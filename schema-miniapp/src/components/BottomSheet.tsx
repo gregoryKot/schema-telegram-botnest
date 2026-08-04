@@ -7,6 +7,12 @@ interface Props {
   children: React.ReactNode;
   zIndex?: number;
   scrollRef?: React.RefObject<HTMLDivElement>;
+  /**
+   * Дневниковый скин: шит живёт в тёплой светлой палитре независимо от темы
+   * приложения. Шит уходит порталом в body, поэтому класс от родительской
+   * обёртки сюда не доезжает — его приходится передавать явно.
+   */
+  skin?: 'diary';
 }
 
 const HINT_KEY = 'sheet_close_hint_shown';
@@ -16,7 +22,9 @@ export function BottomSheet({
   children,
   zIndex = 200,
   scrollRef,
+  skin,
 }: Props) {
+  const diary = skin === 'diary';
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const [showHint, setShowHint] = useState(
@@ -69,12 +77,13 @@ export function BottomSheet({
           position: 'fixed',
           inset: 0,
           zIndex,
-          background: 'rgba(0,0,0,0.55)',
+          background: diary ? 'rgba(34,30,27,0.35)' : 'rgba(0,0,0,0.55)',
           animation: 'fade-in 200ms ease',
         }}
       />
       <div
         ref={sheetRef}
+        className={diary ? 'diary-skin' : undefined}
         style={{
           position: 'fixed',
           bottom: 0,
@@ -82,7 +91,7 @@ export function BottomSheet({
           right: 0,
           zIndex: zIndex + 1,
           background: 'var(--sheet-bg)',
-          borderRadius: '24px 24px 0 0',
+          borderRadius: diary ? '22px 22px 0 0' : '24px 24px 0 0',
           maxHeight: '88vh',
           display: 'flex',
           flexDirection: 'column',
@@ -108,7 +117,9 @@ export function BottomSheet({
               width: 36,
               height: 4,
               borderRadius: 2,
-              background: 'rgba(var(--fg-rgb),0.15)',
+              background: diary
+                ? 'rgba(34,30,27,0.18)'
+                : 'rgba(var(--fg-rgb),0.15)',
             }}
           />
         </div>

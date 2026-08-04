@@ -5,8 +5,62 @@
    New additions: --surface, --surface-2, --border-color, --sheet-bg-2
    ───────────────────────────────────────────────────────────────────────────── */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overscroll-behavior: none; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+/* ── Шрифты дневника: Spectral (заголовки) + Manrope (интерфейс) ──────────────
+   Свои файлы, не CDN Google: CSP отдаёт defaultSrc 'self' (src/main.ts), так что
+   внешний fonts.gstatic.com был бы заблокирован — и российский пользователь
+   получил бы системный фолбэк. Manrope вариативный: один файл на 400–700.
+   Кириллица и латиница разными подмножествами — грузится только нужное. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
 
 /* ── Нижняя безопасная зона ──────────────────────────────────────────────────
    env() отдаёт реальный инсет только при viewport-fit=cover (index.html), но
@@ -16,7 +70,10 @@ html, body { height: 100%; overscroll-behavior: none; }
 :root {
   --safe-bottom: max(
     env(safe-area-inset-bottom, 0px),
-    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+    calc(
+      var(--tg-safe-area-inset-bottom, 0px) +
+        var(--tg-content-safe-area-inset-bottom, 0px)
+    )
   );
 }
 
@@ -26,32 +83,32 @@ html, body { height: 100%; overscroll-behavior: none; }
    перекрашиваются без правок. Карточки СПЛОШНЫЕ (не стекло) — как в макете.
    Фоновые «блобы» убраны: макет — плоский, ровный фон (меньше сенсорного шума). */
 :root {
-  --fg-rgb:        240, 240, 246;
-  --bg:            #191b25;
-  --sheet-bg:      #23252f;
-  --text:          #f0f0f6;
-  --nav-bg:        rgba(25, 27, 37, 0.82);
-  --text-sub:      rgba(240, 240, 246, 0.62);
-  --text-faint:    rgba(240, 240, 246, 0.40);
+  --fg-rgb: 240, 240, 246;
+  --bg: #191b25;
+  --sheet-bg: #23252f;
+  --text: #f0f0f6;
+  --nav-bg: rgba(25, 27, 37, 0.82);
+  --text-sub: rgba(240, 240, 246, 0.62);
+  --text-faint: rgba(240, 240, 246, 0.4);
   --chip-sel-text: #ffffff;
-  --on-accent:     #ffffff;
+  --on-accent: #ffffff;
 
   /* Accent palette — макет (тёмная тема) */
-  --accent:        #8f86ff;
+  --accent: #8f86ff;
   --accent-indigo: #9a8dff;
   --accent-orange: #f7ad4d;
-  --accent-blue:   #5aa8f7;
-  --accent-green:  #42d19d;
+  --accent-blue: #5aa8f7;
+  --accent-green: #42d19d;
   --accent-yellow: #facc15;
-  --accent-red:    #f7708a;
-  --accent-pink:   #f77aa3;
+  --accent-red: #f7708a;
+  --accent-pink: #f77aa3;
 
   /* Solid surfaces (как в макете) */
-  --surface:       #23252f;
-  --surface-2:     #282b37;
-  --border-color:  rgba(255, 255, 255, 0.09);
-  --track-color:   rgba(255, 255, 255, 0.10);
-  --sheet-bg-2:    #1f212b;
+  --surface: #23252f;
+  --surface-2: #282b37;
+  --border-color: rgba(255, 255, 255, 0.09);
+  --track-color: rgba(255, 255, 255, 0.1);
+  --sheet-bg-2: #1f212b;
 
   /* Плоский фон макета — блобы отключены */
   --blob-1: rgba(0, 0, 0, 0);
@@ -59,33 +116,33 @@ html, body { height: 100%; overscroll-behavior: none; }
 }
 
 /* ── Light theme («бумага» макета) ─────────────────────────────────────────── */
-html[data-theme="light"] {
-  --fg-rgb:        43, 41, 52;
-  --bg:            #f4f0e9;
-  --sheet-bg:      #ffffff;
-  --text:          #2b2934;
-  --nav-bg:        rgba(244, 240, 233, 0.86);
-  --text-sub:      rgba(43, 41, 52, 0.60);
-  --text-faint:    rgba(43, 41, 52, 0.40);
+html[data-theme='light'] {
+  --fg-rgb: 43, 41, 52;
+  --bg: #f4f0e9;
+  --sheet-bg: #ffffff;
+  --text: #2b2934;
+  --nav-bg: rgba(244, 240, 233, 0.86);
+  --text-sub: rgba(43, 41, 52, 0.6);
+  --text-faint: rgba(43, 41, 52, 0.4);
   --chip-sel-text: #2b2934;
-  --on-accent:     #ffffff;
+  --on-accent: #ffffff;
 
   /* Accent palette — макет (светлая тема) */
-  --accent:        #6d5efc;
+  --accent: #6d5efc;
   --accent-indigo: #6d5efc;
   --accent-orange: #d97706;
-  --accent-blue:   #2f7fe0;
-  --accent-green:  #0f9d67;
+  --accent-blue: #2f7fe0;
+  --accent-green: #0f9d67;
   --accent-yellow: #b45309;
-  --accent-red:    #e5484d;
-  --accent-pink:   #ec5f8b;
+  --accent-red: #e5484d;
+  --accent-pink: #ec5f8b;
 
   /* Тёплые бумажные поверхности */
-  --surface:       #ffffff;
-  --surface-2:     #faf8f3;
-  --border-color:  rgba(43, 41, 52, 0.08);
-  --track-color:   rgba(43, 41, 52, 0.07);
-  --sheet-bg-2:    #faf8f3;
+  --surface: #ffffff;
+  --surface-2: #faf8f3;
+  --border-color: rgba(43, 41, 52, 0.08);
+  --track-color: rgba(43, 41, 52, 0.07);
+  --sheet-bg-2: #faf8f3;
 
   /* Плоский фон макета — блобов нет */
   --blob-1: rgba(0, 0, 0, 0);
@@ -95,24 +152,56 @@ html[data-theme="light"] {
 /* ── Base ──────────────────────────────────────────────────────────────────── */
 body {
   background: var(--bg);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--text);
   min-height: 100vh;
 }
 
-#root { min-height: 100vh; }
+#root {
+  min-height: 100vh;
+}
 
 /* ── Input reset ───────────────────────────────────────────────────────────── */
-input[type=range] { -webkit-appearance: none; appearance: none; outline: none; border: none; background: transparent; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 0; height: 0; }
-input[type=range]::-moz-range-thumb     { width: 0; height: 0; border: none; background: transparent; }
-button { font-family: inherit; }
-::placeholder { color: var(--text-faint); opacity: 1; }
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+}
+input[type='range']::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+}
+button {
+  font-family: inherit;
+}
+::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
 
 /* ── Scrollbar hide ────────────────────────────────────────────────────────── */
-* { scrollbar-width: none; -ms-overflow-style: none; }
-*::-webkit-scrollbar { display: none; }
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
 
 /* ── Primary button ────────────────────────────────────────────────────────── */
 .btn-primary {
@@ -127,13 +216,21 @@ button { font-family: inherit; }
   cursor: pointer;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s, transform 0.15s;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
 }
-.btn-primary:active { opacity: 0.82; transform: scale(0.97); }
-.btn-primary:disabled { opacity: 0.4; cursor: default; }
+.btn-primary:active {
+  opacity: 0.82;
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 /* Light theme: softer gradient instead of flat saturated color */
-html[data-theme="light"] .btn-primary {
+html[data-theme='light'] .btn-primary {
   background: var(--accent);
   box-shadow: 0 4px 16px rgba(109, 94, 252, 0.28);
 }
@@ -153,67 +250,331 @@ html[data-theme="light"] .btn-primary {
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s;
 }
-.btn-ghost:active { opacity: 0.7; }
+.btn-ghost:active {
+  opacity: 0.7;
+}
 
 /* ── Card ──────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  transition: opacity 0.12s, transform 0.12s;
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
-.card:active { opacity: 0.72; transform: scale(0.98); }
+.card:active {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
 
 /* Light theme: white cards with subtle shadow (iOS-style) */
-html[data-theme="light"] .card {
+html[data-theme='light'] .card {
   border-color: transparent;
-  box-shadow: 0 2px 12px rgba(22, 19, 44, 0.08), 0 0 1px rgba(22, 19, 44, 0.05);
+  box-shadow:
+    0 2px 12px rgba(22, 19, 44, 0.08),
+    0 0 1px rgba(22, 19, 44, 0.05);
 }
 
 /* ── Section label ─────────────────────────────────────────────────────────── */
 .section-label {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
 /* ── Typography scale ──────────────────────────────────────────────────────── */
-.text-xs  { font-size: 11px; }
-.text-sm  { font-size: 13px; }
-.text-md  { font-size: 15px; }
-.text-lg  { font-size: 17px; }
-.text-xl  { font-size: 20px; }
-.text-2xl { font-size: 24px; }
-.text-3xl { font-size: 28px; }
-.font-medium   { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold     { font-weight: 700; }
-.font-black    { font-weight: 800; }
+.text-xs {
+  font-size: 11px;
+}
+.text-sm {
+  font-size: 13px;
+}
+.text-md {
+  font-size: 15px;
+}
+.text-lg {
+  font-size: 17px;
+}
+.text-xl {
+  font-size: 20px;
+}
+.text-2xl {
+  font-size: 24px;
+}
+.text-3xl {
+  font-size: 28px;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-black {
+  font-weight: 800;
+}
 
 /* ── Animations ────────────────────────────────────────────────────────────── */
-@keyframes fade-in   { from { opacity: 0; transform: translateY(8px); }  to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-up  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pop-in    { 0%   { opacity: 0; transform: scale(0.94); }      100% { opacity: 1; transform: scale(1); } }
-@keyframes sheet-up  { from { transform: translateY(100%); }             to   { transform: translateY(0); } }
-@keyframes tab-right { from { opacity: 0; transform: translateX(24px); } to   { opacity: 1; transform: translateX(0); } }
-@keyframes tab-left  { from { opacity: 0; transform: translateX(-24px); }to   { opacity: 1; transform: translateX(0); } }
-@keyframes shimmer        { from { background-position: 200% center; }        to   { background-position: 0% center; } }
-@keyframes slide-in-right { from { opacity: 0; transform: translateX(32px); } to   { opacity: 1; transform: translateX(0); } }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes tab-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes tab-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% center;
+  }
+  to {
+    background-position: 0% center;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 /* Мягкое «дыхание» декоративного круга в hero-CTA (как круг на экране «Помощь») */
-@keyframes hero-breathe { 0%,100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.18); opacity: 1; } }
+@keyframes hero-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
 
 /* ── Field focus ────────────────────────────────────────────────────────────── */
-.field-input:focus { border-color: rgba(var(--fg-rgb), 0.25) !important; outline: none; }
+.field-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.25) !important;
+  outline: none;
+}
 
 /* ── Chip / selection ───────────────────────────────────────────────────────── */
-.sel-btn { transition: background 150ms, border-color 150ms, color 150ms; -webkit-tap-highlight-color: transparent; }
+.sel-btn {
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ── Layout: отступы под таб-бар и системную полосу (--safe-bottom) ─────────── */
-.section-pad { min-height: 100vh; padding-bottom: calc(140px + var(--safe-bottom)); }
-.sheet-scroll { overflow-y: auto; flex: 1; padding: 0 24px calc(48px + var(--safe-bottom)); }
+.section-pad {
+  min-height: 100vh;
+  padding-bottom: calc(140px + var(--safe-bottom));
+}
+.sheet-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 24px calc(48px + var(--safe-bottom));
+}
+
+/* ── Дневники: тёплая бумага ─────────────────────────────────────────────────
+   Поверхность дневников живёт в своей палитре и всегда светлая: тема
+   Telegram (themeParams) её не перекрывает. Это отдельный «скин», а не вторая
+   тема приложения — переопределяем ИМЕНА уже существующих токенов, поэтому
+   вложенные общие компоненты (.card, .btn-primary, поля) перекрашиваются сами,
+   без правки инлайновых стилей.
+   Служебные цветные акценты (--accent-red/blue/green) сведены к одной
+   терракоте: в макете дневника цветных полос и иконок нет, различие несут
+   типографика, порядок и группировка. */
+.diary-skin {
+  --fg-rgb: 34, 30, 27;
+  --bg: #faf7f3;
+  --surface: #ffffff;
+  --surface-2: #f2ece4;
+  --sheet-bg: #ffffff;
+  --sheet-bg-2: #f2ece4;
+  --text: #221e1b;
+  --ink-2: #4a423c;
+  --text-sub: #4a423c;
+  --muted: #8a8079;
+  --text-faint: #a2988f;
+  --faint: #a2988f;
+  --line: rgba(34, 30, 27, 0.07);
+  --border-color: rgba(34, 30, 27, 0.07);
+  --track-color: rgba(34, 30, 27, 0.07);
+  --accent: #9a5b3e;
+  --accent-hi: #86482d;
+  --accent-bg: #f6eee8;
+  --calm: #e7ede4;
+  --dot: #e0d6cb;
+  --chevron: #c7bdb3;
+  --on-accent: #ffffff;
+  --chip-sel-text: #221e1b;
+  --accent-indigo: #9a5b3e;
+  --accent-orange: #9a5b3e;
+  --accent-blue: #9a5b3e;
+  --accent-green: #9a5b3e;
+  --accent-yellow: #9a5b3e;
+  --accent-red: #9a5b3e;
+  --accent-pink: #9a5b3e;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    'Manrope',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+.diary-skin button,
+.diary-skin input,
+.diary-skin textarea {
+  font-family:
+    'Manrope',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+/* Селекторы с html[data-theme] — чтобы перебить светлые/тёмные правила выше
+   (у них специфичность выше, чем у одного класса). */
+html[data-theme] .diary-skin .card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
+}
+html[data-theme] .diary-skin .btn-primary {
+  border-radius: 16px;
+  box-shadow: none;
+  font-size: 16px;
+  padding: 16px 0;
+}
+html[data-theme] .diary-skin .btn-primary:disabled {
+  background: #efe8e1;
+  color: #b0a69d;
+  opacity: 1;
+}
+
+/* Заголовки экранов и вопросы — Spectral. */
+.d-display {
+  font-family: 'Spectral', 'Instrument Serif', Georgia, serif;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--text);
+}
+/* Капс-подпись секции. */
+.d-caps {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+/* Строка списка: цель нажатия не меньше 60px (в макете — строки дневников). */
+.d-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 120ms;
+}
+.d-row + .d-row {
+  border-top: 1px solid var(--line);
+}
+.d-row:active {
+  background: var(--surface-2);
+}
+/* Белый контейнер-группа: строки внутри разделяются волосяной линией. */
+.d-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
+  overflow: hidden;
+}
+
+/* Запись в списке дневника: строки внутри панели, не отдельные карточки. */
+.d-entry {
+  padding: 16px;
+}
+.d-entry + .d-entry {
+  border-top: 1px solid var(--line);
+}
+/* Первая строка записи в свёрнутом виде — одной строкой с многоточием. */
+.d-clamp {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
@@ -221,16 +582,18 @@ html[data-theme="light"] .card {
    Блок продублирован: media query и атрибут не объединить в один селектор.
    !important нужен, чтобы перебить инлайновые style={{ transition, animation }}. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
-html[data-reduce-motion="1"] *,
-html[data-reduce-motion="1"] *::before,
-html[data-reduce-motion="1"] *::after {
+html[data-reduce-motion='1'] *,
+html[data-reduce-motion='1'] *::before,
+html[data-reduce-motion='1'] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;

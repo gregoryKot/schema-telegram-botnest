@@ -28,10 +28,7 @@ export function ModeCard({
   ];
 
   return (
-    <div
-      className="card"
-      style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
-    >
+    <div className="d-entry">
       <div
         {...pressable(() => setOpen((v) => !v))}
         style={{ cursor: 'pointer' }}
@@ -43,29 +40,34 @@ export function ModeCard({
             marginBottom: 6,
           }}
         >
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+          <span style={{ fontSize: 12, color: 'var(--faint)' }}>
             {formatDt(entry.createdAt)}
           </span>
-          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
+          <span style={{ fontSize: 13, color: 'var(--chevron)' }}>
             {open ? '▲' : '▼'}
           </span>
         </div>
         {mode && (
-          <div style={{ fontSize: 13, color, marginBottom: 4 }}>
-            {mode.emoji} {mode.name}
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--text)',
+              marginBottom: 4,
+            }}
+          >
+            {mode.name}
           </div>
         )}
         <div
+          className={open ? undefined : 'd-clamp'}
           style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text)',
-            lineHeight: 1.4,
+            fontSize: 13,
+            color: 'var(--muted)',
+            lineHeight: 1.5,
           }}
         >
-          {entry.situation.length > 80 && !open
-            ? entry.situation.slice(0, 80) + '…'
-            : entry.situation}
+          {entry.situation}
         </div>
       </div>
       {open && (

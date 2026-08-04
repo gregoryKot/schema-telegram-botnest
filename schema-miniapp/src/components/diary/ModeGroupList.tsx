@@ -15,20 +15,13 @@ export function ModeGroupList({
   return (
     <>
       {MODE_GROUPS.map((group) => (
-        <div key={group.id} style={{ marginBottom: 12 }}>
-          <div
-            style={{
-              fontSize: 10,
-              color: group.color,
-              fontWeight: 600,
-              marginBottom: 6,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
+        <div key={group.id} style={{ marginBottom: 16 }}>
+          {/* Цвет группы больше не красит подпись: различие несут порядок и
+              группировка, а не палитра (макет «тёплая бумага»). */}
+          <div className="d-caps" style={{ marginBottom: 8 }}>
             {group.group}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {group.items.map((m) => (
               <button
                 key={m.id}
@@ -38,16 +31,16 @@ export function ModeGroupList({
                 })}
                 className="sel-btn"
                 style={{
-                  background: 'rgba(var(--fg-rgb),0.06)',
-                  border: '1px solid transparent',
-                  borderRadius: 16,
-                  padding: '6px 11px',
-                  color: 'rgba(var(--fg-rgb),0.6)',
+                  background: 'var(--surface)',
+                  border: '1px solid rgba(34,30,27,0.1)',
+                  borderRadius: 999,
+                  padding: '10px 14px',
+                  color: 'var(--ink-2)',
                   fontSize: 13,
                   cursor: 'pointer',
                 }}
               >
-                {m.emoji} {m.name}
+                {m.name}
               </button>
             ))}
           </div>

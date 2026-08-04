@@ -13,6 +13,7 @@ import {
   MODE_UNKNOWN_GROUP,
   SECOND_DOORS,
   MODE_PICKER_GROUPS,
+  findPickerGroupIdByModeId,
 } from './modeBodyCues';
 import {
   MODE_TEST_GROUPS,
@@ -130,4 +131,33 @@ describe('вторые входы достижимы из своих двере�
       }
     },
   );
+});
+
+// Обратный поиск семьи по режиму: на нём держится «Назад» с шага записи в
+// дневнике режимов (ModeEntrySheet) и восстановление шага у черновика.
+describe('findPickerGroupIdByModeId', () => {
+  it('возвращает семью, в двери которой режим действительно лежит', () => {
+    expect(findPickerGroupIdByModeId('detached_protector')).toBe('avoid');
+    expect(findPickerGroupIdByModeId('vulnerable_child')).toBe('hurt');
+  });
+
+  it('вторая дверь ведёт в ту семью, где выбор и делается', () => {
+    // angry_protector живёт в копингах, но в пикере открывается из «злюсь»
+    expect(findPickerGroupIdByModeId('angry_protector')).toBe('anger');
+  });
+
+  it('для неизвестного режима отдаёт null, а не первую попавшуюся семью', () => {
+    expect(findPickerGroupIdByModeId('нет_такого_режима')).toBeNull();
+    expect(findPickerGroupIdByModeId('')).toBeNull();
+  });
+
+  it('любой найденный id — реальная семья пикера', () => {
+    const ids = MODE_PICKER_GROUPS.flatMap((g) =>
+      g.leaves.map((l) => l.modeId),
+    );
+    for (const modeId of ids) {
+      const groupId = findPickerGroupIdByModeId(modeId);
+      expect(MODE_PICKER_GROUPS.some((g) => g.id === groupId)).toBe(true);
+    }
+  });
 });

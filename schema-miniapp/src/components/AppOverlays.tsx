@@ -121,11 +121,17 @@ export function AppOverlays({
             position: 'fixed',
             inset: 0,
             zIndex: 80,
-            background: 'var(--bg)',
             overflowY: 'auto',
           }}
+          className="diary-skin"
         >
-          <DiarySection onClose={() => sheets.close('diaries')} />
+          <DiarySection
+            onClose={() => sheets.close('diaries')}
+            onOpenTracker={() => {
+              sheets.close('diaries');
+              sheets.open('trackerOverlay', { trackerNeedId: null });
+            }}
+          />
         </div>
       )}
 

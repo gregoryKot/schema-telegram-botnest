@@ -24,7 +24,7 @@ interface Props {
   onSave: (data: SchemaDiaryEntryInput) => Promise<void>;
 }
 
-const COLOR = 'var(--accent-red)';
+const COLOR = 'var(--accent)';
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const tr = useTr();
@@ -89,7 +89,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   );
 
   return (
-    <BottomSheet onClose={onClose}>
+    <BottomSheet onClose={onClose} skin="diary">
       <div>
         <DiaryStickyHeader
           title="Дневник схем"

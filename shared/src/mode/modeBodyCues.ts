@@ -135,3 +135,18 @@ export const MODE_PICKER_GROUPS: ModeTestGroup[] = [
   }),
   MODE_UNKNOWN_GROUP,
 ];
+
+/**
+ * Семья пикера, в которой лежит режим, — по ней шаг «уточнить режим» знает,
+ * куда вернуть человека с шага записи. Ищем именно среди семей ПИКЕРА, а не
+ * теста: у режима может быть вторая дверь (SECOND_DOORS), и вернуться надо
+ * туда, где выбор реально был сделан. Режим, до которого добрались списком
+ * по группам, во вторых дверях может не встретиться — тогда undefined, и
+ * поток честно откатывается к списку состояний.
+ */
+export function findPickerGroupIdByModeId(modeId: string): string | null {
+  const group = MODE_PICKER_GROUPS.find((g) =>
+    g.leaves.some((l) => l.modeId === modeId),
+  );
+  return group?.id ?? null;
+}

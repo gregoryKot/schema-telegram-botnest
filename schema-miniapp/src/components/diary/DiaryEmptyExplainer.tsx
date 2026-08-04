@@ -5,57 +5,35 @@ import { buildDiaryExplainers } from '../../../../shared/src/diary/diaryExplaine
 // Пустой дневник — первая встреча новичка с фичей, поэтому вместо «пока
 // тихо» здесь ответ на «что это и зачем» (правило онбординга CLAUDE.md).
 // Контент — общий buildDiaryExplainers, одно очевидное действие — FAB внизу.
-export function DiaryEmptyExplainer({
-  type,
-  color,
-}: {
-  type: DiaryType;
-  color: string;
-}) {
+export function DiaryEmptyExplainer({ type }: { type: DiaryType }) {
   const tr = useTr();
   const ex = buildDiaryExplainers(tr)[type];
 
   return (
-    <div style={{ padding: '32px 4px 60px', textAlign: 'center' }}>
-      <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.5 }}>
-        {ex.emoji}
-      </div>
+    <div style={{ padding: '24px 2px 60px' }}>
       <div
-        className="card"
         style={{
-          borderRadius: 16,
-          padding: '16px 18px',
-          marginBottom: 12,
-          textAlign: 'left',
+          background: 'var(--surface-2)',
+          borderRadius: 18,
+          padding: '18px 20px',
+          marginBottom: 14,
         }}
       >
-        <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
+        <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.65 }}>
           {ex.what}
         </div>
         <div
           style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            lineHeight: 1.7,
-            marginTop: 10,
+            fontSize: 14,
+            color: 'var(--muted)',
+            lineHeight: 1.65,
+            marginTop: 12,
           }}
         >
           {ex.why}
         </div>
       </div>
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '9px 14px',
-          borderRadius: 12,
-          background: `color-mix(in srgb, ${color} 10%, transparent)`,
-          fontSize: 13,
-          color: 'var(--text-sub)',
-        }}
-      >
-        <span>↓</span>
+      <div style={{ fontSize: 13, color: 'var(--faint)', paddingLeft: 2 }}>
         Первая запись — кнопка внизу, пара минут.
       </div>
     </div>

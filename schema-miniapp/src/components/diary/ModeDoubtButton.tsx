@@ -47,7 +47,8 @@ export function ModeDoubtButton({
           fontSize: 12.5,
           cursor: 'pointer',
           fontFamily: 'inherit',
-          padding: '8px 2px 4px',
+          padding: '4px 2px 18px',
+          minHeight: 48,
           textAlign: 'left',
         }}
       >
@@ -105,7 +106,6 @@ export function ModeDoubtButton({
                         color: 'var(--text)',
                       }}
                     >
-                      <span>{other?.emoji}</span>
                       {other?.name ?? d.otherId}
                     </div>
                     <div
