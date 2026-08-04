@@ -364,11 +364,9 @@ export function renderTemplate(
             ]
           : [[openDiaryButton]];
       return {
-        text: t(
-          form,
-          `🎯 Сегодня ты планировал:\n\n${text}`,
-          `🎯 Сегодня вы планировали:\n\n${text}`,
-        ),
+        // Формулировка намеренно безличная: она одинаково звучит
+        // и в «ты», и в «вы», и не навязывает читателю мужской род.
+        text: `🎯 План на сегодня:\n\n${text}`,
         keyboard: Markup.inlineKeyboard(buttons),
       };
     }

@@ -46,7 +46,7 @@ describe('DoneStep — обращение ты/вы', () => {
       />,
     );
     expect(
-      screen.getByText('Ты сделал шаг навстречу себе. Это уже немало.'),
+      screen.getByText('Это шаг навстречу себе. Уже немало.'),
     ).toBeTruthy();
   });
 

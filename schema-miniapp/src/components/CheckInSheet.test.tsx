@@ -70,7 +70,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
         onDone={onDone}
       />,
     );
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     await waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(api.checkinPlan).toHaveBeenCalledWith(42, true);
   });
@@ -122,7 +122,7 @@ describe('CheckInSheet — провал сохранения виден поль
         onDone={onDone}
       />,
     );
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     expect(
       await screen.findByText('Не удалось сохранить — попробуй ещё раз'),
     ).toBeTruthy();
@@ -144,8 +144,8 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
       />,
       'ty',
     );
-    expect(screen.getByText('Вчера ты планировал')).toBeTruthy();
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    expect(screen.getByText('Вчера в планах было')).toBeTruthy();
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     expect(
       await screen.findByText('Не удалось сохранить — попробуй ещё раз'),
     ).toBeTruthy();
@@ -164,7 +164,7 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
       'vy',
     );
     expect(screen.getByText('Вчера вы планировали')).toBeTruthy();
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     await screen.findByText('Не удалось сохранить — попробуйте ещё раз');
     expect(hasTyForms(container.textContent ?? '')).toBe(false);
   });

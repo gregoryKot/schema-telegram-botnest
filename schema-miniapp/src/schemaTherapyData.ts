@@ -253,7 +253,7 @@ export const MODE_GROUPS = [
         id: 'abandoned_child',
         name: 'Покинутый Ребёнок',
         emoji: '💔',
-        short: 'Страх быть брошенным, тревога при угрозе близким отношениям',
+        short: 'Страх, что бросят, тревога при угрозе близким отношениям',
       },
       {
         id: 'humiliated_child',
@@ -384,7 +384,7 @@ export const MODE_GROUPS = [
         id: 'invincible_oc',
         name: 'Неуязвимый Гиперконтролёр',
         emoji: '🛡️',
-        short: 'Отрицает слабость — должен быть сильным всегда',
+        short: 'Отрицает слабость — броня не снимается никогда',
       },
       {
         id: 'flagellating_oc',
