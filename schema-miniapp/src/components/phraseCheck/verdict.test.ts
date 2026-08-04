@@ -12,20 +12,26 @@ describe('buildVerdict', () => {
     expect(v.suggestRewrite).toBe(false);
   });
 
-  it('одна примета — «почти забота», переписать предлагается', () => {
+  it('одна-две приметы — «почти забота», переписать предлагается', () => {
     const v = buildVerdict(['person']);
     expect(v.title).toBe('Почти забота');
     expect(v.suggestRewrite).toBe(true);
+    expect(buildVerdict(['person', 'fear']).title).toBe('Почти забота');
   });
 
-  it('две и три приметы — смешанный голос', () => {
-    expect(buildVerdict(['person', 'fear']).title).toBe('Голос смешанный');
-    expect(buildVerdict(['person', 'fear', 'shame']).title).toBe(
+  it('от трёх до шести примет — смешанный голос', () => {
+    expect(buildVerdict(['person', 'fear', 'worth']).title).toBe(
+      'Голос смешанный',
+    );
+    expect(buildVerdict(PHRASE_MARK_IDS.slice(0, 6)).title).toBe(
       'Голос смешанный',
     );
   });
 
-  it('все четыре — говорит критик', () => {
+  it('семь и больше — говорит критик', () => {
+    expect(buildVerdict(PHRASE_MARK_IDS.slice(0, 7)).title).toBe(
+      'Говорит критик',
+    );
     expect(buildVerdict([...PHRASE_MARK_IDS]).title).toBe('Говорит критик');
   });
 
@@ -36,11 +42,21 @@ describe('buildVerdict', () => {
     expect(junk.title).toBe('Почти забота');
   });
 
+  it('порог считается от числа примет, а не от захардкоженной четвёрки', () => {
+    // Регрессия: пороги писались под 4 приметы, а таблица содержит 9 —
+    // «смешанный» обязан жить между ними, иначе шкала врёт.
+    expect(PHRASE_MARK_IDS).toHaveLength(9);
+    const titles = PHRASE_MARK_IDS.map(
+      (_, i) => buildVerdict(PHRASE_MARK_IDS.slice(0, i + 1)).title,
+    );
+    expect(new Set(titles).size).toBe(3);
+  });
+
   it('ни один вердикт не переходит на личность читателя', () => {
     const all = [
       buildVerdict([]),
       buildVerdict(['person']),
-      buildVerdict(['person', 'fear']),
+      buildVerdict(['person', 'fear', 'worth']),
       buildVerdict([...PHRASE_MARK_IDS]),
     ];
     for (const v of all) {

@@ -21,10 +21,15 @@ export const PHRASE_MARK_LABELS: Record<
   (typeof PHRASE_MARK_IDS)[number],
   string
 > = {
+  goal: 'сказана, чтобы ткнуть в промах',
+  notok: 'говорит «со мной что-то не так»',
   person: 'ругает не поступок, а себя',
+  label: 'судит вместо фактов',
   fear: 'толкает страхом, а не желанием',
+  never: 'ей всегда мало',
+  mistake: 'ошибка = провал',
   absolute: '«всегда» и «никогда»',
-  shame: 'после неё хочется исчезнуть',
+  worth: 'ценность зависит от результата',
 };
 
 const pct = (part: number, whole: number): string =>
@@ -32,7 +37,7 @@ const pct = (part: number, whole: number): string =>
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatPhraseCheckMetrics(m: PhraseCheckMetrics): string {
-  const lines = ['🔎 <b>Разбор фразы критика</b> (за месяц)'];
+  const lines = ['🔎 <b>Разбор фразы: критик или забота</b> (за месяц)'];
   if (m.checks30 === 0) {
     lines.push(
       'Пока никто не разбирал свои фразы — упражнение ещё не нашли 🙂',

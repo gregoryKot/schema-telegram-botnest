@@ -86,9 +86,9 @@ describe('ToolsList — клики по строкам зовут свой об�
     expect(handlers.onOpenSafePlace).not.toHaveBeenCalled();
   });
 
-  it('клик по «Разобрать фразу» зовёт onOpenPhraseCheck, а не соседний разбор', () => {
+  it('клик по «Критик или забота?» зовёт onOpenPhraseCheck, а не соседний разбор', () => {
     const handlers = renderList();
-    fireEvent.click(screen.getByText('Разобрать фразу'));
+    fireEvent.click(screen.getByText('Критик или забота?'));
     expect(handlers.onOpenPhraseCheck).toHaveBeenCalledTimes(1);
     // Соседняя строка — тоже «проверка», перепутать легко именно её.
     expect(handlers.onOpenBeliefCheck).not.toHaveBeenCalled();
