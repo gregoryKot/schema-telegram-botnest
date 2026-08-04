@@ -12,7 +12,7 @@ async function errorsFor(body: Record<string, unknown>): Promise<string[]> {
   return errs.map((e) => e.property);
 }
 
-const VALID = { phrase: 'ни на что не гожусь', marks: ['person', 'shame'] };
+const VALID = { phrase: 'ни на что не гожусь', marks: ['person', 'worth'] };
 
 describe('PhraseCheckDto', () => {
   it('валидное тело проходит', async () => {
