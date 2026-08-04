@@ -36,7 +36,7 @@ afterEach(() => {
 async function renderSheet() {
   render(<LetterToSelf onClose={() => {}} />);
   await act(async () => {}); // flush getLetters()
-  return screen.getByPlaceholderText('Дорогой маленький я...');
+  return screen.getByPlaceholderText('Дорогой мой ребёнок...');
 }
 
 describe('LetterToSelf — кризисная детекция (правило №7)', () => {
