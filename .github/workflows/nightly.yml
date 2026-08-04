@@ -123,7 +123,7 @@ jobs:
       # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
       - name: отчёт артефактом
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-report
           path: reports/mutation/
@@ -162,7 +162,7 @@ jobs:
         run: npx playwright test
       - name: трейс упавшего смока артефактом
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-trace
           path: test-results/
@@ -195,7 +195,7 @@ jobs:
         run: npx stryker run stryker.bot.config.json
       - name: отчёт артефактом
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-bot-report
           path: reports/mutation/
