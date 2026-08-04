@@ -64,61 +64,82 @@ export function ModeFeelingBrowse({
       </div>
 
       {group && (
-        <div
-          style={{
-            marginTop: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-          }}
-        >
-          {group.leaves.map((leaf) => {
-            const mode = getModeById(leaf.modeId);
-            return (
-              <button
-                key={leaf.modeId}
-                onClick={() => {
-                  haptic.select();
-                  // Событие переехало из удалённого окна-теста (ModeTestSheet) —
-                  // чипы теперь единственный вход выбора режима.
-                  api.trackEvent(MODE_TEST_COMPLETED_EVENT, {
-                    modeId: leaf.modeId,
-                  });
-                  onChange(leaf.modeId);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  background: 'rgba(var(--fg-rgb),0.05)',
-                  border: '1px solid rgba(var(--fg-rgb),0.06)',
-                  borderRadius: 14,
-                  padding: '10px 12px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <span style={{ fontSize: 20, flexShrink: 0 }}>
-                  {leaf.emoji}
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 13.5,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {mode?.name ?? leaf.label}
+        <div style={{ marginTop: 8 }}>
+          <div
+            style={{
+              fontSize: 11.5,
+              color: 'var(--text-faint)',
+              lineHeight: 1.4,
+              marginBottom: 8,
+            }}
+          >
+            {group.hint}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {group.leaves.map((leaf) => {
+              const mode = getModeById(leaf.modeId);
+              return (
+                <button
+                  key={leaf.modeId}
+                  onClick={() => {
+                    haptic.select();
+                    // Событие переехало из удалённого окна-теста (ModeTestSheet) —
+                    // чипы теперь единственный вход выбора режима.
+                    api.trackEvent(MODE_TEST_COMPLETED_EVENT, {
+                      modeId: leaf.modeId,
+                    });
+                    onChange(leaf.modeId);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: 'rgba(var(--fg-rgb),0.05)',
+                    border: '1px solid rgba(var(--fg-rgb),0.06)',
+                    borderRadius: 14,
+                    padding: '10px 12px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>
+                    {leaf.emoji}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                      }}
+                    >
+                      {leaf.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        color: 'var(--text-sub)',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {leaf.desc}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--text-faint)',
+                        marginTop: 3,
+                      }}
+                    >
+                      → {mode?.name ?? leaf.label}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
-                    {leaf.label}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

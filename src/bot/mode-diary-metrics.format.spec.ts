@@ -9,15 +9,20 @@ describe('formatModeDiaryMetrics', () => {
       testCompleted7: 0,
       testCompleted30: 0,
       chainAccepted30: 0,
+      doubtOpened30: 0,
+      doubtSwitched30: 0,
     });
     expect(text).toContain('Дневник режимов');
     expect(text).toContain(
       'Пока никто не вёл дневник режимов и не проходил тест.',
     );
+    // Полностью пустая БД сворачивается в одну фразу (как и chainAccepted) —
+    // строка про сравнение похожих режимов не мусорит нулём, а просто не
+    // выводится, пока нет вообще никакой активности дневника.
     expect(text).not.toMatch(/NaN|undefined/);
   });
 
-  it('заполненная БД — записи, ответ Здорового Взрослого, тест и связанный режим', () => {
+  it('заполненная БД — записи, ответ Здорового Взрослого, тест, связанный режим и сравнение похожих', () => {
     const text = formatModeDiaryMetrics({
       saves7: 5,
       saves30: 20,
@@ -25,6 +30,8 @@ describe('formatModeDiaryMetrics', () => {
       testCompleted7: 3,
       testCompleted30: 9,
       chainAccepted30: 7,
+      doubtOpened30: 11,
+      doubtSwitched30: 4,
     });
     expect(text).toContain('Записей за неделю: 5 · за месяц: 20');
     expect(text).toContain('дописывали ответ Здорового Взрослого: 12');
@@ -32,8 +39,11 @@ describe('formatModeDiaryMetrics', () => {
       'Определяли режим тестом за неделю: 3 · за месяц: 9',
     );
     expect(text).toContain('Разбирали связанный режим после записи: 7');
+    expect(text).toContain(
+      'Сравнивали похожие режимы 11 раз, из них 4 — поменяли выбор.',
+    );
     expect(text).not.toMatch(
-      /NaN|undefined|events|mode_entry_saved|mode_chain_followup/,
+      /NaN|undefined|events|mode_entry_saved|mode_chain_followup|mode_doubt_opened|mode_doubt_switched/,
     );
   });
 
@@ -45,6 +55,8 @@ describe('formatModeDiaryMetrics', () => {
       testCompleted7: 0,
       testCompleted30: 0,
       chainAccepted30: 0,
+      doubtOpened30: 0,
+      doubtSwitched30: 0,
     });
     expect(text).toContain('Записей за неделю: 2 · за месяц: 6');
     expect(text).not.toContain('Определяли режим тестом');
@@ -58,6 +70,8 @@ describe('formatModeDiaryMetrics', () => {
       testCompleted7: 1,
       testCompleted30: 4,
       chainAccepted30: 0,
+      doubtOpened30: 0,
+      doubtSwitched30: 0,
     });
     expect(text).toContain(
       'Определяли режим тестом за неделю: 1 · за месяц: 4',
@@ -65,7 +79,7 @@ describe('formatModeDiaryMetrics', () => {
     expect(text).not.toContain('Пока никто');
   });
 
-  it('связанный режим ни разу не разбирали — человеческая строка, не пропуск', () => {
+  it('связанный режим и похожие режимы ни разу не разбирали — человеческие строки, не пропуск', () => {
     const text = formatModeDiaryMetrics({
       saves7: 2,
       saves30: 6,
@@ -73,7 +87,26 @@ describe('formatModeDiaryMetrics', () => {
       testCompleted7: 0,
       testCompleted30: 0,
       chainAccepted30: 0,
+      doubtOpened30: 0,
+      doubtSwitched30: 0,
     });
     expect(text).toContain('Связанный режим после записи пока не разбирали.');
+    expect(text).toContain('Похожие режимы пока не сравнивали.');
+  });
+
+  it('похожие режимы сравнивали, но ни разу не поменяли выбор — 0 без мусора', () => {
+    const text = formatModeDiaryMetrics({
+      saves7: 2,
+      saves30: 6,
+      withHealthy30: 1,
+      testCompleted7: 0,
+      testCompleted30: 0,
+      chainAccepted30: 0,
+      doubtOpened30: 3,
+      doubtSwitched30: 0,
+    });
+    expect(text).toContain(
+      'Сравнивали похожие режимы 3 раз, из них 0 — поменяли выбор.',
+    );
   });
 });

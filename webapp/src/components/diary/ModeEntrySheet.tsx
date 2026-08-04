@@ -199,6 +199,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       onSave={handleSave}
       onBack={goBack}
       onChangeMode={() => setShowPicker(true)}
+      onSwitchMode={setModeId}
     />
   );
 }

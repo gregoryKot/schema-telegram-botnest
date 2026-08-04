@@ -43,7 +43,7 @@ describe('ModeSelectScreen', () => {
     const onPick = vi.fn();
     render(<ModeSelectScreen modeId="" onPick={onPick} onBack={vi.fn()} />);
     fireEvent.click(screen.getByText(/Мне больно, страшно, одиноко/));
-    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
     expect(onPick).toHaveBeenCalledWith('vulnerable_child');
   });
 
