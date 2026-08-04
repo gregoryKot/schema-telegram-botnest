@@ -74,6 +74,19 @@ describe('check-gendered-forms.mjs', () => {
     expect(res.status).toBe(0);
   });
 
+  it('законная конструкция в строке не прячет мужской род рядом с ней', () => {
+    // Исключения гасят свой фрагмент, а не всю строку. Реальный пропуск:
+    // «Здоровый Взрослый слышит тебя: … и ты не один» — ALLOW на «Здоровый
+    // Взрослый» делал невидимым «ты не один» в той же строке.
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts':
+        "export const m = 'Здоровый Взрослый слышит тебя: боль настоящая, и ты не один.';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[ty-short-adj] ты не один');
+  });
+
   it('рост счётчика в известном файле — exit 1 с «было → стало»', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({
