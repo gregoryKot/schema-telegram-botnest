@@ -3,15 +3,16 @@ import { getModeById } from '../../schemaTherapyData';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
-import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
+import type { FeelGate } from '../../../../shared/src/mode/modeFeelGates';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeFeelGates';
 
 /**
- * Навигация по режиму «по ощущению»: те же 8 семей, что и в тесте «не знаю
- * режим» (shared/mode/modeTest), плюс вход «не знаю, что чувствую, или
- * пусто» последним (shared/mode/modeBodyCues) — сразу списком, без вопросов,
- * для тех, кто уже примерно понимает состояние и не хочет искать в
- * таксономических группах MODE_GROUPS. Переиспользует данные теста (правило
- * №11: один источник семей на оба пути выбора, а не второй список).
+ * Ворота выбора режима «по базовым чувствам» (shared/mode/modeFeelGates) —
+ * восемь чувств (страшно / грустно / злюсь / стыдно / нет сил / пусто /
+ * на подъёме / хорошо), для тех, кто уже примерно понимает состояние и не
+ * хочет искать в таксономических группах MODE_GROUPS. Каждая семья
+ * раскрывается вопросом-уточнением и списком знакомых фраз. Переиспользует
+ * данные теста (правило №11: один источник формулировок, а не второй список).
  */
 export function ModeFeelingBrowse({
   onChange,
@@ -19,7 +20,7 @@ export function ModeFeelingBrowse({
   onChange: (id: string) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const group = openId
+  const group: FeelGate | null = openId
     ? (MODE_PICKER_GROUPS.find((g) => g.id === openId) ?? null)
     : null;
 
@@ -67,7 +68,18 @@ export function ModeFeelingBrowse({
         <div style={{ marginTop: 8 }}>
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: 'var(--text)',
+              lineHeight: 1.3,
+              marginBottom: 4,
+            }}
+          >
+            {group.question}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
               color: 'var(--text-faint)',
               lineHeight: 1.4,
               marginBottom: 8,

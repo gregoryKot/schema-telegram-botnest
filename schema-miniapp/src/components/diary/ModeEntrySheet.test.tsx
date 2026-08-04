@@ -159,9 +159,7 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
     // назад на шаг выбора режима (чипы «по ощущению» снова видны)
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'Что с тобой сейчас? Выбери самое близкое — потом уточним:',
-        ),
+        screen.getByText('Что сейчас чувствуешь? Выбери самое близкое:'),
       ).toBeTruthy(),
     );
     expect(screen.queryByText('Запись сохранена')).toBeNull();

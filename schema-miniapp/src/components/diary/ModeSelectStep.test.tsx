@@ -14,7 +14,7 @@ describe('ModeSelectStep — режим уже выбран', () => {
     render(<ModeSelectStep modeId="vulnerable_child" onChange={vi.fn()} />);
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
     expect(screen.getByText('Сменить')).toBeTruthy();
-    expect(screen.queryByText(/Что с тобой сейчас/)).toBeNull();
+    expect(screen.queryByText(/Что сейчас чувствуешь/)).toBeNull();
   });
 
   it('клик по «Сменить» вызывает onChange с пустой строкой', () => {
