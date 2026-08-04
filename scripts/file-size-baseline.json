@@ -37,7 +37,7 @@
   "webapp/src/components/SchemaInfoSheet.tsx": 439,
   "src/booking/booking.service.ts": 433,
   "webapp/src/api.ts": 424,
-  "shared/src/hooks/useYsqTest.ts": 423,
+  "shared/src/hooks/useYsqTest.ts": 436,
   "schema-miniapp/src/components/NeedTodaySheet.tsx": 421,
   "schema-miniapp/src/components/PracticesScreen.tsx": 417,
   "webapp/src/components/YSQTestSheet.tsx": 416,
