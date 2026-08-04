@@ -11,7 +11,6 @@ import { UseSheetsReturn } from '../hooks/useSheets';
 interface Props {
   therapistMode: boolean;
   section: Section;
-  setSection: (s: Section) => void;
   needs: Need[];
   ratings: Record<string, number>;
   yesterdayRatings: Record<string, number>;
@@ -37,7 +36,6 @@ interface Props {
 export function AppSections({
   therapistMode,
   section,
-  setSection,
   needs,
   ratings,
   yesterdayRatings,
@@ -65,7 +63,6 @@ export function AppSections({
             needs={needs}
             ratings={ratings}
             yesterdayRatings={yesterdayRatings}
-            onNavigate={setSection}
             onOpenSchema={(opts) => {
               sheets.open('schemaInfo', {
                 schemaAutoStartTest: !!opts?.startTest,

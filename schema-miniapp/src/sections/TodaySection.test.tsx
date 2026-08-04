@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // TodaySection — главный экран «Сегодня» (0% покрытия, самый большой файл
 // мини-аппа). Тяжёлые независимые подкомпоненты (у каждого свой тест)
-// мокаем, чтобы бить по СОБСТВЕННОЙ логике TodaySection: три параллельных
-// загрузки (профиль/дневники/задачи), вычисление hasSchemas/todayDone из
+// мокаем, чтобы бить по СОБСТВЕННОЙ логике TodaySection: параллельные
+// загрузки (профиль/дневники), вычисление hasSchemas/todayDone из
 // реальных данных (не заглушка — правило «никаких хардкод-заглушек»),
 // сворачивание «Что ещё можно сегодня» с персистентностью в localStorage,
 // баннер терапевта, фокус-карточка дня.
@@ -33,9 +33,6 @@ vi.mock('../api', () => ({
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
-    getTasks: vi.fn(),
-    getTaskHistory: vi.fn(),
-    completeTask: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
@@ -121,7 +118,6 @@ function baseProps() {
   return {
     needs: NEEDS,
     ratings: {},
-    onNavigate: vi.fn(),
     onOpenSchema: vi.fn(),
     onOpenAdvanced: vi.fn(),
     onOpenTracker: vi.fn(),
@@ -137,8 +133,6 @@ beforeEach(() => {
   mockApi.getSchemaDiary.mockResolvedValue([]);
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
-  mockApi.getTasks.mockResolvedValue([]);
-  mockApi.getTaskHistory.mockResolvedValue([]);
   // Хост по умолчанию (web) с заданным именем — читаем через getHost().user().
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
 });
@@ -208,14 +202,6 @@ describe('TodaySection — загрузка дневников', () => {
         'diaries=1',
       ),
     );
-  });
-});
-
-describe('TodaySection — задачи загружаются при монтировании', () => {
-  it('вызывает getTasks и getTaskHistory на маунте', async () => {
-    await renderReady();
-    expect(mockApi.getTasks).toHaveBeenCalled();
-    expect(mockApi.getTaskHistory).toHaveBeenCalled();
   });
 });
 
