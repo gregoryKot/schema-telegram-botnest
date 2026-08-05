@@ -10,6 +10,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { SchemasSection } from './SchemasSection';
 
@@ -102,7 +103,12 @@ async function renderReady(
   props: Partial<Parameters<typeof SchemasSection>[0]> = {},
 ) {
   const utils = render(<SchemasSection {...baseProps()} {...props} />);
-  await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+  // Ждём не факт вызова (он происходит синхронно, до того как стейт доедет до
+  // DOM), а разрешение самого промиса — иначе под нагрузкой проверка попадает
+  // в скелетон загрузки (красный webapp-двойник на #269, 2026-08).
+  await act(async () => {
+    await mockApi.getProfile.mock.results[0]?.value;
+  });
   return utils;
 }
 
