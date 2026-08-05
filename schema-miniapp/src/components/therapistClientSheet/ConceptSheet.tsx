@@ -2,7 +2,8 @@ import { BottomSheet } from '../BottomSheet';
 import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { SCHEMA_DOMAINS, ALL_SCHEMAS } from '../../schemaTherapyData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { CONCEPT_FIELDS } from './helpers';
 import { ClientDetail } from './types';
 import { ConceptModePicker } from './conceptSheet/ConceptModePicker';
@@ -138,9 +139,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
               {selfSchemaIds.map((id) => {
-                const schema = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
-                  (s) => s.id === id,
-                );
+                const schema = ALL_SCHEMAS.find((s) => s.id === id);
                 return schema ? (
                   <span
                     key={id}
@@ -152,7 +151,8 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                       color: 'var(--text-sub)',
                     }}
                   >
-                    {schema.emoji} {schema.name}
+                    <IdentityDot color={schema.domainColor} size={7} />{' '}
+                    {schema.name}
                   </span>
                 ) : null;
               })}
@@ -200,7 +200,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                     }}
                     title={schema.desc}
                   >
-                    {schema.emoji} {schema.name}
+                    <IdentityDot color={domain.color} size={7} /> {schema.name}
                   </button>
                 );
               })}

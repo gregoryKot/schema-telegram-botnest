@@ -27,15 +27,20 @@ function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {
 }
 
 describe('Celebration — контент', () => {
-  it('немилстоуновый стрик показывает 🔥 и число дней', () => {
+  it('обычный стрик — число дней и без пометки вехи', () => {
     renderCelebration({ streak: 5 });
-    expect(screen.getByText('🔥')).toBeTruthy();
     expect(screen.getByText('5')).toBeTruthy();
+    expect(screen.getByText('5').dataset.milestone).toBe('no');
   });
 
-  it('milestone-стрик (7 дней) показывает 🏆 вместо 🔥', () => {
+  // Веху раньше отличала картинка (🏆 против 🔥). Картинок нет, но событие
+  // разное, поэтому отличие обязано остаться: акцент на числе плюс своя фраза.
+  it('веха (7 дней) помечена акцентом и своим текстом', () => {
     renderCelebration({ streak: 7 });
-    expect(screen.getByText('🏆')).toBeTruthy();
+    const num = screen.getByText('7');
+    expect(num.dataset.milestone).toBe('yes');
+    expect(num.style.color).toBe('var(--accent)');
+    expect(screen.getByText('Неделя подряд. Это настоящий сдвиг')).toBeTruthy();
   });
 
   it('insight, если передан, рендерится отдельным блоком', () => {

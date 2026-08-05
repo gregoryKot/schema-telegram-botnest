@@ -62,7 +62,7 @@ function renderSheet(onClose = vi.fn()) {
 describe('JourneySheet — список', () => {
   it('без выбранной записи показывает заголовок и ленту пути', () => {
     renderSheet();
-    expect(screen.getByText('🧭 Мой путь')).toBeTruthy();
+    expect(screen.getByText('Мой путь')).toBeTruthy();
     expect(screen.getByText('Лента пути')).toBeTruthy();
   });
 
@@ -92,7 +92,7 @@ describe('JourneySheet — деталь записи', () => {
     mockDetailItem = { id: 1 };
     renderSheet();
     expect(screen.getByText('Деталь записи')).toBeTruthy();
-    expect(screen.queryByText('🧭 Мой путь')).toBeNull();
+    expect(screen.queryByText('Мой путь')).toBeNull();
   });
 
   it('шаринг из детали зовёт shareItem с текущим item', () => {

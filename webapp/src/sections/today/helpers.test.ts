@@ -8,8 +8,7 @@ import {
   formatHeaderDate,
   readLocalIds,
   resolveTaskText,
-  resolveTaskEmoji,
-  TASK_EMOJI,
+  taskStatusMark,
 } from './helpers';
 
 afterEach(() => {
@@ -128,24 +127,16 @@ describe('resolveTaskText', () => {
   });
 });
 
-describe('resolveTaskEmoji', () => {
-  it('известный type из TASK_EMOJI — берёт эмодзи из карты', () => {
-    const task = makeTask({ type: 'diary_streak', text: 'x' });
-    expect(resolveTaskEmoji(task)).toBe(TASK_EMOJI.diary_streak);
+describe('taskStatusMark', () => {
+  it('done: true — ✓', () => {
+    expect(taskStatusMark(true)).toBe('✓');
   });
 
-  it('type не в карте, text — id схемы — 🧩', () => {
-    const task = makeTask({ type: 'unknown_type', text: 'abandonment' });
-    expect(resolveTaskEmoji(task)).toBe('🧩');
+  it('done: false — ×', () => {
+    expect(taskStatusMark(false)).toBe('×');
   });
 
-  it('type не в карте, text — id режима — 🔄', () => {
-    const task = makeTask({ type: 'unknown_type', text: 'vulnerable_child' });
-    expect(resolveTaskEmoji(task)).toBe('🔄');
-  });
-
-  it('ничего не совпало — фолбэк 🎯', () => {
-    const task = makeTask({ type: 'unknown_type', text: 'что-то произвольное' });
-    expect(resolveTaskEmoji(task)).toBe('🎯');
+  it('done: null — · (ещё не решено)', () => {
+    expect(taskStatusMark(null)).toBe('·');
   });
 });

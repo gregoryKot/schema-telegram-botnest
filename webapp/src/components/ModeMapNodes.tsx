@@ -4,6 +4,7 @@ import { useNodeActions } from './modeMapActions';
 import { MMIcon } from './modeMapIcons';
 import { getSchemaById } from '../schemaTherapyData';
 import { TYPE_COLORS } from './modeMapData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 export interface ModeNodeData {
   label: string;
@@ -21,8 +22,7 @@ export interface ModeNodeData {
   schemaId?: string;
 }
 
-// TYPE_COLORS/NODE_DEFAULT_SIZES/NODE_TYPES вынесены в modeMapData.ts /
-// modeMapRegistry.ts — этот файл экспортирует только компоненты.
+// TYPE_COLORS/NODE_DEFAULT_SIZES/NODE_TYPES вынесены в modeMapData.ts / modeMapRegistry.ts — этот файл экспортирует только компоненты.
 
 // Connection dots at the 4 sides. Hidden by default, revealed on node hover
 // (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
@@ -184,14 +184,14 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
       {showNeed && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
-        color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>🌿 {data.healthyResponse}</div>}
+        color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>{data.healthyResponse}</div>}
       {showSchema && schema && (
         <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%',
           padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
           background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
           border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,
           color: light ? 'rgba(255,255,255,0.92)' : schema.domainColor }}>
-          <span style={{ fontSize: subFs - 1 }}>{schema.emoji}</span>
+          <IdentityDot color={schema.domainColor} size={7} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{schema.name}</span>
         </div>
       )}

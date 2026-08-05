@@ -146,7 +146,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         {ready && (
           <div {...pressable(() => setJourneyOpen(true))} className="section" style={{ cursor: 'pointer' }}>
             <div className="section-head">
-              <h3>🧭 Мой путь</h3>
+              <h3>Мой путь</h3>
               <span className="hint">→</span>
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
@@ -356,7 +356,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                     minWidth: 64,
                   }}>
-                    <span style={{ fontSize: 20, opacity: 0.25 }}>🔒</span>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                       ещё {achievements.filter(a => !a.earned).length}
                     </span>
@@ -377,7 +376,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 {insights?.bestDayOfWeek && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-yellow) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)' }}>
-                    <span style={{ fontSize: 13 }}>☀️</span>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
@@ -387,7 +385,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 )}
                 {insights?.worstDayOfWeek && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)' }}>
-                    <span style={{ fontSize: 13 }}>🌧</span>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>тяжелее</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)' }}>{insights.worstDayOfWeek}</div>

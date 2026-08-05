@@ -14,7 +14,6 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
   if (compact) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 0' }}>
-        <span style={{ fontSize: 12 }}>💬</span>
         <span style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.4 }}>
           {contact.isTherapist
             ? tr('Ты работаешь как терапевт – поддержка рядом.', 'Вы работаете как терапевт – поддержка рядом.')
@@ -38,7 +37,6 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
       borderRadius: 14, padding: '12px 14px',
       display: 'flex', gap: 10, alignItems: 'flex-start',
     }}>
-      <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>💬</span>
       <div>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55 }}>
           {contact.isTherapist

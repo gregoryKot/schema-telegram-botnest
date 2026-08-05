@@ -116,7 +116,7 @@ export function WarmWords({ onClose }: Props) {
                   >
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                       {item.source === 'phrase' ? (
-                        '🔎 Переписанная фраза'
+                        'Переписанная фраза'
                       ) : mode ? (
                         <>
                           <IdentityDot

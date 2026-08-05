@@ -10,7 +10,6 @@ const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
 
 interface StepDef {
   id: string;
-  emoji: string;
   color: string;
   title: string;
   description: string;
@@ -20,31 +19,31 @@ interface StepDef {
 }
 
 const STEPS: StepDef[] = [
-  { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
+  { id: 'ysq', color: 'var(--accent)',
     title: 'Тест на схемы',
     description: '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
     isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },
-  { id: 'tracker', emoji: '📊', color: 'var(--c-slate)',
+  { id: 'tracker', color: 'var(--c-slate)',
     title: 'Оценка потребностей сегодня',
     description: 'Пять оценок – и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
     detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
-  { id: 'diary', emoji: '📔', color: 'var(--accent-indigo)',
+  { id: 'diary', color: 'var(--accent-indigo)',
     title: 'Первая запись в дневнике',
     description: 'Зафиксировать момент, когда схема сработала – главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
     actionLabel: 'Открыть дневник',
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
-  { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
+  { id: 'notify', color: 'var(--c-clay)',
     title: 'Ежедневное напоминание',
     description: 'Одно уведомление в выбранное время – чтобы практика не держалась на памяти.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },
-  { id: 'childhood', emoji: '🌀', color: 'var(--c-moss)',
+  { id: 'childhood', color: 'var(--c-moss)',
     title: 'Колесо детства',
     description: 'Как удовлетворялись потребности в детстве – откуда пришли нынешние паттерны.',
     detail: '5 областей · связь с активными схемами',

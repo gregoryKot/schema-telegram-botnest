@@ -69,7 +69,7 @@ export function SubscribePage() {
       </>
     ) : sub ? (
       <>
-        <div style={icon}>★</div>
+        <div style={icon}>◆</div>
         <h1 style={h1}>Ваша подписка</h1>
         <p style={sub_}>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</p>
         {sub.nextChargeAt && <div style={card}>Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
@@ -81,7 +81,7 @@ export function SubscribePage() {
   } else if (ret === 'ok') {
     body = (
       <>
-        <div style={icon}>💛</div>
+        <div style={icon}>✓</div>
         <h1 style={h1}>Спасибо за поддержку!</h1>
         <p style={sub_}>Подписка оформлена. Управлять ей можно по ссылке, которую мы пришлём, или в настройках.</p>
         <a href="/" style={primaryBtn}>На главную</a>
@@ -91,9 +91,9 @@ export function SubscribePage() {
     // Hidden until Robokassa's recurring service is live.
     body = (
       <>
-        <div style={icon}>🔜</div>
+        <div style={icon}>·</div>
         <h1 style={h1}>Подписка скоро</h1>
-        <p style={sub_}>Регулярная поддержка пока в разработке. А поддержать проект разово уже можно. 💛</p>
+        <p style={sub_}>Регулярная поддержка пока в разработке. А поддержать проект разово уже можно.</p>
         <a href="/donate" style={primaryBtn}>Разовый донат</a>
       </>
     );
@@ -103,7 +103,7 @@ export function SubscribePage() {
     body = (
       <>
         <h1 style={{ ...h1, marginTop: 8 }}>Поддержать подпиской</h1>
-        <p style={sub_}>SchemeHappens бесплатный. Регулярная поддержка помогает его развивать. Отписаться можно в любой момент. 💛</p>
+        <p style={sub_}>SchemeHappens бесплатный. Регулярная поддержка помогает его развивать. Отписаться можно в любой момент.</p>
         {ret === 'fail' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 14 }}>Оплата не прошла. Можно попробовать снова.</p>}
 
         <div style={{ display: 'flex', gap: 10, margin: '4px 0 16px' }}>

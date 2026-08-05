@@ -1,4 +1,4 @@
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { ALL_SCHEMAS, MODE_GROUPS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
 
@@ -84,10 +84,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                 }}
               >
                 {activeSchemaIds.map((id) => {
-                  const domain = SCHEMA_DOMAINS.find((d) =>
-                    d.schemas.some((s) => s.id === id),
-                  );
-                  const schema = domain?.schemas.find((s) => s.id === id);
+                  const schema = ALL_SCHEMAS.find((s) => s.id === id);
                   return schema ? (
                     <span
                       key={id}
@@ -95,11 +92,12 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                         fontSize: 12,
                         padding: '3px 9px',
                         borderRadius: 20,
-                        background: (domain?.color ?? '#888') + '25',
-                        color: domain?.color ?? 'rgba(var(--fg-rgb),0.6)',
+                        background: (schema.domainColor ?? '#888') + '25',
+                        color: schema.domainColor ?? 'rgba(var(--fg-rgb),0.6)',
                       }}
                     >
-                      {schema.emoji} {schema.name}
+                      <IdentityDot color={schema.domainColor} size={7} />{' '}
+                      {schema.name}
                     </span>
                   ) : null;
                 })}

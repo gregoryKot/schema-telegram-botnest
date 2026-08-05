@@ -123,7 +123,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                         color,
                       }}
                     >
-                      {schema.emoji} {schema.name}
+                      <IdentityDot color={color} size={7} /> {schema.name}
                     </span>
                   ))}
                 </div>

@@ -2,7 +2,7 @@ import type { UserTask } from '../../api';
 import { GlyphArrowLeft } from '../../components/exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { fmtDate } from '../../utils/format';
-import { resolveTaskText, resolveTaskEmoji } from './helpers';
+import { resolveTaskText, taskStatusMark } from './helpers';
 
 // Оверлей «Все задания» экрана «Сегодня». Вынесено из TodaySection.tsx
 // (правило №10). Поведение не менялось.
@@ -25,7 +25,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
         {tasks.map(task => (
           <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
             <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
-              {task.done === true ? '✅' : task.done === false ? '❌' : resolveTaskEmoji(task)}
+              {taskStatusMark(task.done)}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
@@ -45,7 +45,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
             {taskHistory.map(task => (
               <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
-                <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{task.done === true ? '✅' : '❌'}</span>
+                <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{taskStatusMark(task.done)}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
                   {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}

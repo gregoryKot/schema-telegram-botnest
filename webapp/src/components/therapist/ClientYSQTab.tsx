@@ -19,7 +19,6 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
     return (
       <div className="page-inner-wide" style={{ paddingTop: 40 }}>
         <div style={{ padding: '80px 0', textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 16 }}>📋</div>
           <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
           {selectedClient.telegramId < 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Клиент без Telegram – YSQ недоступен</div>

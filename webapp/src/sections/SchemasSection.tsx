@@ -124,7 +124,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
-            <span style={{ color: 'var(--accent)' }}>● </span>Схема-терапия
+            Схема-терапия
           </div>
           <h1 className="hub-title" style={{ marginBottom: 8 }}>
             Мои<br /><span className="it">паттерны</span>
@@ -132,7 +132,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
         </div>
         <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
-          📖 <span>Библиотека</span>
+          Библиотека
         </button>
       </div>
 
@@ -341,7 +341,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
               WebkitTapHighlightColor: 'transparent',
             }}>
-              <span style={{ fontSize: 26, flexShrink: 0 }}>🗺️</span>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                   Карта режимов с терапевтом
@@ -413,7 +412,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
           {!hasChildhood && (
             <div {...pressable(() => onOpenChildhoodWheel?.())} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>

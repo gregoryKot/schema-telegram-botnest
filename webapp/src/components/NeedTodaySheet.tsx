@@ -96,7 +96,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           </div>
           {rangeIdx === 2 && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
-              Хороший день – заметь это 🌿
+              Хороший день – заметь это
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>

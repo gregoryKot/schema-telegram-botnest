@@ -104,7 +104,7 @@ export function WheelCard({
             style={{ cursor: 'pointer' }}
           >
             <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-              🌱 Оценить детство →
+              Оценить детство →
             </span>
           </div>
         ) : null}

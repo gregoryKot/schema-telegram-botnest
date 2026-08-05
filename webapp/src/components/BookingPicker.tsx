@@ -138,7 +138,6 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
   if (status === 'payment_fail') return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
-      <div style={{ fontSize: 56, marginBottom: 20 }}>😕</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Слот был освобождён. Попробуйте выбрать время снова или напишите напрямую.</p>
       <button type="button" onClick={() => setStatus('idle')} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer' }}>
@@ -149,7 +148,6 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
   if (status === 'done') return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
-      <div style={{ fontSize: 56, marginBottom: 20 }}>{cancelled ? '🗓' : '✅'}</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
         {cancelled ? 'Запись отменена' : 'Время забронировано'}
       </h3>
@@ -270,7 +268,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-8px 0 0' }}>
             {returning
               ? 'Хорошо! Укажите, пожалуйста, тот же контакт, что и в прошлый раз — я узнаю вас и открою вашу постоянную комнату для встречи, ту же, что и всегда. Если контакт не совпадёт, я не смогу вас найти и попрошу проверить.'
-              : 'Если занимаемся впервые — я заведу для вас персональную комнату для встреч. Она будет одна и та же для всех наших будущих сессий, чтобы не искать новую ссылку каждый раз. 🙂'}
+              : 'Если занимаемся впервые — я заведу для вас персональную комнату для встреч. Она будет одна и та же для всех наших будущих сессий, чтобы не искать новую ссылку каждый раз.'}
           </p>
           <div>
             <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
