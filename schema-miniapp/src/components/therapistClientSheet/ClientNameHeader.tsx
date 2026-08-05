@@ -144,7 +144,18 @@ export function ClientNameHeader({
       <button
         onClick={deleteClient}
         disabled={deleteLoading}
-        style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-red)', flexShrink: 0 }}
+        style={{
+          width: 44,
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--accent-red)',
+          flexShrink: 0,
+        }}
         title="Удалить клиента"
         aria-label="Удалить"
       >

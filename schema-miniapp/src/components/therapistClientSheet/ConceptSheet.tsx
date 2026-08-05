@@ -96,9 +96,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 cursor: 'pointer',
               }}
             >
-              {ysqRequested
-                ? '✓ Запрос отправлен'
-                : 'Запросить тест на схемы'}
+              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
             </button>
             {ysqError && (
               <div
