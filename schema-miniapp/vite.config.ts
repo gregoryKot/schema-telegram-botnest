@@ -28,8 +28,8 @@ export default defineConfig({
         start_url: '/app/',
         // Светлая тема мини-аппа (src/index.css, html[data-theme="light"]) —
         // манифест один, тёмную отрабатывает meta theme-color в index.html.
-        theme_color: '#f4f0e9',
-        background_color: '#f4f0e9',
+        theme_color: '#faf7f3',
+        background_color: '#faf7f3',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

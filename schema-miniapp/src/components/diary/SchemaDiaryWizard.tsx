@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryTextArea } from './DiaryTextArea';
 import { EmotionPicker } from './EmotionPicker';
 import { SchemaPicker } from './SchemaPicker';
 import { WizardProgress } from '../WizardProgress';
-import { WizardNav } from '../WizardNav';
+import { DiaryWizardNav } from './DiaryWizardNav';
 import type { EmotionEntry } from '../../types';
 import {
   buildSchemaDiarySteps,
@@ -165,35 +164,18 @@ export function SchemaDiaryWizard({
         />
       )}
 
-      <div style={{ marginTop: 16 }}>
-        <WizardNav
-          accentColor={accentColor}
-          onBack={() => {
-            haptic.tap();
-            setStep((s) => Math.max(0, s - 1));
-          }}
-          backDisabled={step === 0}
-          primaryKind={isLast ? 'save' : 'next'}
-          primaryLabel={
-            isLast
-              ? saving
-                ? 'Сохраняю…'
-                : 'Готово'
-              : filled || !optional
-                ? 'Далее →'
-                : 'Пропустить'
-          }
-          onPrimary={
-            isLast
-              ? onSave
-              : () => {
-                  haptic.tap();
-                  setStep((s) => s + 1);
-                }
-          }
-          primaryDisabled={isLast ? !canSave || saving : !canNext}
-        />
-      </div>
+      <DiaryWizardNav
+        accentColor={accentColor}
+        step={step}
+        onStep={setStep}
+        isLast={isLast}
+        filled={filled}
+        optional={optional}
+        canNext={canNext}
+        canSave={canSave}
+        saving={saving}
+        onSave={onSave}
+      />
     </div>
   );
 }

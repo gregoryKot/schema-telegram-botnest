@@ -23,7 +23,7 @@ export function ModeEntryDone({
   onPickChain: (toModeId: string | null) => void;
 }) {
   return (
-    <BottomSheet onClose={onClose} skin="diary">
+    <BottomSheet onClose={onClose}>
       <div style={{ textAlign: 'center', padding: '12px 6px 16px' }}>
         {/* Спокойный зелёный круг вместо эмодзи: цвет и форма, без картинки. */}
         <div

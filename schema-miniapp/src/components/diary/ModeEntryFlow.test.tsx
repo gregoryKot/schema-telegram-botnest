@@ -27,7 +27,7 @@ function openSheet(onSave = vi.fn().mockResolvedValue(undefined)) {
 }
 
 describe('дневник режимов — три шага', () => {
-  it('шаг 1 спрашивает состояние обычными словами, без терминов', () => {
+  it('шаг 1 спрашивает чувство обычными словами, без терминов', () => {
     openSheet();
     expect(screen.getByText('Что ты сейчас чувствуешь?')).toBeTruthy();
     expect(screen.getByText(STATE_ROW)).toBeTruthy();
@@ -45,11 +45,14 @@ describe('дневник режимов — три шага', () => {
     expect(screen.getByText('Твоё состояние')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Избегающий Защитник'));
-    expect(screen.getByText('Шаг 3 из 3 · запись')).toBeTruthy();
+    // шаг 3 — прежний визард: один вопрос на экране, первый из них — ситуация
+    expect(screen.getByText('Что произошло?')).toBeTruthy();
+    expect(screen.getByText('Шаг 1 из 8')).toBeTruthy();
 
     const situation = screen.getByPlaceholderText(/позвонил папа/);
     fireEvent.change(situation, { target: { value: 'ушёл в ленту на час' } });
-    fireEvent.click(screen.getByText('Сохранить запись'));
+    // сохранить можно с любого шага — кнопкой в шапке, не дойдя до конца
+    fireEvent.click(screen.getByText('Сохранить'));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0][0]).toMatchObject({
@@ -58,16 +61,12 @@ describe('дневник режимов — три шага', () => {
     });
   });
 
-  it('без ситуации сохранить нельзя, и об этом сказано словами', () => {
+  it('без ситуации сохранить нельзя', () => {
     openSheet();
     fireEvent.click(screen.getByText(STATE_ROW));
     fireEvent.click(screen.getByText('Избегающий Защитник'));
 
-    const save = screen.getByText('Сохранить запись');
-    expect(save.hasAttribute('disabled')).toBe(true);
-    expect(
-      screen.getByText('Опиши ситуацию — и запись сохранится'),
-    ).toBeTruthy();
+    expect(screen.getByText('Сохранить').hasAttribute('disabled')).toBe(true);
   });
 
   it('«Не могу выбрать» ведёт к телесным маркерам, а не в тупик', () => {
