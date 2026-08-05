@@ -127,6 +127,7 @@ export function createTelegramHost(): HostBridge {
         deviceTop: w?.safeAreaInset?.top,
         isFullscreen: !!w?.isFullscreen,
         contentReported,
+        overlaysContent: true,
       };
     },
     onInsetsChange(cb) {
