@@ -214,15 +214,20 @@ export function HelpSection({
             {...pressable(() => setShowSelfHelp(true))}
             aria-label="О границах самопомощи"
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
+              // Без ⚠️ роль несёт слово, а слову нужна ширина: круг 26×26 её
+              // не давал (текст не влезал), да и в цель меньше 44 не попасть.
+              minHeight: 44,
+              padding: '6px 12px',
+              borderRadius: 999,
               flexShrink: 0,
               border: 'none',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: 15,
+              fontSize: 12,
+              fontWeight: 600,
               lineHeight: 1,
+              whiteSpace: 'nowrap',
+              color: 'var(--ink-2)',
               background:
                 'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
               display: 'flex',
@@ -231,7 +236,7 @@ export function HelpSection({
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            Важное
+            Важное о самопомощи
           </button>
         </div>
         <div

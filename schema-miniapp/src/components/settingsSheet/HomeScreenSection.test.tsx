@@ -33,7 +33,7 @@ describe('HomeScreenSection — гейт видимости', () => {
     };
     render(<HomeScreenSection />);
     expect(screen.getByText('ЗНАЧОК НА ЭКРАНЕ')).toBeTruthy();
-    expect(screen.getByText('📲 Добавить значок на экран')).toBeTruthy();
+    expect(screen.getByText('Добавить значок на экран')).toBeTruthy();
     expect(screen.getByText(/Telegram спросит подтверждение/)).toBeTruthy();
   });
 

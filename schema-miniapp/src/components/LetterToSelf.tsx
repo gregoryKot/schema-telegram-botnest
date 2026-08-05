@@ -128,9 +128,6 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
-          emoji="✉️"
-          bg="rgba(251,191,36,0.12)"
-          border="rgba(251,191,36,0.2)"
           title="Письмо Уязвимому Ребёнку"
           subtitle="Написать себе из прошлого"
         />

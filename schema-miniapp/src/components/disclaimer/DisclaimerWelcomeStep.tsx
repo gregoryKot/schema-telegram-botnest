@@ -9,26 +9,10 @@ export function DisclaimerWelcomeStep() {
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
         <div
           style={{
-            width: 68,
-            height: 68,
-            borderRadius: 22,
-            margin: '0 auto 14px',
-            background: 'linear-gradient(135deg, var(--accent), #60a5fa)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 30,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          }}
-        >
-          🧠
-        </div>
-        <div
-          style={{
             fontSize: 22,
             fontWeight: 700,
             color: 'var(--text)',
-            marginBottom: 6,
+            marginBottom: 14,
           }}
         >
           Всё по схеме

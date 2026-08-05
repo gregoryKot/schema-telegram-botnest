@@ -116,13 +116,11 @@ export function ShareSection({ setExportText }: ShareProps) {
         <Row
           label="Пригласить друга"
           sub="Карточка со ссылкой на бота"
-          emoji="🔗"
           onClick={() => setInvite(true)}
         />
         <Row
           label="Для терапевта"
           sub="Сводка за 30 дней"
-          emoji="📤"
           divider
           onClick={async () => {
             const { text } = await api.getExport();
@@ -167,14 +165,9 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ДАННЫЕ</SettingsLabel>
       <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
-        <Row
-          label="О данных и конфиденциальности"
-          emoji="🔒"
-          onClick={onPrivacy}
-        />
+        <Row label="О данных и конфиденциальности" onClick={onPrivacy} />
         <Row
           label="Удалить все данные"
-          emoji="🗑"
           divider
           color="#f87171"
           onClick={onDelete}
