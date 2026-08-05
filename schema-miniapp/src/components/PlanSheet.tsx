@@ -3,6 +3,7 @@ import { getHost } from '../../../shared/src/host';
 import { api, UserPractice } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { NeedDot } from './NeedDot';
 import { useTr } from '../utils/addressForm';
 import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
 
@@ -63,7 +64,6 @@ const REMINDER_OPTIONS = [
 
 interface Props {
   needId: string;
-  needEmoji: string;
   needLabel: string;
   color: string;
   onClose: () => void;
@@ -79,7 +79,6 @@ function defaultReminderIdx(): number {
 
 export function PlanSheet({
   needId,
-  needEmoji,
   needLabel,
   color,
   onClose,
@@ -219,10 +218,9 @@ export function PlanSheet({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 20,
           }}
         >
-          {needEmoji}
+          <NeedDot id={needId} size={14} />
         </div>
         <div>
           <div

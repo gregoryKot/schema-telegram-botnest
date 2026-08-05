@@ -186,7 +186,7 @@ export function TrackerHistoryOverlay({
           return (
             <CheckInSheet
               plan={plan}
-              needEmoji={need.emoji ?? ''}
+              needColor={COLORS[need.id] ?? '#888'}
               needLabel={need.chartLabel}
               color={COLORS[need.id] ?? '#888'}
               onDone={() =>
