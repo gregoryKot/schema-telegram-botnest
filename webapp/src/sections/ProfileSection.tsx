@@ -19,20 +19,20 @@ const NEED_NAMES: Record<string, string> = {
   expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
 };
 
-const ACHIEVEMENT_META: Record<string, { emoji: string; title: string; desc: string }> = {
-  first_day:      { emoji: '🌱', title: 'Первый шаг',   desc: 'Заполнил дневник первый раз' },
-  streak_3:       { emoji: '🔥', title: 'Начало серии', desc: '3 дня подряд' },
-  streak_7:       { emoji: '⭐', title: 'Неделя',        desc: '7 дней подряд' },
-  streak_14:      { emoji: '💫', title: 'Две недели',    desc: '14 дней подряд' },
-  streak_30:      { emoji: '🏆', title: 'Месяц',         desc: '30 дней подряд' },
-  streak_100:     { emoji: '👑', title: 'Сотня',         desc: '100 дней подряд' },
-  total_10:       { emoji: '📅', title: '10 дней',       desc: '10 дней всего' },
-  total_50:       { emoji: '📆', title: '50 дней',       desc: '50 дней всего' },
-  high_day:       { emoji: '✨', title: 'Хороший день',  desc: 'Средний индекс выше 8' },
-  all_above7:     { emoji: '🎯', title: 'Баланс',        desc: 'Все потребности выше 7 в один день' },
-  comeback:       { emoji: '🔄', title: 'Возвращение',   desc: 'Вернулся после перерыва в 3+ дня' },
-  growth:         { emoji: '📈', title: 'Рост',          desc: 'Потребность выросла на 3+ за неделю' },
-  pair_connected: { emoji: '🤝', title: 'Партнёр',       desc: 'Связался с партнёром' },
+const ACHIEVEMENT_META: Record<string, { title: string; desc: string }> = {
+  first_day:      { title: 'Первый шаг',   desc: 'Первая запись в дневнике' },
+  streak_3:       { title: 'Начало серии', desc: '3 дня подряд' },
+  streak_7:       { title: 'Неделя',        desc: '7 дней подряд' },
+  streak_14:      { title: 'Две недели',    desc: '14 дней подряд' },
+  streak_30:      { title: 'Месяц',         desc: '30 дней подряд' },
+  streak_100:     { title: 'Сотня',         desc: '100 дней подряд' },
+  total_10:       { title: '10 дней',       desc: '10 дней всего' },
+  total_50:       { title: '50 дней',       desc: '50 дней всего' },
+  high_day:       { title: 'Хороший день',  desc: 'Средний индекс выше 8' },
+  all_above7:     { title: 'Баланс',        desc: 'Все потребности выше 7 в один день' },
+  comeback:       { title: 'Возвращение',   desc: 'Возвращение после перерыва в 3+ дня' },
+  growth:         { title: 'Рост',          desc: 'Потребность выросла на 3+ за неделю' },
+  pair_connected: { title: 'Партнёр',       desc: 'Связь с партнёром' },
 };
 
 type StreakData = { currentStreak: number; longestStreak: number; totalDays: number; todayDone: boolean; weekDots: boolean[] };
@@ -341,7 +341,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
                       minWidth: 64,
                     }}>
-                      <span style={{ fontSize: 26 }}>{m.emoji}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>{m.title}</span>
                     </div>
                   );
@@ -527,7 +526,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       cursor: a.earned ? 'pointer' : 'default',
                     }}
                   >
-                    <div style={{ fontSize: 26, marginBottom: 6, filter: a.earned ? 'none' : 'grayscale(1) opacity(0.25)' }}>{m.emoji}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: a.earned ? 'var(--text)' : 'var(--text-faint)', marginBottom: 3, lineHeight: 1.3 }}>{m.title}</div>
                     {progress
                       ? <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>{progress}</div>

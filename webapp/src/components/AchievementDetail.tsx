@@ -51,9 +51,6 @@ export function AchievementDetail({ meta, onClose }: Props) {
           animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)',
         }}
       >
-        <div style={{ fontSize: 72, marginBottom: 16, lineHeight: 1 }}>
-          {meta.emoji}
-        </div>
         <div
           style={{
             fontSize: 22,
@@ -84,7 +81,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
           <ShareCardSheet
             title="Достижение"
             draw={draw}
-            shareText={achievementShareText(meta.emoji, meta.title, botShortUrl)}
+            shareText={achievementShareText(meta.title, botShortUrl)}
             filename="achievement.png"
             eventKind="achievement"
             onClose={() => setShowShare(false)}

@@ -46,7 +46,6 @@ export function InsightsCard({
                     '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)',
                 }}
               >
-                <span style={{ fontSize: 13 }}>☀️</span>
                 <div>
                   <div
                     style={{
@@ -119,7 +118,6 @@ export function InsightsCard({
                     '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)',
                 }}
               >
-                <span style={{ fontSize: 13 }}>🌧</span>
                 <div>
                   <div
                     style={{

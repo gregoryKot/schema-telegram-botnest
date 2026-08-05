@@ -11,12 +11,8 @@ export function pluralEntries(n: number): string {
   return 'записей';
 }
 
-export function achievementShareText(
-  emoji: string,
-  title: string,
-  link: string,
-): string {
-  return `${emoji} Новое достижение — «${title}»!\n\nВеду дневник потребностей. ${link}`;
+export function achievementShareText(title: string, link: string): string {
+  return `Новое достижение — «${title}»!\n\nВеду дневник потребностей. ${link}`;
 }
 
 export function streakShareText(streak: number, link: string): string {
