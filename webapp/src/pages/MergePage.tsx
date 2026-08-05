@@ -1,34 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
-const TABLE_LABELS: Record<string, string> = {
-  Rating: 'оценки потребностей',
-  YsqProgress: 'прогресс теста на схемы',
-  YsqResult: 'результат теста на схемы',
-  YsqResultHistory: 'история тестов',
-  Note: 'заметки',
-  UserSchemaNote: 'заметки по схемам',
-  UserModeNote: 'заметки по режимам',
-  UserBeliefCheck: 'проверки убеждений',
-  UserLetter: 'письма себе',
-  UserSafePlace: 'безопасное место',
-  UserFlashcard: 'флэшкарты',
-  UserPractice: 'практики',
-  PracticePlan: 'планы практик',
-  ChildhoodRating: 'колесо детства',
-  ScheduledNotification: 'уведомления',
-  SchemaDiaryEntry: 'дневник схем',
-  ModeDiaryEntry: 'дневник режимов',
-  GratitudeDiaryEntry: 'дневник благодарности',
-  AppActivity: 'активность',
-  UserTask: 'задания',
-  DiaryDraft: 'черновики',
-  TherapyRelation: 'связи терапевт↔клиент',
-  Pair: 'пары',
-};
 
 export function MergePage() {
   const [params] = useSearchParams();
@@ -45,7 +21,7 @@ export function MergePage() {
 
   let summary: Record<string, number> = {};
   try { summary = JSON.parse(summaryStr); } catch { /* keep empty */ }
-  const totalItems = Object.values(summary).reduce((s, n) => s + n, 0);
+  const totalItems = sumItems(summary);
 
   useEffect(() => {
     if (!token) navigate('/account', { replace: true });
@@ -94,7 +70,7 @@ export function MergePage() {
         ) : (
           Object.entries(summary).map(([table, n]) => (
             <div key={table} className="list-line">
-              <span className="text-sm" style={{ flex: 1 }}>{TABLE_LABELS[table] ?? table}</span>
+              <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
               <span className="num text-md" style={{ fontWeight: 500 }}>{n}</span>
             </div>
           ))
