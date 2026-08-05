@@ -241,6 +241,9 @@ describe('адаптер Telegram', () => {
       deviceTop: 47,
       isFullscreen: true,
       contentReported: false,
+      // Telegram рисует «Закрыть»/меню поверх контента — нулевому инсету от
+      // него верить нельзя (см. computeSafeTop в мини-аппе).
+      overlaysContent: true,
     });
 
     const cb = vi.fn();
@@ -454,6 +457,7 @@ describe('адаптер MAX', () => {
       deviceTop: 0,
       isFullscreen: false,
       contentReported: true,
+      overlaysContent: false,
     });
     expect(host.onInsetsChange(vi.fn())).toBeInstanceOf(Function);
   });
@@ -516,6 +520,7 @@ describe('адаптер браузера', () => {
       deviceTop: 0,
       isFullscreen: false,
       contentReported: true,
+      overlaysContent: false,
     });
   });
 

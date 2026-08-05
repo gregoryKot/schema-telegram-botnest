@@ -1,19 +1,21 @@
-// iOS-строка по дизайн-макету: плашка-иконка, заголовок с подписью, шеврон.
-// Каскадное появление (index → задержка); глушится reduced-motion блоком CSS.
+/**
+ * Строка-переход: название, подпись, шеврон. Без иконки-плашки — различие
+ * несут название и подпись, как в хабе дневников. Цветная плашка с эмодзи
+ * давала двенадцать разных пятен в одном списке: глаз цеплялся за цвет,
+ * а не за смысл, и строки читались дольше, чем без неё.
+ *
+ * Каскадное появление (index → задержка); глушится reduced-motion блоком CSS.
+ */
 export function ToolRow({
-  emoji,
   label,
   sub,
   onClick,
-  tint = 'var(--accent)',
   danger,
   index = 0,
 }: {
-  emoji: string;
   label: string;
   sub?: string;
   onClick: () => void;
-  tint?: string;
   danger?: boolean;
   index?: number;
 }) {
@@ -26,39 +28,24 @@ export function ToolRow({
         textAlign: 'left',
         cursor: 'pointer',
         fontFamily: 'inherit',
-        padding: '13px 16px',
+        padding: '15px 16px',
         borderRadius: 18,
         display: 'flex',
         alignItems: 'center',
-        gap: 13,
+        gap: 12,
         minHeight: 66,
         animation: 'slide-up 0.3s ease both',
         animationDelay: `${index * 45}ms`,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          flexShrink: 0,
-          background: `color-mix(in srgb, ${tint} 14%, transparent)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 19,
-        }}
-      >
-        {emoji}
-      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: 15,
-            fontWeight: 700,
+            fontSize: 16,
+            fontWeight: 600,
             color: danger ? 'var(--accent-red)' : 'var(--text)',
-            lineHeight: 1.3,
+            lineHeight: 1.35,
           }}
         >
           {label}
@@ -66,17 +53,17 @@ export function ToolRow({
         {sub && (
           <div
             style={{
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              marginTop: 1,
-              lineHeight: 1.4,
+              fontSize: 13,
+              color: 'var(--muted)',
+              marginTop: 3,
+              lineHeight: 1.45,
             }}
           >
             {sub}
           </div>
         )}
       </div>
-      <span style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}>
+      <span style={{ color: 'var(--chevron)', fontSize: 19, flexShrink: 0 }}>
         ›
       </span>
     </button>

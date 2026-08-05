@@ -186,6 +186,7 @@ export function createMaxHost(): HostBridge {
       // Инсетов MAX не присылает — чёлку и home-индикатор закрывает CSS
       // env(safe-area-inset-*), а не мост.
       contentReported: true,
+      overlaysContent: false,
     }),
     onInsetsChange: () => () => {},
 

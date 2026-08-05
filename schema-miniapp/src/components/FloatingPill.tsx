@@ -58,16 +58,7 @@ export function FloatingPill({
       {showPicker && (
         <BottomSheet onClose={() => setShowPicker(false)} zIndex={200}>
           <div style={{ paddingTop: 4, paddingBottom: 8 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--text-sub)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: 10,
-              }}
-            >
+            <div className="d-caps" style={{ marginBottom: 10 }}>
               Записать момент
             </div>
             <div
@@ -79,30 +70,24 @@ export function FloatingPill({
               }}
             >
               <DiaryTypeButton
-                emoji="📓"
                 label="Схема"
                 sub="Когда сработал паттерн"
-                color="#a78bfa"
                 onClick={() => {
                   setShowPicker(false);
                   onOpenSchemaDiary();
                 }}
               />
               <DiaryTypeButton
-                emoji="🔄"
                 label="Режим"
                 sub="Какой режим активировался"
-                color="#60a5fa"
                 onClick={() => {
                   setShowPicker(false);
                   onOpenModeDiary();
                 }}
               />
               <DiaryTypeButton
-                emoji="🌱"
                 label="Благодарность"
                 sub="Что было хорошего"
-                color="#34d399"
                 onClick={() => {
                   setShowPicker(false);
                   onOpenGratitude();
@@ -128,13 +113,11 @@ export function FloatingPill({
                 Оценить день
               </div>
               <DiaryTypeButton
-                emoji="📅"
                 label="Трекер потребностей"
                 sub={tr(
                   'Оцени день по пяти шкалам',
                   'Оцените день по пяти шкалам',
                 )}
-                color="#fb923c"
                 onClick={() => {
                   setShowPicker(false);
                   onOpenTracker();
@@ -148,17 +131,15 @@ export function FloatingPill({
   );
 }
 
+// Строка выбора дневника: название и подпись, без иконки и без своего цвета.
+// Три цветные плашки подряд спорили друг с другом, а выбирают здесь по смыслу.
 function DiaryTypeButton({
-  emoji,
   label,
   sub,
-  color,
   onClick,
 }: {
-  emoji: string;
   label: string;
   sub: string;
-  color: string;
   onClick: () => void;
 }) {
   return (
@@ -168,22 +149,23 @@ function DiaryTypeButton({
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
+        gap: 12,
+        minHeight: 60,
         padding: '14px 16px',
         borderRadius: 16,
-        border: `1px solid ${color}22`,
-        background: `${color}0d`,
+        border: '1px solid var(--line)',
+        background: 'var(--surface)',
         cursor: 'pointer',
+        fontFamily: 'inherit',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <span style={{ fontSize: 26 }}>{emoji}</span>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
           {label}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
+        <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
           {sub}
         </div>
       </div>
