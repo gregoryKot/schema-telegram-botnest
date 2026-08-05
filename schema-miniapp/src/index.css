@@ -5,8 +5,62 @@
    New additions: --surface, --surface-2, --border-color, --sheet-bg-2
    ───────────────────────────────────────────────────────────────────────────── */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overscroll-behavior: none; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+/* ── Шрифты дневника: Spectral (заголовки) + Manrope (интерфейс) ──────────────
+   Свои файлы, не CDN Google: CSP отдаёт defaultSrc 'self' (src/main.ts), так что
+   внешний fonts.gstatic.com был бы заблокирован — и российский пользователь
+   получил бы системный фолбэк. Manrope вариативный: один файл на 400–700.
+   Кириллица и латиница разными подмножествами — грузится только нужное. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
 
 /* ── Нижняя безопасная зона ──────────────────────────────────────────────────
    env() отдаёт реальный инсет только при viewport-fit=cover (index.html), но
@@ -16,42 +70,68 @@ html, body { height: 100%; overscroll-behavior: none; }
 :root {
   --safe-bottom: max(
     env(safe-area-inset-bottom, 0px),
-    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+    calc(
+      var(--tg-safe-area-inset-bottom, 0px) +
+        var(--tg-content-safe-area-inset-bottom, 0px)
+    )
   );
 }
 
 /* ── Dark theme (default) ──────────────────────────────────────────────────────
-   Палитра дизайн-макета «Сегодня» (тёплая «бумага» в светлой,
-   мягкий графит в тёмной). Имена токенов сохранены — все экраны и компоненты
-   перекрашиваются без правок. Карточки СПЛОШНЫЕ (не стекло) — как в макете.
-   Фоновые «блобы» убраны: макет — плоский, ровный фон (меньше сенсорного шума). */
+   «Тёплая ночь» — та же гамма, что в светлой теме, только перевёрнутая: не синий
+   графит, а глубокий тёплый коричнево-чёрный, тёплые чернила и та же
+   терракота, осветлённая до читаемого на тёмном контраста. Приложение обязано
+   оставаться собой и в два часа ночи: до этого тёмная тема была целиком
+   старой фиолетовой гаммой и выглядела другим продуктом.
+
+   Синий графит (#191b25) заменён на #16120f: холодный фон под тёплой
+   терракотой давал грязный отлив на границах карточек.
+
+   Имена токенов сохранены — экраны перекрашиваются без правок. Карточки
+   СПЛОШНЫЕ (не стекло). Фоновые «блобы» убраны: фон плоский и ровный
+   (меньше сенсорного шума). */
 :root {
-  --fg-rgb:        240, 240, 246;
-  --bg:            #191b25;
-  --sheet-bg:      #23252f;
-  --text:          #f0f0f6;
-  --nav-bg:        rgba(25, 27, 37, 0.82);
-  --text-sub:      rgba(240, 240, 246, 0.62);
-  --text-faint:    rgba(240, 240, 246, 0.40);
-  --chip-sel-text: #ffffff;
-  --on-accent:     #ffffff;
+  --fg-rgb: 240, 233, 226;
+  --bg: #16120f;
+  --sheet-bg: #1f1a16;
+  --text: #f0e9e2;
+  --nav-bg: rgba(22, 18, 15, 0.86);
+  --text-sub: rgba(240, 233, 226, 0.64);
+  --text-faint: rgba(240, 233, 226, 0.42);
+  --chip-sel-text: #16120f;
+  --on-accent: #ffffff;
 
-  /* Accent palette — макет (тёмная тема) */
-  --accent:        #8f86ff;
-  --accent-indigo: #9a8dff;
-  --accent-orange: #f7ad4d;
-  --accent-blue:   #5aa8f7;
-  --accent-green:  #42d19d;
-  --accent-yellow: #facc15;
-  --accent-red:    #f7708a;
-  --accent-pink:   #f77aa3;
+  /* Акцент тот же, что в светлой теме, но осветлённый: #9a5b3e на почти
+     чёрном даёт 2.3:1 и не читается. #c97d5a — 5.8:1, проходит и для текста.
+     Служебные цвета (успех/ошибка/графики) остаются РАЗНЫМИ: сведи их
+     в один — и статус перестанет читаться. */
+  --accent: #c97d5a;
+  --accent-indigo: #c97d5a;
+  --accent-orange: #d98b4a;
+  --accent-green: #6bb083;
+  --accent-blue: #6ba3d6;
+  --accent-yellow: #d9a72c;
+  --accent-red: #e07a67;
+  --accent-pink: #cc8497;
 
-  /* Solid surfaces (как в макете) */
-  --surface:       #23252f;
-  --surface-2:     #282b37;
-  --border-color:  rgba(255, 255, 255, 0.09);
-  --track-color:   rgba(255, 255, 255, 0.10);
-  --sheet-bg-2:    #1f212b;
+  /* Тёплые ночные поверхности — коричневая, а не синяя, ветка серого */
+  --surface: #1f1a16;
+  --surface-2: #29221d;
+  --border-color: rgba(240, 233, 226, 0.1);
+  --track-color: rgba(240, 233, 226, 0.1);
+  --sheet-bg-2: #1a1512;
+
+  /* Те же роли, что в светлой теме: на них держатся списки и подписи */
+  --ink-2: rgba(240, 233, 226, 0.78);
+  --muted: rgba(240, 233, 226, 0.62);
+  --faint: rgba(240, 233, 226, 0.42);
+  --line: rgba(240, 233, 226, 0.1);
+  --accent-hi: #db8e68;
+  --accent-bg: rgba(201, 125, 90, 0.16);
+  --calm: #253026;
+  --dot: rgba(240, 233, 226, 0.24);
+  --chevron: rgba(240, 233, 226, 0.32);
+  --progress-track: rgba(240, 233, 226, 0.14);
 
   /* Плоский фон макета — блобы отключены */
   --blob-1: rgba(0, 0, 0, 0);
@@ -59,33 +139,46 @@ html, body { height: 100%; overscroll-behavior: none; }
 }
 
 /* ── Light theme («бумага» макета) ─────────────────────────────────────────── */
-html[data-theme="light"] {
-  --fg-rgb:        43, 41, 52;
-  --bg:            #f4f0e9;
-  --sheet-bg:      #ffffff;
-  --text:          #2b2934;
-  --nav-bg:        rgba(244, 240, 233, 0.86);
-  --text-sub:      rgba(43, 41, 52, 0.60);
-  --text-faint:    rgba(43, 41, 52, 0.40);
-  --chip-sel-text: #2b2934;
-  --on-accent:     #ffffff;
+html[data-theme='light'] {
+  --fg-rgb: 34, 30, 27;
+  --bg: #faf7f3;
+  --sheet-bg: #ffffff;
+  --text: #221e1b;
+  --nav-bg: rgba(250, 247, 243, 0.86);
+  --text-sub: #4a423c;
+  --text-faint: #a2988f;
+  --chip-sel-text: #221e1b;
+  --on-accent: #ffffff;
 
-  /* Accent palette — макет (светлая тема) */
-  --accent:        #6d5efc;
-  --accent-indigo: #6d5efc;
-  --accent-orange: #d97706;
-  --accent-blue:   #2f7fe0;
-  --accent-green:  #0f9d67;
-  --accent-yellow: #b45309;
-  --accent-red:    #e5484d;
-  --accent-pink:   #ec5f8b;
+  /* Акцент продукта — терракота. Служебные цвета (успех/ошибка/графики)
+     остаются РАЗНЫМИ: сведи их в один — и статус перестанет читаться. */
+  --accent: #9a5b3e;
+  --accent-indigo: #9a5b3e;
+  --accent-orange: #b4622a;
+  --accent-blue: #2f6f9e;
+  --accent-green: #4a7c59;
+  --accent-yellow: #a8730f;
+  --accent-red: #b3453f;
+  --accent-pink: #b05a72;
 
   /* Тёплые бумажные поверхности */
-  --surface:       #ffffff;
-  --surface-2:     #faf8f3;
-  --border-color:  rgba(43, 41, 52, 0.08);
-  --track-color:   rgba(43, 41, 52, 0.07);
-  --sheet-bg-2:    #faf8f3;
+  --surface: #ffffff;
+  --surface-2: #f2ece4;
+  --border-color: rgba(34, 30, 27, 0.07);
+  --track-color: rgba(34, 30, 27, 0.07);
+  --sheet-bg-2: #f2ece4;
+
+  /* Оттенки текста и линий, на которых держится вёрстка «бумаги» */
+  --ink-2: #4a423c;
+  --muted: #8a8079;
+  --faint: #a2988f;
+  --line: rgba(34, 30, 27, 0.07);
+  --accent-hi: #86482d;
+  --accent-bg: #f6eee8;
+  --calm: #e7ede4;
+  --dot: #e0d6cb;
+  --chevron: #c7bdb3;
+  --progress-track: #e6ddd3;
 
   /* Плоский фон макета — блобов нет */
   --blob-1: rgba(0, 0, 0, 0);
@@ -95,57 +188,99 @@ html[data-theme="light"] {
 /* ── Base ──────────────────────────────────────────────────────────────────── */
 body {
   background: var(--bg);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family:
+    'Manrope',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--text);
   min-height: 100vh;
 }
 
-#root { min-height: 100vh; }
+#root {
+  min-height: 100vh;
+}
 
 /* ── Input reset ───────────────────────────────────────────────────────────── */
-input[type=range] { -webkit-appearance: none; appearance: none; outline: none; border: none; background: transparent; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 0; height: 0; }
-input[type=range]::-moz-range-thumb     { width: 0; height: 0; border: none; background: transparent; }
-button { font-family: inherit; }
-::placeholder { color: var(--text-faint); opacity: 1; }
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+}
+input[type='range']::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+}
+button {
+  font-family: inherit;
+}
+::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
 
 /* ── Scrollbar hide ────────────────────────────────────────────────────────── */
-* { scrollbar-width: none; -ms-overflow-style: none; }
-*::-webkit-scrollbar { display: none; }
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
 
 /* ── Primary button ────────────────────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 14px;
-  padding: 14px 0;
+  border-radius: 16px;
+  padding: 16px 0;
+  min-height: 48px;
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s, transform 0.15s;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
 }
-.btn-primary:active { opacity: 0.82; transform: scale(0.97); }
-.btn-primary:disabled { opacity: 0.4; cursor: default; }
+.btn-primary:active {
+  opacity: 0.82;
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 /* Light theme: softer gradient instead of flat saturated color */
-html[data-theme="light"] .btn-primary {
+html[data-theme='light'] .btn-primary {
   background: var(--accent);
-  box-shadow: 0 4px 16px rgba(109, 94, 252, 0.28);
+  box-shadow: none;
 }
 
 /* ── Ghost / tinted button ─────────────────────────────────────────────────── */
 .btn-ghost {
-  background: rgba(var(--fg-rgb), 0.06);
+  background: var(--surface-2);
   color: var(--accent);
   border: none;
-  border-radius: 12px;
-  padding: 10px 0;
-  font-size: 13px;
+  border-radius: 14px;
+  padding: 13px 0;
+  min-height: 48px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -153,67 +288,254 @@ html[data-theme="light"] .btn-primary {
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s;
 }
-.btn-ghost:active { opacity: 0.7; }
+.btn-ghost:active {
+  opacity: 0.7;
+}
 
 /* ── Card ──────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  transition: opacity 0.12s, transform 0.12s;
+  border-radius: 18px;
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
-.card:active { opacity: 0.72; transform: scale(0.98); }
+.card:active {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
 
-/* Light theme: white cards with subtle shadow (iOS-style) */
-html[data-theme="light"] .card {
-  border-color: transparent;
-  box-shadow: 0 2px 12px rgba(22, 19, 44, 0.08), 0 0 1px rgba(22, 19, 44, 0.05);
+/* Тень — только чтобы карточка отделилась от фона: потолок 0 1px 2px.
+   Глубокие тени возвращают «наляпанность», от которой уходит система. */
+html[data-theme='light'] .card {
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
 }
 
 /* ── Section label ─────────────────────────────────────────────────────────── */
-.section-label {
+.section-label,
+.d-caps {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.10em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--faint);
 }
 
 /* ── Typography scale ──────────────────────────────────────────────────────── */
-.text-xs  { font-size: 11px; }
-.text-sm  { font-size: 13px; }
-.text-md  { font-size: 15px; }
-.text-lg  { font-size: 17px; }
-.text-xl  { font-size: 20px; }
-.text-2xl { font-size: 24px; }
-.text-3xl { font-size: 28px; }
-.font-medium   { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold     { font-weight: 700; }
-.font-black    { font-weight: 800; }
+.text-xs {
+  font-size: 11px;
+}
+.text-sm {
+  font-size: 13px;
+}
+.text-md {
+  font-size: 15px;
+}
+.text-lg {
+  font-size: 17px;
+}
+.text-xl {
+  font-size: 20px;
+}
+.text-2xl {
+  font-size: 24px;
+}
+.text-3xl {
+  font-size: 28px;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-black {
+  font-weight: 800;
+}
 
 /* ── Animations ────────────────────────────────────────────────────────────── */
-@keyframes fade-in   { from { opacity: 0; transform: translateY(8px); }  to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-up  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pop-in    { 0%   { opacity: 0; transform: scale(0.94); }      100% { opacity: 1; transform: scale(1); } }
-@keyframes sheet-up  { from { transform: translateY(100%); }             to   { transform: translateY(0); } }
-@keyframes tab-right { from { opacity: 0; transform: translateX(24px); } to   { opacity: 1; transform: translateX(0); } }
-@keyframes tab-left  { from { opacity: 0; transform: translateX(-24px); }to   { opacity: 1; transform: translateX(0); } }
-@keyframes shimmer        { from { background-position: 200% center; }        to   { background-position: 0% center; } }
-@keyframes slide-in-right { from { opacity: 0; transform: translateX(32px); } to   { opacity: 1; transform: translateX(0); } }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes tab-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes tab-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% center;
+  }
+  to {
+    background-position: 0% center;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 /* Мягкое «дыхание» декоративного круга в hero-CTA (как круг на экране «Помощь») */
-@keyframes hero-breathe { 0%,100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.18); opacity: 1; } }
+@keyframes hero-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
 
 /* ── Field focus ────────────────────────────────────────────────────────────── */
-.field-input:focus { border-color: rgba(var(--fg-rgb), 0.25) !important; outline: none; }
+.field-input {
+  border-radius: 14px;
+}
+.field-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.25) !important;
+  outline: none;
+}
 
 /* ── Chip / selection ───────────────────────────────────────────────────────── */
-.sel-btn { transition: background 150ms, border-color 150ms, color 150ms; -webkit-tap-highlight-color: transparent; }
+.sel-btn {
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ── Layout: отступы под таб-бар и системную полосу (--safe-bottom) ─────────── */
-.section-pad { min-height: 100vh; padding-bottom: calc(140px + var(--safe-bottom)); }
-.sheet-scroll { overflow-y: auto; flex: 1; padding: 0 24px calc(48px + var(--safe-bottom)); }
+.section-pad {
+  min-height: 100vh;
+  padding-bottom: calc(140px + var(--safe-bottom));
+}
+.sheet-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 24px calc(48px + var(--safe-bottom));
+}
+
+/* Кнопка-действие в неактивном виде: не «полупрозрачная», а спокойно
+   выключенная — прозрачность съедала читаемость подписи. */
+.btn-primary:disabled {
+  background: var(--surface-2);
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+/* Заголовки экранов и вопросы — Spectral. */
+.d-display {
+  font-family: 'Spectral', 'Instrument Serif', Georgia, serif;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--text);
+}
+/* Строка списка: цель нажатия не меньше 60px (в макете — строки дневников). */
+.d-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 120ms;
+}
+.d-row + .d-row {
+  border-top: 1px solid var(--line);
+}
+.d-row:active {
+  background: var(--surface-2);
+}
+/* Белый контейнер-группа: строки внутри разделяются волосяной линией. */
+.d-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
+  overflow: hidden;
+}
+
+/* Запись в списке дневника: строки внутри панели, не отдельные карточки. */
+.d-entry {
+  padding: 16px;
+}
+.d-entry + .d-entry {
+  border-top: 1px solid var(--line);
+}
+/* Первая строка записи в свёрнутом виде — одной строкой с многоточием. */
+.d-clamp {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
@@ -221,16 +543,18 @@ html[data-theme="light"] .card {
    Блок продублирован: media query и атрибут не объединить в один селектор.
    !important нужен, чтобы перебить инлайновые style={{ transition, animation }}. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
-html[data-reduce-motion="1"] *,
-html[data-reduce-motion="1"] *::before,
-html[data-reduce-motion="1"] *::after {
+html[data-reduce-motion='1'] *,
+html[data-reduce-motion='1'] *::before,
+html[data-reduce-motion='1'] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;

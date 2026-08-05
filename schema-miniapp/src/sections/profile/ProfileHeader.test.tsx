@@ -50,7 +50,7 @@ describe('ProfileHeader', () => {
     expect(screen.getByText(/10 дней в/)).toBeTruthy();
   });
 
-  it('клик по шестерёнке вызывает onOpenSettings', () => {
+  it('клик по кнопке настроек вызывает onOpenSettings', () => {
     const onOpenSettings = vi.fn();
     render(
       <ProfileHeader
@@ -59,7 +59,7 @@ describe('ProfileHeader', () => {
         onOpenSettings={onOpenSettings}
       />,
     );
-    fireEvent.click(screen.getByText('⚙️'));
+    fireEvent.click(screen.getByLabelText('Настройки'));
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 });

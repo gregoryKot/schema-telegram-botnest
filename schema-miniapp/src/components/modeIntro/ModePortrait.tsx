@@ -4,14 +4,18 @@
 // (shared/src/mode/modePortraitSections.ts, правило №3). Презентационный
 // компонент — card резолвит родитель (ModeIntroSheet), чтобы не тянуть сюда
 // реестр modeCards напрямую.
+import type { ReactNode } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { buildModePortraitSections } from '../../../../shared/src/mode/modePortraitSections';
 import type { ModeCard } from '../../../../shared/src/mode/modeCards';
+import { cm } from '../../sections/schemas/utils';
 
 interface Props {
   onClose: () => void;
-  emoji: string;
+  /** Цветной кружок режима (`<IdentityDot color={...} />`, волна 6) — заменил
+   *  эмодзи, но проп сохранён под тем же именем, чтобы не плодить диффы. */
+  emoji: ReactNode;
   name: string;
   groupName: string;
   accentColor: string;
@@ -53,8 +57,8 @@ export function ModePortrait({
               height: 48,
               borderRadius: 14,
               flexShrink: 0,
-              background: `${accentColor}18`,
-              border: `1px solid ${accentColor}28`,
+              background: cm(accentColor, 9),
+              border: `1px solid ${cm(accentColor, 16)}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -89,8 +93,8 @@ export function ModePortrait({
 
         <div
           style={{
-            background: `${accentColor}0e`,
-            border: `1px solid ${accentColor}22`,
+            background: cm(accentColor, 5),
+            border: `1px solid ${cm(accentColor, 13)}`,
             borderRadius: 16,
             padding: '12px 14px',
             marginBottom: 16,

@@ -6,6 +6,16 @@ interface TasksSheetProps {
   detail: ClientDetail;
 }
 
+type Task = ClientDetail['clientTasks'][number];
+const taskMark = (t: Task) =>
+  t.done === true || t.doneToday ? '✓' : t.done === false ? '×' : '·';
+const taskMarkColor = (t: Task) =>
+  t.done === false
+    ? 'var(--text-faint)'
+    : taskMark(t) === '✓'
+      ? 'var(--text)'
+      : undefined;
+
 export function TasksSheet({ detail }: TasksSheetProps) {
   const { clientTasks, setShowTasksSheet, setShowAssign } = detail;
 
@@ -20,7 +30,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
             marginBottom: 16,
           }}
         >
-          📋 Задания
+          Задания
         </div>
         <div
           style={{
@@ -55,14 +65,15 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                     i > 0 ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
                 }}
               >
-                <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>
-                  {task.done === true
-                    ? '✅'
-                    : task.done === false
-                      ? '❌'
-                      : task.doneToday
-                        ? '✅'
-                        : '⏳'}
+                <span
+                  style={{
+                    fontSize: 16,
+                    flexShrink: 0,
+                    marginTop: 1,
+                    color: taskMarkColor(task),
+                  }}
+                >
+                  {taskMark(task)}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div

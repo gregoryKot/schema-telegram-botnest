@@ -5,6 +5,7 @@ import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
+import { ModeDoubtButton } from './ModeDoubtButton';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
@@ -34,9 +35,10 @@ interface Props {
   onSave: () => void;
   onBack: () => void;
   onChangeMode: () => void;
+  onSwitchMode: (id: string) => void;
 }
 
-export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, canSave, onSave, onBack, onChangeMode }: Props) {
+export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, canSave, onSave, onBack, onChangeMode, onSwitchMode }: Props) {
   const tr = useTr();
   const steps = buildModeDiarySteps(tr);
   const modeColor = selectedMode?.color ?? 'var(--c-slate)';
@@ -85,6 +87,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
           <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <GlyphArrowLeft /> Сменить режим
           </button>
+          <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
         </>
       }
     >

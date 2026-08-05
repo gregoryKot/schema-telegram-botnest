@@ -20,6 +20,7 @@ import { fmtDate, todayStr } from '../utils/format';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
+import { GearIcon } from '../components/GearIcon';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
@@ -188,15 +189,13 @@ export function TodaySection({
           }}
         >
           <div
+            className="d-display"
             style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.03em',
+              fontSize: 26,
               lineHeight: 1.15,
             }}
           >
-            {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+            {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
           </div>
           <button
             onClick={today.openByGear}
@@ -217,7 +216,7 @@ export function TodaySection({
               marginTop: -6,
             }}
           >
-            ⚙
+            <GearIcon />
           </button>
         </div>
         <div

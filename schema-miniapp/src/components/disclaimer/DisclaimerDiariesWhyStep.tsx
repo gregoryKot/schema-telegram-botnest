@@ -36,7 +36,6 @@ export function DisclaimerDiariesWhyStep() {
             alignItems: 'flex-start',
           }}
         >
-          <span style={{ fontSize: 22, flexShrink: 0 }}>{ex[type].emoji}</span>
           <div
             style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.65 }}
           >

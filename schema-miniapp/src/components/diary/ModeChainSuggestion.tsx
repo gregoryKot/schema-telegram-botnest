@@ -66,7 +66,6 @@ export function ModeChainSuggestion({
                 fontFamily: 'inherit',
               }}
             >
-              <span>{mode.emoji}</span>
               {mode.name}
             </button>
           ))}

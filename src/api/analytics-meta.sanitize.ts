@@ -166,7 +166,7 @@ export function sanitizeMeta(
     // Событие валидно и без meta — count не обязателен для самого факта открытия.
     return {};
   }
-  if (name === 'mode_chain_followup') {
+  if (name === 'mode_chain_followup' || name === 'mode_doubt_switched') {
     const from = meta.from;
     const to = meta.to;
     if (
@@ -176,6 +176,13 @@ export function sanitizeMeta(
       /^[a-z_]{1,64}$/.test(to)
     ) {
       return { from, to };
+    }
+    return undefined;
+  }
+  if (name === 'mode_doubt_opened') {
+    const modeId = meta.modeId;
+    if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
+      return { modeId };
     }
     return undefined;
   }

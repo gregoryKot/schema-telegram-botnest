@@ -28,7 +28,7 @@ export function JourneyEntryCard({ onOpen }: { onOpen: () => void }) {
             color: 'var(--text-faint)',
           }}
         >
-          🧭 Мой путь
+          Мой путь
         </div>
         <span style={{ color: 'var(--text-faint)', fontSize: 14 }}>›</span>
       </div>

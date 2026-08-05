@@ -6,17 +6,11 @@ import { useTr } from '../utils/addressForm';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { Topbar } from './SchemaFlashcardTopbar';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const STORAGE_KEY = 'schema_flashcards';
 
-interface FlashcardEntry {
-  id: string | number;
-  date: string;
-  mode: string;
-  reflection: string;
-  needId: string;
-  action: string;
-}
+interface FlashcardEntry { id: string | number; date: string; mode: string; reflection: string; needId: string; action: string }
 
 const buildModes = (tr: (ty: string, vy: string) => string) => [
   {
@@ -145,7 +139,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 20, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{viewing.date}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
-              { label: 'Режим',       value: `${modeInfo?.emoji ?? '🧩'} ${modeInfo?.label ?? viewing.mode}` },
+              { label: 'Режим',       value: modeInfo?.label ?? viewing.mode },
               viewing.reflection ? { label: 'Рефлексия',   value: viewing.reflection } : null,
               needInfo            ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
               viewing.action      ? { label: 'Шаг',         value: viewing.action } : null,
@@ -188,7 +182,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{card.date}</div>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.4 }}>
-                  {m?.emoji ?? '🧩'} {m?.label ?? card.mode}
+                  {m?.label ?? card.mode}
                   {n ? ` · ${n.emoji} ${n.label}` : ''}
                 </div>
                 {card.action && (
@@ -221,7 +215,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           </p>
           <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
-              { label: 'Режим',       value: `${modeInfo?.emoji} ${modeInfo?.label}` },
+              { label: 'Режим',       value: modeInfo?.label },
               needInfo ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
               action   ? { label: 'Шаг',         value: action } : null,
             ].filter(Boolean).map((row, i, arr) => row && (
@@ -329,7 +323,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
                 fontFamily: 'inherit',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                  <IdentityDot color={m.color} size={16} />
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: m.color }}>{m.label}</span>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-faint)', paddingLeft: 34 }}>{m.desc}</div>

@@ -183,7 +183,8 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             padding: '14px',
             borderRadius: 14,
             border: 'none',
-            background: 'linear-gradient(135deg, #a78bfa, #60a5fa)',
+            background:
+              'linear-gradient(135deg, var(--accent), var(--accent-hi))',
             color: 'var(--text)',
             fontSize: 16,
             fontWeight: 600,

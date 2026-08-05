@@ -352,7 +352,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     });
     const modeNames = activeModeIds.map((id) => {
       const m = MODE_GROUPS.flatMap((g) => g.items).find((x) => x.id === id);
-      return m ? `${m.emoji} ${m.name}` : id;
+      return m ? m.name : id;
     });
     const row = (label: string, value: string | null | undefined) =>
       `${label}\n${value?.trim() || '—'}\n`;

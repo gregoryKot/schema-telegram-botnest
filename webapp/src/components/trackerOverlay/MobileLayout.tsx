@@ -1,4 +1,5 @@
 import { PickerRail } from './PickerRail';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import type { LayoutProps } from './types';
 
 export function MobileLayout({
@@ -105,9 +106,7 @@ export function MobileLayout({
               </div>
             )}
           </div>
-          <span style={{ fontSize: 38, lineHeight: 1, flexShrink: 0 }}>
-            {need.emoji}
-          </span>
+          <IdentityDot id={need.id} size={18} />
         </div>
         <div
           style={{

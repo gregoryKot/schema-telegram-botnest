@@ -69,7 +69,7 @@ export function BottomSheet({
           position: 'fixed',
           inset: 0,
           zIndex,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'rgba(34,30,27,0.35)',
           animation: 'fade-in 200ms ease',
         }}
       />
@@ -82,7 +82,7 @@ export function BottomSheet({
           right: 0,
           zIndex: zIndex + 1,
           background: 'var(--sheet-bg)',
-          borderRadius: '24px 24px 0 0',
+          borderRadius: '22px 22px 0 0',
           maxHeight: '88vh',
           display: 'flex',
           flexDirection: 'column',
@@ -108,7 +108,7 @@ export function BottomSheet({
               width: 36,
               height: 4,
               borderRadius: 2,
-              background: 'rgba(var(--fg-rgb),0.15)',
+              background: 'rgba(var(--fg-rgb),0.18)',
             }}
           />
         </div>

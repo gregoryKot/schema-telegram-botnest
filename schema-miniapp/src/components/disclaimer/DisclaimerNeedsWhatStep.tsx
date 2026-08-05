@@ -1,11 +1,11 @@
 import { NEEDS_EXPLAINER } from '../../aboutData';
 import { NEED_ORDER } from '../../needData';
 import { COLORS } from '../../types';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
-// Первый содержательный шаг онбординга, сразу после согласий: что это за пять
-// потребностей и откуда они. Одна мысль на экран — «зачем отмечать» и «что
-// увидишь» вынесены в следующие шаги. Контент — тот же NEEDS_EXPLAINER, что в
-// AboutSheet (третьей формулировки не заводим).
+// Первый содержательный шаг онбординга: что это за пять потребностей и откуда
+// они. «Зачем отмечать» и «что увидишь» — в следующих шагах. Контент — тот же
+// NEEDS_EXPLAINER, что в AboutSheet (третьей формулировки не заводим).
 export function DisclaimerNeedsWhatStep() {
   return (
     <div>
@@ -59,7 +59,7 @@ export function DisclaimerNeedsWhatStep() {
                 border: `1px solid color-mix(in srgb, ${color} 26%, transparent)`,
               }}
             >
-              <span style={{ fontSize: 15 }}>{n.emoji}</span>
+              <IdentityDot id={NEED_ORDER[i]} />
               <span
                 style={{
                   fontSize: 12.5,

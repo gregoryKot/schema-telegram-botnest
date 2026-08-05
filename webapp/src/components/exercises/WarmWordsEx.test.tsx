@@ -10,6 +10,7 @@ vi.mock('../../api', () => ({
   api: {
     getModeNotes: vi.fn(),
     getModeDiary: vi.fn(),
+    getPhraseChecks: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
@@ -41,6 +42,7 @@ describe('WarmWordsEx', () => {
         updatedAt: '2026-01-10T00:00:00.000Z',
       },
     ]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
     mockApi.getModeDiary.mockResolvedValue([
       {
         id: 1,
@@ -64,6 +66,7 @@ describe('WarmWordsEx', () => {
 
   it('пустой ответ обоих источников — честное пустое состояние, не выдумка', async () => {
     mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
     mockApi.getModeDiary.mockResolvedValue([]);
 
     renderSheet();

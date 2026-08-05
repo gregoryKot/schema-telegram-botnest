@@ -365,3 +365,41 @@ describe('merge-miniapp-dist: драйвер гасит конфликт, соб
     expect(res.stderr).toContain('зависимости мини-аппа');
   });
 });
+
+// Инцидент 2026-08-04: корневой npm-хук `prepare` уронил Docker-сборку Amvera
+// — на шаге `RUN npm ci` в образе есть только package*.json, файла скрипта
+// нет, node падает с ENOENT, и деплой молча стоит (прод застрял на #255,
+// пока #256–#258 были зелёными в CI). Тест закрепляет оба слоя фикса.
+describe('prepare выживает в Docker-контексте (инцидент 2026-08-04)', () => {
+  it('setup-merge-drivers в каталоге без .git выходит нулём', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prepare-docker-'));
+    try {
+      mkdirSync(join(dir, 'scripts'));
+      copyFileSync(
+        join(REAL_SCRIPTS, 'setup-merge-drivers.mjs'),
+        join(dir, 'scripts', 'setup-merge-drivers.mjs'),
+      );
+      const res = spawnSync(
+        process.execPath,
+        ['scripts/setup-merge-drivers.mjs'],
+        { cwd: dir, encoding: 'utf8' },
+      );
+      expect(res.status).toBe(0);
+      expect(res.stdout + res.stderr).toContain('пропуска');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('Dockerfile копирует скрипт prepare ДО первого npm ci', () => {
+    const dockerfile = readFileSync(
+      join(REAL_SCRIPTS, '..', 'Dockerfile'),
+      'utf8',
+    );
+    const copyAt = dockerfile.indexOf('COPY scripts/setup-merge-drivers.mjs');
+    const ciAt = dockerfile.indexOf('RUN npm ci');
+    expect(copyAt).toBeGreaterThan(-1);
+    expect(ciAt).toBeGreaterThan(-1);
+    expect(copyAt).toBeLessThan(ciAt);
+  });
+});

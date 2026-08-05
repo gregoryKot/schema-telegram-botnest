@@ -5,12 +5,7 @@
 // ('⏳' в Help vs '🎯' в Today) — тест фиксирует выбранную (Help) версию,
 // чтобы дрейф не вернулся при следующей правке.
 import { describe, it, expect } from 'vitest';
-import {
-  TASK_EMOJI,
-  resolveTaskEmoji,
-  resolveTaskDisplayText,
-  findLegacyTaskTarget,
-} from './taskEmoji';
+import { resolveTaskDisplayText, findLegacyTaskTarget } from './taskEmoji';
 import { ALL_SCHEMAS, ALL_MODES } from '../../schemaTherapyData';
 import { UserTask } from '../../api';
 
@@ -30,39 +25,6 @@ function makeTask(overrides: Partial<UserTask> = {}): UserTask {
     ...overrides,
   };
 }
-
-describe('TASK_EMOJI', () => {
-  it('custom — карандаш, не совпадает с иконкой виджета «Мои цели» (🎯)', () => {
-    expect(TASK_EMOJI.custom).toBe('✏️');
-    expect(TASK_EMOJI.custom).not.toBe('🎯');
-  });
-});
-
-describe('resolveTaskEmoji', () => {
-  it('известный тип — берёт иконку из TASK_EMOJI', () => {
-    expect(resolveTaskEmoji(makeTask({ type: 'diary_streak' }))).toBe('📔');
-  });
-
-  it('легаси-задача с raw id схемы в text — иконка схемы', () => {
-    const schemaId = ALL_SCHEMAS[0].id;
-    expect(resolveTaskEmoji(makeTask({ type: 'legacy', text: schemaId }))).toBe(
-      '🧩',
-    );
-  });
-
-  it('легаси-задача с raw id режима в text — иконка режима', () => {
-    const modeId = ALL_MODES[0].id;
-    expect(resolveTaskEmoji(makeTask({ type: 'legacy', text: modeId }))).toBe(
-      '🔄',
-    );
-  });
-
-  it('полностью нераспознанный тип — фолбэк ⏳ (не 🎯, чтобы не путать с целью/custom)', () => {
-    expect(
-      resolveTaskEmoji(makeTask({ type: 'unknown_type', text: 'мусор' })),
-    ).toBe('⏳');
-  });
-});
 
 describe('resolveTaskDisplayText', () => {
   it('schema_intro — полный вариант с типизированным текстом', () => {

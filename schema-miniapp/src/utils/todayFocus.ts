@@ -13,31 +13,26 @@ const PHRASE_KEY = 'today_phrase_hidden';
 
 export const FOCUS_OPTIONS: {
   id: FocusPractice;
-  emoji: string;
   label: string;
   sub: string;
 }[] = [
   {
     id: 'tracker',
-    emoji: '📊',
     label: 'Трекер потребностей',
     sub: 'пять оценок дня · ≈1 мин',
   },
   {
     id: 'schema',
-    emoji: '🧩',
     label: 'Дневник схем',
     sub: 'заметить момент схемы · ≈2 мин',
   },
   {
     id: 'mode',
-    emoji: '🔄',
     label: 'Дневник режимов',
     sub: 'какой режим включался · ≈2 мин',
   },
   {
     id: 'gratitude',
-    emoji: '🙏',
     label: 'Благодарность',
     sub: 'три хорошие вещи · ≈1 мин',
   },
@@ -118,7 +113,7 @@ export function focusCardContent(
   switch (practice) {
     case 'schema':
       return {
-        chip: '⏱ ≈2 мин',
+        chip: '≈2 мин',
         title: 'Заметить момент схемы',
         sub: 'Одна запись: что случилось и какая схема включилась.',
         buttonLabel: 'Записать',
@@ -126,7 +121,7 @@ export function focusCardContent(
       };
     case 'mode':
       return {
-        chip: '⏱ ≈2 мин',
+        chip: '≈2 мин',
         title: 'Отметить режим дня',
         sub: 'Какой режим сегодня включался — одна запись.',
         buttonLabel: 'Записать',
@@ -134,7 +129,7 @@ export function focusCardContent(
       };
     case 'gratitude':
       return {
-        chip: '⏱ ≈1 мин',
+        chip: '≈1 мин',
         title: 'Три хорошие вещи',
         sub: 'Маленькая практика благодарности — прямо сейчас.',
         buttonLabel: 'Записать',
@@ -142,7 +137,7 @@ export function focusCardContent(
       };
     default:
       return {
-        chip: '⏱ ≈1 мин',
+        chip: '≈1 мин',
         title: 'Заполнить трекер потребностей',
         sub:
           ratedCount > 0

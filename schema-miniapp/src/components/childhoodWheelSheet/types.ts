@@ -15,7 +15,6 @@ export type NeedId = (typeof NEED_IDS)[number];
 
 export type NeedMetaEntry = {
   label: string;
-  emoji: string;
   question: string;
   anchorLow: string;
   anchorHigh: string;

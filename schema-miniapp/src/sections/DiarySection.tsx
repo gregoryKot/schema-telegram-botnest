@@ -16,9 +16,10 @@ const TODAY = new Date().toISOString().split('T')[0];
 
 interface Props {
   onClose?: () => void;
+  onOpenTracker?: () => void;
 }
 
-export function DiarySection({ onClose }: Props = {}) {
+export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
   const [activeDiary, setActiveDiary] = useState<DiaryType | null>(null);
   const [newEntry, setNewEntry] = useState<DiaryType | null>(null);
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
@@ -27,6 +28,12 @@ export function DiarySection({ onClose }: Props = {}) {
     GratitudeDiaryEntry[]
   >([]);
   const [activeSchemaIds, setActiveSchemaIds] = useState<string[] | undefined>(
+    undefined,
+  );
+  // Серия и последняя отметка трекера — из профиля, а не из константы: на
+  // чистом аккаунте чип серии просто не рисуется (правило «никаких заглушек»).
+  const [streak, setStreak] = useState<number | undefined>(undefined);
+  const [lastNeedsDate, setLastNeedsDate] = useState<string | undefined>(
     undefined,
   );
 
@@ -41,7 +48,11 @@ export function DiarySection({ onClose }: Props = {}) {
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
-      if (profile) setActiveSchemaIds(profile.ysq.activeSchemaIds);
+      if (profile) {
+        setActiveSchemaIds(profile.ysq.activeSchemaIds);
+        setStreak(profile.streak);
+        setLastNeedsDate(profile.lastActivity.needsTracker ?? undefined);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -90,7 +101,10 @@ export function DiarySection({ onClose }: Props = {}) {
           lastSchemaDiaryDate={schemaEntries[0]?.createdAt}
           lastModeDiaryDate={modeEntries[0]?.createdAt}
           lastGratitudeDiaryDate={gratitudeEntries[0]?.date}
+          streak={streak}
+          lastNeedsDate={lastNeedsDate}
           onOpen={(type) => setActiveDiary(type)}
+          onOpenTracker={onOpenTracker}
           onClose={onClose}
         />
       )}

@@ -287,23 +287,6 @@ function PlanCard({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {needData && (
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                flexShrink: 0,
-                background: needColor + '22',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-              }}
-            >
-              {needData.emoji}
-            </div>
-          )}
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>

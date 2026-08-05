@@ -31,7 +31,7 @@ export function WizardProgress({
           background: segment.filled
             ? accentColor
             : i === active
-              ? `${accentColor}55`
+              ? `color-mix(in srgb, ${accentColor} 34%, transparent)`
               : 'var(--surface-2)',
           transition: 'background 0.2s',
           cursor: onSelect ? 'pointer' : undefined,

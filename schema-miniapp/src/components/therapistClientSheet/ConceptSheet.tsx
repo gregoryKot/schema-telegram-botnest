@@ -2,12 +2,13 @@ import { BottomSheet } from '../BottomSheet';
 import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { CONCEPT_FIELDS } from './helpers';
 import { ClientDetail } from './types';
+import { ConceptModePicker } from './conceptSheet/ConceptModePicker';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
-
+import { cm } from '../../sections/schemas/utils';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
@@ -55,7 +56,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           }}
         >
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            🗂 Концептуализация
+            Концептуализация
           </div>
           {concept && (concept.history as unknown[])?.length > 0 && (
             <button
@@ -75,7 +76,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 gap: 4,
               }}
             >
-              🕐 История ({(concept.history as unknown[]).length})
+              История ({(concept.history as unknown[]).length})
             </button>
           )}
         </div>
@@ -88,17 +89,15 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 width: '100%',
                 padding: '10px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(96,165,250,0.2)',
-                background: 'rgba(96,165,250,0.06)',
-                color: ysqRequested ? '#06d6a0' : 'rgba(96,165,250,0.8)',
+                border: `1px solid ${cm('var(--accent-blue)', 20)}`,
+                background: cm('var(--accent-blue)', 6),
+                color: ysqRequested ? '#06d6a0' : cm('var(--accent-blue)', 80),
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: 'pointer',
               }}
             >
-              {ysqRequested
-                ? '✓ Запрос отправлен'
-                : '📋 Запросить тест на схемы'}
+              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
             </button>
             {ysqError && (
               <div
@@ -211,49 +210,10 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         <div style={{ marginTop: 6 }}>
           <SectionLabel mb={8}>Карта режимов</SectionLabel>
         </div>
-        {MODE_GROUPS.map((group) => (
-          <div key={group.id} style={{ marginBottom: 8 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.07em',
-                color: group.color + 'aa',
-                textTransform: 'uppercase',
-                marginBottom: 5,
-                paddingLeft: 2,
-              }}
-            >
-              {group.group}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {group.items.map((mode) => {
-                const active = activeModeIds.includes(mode.id);
-                return (
-                  <button
-                    key={mode.id}
-                    onClick={() => toggleModeId(mode.id)}
-                    style={{
-                      padding: '5px 10px',
-                      borderRadius: 20,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: active
-                        ? group.color + '30'
-                        : 'rgba(var(--fg-rgb),0.05)',
-                      color: active ? group.color : 'rgba(var(--fg-rgb),0.45)',
-                      fontSize: 12,
-                      fontWeight: active ? 600 : 400,
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {mode.emoji} {mode.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        <ConceptModePicker
+          activeModeIds={activeModeIds}
+          onToggle={toggleModeId}
+        />
         <div style={{ marginTop: 8 }}>
           {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
             <div key={key} style={{ marginBottom: 12 }}>
@@ -301,7 +261,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             borderRadius: 14,
             border: 'none',
             background: conceptDirty
-              ? 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), rgba(79,163,247,0.2))'
+              ? `linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), ${cm('var(--accent-blue)', 20)})`
               : 'rgba(var(--fg-rgb),0.05)',
             color: conceptDirty ? 'var(--text)' : 'rgba(var(--fg-rgb),0.25)',
             fontSize: 14,

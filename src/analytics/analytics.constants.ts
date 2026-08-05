@@ -42,6 +42,10 @@
 //   mode_chain_followup — после сохранения записи дневника режимов согласился
 //                         разобрать связанный режим (meta.from + meta.to —
 //                         modeId исходного и выбранного режима).
+//   mode_doubt_opened   — открыл «С чем путают режим» с карточки выбранного
+//                         режима (meta.modeId).
+//   mode_doubt_switched — в «С чем путают режим» нажал «Это ближе» (meta.from
+//                         + meta.to — modeId исходного и выбранного режима).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -68,6 +72,8 @@ export const ANALYTICS_EVENTS = [
   'mode_test_completed',
   'warm_words_open',
   'mode_chain_followup',
+  'mode_doubt_opened',
+  'mode_doubt_switched',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -176,6 +182,8 @@ export const SHARE_CARD_KINDS = [
   'journey_item',
   'practice',
   'mode_entry_full',
+  'phrase_check',
+  'phrase_check_full',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 

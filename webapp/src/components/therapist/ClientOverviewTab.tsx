@@ -129,7 +129,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     const mode = getModeById(entry.modeId ?? '');
                     const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
                     color = group?.color ?? 'var(--c-plum)';
-                    title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                    title = mode ? mode.name : (entry.modeId ?? 'Режим');
                     typeLabel = 'Режим-дневник';
                   } else {
                     color = 'var(--c-moss)';

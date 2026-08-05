@@ -3,7 +3,6 @@ import type { Tr } from './types';
 /* ─── Mode Check-in ─── */
 export const buildModeCheckin = (tr: Tr) => [
   {
-    emoji: '🥺',
     label: 'Одиноко / страшно',
     mode: 'Уязвимый Ребёнок',
     tip: tr(
@@ -12,13 +11,11 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😤',
     label: 'Злюсь / несправедливо',
     mode: 'Сердитый / Разъярённый Ребёнок',
     tip: 'Сначала — тело. Выдох, пауза, движение. Потом можно разбираться с ситуацией. Злость — сигнал о нарушенной потребности.',
   },
   {
-    emoji: '⚡',
     label: 'Не могу терпеть / скучно',
     mode: 'Импульсивный Ребёнок',
     tip: tr(
@@ -27,7 +24,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😬',
     label: 'Давление / «надо больше»',
     mode: 'Требовательный Критик',
     tip: tr(
@@ -36,7 +32,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😠',
     label: 'Стыдно / со мной что-то не так',
     mode: 'Карающий Критик',
     tip: tr(
@@ -45,7 +40,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😔',
     label: 'Вина / долг перед всеми',
     mode: 'Внушающий Вину Критик',
     tip: tr(
@@ -54,7 +48,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🌫️',
     label: 'Хочу отключиться / исчезнуть',
     mode: 'Отстранённый Защитник',
     tip: tr(
@@ -63,7 +56,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🛋️',
     label: 'Тянет к телефону / еде / сериалу',
     mode: 'Отстранённый Самоутешитель',
     tip: tr(
@@ -72,7 +64,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🚪',
     label: 'Не хочу даже думать об этом',
     mode: 'Избегающий Защитник',
     tip: tr(
@@ -81,7 +72,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😶',
     label: 'Соглашаюсь, хотя не хочу',
     mode: 'Послушный Капитулянт',
     tip: tr(
@@ -90,7 +80,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🔥',
     label: 'Контролирую / превосхожу других',
     mode: 'Самовозвеличиватель',
     tip: tr(
@@ -99,7 +88,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '✅',
     label: 'Сделано, но всё равно недостаточно',
     mode: 'Перфекционист-Гиперконтролёр',
     tip: tr(
@@ -108,7 +96,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😟',
     label: 'Прокручиваю худшее снова и снова',
     mode: 'Беспокоящийся Гиперконтролёр',
     tip: tr(
@@ -117,7 +104,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😞',
     label: 'Одиноко среди людей',
     mode: 'Одинокий Ребёнок',
     tip: tr(
@@ -126,7 +112,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '💔',
     label: 'Боюсь, что бросят / уйдут',
     mode: 'Покинутый Ребёнок',
     tip: tr(
@@ -135,7 +120,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😶',
     label: 'Стыдно / чувствую себя дефектным',
     mode: 'Униженный Ребёнок',
     tip: tr(
@@ -144,7 +128,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🫂',
     label: 'Страшно решать самому',
     mode: 'Зависимый Ребёнок',
     tip: tr(
@@ -153,7 +136,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🙅',
     label: 'Не хочу / не буду / сопротивляюсь',
     mode: 'Упрямый Ребёнок',
     tip: tr(
@@ -162,13 +144,11 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🫠',
     label: 'Беспомощно / жду что решат за меня',
     mode: 'Беспомощный Капитулянт',
     tip: 'Беспомощность — усвоенная, не реальная. Один маленький выбор прямо сейчас тренирует ощущение контроля над своей жизнью.',
   },
   {
-    emoji: '😡',
     label: 'Злюсь и отталкиваю людей',
     mode: 'Гневный Защитник',
     tip: tr(
@@ -177,13 +157,11 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🎛️',
     label: 'Всё должно быть под контролем',
     mode: 'Гиперконтролёр',
     tip: 'Контроль снижает тревогу, но не устраняет угрозу. Что самое страшное случится, если отпустить немного? Насколько это реально?',
   },
   {
-    emoji: '🔍',
     label: 'Ищу скрытые мотивы / не доверяю',
     mode: 'Подозрительный Гиперконтролёр',
     tip: tr(
@@ -192,7 +170,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🛡️',
     label: 'Нельзя показывать слабость',
     mode: 'Неуязвимый Гиперконтролёр',
     tip: tr(
@@ -201,7 +178,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😩',
     label: 'Наказываю себя строже чем нужно',
     mode: 'Самобичующий Гиперконтролёр',
     tip: tr(
@@ -210,7 +186,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🔁',
     label: 'Ритуалы и навязчивые действия',
     mode: 'Компульсивный Гиперконтролёр',
     tip: tr(
@@ -219,7 +194,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '👊',
     label: 'Добиваюсь через давление / запугивание',
     mode: 'Агрессор',
     tip: tr(
@@ -228,7 +202,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🎭',
     label: 'Влияю косвенно, скрываю намерения',
     mode: 'Манипулятор',
     tip: tr(
@@ -237,13 +210,11 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🦊',
     label: 'Использую других в своих целях',
     mode: 'Хищник',
     tip: 'Если этот режим активен — стоит поговорить с терапевтом. Это сигнал о глубокой диссоциации от эмпатии, не ярлык.',
   },
   {
-    emoji: '🌟',
     label: 'Нужны признание и похвала',
     mode: 'Ищущий внимания',
     tip: tr(
@@ -252,7 +223,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🌈',
     label: 'Всё хорошо, не вижу проблем',
     mode: 'Полианна',
     tip: tr(
@@ -261,7 +231,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '💚',
     label: 'Поддерживаю и ободряю себя',
     mode: 'Хороший Родитель',
     tip: tr(
@@ -270,7 +239,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '😄',
     label: 'Легко и радостно',
     mode: 'Счастливый Ребёнок',
     tip: tr(
@@ -279,7 +247,6 @@ export const buildModeCheckin = (tr: Tr) => [
     ),
   },
   {
-    emoji: '🌿',
     label: 'Спокойно и устойчиво',
     mode: 'Здоровый Взрослый',
     tip: 'Хорошее время для рефлексии и сложных решений. Можно спросить себя: что сейчас нужно Уязвимому Ребёнку внутри меня?',

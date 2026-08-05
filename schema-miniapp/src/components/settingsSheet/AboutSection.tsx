@@ -109,7 +109,7 @@ export function AboutSection() {
                 textDecoration: 'none',
               }}
             >
-              разовый донат 💛
+              разовый донат
             </a>
           </div>
         </div>

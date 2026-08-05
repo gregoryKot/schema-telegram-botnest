@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { api } from '../api';
-import type { PracticePlan } from '../api';
+import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   plan: PracticePlan;
-  needEmoji: string;
+  needColor: string;
   needLabel: string;
   color: string;
   onDone: () => void;
 }
 
-export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Props) {
+export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
@@ -42,8 +42,8 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
             {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-            {needEmoji} {needLabel}
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <IdentityDot color={needColor} /> {needLabel}
           </div>
         </div>
 

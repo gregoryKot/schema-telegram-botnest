@@ -21,7 +21,9 @@ export type ShareCardKind =
   | 'journey'
   | 'journey_item'
   | 'practice'
-  | 'mode_entry_full';
+  | 'mode_entry_full'
+  | 'phrase_check'
+  | 'phrase_check_full';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
@@ -65,6 +67,13 @@ export const WARM_WORDS_OPEN_EVENT = 'warm_words_open';
 // meta { from, to } — modeId исходного и выбранного режима. Парный allow-list
 // там же.
 export const MODE_CHAIN_FOLLOWUP_EVENT = 'mode_chain_followup';
+
+// Открыл лист «С чем путают режим» (сравнение с соседями по путанице) с
+// карточки выбранного режима: meta { modeId }. Парный allow-list там же.
+export const MODE_DOUBT_OPENED_EVENT = 'mode_doubt_opened';
+// В листе «С чем путают режим» нажал «Это ближе» — переключил выбор:
+// meta { from, to } — modeId исходного и выбранного режима. Парный allow-list там же.
+export const MODE_DOUBT_SWITCHED_EVENT = 'mode_doubt_switched';
 
 /** meta для mode_entry_saved из значений формы дневника (общий, оба фронта). */
 export function modeEntrySavedMeta(

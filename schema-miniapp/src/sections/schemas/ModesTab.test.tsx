@@ -55,7 +55,7 @@ describe('ModesTab — группировка режимов пользоват�
       />,
     );
     const list = screen.getByTestId('pattern-list');
-    expect(list.textContent).toContain('😬 Требовательный Критик(3)');
+    expect(list.textContent).toContain('Требовательный Критик(3)');
   });
 
   it('частота отсутствующего в modeFreq режима — 0, а не undefined', () => {
@@ -67,7 +67,7 @@ describe('ModesTab — группировка режимов пользоват�
       />,
     );
     expect(screen.getByTestId('pattern-list').textContent).toContain(
-      '😬 Требовательный Критик(0)',
+      'Требовательный Критик(0)',
     );
   });
 });

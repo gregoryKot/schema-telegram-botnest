@@ -20,6 +20,7 @@ function makePrisma() {
     'userSchemaNote',
     'userModeNote',
     'userBeliefCheck',
+    'userPhraseCheck',
     'userLetter',
     'userSafePlace',
     'userFlashcard',

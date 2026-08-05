@@ -49,7 +49,7 @@ export function TherapistClientSection({
                 marginBottom: 12,
               }}
             >
-              👨‍⚕️ {therapyRelation.partnerName ?? 'Терапевт'} подключён
+              {therapyRelation.partnerName ?? 'Терапевт'} подключён
             </div>
 
             {/* Privacy toggles */}

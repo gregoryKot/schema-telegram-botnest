@@ -1,11 +1,11 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import { COLORS } from '../types';
-import type { Need } from '../types';
+import { COLORS, type Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 interface Props {
   need: Need;
@@ -63,7 +63,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
-      eyebrow={`${data.emoji} Оцени сейчас`}
+      eyebrow="Оцени сейчас"
       eyebrowColor={color}
       title={<>{need.chartLabel}</>}
       lede={data.question}
@@ -243,7 +243,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
       {showPlan && (
         <PlanSheet
           needId={need.id}
-          needEmoji={data.emoji}
+          needColor={needColor(need.id)}
           needLabel={need.chartLabel}
           color={color}
           onClose={() => setShowPlan(false)}

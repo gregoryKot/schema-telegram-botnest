@@ -20,7 +20,7 @@ export function HomeScreenSection() {
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
       <div className="card" style={{ borderRadius: 16, padding: 14 }}>
-        <AddHomeScreenButton>📲 Добавить значок на экран</AddHomeScreenButton>
+        <AddHomeScreenButton>Добавить значок на экран</AddHomeScreenButton>
         <div
           style={{
             marginTop: 10,

@@ -1,29 +1,15 @@
+import * as needColors from '../../../../shared/src/needs/needColors';
+
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 export function cm(color: string, pct: number) {
   return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
 
-/** Keep hex() for dot/icon backgrounds where we need a solid resolved color */
-const VAR_HEX: Record<string, string> = {
-  'var(--accent-red)': '#f87171',
-  'var(--accent-orange)': '#fb923c',
-  'var(--accent-yellow)': '#facc15',
-  'var(--accent-green)': '#4ade80',
-  'var(--accent-indigo)': '#818cf8',
-  'var(--accent-blue)': '#60a5fa',
-  'var(--accent)': '#a78bfa',
-};
-export function hex(color: string) {
-  return VAR_HEX[color] ?? color;
-}
-
-export const NEED_IDS: { id: string; color: string }[] = [
-  { id: 'attachment', color: '#ff6b9d' },
-  { id: 'autonomy', color: '#4fa3f7' },
-  { id: 'expression', color: '#facc15' },
-  { id: 'play', color: '#06d6a0' },
-  { id: 'limits', color: '#a78bfa' },
-];
+// Цвет — только из needColors.ts (правило №4), без хардкода здесь.
+export const NEED_IDS = needColors.NEED_COLOR_ORDER.map((id) => ({
+  id,
+  color: needColors.needColor(id),
+}));
 
 export function readLocalIds(key: string): string[] {
   try {

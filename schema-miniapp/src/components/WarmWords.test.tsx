@@ -9,6 +9,7 @@ vi.mock('../api', () => ({
   api: {
     getModeNotes: vi.fn(),
     getModeDiary: vi.fn(),
+    getPhraseChecks: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
@@ -25,6 +26,7 @@ afterEach(() => {
 
 describe('WarmWords', () => {
   it('рисует элементы из обоих источников и шлёт событие открытия со счётчиком', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([]);
     mockApi.getModeNotes.mockResolvedValue([
       {
         modeId: 'critic',
@@ -56,6 +58,7 @@ describe('WarmWords', () => {
   it('пустой ответ обоих источников — честное пустое состояние, не выдумка', async () => {
     mockApi.getModeNotes.mockResolvedValue([]);
     mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
 
     render(<WarmWords onClose={() => {}} />);
     await act(async () => {});

@@ -5,6 +5,9 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
+import { useTr } from '../../utils/addressForm';
+import { DiaryPanel } from './diaryUi';
+import { PrimaryAction } from './diaryFlowUi';
 
 interface Props {
   onClose: () => void;
@@ -19,6 +22,7 @@ export function GratitudeEntrySheet({
   existingItems,
   onSave,
 }: Props) {
+  const tr = useTr();
   const existing = !existingItems
     ? loadDraft<{ items: string[] }>('gratitude')
     : null;
@@ -74,88 +78,58 @@ export function GratitudeEntrySheet({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Дневник благодарности
+        <div className="d-caps" style={{ marginBottom: 14 }}>
+          Дневник благодарности · {dateLabel}
         </div>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20 }}
-        >
-          {dateLabel}
+        <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+          За что есть благодарность сегодня?
         </div>
         <div
           style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            marginBottom: 16,
-            lineHeight: 1.6,
+            fontSize: 14,
+            color: 'var(--muted)',
+            marginBottom: 20,
+            lineHeight: 1.5,
           }}
         >
-          За что есть благодарность сегодня? Даже самое маленькое — оно важно.
+          Даже самое маленькое — оно считается. Хватит и одной строки.
         </div>
 
-        {items.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 12,
-              marginBottom: 12,
-            }}
-          >
+        {/* Три строки в одном контейнере: без иконок и нумерованных плашек —
+            границу между строками держит волосяная линия. */}
+        <DiaryPanel>
+          {items.map((item, i) => (
             <div
+              key={i}
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 10,
-                flexShrink: 0,
-                marginTop: 2,
-                background: item.trim()
-                  ? '#34d39922'
-                  : 'rgba(var(--fg-rgb),0.06)',
-                border: item.trim()
-                  ? '1px solid #34d39966'
-                  : '1px solid rgba(var(--fg-rgb),0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 13,
-                color: 'var(--accent-green)',
-                fontWeight: 700,
-                transition: 'background 150ms, border-color 150ms',
+                padding: '4px 14px',
+                borderTop: i === 0 ? undefined : '1px solid var(--line)',
               }}
             >
-              {i + 1}
+              <textarea
+                value={item}
+                onChange={(e) => update(i, e.target.value)}
+                placeholder={
+                  PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]
+                }
+                rows={2}
+                aria-label={`Благодарность ${i + 1}`}
+                style={{
+                  width: '100%',
+                  minHeight: 48,
+                  background: 'none',
+                  border: 'none',
+                  padding: '12px 0',
+                  color: 'var(--text)',
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                  outline: 'none',
+                  resize: 'none',
+                }}
+              />
             </div>
-            <textarea
-              value={item}
-              onChange={(e) => update(i, e.target.value)}
-              placeholder={
-                PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]
-              }
-              rows={2}
-              className="field-input"
-              style={{
-                flex: 1,
-                background: 'rgba(var(--fg-rgb),0.05)',
-                border: '1px solid rgba(var(--fg-rgb),0.1)',
-                borderRadius: 12,
-                padding: '10px 12px',
-                color: 'var(--text)',
-                fontSize: 14,
-                lineHeight: 1.5,
-                outline: 'none',
-              }}
-            />
-          </div>
-        ))}
+          ))}
+        </DiaryPanel>
 
         {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
 
@@ -163,42 +137,31 @@ export function GratitudeEntrySheet({
           <button
             onClick={() => setItems((prev) => [...prev, ''])}
             style={{
-              background: 'rgba(var(--fg-rgb),0.05)',
-              border: '1px dashed rgba(var(--fg-rgb),0.15)',
-              borderRadius: 12,
-              padding: '10px',
-              width: '100%',
-              color: 'var(--text-sub)',
-              fontSize: 13,
+              background: 'none',
+              border: 'none',
+              padding: '18px 2px',
+              minHeight: 48,
+              color: 'var(--accent)',
+              fontSize: 14,
+              fontWeight: 600,
               cursor: 'pointer',
-              marginBottom: 4,
             }}
           >
-            + добавить ещё
+            Добавить строку
           </button>
         )}
 
-        <button
-          onClick={handleSave}
-          disabled={!canSave || saving}
-          style={{
-            marginTop: 20,
-            width: '100%',
-            padding: '14px',
-            borderRadius: 14,
-            background: canSave
-              ? 'var(--accent-green)'
-              : 'rgba(var(--fg-rgb),0.1)',
-            color: canSave ? 'var(--bg)' : 'rgba(var(--fg-rgb),0.3)',
-            border: 'none',
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: canSave ? 'pointer' : 'default',
-            transition: 'background 200ms, color 200ms',
-          }}
-        >
-          {saving ? 'Сохраняю...' : 'Сохранить'}
-        </button>
+        <div style={{ marginTop: 12 }}>
+          <PrimaryAction
+            label={saving ? 'Сохраняю…' : 'Сохранить'}
+            hint={tr(
+              'Напиши хотя бы одну строку — и запись сохранится',
+              'Напишите хотя бы одну строку — и запись сохранится',
+            )}
+            disabled={!canSave || saving}
+            onClick={handleSave}
+          />
+        </div>
         {saveError && (
           <div
             role="status"

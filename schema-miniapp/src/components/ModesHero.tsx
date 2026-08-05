@@ -37,28 +37,24 @@ export function ModesHero({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <HeroCta
           label="Знакомство"
-          chip="⏱ ≈2 мин"
+          chip="≈2 мин"
           title="Встретить своего Критика"
           sub={tr(
             'Режимы — состояния, которые включаются в моменте. Начни с самого узнаваемого: внутреннего голоса требований.',
             'Режимы — состояния, которые включаются в моменте. Начните с самого узнаваемого: внутреннего голоса требований.',
           )}
-          buttonLabel="😬 Познакомиться"
+          buttonLabel="Познакомиться"
           onClick={onMeetCritic}
         />
         <ToolRow
-          emoji="🔄"
           label="Что такое режимы"
           sub="части, которые включаются по очереди"
-          tint="var(--accent-blue)"
           index={1}
           onClick={onOpenLibrary}
         />
         <ToolRow
-          emoji="✍️"
           label="Отметить свои"
           sub={tr('если уже знаешь свои режимы', 'если уже знаете свои режимы')}
-          tint="var(--accent-green)"
           index={2}
           onClick={onPickManually}
         />
@@ -76,7 +72,7 @@ export function ModesHero({
       <WeekTopCard
         label="Чаще всего включается"
         color={group.color}
-        title={`${mode.emoji} ${mode.name}`}
+        title={mode.name}
         sub={`${summary.days} из ${summary.windowDays} дней — по записям дневника. Заметить включение — уже полработы.`}
         onClick={() => onOpenModeDetail(summary.id)}
       />
@@ -86,13 +82,11 @@ export function ModesHero({
   if (onOpenDiaries) {
     return (
       <ToolRow
-        emoji="📔"
         label="Картина недели появится из дневника"
         sub={tr(
           'замечай моменты, когда режим включился',
           'замечайте моменты, когда режим включился',
         )}
-        tint="var(--accent-indigo)"
         onClick={onOpenDiaries}
       />
     );

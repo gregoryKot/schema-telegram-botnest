@@ -7,7 +7,6 @@ export const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
 
 export interface StepDef {
   id: string;
-  emoji: string;
   color: string;
   title: string;
   description: string;
@@ -22,7 +21,6 @@ export interface StepDef {
 export const STEPS: StepDef[] = [
   {
     id: 'ysq',
-    emoji: '🧪',
     color: 'var(--accent)',
     title: 'Тест на схемы',
     description:
@@ -33,7 +31,6 @@ export const STEPS: StepDef[] = [
   },
   {
     id: 'tracker',
-    emoji: '📊',
     color: 'var(--accent-blue)',
     title: 'Оценка потребностей сегодня',
     description:
@@ -44,7 +41,6 @@ export const STEPS: StepDef[] = [
   },
   {
     id: 'diary',
-    emoji: '📔',
     color: 'var(--accent-indigo)',
     title: 'Первая запись в дневнике',
     description:
@@ -60,7 +56,6 @@ export const STEPS: StepDef[] = [
   },
   {
     id: 'notify',
-    emoji: '🔔',
     color: 'var(--accent-orange)',
     title: 'Ежедневное напоминание',
     description:
@@ -71,7 +66,6 @@ export const STEPS: StepDef[] = [
   },
   {
     id: 'childhood',
-    emoji: '🌀',
     color: 'var(--accent-green)',
     title: 'Колесо детства',
     description:

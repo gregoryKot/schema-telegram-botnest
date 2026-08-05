@@ -56,15 +56,18 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
               opacity: full ? 0.6 : 0.5,
             }}
           >
+            {/* Исход — знак, а не картинка: галочка выполненного, крестик
+                невыполненного. Цвет отделяет их без второго символа. */}
             <span
               style={{
                 fontSize: full ? 15 : 16,
                 flexShrink: 0,
                 width: full ? 20 : 22,
                 textAlign: 'center',
+                color: task.done === true ? 'var(--text)' : 'var(--faint)',
               }}
             >
-              {task.done === true ? '✅' : '❌'}
+              {task.done === true ? '✓' : '×'}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div

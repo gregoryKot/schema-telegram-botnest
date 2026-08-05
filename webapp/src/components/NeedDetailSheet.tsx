@@ -2,14 +2,7 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-
-const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy:   '#4fa3f7',
-  expression: '#facc15',
-  play:       '#06d6a0',
-  limits:     '#a78bfa',
-};
+import { needColor } from '../../../shared/src/needs/needColors';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -30,7 +23,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const goBack = useHistorySheet(onClose);
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = NEED_COLORS[needId] ?? '#a78bfa';
+  const color = needColor(needId);
 
   if (!need) return null;
 
@@ -52,7 +45,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
-      eyebrow={`${need.emoji} Потребность`}
+      eyebrow="Потребность"
       eyebrowColor={color}
       title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
       lede={need.explanation}
