@@ -21,7 +21,9 @@ export type ShareCardKind =
   | 'journey'
   | 'journey_item'
   | 'practice'
-  | 'mode_entry_full';
+  | 'mode_entry_full'
+  | 'phrase_check'
+  | 'phrase_check_full';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли

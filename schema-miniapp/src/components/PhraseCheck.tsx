@@ -12,7 +12,10 @@ import { CrisisGate } from './CrisisGate';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
-import { PHRASE_CRITERIA, type PhraseMarkId } from './phraseCheck/criteria';
+import {
+  PHRASE_CRITERIA,
+  type PhraseMarkId,
+} from '../../../shared/src/phraseCheck/criteria';
 import { MarksStep } from './phraseCheck/MarksStep';
 import { RewriteStep } from './phraseCheck/RewriteStep';
 import { PhraseDoneScreen } from './phraseCheck/DoneScreen';
@@ -28,6 +31,9 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   const [markIndex, setMarkIndex] = useState(-1); // -1 — ещё на вводе фразы
   const [marks, setMarks] = useState<PhraseMarkId[]>([]);
   const [rewrite, setRewrite] = useState('');
+  // Переписанную фразу предлагаем забрать в «Тёплые слова» — по умолчанию да,
+  // это ровно тот жанр; галочку видно и её можно снять.
+  const [inWarmWords, setInWarmWords] = useState(true);
   const [done, setDone] = useState(false);
   const [history, setHistory] = useState<
     Array<{ id: number; phrase: string; rewrite: string | null }>
@@ -58,6 +64,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
       phrase: phrase.trim(),
       marks,
       rewrite: rewrite.trim() || undefined,
+      inWarmWords: inWarmWords && Boolean(rewrite.trim()),
     };
     api.createPhraseCheck(body).catch(() => {});
     setDone(true);
@@ -249,6 +256,8 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             marks={marks}
             rewrite={rewrite}
             setRewrite={setRewrite}
+            inWarmWords={inWarmWords}
+            setInWarmWords={setInWarmWords}
             onSave={save}
             tr={tr}
           />

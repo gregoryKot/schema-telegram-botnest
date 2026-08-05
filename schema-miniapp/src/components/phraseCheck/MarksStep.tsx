@@ -1,7 +1,10 @@
 // Шаг разбора: четыре приметы по одной, у каждой два ответа — «забота» или
 // «критик». Одно очевидное действие на экран (правило онбординга): вопрос,
 // две кнопки, строка «зачем это».
-import { PHRASE_CRITERIA, type PhraseMarkId } from './criteria';
+import {
+  PHRASE_CRITERIA,
+  type PhraseMarkId,
+} from '../../../../shared/src/phraseCheck/criteria';
 
 const CHOICE: React.CSSProperties = {
   width: '100%',

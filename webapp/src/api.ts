@@ -340,6 +340,9 @@ export const api = {
   saveSchemaNote:       (body: SaveSchemaNoteBody) => post('/api/schema-notes', body),
   getModeNotes:         () => get<UserModeNote[]>('/api/mode-notes'),
   saveModeNote:         (body: SaveModeNoteBody) => post('/api/mode-notes', body),
+  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
+  // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
+  getPhraseChecks:      () => get<Array<{ id: number; rewrite: string | null; inWarmWords: boolean; createdAt: string }>>('/api/phrase-checks'),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),

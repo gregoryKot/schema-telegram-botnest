@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -31,4 +32,9 @@ export class PhraseCheckDto {
   @IsString()
   @MaxLength(TEXT_MAX)
   rewrite?: string;
+
+  /** Забрать переписанную фразу в «Тёплые слова» — выбор пользователя. */
+  @IsOptional()
+  @IsBoolean()
+  inWarmWords?: boolean;
 }

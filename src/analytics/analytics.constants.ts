@@ -182,6 +182,8 @@ export const SHARE_CARD_KINDS = [
   'journey_item',
   'practice',
   'mode_entry_full',
+  'phrase_check',
+  'phrase_check_full',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 

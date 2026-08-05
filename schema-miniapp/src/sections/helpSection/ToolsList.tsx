@@ -44,13 +44,19 @@ export function ToolsList({
         Инструменты
       </div>
       <ToolRow
+        label="Критик или забота?"
+        sub="Проверить фразу внутреннего голоса"
+        index={0}
+        onClick={onOpenPhraseCheck}
+      />
+      <ToolRow
         label="Мои цели"
         sub={
           tasksCount === 0
             ? 'Нет активных'
             : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`
         }
-        index={0}
+        index={1}
         onClick={onOpenTasks}
       />
       <ToolRow
@@ -62,7 +68,7 @@ export function ToolsList({
               ? 'Нет практик'
               : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
         }
-        index={1}
+        index={2}
         onClick={onOpenPractices}
       />
       <ToolRow
@@ -74,20 +80,14 @@ export function ToolsList({
               ? 'История пуста'
               : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
         }
-        index={2}
+        index={3}
         onClick={onOpenPlans}
       />
       <ToolRow
         label="Проверка убеждений"
         sub="Правда ли это?"
-        index={3}
-        onClick={onOpenBeliefCheck}
-      />
-      <ToolRow
-        label="Критик или забота?"
-        sub="Проверить фразу внутреннего голоса"
         index={4}
-        onClick={onOpenPhraseCheck}
+        onClick={onOpenBeliefCheck}
       />
       <ToolRow
         label="Безопасное место"

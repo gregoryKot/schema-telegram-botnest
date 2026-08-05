@@ -3,13 +3,15 @@
 // файл на 441 строке не пухнет дальше); поведение методов не менялось,
 // добавлены только phrase-checks.
 import { get, post, del } from './apiClient';
-import type { PhraseMarkId } from './components/phraseCheck/criteria';
+import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 
 export interface PhraseCheckEntry {
   id: number;
   phrase: string;
   marks: PhraseMarkId[];
   rewrite: string | null;
+  /** Забрана ли переписанная фраза в «Тёплые слова» */
+  inWarmWords: boolean;
   createdAt: string;
 }
 
@@ -69,6 +71,7 @@ export const exercisesApi = {
     phrase: string;
     marks: PhraseMarkId[];
     rewrite?: string;
+    inWarmWords?: boolean;
   }) => post('/api/phrase-checks', body),
   deletePhraseCheck: (id: number) => del(`/api/phrase-checks/${id}`),
 };

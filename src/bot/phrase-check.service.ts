@@ -25,6 +25,7 @@ export class PhraseCheckService {
     return rows.map((r) => ({
       id: r.id,
       createdAt: r.createdAt,
+      inWarmWords: r.inWarmWords,
       phrase: decrypt(r.phrase) ?? r.phrase,
       // Чужие/протухшие id молча отбрасываем: список примет со временем может
       // меняться, а старая запись не должна ронять экран истории.
@@ -37,7 +38,12 @@ export class PhraseCheckService {
 
   async createPhraseCheck(
     userId: bigint,
-    data: { phrase: string; marks: PhraseMarkId[]; rewrite?: string },
+    data: {
+      phrase: string;
+      marks: PhraseMarkId[];
+      rewrite?: string;
+      inWarmWords?: boolean;
+    },
   ) {
     const marks = [...new Set(data.marks)];
     const row = await this.prisma.userPhraseCheck.create({
@@ -46,6 +52,8 @@ export class PhraseCheckService {
         phrase: encrypt(data.phrase) ?? data.phrase,
         marks,
         rewrite: encrypt(data.rewrite),
+        // Без переписанной фразы забирать в «Тёплые слова» нечего.
+        inWarmWords: Boolean(data.inWarmWords && data.rewrite?.trim()),
       },
     });
     return {
@@ -54,6 +62,7 @@ export class PhraseCheckService {
       phrase: data.phrase,
       marks,
       rewrite: data.rewrite ?? null,
+      inWarmWords: row.inWarmWords,
     };
   }
 
