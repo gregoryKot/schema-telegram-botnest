@@ -7,14 +7,16 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
-import { useNeedData } from '../needData';
+import { useNeedData, NEED_ORDER } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
+import { NeedDot } from '../components/NeedDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { pressable } from '../utils/a11y';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
@@ -23,14 +25,6 @@ const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m =>
 function cm(color: string, pct: number) {
   return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
-const NEED_IDS: { id: string; color: string }[] = [
-  { id: 'attachment', color: '#ff6b9d' },
-  { id: 'autonomy',   color: '#4fa3f7' },
-  { id: 'expression', color: '#facc15' },
-  { id: 'play',       color: '#06d6a0' },
-  { id: 'limits',     color: '#a78bfa' },
-];
-
 function readLocalIds(key: string): string[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
@@ -428,7 +422,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
           )}
 
-          {NEED_IDS.map(({ id, color }) => {
+          {NEED_ORDER.map((id) => {
+            const color = needColor(id);
             const d = NEED_DATA[id];
             if (!d) return null;
             const childScore = childhoodRatings[id];
@@ -439,7 +434,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  {d.emoji}
+                  <NeedDot id={id} size={14} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>

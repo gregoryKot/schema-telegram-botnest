@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
-import type { UserPractice } from '../api';
+import { api, type UserPractice } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
+import { NeedDot } from './NeedDot';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -25,7 +25,7 @@ const REMINDER_OPTIONS = [
 
 interface Props {
   needId: string;
-  needEmoji: string;
+  needColor: string;
   needLabel: string;
   color: string;
   onClose: () => void;
@@ -39,7 +39,7 @@ function defaultReminderIdx(): number {
   return 2;
 }
 
-export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSaved }: Props) {
+export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSaved }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
@@ -85,7 +85,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
     <ExScreen
       onBack={phase === 'confirm' ? () => setPhase('pick') : goBack}
       backLabel={phase === 'confirm' ? '← Выбрать другое' : 'Назад'}
-      eyebrow={`${needEmoji} ${needLabel}`}
+      eyebrow={needLabel}
       eyebrowColor={color}
       title={phase === 'pick'
         ? <>Что сделаешь<br /><span className="it">завтра?</span></>
@@ -95,7 +95,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
       aside={
         <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color }}>Потребность</div>
-          <h3 style={{ fontSize: 18 }}>{needEmoji} {needLabel}</h3>
+          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><NeedDot color={needColor} /> {needLabel}</h3>
           <p className="body">Практика помогает восстановить потребность через конкретное действие</p>
         </div>
       }

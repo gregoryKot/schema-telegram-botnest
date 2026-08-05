@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTr } from '../utils/addressForm';
-import { COLORS } from '../types';
-import type { Need, DayHistory } from '../types';
+import { COLORS, type Need, type DayHistory } from '../types';
 import { NeedHistorySheet } from './NeedHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
 import { IndexInfoSheet } from './IndexInfoSheet';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
+import { NeedDot } from './NeedDot';
 
 interface Props {
   needs: Need[];
@@ -395,7 +395,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                     cursor: 'pointer',
                   }}>
                     <div style={{ width: 3, height: 32, borderRadius: 2, background: val > 0 ? color : 'rgba(var(--fg-rgb),0.1)', flexShrink: 0 }} />
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{n.emoji}</span>
+                    <NeedDot id={n.id} size={14} />
                     <span style={{ flex: 1, fontSize: 15, color: 'var(--text)', fontWeight: 400 }}>{n.chartLabel}</span>
                     {val > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: levelColor }}>{levelLabel}</span>
