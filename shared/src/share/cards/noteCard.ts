@@ -27,7 +27,8 @@ export type NoteFieldKey =
   | 'needs';
 
 /**
- * Подписи полей — form-agnostic (без обращения на «ты/вы», без рода),
+ * Подписи полей от первого лица: без обращения к читателю и без рода —
+ * поэтому вилка форм обращения им не нужна вовсе. Формулировки
  * совпадают по смыслу с вопросами, которые видел человек при заполнении:
  * SchemaIntroSheet.QUESTIONS (schema-miniapp) и buildModeIntroQuestions
  * (shared/src/mode/modeIntroQuestions.ts).
