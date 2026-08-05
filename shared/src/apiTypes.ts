@@ -127,3 +127,14 @@ export interface ClientData {
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
 }
+
+export interface Insights {
+  weeklyStats: Array<{
+    needId: string;
+    avg: number | null;
+    trend: '↑' | '↓' | '→';
+  }>;
+  bestDayOfWeek: string | null;
+  worstDayOfWeek: string | null;
+  totalDays: number;
+}
