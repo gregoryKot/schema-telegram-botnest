@@ -36,7 +36,7 @@ export function mockCardCtx() {
 export function canvasWithMockCtx() {
   const canvas = document.createElement('canvas');
   const ctx = mockCardCtx();
-  vi.spyOn(canvas, 'getContext').mockReturnValue(ctx as never);
+  vi.spyOn(canvas, 'getContext').mockReturnValue(ctx);
   return { canvas, ctx };
 }
 
