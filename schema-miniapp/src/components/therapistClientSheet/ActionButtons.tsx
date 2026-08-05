@@ -34,7 +34,6 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
           cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 18 }}>📋</span>
         <div style={{ flex: 1 }}>
           <div
             style={{
@@ -77,7 +76,6 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
           cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 18 }}>📝</span>
         <div style={{ flex: 1 }}>
           <div
             style={{
@@ -115,7 +113,6 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
           cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 18 }}>🗂</span>
         <div style={{ flex: 1 }}>
           <div
             style={{
@@ -153,7 +150,6 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
           cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 18 }}>📖</span>
         <div style={{ flex: 1 }}>
           <div
             style={{

@@ -30,7 +30,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
             marginBottom: 16,
           }}
         >
-          📝 Заметки сессий
+          Заметки сессий
         </div>
         {notes.length === 0 ? (
           <div

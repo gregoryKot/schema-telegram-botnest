@@ -24,12 +24,11 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
             marginBottom: 20,
           }}
         >
-          📖 Записи клиента
+          Записи клиента
         </div>
         {clientSchemaNotesData.length === 0 &&
         clientModeNotesData.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
             <div
               style={{
                 fontSize: 14,
@@ -176,7 +175,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                           marginBottom: 8,
                         }}
                       >
-                        {m?.emoji ?? '🔄'} {m?.name ?? n.modeId}
+                        {m?.name ?? n.modeId}
                       </div>
                       {[
                         { label: 'Триггеры', val: n.triggers },

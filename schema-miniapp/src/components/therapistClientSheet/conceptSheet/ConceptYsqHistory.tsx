@@ -48,7 +48,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           marginBottom: 10,
         }}
       >
-        📊 Схемы · {hist.length}{' '}
+        Схемы · {hist.length}{' '}
         {hist.length === 1
           ? 'прохождение'
           : hist.length < 5
