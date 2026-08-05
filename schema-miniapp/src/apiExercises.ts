@@ -2,7 +2,7 @@
 // письма, безопасное место, флешкарты. Вынесено из api.ts (правило №10 —
 // файл на 441 строке не пухнет дальше); поведение методов не менялось,
 // добавлены только phrase-checks.
-import { get, post, del } from './apiClient';
+import { get, post, del, authedFetch, HttpStatusError } from './apiClient';
 import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 
 export interface PhraseCheckEntry {
@@ -74,4 +74,19 @@ export const exercisesApi = {
     inWarmWords?: boolean;
   }) => post('/api/phrase-checks', body),
   deletePhraseCheck: (id: number) => del(`/api/phrase-checks/${id}`),
+  // Правка уже сохранённого разбора: только rewrite (ответ Здорового
+  // Взрослого) — фраза и приметы критика неизменны. '' — осознанная очистка
+  // ответа, не ошибка. Прямой authedFetch: post()/postJson() шлют POST, тут
+  // нужен PATCH.
+  updatePhraseCheck: async (
+    id: number,
+    rewrite: string,
+  ): Promise<{ id: number; rewrite: string | null }> => {
+    const res = await authedFetch(`/api/phrase-checks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ rewrite }),
+    });
+    if (!res.ok) throw new HttpStatusError(res.status);
+    return res.json() as Promise<{ id: number; rewrite: string | null }>;
+  },
 };
