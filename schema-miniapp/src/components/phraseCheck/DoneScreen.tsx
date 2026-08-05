@@ -1,8 +1,10 @@
 // Финальный экран разбора: было → стало. Смысл упражнения виден именно на
-// этом экране, поэтому обе фразы показываются рядом, дословно.
+// этом экране, поэтому обе фразы показываются рядом, дословно — и отсюда же
+// разбором делятся (краткой карточкой или целиком).
 import { BottomSheet } from '../BottomSheet';
-import { buildVerdict } from './verdict';
-import type { PhraseMarkId } from './criteria';
+import { PhraseCheckShare } from './PhraseCheckShare';
+import { buildVerdict } from '../../../../shared/src/phraseCheck/verdict';
+import type { PhraseMarkId } from '../../../../shared/src/phraseCheck/criteria';
 
 export function PhraseDoneScreen({
   phrase,
@@ -112,10 +114,16 @@ export function PhraseDoneScreen({
           </div>
         )}
 
+        <PhraseCheckShare
+          phrase={phrase}
+          marks={marks}
+          rewrite={rewrite.trim() || undefined}
+        />
+
         <button
           onClick={onClose}
           className="btn-primary"
-          style={{ width: '100%' }}
+          style={{ width: '100%', marginTop: 14 }}
         >
           Готово
         </button>

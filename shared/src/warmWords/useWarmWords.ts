@@ -8,12 +8,15 @@ import { collectWarmWords, type WarmWordsItem } from './collectWarmWords';
 import type {
   WarmWordsModeEntrySource,
   WarmWordsModeNoteSource,
+  WarmWordsPhraseCheckSource,
 } from './collectWarmWords';
 import { WARM_WORDS_OPEN_EVENT } from '../share/analytics';
 
 export interface WarmWordsDeps {
   getModeNotes(): Promise<WarmWordsModeNoteSource[]>;
   getModeDiary(): Promise<WarmWordsModeEntrySource[]>;
+  /** Разборы фразы: в коллекцию идут только помеченные inWarmWords. */
+  getPhraseChecks(): Promise<WarmWordsPhraseCheckSource[]>;
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
 
@@ -23,10 +26,14 @@ export function useWarmWords(deps: WarmWordsDeps): WarmWordsItem[] | null {
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([deps.getModeNotes(), deps.getModeDiary()])
-      .then(([notes, entries]) => {
+    Promise.all([
+      deps.getModeNotes(),
+      deps.getModeDiary(),
+      deps.getPhraseChecks(),
+    ])
+      .then(([notes, entries, phrases]) => {
         if (ignore) return;
-        const collected = collectWarmWords(notes, entries);
+        const collected = collectWarmWords(notes, entries, phrases);
         setItems(collected);
         deps.trackEvent(WARM_WORDS_OPEN_EVENT, {
           count: Math.min(collected.length, 1000),

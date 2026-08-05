@@ -37,6 +37,7 @@ export class PhraseCheckController {
       phrase: body.phrase.trim(),
       marks: body.marks as PhraseMarkId[],
       rewrite: body.rewrite?.trim() || undefined,
+      inWarmWords: body.inWarmWords ?? false,
     });
   }
 

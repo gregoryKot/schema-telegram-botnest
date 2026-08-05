@@ -30,6 +30,7 @@ describe('PhraseCheckController', () => {
       phrase: 'Опять всё не так',
       marks: ['person'],
       rewrite: 'Задача сдвинулась на день',
+      inWarmWords: false,
     });
   });
 
@@ -46,6 +47,25 @@ describe('PhraseCheckController', () => {
       phrase: 'фраза',
       marks: [],
       rewrite: undefined,
+      inWarmWords: false,
+    });
+  });
+
+  it('«в тёплые слова» доезжает до сервиса, когда его выбрали', async () => {
+    const { controller, service } = makeController();
+
+    await controller.createPhraseCheck(req(3n), {
+      phrase: 'фраза',
+      marks: [],
+      rewrite: 'переписанная',
+      inWarmWords: true,
+    });
+
+    expect(service.createPhraseCheck).toHaveBeenCalledWith(3n, {
+      phrase: 'фраза',
+      marks: [],
+      rewrite: 'переписанная',
+      inWarmWords: true,
     });
   });
 

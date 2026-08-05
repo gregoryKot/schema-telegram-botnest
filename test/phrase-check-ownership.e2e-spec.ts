@@ -40,8 +40,9 @@ describe('e2e smoke: ownership упражнения «Разобрать фра�
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
         phrase: 'ни на что не гожусь — фраза пользователя A',
-        marks: ['person', 'shame'],
+        marks: ['person', 'worth'],
         rewrite: 'отчёт вышел с ошибкой, проверю цифры дважды',
+        inWarmWords: true,
       });
     expect(created.status).toBeLessThan(300);
 
@@ -51,7 +52,9 @@ describe('e2e smoke: ownership упражнения «Разобрать фра�
     expect(asOwner.status).toBe(200);
     expect(asOwner.body).toHaveLength(1);
     expect(asOwner.body[0].phrase).toContain('фраза пользователя A');
-    expect(asOwner.body[0].marks).toEqual(['person', 'shame']);
+    expect(asOwner.body[0].marks).toEqual(['person', 'worth']);
+    // Флаг «в тёплые слова» доезжает по HTTP: по нему коллекция и собирается.
+    expect(asOwner.body[0].inWarmWords).toBe(true);
 
     const asStranger = await request(app.getHttpServer())
       .get('/api/phrase-checks')
