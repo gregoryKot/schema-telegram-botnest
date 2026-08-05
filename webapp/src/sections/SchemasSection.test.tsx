@@ -60,8 +60,10 @@ afterEach(() => {
 describe('SchemasSection — пустой аккаунт (без хардкод-заглушек)', () => {
   it('без схем/режимов показывает реальные пустые подсказки, а не выдуманные данные', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    // Ждём именно отрисованную подсказку, а не факт вызова api: вызов случается
+    // раньше, чем стейт доедет до DOM, и под нагрузкой CI между ними ещё виден
+    // скелетон (красный webapp на #269, 2026-08).
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText('Начать →')).toBeTruthy();
   });
@@ -69,8 +71,7 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
   it('ошибка getProfile не роняет экран — остаётся пустое состояние вместо краха', async () => {
     mockApi.getProfile.mockRejectedValue(new Error('network down'));
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
   });
 });
 
@@ -92,16 +93,14 @@ describe('SchemasSection — скелетон загрузки', () => {
 describe('SchemasSection — ты/вы вилка', () => {
   it('на «ты»: подсказки на «ты», без "вы"-форм', async () => {
     renderSection({}, 'ty');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText(/Определи схемы автоматически/)).toBeTruthy();
   });
 
   it('на «вы»: те же подсказки во множественном числе, ни одной "ты"-формы', async () => {
     renderSection({}, 'vy');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройдите тест на схемы или добавьте вручную')).toBeTruthy();
+    await screen.findByText('Пройдите тест на схемы или добавьте вручную');
     expect(screen.getByText('Добавьте режимы которые узнаёте у себя')).toBeTruthy();
     expect(screen.getByText(/Определите схемы автоматически/)).toBeTruthy();
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
@@ -161,9 +160,7 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
   it('"+ Добавить" у схем открывает SchemaPickerSheet, сохранение зовёт api.updateSettings', async () => {
     mockApi.updateSettings.mockResolvedValue({ ok: true });
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-
-    const addButtons = screen.getAllByText('+ Добавить');
+    const addButtons = await screen.findAllByText('+ Добавить');
     fireEvent.click(addButtons[0]);
     await screen.findByText(/Выбери схемы, которые тебе близки/);
   });
@@ -172,7 +169,9 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
 describe('SchemasSection — карта режимов от терапевта', () => {
   it('без карт от терапевта блок скрыт (не 0 карт, а вообще нет блока)', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.listMyModeMaps).toHaveBeenCalled());
+    // Экран должен дорисоваться: проверка отсутствия блока по недогруженному
+    // DOM зеленела бы всегда, даже если блок появляется.
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.queryByText('Карта режимов с терапевтом')).toBeNull();
   });
 
@@ -190,22 +189,20 @@ describe('SchemasSection — карта режимов от терапевта',
 describe('SchemasSection — базовые потребности / колесо детства', () => {
   it('без childhoodRatings — плашка "Пройти колесо детства"', async () => {
     renderSection({ childhoodRatings: {} });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройти колесо детства →')).toBeTruthy();
+    await screen.findByText('Пройти колесо детства →');
   });
 
   it('с childhoodRatings — реальный балл потребности, а не заглушка, и "Изменить детство"', async () => {
     renderSection({ childhoodRatings: { attachment: 6 } });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Изменить детство →')).toBeTruthy();
+    await screen.findByText('Изменить детство →');
     expect(screen.getByText('6')).toBeTruthy();
   });
 
   it('клик по потребности открывает NeedDetailSheet (появляется кнопка "Назад")', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    const need = await screen.findByText('Привязанность');
     expect(screen.queryByText('Назад')).toBeNull();
-    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.click(need);
     await screen.findByText('Назад');
   });
 });
@@ -214,9 +211,7 @@ describe('SchemasSection — пикер режимов', () => {
   it('открывает ModePickerSheet с популярными режимами, сохранение вызывает updateSettings', async () => {
     mockApi.updateSettings.mockResolvedValue({ ok: true });
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-
-    fireEvent.click(screen.getAllByText('+ Добавить')[1]);
+    fireEvent.click((await screen.findAllByText('+ Добавить'))[1]);
     await screen.findByText('С чего начать');
     // «Уязвимый Ребёнок» дублируется с постоянно видимой «Картой режимов» на
     // основной странице — берём последнее вхождение (пикер рендерится позже в DOM).

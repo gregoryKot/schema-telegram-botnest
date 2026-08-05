@@ -232,7 +232,6 @@ export function TaskCreateSheet({
               gap: 10,
             }}
           >
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{opt.emoji}</span>
             <div>
               <div
                 style={{
@@ -314,7 +313,6 @@ export function TaskCreateSheet({
                   gap: 10,
                 }}
               >
-                <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
                 <div
                   style={{
                     fontSize: 13,
@@ -367,7 +365,6 @@ export function TaskCreateSheet({
                   gap: 10,
                 }}
               >
-                <span style={{ fontSize: 16, flexShrink: 0 }}>{m.emoji}</span>
                 <div
                   style={{
                     fontSize: 13,
