@@ -7,7 +7,10 @@ export {
 } from '../../../shared/src/needs/needColors';
 
 interface Props {
-  id: string;
+  /** Id потребности — цвет берётся из общего реестра. */
+  id?: string;
+  /** Готовый цвет, если вызывающая сторона уже его вычислила. Сильнее `id`. */
+  color?: string;
   size?: number;
 }
 
@@ -16,16 +19,18 @@ interface Props {
 // на графиках и в трекере), поэтому кружок связывает строку с ними — эмодзи
 // такой связи не давал. Название потребности всегда рядом (не единственный
 // носитель смысла), кружок декоративный — скрыт от скринридера.
-export function NeedDot({ id, size = 10 }: Props) {
+export function NeedDot({ id, color, size = 10 }: Props) {
   return (
-    <div
+    <span
       aria-hidden="true"
       style={{
+        display: 'inline-block',
+        verticalAlign: 'middle',
         width: size,
         height: size,
         borderRadius: '50%',
         flexShrink: 0,
-        background: needColor(id),
+        background: color ?? (id ? needColor(id) : 'var(--muted)'),
       }}
     />
   );

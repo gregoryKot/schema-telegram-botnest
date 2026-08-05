@@ -22,8 +22,10 @@ export function NeedDot({ id, color, size = 10 }: NeedDotProps) {
   const dotColor = color ?? (id ? needColor(id) : 'var(--muted)');
   return (
     <span
+      aria-hidden="true"
       style={{
         display: 'inline-block',
+        verticalAlign: 'middle',
         width: size,
         height: size,
         borderRadius: '50%',
