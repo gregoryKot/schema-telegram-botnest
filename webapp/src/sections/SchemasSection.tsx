@@ -12,7 +12,7 @@ import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
-import { NeedDot } from '../components/NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { pressable } from '../utils/a11y';
@@ -323,7 +323,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                     WebkitTapHighlightColor: 'transparent',
                     display: 'flex', alignItems: 'center', gap: 5,
                   }}>
-                    <span style={{ fontSize: 14 }}>{m.emoji}</span>
+                    <IdentityDot color={c} />
                     {m.name}
                   </button>
                 );
@@ -385,7 +385,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                             background: active ? cm(c, 22) : cm(c, 14),
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 20,
-                          }}>{m.emoji}</div>
+                          }}><IdentityDot color={c} size={14} /></div>
                           <div style={{ paddingTop: 1 }}>
                             <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)', lineHeight: 1.25 }}>{m.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{m.short}</div>
@@ -434,7 +434,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  <NeedDot id={id} size={14} />
+                  <IdentityDot id={id} size={14} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
@@ -553,7 +553,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
               const c = mode.groupColor; // CSS variable
               return (
                 <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{mode.emoji}</span>
+                  <IdentityDot color={c} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
                     {MODE_DESC[id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[id]}</div>}
@@ -580,7 +580,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
                   const active = ids.includes(m.id);
                   return (
                     <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>{m.emoji}</span>
+                      <IdentityDot color={c} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>
                         {MODE_DESC[m.id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[m.id]}</div>}

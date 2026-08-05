@@ -1,5 +1,5 @@
 import { PickerRail } from './PickerRail';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import type { LayoutProps } from './types';
 
 export function DesktopLayout({
@@ -99,7 +99,7 @@ export function DesktopLayout({
               >
                 {needName}
               </button>{' '}
-              <NeedDot id={need.id} size={20} />
+              <IdentityDot id={need.id} size={20} />
             </h1>
             {extra?.desc && (
               <p

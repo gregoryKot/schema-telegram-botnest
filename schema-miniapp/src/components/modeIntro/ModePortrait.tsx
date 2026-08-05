@@ -4,6 +4,7 @@
 // (shared/src/mode/modePortraitSections.ts, правило №3). Презентационный
 // компонент — card резолвит родитель (ModeIntroSheet), чтобы не тянуть сюда
 // реестр modeCards напрямую.
+import type { ReactNode } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { buildModePortraitSections } from '../../../../shared/src/mode/modePortraitSections';
@@ -11,7 +12,9 @@ import type { ModeCard } from '../../../../shared/src/mode/modeCards';
 
 interface Props {
   onClose: () => void;
-  emoji: string;
+  /** Цветной кружок режима (`<IdentityDot color={...} />`, волна 6) — заменил
+   *  эмодзи, но проп сохранён под тем же именем, чтобы не плодить диффы. */
+  emoji: ReactNode;
   name: string;
   groupName: string;
   accentColor: string;

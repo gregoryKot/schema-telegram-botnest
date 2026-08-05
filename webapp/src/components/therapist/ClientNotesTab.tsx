@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
 import { fmtDate } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 type DiaryEntry = {
   type: 'schema' | 'mode' | 'gratitude';
@@ -74,7 +75,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                 const mode = getModeById(entry.modeId ?? '');
                 const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
                 color = group?.color ?? 'var(--accent)';
-                title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                title = mode ? mode.name : (entry.modeId ?? 'Режим');
                 typeLabel = 'Режим-дневник';
               } else {
                 color = 'var(--c-moss)';
@@ -157,8 +158,8 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             return (
               <div key={n.modeId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 3, height: 16, borderRadius: 2, background: group?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.emoji} {m?.name ?? n.modeId}</span>
+                  <IdentityDot color={group?.color} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.name ?? n.modeId}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
                   {[

@@ -1,7 +1,7 @@
 import { Need } from '../types';
 import { NeedExtra } from '../needData';
 import { pressable } from '../utils/a11y';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   need: Need;
@@ -49,7 +49,7 @@ export function NeedSheetHeader({
           justifyContent: 'center',
         }}
       >
-        <NeedDot id={need.id} size={16} />
+        <IdentityDot id={need.id} size={16} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div

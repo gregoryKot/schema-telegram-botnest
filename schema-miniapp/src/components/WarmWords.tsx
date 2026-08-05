@@ -5,6 +5,7 @@ import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { getModeById } from '../schemaTherapyData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useWarmWords } from '../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../shared/src/share/shareTexts';
 
@@ -114,11 +115,19 @@ export function WarmWords({ onClose }: Props) {
                     }}
                   >
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      {item.source === 'phrase'
-                        ? '🔎 Переписанная фраза'
-                        : mode
-                          ? `${mode.emoji} ${mode.name}`
-                          : 'Режим'}
+                      {item.source === 'phrase' ? (
+                        '🔎 Переписанная фраза'
+                      ) : mode ? (
+                        <>
+                          <IdentityDot
+                            color={mode.groupColor ?? 'var(--accent)'}
+                            size={8}
+                          />{' '}
+                          {mode.name}
+                        </>
+                      ) : (
+                        'Режим'
+                      )}
                     </span>
                     <span
                       style={{

@@ -9,6 +9,7 @@ import { buildModeIntroQuestions } from '../../../shared/src/mode/modeIntroQuest
 import { getModeCard } from '../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../shared/src/share/analytics';
 import { ModePortrait } from './modeIntro/ModePortrait';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const STORAGE_KEY = (modeId: string) => `mode_intro_${modeId}`;
 const SEEN_KEY = (modeId: string) => `mode_portrait_seen_${modeId}`;
@@ -51,15 +52,18 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
     () => Boolean(card) && !seen,
   );
   if (!mode) return null;
+  const accentColor = mode.groupColor ?? 'var(--accent)';
+  // Опознаватель режима — цветной кружок группы вместо эмодзи (волна 6).
+  const modeDot = <IdentityDot color={accentColor} size={20} />;
 
   if (showPortrait && card) {
     return (
       <ModePortrait
         onClose={onClose}
-        emoji={mode.emoji}
+        emoji={modeDot}
         name={mode.name}
         groupName={mode.groupName}
-        accentColor={mode.groupColor ?? 'var(--accent)'}
+        accentColor={accentColor}
         card={card}
         explainer={buildModeIntroExplainer(tr)}
         ctaLabel={seen ? 'Назад к вопросам →' : undefined}
@@ -109,8 +113,8 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         })
       }
       saveNote={(data) => api.saveModeNote({ modeId, ...data })}
-      accentColor={mode.groupColor ?? 'var(--accent)'}
-      emoji={mode.emoji}
+      accentColor={accentColor}
+      emoji={modeDot}
       title={mode.name}
       subtitle={mode.groupName}
       description={mode.short}

@@ -6,7 +6,7 @@ import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { NEED_ORDER } from '../needData';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
@@ -89,17 +89,17 @@ const buildModes = (tr: (ty: string, vy: string) => string) => [
 
 /* ─── Mode Check-in data ─── */
 const buildModeCheckin = (tr: (ty: string, vy: string) => string) => [
-  { emoji: '🥺', label: 'Одиноко / страшно', mode: 'Уязвимый Ребёнок', tip: tr('Найди что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.', 'Найдите что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.') },
-  { emoji: '😤', label: 'Злюсь / несправедливо', mode: 'Сердитый Ребёнок', tip: 'Сначала – тело. Выдох, пауза, движение. Потом можно разбираться с ситуацией. Злость – сигнал о нарушенной потребности.' },
-  { emoji: '😬', label: 'Давление / «надо больше»', mode: 'Требовательный Критик', tip: tr('Это не твой голос – это усвоенное. Спроси: а другу в такой же ситуации — те же слова?', 'Это не ваш голос – это усвоенное. Спросите: а другу в такой же ситуации — те же слова?') },
-  { emoji: '😠', label: 'Стыдно / со мной что-то не так', mode: 'Карающий Критик', tip: tr('Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуй сострадание к себе.', 'Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуйте сострадание к себе.') },
-  { emoji: '😔', label: 'Вина / долг перед всеми', mode: 'Критик вины', tip: tr('Чувство вины – не факт. Попробуй отделить: это реальная ответственность или усвоенный голос о долге?', 'Чувство вины – не факт. Попробуйте отделить: это реальная ответственность или усвоенный голос о долге?') },
-  { emoji: '🌫️', label: 'Хочу отключиться', mode: 'Отстранённый Защитник', tip: tr('За отстранённостью – боль. Попробуй назвать, что именно больно, хотя бы для себя.', 'За отстранённостью – боль. Попробуйте назвать, что именно больно, хотя бы для себя.') },
-  { emoji: '😶', label: 'Соглашаюсь, хотя не хочу', mode: 'Послушный Капитулянт', tip: tr('Твои потребности тоже важны. Даже маленький «нет» – шаг к себе.', 'Ваши потребности тоже важны. Даже маленький «нет» – шаг к себе.') },
-  { emoji: '🔥', label: 'Контролирую / превосхожу', mode: 'Гиперкомпенсатор', tip: tr('Грандиозность – это Уязвимый Ребёнок в доспехах. Что ты защищаешь?', 'Грандиозность – это Уязвимый Ребёнок в доспехах. Что вы защищаете?') },
-  { emoji: '💚', label: 'Поддерживаю себя', mode: 'Хороший Родитель', tip: tr('Запомни это ощущение – к нему можно возвращаться.', 'Запомните это ощущение – к нему можно возвращаться.') },
-  { emoji: '😄', label: 'Легко и радостно', mode: 'Счастливый Ребёнок', tip: tr('Лёгкость и радость без тревоги – это ты, когда тебе хорошо. Просто побудь в этом.', 'Лёгкость и радость без тревоги – это вы, когда вам хорошо. Просто побудьте в этом.') },
-  { emoji: '🌿', label: 'Спокойно и устойчиво', mode: 'Здоровый Взрослый', tip: 'Хорошее время для рефлексии и сложных решений.' },
+  { color: 'var(--accent-blue)', label: 'Одиноко / страшно', mode: 'Уязвимый Ребёнок', tip: tr('Найди что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.', 'Найдите что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.') },
+  { color: 'var(--accent-blue)', label: 'Злюсь / несправедливо', mode: 'Сердитый Ребёнок', tip: 'Сначала – тело. Выдох, пауза, движение. Потом можно разбираться с ситуацией. Злость – сигнал о нарушенной потребности.' },
+  { color: 'var(--accent-red)', label: 'Давление / «надо больше»', mode: 'Требовательный Критик', tip: tr('Это не твой голос – это усвоенное. Спроси: а другу в такой же ситуации — те же слова?', 'Это не ваш голос – это усвоенное. Спросите: а другу в такой же ситуации — те же слова?') },
+  { color: 'var(--accent-red)', label: 'Стыдно / со мной что-то не так', mode: 'Карающий Критик', tip: tr('Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуй сострадание к себе.', 'Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуйте сострадание к себе.') },
+  { color: 'var(--accent-red)', label: 'Вина / долг перед всеми', mode: 'Критик вины', tip: tr('Чувство вины – не факт. Попробуй отделить: это реальная ответственность или усвоенный голос о долге?', 'Чувство вины – не факт. Попробуйте отделить: это реальная ответственность или усвоенный голос о долге?') },
+  { color: 'var(--accent-orange)', label: 'Хочу отключиться', mode: 'Отстранённый Защитник', tip: tr('За отстранённостью – боль. Попробуй назвать, что именно больно, хотя бы для себя.', 'За отстранённостью – боль. Попробуйте назвать, что именно больно, хотя бы для себя.') },
+  { color: 'var(--accent-orange)', label: 'Соглашаюсь, хотя не хочу', mode: 'Послушный Капитулянт', tip: tr('Твои потребности тоже важны. Даже маленький «нет» – шаг к себе.', 'Ваши потребности тоже важны. Даже маленький «нет» – шаг к себе.') },
+  { color: 'var(--accent-orange)', label: 'Контролирую / превосхожу', mode: 'Гиперкомпенсатор', tip: tr('Грандиозность – это Уязвимый Ребёнок в доспехах. Что ты защищаешь?', 'Грандиозность – это Уязвимый Ребёнок в доспехах. Что вы защищаете?') },
+  { color: 'var(--accent-green)', label: 'Поддерживаю себя', mode: 'Хороший Родитель', tip: tr('Запомни это ощущение – к нему можно возвращаться.', 'Запомните это ощущение – к нему можно возвращаться.') },
+  { color: 'var(--accent-green)', label: 'Легко и радостно', mode: 'Счастливый Ребёнок', tip: tr('Лёгкость и радость без тревоги – это ты, когда тебе хорошо. Просто побудь в этом.', 'Лёгкость и радость без тревоги – это вы, когда вам хорошо. Просто побудьте в этом.') },
+  { color: 'var(--accent-green)', label: 'Спокойно и устойчиво', mode: 'Здоровый Взрослый', tip: 'Хорошее время для рефлексии и сложных решений.' },
 ];
 
 /* ─── Sub-components ─── */
@@ -114,7 +114,7 @@ function NeedsTab() {
       {NEEDS_DATA.map((n, i) => (
         <div key={n.title} style={{ borderBottom: '1px solid var(--line)', padding: '20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-            <NeedDot id={NEED_ORDER[i]} size={16} />
+            <IdentityDot id={NEED_ORDER[i]} size={16} />
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--text)' }}>{n.title}</div>
               <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{n.subtitle}</div>
@@ -222,7 +222,7 @@ function ModesTab() {
           {g.items.map((m) => (
             <div key={m.name} style={{ borderBottom: '1px solid var(--line)', padding: '16px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                <IdentityDot color={g.color} size={16} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{m.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>Чувствуется как: {m.feel}</div>
@@ -259,7 +259,7 @@ function ModesTab() {
                   >
                     <span className="mode-card-stripe" />
                     <div style={{ textAlign: 'center', width: '100%', padding: '4px 0' }}>
-                      <div style={{ fontSize: 32, marginBottom: 8 }}>{item.emoji}</div>
+                      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><IdentityDot color={item.color} size={22} /></div>
                       <div className="mode-card-name" style={{ fontSize: 13, textAlign: 'center' }}>{item.label}</div>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ function ModesTab() {
           </div>
           <div className="page">
             <div className="page-inner" style={{ paddingTop: 56, maxWidth: 520 }}>
-              <div style={{ fontSize: 64, marginBottom: 20, textAlign: 'center' }}>{checkinMode.emoji}</div>
+              <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}><IdentityDot color={checkinMode.color} size={40} /></div>
               <div className="eyebrow" style={{ color: 'var(--accent)', textAlign: 'center', marginBottom: 8 }}>Режим</div>
               <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', textAlign: 'center', marginBottom: 32 }}>
                 {checkinMode.mode}

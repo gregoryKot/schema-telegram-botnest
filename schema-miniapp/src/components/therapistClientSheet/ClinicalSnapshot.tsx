@@ -1,4 +1,5 @@
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
 
 interface ClinicalSnapshotProps {
@@ -166,7 +167,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                             color: group.color,
                           }}
                         >
-                          {m.emoji} {m.name}
+                          <IdentityDot color={group.color} size={7} /> {m.name}
                         </span>
                       ))}
                     </div>

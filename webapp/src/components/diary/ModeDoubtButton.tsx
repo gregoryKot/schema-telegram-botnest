@@ -5,6 +5,7 @@ import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {
@@ -98,8 +99,8 @@ function ModeDoubtSheet({
               marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-              {mode?.emoji} {mode?.name ?? ''}
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
               сейчас выбран
@@ -124,7 +125,7 @@ function ModeDoubtSheet({
                       color: 'var(--text)',
                     }}
                   >
-                    <span>{other?.emoji}</span>
+                    {other && <IdentityDot color={other.groupColor} />}
                     {leafLabel ?? other?.name ?? d.otherId}
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginBottom: 6 }}>
@@ -185,7 +186,7 @@ function ModeDoubtSheet({
               fontFamily: 'inherit',
             }}
           >
-            Оставляю: {mode?.emoji} {mode?.name ?? ''}
+            Оставляю: {mode?.name ?? ''}
           </button>
         </div>
       </div>

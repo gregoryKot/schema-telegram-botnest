@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { BottomSheet } from '../BottomSheet';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {
@@ -99,12 +100,18 @@ export function ModeDoubtButton({
             >
               <div
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                   fontSize: 15,
                   fontWeight: 700,
                   color: 'var(--text)',
                 }}
               >
-                {mode?.emoji} {mode?.name ?? ''}
+                {mode && (
+                  <IdentityDot color={mode.groupColor ?? 'var(--accent)'} />
+                )}
+                {mode?.name ?? ''}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                 сейчас выбран
@@ -145,7 +152,9 @@ export function ModeDoubtButton({
                         color: 'var(--text)',
                       }}
                     >
-                      <span>{other?.emoji}</span>
+                      <IdentityDot
+                        color={other?.groupColor ?? 'var(--muted)'}
+                      />
                       {leafLabel ?? other?.name ?? d.otherId}
                     </div>
                     <div
@@ -236,7 +245,11 @@ export function ModeDoubtButton({
                 fontFamily: 'inherit',
               }}
             >
-              Оставляю: {mode?.emoji} {mode?.name ?? ''}
+              Оставляю:{' '}
+              {mode && (
+                <IdentityDot color={mode.groupColor ?? 'var(--accent)'} />
+              )}{' '}
+              {mode?.name ?? ''}
             </button>
           </div>
         </BottomSheet>

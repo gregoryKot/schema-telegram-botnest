@@ -3,7 +3,7 @@ import { getHost } from '../../../shared/src/host';
 import { api, UserPractice } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
 
@@ -220,7 +220,7 @@ export function PlanSheet({
             justifyContent: 'center',
           }}
         >
-          <NeedDot id={needId} size={14} />
+          <IdentityDot id={needId} size={14} />
         </div>
         <div>
           <div

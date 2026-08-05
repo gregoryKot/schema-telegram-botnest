@@ -1,7 +1,7 @@
 import { NEEDS_EXPLAINER } from '../../aboutData';
 import { NEED_ORDER } from '../../needData';
 import { COLORS } from '../../types';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 // Первый содержательный шаг онбординга: что это за пять потребностей и откуда
 // они. «Зачем отмечать» и «что увидишь» — в следующих шагах. Контент — тот же
@@ -59,7 +59,7 @@ export function DisclaimerNeedsWhatStep() {
                 border: `1px solid color-mix(in srgb, ${color} 26%, transparent)`,
               }}
             >
-              <NeedDot id={NEED_ORDER[i]} />
+              <IdentityDot id={NEED_ORDER[i]} />
               <span
                 style={{
                   fontSize: 12.5,

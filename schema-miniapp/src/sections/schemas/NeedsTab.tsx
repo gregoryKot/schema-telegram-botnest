@@ -1,6 +1,6 @@
 import { useNeedData } from '../../needData';
 import { pressable } from '../../utils/a11y';
-import { NeedDot } from '../../components/NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { NEED_IDS, needScoreColor } from './utils';
 
 interface NeedsTabProps {
@@ -84,7 +84,7 @@ export function NeedsTab({
               {/* Не иконка, а образец цвета: тот же цвет потребность носит на
                   графиках и в трекере, поэтому кружок связывает строку с ними.
                   Эмодзи такой связи не давал — он был просто картинкой. */}
-              <NeedDot id={id} />
+              <IdentityDot id={id} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{

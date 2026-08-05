@@ -1,5 +1,5 @@
 import { Need, DayHistory, COLORS } from '../../types';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 export function SparklineRow({
   need,
@@ -81,7 +81,7 @@ export function SparklineRow({
             justifyContent: 'center',
           }}
         >
-          <NeedDot id={need.id} size={11} />
+          <IdentityDot id={need.id} size={11} />
         </div>
         <span
           style={{
