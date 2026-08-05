@@ -76,7 +76,7 @@ export function GratitudeEntrySheet({
   ];
 
   return (
-    <BottomSheet onClose={onClose} skin="diary">
+    <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div className="d-caps" style={{ marginBottom: 14 }}>
           Дневник благодарности · {dateLabel}

@@ -93,7 +93,7 @@ describe('ModeEntrySheet — итог после сохранения (Journey D
     const onClose = vi.fn();
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={onClose} onSave={onSave} />);
-    fireEvent.click(screen.getByText('Сохранить запись'));
+    fireEvent.click(screen.getByText('Сохранить'));
     await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled(); // итог, а не закрытие
@@ -127,7 +127,7 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
     seedCoping();
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getByText('Сохранить запись'));
+    fireEvent.click(screen.getByText('Сохранить'));
     await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
 
     fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
@@ -145,7 +145,7 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
     seedCoping();
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getByText('Сохранить запись'));
+    fireEvent.click(screen.getByText('Сохранить'));
     await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
 
     fireEvent.click(screen.getByText('Другой режим'));

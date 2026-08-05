@@ -89,7 +89,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   );
 
   return (
-    <BottomSheet onClose={onClose} skin="diary">
+    <BottomSheet onClose={onClose}>
       <div>
         <DiaryStickyHeader
           title="Дневник схем"

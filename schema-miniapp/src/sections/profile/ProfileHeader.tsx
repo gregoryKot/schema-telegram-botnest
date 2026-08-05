@@ -39,11 +39,9 @@ export function ProfileHeader({
         </div>
         <div>
           <div
+            className="d-display"
             style={{
-              fontSize: 20,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.4px',
+              fontSize: 22,
             }}
           >
             {firstName || 'Я'}

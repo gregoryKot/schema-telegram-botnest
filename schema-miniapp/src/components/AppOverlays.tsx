@@ -123,7 +123,6 @@ export function AppOverlays({
             zIndex: 80,
             overflowY: 'auto',
           }}
-          className="diary-skin"
         >
           <DiarySection
             onClose={() => sheets.close('diaries')}

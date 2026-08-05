@@ -8,7 +8,7 @@ import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { ModeStateStep } from './ModeStateStep';
 import { ModeCandidateStep } from './ModeCandidateStep';
-import { ModeEntryFields } from './ModeEntryFields';
+import { ModeDiaryWizard } from './ModeDiaryWizard';
 import { ModeDoubtButton } from './ModeDoubtButton';
 import { ModeEntryDone } from './ModeEntryDone';
 import { SheetHeader, StepProgress, SummaryBlock } from './diaryFlowUi';
@@ -39,9 +39,10 @@ const STEP_LABELS = [
 
 /**
  * Дневник режимов в три шага: чувство обычными словами → уточнение режима →
- * запись. До этого был один свиток из восьми вопросов и 35 чипов сразу —
- * человек, зашедший записать один момент, упирался в таксономию.
- * Обязательное поле по-прежнему одно (ситуация), форма данных не менялась.
+ * запись. Шаги 1–2 заменили свалку из 35 чипов, где первой попадалась
+ * таксономия; шаг 3 — прежний визард «один вопрос — один экран»
+ * (ModeDiaryWizard), он остаётся низким порогом входа: обязательна только
+ * ситуация, сохранить можно с любого шага.
  */
 export function ModeEntrySheet({ onClose, onSave }: Props) {
   const tr = useTr();
@@ -162,14 +163,22 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   }
 
   return (
-    <BottomSheet onClose={onClose} skin="diary">
+    <BottomSheet onClose={onClose}>
       <div>
         <SheetHeader
           title="Дневник режимов"
           onBack={step > 0 ? goBack : undefined}
+          onSave={step === 2 ? handleSave : undefined}
+          canSave={canSave}
+          saving={saving}
         />
 
-        <StepProgress step={step} total={3} label={STEP_LABELS[step]} />
+        {/* На шаге записи прогресс ведёт сам визард (вопрос = экран), поэтому
+            внешняя полоска шагов уступает ему место — две полосы подряд читались
+            бы как сбой, а не как «где я». */}
+        {step < 2 && (
+          <StepProgress step={step} total={3} label={STEP_LABELS[step]} />
+        )}
 
         {step === 0 && (
           <ModeStateStep onPickGroup={setGroupId} onPickMode={pickMode} />
@@ -192,15 +201,16 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
               onEdit={goBack}
             />
             <ModeDoubtButton modeId={modeId} onSwitch={pickMode} />
-            <ModeEntryFields
+            <ModeDiaryWizard
               values={values}
               onChange={setField}
               healthyResponse={healthyResponse}
               onHealthyChange={setHealthyResponse}
               healthyHint={healthyAdultHint(modeId)}
+              onSave={handleSave}
               canSave={canSave}
               saving={saving}
-              onSave={handleSave}
+              accentColor="var(--accent)"
             />
           </>
         )}

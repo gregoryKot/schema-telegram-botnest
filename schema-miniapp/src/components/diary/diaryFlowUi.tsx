@@ -8,13 +8,24 @@ import { WizardProgress } from '../WizardProgress';
  * ни один из файлов не разрастался (правило №10).
  */
 
-/** Шапка дневникового потока: название дневника и «Назад» на шагах после первого. */
+/**
+ * Шапка дневникового потока: название, «Назад» на шагах после первого и
+ * «Сохранить» — там, где уже есть что сохранять. Кнопка в шапке существует
+ * ровно затем, чтобы не заставлять дойти до последнего вопроса: обязательна
+ * одна ситуация, остальное можно пропустить.
+ */
 export function SheetHeader({
   title,
   onBack,
+  onSave,
+  canSave,
+  saving,
 }: {
   title: string;
   onBack?: () => void;
+  onSave?: () => void;
+  canSave?: boolean;
+  saving?: boolean;
 }) {
   return (
     <div
@@ -42,7 +53,30 @@ export function SheetHeader({
           ‹
         </button>
       )}
-      <div className="d-caps">{title}</div>
+      <div className="d-caps" style={{ flex: 1 }}>
+        {title}
+      </div>
+      {onSave && (
+        <button
+          onClick={onSave}
+          disabled={!canSave || saving}
+          style={{
+            flexShrink: 0,
+            minHeight: 44,
+            padding: '11px 16px',
+            borderRadius: 14,
+            border: 'none',
+            fontFamily: 'inherit',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: canSave && !saving ? 'pointer' : 'default',
+            background: canSave ? 'var(--accent)' : 'var(--surface-2)',
+            color: canSave ? 'var(--on-accent)' : 'var(--text-faint)',
+          }}
+        >
+          {saving ? 'Сохраняю…' : 'Сохранить'}
+        </button>
+      )}
     </div>
   );
 }
@@ -108,16 +142,16 @@ export function StepProgress({
 }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      {/* WizardProgress красит непройденные сегменты в --surface-2; на белом
-          листе дневника это почти невидимо, поэтому подменяем переменную
-          локально — вместо второй копии полоски (правило №11). */}
-      {/* Ширина под сегменты 26px с зазором 4px (WizardProgress тянет их
-          flex:1). Обёртка НЕ flex: иначе полоска внутри схлопывается в ноль. */}
+      {/* WizardProgress красит непройденные сегменты в --surface-2— на листе
+          он почти сливается с фоном, поэтому подменяем переменную локально на
+          токен дорожки (в обеих темах свой), вместо второй копии полоски.
+          Ширина — сегменты 26px с зазором 4px; обёртка НЕ flex, иначе полоска
+          внутри схлопывается в ноль. */}
       <div
         style={
           {
             width: total * 26 + (total - 1) * 4,
-            '--surface-2': '#e6ddd3',
+            '--surface-2': 'var(--progress-track)',
           } as React.CSSProperties
         }
       >

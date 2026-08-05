@@ -94,10 +94,7 @@ export function HomeView({
   ];
 
   return (
-    <div
-      className="diary-skin"
-      style={{ minHeight: '100vh', padding: `${safeTop + 16}px 16px 32px` }}
-    >
+    <div style={{ minHeight: '100vh', padding: `${safeTop + 16}px 16px 32px` }}>
       <div
         style={{
           display: 'flex',

@@ -27,25 +27,6 @@ export const MODE_DIARY_FIELD_KEYS = [
 export type ModeDiaryFieldKey = (typeof MODE_DIARY_FIELD_KEYS)[number];
 
 /**
- * Что показывается на экране записи сразу: обязательная ситуация плюс три
- * необязательных вопроса. Больше четырёх полей на экран — и человек, который
- * зашёл записать один момент, закрывает форму, не начав.
- */
-export const MODE_PRIMARY_FIELD_KEYS = [
-  'situation',
-  'thoughts',
-  'feelings',
-  'actualNeed',
-] as const;
-
-/** Остальное — за раскрытием «Добавить ещё», для тех, кто хочет глубже. */
-export const MODE_EXTRA_FIELD_KEYS = [
-  'bodyFeelings',
-  'actions',
-  'childhoodMemories',
-] as const;
-
-/**
  * Что сохраняет дневник режимов — общий тип для `onSave` в обоих фронтах
  * (правило №3: одинаковая форма данных, не копипастить интерфейс). Обязательны
  * только modeId + situation, остальное — опционально (можно пропустить шаг).

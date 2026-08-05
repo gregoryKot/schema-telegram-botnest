@@ -76,10 +76,7 @@ export function DiaryListView({
   const isEmpty = entries.length === 0 && !hasDraftEntry;
 
   return (
-    <div
-      className="diary-skin"
-      style={{ minHeight: '100vh', animation: 'slide-in-right 250ms ease' }}
-    >
+    <div style={{ minHeight: '100vh', animation: 'slide-in-right 250ms ease' }}>
       <div
         style={{
           position: 'sticky',

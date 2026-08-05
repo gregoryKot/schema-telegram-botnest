@@ -110,6 +110,18 @@ body {
   --track-color: rgba(255, 255, 255, 0.1);
   --sheet-bg-2: #1f212b;
 
+  /* Те же роли, что в светлой теме: на них держатся списки и подписи */
+  --ink-2: rgba(240, 240, 246, 0.78);
+  --muted: rgba(240, 240, 246, 0.62);
+  --faint: rgba(240, 240, 246, 0.4);
+  --line: rgba(255, 255, 255, 0.09);
+  --accent-hi: #a79dff;
+  --accent-bg: rgba(143, 134, 255, 0.14);
+  --calm: rgba(66, 209, 157, 0.16);
+  --dot: rgba(255, 255, 255, 0.22);
+  --chevron: rgba(255, 255, 255, 0.3);
+  --progress-track: rgba(255, 255, 255, 0.14);
+
   /* Плоский фон макета — блобы отключены */
   --blob-1: rgba(0, 0, 0, 0);
   --blob-2: rgba(0, 0, 0, 0);
@@ -117,32 +129,45 @@ body {
 
 /* ── Light theme («бумага» макета) ─────────────────────────────────────────── */
 html[data-theme='light'] {
-  --fg-rgb: 43, 41, 52;
-  --bg: #f4f0e9;
+  --fg-rgb: 34, 30, 27;
+  --bg: #faf7f3;
   --sheet-bg: #ffffff;
-  --text: #2b2934;
-  --nav-bg: rgba(244, 240, 233, 0.86);
-  --text-sub: rgba(43, 41, 52, 0.6);
-  --text-faint: rgba(43, 41, 52, 0.4);
-  --chip-sel-text: #2b2934;
+  --text: #221e1b;
+  --nav-bg: rgba(250, 247, 243, 0.86);
+  --text-sub: #4a423c;
+  --text-faint: #a2988f;
+  --chip-sel-text: #221e1b;
   --on-accent: #ffffff;
 
-  /* Accent palette — макет (светлая тема) */
-  --accent: #6d5efc;
-  --accent-indigo: #6d5efc;
-  --accent-orange: #d97706;
-  --accent-blue: #2f7fe0;
-  --accent-green: #0f9d67;
-  --accent-yellow: #b45309;
-  --accent-red: #e5484d;
-  --accent-pink: #ec5f8b;
+  /* Акцент продукта — терракота. Служебные цвета (успех/ошибка/графики)
+     остаются РАЗНЫМИ: сведи их в один — и статус перестанет читаться. */
+  --accent: #9a5b3e;
+  --accent-indigo: #9a5b3e;
+  --accent-orange: #b4622a;
+  --accent-blue: #2f6f9e;
+  --accent-green: #4a7c59;
+  --accent-yellow: #a8730f;
+  --accent-red: #b3453f;
+  --accent-pink: #b05a72;
 
   /* Тёплые бумажные поверхности */
   --surface: #ffffff;
-  --surface-2: #faf8f3;
-  --border-color: rgba(43, 41, 52, 0.08);
-  --track-color: rgba(43, 41, 52, 0.07);
-  --sheet-bg-2: #faf8f3;
+  --surface-2: #f2ece4;
+  --border-color: rgba(34, 30, 27, 0.07);
+  --track-color: rgba(34, 30, 27, 0.07);
+  --sheet-bg-2: #f2ece4;
+
+  /* Оттенки текста и линий, на которых держится вёрстка «бумаги» */
+  --ink-2: #4a423c;
+  --muted: #8a8079;
+  --faint: #a2988f;
+  --line: rgba(34, 30, 27, 0.07);
+  --accent-hi: #86482d;
+  --accent-bg: #f6eee8;
+  --calm: #e7ede4;
+  --dot: #e0d6cb;
+  --chevron: #c7bdb3;
+  --progress-track: #e6ddd3;
 
   /* Плоский фон макета — блобов нет */
   --blob-1: rgba(0, 0, 0, 0);
@@ -153,7 +178,7 @@ html[data-theme='light'] {
 body {
   background: var(--bg);
   font-family:
-    'Inter',
+    'Manrope',
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -208,10 +233,11 @@ button {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 14px;
-  padding: 14px 0;
+  border-radius: 16px;
+  padding: 16px 0;
+  min-height: 48px;
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -232,17 +258,18 @@ button {
 /* Light theme: softer gradient instead of flat saturated color */
 html[data-theme='light'] .btn-primary {
   background: var(--accent);
-  box-shadow: 0 4px 16px rgba(109, 94, 252, 0.28);
+  box-shadow: none;
 }
 
 /* ── Ghost / tinted button ─────────────────────────────────────────────────── */
 .btn-ghost {
-  background: rgba(var(--fg-rgb), 0.06);
+  background: var(--surface-2);
   color: var(--accent);
   border: none;
-  border-radius: 12px;
-  padding: 10px 0;
-  font-size: 13px;
+  border-radius: 14px;
+  padding: 13px 0;
+  min-height: 48px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -258,7 +285,7 @@ html[data-theme='light'] .btn-primary {
 .card {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 18px;
   transition:
     opacity 0.12s,
     transform 0.12s;
@@ -269,21 +296,21 @@ html[data-theme='light'] .btn-primary {
   transform: scale(0.98);
 }
 
-/* Light theme: white cards with subtle shadow (iOS-style) */
+/* Тень — только чтобы карточка отделилась от фона: потолок 0 1px 2px.
+   Глубокие тени возвращают «наляпанность», от которой уходит система. */
 html[data-theme='light'] .card {
-  border-color: transparent;
-  box-shadow:
-    0 2px 12px rgba(22, 19, 44, 0.08),
-    0 0 1px rgba(22, 19, 44, 0.05);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
 }
 
 /* ── Section label ─────────────────────────────────────────────────────────── */
-.section-label {
+.section-label,
+.d-caps {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--faint);
 }
 
 /* ── Typography scale ──────────────────────────────────────────────────────── */
@@ -412,6 +439,9 @@ html[data-theme='light'] .card {
 }
 
 /* ── Field focus ────────────────────────────────────────────────────────────── */
+.field-input {
+  border-radius: 14px;
+}
 .field-input:focus {
   border-color: rgba(var(--fg-rgb), 0.25) !important;
   outline: none;
@@ -437,83 +467,11 @@ html[data-theme='light'] .card {
   padding: 0 24px calc(48px + var(--safe-bottom));
 }
 
-/* ── Дневники: тёплая бумага ─────────────────────────────────────────────────
-   Поверхность дневников живёт в своей палитре и всегда светлая: тема
-   Telegram (themeParams) её не перекрывает. Это отдельный «скин», а не вторая
-   тема приложения — переопределяем ИМЕНА уже существующих токенов, поэтому
-   вложенные общие компоненты (.card, .btn-primary, поля) перекрашиваются сами,
-   без правки инлайновых стилей.
-   Служебные цветные акценты (--accent-red/blue/green) сведены к одной
-   терракоте: в макете дневника цветных полос и иконок нет, различие несут
-   типографика, порядок и группировка. */
-.diary-skin {
-  --fg-rgb: 34, 30, 27;
-  --bg: #faf7f3;
-  --surface: #ffffff;
-  --surface-2: #f2ece4;
-  --sheet-bg: #ffffff;
-  --sheet-bg-2: #f2ece4;
-  --text: #221e1b;
-  --ink-2: #4a423c;
-  --text-sub: #4a423c;
-  --muted: #8a8079;
-  --text-faint: #a2988f;
-  --faint: #a2988f;
-  --line: rgba(34, 30, 27, 0.07);
-  --border-color: rgba(34, 30, 27, 0.07);
-  --track-color: rgba(34, 30, 27, 0.07);
-  --accent: #9a5b3e;
-  --accent-hi: #86482d;
-  --accent-bg: #f6eee8;
-  --calm: #e7ede4;
-  --dot: #e0d6cb;
-  --chevron: #c7bdb3;
-  --on-accent: #ffffff;
-  --chip-sel-text: #221e1b;
-  --accent-indigo: #9a5b3e;
-  --accent-orange: #9a5b3e;
-  --accent-blue: #9a5b3e;
-  --accent-green: #9a5b3e;
-  --accent-yellow: #9a5b3e;
-  --accent-red: #9a5b3e;
-  --accent-pink: #9a5b3e;
-
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    'Manrope',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
-}
-.diary-skin button,
-.diary-skin input,
-.diary-skin textarea {
-  font-family:
-    'Manrope',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
-}
-
-/* Селекторы с html[data-theme] — чтобы перебить светлые/тёмные правила выше
-   (у них специфичность выше, чем у одного класса). */
-html[data-theme] .diary-skin .card {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
-}
-html[data-theme] .diary-skin .btn-primary {
-  border-radius: 16px;
-  box-shadow: none;
-  font-size: 16px;
-  padding: 16px 0;
-}
-html[data-theme] .diary-skin .btn-primary:disabled {
-  background: #efe8e1;
-  color: #b0a69d;
+/* Кнопка-действие в неактивном виде: не «полупрозрачная», а спокойно
+   выключенная — прозрачность съедала читаемость подписи. */
+.btn-primary:disabled {
+  background: var(--surface-2);
+  color: var(--text-faint);
   opacity: 1;
 }
 
@@ -523,14 +481,6 @@ html[data-theme] .diary-skin .btn-primary:disabled {
   font-weight: 500;
   line-height: 1.25;
   color: var(--text);
-}
-/* Капс-подпись секции. */
-.d-caps {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--faint);
 }
 /* Строка списка: цель нажатия не меньше 60px (в макете — строки дневников). */
 .d-row {
