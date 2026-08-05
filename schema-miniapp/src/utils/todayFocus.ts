@@ -13,31 +13,26 @@ const PHRASE_KEY = 'today_phrase_hidden';
 
 export const FOCUS_OPTIONS: {
   id: FocusPractice;
-  emoji: string;
   label: string;
   sub: string;
 }[] = [
   {
     id: 'tracker',
-    emoji: '📊',
     label: 'Трекер потребностей',
     sub: 'пять оценок дня · ≈1 мин',
   },
   {
     id: 'schema',
-    emoji: '🧩',
     label: 'Дневник схем',
     sub: 'заметить момент схемы · ≈2 мин',
   },
   {
     id: 'mode',
-    emoji: '🔄',
     label: 'Дневник режимов',
     sub: 'какой режим включался · ≈2 мин',
   },
   {
     id: 'gratitude',
-    emoji: '🙏',
     label: 'Благодарность',
     sub: 'три хорошие вещи · ≈1 мин',
   },

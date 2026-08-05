@@ -94,7 +94,6 @@ export function TodayCustomizeSheet({
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{opt.emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
