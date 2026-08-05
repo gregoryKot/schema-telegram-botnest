@@ -250,8 +250,8 @@ export function AccountPage() {
           <div style={{ padding: '14px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(var(--fg-rgb),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                  ✉️
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(var(--fg-rgb),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" /><path d="m4 7 8 6 8-6" /></svg>
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>Email</div>
@@ -272,7 +272,7 @@ export function AccountPage() {
             {showEmailLink && !hasEmail && (
               emailLinkSent ? (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                  ✉️ Письмо отправлено на <b>{emailInput}</b>. Перейди по ссылке в письме — она привяжет email к аккаунту.
+                  Письмо отправлено на <b>{emailInput}</b>. Перейди по ссылке в письме — она привяжет email к аккаунту.
                   <button onClick={() => { setEmailLinkSent(false); setEmailInput(''); }} style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                     Ввести другой email
                   </button>

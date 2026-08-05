@@ -24,6 +24,9 @@ export function Celebration({ streak, onDone, insight }: Props) {
   const [copied, setCopied] = useState(false);
   const tr = useTr();
 
+  // Веху раньше отмечал 🏆 против 🔥. Картинок больше нет, но отличать вехи
+  // надо: 7/30/100 дней — другое событие, чем «ещё один день». Отмечаем
+  // акцентом на числе, а словами это уже делает getMilestoneText.
   const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
 
   return (
@@ -37,10 +40,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
         boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
         animation: 'sheet-up 400ms cubic-bezier(0.34,1.56,0.64,1)',
       }}>
-        <div style={{ fontSize: 56, lineHeight: 1, marginBottom: 12 }}>
-          {isMilestone ? '🏆' : '🔥'}
-        </div>
-        <div style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1, marginBottom: 6 }}>
+        <div data-milestone={isMilestone ? 'yes' : 'no'} style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-0.03em', color: isMilestone ? 'var(--accent)' : 'var(--text)', lineHeight: 1, marginTop: 12, marginBottom: 6 }}>
           {streak}
         </div>
         <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 16 }}>

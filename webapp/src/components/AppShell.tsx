@@ -393,7 +393,6 @@ export function AppShell() {
   if (error) {
     return (
       <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center' }}>
-        <div style={{ fontSize: 40 }}>😔</div>
         <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Не удалось загрузить</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>Проверь подключение и попробуй ещё раз</div>
         <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>

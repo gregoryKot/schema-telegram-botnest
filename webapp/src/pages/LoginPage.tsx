@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { getHost } from '../../../shared/src/host';
+import { MMIcon } from '../components/modeMapIcons';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -82,7 +83,6 @@ export function LoginPage() {
   if (isTelegramContext) {
     return (
       <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
         <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
           {miniAppLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
         </p>
@@ -109,7 +109,7 @@ export function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36, boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}>🧠</div>
+          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}><MMIcon name="compass" size={34} stroke={1.6} /></div>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Всё по схеме</h1>
           <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
             Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
@@ -171,7 +171,6 @@ export function LoginPage() {
             </p>
           ) : emailSent ? (
             <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>✉️</div>
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 4px' }}>Письмо отправлено</p>
               <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>Проверь почту и перейди по ссылке — она действует 30 минут</p>
               <button
@@ -232,7 +231,7 @@ export function LoginPage() {
 
         {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
         <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
-          Проект бесплатный 💛{' '}
+          Проект бесплатный{' '}
           <a href="/donate" style={{ color: 'var(--accent)', textDecoration: 'none' }}>поддержать</a>
         </p>
       </div>
