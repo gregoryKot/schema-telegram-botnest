@@ -195,43 +195,35 @@ export function HelpSection({
     >
       {/* Header */}
       <div style={{ padding: '20px 20px 12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <div
-            className="d-display"
-            style={{
-              fontSize: 26,
-            }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="d-display" style={{ fontSize: 26 }}>
             Здесь и сейчас
           </div>
           <button
             {...pressable(() => setShowSelfHelp(true))}
             aria-label="О границах самопомощи"
+            // Роль несёт слово, а слову нужна ширина: в круге 26×26 текст не
+            // помещался, и в цель меньше 44 не попасть.
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
+              minHeight: 44,
+              padding: '6px 12px',
+              borderRadius: 999,
               flexShrink: 0,
               border: 'none',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: 15,
-              lineHeight: 1,
+              fontSize: 12,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              color: 'var(--ink-2)',
               background:
                 'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            Важное
+            Важное о самопомощи
           </button>
         </div>
         <div

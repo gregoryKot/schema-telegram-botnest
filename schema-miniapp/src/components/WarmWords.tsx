@@ -38,9 +38,6 @@ export function WarmWords({ onClose }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
-          emoji="💛"
-          bg="rgba(251,191,36,0.12)"
-          border="rgba(251,191,36,0.2)"
           title="Тёплые слова"
           subtitle="Слова поддержки от Здорового Взрослого"
         />

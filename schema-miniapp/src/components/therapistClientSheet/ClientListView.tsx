@@ -174,7 +174,6 @@ export function ClientListView({
         {!loading && (
           <WebBanner
             id="cabinet_full"
-            emoji="🖥"
             title="Полная версия кабинета — на сайте"
             text="На schemehappens.ru: карта режимов клиента, канбан-доска, дашборд дня и большой экран для сессий. Вход через Telegram — данные общие с мини-аппом."
             url={WEB_CABINET_URL}
@@ -197,11 +196,11 @@ export function ClientListView({
             <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
               {(
                 [
-                  ['invite', '🔗', 'Ссылка'],
-                  ['telegram', '📱', 'Telegram ID'],
-                  ['virtual', '👤', 'Оффлайн'],
-                ] as [AddMode, string, string][]
-              ).map(([mode, icon, label]) => (
+                  ['invite', 'Ссылка'],
+                  ['telegram', 'Telegram ID'],
+                  ['virtual', 'Оффлайн'],
+                ] as [AddMode, string][]
+              ).map(([mode, label]) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -228,7 +227,7 @@ export function ClientListView({
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  {icon} {label}
+                  {label}
                 </button>
               ))}
             </div>

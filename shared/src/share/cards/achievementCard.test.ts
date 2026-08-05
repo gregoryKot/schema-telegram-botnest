@@ -44,7 +44,6 @@ describe('drawAchievementCard', () => {
     const canvas = document.createElement('canvas');
     expect(() =>
       drawAchievementCard(canvas, {
-        emoji: '🏆',
         title: 'Первая неделя',
         desc: 'Семь дней подряд с трекером',
       }),
@@ -58,13 +57,11 @@ describe('drawAchievementCard', () => {
     );
     const short = document.createElement('canvas');
     drawAchievementCard(short, {
-      emoji: '🏆',
       title: 'Т',
       desc: 'Коротко',
     });
     const long = document.createElement('canvas');
     drawAchievementCard(long, {
-      emoji: '🏆',
       title: 'Т',
       desc: 'Очень длинное описание достижения, которое переносится через несколько строк подряд и должно быть аккуратно обрезано без исключений',
     });

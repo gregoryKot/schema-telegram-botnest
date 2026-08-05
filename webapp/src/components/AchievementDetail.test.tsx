@@ -13,7 +13,7 @@ afterEach(() => {
   cleanup();
 });
 
-const META: AchievementMeta = { emoji: '🏅', title: 'Неделя подряд', desc: 'Семь дней без пропусков' };
+const META: AchievementMeta = { title: 'Неделя подряд', desc: 'Семь дней без пропусков' };
 
 function renderDetail(onClose = vi.fn()) {
   return render(
@@ -24,9 +24,8 @@ function renderDetail(onClose = vi.fn()) {
 }
 
 describe('AchievementDetail — контент', () => {
-  it('рендерит эмодзи, заголовок и описание достижения', () => {
+  it('рендерит заголовок и описание достижения', () => {
     renderDetail();
-    expect(screen.getByText('🏅')).toBeTruthy();
     expect(screen.getByText('Неделя подряд')).toBeTruthy();
     expect(screen.getByText('Семь дней без пропусков')).toBeTruthy();
   });

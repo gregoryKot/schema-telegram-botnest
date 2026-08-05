@@ -99,9 +99,6 @@ export function SafePlace({ onClose, onComplete }: Props) {
       <BottomSheet onClose={onClose}>
         <div style={{ paddingTop: 4 }}>
           <SheetIconHeader
-            emoji="🏡"
-            bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
-            border="color-mix(in srgb, var(--accent-green) 20%, transparent)"
             title="Моё безопасное место"
             subtitle="Прочти — и почувствуй"
           />
@@ -189,9 +186,6 @@ export function SafePlace({ onClose, onComplete }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
-          emoji="🏡"
-          bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
-          border="color-mix(in srgb, var(--accent-green) 20%, transparent)"
           title="Безопасное место"
           subtitle={tr(
             'Напиши — чтобы возвращаться в трудный момент',

@@ -66,19 +66,15 @@ export function DisclaimerTodayScreenStep() {
 
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 11,
           padding: '13px 16px',
           borderRadius: 14,
           background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
         }}
       >
-        <span style={{ fontSize: 20, flexShrink: 0 }}>⚙️</span>
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
         >
-          Шестерёнка в шапке «Сегодня» — «Настроить экран». Там убирается
+          Кнопка «Настроить экран» сверху справа от «Сегодня». Там убирается
           счётчик дней подряд, если он давит, и цитата, если она не нужна.
         </div>
       </div>
@@ -86,16 +82,12 @@ export function DisclaimerTodayScreenStep() {
       {/* Жест без аффорданса существует, только если о нём сказали. */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 11,
           padding: '13px 16px',
           borderRadius: 14,
           marginTop: 8,
           background: 'rgba(var(--fg-rgb),0.05)',
         }}
       >
-        <span style={{ fontSize: 20, flexShrink: 0 }}>👆</span>
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
         >

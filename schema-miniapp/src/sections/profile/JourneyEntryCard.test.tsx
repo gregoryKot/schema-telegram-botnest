@@ -14,9 +14,9 @@ describe('JourneyEntryCard', () => {
   it('объясняет, что это, и клик по карточке вызывает onOpen', () => {
     const onOpen = vi.fn();
     render(<JourneyEntryCard onOpen={onOpen} />);
-    expect(screen.getByText('🧭 Мой путь')).toBeTruthy();
+    expect(screen.getByText('Мой путь')).toBeTruthy();
     expect(screen.getByText(/трекер, дневники, практики и тесты/)).toBeTruthy();
-    fireEvent.click(screen.getByText('🧭 Мой путь'));
+    fireEvent.click(screen.getByText('Мой путь'));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

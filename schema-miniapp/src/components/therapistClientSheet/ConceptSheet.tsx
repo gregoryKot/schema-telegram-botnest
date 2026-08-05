@@ -55,7 +55,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           }}
         >
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            🗂 Концептуализация
+            Концептуализация
           </div>
           {concept && (concept.history as unknown[])?.length > 0 && (
             <button
@@ -75,7 +75,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 gap: 4,
               }}
             >
-              🕐 История ({(concept.history as unknown[]).length})
+              История ({(concept.history as unknown[]).length})
             </button>
           )}
         </div>
@@ -96,9 +96,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 cursor: 'pointer',
               }}
             >
-              {ysqRequested
-                ? '✓ Запрос отправлен'
-                : '📋 Запросить тест на схемы'}
+              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
             </button>
             {ysqError && (
               <div

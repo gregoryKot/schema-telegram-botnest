@@ -64,7 +64,7 @@ export function DisclaimerAuthorStep() {
             lineHeight: 1.7,
           }}
         >
-          Приложение бесплатное 💛 Поддержать —{' '}
+          Приложение бесплатное. Поддержать —{' '}
           <a
             href="https://schemehappens.ru/donate"
             target="_blank"

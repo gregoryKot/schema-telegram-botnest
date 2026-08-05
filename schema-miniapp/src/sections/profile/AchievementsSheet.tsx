@@ -33,8 +33,10 @@ export function AchievementsSheet({
         canvas,
         achievements
           .filter((a) => ACHIEVEMENT_META[a.id])
+          // Экран профиля больше не хранит эмодзи для достижений — карточка
+          // для шаринга (shared/) рисует пустой медальон вместо иконки.
           .map((a) => ({
-            emoji: ACHIEVEMENT_META[a.id].emoji,
+            emoji: '',
             earned: a.earned,
           })),
       );
@@ -116,15 +118,6 @@ export function AchievementsSheet({
                   cursor: a.earned ? 'pointer' : 'default',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 26,
-                    marginBottom: 6,
-                    filter: a.earned ? 'none' : 'grayscale(1) opacity(0.25)',
-                  }}
-                >
-                  {m.emoji}
-                </div>
                 <div
                   style={{
                     fontSize: 12,
