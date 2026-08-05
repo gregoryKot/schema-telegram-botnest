@@ -2,19 +2,23 @@
 // Подсказка — правая колонка таблицы самокоррекции: факт, влияние,
 // следующий шаг. Кризисный гейт обязателен (правило №7).
 import { CrisisGate } from '../CrisisGate';
-import { buildVerdict } from './verdict';
-import type { PhraseMarkId } from './criteria';
+import { buildVerdict } from '../../../../shared/src/phraseCheck/verdict';
+import type { PhraseMarkId } from '../../../../shared/src/phraseCheck/criteria';
 
 export function RewriteStep({
   marks,
   rewrite,
   setRewrite,
+  inWarmWords,
+  setInWarmWords,
   onSave,
   tr,
 }: {
   marks: PhraseMarkId[];
   rewrite: string;
   setRewrite: (v: string) => void;
+  inWarmWords: boolean;
+  setInWarmWords: (v: boolean) => void;
   onSave: () => void;
   tr: (ty: string, vy: string) => string;
 }) {
@@ -86,6 +90,50 @@ export function RewriteStep({
         }}
       />
       <CrisisGate texts={[rewrite]} surface="phrase_check" />
+
+      {/* Переписанная фраза — это и есть слова поддержки себе; предлагаем
+          забрать её в «Тёплые слова», но решает пользователь. */}
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          padding: '11px 13px',
+          borderRadius: 14,
+          background: rewrite.trim()
+            ? 'color-mix(in srgb, var(--accent-yellow) 8%, transparent)'
+            : 'rgba(var(--fg-rgb),0.03)',
+          border: `1px solid ${rewrite.trim() ? 'color-mix(in srgb, var(--accent-yellow) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)'}`,
+          marginBottom: 14,
+          cursor: rewrite.trim() ? 'pointer' : 'default',
+          opacity: rewrite.trim() ? 1 : 0.5,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={inWarmWords && Boolean(rewrite.trim())}
+          disabled={!rewrite.trim()}
+          onChange={(e) => setInWarmWords(e.target.checked)}
+          style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }}
+        />
+        <span
+          style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-sub)' }}
+        >
+          💛 Добавить в «Тёплые слова»
+          <span
+            style={{
+              display: 'block',
+              fontSize: 11.5,
+              color: 'var(--text-faint)',
+              marginTop: 2,
+            }}
+          >
+            Будет лежать вместе с другими словами поддержки — перечитать, когда
+            снова накроет.
+          </span>
+        </span>
+      </label>
+
       <button
         onClick={onSave}
         className="btn-primary"

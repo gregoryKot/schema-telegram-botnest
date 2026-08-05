@@ -88,6 +88,16 @@ export function modeEntryFullShareText(link: string): string {
   return `🌿 Моя запись из дневника режимов.\n\n${link}`;
 }
 
+/** Краткая карточка разбора фразы: обе реплики — на картинке, не в тексте. */
+export function phraseCheckShareText(link: string): string {
+  return `🔎 Одна фраза — два голоса: как это звучит у критика и как у заботы.\n\n${link}`;
+}
+
+/** Полный разбор: приметы и фраза остаются на картинке. */
+export function phraseCheckFullShareText(link: string): string {
+  return `🔎 Разбор своей фразы по приметам самокритики.\n\n${link}`;
+}
+
 export function journeyShareText(
   count: number,
   link: string,

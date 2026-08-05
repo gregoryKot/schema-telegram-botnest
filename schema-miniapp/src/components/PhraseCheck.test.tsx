@@ -13,7 +13,7 @@ import {
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { PhraseCheck } from './PhraseCheck';
-import { PHRASE_CRITERIA } from './phraseCheck/criteria';
+import { PHRASE_CRITERIA } from '../../../shared/src/phraseCheck/criteria';
 import { api } from '../api';
 
 vi.mock('../api', () => ({
@@ -38,6 +38,13 @@ function renderWithForm(ui: ReactElement, form: AddressForm = 'ty') {
 function startWith(phrase: string) {
   fireEvent.change(screen.getByRole('textbox'), { target: { value: phrase } });
   fireEvent.click(screen.getByText('Проверить →'));
+}
+
+/** Пройти весь путь до шага переписывания, ответив «критик» на все приметы. */
+function answerAllCritic(rewrite: string) {
+  startWith('ни на что не гожусь');
+  for (const c of PHRASE_CRITERIA) fireEvent.click(screen.getByText(c.critic));
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: rewrite } });
 }
 
 beforeEach(() => {
@@ -93,6 +100,9 @@ describe('PhraseCheck', () => {
         'worth',
       ],
       rewrite: 'отчёт вышел с ошибкой, проверю цифры дважды',
+      // Галочка «в тёплые слова» стоит по умолчанию — переписанная фраза и
+      // есть слова поддержки; тест ловит смену дефолта.
+      inWarmWords: true,
     });
     // Финальный экран показывает «было → стало» — ради этого всё и затевалось.
     expect(screen.getByText('БЫЛО')).toBeTruthy();
@@ -111,6 +121,8 @@ describe('PhraseCheck', () => {
       phrase: 'вышло неточно, поправлю завтра',
       marks: [],
       rewrite: undefined,
+      // Переписывать было нечего — забирать в коллекцию тоже нечего.
+      inWarmWords: false,
     });
   });
 
@@ -137,6 +149,27 @@ describe('PhraseCheck', () => {
     // Каждый шаг двигает полосу ровно на один и доходит до максимума.
     expect(seen).toEqual(PHRASE_CRITERIA.map((_, i) => i + 2));
     expect(at()).toBe(PHRASE_CRITERIA.length + 2);
+  });
+
+  it('«в тёплые слова» можно снять — тогда фраза в коллекцию не идёт', () => {
+    renderWithForm(<PhraseCheck onClose={() => {}} />);
+    answerAllCritic('вышло неточно, поправлю');
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Сохранить разбор'));
+
+    expect(api.createPhraseCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ inWarmWords: false }),
+    );
+  });
+
+  it('поделиться можно и краткой карточкой, и всем разбором', () => {
+    renderWithForm(<PhraseCheck onClose={() => {}} />);
+    answerAllCritic('вышло неточно, поправлю');
+    fireEvent.click(screen.getByText('Сохранить разбор'));
+
+    expect(screen.getByText('Поделиться всем разбором')).toBeTruthy();
+    // Краткая карточка живёт за пилюлей шаринга — она рядом с подписью.
+    expect(screen.getByText(/только две реплики/)).toBeTruthy();
   });
 
   it('кризисный маркер во фразе показывает телефон доверия', () => {

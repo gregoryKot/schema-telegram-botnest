@@ -12,6 +12,13 @@ interface Props {
   onClose: () => void;
 }
 
+// Откуда слова — подпись под датой (источники collectWarmWords).
+const SOURCE_LABELS: Record<'diary' | 'card' | 'phrase', string> = {
+  diary: 'дневник',
+  card: 'карточка режима',
+  phrase: 'разбор фразы',
+};
+
 function fmtDate(d: Date): string {
   return d.toLocaleDateString('ru-RU', {
     day: 'numeric',
@@ -52,8 +59,8 @@ export function WarmWords({ onClose }: Props) {
           }}
         >
           {tr(
-            'Здесь — твои слова из дневника режимов и карточек режимов: то, что говорит Здоровый Взрослый. Перечитывай, когда трудно.',
-            'Здесь — ваши слова из дневника режимов и карточек режимов: то, что говорит Здоровый Взрослый. Перечитывайте, когда трудно.',
+            'Здесь — твои слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывай, когда трудно.',
+            'Здесь — ваши слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывайте, когда трудно.',
           )}
         </div>
 
@@ -110,7 +117,11 @@ export function WarmWords({ onClose }: Props) {
                     }}
                   >
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      {mode ? `${mode.emoji} ${mode.name}` : 'Режим'}
+                      {item.source === 'phrase'
+                        ? '🔎 Переписанная фраза'
+                        : mode
+                          ? `${mode.emoji} ${mode.name}`
+                          : 'Режим'}
                     </span>
                     <span
                       style={{
@@ -120,8 +131,7 @@ export function WarmWords({ onClose }: Props) {
                         textAlign: 'right',
                       }}
                     >
-                      {fmtDate(item.at)} ·{' '}
-                      {item.source === 'diary' ? 'дневник' : 'карточка режима'}
+                      {fmtDate(item.at)} · {SOURCE_LABELS[item.source]}
                     </span>
                   </div>
                   <div

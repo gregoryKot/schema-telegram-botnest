@@ -104,6 +104,34 @@ describe('PhraseCheckService', () => {
     ]);
   });
 
+  it('«в тёплые слова» сохраняется и возвращается при чтении', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    await service.createPhraseCheck(USER, {
+      phrase: 'фраза',
+      marks: ['goal'],
+      rewrite: 'переписанная фраза',
+      inWarmWords: true,
+    });
+
+    expect((await service.getPhraseChecks(USER))[0].inWarmWords).toBe(true);
+  });
+
+  it('без переписанной фразы флаг не ставится — забирать в коллекцию нечего', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    const created = await service.createPhraseCheck(USER, {
+      phrase: 'фраза',
+      marks: ['goal'],
+      inWarmWords: true,
+    });
+
+    expect(created.inWarmWords).toBe(false);
+    expect((await service.getPhraseChecks(USER))[0].inWarmWords).toBe(false);
+  });
+
   it('чужие разборы не видны и не удаляются по id', async () => {
     const { db } = makeDb();
     const service = new PhraseCheckService(db);

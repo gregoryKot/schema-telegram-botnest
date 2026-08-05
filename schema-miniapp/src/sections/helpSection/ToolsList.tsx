@@ -44,6 +44,14 @@ export function ToolsList({
         Инструменты
       </div>
       <ToolRow
+        emoji="🔎"
+        label="Критик или забота?"
+        sub="Проверить фразу внутреннего голоса"
+        tint="var(--accent-red)"
+        index={0}
+        onClick={onOpenPhraseCheck}
+      />
+      <ToolRow
         emoji="🎯"
         label="Мои цели"
         sub={
@@ -52,7 +60,7 @@ export function ToolsList({
             : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`
         }
         tint="var(--accent-orange)"
-        index={0}
+        index={1}
         onClick={onOpenTasks}
       />
       <ToolRow
@@ -66,7 +74,7 @@ export function ToolsList({
               : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
         }
         tint="var(--accent)"
-        index={1}
+        index={2}
         onClick={onOpenPractices}
       />
       <ToolRow
@@ -80,7 +88,7 @@ export function ToolsList({
               : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
         }
         tint="var(--accent-blue)"
-        index={2}
+        index={3}
         onClick={onOpenPlans}
       />
       <ToolRow
@@ -88,16 +96,8 @@ export function ToolsList({
         label="Проверка убеждений"
         sub="Правда ли это?"
         tint="var(--accent-yellow)"
-        index={3}
-        onClick={onOpenBeliefCheck}
-      />
-      <ToolRow
-        emoji="🔎"
-        label="Критик или забота?"
-        sub="Проверить фразу внутреннего голоса"
-        tint="var(--accent-red)"
         index={4}
-        onClick={onOpenPhraseCheck}
+        onClick={onOpenBeliefCheck}
       />
       <ToolRow
         emoji="🏡"
