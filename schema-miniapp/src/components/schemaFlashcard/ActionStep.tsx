@@ -53,7 +53,6 @@ export function ActionStep({
               marginBottom: 16,
             }}
           >
-            <span style={{ fontSize: 20 }}>{needInfo.emoji}</span>
             <div>
               <div
                 style={{

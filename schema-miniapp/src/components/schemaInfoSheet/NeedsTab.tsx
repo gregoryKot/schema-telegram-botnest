@@ -36,7 +36,6 @@ export function NeedsTab() {
               marginBottom: 8,
             }}
           >
-            <span style={{ fontSize: 24 }}>{n.emoji}</span>
             <div>
               <div
                 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}

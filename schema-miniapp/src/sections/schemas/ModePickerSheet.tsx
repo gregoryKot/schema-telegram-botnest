@@ -87,9 +87,6 @@ export function ModePickerSheet({
                     transition: 'all 0.15s',
                   }}
                 >
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>
-                    {mode.emoji}
-                  </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
@@ -184,9 +181,6 @@ export function ModePickerSheet({
                           transition: 'all 0.15s',
                         }}
                       >
-                        <span style={{ fontSize: 18, flexShrink: 0 }}>
-                          {m.emoji}
-                        </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
