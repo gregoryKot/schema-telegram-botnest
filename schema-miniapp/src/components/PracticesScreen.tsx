@@ -3,7 +3,6 @@ import { api, UserPractice } from '../api';
 import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
-import { useNeedData } from '../needData';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
@@ -24,7 +23,6 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
-  const NEED_DATA = useNeedData();
   const tr = useTr();
   const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);
@@ -185,7 +183,6 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         >
           {NEED_IDS.map((id, i) => {
             const color = COLORS[id] ?? '#888';
-            const emoji = NEED_DATA[id]?.emoji ?? '';
             const active = i === needIdx;
             const score = ratings[id];
             return (
@@ -213,7 +210,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                   gap: 5,
                 }}
               >
-                {emoji} {NEED_NAMES[id]}
+                {NEED_NAMES[id]}
                 {score !== undefined && (
                   <span
                     style={{

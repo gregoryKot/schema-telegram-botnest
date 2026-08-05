@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { pressable } from '../../utils/a11y';
 import { UserTask } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { resolveTaskDisplayText, resolveTaskEmoji } from './taskEmoji';
+import { resolveTaskDisplayText } from './taskEmoji';
 import { TaskProgressBar } from './TaskProgressBar';
 
 interface Props {
@@ -44,7 +44,6 @@ function FullTaskRow({
     task.type === 'diary_streak' || task.type === 'tracker_streak';
   const isAssigned = task.assignedBy !== null;
   const [completing, setCompleting] = useState(false);
-  const emoji = task.doneToday ? '✅' : resolveTaskEmoji(task);
   const showComplete =
     !task.doneToday &&
     task.done === null &&
@@ -68,23 +67,24 @@ function FullTaskRow({
         transition: 'all 0.15s',
       }}
     >
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          flexShrink: 0,
-          background: task.doneToday
-            ? 'rgba(52,211,153,0.1)'
-            : 'var(--surface-2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 19,
-        }}
-      >
-        {emoji}
-      </div>
+      {task.doneToday && (
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            flexShrink: 0,
+            background: 'var(--calm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+            color: 'var(--text)',
+          }}
+        >
+          ✓
+        </div>
+      )}
 
       <div style={{ flex: 1, minWidth: 0 }}>
         {isAssigned && !task.doneToday && (
@@ -171,12 +171,8 @@ function CompactTaskRow({
   task: UserTask;
   onComplete?: () => void;
 }) {
-  const emoji =
-    task.done === true
-      ? '✅'
-      : task.done === false
-        ? '❌'
-        : resolveTaskEmoji(task);
+  // История: важен исход, а не тип. Галочка и крестик — знаки, не картинки.
+  const mark = task.done === true ? '✓' : task.done === false ? '×' : '·';
   const showComplete =
     task.done === null &&
     task.assignedBy !== null &&
@@ -194,9 +190,15 @@ function CompactTaskRow({
       }}
     >
       <span
-        style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}
+        style={{
+          fontSize: 16,
+          flexShrink: 0,
+          width: 22,
+          textAlign: 'center',
+          color: task.done === true ? 'var(--text)' : 'var(--faint)',
+        }}
       >
-        {emoji}
+        {mark}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         {task.assignedBy !== null && (
