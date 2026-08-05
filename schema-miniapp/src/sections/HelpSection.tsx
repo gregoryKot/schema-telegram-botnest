@@ -203,11 +203,9 @@ export function HelpSection({
           }}
         >
           <div
+            className="d-display"
             style={{
               fontSize: 26,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
             }}
           >
             Здесь и сейчас

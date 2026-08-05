@@ -89,7 +89,6 @@ export function OnboardingResumeCard({
         gap: 12,
       }}
     >
-      <div style={{ fontSize: 22 }}>📋</div>
       <div style={{ flex: 1 }}>
         <div
           style={{

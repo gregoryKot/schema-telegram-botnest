@@ -24,15 +24,16 @@ export function StreakCard({ streak }: { streak: number }) {
           height: 40,
           borderRadius: 12,
           flexShrink: 0,
-          background:
-            'color-mix(in srgb, var(--accent-orange) 14%, transparent)',
+          background: 'var(--accent-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 20,
+          fontSize: 17,
+          fontWeight: 700,
+          color: 'var(--accent)',
         }}
       >
-        🔥
+        {streak}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>

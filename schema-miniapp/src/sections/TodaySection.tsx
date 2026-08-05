@@ -188,15 +188,13 @@ export function TodaySection({
           }}
         >
           <div
+            className="d-display"
             style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.03em',
+              fontSize: 26,
               lineHeight: 1.15,
             }}
           >
-            {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+            {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
           </div>
           <button
             onClick={today.openByGear}

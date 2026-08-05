@@ -125,11 +125,9 @@ export function SchemasSection({
       >
         <div>
           <div
+            className="d-display"
             style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
+              fontSize: 27,
               lineHeight: 1.15,
             }}
           >
@@ -141,14 +139,14 @@ export function SchemasSection({
         </div>
         <button
           onClick={() => onOpenSchema()}
+          className="d-caps"
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 12,
+            minHeight: 48,
+            padding: '0 14px',
+            borderRadius: 14,
             border: 'none',
-            background: 'rgba(var(--fg-rgb),0.07)',
-            color: 'var(--text-sub)',
-            fontSize: 18,
+            background: 'var(--surface-2)',
+            color: 'var(--accent)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -159,7 +157,7 @@ export function SchemasSection({
           title="Библиотека схема-терапии"
           aria-label="Библиотека схема-терапии"
         >
-          📖
+          Библиотека
         </button>
       </div>
 
