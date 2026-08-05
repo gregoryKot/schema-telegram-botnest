@@ -170,7 +170,7 @@
   "schema-miniapp/src/components/settingsSheet/AddressFormSection.tsx": 62,
   "schema-miniapp/src/components/settingsSheet/AppearanceSection.tsx": 284,
   "schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx": 294,
-  "schema-miniapp/src/components/settingsSheet/constants.ts": 54,
+  "schema-miniapp/src/components/settingsSheet/constants.ts": 3,
   "schema-miniapp/src/components/settingsSheet/DataOverlays.tsx": 315,
   "schema-miniapp/src/components/settingsSheet/HomeScreenSection.tsx": 37,
   "schema-miniapp/src/components/settingsSheet/InfoOverlays.tsx": 151,
@@ -831,7 +831,7 @@
   "webapp/src/components/SchemaFlashcardTopbar.tsx": 12,
   "webapp/src/components/SchemaInfoSheet.tsx": 434,
   "webapp/src/components/SchemaPickerSheet.tsx": 97,
-  "webapp/src/components/SettingsSheet.tsx": 826,
+  "webapp/src/components/SettingsSheet.tsx": 799,
   "webapp/src/components/Skeleton.tsx": 56,
   "webapp/src/components/TaskCreateSheet.tsx": 330,
   "webapp/src/components/taskDisplayText.ts": 18,
@@ -954,5 +954,6 @@
   "webapp/src/utils/theme.ts": 37,
   "webapp/src/utils/therapistContact.ts": 2,
   "webapp/src/utils/todayInsight.ts": 2,
-  "webapp/vite.config.ts": 53
+  "webapp/vite.config.ts": 53,
+  "shared/src/settings/constants.ts": 58
 }
