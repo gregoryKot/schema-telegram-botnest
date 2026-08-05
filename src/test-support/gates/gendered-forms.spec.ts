@@ -87,6 +87,33 @@ describe('check-gendered-forms.mjs', () => {
     expect(res.stderr).toContain('[ty-short-adj] ты не один');
   });
 
+  it('ловит мужское прошедшее с опущенным подлежащим', () => {
+    // «Научился прятать» — рассказ читателя о себе, где «я»/«ты» не написано,
+    // поэтому правила на «ты …л» его не видят (колесо детства, свип 2026-08).
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Чувства было опасно показывать. Научился прятать.';",
+        "export const b = 'Злость каралась. Выучил правило: наружу не выносить.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[dropped-subject-past]');
+  });
+
+  it('при явном подлежащем прошедшее не считается — род принадлежит ему', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Внутренний Критик перестал атаковать';",
+        "export const b = 'Рядом оказывался взрослый, который это замечал';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('рост счётчика в известном файле — exit 1 с «было → стало»', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({

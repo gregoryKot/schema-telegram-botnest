@@ -341,7 +341,7 @@
   "scripts/check-eslint-ratchet.mjs": 142,
   "scripts/check-file-size-ratchet.mjs": 154,
   "scripts/check-frontend-coverage-ratchet.mjs": 164,
-  "scripts/check-gendered-forms.mjs": 228,
+  "scripts/check-gendered-forms.mjs": 242,
   "scripts/check-jscpd-ratchet.mjs": 82,
   "scripts/check-legacy-name.mjs": 60,
   "scripts/check-mutation-ratchet.mjs": 158,
