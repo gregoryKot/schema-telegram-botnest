@@ -11,7 +11,7 @@ import {
   MODE_DOUBT_OPENED_EVENT,
   MODE_DOUBT_SWITCHED_EVENT,
 } from '../../../../shared/src/share/analytics';
-
+import { cm } from '../../sections/schemas/utils';
 /**
  * «Сомневаешься? Сравни с похожими» — на карточке выбранного режима
  * (ModeSelectStep, ветка selectedMode): кнопка + лист сравнения с соседями
@@ -91,8 +91,8 @@ export function ModeDoubtButton({
 
             <div
               style={{
-                background: 'rgba(96,165,250,0.1)',
-                border: '1px solid rgba(96,165,250,0.25)',
+                background: cm('var(--accent-blue)', 10),
+                border: `1px solid ${cm('var(--accent-blue)', 25)}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 marginBottom: 14,
@@ -178,7 +178,7 @@ export function ModeDoubtButton({
                     </div>
                     <div
                       style={{
-                        background: 'rgba(96,165,250,0.08)',
+                        background: cm('var(--accent-blue)', 8),
                         borderRadius: 10,
                         padding: '8px 10px',
                         marginBottom: 10,
@@ -207,8 +207,8 @@ export function ModeDoubtButton({
                       style={{
                         width: '100%',
                         minHeight: 44,
-                        background: 'rgba(96,165,250,0.16)',
-                        border: '1px solid rgba(96,165,250,0.4)',
+                        background: cm('var(--accent-blue)', 16),
+                        border: `1px solid ${cm('var(--accent-blue)', 40)}`,
                         borderRadius: 12,
                         color: 'var(--accent-blue)',
                         fontSize: 14,

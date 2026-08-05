@@ -12,9 +12,9 @@ const VAR_HEX: Record<string, string> = {
   'var(--accent-orange)': '#fb923c',
   'var(--accent-yellow)': '#facc15',
   'var(--accent-green)': '#34d399',
-  'var(--accent-indigo)': '#818cf8',
-  'var(--accent-blue)': '#60a5fa',
-  'var(--accent)': '#a78bfa',
+  'var(--accent-indigo)': '#9a5b3e',
+  'var(--accent-blue)': '#2f6f9e',
+  'var(--accent)': '#9a5b3e',
 };
 
 function getSchemaById(id: string) {
@@ -109,7 +109,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
   const schema = getSchemaById(schemaId);
   if (!schema) return null;
 
-  const colorHex = VAR_HEX[schema.color] ?? '#a78bfa';
+  const colorHex = VAR_HEX[schema.color] ?? '#9a5b3e';
 
   return (
     <IntroSheetShell

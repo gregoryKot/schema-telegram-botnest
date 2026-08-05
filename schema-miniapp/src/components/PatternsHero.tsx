@@ -38,7 +38,7 @@ export function PatternsHero({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <HeroCta
           label="Первый шаг"
-          chip="⏱ ≈10 мин"
+          chip="≈10 мин"
           title="Узнать свои схемы"
           sub={tr(
             'Схемы — привычные реакции родом из детства. Тест покажет, какие включаются у тебя чаще всего.',

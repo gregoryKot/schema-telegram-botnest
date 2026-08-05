@@ -56,7 +56,7 @@ export function ModesTab() {
         }}
         style={{
           background:
-            'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), rgba(79,163,247,0.1))',
+            'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), color-mix(in srgb, var(--accent-blue) 10%, transparent))',
           border:
             '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
           borderRadius: 16,
@@ -304,7 +304,7 @@ export function ModesTab() {
             onClick={(e) => e.stopPropagation()}
             style={{
               background:
-                'linear-gradient(145deg, color-mix(in srgb, var(--accent) 18%, transparent), rgba(79,163,247,0.08))',
+                'linear-gradient(145deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
               borderRadius: 24,

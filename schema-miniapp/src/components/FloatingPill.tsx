@@ -36,10 +36,12 @@ export function FloatingPill({
             height: 60,
             borderRadius: '50%',
             border: 'none',
-            background: 'linear-gradient(135deg, #60a5fa, #7c72f8)',
+            // Сплошной акцент вместо сине-фиолетового градиента: градиент был
+            // прописан хексами мимо токенов и светился чужим цветом на тёплой
+            // бумаге. Тень — по потолку системы (мягкая, без цветного ореола).
+            background: 'var(--accent)',
             cursor: 'pointer',
-            boxShadow:
-              '0 6px 24px rgba(96,165,250,0.45), 0 2px 8px rgba(124,114,248,0.3)',
+            boxShadow: '0 2px 10px rgba(34, 30, 27, 0.18)',
             WebkitTapHighlightColor: 'transparent',
             display: 'flex',
             alignItems: 'center',

@@ -72,7 +72,9 @@ describe('ModeEntryShare', () => {
     render(
       <ModeEntryShare mode={MODE} healthyResponse="я имею право на отдых" />,
     );
-    expect(screen.getByRole('button', { name: 'Поделиться' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Поделиться карточкой' }),
+    ).toBeTruthy();
     expect(screen.queryByText('Поделиться всей записью')).toBeNull();
   });
 
@@ -87,7 +89,9 @@ describe('ModeEntryShare', () => {
         }}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Поделиться' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Поделиться карточкой' }),
+    ).toBeTruthy();
     expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
   });
 
@@ -95,7 +99,9 @@ describe('ModeEntryShare', () => {
     render(
       <ModeEntryShare mode={MODE} entry={{ situation: 'Позвонил папа' }} />,
     );
-    expect(screen.queryByRole('button', { name: 'Поделиться' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Поделиться карточкой' }),
+    ).toBeNull();
     expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
   });
 

@@ -23,7 +23,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
     ).toBe(67);
   });
 
-  it('iOS без инсетов (contentTop не сообщён) — фолбэк 56', () => {
+  it('iOS без инсетов (contentTop не сообщён) — фолбэк 96', () => {
     expect(
       computeSafeTop({
         contentTop: undefined,
@@ -32,7 +32,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         ios: true,
         contentReported: false,
       }),
-    ).toBe(56);
+    ).toBe(96);
   });
 
   it('не-iOS без инсетов — 0', () => {
@@ -152,7 +152,7 @@ describe('computeSafeTop — нулевые инсеты внутри мессе
 
   it('iOS в мессенджере: ноль не принимаем, держим фолбэк под кнопку закрытия', () => {
     expect(computeSafeTop({ ...zeros, ios: true, overlaysContent: true })).toBe(
-      56,
+      96,
     );
   });
 
@@ -194,5 +194,49 @@ describe('computeSafeTop — нулевые инсеты внутри мессе
         overlaysContent: true,
       }),
     ).toBe(93);
+  });
+});
+
+// Регресс к скриншоту 2026-08: заголовок «Паттерны» стоял под пилюлей
+// «Закрыть». Инсеты нулевые, клиент внутри мессенджера — отступ обязан
+// очищать не только статус-бар (~54pt), но и полосу кнопок (низ ~87pt).
+describe('фолбэк очищает кнопки Telegram, а не только статус-бар', () => {
+  const TELEGRAM_BUTTONS_BOTTOM_PT = 87;
+
+  it('нулевые инсеты на iOS в мессенджере → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: false,
+      ios: true,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('в полноэкранном режиме без инсетов — тоже ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: true,
+      ios: true,
+      contentReported: false,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('браузер на iOS лишнего отступа не получает — там чёлку закрывает CSS', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
   });
 });

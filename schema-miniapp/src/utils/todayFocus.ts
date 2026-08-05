@@ -113,7 +113,7 @@ export function focusCardContent(
   switch (practice) {
     case 'schema':
       return {
-        chip: '⏱ ≈2 мин',
+        chip: '≈2 мин',
         title: 'Заметить момент схемы',
         sub: 'Одна запись: что случилось и какая схема включилась.',
         buttonLabel: 'Записать',
@@ -121,7 +121,7 @@ export function focusCardContent(
       };
     case 'mode':
       return {
-        chip: '⏱ ≈2 мин',
+        chip: '≈2 мин',
         title: 'Отметить режим дня',
         sub: 'Какой режим сегодня включался — одна запись.',
         buttonLabel: 'Записать',
@@ -129,7 +129,7 @@ export function focusCardContent(
       };
     case 'gratitude':
       return {
-        chip: '⏱ ≈1 мин',
+        chip: '≈1 мин',
         title: 'Три хорошие вещи',
         sub: 'Маленькая практика благодарности — прямо сейчас.',
         buttonLabel: 'Записать',
@@ -137,7 +137,7 @@ export function focusCardContent(
       };
     default:
       return {
-        chip: '⏱ ≈1 мин',
+        chip: '≈1 мин',
         title: 'Заполнить трекер потребностей',
         sub:
           ratedCount > 0
