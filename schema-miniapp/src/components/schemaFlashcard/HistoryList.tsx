@@ -73,8 +73,8 @@ export function HistoryList({
                     lineHeight: 1.4,
                   }}
                 >
-                  {m?.emoji ?? '🧩'} {m?.label ?? card.mode}
-                  {n ? ` · ${n.emoji} ${n.label}` : ''}
+                  {m?.label ?? card.mode}
+                  {n ? ` · ${n.label}` : ''}
                 </div>
                 {card.action && (
                   <div

@@ -43,7 +43,7 @@ export function ModesHero({
             'Режимы — состояния, которые включаются в моменте. Начни с самого узнаваемого: внутреннего голоса требований.',
             'Режимы — состояния, которые включаются в моменте. Начните с самого узнаваемого: внутреннего голоса требований.',
           )}
-          buttonLabel="😬 Познакомиться"
+          buttonLabel="Познакомиться"
           onClick={onMeetCritic}
         />
         <ToolRow
@@ -72,7 +72,7 @@ export function ModesHero({
       <WeekTopCard
         label="Чаще всего включается"
         color={group.color}
-        title={`${mode.emoji} ${mode.name}`}
+        title={mode.name}
         sub={`${summary.days} из ${summary.windowDays} дней — по записям дневника. Заметить включение — уже полработы.`}
         onClick={() => onOpenModeDetail(summary.id)}
       />

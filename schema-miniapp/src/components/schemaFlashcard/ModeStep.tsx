@@ -86,7 +86,6 @@ export function ModeStep({
                   marginBottom: 4,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{m.emoji}</span>
                 <span style={{ fontSize: 15, fontWeight: 600, color: m.color }}>
                   {m.label}
                 </span>

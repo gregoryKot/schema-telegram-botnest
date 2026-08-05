@@ -36,7 +36,7 @@ export function ModesTab({
       .filter((m) => myModeIds.includes(m.id))
       .map((m) => ({
         id: m.id,
-        name: `${m.emoji} ${m.name}`,
+        name: m.name,
         freq: modeFreq[m.id] ?? 0,
       })),
   })).filter((g) => g.items.length > 0);

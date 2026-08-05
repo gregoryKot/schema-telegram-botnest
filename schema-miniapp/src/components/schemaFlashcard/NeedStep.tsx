@@ -72,7 +72,6 @@ export function NeedStep({
                   gap: 10,
                 }}
               >
-                <span style={{ fontSize: 18 }}>{n.emoji}</span>
                 {n.label}
               </button>
             );

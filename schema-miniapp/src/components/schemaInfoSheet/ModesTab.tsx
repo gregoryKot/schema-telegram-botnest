@@ -127,7 +127,6 @@ export function ModesTab() {
                   marginBottom: 6,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{m.emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -264,9 +263,6 @@ export function ModesTab() {
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                   }}
                 >
-                  <div style={{ fontSize: 26, marginBottom: 6 }}>
-                    {item.emoji}
-                  </div>
                   <div
                     style={{
                       fontSize: 11,
@@ -319,9 +315,6 @@ export function ModesTab() {
               animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)',
             }}
           >
-            <div style={{ fontSize: 56, marginBottom: 12 }}>
-              {checkinMode.emoji}
-            </div>
             <SectionLabel purple mb={8}>
               Режим
             </SectionLabel>
