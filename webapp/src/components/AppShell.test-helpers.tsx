@@ -148,7 +148,7 @@ vi.mock('./SchemaInfoSheet', () => ({
 }));
 vi.mock('./exercises/ChildhoodWheelEx', () => ({
   ChildhoodWheelEx: (p: ComponentProps<typeof ChildhoodWheelExT>) => (
-    <Btns testid="childhood-wheel" map={{ back: () => p.onBack(), saved: () => p.onSaved({ safety: 5 }) }} />
+    <Btns testid="childhood-wheel" map={{ back: () => p.onBack(), saved: () => p.onSaved?.({ safety: 5 }) }} />
   ),
 }));
 vi.mock('./TherapistClientSheet', () => ({

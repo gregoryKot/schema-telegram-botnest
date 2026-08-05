@@ -714,7 +714,7 @@
   "schema-miniapp/src/utils/addressForm.tsx": 42,
   "schema-miniapp/src/utils/breathing.ts": 42,
   "shared/src/journey/journeyPeriod.ts": 42,
-  "webapp/eslint.config.js": 42,
+  "webapp/eslint.config.js": 57,
   "webapp/src/utils/addressForm.tsx": 42,
   "schema-miniapp/src/sections/today/helpers.ts": 41,
   "src/auth/providers/max.provider.ts": 41,
