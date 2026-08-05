@@ -20,6 +20,7 @@ import { fmtDate, todayStr } from '../utils/format';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
+import { GearIcon } from '../components/GearIcon';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
@@ -215,7 +216,7 @@ export function TodaySection({
               marginTop: -6,
             }}
           >
-            ⚙
+            <GearIcon />
           </button>
         </div>
         <div

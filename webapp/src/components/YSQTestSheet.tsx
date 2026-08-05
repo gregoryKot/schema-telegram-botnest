@@ -133,12 +133,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {[
-              ['📋', '116 утверждений', 'Оцени каждое от 1 до 6'],
-              ['⏱️', '~10 минут', 'Можно прервать – прогресс сохраняется'],
-              ['🔍', '20 схем', 'Результат с описанием и советом для каждой'],
-            ].map(([emoji, title, desc]) => (
+              ['116 утверждений', 'Оцени каждое от 1 до 6'],
+              ['~10 минут', 'Можно прервать – прогресс сохраняется'],
+              ['20 схем', 'Результат с описанием и советом для каждой'],
+            ].map(([title, desc]) => (
               <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 16px' }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 1 }}>{desc}</div>

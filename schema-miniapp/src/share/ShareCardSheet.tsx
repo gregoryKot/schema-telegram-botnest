@@ -99,7 +99,8 @@ export function ShareCardSheet({
               padding: '15px 0',
               borderRadius: 14,
               border: 'none',
-              background: 'linear-gradient(135deg, #8f86ff, #5aa8f7)',
+              background:
+                'linear-gradient(135deg, var(--accent), var(--accent-hi))',
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,

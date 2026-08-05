@@ -81,7 +81,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
     <div
       style={{
         background:
-          'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(79,163,247,0.08))',
+          'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
         border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
         borderRadius: 16,
         padding: '16px 18px',

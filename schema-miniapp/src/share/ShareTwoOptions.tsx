@@ -1,7 +1,11 @@
 // Блок шаринга «краткая карточка + полный вариант» — один контрол на все
 // упражнения (правило «одна механика — один компонент»). До выноса эта
-// вёрстка была скопирована в ModeEntryShare и PhraseCheckShare: пилюля,
-// подпись под ней, текстовая ссылка на второй вариант и два ShareCardSheet.
+// вёрстка была скопирована в ModeEntryShare и PhraseCheckShare.
+//
+// Оба варианта — ОДИНАКОВЫЕ кнопки с подписью. Раньше первый был безымянным
+// значком, а второй — подчёркнутой ссылкой: два соседних действия одного
+// смысла выглядели как разные виды элементов, и по значку нельзя было понять,
+// чем он делится, а чем вторая строка (замечание пользователя, 2026-08).
 //
 // Состояние живёт в хуке фичи (useModeEntryShare / usePhraseCheckShare) —
 // сюда приходит уже готовым, чтобы контрол оставался без своей логики.
@@ -19,21 +23,12 @@ export interface ShareTwoOptionsProps {
   fullProps: (SheetProps & { hint?: string }) | null;
   /** Подпись под пилюлей — зачем сохранять краткую карточку */
   shortHint: string;
-  /** Текст ссылки на второй, более откровенный вариант */
+  /** Подпись первой кнопки; по умолчанию — «Поделиться карточкой» */
+  shortLabel?: string;
+  /** Подпись второй кнопки — более откровенный вариант */
   fullLabel: string;
   zIndex?: number;
 }
-
-const linkStyle = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  color: 'var(--text-sub)',
-  fontSize: 12,
-  fontWeight: 600,
-  textDecoration: 'underline',
-  cursor: 'pointer',
-} as const;
 
 const hintStyle = {
   fontSize: 11,
@@ -48,6 +43,7 @@ export function ShareTwoOptions({
   shortProps,
   fullProps,
   shortHint,
+  shortLabel,
   fullLabel,
   zIndex,
 }: ShareTwoOptionsProps) {
@@ -56,26 +52,19 @@ export function ShareTwoOptions({
   return (
     <>
       {shortProps && (
-        <>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              marginTop: 8,
-            }}
-          >
-            <SharePill compact onClick={() => setShare('short')} />
-          </div>
+        <div style={{ marginTop: 8 }}>
+          <SharePill
+            label={shortLabel ?? 'Поделиться карточкой'}
+            onClick={() => setShare('short')}
+          />
           <div style={{ ...hintStyle, marginTop: 6 }}>{shortHint}</div>
-        </>
+        </div>
       )}
       {fullProps && (
-        <div style={{ marginTop: shortProps ? 10 : 8, textAlign: 'right' }}>
-          <button onClick={() => setShare('full')} style={linkStyle}>
-            {fullLabel}
-          </button>
+        <div style={{ marginTop: shortProps ? 12 : 8 }}>
+          <SharePill label={fullLabel} onClick={() => setShare('full')} />
           {fullProps.hint && (
-            <div style={{ ...hintStyle, marginTop: 4 }}>{fullProps.hint}</div>
+            <div style={{ ...hintStyle, marginTop: 6 }}>{fullProps.hint}</div>
           )}
         </div>
       )}

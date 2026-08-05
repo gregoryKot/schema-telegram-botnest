@@ -24,11 +24,18 @@ interface TabDef {
   color: string;
 }
 
+// Активная вкладка красится акцентом продукта, а не своим цветом. Четыре
+// разных ярких цвета (индиго/розовый/голубой/фиолетовый) были прописаны
+// хексами мимо токенов — поэтому на тёплой бумаге снизу светился чужой
+// фиолетовый, и тема на него не влияла. Цвет вкладки ничего не сообщает:
+// где ты находишься, говорят иконка, подпись и заливка.
+const ACTIVE = 'var(--accent)';
+
 const TABS: TabDef[] = [
-  { id: 'today', label: 'Сегодня', color: '#7c72f8' },
-  { id: 'help', label: 'Помощь', color: '#f472b6' },
-  { id: 'schemas', label: 'Паттерны', color: '#60a5fa' },
-  { id: 'profile', label: 'Профиль', color: '#a78bfa' },
+  { id: 'today', label: 'Сегодня', color: ACTIVE },
+  { id: 'help', label: 'Помощь', color: ACTIVE },
+  { id: 'schemas', label: 'Паттерны', color: ACTIVE },
+  { id: 'profile', label: 'Профиль', color: ACTIVE },
 ];
 
 function TabIcon({
@@ -47,7 +54,6 @@ function TabIcon({
     height: 22,
     color: active ? color : 'var(--text-faint)',
     transition: 'color 0.2s',
-    filter: active ? `drop-shadow(0 0 5px ${color}88)` : 'none',
   };
 
   if (id === 'today')
@@ -176,8 +182,8 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                       position: 'absolute',
                       inset: '-6px -10px',
                       borderRadius: 12,
-                      background: tab.color + '18',
-                      border: `1px solid ${tab.color}30`,
+                      background: 'var(--accent-bg)',
+                      border: '1px solid var(--line)',
                     }}
                   />
                 )}

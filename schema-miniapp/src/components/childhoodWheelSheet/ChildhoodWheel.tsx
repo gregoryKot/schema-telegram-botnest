@@ -57,7 +57,7 @@ export function ChildhoodWheel({
       <polygon
         points={valuePoints}
         fill="color-mix(in srgb, var(--accent) 18%, transparent)"
-        stroke="#a78bfa"
+        stroke="var(--accent)"
         strokeWidth={1.5}
         strokeLinejoin="round"
       />

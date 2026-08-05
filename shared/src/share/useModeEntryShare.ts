@@ -11,18 +11,6 @@ import type { ModeEntryMode } from './cards/modeEntryCard';
 
 export type ModeEntryShareKind = 'short' | 'full' | null;
 
-/** Стиль текстовой ссылки «Поделиться всей записью» — одинаков в обоих фронтах. */
-export const modeEntryShareLinkStyle = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  color: 'var(--text-sub)',
-  fontSize: 12,
-  fontWeight: 600,
-  textDecoration: 'underline',
-  cursor: 'pointer',
-} as const;
-
 export interface ModeEntryShareState {
   share: ModeEntryShareKind;
   setShare: (v: ModeEntryShareKind) => void;

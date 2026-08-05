@@ -232,7 +232,6 @@ export function TodayCustomizeSheet({
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <span style={{ fontSize: 20, flexShrink: 0 }}>⚙️</span>
           <span
             style={{
               flex: 1,

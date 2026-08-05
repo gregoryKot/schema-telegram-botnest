@@ -92,8 +92,8 @@ function ModeDoubtSheet({
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
           <div
             style={{
-              background: 'rgba(96,165,250,0.1)',
-              border: '1px solid rgba(96,165,250,0.25)',
+              background: 'color-mix(in srgb, var(--accent-blue) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)',
               borderRadius: 14,
               padding: '10px 14px',
               marginBottom: 14,
@@ -134,7 +134,7 @@ function ModeDoubtSheet({
                   <p className="body" style={{ marginBottom: 8 }}>{d.gist}</p>
                   <div
                     style={{
-                      background: 'rgba(96,165,250,0.08)',
+                      background: 'color-mix(in srgb, var(--accent-blue) 8%, transparent)',
                       borderRadius: 10,
                       padding: '8px 10px',
                       marginBottom: 10,

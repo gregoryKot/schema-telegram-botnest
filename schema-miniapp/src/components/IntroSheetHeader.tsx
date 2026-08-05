@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cm } from '../sections/schemas/utils';
 
 // Шапка интро-шита (иконка + заголовок + подзаголовок, плашка description,
 // explainer) — вынесена из IntroSheetShell.tsx (правило №10 CLAUDE.md: шелл
@@ -45,8 +46,8 @@ export function IntroSheetHeader({
             height: 48,
             borderRadius: 14,
             flexShrink: 0,
-            background: `${accentColor}18`,
-            border: `1px solid ${accentColor}28`,
+            background: cm(accentColor, 9),
+            border: `1px solid ${cm(accentColor, 16)}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -83,8 +84,8 @@ export function IntroSheetHeader({
       {showDescription && (
         <div
           style={{
-            background: `${accentColor}0e`,
-            border: `1px solid ${accentColor}22`,
+            background: cm(accentColor, 5),
+            border: `1px solid ${cm(accentColor, 13)}`,
             borderRadius: 16,
             padding: '12px 14px',
             marginBottom: 16,

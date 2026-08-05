@@ -37,7 +37,7 @@ export function ModesHero({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <HeroCta
           label="Знакомство"
-          chip="⏱ ≈2 мин"
+          chip="≈2 мин"
           title="Встретить своего Критика"
           sub={tr(
             'Режимы — состояния, которые включаются в моменте. Начни с самого узнаваемого: внутреннего голоса требований.',

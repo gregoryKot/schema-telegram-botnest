@@ -159,8 +159,8 @@ export function SecondaryCards({
             const typeColor =
               (
                 {
-                  schema: '#818cf8',
-                  mode: '#f472b6',
+                  schema: 'var(--accent)',
+                  mode: 'var(--accent-pink)',
                   gratitude: '#4ade80',
                 } as Record<string, string>
               )[entry.type] ?? '#aaa';

@@ -8,7 +8,7 @@ import { ClientDetail } from './types';
 import { ConceptModePicker } from './conceptSheet/ConceptModePicker';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
-
+import { cm } from '../../sections/schemas/utils';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
@@ -89,9 +89,9 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                 width: '100%',
                 padding: '10px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(96,165,250,0.2)',
-                background: 'rgba(96,165,250,0.06)',
-                color: ysqRequested ? '#06d6a0' : 'rgba(96,165,250,0.8)',
+                border: `1px solid ${cm('var(--accent-blue)', 20)}`,
+                background: cm('var(--accent-blue)', 6),
+                color: ysqRequested ? '#06d6a0' : cm('var(--accent-blue)', 80),
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -261,7 +261,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             borderRadius: 14,
             border: 'none',
             background: conceptDirty
-              ? 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), rgba(79,163,247,0.2))'
+              ? `linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), ${cm('var(--accent-blue)', 20)})`
               : 'rgba(var(--fg-rgb),0.05)',
             color: conceptDirty ? 'var(--text)' : 'rgba(var(--fg-rgb),0.25)',
             fontSize: 14,
