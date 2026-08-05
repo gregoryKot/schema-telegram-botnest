@@ -4,7 +4,7 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { SkeletonCard } from '../Skeleton';
-import { IdentityDot } from '../IdentityDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { useWarmWords } from '../../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../../shared/src/share/shareTexts';
 

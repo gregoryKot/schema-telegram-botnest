@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { IdentityDot } from './IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   plan: PracticePlan;

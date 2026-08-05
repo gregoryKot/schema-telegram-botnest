@@ -1,5 +1,5 @@
 import { PickerRail } from './PickerRail';
-import { IdentityDot } from '../IdentityDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import type { LayoutProps } from './types';
 
 export function MobileLayout({

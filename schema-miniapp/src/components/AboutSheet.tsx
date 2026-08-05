@@ -1,6 +1,7 @@
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { NeedDot, NEED_COLOR_ORDER } from './NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { NEED_COLOR_ORDER } from '../../../shared/src/needs/needColors';
 import { useAboutText, NEEDS_EXPLAINER } from '../aboutData';
 import { pressable } from '../utils/a11y';
 
@@ -61,7 +62,7 @@ export function AboutSheet({
                   marginBottom: 6,
                 }}
               >
-                <NeedDot id={NEED_COLOR_ORDER[i]} />
+                <IdentityDot id={NEED_COLOR_ORDER[i]} />
                 <span
                   style={{
                     fontSize: 14,

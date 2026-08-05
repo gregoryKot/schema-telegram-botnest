@@ -1,5 +1,5 @@
 import { Need, COLORS } from '../../types';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 export function NeedRow({
   need,
@@ -58,7 +58,7 @@ export function NeedRow({
             justifyContent: 'center',
           }}
         >
-          <NeedDot id={need.id} size={12} />
+          <IdentityDot id={need.id} size={12} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div

@@ -4,14 +4,15 @@ import type { ModeMapNode, TherapistCustomMode } from '../api';
 import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, type NodeType } from './modeMapData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 // Maps a mode id → which palette group/type it belongs to (for client modes)
-function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; emoji: string; name: string } | null {
+function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; color: string; name: string } | null {
   for (const group of MODE_GROUPS) {
     const meta = GROUP_TO_TYPE[group.id];
     if (!meta) continue;
     const item = group.items.find(i => i.id === modeId);
-    if (item) return { type: meta.type, copingSubtype: meta.copingSubtype, emoji: item.emoji, name: item.name };
+    if (item) return { type: meta.type, copingSubtype: meta.copingSubtype, color: meta.color, name: item.name };
   }
   return null;
 }
@@ -19,11 +20,7 @@ function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' 
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
 
-interface Props {
-  onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
-  onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void;
-  clientId: number;
-}
+interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: number }
 
 export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   const [search, setSearch] = useState('');
@@ -66,8 +63,8 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
     const extra = meta?.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
     return makeNode(modeId, type, name, extra);
   };
-  const clientModeEmoji = (modeId: string): string =>
-    findModeMeta(modeId)?.emoji ?? getModeById(modeId)?.emoji ?? '◆';
+  const clientModeColor = (modeId: string): string | undefined =>
+    findModeMeta(modeId)?.color ?? getModeById(modeId)?.groupColor;
 
   const onDragStart = (e: React.DragEvent, partial: Omit<ModeMapNode, 'position'>) => {
     e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(partial));
@@ -143,7 +140,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                   onClick={() => onAdd(node)}
                   draggable onDragStart={e => onDragStart(e, node)}
                   style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента" aria-label="Из концептуализации клиента">
-                  <span style={{ fontSize: 12 }}>{clientModeEmoji(modeId)}</span>
+                  {clientModeColor(modeId) ? <IdentityDot color={clientModeColor(modeId)} size={12} /> : <span style={{ fontSize: 12 }}>◆</span>}
                   <span style={{ fontSize: 12, flex: 1 }}>{node.data.label}</span>
                 </button>
               );
@@ -195,7 +192,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                   onClick={() => onAdd(makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   style={itemStyle} title={item.short}>
-                  <span style={{ fontSize: 12 }}>{item.emoji}</span>
+                  <IdentityDot color={meta.color} size={12} />
                   <span style={{ fontSize: 12, flex: 1, lineHeight: 1.3 }}>{item.name}</span>
                 </button>
               ))}

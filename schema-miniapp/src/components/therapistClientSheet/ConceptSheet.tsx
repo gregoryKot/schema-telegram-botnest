@@ -2,9 +2,10 @@ import { BottomSheet } from '../BottomSheet';
 import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { CONCEPT_FIELDS } from './helpers';
 import { ClientDetail } from './types';
+import { ConceptModePicker } from './conceptSheet/ConceptModePicker';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
 
@@ -209,49 +210,10 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         <div style={{ marginTop: 6 }}>
           <SectionLabel mb={8}>Карта режимов</SectionLabel>
         </div>
-        {MODE_GROUPS.map((group) => (
-          <div key={group.id} style={{ marginBottom: 8 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.07em',
-                color: group.color + 'aa',
-                textTransform: 'uppercase',
-                marginBottom: 5,
-                paddingLeft: 2,
-              }}
-            >
-              {group.group}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {group.items.map((mode) => {
-                const active = activeModeIds.includes(mode.id);
-                return (
-                  <button
-                    key={mode.id}
-                    onClick={() => toggleModeId(mode.id)}
-                    style={{
-                      padding: '5px 10px',
-                      borderRadius: 20,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: active
-                        ? group.color + '30'
-                        : 'rgba(var(--fg-rgb),0.05)',
-                      color: active ? group.color : 'rgba(var(--fg-rgb),0.45)',
-                      fontSize: 12,
-                      fontWeight: active ? 600 : 400,
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {mode.emoji} {mode.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        <ConceptModePicker
+          activeModeIds={activeModeIds}
+          onToggle={toggleModeId}
+        />
         <div style={{ marginTop: 8 }}>
           {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
             <div key={key} style={{ marginBottom: 12 }}>

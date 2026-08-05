@@ -7,7 +7,7 @@ import { IndexInfoSheet } from './IndexInfoSheet';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
-import { IdentityDot } from './IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   needs: Need[];

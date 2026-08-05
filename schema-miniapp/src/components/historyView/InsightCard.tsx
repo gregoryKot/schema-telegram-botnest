@@ -1,5 +1,5 @@
 import { Need, COLORS } from '../../types';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 export function InsightCard({
   needs,
@@ -56,7 +56,7 @@ export function InsightCard({
           justifyContent: 'center',
         }}
       >
-        <NeedDot id={lowest.id} size={14} />
+        <IdentityDot id={lowest.id} size={14} />
       </div>
       <div style={{ flex: 1 }}>
         <div

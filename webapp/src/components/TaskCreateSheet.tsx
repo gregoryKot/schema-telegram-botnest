@@ -7,16 +7,11 @@ import { haptic } from '../haptic';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
-interface Props {
-  clientId?: number;
-  clientName?: string;
-  defaultType?: TaskType;
-  onCreated: () => void;
-  onClose: () => void;
-}
+interface Props { clientId?: number; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
 
 const STREAK_OPTIONS = [3, 7, 14, 30];
 
@@ -255,8 +250,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         gap: 12,
                       }}
                     >
-                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400 }}>
-                        {m.emoji} {m.name}
+                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IdentityDot color={m.groupColor} /> {m.name}
                       </span>
                       {selectedModeId === m.id && (
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

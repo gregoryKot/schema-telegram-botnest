@@ -1,6 +1,6 @@
 import { COLORS } from '../../types';
 import { pressable } from '../../utils/a11y';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { Slider } from './Slider';
 import type { NeedId, NeedMetaEntry } from './types';
 
@@ -48,7 +48,7 @@ export function NeedFillRow({
             flexShrink: 0,
           }}
         >
-          <NeedDot id={id} size={12} />
+          <IdentityDot id={id} size={12} />
         </div>
         <div style={{ flex: 1 }}>
           <div

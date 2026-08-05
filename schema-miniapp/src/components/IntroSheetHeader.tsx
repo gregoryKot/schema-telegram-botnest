@@ -5,7 +5,9 @@ import type { ReactNode } from 'react';
 // подошёл к потолку 218). Различия между режимами/схемами — только пропсы,
 // вёрстка не меняется ни на пиксель.
 export interface IntroSheetHeaderProps {
-  emoji: string;
+  /** Иконка слева от заголовка: эмодзи схемы (строка) или, для режимов,
+   *  цветной кружок опознавателя (`<IdentityDot color={...} />`, волна 6). */
+  emoji: ReactNode;
   title: string;
   subtitle: string;
   accentColor: string;

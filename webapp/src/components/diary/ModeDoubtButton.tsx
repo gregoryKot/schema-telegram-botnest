@@ -5,7 +5,7 @@ import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
-import { IdentityDot } from '../IdentityDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {

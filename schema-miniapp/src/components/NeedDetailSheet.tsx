@@ -1,5 +1,5 @@
 import { BottomSheet } from './BottomSheet';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { needColor } from '../../../shared/src/needs/needColors';
@@ -84,7 +84,7 @@ export function NeedDetailSheet({
               justifyContent: 'center',
             }}
           >
-            <NeedDot id={needId} size={16} />
+            <IdentityDot id={needId} size={16} />
           </div>
           <div>
             <div

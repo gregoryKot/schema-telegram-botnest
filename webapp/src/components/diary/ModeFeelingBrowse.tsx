@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getModeById } from '../../schemaTherapyData';
-import { IdentityDot } from '../IdentityDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';

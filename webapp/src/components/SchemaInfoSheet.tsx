@@ -6,7 +6,7 @@ import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { NEED_ORDER } from '../needData';
-import { IdentityDot } from './IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 

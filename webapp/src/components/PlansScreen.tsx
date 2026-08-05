@@ -5,7 +5,7 @@ import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { IdentityDot } from './IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   onClose: () => void;

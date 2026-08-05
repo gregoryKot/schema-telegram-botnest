@@ -4,7 +4,7 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
-import { IdentityDot } from './IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 function ianaToUtcOffset(iana: string): number {
   try {

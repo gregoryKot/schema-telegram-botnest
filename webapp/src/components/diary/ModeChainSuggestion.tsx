@@ -4,7 +4,7 @@ import {
   modeChainVmLocal,
   type ModeChainSuggestionProps,
 } from '../../modeChainVm';
-import { IdentityDot } from '../IdentityDot';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 /**
  * Подсказка «разобрать связанный режим» после сохранения записи — в одной
