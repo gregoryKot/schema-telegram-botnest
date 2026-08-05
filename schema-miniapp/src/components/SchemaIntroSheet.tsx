@@ -7,16 +7,6 @@ import { buildSchemaIntroExplainer } from '../../../shared/src/schema/schemaFlow
 
 const LS_KEY = (id: string) => `schema_intro_${id}`;
 
-const VAR_HEX: Record<string, string> = {
-  'var(--accent-red)': '#f87171',
-  'var(--accent-orange)': '#fb923c',
-  'var(--accent-yellow)': '#facc15',
-  'var(--accent-green)': '#34d399',
-  'var(--accent-indigo)': '#9a5b3e',
-  'var(--accent-blue)': '#2f6f9e',
-  'var(--accent)': '#9a5b3e',
-};
-
 function getSchemaById(id: string) {
   for (const domain of SCHEMA_DOMAINS) {
     const schema = domain.schemas.find((s) => s.id === id);
@@ -109,8 +99,6 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
   const schema = getSchemaById(schemaId);
   if (!schema) return null;
 
-  const colorHex = VAR_HEX[schema.color] ?? '#9a5b3e';
-
   return (
     <IntroSheetShell
       onClose={onClose}
@@ -135,7 +123,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
         })
       }
       saveNote={(data) => api.saveSchemaNote({ schemaId, ...data })}
-      accentColor={colorHex}
+      accentColor={schema.color}
       emoji={schema.emoji ?? '●'}
       title={schema.name}
       subtitle={schema.domainName}
