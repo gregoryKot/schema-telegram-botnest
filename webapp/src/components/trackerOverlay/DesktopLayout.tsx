@@ -1,4 +1,5 @@
 import { PickerRail } from './PickerRail';
+import { NeedDot } from '../NeedDot';
 import type { LayoutProps } from './types';
 
 export function DesktopLayout({
@@ -97,10 +98,8 @@ export function DesktopLayout({
                 style={{ all: 'unset', cursor: 'pointer' }}
               >
                 {needName}
-              </button>
-              <span style={{ marginLeft: 14, fontSize: 48 }}>
-                {need.emoji}
-              </span>
+              </button>{' '}
+              <NeedDot id={need.id} size={20} />
             </h1>
             {extra?.desc && (
               <p

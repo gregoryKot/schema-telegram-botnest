@@ -1,4 +1,5 @@
 import { Need, DayHistory, COLORS } from '../../types';
+import { NeedDot } from '../NeedDot';
 
 export function SparklineRow({
   need,
@@ -78,10 +79,9 @@ export function SparklineRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 14,
           }}
         >
-          {need.emoji}
+          <NeedDot id={need.id} size={11} />
         </div>
         <span
           style={{

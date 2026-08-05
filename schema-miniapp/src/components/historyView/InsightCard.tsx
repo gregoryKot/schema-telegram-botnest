@@ -1,4 +1,5 @@
 import { Need, COLORS } from '../../types';
+import { NeedDot } from '../NeedDot';
 
 export function InsightCard({
   needs,
@@ -53,10 +54,9 @@ export function InsightCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 18,
         }}
       >
-        {lowest.emoji}
+        <NeedDot id={lowest.id} size={14} />
       </div>
       <div style={{ flex: 1 }}>
         <div

@@ -1,15 +1,12 @@
 import { useMemo } from 'react';
-import { useTr } from '../../utils/addressForm';
 import { COLORS } from '../../types';
 import { NEED_IDS, type NeedId } from './types';
-import { buildNeedMeta } from './needMeta';
 
 export function ChildhoodWheel({
   ratings,
 }: {
   ratings: Record<NeedId, number>;
 }) {
-  const NEED_META = buildNeedMeta(useTr());
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
@@ -81,16 +78,15 @@ export function ChildhoodWheel({
               r={4}
               fill={color}
             />
-            <text
-              x={labelX.toFixed(1)}
-              y={labelY.toFixed(1)}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontSize={13}
-              style={{ userSelect: 'none' }}
-            >
-              {NEED_META[id].emoji}
-            </text>
+            {/* Опознавательный знак оси — тот же цвет, что и точка значения
+                (эмодзи убрали, волна 5): дублировать компонент NeedDot тут
+                нельзя, SVG не рендерит HTML-узлы. */}
+            <circle
+              cx={labelX.toFixed(1)}
+              cy={labelY.toFixed(1)}
+              r={4}
+              fill={color}
+            />
             <text
               x={labelX.toFixed(1)}
               y={(labelY + 14).toFixed(1)}

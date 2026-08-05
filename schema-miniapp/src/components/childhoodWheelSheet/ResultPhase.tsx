@@ -1,6 +1,6 @@
 import { useTr } from '../../utils/addressForm';
-import { COLORS } from '../../types';
 import { SectionLabel } from '../SectionLabel';
+import { NeedDot, needColor } from '../NeedDot';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { TherapyNote } from '../TherapyNote';
 import { pressable } from '../../utils/a11y';
@@ -73,13 +73,13 @@ export function ResultPhase({
       >
         {NEED_IDS.map((id) => {
           const value = ratings[id];
-          const color = COLORS[id] ?? '#888';
+          const color = needColor(id);
           return (
             <div
               key={id}
               style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
-              <span style={{ fontSize: 13 }}>{NEED_META[id].emoji}</span>
+              <NeedDot id={id} />
               <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                 {NEED_META[id].label.split(' ')[0]}
               </span>
@@ -139,7 +139,7 @@ export function ResultPhase({
                     marginBottom: 8,
                   }}
                 >
-                  <span style={{ fontSize: 14 }}>{meta.emoji}</span>
+                  <NeedDot id={id} />
                   <span
                     style={{
                       fontSize: 13,

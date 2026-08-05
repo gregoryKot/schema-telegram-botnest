@@ -1,14 +1,8 @@
 import { BottomSheet } from './BottomSheet';
+import { NeedDot } from './NeedDot';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-
-const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy: '#4fa3f7',
-  expression: '#facc15',
-  play: '#06d6a0',
-  limits: '#a78bfa',
-};
+import { needColor } from '../../../shared/src/needs/needColors';
 
 // Schema domains most associated with each core need (schema therapy theory)
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -34,7 +28,7 @@ export function NeedDetailSheet({
 }: Props) {
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = NEED_COLORS[needId] ?? '#a78bfa';
+  const color = needColor(needId);
 
   if (!need) return null;
 
@@ -88,10 +82,9 @@ export function NeedDetailSheet({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 24,
             }}
           >
-            {need.emoji}
+            <NeedDot id={needId} size={16} />
           </div>
           <div>
             <div

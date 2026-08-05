@@ -48,14 +48,14 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
       />,
     );
     expect(screen.getByText('Позвонить другу и рассказать о дне')).toBeTruthy();
-    expect(screen.getByText('🛡 Безопасность')).toBeTruthy();
+    expect(screen.getByText('Безопасность')).toBeTruthy();
   });
 
   it('«Да, сделал» зовёт checkinPlan(id, true) и onDone', async () => {
@@ -64,7 +64,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
@@ -80,7 +80,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
@@ -97,7 +97,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
@@ -116,7 +116,7 @@ describe('CheckInSheet — провал сохранения виден поль
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
@@ -137,7 +137,7 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
     renderWithForm(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
@@ -156,7 +156,7 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
     const { container } = renderWithForm(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}

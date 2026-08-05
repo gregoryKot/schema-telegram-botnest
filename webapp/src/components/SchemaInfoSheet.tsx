@@ -5,7 +5,8 @@ import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
-export { SCHEMA_DOMAINS };
+import { NEED_ORDER } from '../needData';
+import { NeedDot } from './NeedDot';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
@@ -110,10 +111,10 @@ function NeedsTab() {
       <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 24 }}>
         Схема-терапия строится на идее, что у каждого есть пять базовых эмоциональных потребностей. Когда они систематически не удовлетворялись в детстве – формируются схемы.
       </p>
-      {NEEDS_DATA.map((n) => (
+      {NEEDS_DATA.map((n, i) => (
         <div key={n.title} style={{ borderBottom: '1px solid var(--line)', padding: '20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-            <span style={{ fontSize: 28 }}>{n.emoji}</span>
+            <NeedDot id={NEED_ORDER[i]} size={16} />
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--text)' }}>{n.title}</div>
               <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{n.subtitle}</div>
@@ -369,7 +370,6 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           <GlyphArrowLeft /> Назад
         </button>
       </div>
-
       <div className="page">
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 32 }}>

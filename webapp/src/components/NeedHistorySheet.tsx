@@ -56,7 +56,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
-      eyebrow={`${data.emoji} ${need.chartLabel}`}
+      eyebrow={need.chartLabel}
       eyebrowColor={color}
       title={<>Динамика<br /><span className="it">потребности</span></>}
       lede={data.explanation}

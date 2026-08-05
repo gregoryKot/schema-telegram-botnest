@@ -1,10 +1,10 @@
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { NeedDot, NEED_COLOR_ORDER } from './NeedDot';
 import { useAboutText, NEEDS_EXPLAINER } from '../aboutData';
 import { pressable } from '../utils/a11y';
 
-// «Зачем это всё» — содержимое sheets.about. Перенесено из App.tsx как есть
-// (этап 3 REMEDIATION_PLAN), ABOUT_TEXT берётся хуком на месте вместо пропа.
+// «Зачем это всё» — содержимое sheets.about (ABOUT_TEXT берётся хуком на месте).
 export function AboutSheet({
   onClose,
   onOpenSchemaInfo,
@@ -43,7 +43,7 @@ export function AboutSheet({
             marginBottom: 24,
           }}
         >
-          {NEEDS_EXPLAINER.map((n) => (
+          {NEEDS_EXPLAINER.map((n, i) => (
             <div
               key={n.name}
               style={{
@@ -61,7 +61,7 @@ export function AboutSheet({
                   marginBottom: 6,
                 }}
               >
-                <span style={{ fontSize: 18 }}>{n.emoji}</span>
+                <NeedDot id={NEED_COLOR_ORDER[i]} />
                 <span
                   style={{
                     fontSize: 14,

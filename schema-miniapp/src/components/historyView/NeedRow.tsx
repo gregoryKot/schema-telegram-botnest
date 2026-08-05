@@ -1,4 +1,5 @@
 import { Need, COLORS } from '../../types';
+import { NeedDot } from '../NeedDot';
 
 export function NeedRow({
   need,
@@ -55,10 +56,9 @@ export function NeedRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 16,
           }}
         >
-          {need.emoji}
+          <NeedDot id={need.id} size={12} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div

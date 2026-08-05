@@ -401,7 +401,6 @@ export function NeedTodaySheet({
       {showPlan && (
         <PlanSheet
           needId={need.id}
-          needEmoji={data.emoji}
           needLabel={need.chartLabel}
           color={color}
           onClose={() => setShowPlan(false)}

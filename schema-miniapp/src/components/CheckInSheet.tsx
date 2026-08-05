@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { api, PracticePlan } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { useTr } from '../utils/addressForm';
+import { NeedDot } from './NeedDot';
 
 interface Props {
   plan: PracticePlan;
-  needEmoji: string;
+  needColor: string;
   needLabel: string;
   color: string;
   onDone: () => void;
@@ -13,7 +14,7 @@ interface Props {
 
 export function CheckInSheet({
   plan,
-  needEmoji,
+  needColor,
   needLabel,
   color,
   onDone,
@@ -51,7 +52,7 @@ export function CheckInSheet({
           {tr('Вчера в планах было', 'Вчера вы планировали')}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-          {needEmoji} {needLabel}
+          <NeedDot color={needColor} /> {needLabel}
         </div>
       </div>
 
