@@ -426,6 +426,7 @@
   "shared/src/schema/schemaDiarySteps.ts": 203,
   "shared/src/schema/schemaFlowExplainers.ts": 32,
   "shared/src/schema/useSchemaDiaryDraftState.ts": 77,
+  "shared/src/settings/constants.ts": 58,
   "shared/src/share/analytics.ts": 100,
   "shared/src/share/cardKit.ts": 50,
   "shared/src/share/cards/achievementCard.ts": 88,
@@ -923,7 +924,9 @@
   "webapp/src/pages/tests/TestsPage.tsx": 73,
   "webapp/src/pages/TwoFactorChallengePage.tsx": 95,
   "webapp/src/schemaTherapyData.ts": 219,
-  "webapp/src/sections/DiarySection.tsx": 544,
+  "webapp/src/sections/diary/dateHelpers.ts": 28,
+  "webapp/src/sections/diary/EntryCards.tsx": 211,
+  "webapp/src/sections/DiarySection.tsx": 320,
   "webapp/src/sections/PracticeSection.tsx": 395,
   "webapp/src/sections/profile/DeleteAccountDialog.tsx": 66,
   "webapp/src/sections/ProfileSection.tsx": 569,
@@ -954,6 +957,5 @@
   "webapp/src/utils/theme.ts": 37,
   "webapp/src/utils/therapistContact.ts": 2,
   "webapp/src/utils/todayInsight.ts": 2,
-  "webapp/vite.config.ts": 53,
-  "shared/src/settings/constants.ts": 58
+  "webapp/vite.config.ts": 53
 }
