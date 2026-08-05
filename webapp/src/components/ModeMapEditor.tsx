@@ -259,7 +259,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
             style={mobile
               ? { ...collapseBtnStyle('left'), position: 'absolute', top: 52, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
               : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
-            {mobile ? '☰' : '›'}
+            ›
           </button>
         )}
 

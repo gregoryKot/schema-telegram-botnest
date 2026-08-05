@@ -1,7 +1,7 @@
 import { BottomSheet } from './BottomSheet';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useNeedData } from '../needData';
-import { SCHEMA_DOMAINS } from '../schemaTherapyData';
+import { ALL_SCHEMAS } from '../schemaTherapyData';
 import { needColor } from '../../../shared/src/needs/needColors';
 
 // Schema domains most associated with each core need (schema therapy theory)
@@ -53,9 +53,9 @@ export function NeedDetailSheet({
 
   // Related schemas from user's active list
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
-  const relatedSchemas = SCHEMA_DOMAINS.filter((d) =>
-    domainIds.includes(d.id),
-  ).flatMap((d) => d.schemas.filter((s) => activeSchemaIds.includes(s.id)));
+  const relatedSchemas = ALL_SCHEMAS.filter(
+    (s) => domainIds.includes(s.domainId) && activeSchemaIds.includes(s.id),
+  );
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
@@ -185,9 +185,7 @@ export function NeedDetailSheet({
                     border: `1px solid ${color}15`,
                   }}
                 >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>
-                    {s.emoji ?? '●'}
-                  </span>
+                  <IdentityDot color={s.domainColor} size={10} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{

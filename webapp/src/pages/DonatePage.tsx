@@ -37,7 +37,6 @@ export function DonatePage() {
 
         {ret === 'ok' ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>💛</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, margin: '0 0 10px' }}>Спасибо за поддержку!</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6 }}>Это очень помогает развивать проект.</p>
           </div>
@@ -45,7 +44,7 @@ export function DonatePage() {
           <div style={{ marginTop: 24 }}>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, margin: '0 0 8px' }}>Поддержать проект</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6, margin: '0 0 24px' }}>
-              SchemeHappens бесплатный. Если он полезен — поддержите развитие любой суммой. 💛
+              SchemeHappens бесплатный. Если он полезен — поддержите развитие любой суммой.
             </p>
             {ret === 'fail' && <p style={{ color: 'var(--accent-red)', fontSize: 14, margin: '0 0 16px' }}>Оплата не прошла. Можно попробовать снова.</p>}
 

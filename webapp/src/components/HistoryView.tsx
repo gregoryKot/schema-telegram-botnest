@@ -349,7 +349,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 </button>
               ) : onOpenChildhoodWheel ? (
                 <button onClick={onOpenChildhoodWheel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>🌱 Оценить детство →</span>
+                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>Оценить детство →</span>
                 </button>
               ) : null}
               {onOpenSchemas && (
@@ -443,7 +443,6 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               padding: '14px 0', marginTop: 4,
               borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
             }}>
-              <span style={{ fontSize: 16, color: 'var(--text-faint)' }}>📝</span>
               <span style={{ fontSize: 13, color: noteText ? 'var(--text-sub)' : 'var(--text-faint)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: noteText ? 'normal' : 'italic' }}>
                 {noteText || 'Добавить заметку к этому дню'}
               </span>

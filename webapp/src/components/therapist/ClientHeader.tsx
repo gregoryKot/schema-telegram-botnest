@@ -74,7 +74,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
                 </span>
               )}
               {selectedClient.streak > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>🔥 {selectedClient.streak} дн.</span>
+                <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>{selectedClient.streak} дн. подряд</span>
               )}
             </div>
           </div>
@@ -85,9 +85,13 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
           <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
           <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
           <button onClick={deleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента"
-            style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', fontSize: 14, color: 'var(--text-faint)', cursor: 'pointer' }}>
-            {deleteLoading ? '…' : '🗑'}
+            style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer' }}>
+            {deleteLoading ? '…' : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 7h16 M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2 M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+              </svg>
+            )}
           </button>
         </div>
       </div>

@@ -19,9 +19,9 @@ function statusColor(done: boolean | null) {
 }
 
 function statusIcon(done: boolean | null) {
-  if (done === true)  return '✅';
-  if (done === false) return '❌';
-  return '⏳';
+  if (done === true)  return '✓';
+  if (done === false) return '×';
+  return '·';
 }
 
 function formatDate(dateStr: string): string {
@@ -69,7 +69,6 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         ) : plans.length === 0 ? (
           /* Empty state */
           <div style={{ paddingTop: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
               Планов пока нет
             </div>

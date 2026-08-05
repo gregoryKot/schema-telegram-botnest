@@ -76,16 +76,6 @@ export function CookieBanner() {
       >
         {/* Header row */}
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="cookie-glow" />
-            <div style={{
-              position: 'relative', width: 44, height: 44, borderRadius: 14,
-              background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>
-              <span className="cookie-emoji">🍪</span>
-            </div>
-          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,

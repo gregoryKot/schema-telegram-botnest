@@ -399,7 +399,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
 
       {(node.type === 'child' || node.type === 'critic' || node.type === 'coping') && (
         <>
-          <label style={{ ...labelStyle, color: 'var(--accent-green)' }} htmlFor="mm-node-healthy">🌿 Что сказал бы Здоровый Взрослый</label>
+          <label style={{ ...labelStyle, color: 'var(--accent-green)' }} htmlFor="mm-node-healthy">Что сказал бы Здоровый Взрослый</label>
           <textarea id="mm-node-healthy" ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
             borderColor: 'color-mix(in srgb, var(--c-moss) 45%, transparent)' }} rows={2}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}

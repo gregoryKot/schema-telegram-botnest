@@ -1,4 +1,5 @@
-import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
+import { ALL_SCHEMAS } from '../../../schemaTherapyData';
+import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
 import { cm } from '../../../sections/schemas/utils';
 // Блок истории теста на схемы (YSQ) клиента: выраженные/остальные схемы,
@@ -70,9 +71,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
             Выраженные ({activeScores.length})
           </div>
           {activeScores.map((score) => {
-            const meta = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
-              (s) => s.id === score.id,
-            );
+            const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
             const delta = getDelta(score.id);
             return (
               <div key={score.id} style={{ marginBottom: 6 }}>
@@ -91,7 +90,8 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                       fontWeight: 500,
                     }}
                   >
-                    {meta?.emoji} {meta?.name ?? score.id}
+                    <IdentityDot color={meta?.domainColor} size={7} />{' '}
+                    {meta?.name ?? score.id}
                   </span>
                   <div
                     style={{
@@ -162,9 +162,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {inactiveScores.map((score) => {
-              const meta = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
-                (s) => s.id === score.id,
-              );
+              const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
               const isNearBorder = score.pct5plus >= 30;
               return (
                 <span
