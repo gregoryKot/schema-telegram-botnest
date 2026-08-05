@@ -137,3 +137,62 @@ describe('computeSafeTop — fullscreen, инсеты НЕ пришли (щед�
     ).toBe(FS_BAND_ANDROID);
   });
 });
+
+// Скриншот пользователя (2026-08): на iOS в Telegram шапка «Паттерны» уехала
+// под статус-бар и под плавающую кнопку «Закрыть». Хост отчитался нулями —
+// и старая ветка «контентный инсет определён (== 0) → доверяем» вернула 0.
+// Внутри мессенджера ноль не бывает правдой: свои кнопки он рисует всегда.
+describe('computeSafeTop — нулевые инсеты внутри мессенджера (регрессия 2026-08)', () => {
+  const zeros = {
+    contentTop: 0,
+    deviceTop: 0,
+    isFullscreen: false,
+    contentReported: true,
+  };
+
+  it('iOS в мессенджере: ноль не принимаем, держим фолбэк под кнопку закрытия', () => {
+    expect(computeSafeTop({ ...zeros, ios: true, overlaysContent: true })).toBe(
+      56,
+    );
+  });
+
+  it('браузер на iOS: ноль — правда, чёлку закрывает CSS env()', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: true, overlaysContent: false }),
+    ).toBe(0);
+  });
+
+  it('Android в мессенджере: кнопки не поверх контента, отступ не выдумываем', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
+    ).toBe(0);
+  });
+
+  it('полный экран с нулевой полосой контента — тоже «не доехало», а не точное значение', () => {
+    // device пришёл, content отчитан нулём: раньше вернули бы 47 и шапка
+    // оказалась бы ровно под кнопками Telegram.
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(123);
+  });
+
+  it('полный экран с обоими ненулевыми инсетами — по-прежнему точное значение', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(93);
+  });
+});

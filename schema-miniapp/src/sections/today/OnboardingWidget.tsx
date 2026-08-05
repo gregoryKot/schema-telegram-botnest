@@ -83,6 +83,8 @@ export function OnboardingWidget({
   const current =
     (selectedId ? STEPS.find((s) => s.id === selectedId) : null) ?? autoStep;
   const isCurrentDone = current.isDone(profile, ctx);
+  // Номер шага вместо картинки: он сам сообщает, где человек в цепочке.
+  const currentNo = STEPS.findIndex((s) => s.id === current.id) + 1;
   const isCurrentSkipped = skipped.includes(current.id) && !isCurrentDone;
 
   function handleAction() {
@@ -163,7 +165,7 @@ export function OnboardingWidget({
               border: `1.5px solid color-mix(in srgb, ${current.color} 24%, transparent)`,
             }}
           >
-            {isCurrentDone ? '✓' : current.emoji}
+            {isCurrentDone ? '✓' : currentNo}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div

@@ -34,22 +34,31 @@ export function computeSafeTop(p: {
   isFullscreen: boolean;
   ios: boolean;
   contentReported: boolean;
+  /** хост рисует свои кнопки поверх контента (мессенджер, не браузер) */
+  overlaysContent?: boolean;
 }): number {
   const device = p.deviceTop ?? 0;
   const content = p.contentTop ?? 0;
   const real = device + content;
 
   if (p.isFullscreen) {
-    // Оба инсета пришли → доверяем точному значению (без лишнего отступа на
-    // корректных клиентах, включая iPhone SE с маленьким статус-баром).
-    if (p.contentReported && device > 0) return real;
+    // Точному значению доверяем, только когда пришли ОБА инсета ненулевыми
+    // (без лишнего отступа на корректных клиентах, включая iPhone SE с
+    // маленьким статус-баром). Нулевая полоса контента в полноэкранном режиме
+    // — это «не доехало»: свои кнопки клиент рисует всегда.
+    if (p.contentReported && device > 0 && content > 0) return real;
     // Инсеты не доехали → щедрая граница под полосу кнопок Telegram.
     if (p.ios) return Math.max(real, device + FS_BAND_IOS, IOS_FULLSCREEN_MIN);
     return Math.max(real, device + FS_BAND_ANDROID);
   }
 
   if (real > 0) return real;
-  // Инсеты нулевые. Если контентный инсет явно определён (== 0) — доверяем ему.
+  // Инсеты нулевые. Внутри мессенджера на iOS это значит «не доехало», а не
+  // «отступ не нужен»: клиент всё равно рисует кнопку закрытия поверх верха
+  // экрана. Раньше нулю верили — и шапка уезжала под статус-бар и кнопки
+  // (скриншот пользователя, 2026-08; тот же класс, что FS_BAND_IOS выше).
+  if (p.ios && p.overlaysContent) return IOS_LEGACY_TOP;
+  // Браузер: чёлку закрывает CSS env(safe-area-inset-*), лишний отступ вреден.
   if (p.contentTop !== undefined) return 0;
   return p.ios ? IOS_LEGACY_TOP : 0;
 }
@@ -62,6 +71,7 @@ function read(): number {
     isFullscreen: insets.isFullscreen,
     ios: isIOS(),
     contentReported: insets.contentReported,
+    overlaysContent: insets.overlaysContent,
   });
 }
 

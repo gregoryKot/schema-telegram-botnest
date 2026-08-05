@@ -231,7 +231,7 @@ export function HelpSection({
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            ⚠️
+            Важное
           </button>
         </div>
         <div
@@ -266,32 +266,26 @@ export function HelpSection({
           Если нужно больше
         </div>
         <ToolRow
-          emoji="🌍"
           label="Заземление 5-4-3-2-1"
           sub={
             practiceCountLabel(practiceCounts?.grounding ?? null) ??
             'вернуться в тело и в комнату'
           }
-          tint="var(--accent-blue)"
           index={0}
           onClick={() => setShowGrounding(true)}
         />
         <ToolRow
-          emoji="🛑"
           label="Техника «Стоп»"
           sub={
             practiceCountLabel(practiceCounts?.stop ?? null) ??
             'пауза между импульсом и действием'
           }
-          tint="var(--accent-orange)"
           index={1}
           onClick={() => setShowStop(true)}
         />
         <ToolRow
-          emoji="📞"
           label="Мне очень плохо"
           sub="контакты помощи прямо сейчас"
-          tint="var(--accent-red)"
           danger
           index={2}
           onClick={() => setShowCrisis(true)}

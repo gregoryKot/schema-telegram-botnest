@@ -52,18 +52,14 @@ export function PatternsHero({
           onClick={onStartTest}
         />
         <ToolRow
-          emoji="📖"
           label="Что такое схемы и режимы"
           sub="короткое знакомство с картой"
-          tint="var(--accent-blue)"
           index={1}
           onClick={onOpenLibrary}
         />
         <ToolRow
-          emoji="✍️"
           label="Собрать вручную"
           sub={tr('если уже знаешь свои схемы', 'если уже знаете свои схемы')}
-          tint="var(--accent-green)"
           index={2}
           onClick={onPickManually}
         />
@@ -91,13 +87,11 @@ export function PatternsHero({
   if (onOpenDiaries) {
     return (
       <ToolRow
-        emoji="📔"
         label="Картина недели появится из дневника"
         sub={tr(
           'замечай моменты, когда схема включилась',
           'замечайте моменты, когда схема включилась',
         )}
-        tint="var(--accent-indigo)"
         onClick={onOpenDiaries}
       />
     );

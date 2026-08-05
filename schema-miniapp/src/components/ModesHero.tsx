@@ -47,18 +47,14 @@ export function ModesHero({
           onClick={onMeetCritic}
         />
         <ToolRow
-          emoji="🔄"
           label="Что такое режимы"
           sub="части, которые включаются по очереди"
-          tint="var(--accent-blue)"
           index={1}
           onClick={onOpenLibrary}
         />
         <ToolRow
-          emoji="✍️"
           label="Отметить свои"
           sub={tr('если уже знаешь свои режимы', 'если уже знаете свои режимы')}
-          tint="var(--accent-green)"
           index={2}
           onClick={onPickManually}
         />
@@ -86,13 +82,11 @@ export function ModesHero({
   if (onOpenDiaries) {
     return (
       <ToolRow
-        emoji="📔"
         label="Картина недели появится из дневника"
         sub={tr(
           'замечай моменты, когда режим включился',
           'замечайте моменты, когда режим включился',
         )}
-        tint="var(--accent-indigo)"
         onClick={onOpenDiaries}
       />
     );

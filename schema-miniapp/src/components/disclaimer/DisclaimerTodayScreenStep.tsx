@@ -50,7 +50,6 @@ export function DisclaimerTodayScreenStep() {
                 border: '1px solid rgba(var(--fg-rgb),0.08)',
               }}
             >
-              <span style={{ fontSize: 15 }}>{o.emoji}</span>
               <span
                 style={{
                   fontSize: 12.5,
