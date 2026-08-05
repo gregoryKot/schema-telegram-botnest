@@ -135,7 +135,7 @@ const SUPPORT_VS_STRUCTURE = `
     <text class="dg-t" x="34" y="76">Свободная повестка</text>
     <text class="dg-s" x="34" y="100">тема – то, что накопилось</text>
     <text class="dg-cap" x="34" y="140">МИШЕНЬ</text>
-    <text class="dg-s" x="34" y="164">разгрузка, быть услышанным</text>
+    <text class="dg-s" x="34" y="164">разгрузка, ощущение, что услышали</text>
     <text class="dg-s" x="34" y="188">эта неделя, конкретный случай</text>
     <rect class="dg-accent" x="326" y="14" width="300" height="222" rx="16"/>
     <text class="dg-cap-on" x="346" y="44">СХЕМА-ТЕРАПИЯ</text>
