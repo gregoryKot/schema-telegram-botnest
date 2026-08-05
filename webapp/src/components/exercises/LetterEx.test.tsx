@@ -38,8 +38,8 @@ describe('LetterEx — приветствие без мужского рода',
   // держим в обоих экранах — черновике и запечатанном.
   it('черновик письма приветствует нейтрально', () => {
     renderSheet();
-    expect(screen.getByText('Дорогой мой ребёнок,')).toBeTruthy();
-    expect(screen.queryByText(/маленький я/)).toBeNull();
+    expect(screen.getByText('Здравствуй,')).toBeTruthy();
+    expect(screen.queryByText(/маленький я|Дорогой мой ребёнок/)).toBeNull();
   });
 
   it('запечатанное письмо показывает тот же текст и то же приветствие', async () => {
@@ -50,7 +50,7 @@ describe('LetterEx — приветствие без мужского рода',
     });
     fireEvent.click(screen.getByRole('button', { name: /Запечатать письмо/ }));
 
-    expect(await screen.findByText('Дорогой мой ребёнок,')).toBeTruthy();
+    expect(await screen.findByText('Здравствуй,')).toBeTruthy();
     expect(screen.getByText('Тебе тогда очень нужна была поддержка.')).toBeTruthy();
     expect(mockApi.createLetter).toHaveBeenCalledWith('Тебе тогда очень нужна была поддержка.');
     expect(screen.getByText('6 слов')).toBeTruthy();

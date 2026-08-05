@@ -77,7 +77,7 @@ export function LetterEx({
         }
       >
         <div className="letter-paper">
-          <div className="letter-salutation">Дорогой мой ребёнок,</div>
+          <div className="letter-salutation">Здравствуй,</div>
           <div
             style={{
               fontFamily: 'var(--serif)',
@@ -129,8 +129,8 @@ export function LetterEx({
         </>
       }
       lede={tr(
-        'Мысленно сядь рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажи ему то, что он должен был услышать.',
-        'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажите ему то, что он должен был услышать.',
+        'Мысленно сядь рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажи то, что тогда важно было услышать.',
+        'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажите то, что тогда важно было услышать.',
       )}
       aside={
         <>
@@ -170,7 +170,7 @@ export function LetterEx({
       }
     >
       <div className="letter-paper">
-        <div className="letter-salutation">Дорогой мой ребёнок,</div>
+        <div className="letter-salutation">Здравствуй,</div>
         <textarea
           ref={textRef}
           value={text}
