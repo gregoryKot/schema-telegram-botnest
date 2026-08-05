@@ -8,6 +8,7 @@ function makeController(overrides: Partial<PhraseCheckService> = {}) {
   const service = {
     getPhraseChecks: jest.fn().mockResolvedValue([]),
     createPhraseCheck: jest.fn().mockResolvedValue({ id: 1 }),
+    updatePhraseCheck: jest.fn().mockResolvedValue({ id: 1, rewrite: null }),
     deletePhraseCheck: jest.fn().mockResolvedValue({ count: 1 }),
     ...overrides,
   } as unknown as PhraseCheckService;
@@ -77,5 +78,27 @@ describe('PhraseCheckController', () => {
 
     expect(service.getPhraseChecks).toHaveBeenCalledWith(5n);
     expect(service.deletePhraseCheck).toHaveBeenCalledWith(5n, 12);
+  });
+
+  it('правка зовёт сервис с распарсенным id, userId из запроса и обрезанным rewrite', async () => {
+    const { controller, service } = makeController();
+
+    await controller.updatePhraseCheck(req(9n), '12', {
+      rewrite: '  новый добрый ответ  ',
+    });
+
+    expect(service.updatePhraseCheck).toHaveBeenCalledWith(
+      9n,
+      12,
+      'новый добрый ответ',
+    );
+  });
+
+  it('пустая правка (после trim) уходит как «не заполнено», а не пустой строкой', async () => {
+    const { controller, service } = makeController();
+
+    await controller.updatePhraseCheck(req(9n), '12', { rewrite: '   ' });
+
+    expect(service.updatePhraseCheck).toHaveBeenCalledWith(9n, 12, undefined);
   });
 });

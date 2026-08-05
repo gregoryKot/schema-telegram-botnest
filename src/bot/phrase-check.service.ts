@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { isPhraseMarkId, type PhraseMarkId } from './phrase-check.constants';
@@ -64,6 +64,20 @@ export class PhraseCheckService {
       rewrite: data.rewrite ?? null,
       inWarmWords: row.inWarmWords,
     };
+  }
+
+  // Правится только rewrite — фраза и приметы критика остаются фактом
+  // момента (см. заголовок класса). Ownership — updateMany с userId в WHERE,
+  // а не find+update: чужая запись и «не найдено» неотличимы для клиента.
+  async updatePhraseCheck(userId: bigint, id: number, rewrite?: string) {
+    const result = await this.prisma.userPhraseCheck.updateMany({
+      where: { id, userId },
+      data: { rewrite: encrypt(rewrite) },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Phrase check not found');
+    }
+    return { id, rewrite: rewrite ?? null };
   }
 
   async deletePhraseCheck(userId: bigint, id: number) {

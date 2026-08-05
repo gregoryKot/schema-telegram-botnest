@@ -25,6 +25,13 @@ function makeDb() {
       findMany: jest.fn(({ where }: any) =>
         rows.filter((r) => r.userId === where.userId),
       ),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const target = rows.find(
+          (r) => r.id === where.id && r.userId === where.userId,
+        );
+        if (target) Object.assign(target, data);
+        return { count: target ? 1 : 0 };
+      }),
       deleteMany: jest.fn(({ where }: any) => {
         const before = rows.length;
         const kept = rows.filter(
@@ -130,6 +137,67 @@ describe('PhraseCheckService', () => {
 
     expect(created.inWarmWords).toBe(false);
     expect((await service.getPhraseChecks(USER))[0].inWarmWords).toBe(false);
+  });
+
+  it('правка rewrite: фраза и приметы не трогаются, новый ответ читается', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    const created = await service.createPhraseCheck(USER, {
+      phrase: 'Опять всё завалила',
+      marks: ['person'],
+      rewrite: 'старый ответ себе',
+    });
+
+    await service.updatePhraseCheck(USER, created.id, 'новый добрый ответ');
+
+    const [saved] = await service.getPhraseChecks(USER);
+    expect(saved.rewrite).toBe('новый добрый ответ');
+    expect(saved.phrase).toBe('Опять всё завалила');
+    expect(saved.marks).toEqual(['person']);
+  });
+
+  it('чужой userId не может отредактировать разбор — данные не меняются', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    const created = await service.createPhraseCheck(USER, {
+      phrase: 'фраза владельца',
+      marks: [],
+      rewrite: 'исходный ответ',
+    });
+
+    await expect(
+      service.updatePhraseCheck(OTHER, created.id, 'подмена от чужого'),
+    ).rejects.toThrow();
+
+    const [saved] = await service.getPhraseChecks(USER);
+    expect(saved.rewrite).toBe('исходный ответ');
+  });
+
+  it('пустая строка после trim — это очистка ответа, сохраняется null', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    const created = await service.createPhraseCheck(USER, {
+      phrase: 'фраза',
+      marks: [],
+      rewrite: 'был ответ',
+    });
+
+    await service.updatePhraseCheck(USER, created.id, undefined);
+
+    const [saved] = await service.getPhraseChecks(USER);
+    expect(saved.rewrite).toBeNull();
+  });
+
+  it('несуществующий id — тоже отказ (не отличим от чужого)', async () => {
+    const { db } = makeDb();
+    const service = new PhraseCheckService(db);
+
+    await expect(
+      service.updatePhraseCheck(USER, 999999, 'что угодно'),
+    ).rejects.toThrow();
   });
 
   it('чужие разборы не видны и не удаляются по id', async () => {
