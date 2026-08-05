@@ -4,7 +4,7 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from './IdentityDot';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -95,7 +95,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
       aside={
         <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color }}>Потребность</div>
-          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><NeedDot color={needColor} /> {needLabel}</h3>
+          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><IdentityDot color={needColor} /> {needLabel}</h3>
           <p className="body">Практика помогает восстановить потребность через конкретное действие</p>
         </div>
       }

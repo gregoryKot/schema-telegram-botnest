@@ -12,7 +12,7 @@ import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
-import { NeedDot } from '../components/NeedDot';
+import { IdentityDot } from '../components/IdentityDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { pressable } from '../utils/a11y';
@@ -434,7 +434,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  <NeedDot id={id} size={14} />
+                  <IdentityDot id={id} size={14} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>

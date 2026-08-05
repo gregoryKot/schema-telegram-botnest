@@ -4,6 +4,7 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { SkeletonCard } from '../Skeleton';
+import { IdentityDot } from '../IdentityDot';
 import { useWarmWords } from '../../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../../shared/src/share/shareTexts';
 
@@ -75,8 +76,9 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
                       marginBottom: 8,
                     }}
                   >
-                    <span className="text-sm">
-                      {mode ? `${mode.emoji} ${mode.name}` : 'Режим'}
+                    <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {mode && <IdentityDot color={mode.groupColor} />}
+                      {mode ? mode.name : 'Режим'}
                     </span>
                     <span className="text-xs faint" style={{ textAlign: 'right', flexShrink: 0 }}>
                       {fmtDate(item.at)} ·{' '}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from './IdentityDot';
 
 interface Props {
   plan: PracticePlan;
@@ -43,7 +43,7 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
             {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <NeedDot color={needColor} /> {needLabel}
+            <IdentityDot color={needColor} /> {needLabel}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { PickerRail } from './PickerRail';
-import { NeedDot } from '../NeedDot';
+import { IdentityDot } from '../IdentityDot';
 import type { LayoutProps } from './types';
 
 export function MobileLayout({
@@ -106,7 +106,7 @@ export function MobileLayout({
               </div>
             )}
           </div>
-          <NeedDot id={need.id} size={18} />
+          <IdentityDot id={need.id} size={18} />
         </div>
         <div
           style={{

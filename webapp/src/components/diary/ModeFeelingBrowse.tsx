@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getModeById } from '../../schemaTherapyData';
+import { IdentityDot } from '../IdentityDot';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
@@ -62,7 +63,7 @@ export function ModeFeelingBrowse({
                   onPick(leaf.modeId);
                 }}
               >
-                <span className="mode-test-row-emoji">{leaf.emoji}</span>
+                <span className="mode-test-row-emoji"><IdentityDot color={mode?.groupColor} size={14} /></span>
                 <span className="mode-test-row-text">
                   <span className="mode-test-row-title">{leaf.label}</span>
                   <span className="mode-test-row-desc">{leaf.desc}</span>

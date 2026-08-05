@@ -5,7 +5,7 @@ import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { NeedDot } from './NeedDot';
+import { IdentityDot } from './IdentityDot';
 
 interface Props {
   onClose: () => void;
@@ -147,7 +147,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {needData && <NeedDot id={plan.needId} size={12} />}
+          {needData && <IdentityDot id={plan.needId} size={12} />}
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>
