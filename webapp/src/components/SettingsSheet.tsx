@@ -6,7 +6,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
-import { useSetAddressForm } from '../utils/addressForm';
+import { useSetAddressForm, useTr } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -61,6 +61,7 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
@@ -157,7 +158,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   async function submitTherapistRequest() {
     setReqError('');
     if (!reqFullName.trim() || !reqQual.trim() || !reqContacts.trim()) {
-      setReqError('Заполни ФИО, квалификацию и контакты');
+      setReqError(
+        tr(
+          'Заполни ФИО, квалификацию и контакты',
+          'Заполните ФИО, квалификацию и контакты',
+        ),
+      );
       return;
     }
     setReqBusy(true);
@@ -349,7 +355,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div style={{ padding: '10px 0' }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
-                        Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.
+                        {tr(
+                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.',
+                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button disabled={resignBusy} onClick={() => setResignConfirm(false)}

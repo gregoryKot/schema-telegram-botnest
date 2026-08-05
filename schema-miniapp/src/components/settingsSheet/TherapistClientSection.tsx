@@ -1,6 +1,7 @@
 import { api, UserSettings, TherapyRelationInfo } from '../../api';
 import { SkeletonLines } from '../Skeleton';
 import { SectionHeader } from './ui';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   therapyRelation: TherapyRelationInfo | null | undefined;
@@ -25,6 +26,7 @@ export function TherapistClientSection({
   setTherapyJoinError,
   onInfo,
 }: Props) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
       <SectionHeader onInfo={onInfo}>МОЙ ТЕРАПЕВТ</SectionHeader>
@@ -251,7 +253,10 @@ export function TherapistClientSection({
                 marginBottom: 10,
               }}
             >
-              Если терапевт дал код — введи его здесь
+              {tr(
+                'Если терапевт дал код — введи его здесь',
+                'Если терапевт дал код — введите его здесь',
+              )}
             </div>
             <div
               style={{
