@@ -35,7 +35,7 @@ describe('TherapistRequestSection — загрузка статуса', () => {
   it('без заявки (null) — кнопка «Я психолог – подать заявку»', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, null));
     render(<TherapistRequestSection accessToken="tok" />);
-    await screen.findByText('👨‍⚕️ Я психолог – подать заявку');
+    await screen.findByText('Я психолог – подать заявку');
   });
 });
 
@@ -56,7 +56,7 @@ describe('TherapistRequestSection — статусы существующей з
   it('rejected — открытие формы показывает причину отказа', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'rejected', rejectReason: 'Не хватает подтверждения квалификации', createdAt: '2026-07-01', reviewedAt: '2026-07-02' }));
     render(<TherapistRequestSection accessToken="tok" />);
-    const btn = await screen.findByText('👨‍⚕️ Я психолог – подать заявку');
+    const btn = await screen.findByText('Я психолог – подать заявку');
     fireEvent.click(btn);
 
     await screen.findByText(/Не хватает подтверждения квалификации/);
@@ -67,7 +67,7 @@ describe('TherapistRequestSection — отправка заявки', () => {
   async function openForm() {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, null));
     render(<TherapistRequestSection accessToken="tok" />);
-    fireEvent.click(await screen.findByText('👨‍⚕️ Я психолог – подать заявку'));
+    fireEvent.click(await screen.findByText('Я психолог – подать заявку'));
     await screen.findByPlaceholderText('ФИО');
   }
 

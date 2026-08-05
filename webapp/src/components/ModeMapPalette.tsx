@@ -3,7 +3,7 @@ import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import type { ModeMapNode, TherapistCustomMode } from '../api';
 import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
-import { DRAG_TYPE, GROUP_TO_TYPE, type NodeType } from './modeMapData';
+import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 // Maps a mode id → which palette group/type it belongs to (for client modes)
@@ -120,7 +120,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
             <div style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px' }}>
               <button onClick={() => setClientOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>★ Режимы клиента</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>Режимы клиента</span>
                 <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientOpen ? '▲' : `▼ ${clientModeIds.length}`}</span>
               </button>
               {onAddMany && (
@@ -153,7 +153,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             draggable onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             style={itemStyle} title="Внешняя ситуация, запускающая цикл" aria-label="Внешняя ситуация, запускающая цикл">
-            <span style={{ fontSize: 12 }}>☁️</span>
+            <IdentityDot color={TYPE_COLORS.trigger} size={12} />
             <span style={{ fontSize: 12.5, flex: 1 }}>Триггер / Ситуация</span>
           </button>
         )}
@@ -161,7 +161,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           <button onClick={() => onAdd({ id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
             draggable onDragStart={e => onDragStart(e, { id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
             style={itemStyle} title="Что человек делает / последствие" aria-label="Что человек делает / последствие">
-            <span style={{ fontSize: 12 }}>🎬</span>
+            <IdentityDot color={TYPE_COLORS.behavior} size={12} />
             <span style={{ fontSize: 12.5, flex: 1 }}>Поведение / Последствие</span>
           </button>
         )}

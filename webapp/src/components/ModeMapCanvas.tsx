@@ -413,7 +413,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                         onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
                         style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8, opacity: selectedNodeId ? 1 : 0.55 }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.domainColor, flexShrink: 0 }} />
-                        <span>{s.emoji} {s.name}</span>
+                        <span>{s.name}</span>
                       </button>
                     );
                   })}

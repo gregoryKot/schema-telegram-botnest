@@ -122,7 +122,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
       {phase === 'intro' && (
         <div>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>🧠</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
               Тест на схемы
             </h1>
@@ -265,8 +264,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                         {schema.desc}
                       </div>
 
-                      <div style={{ display: 'flex', gap: 8, background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
+                      <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
                         <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}</span>
                       </div>
 
@@ -280,7 +278,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
                       {showDiaryHint && (
                         <div style={{ fontSize: 12, color: 'var(--accent-yellow)', lineHeight: 1.4, padding: '6px 10px', background: 'rgba(250,204,21,0.1)', borderRadius: 8 }}>
-                          ⚡ Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая
+                          Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая
                         </div>
                       )}
                     </div>

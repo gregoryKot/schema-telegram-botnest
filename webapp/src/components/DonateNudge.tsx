@@ -48,10 +48,9 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
       <div onClick={(e) => e.stopPropagation()} role="button" tabIndex={0}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
         style={{ width: '100%', maxWidth: 440, background: 'var(--bg)', borderRadius: '18px 18px 0 0', padding: '28px 22px calc(28px + var(--safe-bottom))', textAlign: 'center', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>💛</div>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
-          {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает. 🙏', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает. 🙏')}
+          {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
         </p>
         <a href="/donate" onClick={close} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '14px', fontSize: 16, fontWeight: 700, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, textDecoration: 'none', marginBottom: 10 }}>
           Поддержать

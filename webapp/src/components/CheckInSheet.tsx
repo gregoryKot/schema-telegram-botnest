@@ -38,7 +38,6 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 28px' }} />
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
             {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>

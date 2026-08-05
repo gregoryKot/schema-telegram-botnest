@@ -482,11 +482,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     {therapistReq?.status === 'pending' ? (
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                        ⏳ Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
+                        Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
                       </div>
                     ) : therapistReq?.status === 'approved' ? (
                       <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
-                        ✅ Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
+                        Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
                       </div>
                     ) : !showReqForm ? (
                       <div>
@@ -639,7 +639,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </a>
                     {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
                     <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат</span>
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>

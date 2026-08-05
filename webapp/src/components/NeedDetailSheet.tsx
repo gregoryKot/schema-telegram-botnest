@@ -2,7 +2,7 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-import { needColor } from '../../../shared/src/needs/needColors';
+import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -37,7 +37,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
   const relatedSchemas = SCHEMA_DOMAINS
     .filter(d => domainIds.includes(d.id))
-    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)));
+    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainColor: d.color })));
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
@@ -82,7 +82,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
                 <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
                   <span className="mode-card-stripe" />
                   <div>
-                    <div className="mode-card-name">{s.emoji ?? '●'} {s.name}</div>
+                    <div className="mode-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
                     <div className="mode-card-short">{s.desc}</div>
                   </div>
                 </div>
