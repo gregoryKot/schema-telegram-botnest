@@ -1,6 +1,7 @@
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { IntroSheetShell } from './IntroSheetShell';
 import { IntroSheetQuestion } from './IntroSheetFlashcard';
 import { buildSchemaIntroExplainer } from '../../../shared/src/schema/schemaFlowExplainers';
@@ -8,12 +9,11 @@ import { buildSchemaIntroExplainer } from '../../../shared/src/schema/schemaFlow
 const LS_KEY = (id: string) => `schema_intro_${id}`;
 
 function getSchemaById(id: string) {
-  for (const domain of SCHEMA_DOMAINS) {
-    const schema = domain.schemas.find((s) => s.id === id);
-    if (schema)
-      return { ...schema, domainName: domain.domain, color: domain.color };
-  }
-  return null;
+  return (
+    SCHEMA_DOMAINS.flatMap((d) =>
+      d.schemas.map((s) => ({ ...s, domainName: d.domain, color: d.color })),
+    ).find((s) => s.id === id) ?? null
+  );
 }
 
 export interface SchemaIntroData {
@@ -124,7 +124,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
       }
       saveNote={(data) => api.saveSchemaNote({ schemaId, ...data })}
       accentColor={schema.color}
-      emoji={schema.emoji ?? '●'}
+      emoji={<IdentityDot color={schema.color} size={20} />}
       title={schema.name}
       subtitle={schema.domainName}
       description={schema.desc}

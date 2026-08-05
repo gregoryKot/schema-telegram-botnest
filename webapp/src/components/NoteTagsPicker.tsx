@@ -1,16 +1,16 @@
 // Вынесено из NoteSheet.tsx (правило №10 CLAUDE.md — файл-храповик): чипы тем
 // дня — самостоятельный кусок разметки, без изменения поведения.
 const TAGS = [
-  { id: 'work',       label: 'Работа',      emoji: '💼' },
-  { id: 'relations',  label: 'Отношения',   emoji: '🤝' },
-  { id: 'health',     label: 'Здоровье',    emoji: '🏃' },
-  { id: 'loneliness', label: 'Одиночество', emoji: '🌙' },
-  { id: 'rest',       label: 'Отдых',       emoji: '🛋️' },
-  { id: 'family',     label: 'Семья',       emoji: '🏠' },
-  { id: 'creativity', label: 'Творчество',  emoji: '🎨' },
-  { id: 'anxiety',    label: 'Тревога',     emoji: '😰' },
-  { id: 'joy',        label: 'Радость',     emoji: '✨' },
-  { id: 'body',       label: 'Тело',        emoji: '💆' },
+  { id: 'work',       label: 'Работа' },
+  { id: 'relations',  label: 'Отношения' },
+  { id: 'health',     label: 'Здоровье' },
+  { id: 'loneliness', label: 'Одиночество' },
+  { id: 'rest',       label: 'Отдых' },
+  { id: 'family',     label: 'Семья' },
+  { id: 'creativity', label: 'Творчество' },
+  { id: 'anxiety',    label: 'Тревога' },
+  { id: 'joy',        label: 'Радость' },
+  { id: 'body',       label: 'Тело' },
 ];
 
 interface Props {
@@ -47,7 +47,6 @@ export function NoteTagsPicker({ selectedTags, onToggle }: Props) {
                   transition: 'all 0.15s',
                 }}
               >
-                <span>{t.emoji}</span>
                 <span>{t.label}</span>
               </div>
             );

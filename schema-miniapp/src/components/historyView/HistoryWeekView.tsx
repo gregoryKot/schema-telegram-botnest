@@ -94,7 +94,7 @@ export function HistoryWeekView({
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 16 }}>🪄</span> Карточка недели
+        Карточка недели
       </button>
     </div>
   );

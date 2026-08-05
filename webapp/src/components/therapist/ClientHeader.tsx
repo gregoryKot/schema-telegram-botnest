@@ -74,7 +74,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
                 </span>
               )}
               {selectedClient.streak > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>🔥 {selectedClient.streak} дн.</span>
+                <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>{selectedClient.streak} дн. подряд</span>
               )}
             </div>
           </div>

@@ -187,7 +187,7 @@ export function PlanSheet({
       'BEGIN:VEVENT',
       `DTSTART:${y}${mo}${d}T${h}0000Z`,
       `DTEND:${y}${mo}${d}T${h}3000Z`,
-      `SUMMARY:🎯 ${selectedText}`,
+      `SUMMARY:${selectedText}`,
       `DESCRIPTION:Практика для потребности: ${needLabel}`,
       'END:VEVENT',
       'END:VCALENDAR',
@@ -437,7 +437,6 @@ export function PlanSheet({
                 cursor: 'pointer',
               }}
             >
-              <span style={{ fontSize: 16 }}>📅</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
                 Добавить в календарь (.ics)
               </span>

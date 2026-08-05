@@ -273,7 +273,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     const c = { ...concept, ...localConcept };
     const schemaNames = activeSchemaIds.map(id => {
       const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-      return s ? `${s.emoji} ${s.name}` : id;
+      return s ? s.name : id;
     });
     const modeNames = activeModeIds.map(id => {
       const m = MODE_GROUPS.flatMap(g => g.items).find(x => x.id === id);

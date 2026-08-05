@@ -121,7 +121,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
                     const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
                     color = domain?.color ?? 'var(--accent)';
-                    title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                    title = schema ? schema.name : (entry.schemaIds?.join(', ') ?? 'Схема');
                     const extra = (entry.schemaIds?.length ?? 0) > 1 ? ` +${(entry.schemaIds?.length ?? 1) - 1}` : '';
                     title += extra;
                     typeLabel = 'Схема-дневник';

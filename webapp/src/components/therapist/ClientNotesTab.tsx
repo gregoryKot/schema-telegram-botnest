@@ -68,7 +68,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                 const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
                 const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
                 color = domain?.color ?? 'var(--accent)';
-                title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                title = schema ? schema.name : (entry.schemaIds?.join(', ') ?? 'Схема');
                 if ((entry.schemaIds?.length ?? 0) > 1) title += ` +${(entry.schemaIds?.length ?? 1) - 1}`;
                 typeLabel = 'Схема-дневник';
               } else if (entry.type === 'mode') {
@@ -123,8 +123,8 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             return (
               <div key={n.schemaId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 3, height: 16, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</span>
+                  <IdentityDot color={domain?.color} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.name ?? n.schemaId}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
                   {[
