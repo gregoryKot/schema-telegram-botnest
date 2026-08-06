@@ -132,6 +132,113 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     expect(result?.parts).toEqual([{ title: 'Триггеры', text: 'Критика' }]);
   });
 
+  it('mode_diary: находит запись по id, ситуация и потребность попадают в части', async () => {
+    const api = stubApi({
+      getModeDiary: async () => [
+        { id: 1, situation: 'Первая', actualNeed: '' },
+        { id: 2, situation: 'Критика на работе', actualNeed: 'Поддержка' },
+      ],
+    });
+    const result = await fetchJourneyResult(
+      api,
+      item({ type: 'mode_diary', id: 2 }),
+    );
+    expect(result?.parts).toEqual([
+      { title: 'Ситуация', text: 'Критика на работе' },
+      { title: 'Что было нужно', text: 'Поддержка' },
+    ]);
+  });
+
+  it('gratitude: находит запись по id, до трёх пунктов благодарности', async () => {
+    const api = stubApi({
+      getGratitudeDiary: async () => [
+        { id: 9, items: ['Солнце', 'Кофе', 'Звонок другу', 'Лишний пункт'] },
+      ],
+    });
+    const result = await fetchJourneyResult(
+      api,
+      item({ type: 'gratitude', id: 9 }),
+    );
+    expect(result?.parts).toEqual([
+      { text: 'Солнце' },
+      { text: 'Кофе' },
+      { text: 'Звонок другу' },
+    ]);
+  });
+
+  it('belief_check: находит запись по id, убеждение и переформулировка попадают в части', async () => {
+    const api = stubApi({
+      getBeliefChecks: async () => [
+        { id: 4, belief: 'Я всё испорчу', reframe: 'Я могу ошибаться' },
+      ],
+    });
+    const result = await fetchJourneyResult(
+      api,
+      item({ type: 'belief_check', id: 4 }),
+    );
+    expect(result?.parts).toEqual([
+      { title: 'Убеждение', text: 'Я всё испорчу' },
+      { title: 'Здоровый взгляд', text: 'Я могу ошибаться' },
+    ]);
+  });
+
+  it('flashcard: находит запись по id, напоминание и действие попадают в части', async () => {
+    const api = stubApi({
+      getFlashcards: async () => [
+        { id: 7, reflection: 'Это пройдёт', action: 'Подышать' },
+      ],
+    });
+    const result = await fetchJourneyResult(
+      api,
+      item({ type: 'flashcard', id: 7 }),
+    );
+    expect(result?.parts).toEqual([
+      { title: 'Напоминание себе', text: 'Это пройдёт' },
+      { title: 'Что делать', text: 'Подышать' },
+    ]);
+  });
+
+  it('safe_place: своя запись без id-списка, читается целиком', async () => {
+    const api = stubApi({
+      getSafePlace: async () => ({ description: 'Тихий сад у бабушки' }),
+    });
+    const result = await fetchJourneyResult(api, item({ type: 'safe_place' }));
+    expect(result?.parts).toEqual([
+      { title: undefined, text: 'Тихий сад у бабушки' },
+    ]);
+  });
+
+  it('plan_done: находит запись по id среди истории плана', async () => {
+    const getPlanHistory = vi.fn(async () => [
+      { id: 2, practiceText: 'Дыхание 4-4-6' },
+    ]);
+    const api = stubApi({ getPlanHistory });
+    const result = await fetchJourneyResult(
+      api,
+      item({ type: 'plan_done', id: 2 }),
+    );
+    expect(getPlanHistory).toHaveBeenCalledWith(365);
+    expect(result?.parts).toEqual([
+      { title: 'Практика', text: 'Дыхание 4-4-6' },
+    ]);
+  });
+
+  it('schema_note: с schemaIds в записи ленты — ищет по первому id из списка', async () => {
+    const api = stubApi({
+      getSchemaNotes: async () => [
+        { schemaId: 'abandonment', triggers: 'Молчание', healthyView: '' },
+      ],
+    });
+    const result = await fetchJourneyResult(
+      api,
+      item({
+        type: 'schema_note',
+        schemaIds: ['abandonment', 'defectiveness'],
+      }),
+    );
+    expect(result?.parts).toEqual([{ title: 'Триггеры', text: 'Молчание' }]);
+  });
+
   it('незнакомый тип записи → null без похода в api (default-ветка)', async () => {
     const result = await fetchJourneyResult(
       stubApi({}),
