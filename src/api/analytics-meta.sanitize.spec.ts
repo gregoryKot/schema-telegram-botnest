@@ -490,4 +490,206 @@ describe('sanitizeMeta', () => {
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });
+
+  it('today_streak_toggle: hidden не boolean → отброшено', () => {
+    expect(
+      sanitizeMeta('today_streak_toggle', { hidden: 'true' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('today_streak_toggle', {})).toBeUndefined();
+  });
+
+  it('onboarding_step: step из allow-list проходит', () => {
+    expect(sanitizeMeta('onboarding_step', { step: 'done' })).toEqual({
+      step: 'done',
+    });
+  });
+
+  it('onboarding_step: неизвестный/отсутствующий step → отброшено', () => {
+    expect(
+      sanitizeMeta('onboarding_step', { step: 'evil_step' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('onboarding_step', {})).toBeUndefined();
+  });
+
+  it('onboarding_step: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('onboarding_step', {
+        step: 'privacy',
+        userAgent: 'секретный текст',
+      }),
+    ).toEqual({ step: 'privacy' });
+  });
+
+  it('today_block_toggle: block + hidden из allow-list проходят', () => {
+    expect(
+      sanitizeMeta('today_block_toggle', { block: 'phrase', hidden: true }),
+    ).toEqual({ block: 'phrase', hidden: true });
+  });
+
+  it('today_block_toggle: неизвестный block → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('today_block_toggle', { block: 'evil', hidden: true }),
+    ).toBeUndefined();
+  });
+
+  it('today_block_toggle: hidden не boolean → отброшено', () => {
+    expect(
+      sanitizeMeta('today_block_toggle', { block: 'streak', hidden: 'yes' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('today_block_toggle', { block: 'streak' }),
+    ).toBeUndefined();
+  });
+
+  it('today_customize_open: via из allow-list проходит', () => {
+    expect(sanitizeMeta('today_customize_open', { via: 'longpress' })).toEqual({
+      via: 'longpress',
+    });
+  });
+
+  it('today_customize_open: неизвестный/отсутствующий via → отброшено', () => {
+    expect(
+      sanitizeMeta('today_customize_open', { via: 'evil' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('today_customize_open', {})).toBeUndefined();
+  });
+
+  it('home_screen_offer: action + surface из allow-list проходят', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'added',
+        surface: 'today',
+      }),
+    ).toEqual({ action: 'added', surface: 'today' });
+  });
+
+  it('home_screen_offer: неизвестный action → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'evil',
+        surface: 'today',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('home_screen_offer: неизвестный/отсутствующий surface → отброшено', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', { action: 'shown', surface: 'evil' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('home_screen_offer', { action: 'shown' }),
+    ).toBeUndefined();
+  });
+
+  it('home_screen_offer: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'add',
+        surface: 'settings',
+        deviceModel: 'секретный отпечаток устройства',
+      }),
+    ).toEqual({ action: 'add', surface: 'settings' });
+  });
+
+  // ── Deny-list-by-default: события без meta не пропускают вообще ничего ──
+  it('stop_start/journey_open/ysq_help_open/plus_open: meta игнорируется', () => {
+    expect(sanitizeMeta('stop_start', { junk: 'x' })).toBeUndefined();
+    expect(sanitizeMeta('journey_open', { junk: 'x' })).toBeUndefined();
+    expect(sanitizeMeta('ysq_help_open', { junk: 'x' })).toBeUndefined();
+    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
+  });
+
+  // quiz_started/quiz_completed/practice_link_click несут meta по реестру
+  // (analytics.constants.ts), но санитизируются ТОЛЬКО в PublicEventsController
+  // (анонимный /api/public-event) — эта функция обслуживает /api/event и
+  // намеренно не знает про них: deny-by-default безопасен даже если
+  // авторизованный клиент пошлёт их сюда по ошибке.
+  it('quiz_started/quiz_completed/practice_link_click: нет ветки в sanitizeMeta — meta полностью отбрасывается', () => {
+    expect(
+      sanitizeMeta('quiz_started', { quiz: 'attachment', src: 'bot' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('quiz_completed', {
+        quiz: 'attachment',
+        result: 'secure',
+        src: 'bot',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('practice_link_click', { place: 'footer' }),
+    ).toBeUndefined();
+  });
+
+  // ── Атаки на deny-by-default: произвольные структуры не пролезают ни в
+  // одну ветку и не портят вывод для валидных полей ──────────────────────
+  it('prototype pollution ключи (__proto__/constructor) не влияют на результат', () => {
+    const malicious = JSON.parse(
+      '{"kind":"diary","__proto__":{"polluted":true},"constructor":{"evil":1}}',
+    ) as Record<string, unknown>;
+    const result = sanitizeMeta('share_card', malicious);
+    expect(result).toEqual({ kind: 'diary' });
+    expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(
+      false,
+    );
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it('вложенный объект/массив вместо строкового поля → отброшено', () => {
+    expect(
+      sanitizeMeta('share_card', { kind: { nested: 'diary' } }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('share_card', { kind: ['diary'] })).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_failed', {
+        host: 'max',
+        reason: { message: 'email@example.com', stack: 'trace' },
+      }),
+    ).toBeUndefined();
+  });
+
+  it('огромная строка вместо enum-значения не проходит (не DoS-хранится)', () => {
+    const huge = 'a'.repeat(100_000);
+    expect(sanitizeMeta('share_card', { kind: huge })).toBeUndefined();
+    expect(sanitizeMeta('web_banner_open', { banner: huge })).toBeUndefined();
+  });
+
+  it('meta с email/телефоном в незнакомых полях полностью отбрасывается', () => {
+    expect(
+      sanitizeMeta('crisis_hotline_tapped', {
+        surface: 'mode',
+        email: 'user@example.com',
+        phone: '+79991234567',
+      }),
+    ).toEqual({ surface: 'mode' });
+    expect(
+      sanitizeMeta('outbox_flush', {
+        count: 3,
+        userNote: 'мой дневник за сегодня: было тяжело',
+      }),
+    ).toEqual({ count: 3 });
+  });
+
+  it('outbox_flush: отрицательные/дробные/NaN/Infinity count отброшены', () => {
+    expect(sanitizeMeta('outbox_flush', { count: -5 })).toBeUndefined();
+    expect(sanitizeMeta('outbox_flush', { count: 1.5 })).toBeUndefined();
+    expect(sanitizeMeta('outbox_flush', { count: NaN })).toBeUndefined();
+    expect(sanitizeMeta('outbox_flush', { count: Infinity })).toBeUndefined();
+    expect(sanitizeMeta('outbox_flush', { count: '5' })).toBeUndefined();
+  });
+
+  it('allow-list-сверка: у каждого события ANALYTICS_EVENTS есть предсказуемое поведение sanitizeMeta', () => {
+    // События, ветка которых проверена выше пооперационно (с meta) —
+    // остальные (без meta) покрыты тестом deny-by-default. Сверка сама
+    // работает как трипваер: новое событие в ANALYTICS_EVENTS, для которого
+    // никто не написал тест выше, не завалит этот expect (он про форму
+    // ответа), но развалит сборку `--verbose`-обзора при ревью. Здесь же
+    // фиксируем факт: функция для НЕИЗВЕСТНОГО имени события (в объединении
+    // типов не встречающегося) тоже обязана возвращать undefined, а не кидать.
+    expect(
+      sanitizeMeta(
+        'nonexistent_event' as unknown as Parameters<typeof sanitizeMeta>[0],
+        { anything: 'here' },
+      ),
+    ).toBeUndefined();
+  });
 });
