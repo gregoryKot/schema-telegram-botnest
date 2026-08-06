@@ -20,8 +20,11 @@ describe('StatsReportService.render', () => {
     const accountLink = {
       render: jest.fn().mockResolvedValue('перенос данных: 2'),
     };
+    const plus = {
+      render: jest.fn().mockResolvedValue('кнопка плюс: 4'),
+    };
     return {
-      blocks: { accountLink },
+      blocks: { accountLink, plus },
       service: new StatsReportService(
         product as never,
         modeCard as never,
@@ -29,6 +32,7 @@ describe('StatsReportService.render', () => {
         warmWords as never,
         phraseChecks as never,
         accountLink as never,
+        plus as never,
       ),
     };
   };
@@ -38,7 +42,8 @@ describe('StatsReportService.render', () => {
 
     await expect(service.render()).resolves.toBe(
       'продуктовые метрики\n\nкарточки режимов: 9\n\nдневник режимов: 5\n\n' +
-        'тёплые слова: 3\n\nразборы фраз: 7\n\nперенос данных: 2',
+        'тёплые слова: 3\n\nразборы фраз: 7\n\nперенос данных: 2\n\n' +
+        'кнопка плюс: 4',
     );
   });
 
@@ -48,6 +53,8 @@ describe('StatsReportService.render', () => {
     const { service, blocks } = build();
     const out = await service.render();
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
+    expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('перенос данных: 2');
+    expect(out).toContain('кнопка плюс: 4');
   });
 });
