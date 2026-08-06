@@ -849,7 +849,7 @@
   "webapp/src/components/modeMapFlow.ts": 76,
   "webapp/src/components/ModeMapGuide.tsx": 197,
   "webapp/src/components/modeMapIcons.tsx": 67,
-  "webapp/src/components/modeMapLayout.ts": 138,
+  "webapp/src/components/modeMapLayout.ts": 139,
   "webapp/src/components/ModeMapLegend.tsx": 53,
   "webapp/src/components/ModeMapNodeEditor.tsx": 617,
   "webapp/src/components/ModeMapNodes.tsx": 383,
