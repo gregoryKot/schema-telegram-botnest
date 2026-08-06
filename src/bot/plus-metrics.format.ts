@@ -11,6 +11,8 @@ export interface PlusMetrics {
   actions30: Array<{ action: string; count: number }>;
   /** Что прячут из меню (quick_action_toggle, hidden=true), по убыванию. */
   hidden30: Array<{ action: string; count: number }>;
+  /** За месяц: сколько раз меняли порядок пунктов (quick_action_move). */
+  moves30: number;
 }
 
 // Человеческие подписи пунктов меню — в отчёте не должно быть внутренних id.
@@ -43,18 +45,21 @@ const listByLabel = (rows: Array<{ action: string; count: number }>): string =>
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatPlusMetrics(m: PlusMetrics): string {
-  if (m.opens30 === 0) {
+  if (m.opens30 === 0 && m.moves30 === 0) {
     return '➕ <b>Кнопка «плюс»</b>: за 30 дней ещё не открывали.';
   }
-  const lines = [
-    `➕ <b>Кнопка «плюс»</b> (за месяц)`,
-    `Открывали: ${m.opens30} раз (${m.users30} человек)`,
-  ];
+  const lines = [`➕ <b>Кнопка «плюс»</b> (за месяц)`];
+  if (m.opens30 > 0) {
+    lines.push(`Открывали: ${m.opens30} раз (${m.users30} человек)`);
+  }
   if (m.actions30.length > 0) {
     lines.push(`Чаще всего выбирают: ${listByLabel(m.actions30)}`);
   }
   if (m.hidden30.length > 0) {
     lines.push(`Убирают из меню: ${listByLabel(m.hidden30)}`);
+  }
+  if (m.moves30 > 0) {
+    lines.push(`Меняли порядок пунктов: ${m.moves30} раз`);
   }
   return lines.join('\n');
 }

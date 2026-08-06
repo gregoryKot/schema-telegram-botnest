@@ -376,6 +376,67 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
+  it('quick_action_move: валидные action + surface + dir проходят', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'up',
+      }),
+    ).toEqual({ action: 'plans', surface: 'plus', dir: 'up' });
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'tasks',
+        surface: 'tools',
+        dir: 'down',
+      }),
+    ).toEqual({ action: 'tasks', surface: 'tools', dir: 'down' });
+  });
+
+  it('quick_action_move: неизвестный action → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'evil',
+        surface: 'plus',
+        dir: 'up',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: неизвестный surface → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'evil',
+        dir: 'up',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: невалидный dir → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'sideways',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('quick_action_move', { action: 'plans', surface: 'plus' }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'up',
+        note: 'секретный текст пользователя',
+      }),
+    ).toEqual({ action: 'plans', surface: 'plus', dir: 'up' });
+  });
+
   // ── Перенос аккаунта из мессенджера (account_link_*) ────────────────────
   // Сюда мог бы уехать текст ошибки или адрес — а meta не шифруется. Поэтому
   // проверяем именно срезание всего лишнего, а не только happy path.
