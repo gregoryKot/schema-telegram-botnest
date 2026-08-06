@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { api } from '../api';
+import {
+  ACCOUNT_LINK_CONFIRMED_EVENT,
+  type AccountLinkHost,
+} from '../../../shared/src/share/analytics';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -66,7 +71,13 @@ export function LinkDevicePage() {
     setBusy(true);
     setError(null);
     try {
-      await call('approve');
+      const res = (await call('approve')) as { merged?: boolean };
+      // Успех считает именно этот экран: мини-апп в этот момент ещё ждёт и о
+      // результате не знает, а посчитать «довели до конца» надо ровно один раз.
+      api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {
+        host: (preview?.provider ?? 'max') as AccountLinkHost,
+        merged: res.merged === true,
+      });
       setDone(true);
     } catch (e) {
       setError((e as Error).message);

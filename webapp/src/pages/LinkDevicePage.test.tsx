@@ -15,8 +15,10 @@ import {
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LinkDevicePage } from './LinkDevicePage';
 import { useAuth } from '../auth/authContext';
+import { api } from '../api';
 
 vi.mock('../auth/authContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 
 const mockedAuth = useAuth as unknown as ReturnType<typeof vi.fn>;
 
@@ -134,6 +136,46 @@ describe('подтверждение', () => {
     expect(
       (approveCall[1] as RequestInit).headers as Record<string, string>,
     ).toMatchObject({ 'x-requested-with': 'webapp' });
+  });
+
+  // ── Аналитика (правило №8) ────────────────────────────────────────────────
+  it('успех считает ИМЕННО этот экран — мини-апп в этот момент ещё ждёт', async () => {
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
+    fireEvent.click(screen.getByText('Да, это я'));
+
+    await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
+    expect(api.trackEvent).toHaveBeenCalledWith('account_link_confirmed', {
+      host: 'max',
+      merged: true,
+    });
+  });
+
+  it('подтвердили под тем же аккаунтом — merged=false, успех не приписывается переносу', async () => {
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { merged: false }));
+    fireEvent.click(screen.getByText('Да, это я'));
+
+    await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
+    expect(api.trackEvent).toHaveBeenCalledWith('account_link_confirmed', {
+      host: 'max',
+      merged: false,
+    });
+  });
+
+  it('подтверждение упало — событие успеха не уходит', async () => {
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+
+    fetchMock.mockResolvedValue(jsonResponse(400, { message: 'Код истёк' }));
+    fireEvent.click(screen.getByText('Да, это я'));
+
+    await waitFor(() => expect(screen.getByText('Код истёк')).toBeTruthy());
+    expect(api.trackEvent).not.toHaveBeenCalled();
   });
 
   it('подтверждение не прошло — сообщение видно, экран «готово» не показывается', async () => {

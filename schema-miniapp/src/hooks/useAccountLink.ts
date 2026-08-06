@@ -4,6 +4,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { getHost } from '../../../shared/src/host';
 import {
+  ACCOUNT_LINK_FAILED_EVENT,
+  ACCOUNT_LINK_STARTED_EVENT,
+  type AccountLinkFailReason,
+  type AccountLinkHost,
+} from '../../../shared/src/share/analytics';
+import { api } from '../api';
+import {
   openLinkPage,
   pollLink,
   startLink,
@@ -31,16 +38,28 @@ export function useAccountLink(): AccountLink {
     if (running.current) return;
     running.current = true;
     setBusy(true);
+    const host = getHost().id as AccountLinkHost;
+    // Событие уходит ДО ухода в браузер: без него «начали, но не дошли» ничем
+    // не отличается от «даже не пробовали».
+    api.trackEvent(ACCOUNT_LINK_STARTED_EVENT, { host });
     try {
-      const started = await startLink(getHost().id);
+      const started = await startLink(host);
       setStart(started);
       setState('waiting');
       openLinkPage(started.userCode);
       setBusy(false);
       const outcome = await pollLink(started);
-      setState(outcome === 'linked' ? 'linked' : 'failed');
+      if (outcome === 'linked') {
+        // Подтверждение считает браузер — здесь только неудачи, иначе один
+        // успех посчитался бы дважды.
+        setState('linked');
+        return;
+      }
+      setState('failed');
+      failed(host, 'expired');
     } catch {
       setState('failed');
+      failed(host, 'error');
     } finally {
       setBusy(false);
       running.current = false;
@@ -48,4 +67,8 @@ export function useAccountLink(): AccountLink {
   }, []);
 
   return { state, start, busy, begin };
+}
+
+function failed(host: AccountLinkHost, reason: AccountLinkFailReason): void {
+  api.trackEvent(ACCOUNT_LINK_FAILED_EVENT, { host, reason });
 }
