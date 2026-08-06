@@ -5,6 +5,8 @@ import { AuthOauthController } from './auth-oauth.controller';
 import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
+import { AuthDeviceLinkController } from './auth-device-link.controller';
+import { DeviceLinkService } from './device-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
@@ -28,6 +30,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,
+    DeviceLinkService,
     SecurityLogService,
     TotpService,
     EmailService,
@@ -44,11 +47,11 @@ import { PrismaModule } from '../prisma/prisma.module';
     AuthTelegramController,
     AuthAccountController,
     AuthMaxController,
+    AuthDeviceLinkController,
     Auth2faController,
   ],
-  // MaxProvider экспортируется отдельно от AuthProviderRegistry — его
-  // напрямую использует TelegramAuthGuard (api/init-data-paths.ts), который
-  // живёт вне AuthModule (в ApiModule, но тот уже импортирует AuthModule).
+  // MaxProvider экспортируется отдельно от реестра: его напрямую использует
+  // TelegramAuthGuard (api/init-data-paths.ts) вне этого модуля.
   exports: [
     AuthService,
     JwtAuthGuard,

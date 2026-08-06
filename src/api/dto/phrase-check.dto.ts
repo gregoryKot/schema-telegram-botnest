@@ -38,3 +38,15 @@ export class PhraseCheckDto {
   @IsBoolean()
   inWarmWords?: boolean;
 }
+
+/**
+ * Правка уже сохранённого разбора: меняется ТОЛЬКО ответ Здорового Взрослого.
+ * Сама фраза и приметы критика — факт момента, они не редактируются задним
+ * числом. Пустая строка — валидна: это осознанная очистка ответа, сервис
+ * превращает её в null (см. createPhraseCheck).
+ */
+export class UpdatePhraseCheckDto {
+  @IsString()
+  @MaxLength(TEXT_MAX)
+  rewrite!: string;
+}

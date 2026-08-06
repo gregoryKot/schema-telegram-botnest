@@ -98,3 +98,18 @@ export type OnboardingStep =
   | 'author'
   | 'home_screen'
   | 'done';
+
+// ── Перенос аккаунта из мессенджера (device-link, RFC 8628) ─────────────────
+// Путь идёт через внешний браузер, поэтому мерить надо все три точки: начал в
+// мессенджере, подтвердил в браузере, не вышло. Без последней в отчёте видны
+// только успехи, и «сколько людей не смогли» не измерить.
+// Парный allow-list (ANALYTICS_EVENTS, ACCOUNT_LINK_*) —
+// src/analytics/analytics.constants.ts, при изменении синхронь оба.
+export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
+export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
+export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
+
+/** Мессенджер, из которого переносят: meta.host. */
+export type AccountLinkHost = 'max' | 'telegram';
+/** Почему не вышло: meta.reason. */
+export type AccountLinkFailReason = 'expired' | 'error';

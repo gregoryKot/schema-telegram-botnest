@@ -376,6 +376,56 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
+  // ── Перенос аккаунта из мессенджера (account_link_*) ────────────────────
+  // Сюда мог бы уехать текст ошибки или адрес — а meta не шифруется. Поэтому
+  // проверяем именно срезание всего лишнего, а не только happy path.
+  it('account_link_started: пропускает только известный мессенджер', () => {
+    expect(sanitizeMeta('account_link_started', { host: 'max' })).toEqual({
+      host: 'max',
+    });
+    expect(
+      sanitizeMeta('account_link_started', { host: 'вконтакте' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('account_link_started', {})).toBeUndefined();
+  });
+
+  it('account_link_started: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('account_link_started', {
+        host: 'max',
+        code: 'ABCD2345',
+        userName: 'Гриша',
+      }),
+    ).toEqual({ host: 'max' });
+  });
+
+  it('account_link_confirmed: нужен и мессенджер, и признак переноса', () => {
+    expect(
+      sanitizeMeta('account_link_confirmed', {
+        host: 'telegram',
+        merged: true,
+      }),
+    ).toEqual({ host: 'telegram', merged: true });
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'telegram' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'max', merged: 'yes' }),
+    ).toBeUndefined();
+  });
+
+  it('account_link_failed: причина — только из списка, свободный текст не проходит', () => {
+    expect(
+      sanitizeMeta('account_link_failed', { host: 'max', reason: 'expired' }),
+    ).toEqual({ host: 'max', reason: 'expired' });
+    expect(
+      sanitizeMeta('account_link_failed', {
+        host: 'max',
+        reason: 'PrismaClientKnownRequestError: user 12345 not found',
+      }),
+    ).toBeUndefined();
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

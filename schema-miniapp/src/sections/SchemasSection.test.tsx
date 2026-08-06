@@ -59,6 +59,9 @@ vi.mock('../components/SchemaDetailSheet', () => ({
 vi.mock('../components/NeedDetailSheet', () => ({
   NeedDetailSheet: () => <div data-testid="need-detail" />,
 }));
+vi.mock('../components/myCards/MyCardsSection', () => ({
+  MyCardsSection: () => <div data-testid="my-cards-section" />,
+}));
 
 const PROFILE = {
   name: 'Аня',

@@ -80,6 +80,12 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     email: p('дублирует providerId/OAuth-профиль — см. providerId'),
     displayName: p('имя из OAuth-профиля, показывается в /account'),
   },
+  DeviceLinkRequest: {
+    id: ID,
+    deviceCodeHash: TOKEN,
+    userCodeHash: TOKEN,
+    provider: ID,
+  },
   WebSession: {
     id: ID,
     tokenHash: TOKEN,

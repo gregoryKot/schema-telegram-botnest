@@ -63,6 +63,47 @@ describe('e2e smoke: ownership упражнения «Разобрать фра�
     expect(asStranger.body).toEqual([]);
   });
 
+  it('B не может отредактировать rewrite в разборе A; сам A может', async () => {
+    const tokenA = signAccessToken(USER_A, secret());
+    const tokenB = signAccessToken(USER_B, secret());
+
+    const created = await request(app.getHttpServer())
+      .post('/api/phrase-checks')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        phrase: 'фраза для правки',
+        marks: [],
+        rewrite: 'исходный ответ A',
+      });
+    const id = created.body.id;
+
+    const asStranger = await request(app.getHttpServer())
+      .patch(`/api/phrase-checks/${id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ rewrite: 'подмена от B' });
+    expect(asStranger.status).toBe(404);
+
+    const afterStranger = await request(app.getHttpServer())
+      .get('/api/phrase-checks')
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(
+      afterStranger.body.find((r: { id: number }) => r.id === id).rewrite,
+    ).toBe('исходный ответ A');
+
+    const asOwner = await request(app.getHttpServer())
+      .patch(`/api/phrase-checks/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ rewrite: 'уточнённый ответ A' });
+    expect(asOwner.status).toBeLessThan(300);
+
+    const afterOwner = await request(app.getHttpServer())
+      .get('/api/phrase-checks')
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(
+      afterOwner.body.find((r: { id: number }) => r.id === id).rewrite,
+    ).toBe('уточнённый ответ A');
+  });
+
   it('чужой разбор не удаляется по id', async () => {
     const tokenA = signAccessToken(USER_A, secret());
     const tokenB = signAccessToken(USER_B, secret());

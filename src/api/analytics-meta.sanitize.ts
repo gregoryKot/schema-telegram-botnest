@@ -11,6 +11,8 @@ import {
   HOME_SCREEN_SURFACE_SET,
   QUICK_ACTION_ID_SET,
   QUICK_ACTION_SURFACE_SET,
+  ACCOUNT_LINK_HOST_SET,
+  ACCOUNT_LINK_FAIL_REASON_SET,
 } from './dto/analytics.dto';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
@@ -207,6 +209,38 @@ export function sanitizeMeta(
       QUICK_ACTION_SURFACE_SET.has(surface)
     ) {
       return { action, hidden, surface };
+    }
+    return undefined;
+  }
+  if (name === 'account_link_started') {
+    const host = meta.host;
+    if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
+      return { host };
+    }
+    return undefined;
+  }
+  if (name === 'account_link_confirmed') {
+    const host = meta.host;
+    const merged = meta.merged;
+    if (
+      typeof host === 'string' &&
+      ACCOUNT_LINK_HOST_SET.has(host) &&
+      typeof merged === 'boolean'
+    ) {
+      return { host, merged };
+    }
+    return undefined;
+  }
+  if (name === 'account_link_failed') {
+    const host = meta.host;
+    const reason = meta.reason;
+    if (
+      typeof host === 'string' &&
+      ACCOUNT_LINK_HOST_SET.has(host) &&
+      typeof reason === 'string' &&
+      ACCOUNT_LINK_FAIL_REASON_SET.has(reason)
+    ) {
+      return { host, reason };
     }
     return undefined;
   }
