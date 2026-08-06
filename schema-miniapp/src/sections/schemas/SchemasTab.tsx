@@ -1,15 +1,15 @@
-import { fmtDate } from '../../utils/format';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { useTr } from '../../utils/addressForm';
 import { PatternsHero } from '../../components/PatternsHero';
 import {
   PatternFrequencyList,
   FreqGroup,
 } from '../../components/PatternFrequencyList';
+import { MyCardsSection } from '../../components/myCards/MyCardsSection';
 import { WeekTopSummary } from '../../utils/patternsSummary';
 import { ChipsSkeleton } from './CatalogParts';
 import { shortName } from './utils';
 import { SchemasSectionProps } from './types';
+import { YsqStatusCard } from './YsqStatusCard';
 
 interface SchemasTabProps {
   profileLoading: boolean;
@@ -36,7 +36,6 @@ export function SchemasTab({
   onShowSchemaPicker,
   onOpenSchemaDetail,
 }: SchemasTabProps) {
-  const tr = useTr();
   const hasSchemas = allSchemaIds.length > 0 || !!ysqCompletedAt;
 
   // Схемы пользователя, сгруппированные по домену, с недельной частотой.
@@ -69,66 +68,11 @@ export function SchemasTab({
 
       {/* Тест на схемы — компактный вход к результатам/продолжению */}
       {hasSchemas && (
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 18,
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: 'var(--accent)',
-                marginBottom: 2,
-              }}
-            >
-              Тест на схемы
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-              {ysqProgressAnswered != null
-                ? `Начат · отвечено ${ysqProgressAnswered} из 116`
-                : ysqCompletedAt
-                  ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты внутри`
-                  : tr(
-                      'Определи схемы автоматически',
-                      'Определите схемы автоматически',
-                    )}
-            </div>
-          </div>
-          <button
-            onClick={() => onOpenSchema({ startTest: true })}
-            style={{
-              padding: '9px 20px',
-              borderRadius: 12,
-              border: 'none',
-              background:
-                ysqCompletedAt && ysqProgressAnswered == null
-                  ? 'rgba(var(--fg-rgb),0.08)'
-                  : 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-              color:
-                ysqCompletedAt && ysqProgressAnswered == null
-                  ? 'var(--text-sub)'
-                  : '#fff',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            {ysqProgressAnswered != null
-              ? 'Продолжить'
-              : ysqCompletedAt
-                ? 'Результаты'
-                : 'Начать'}
-          </button>
-        </div>
+        <YsqStatusCard
+          ysqCompletedAt={ysqCompletedAt}
+          ysqProgressAnswered={ysqProgressAnswered}
+          onOpenSchema={onOpenSchema}
+        />
       )}
 
       {/* Мои схемы по группам с недельной частотой (дизайн-макет «Паттерны») */}
@@ -164,6 +108,9 @@ export function SchemasTab({
             + Добавить схему
           </button>
         ))}
+
+      {/* Заполненные карточки схем — открыть/отредактировать/поделиться */}
+      <MyCardsSection kind="schema" />
     </>
   );
 }

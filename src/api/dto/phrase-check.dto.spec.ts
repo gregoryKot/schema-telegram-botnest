@@ -3,7 +3,7 @@
 // иначе в БД накопятся приметы, которых в упражнении нет.
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { PhraseCheckDto } from './phrase-check.dto';
+import { PhraseCheckDto, UpdatePhraseCheckDto } from './phrase-check.dto';
 import { PHRASE_MARK_IDS } from '../../bot/phrase-check.constants';
 
 async function errorsFor(body: Record<string, unknown>): Promise<string[]> {
@@ -59,5 +59,35 @@ describe('PhraseCheckDto', () => {
     await expect(errorsFor({ ...VALID, rewrite: undefined })).resolves.toEqual(
       [],
     );
+  });
+});
+
+async function errorsForUpdate(
+  body: Record<string, unknown>,
+): Promise<string[]> {
+  const dto = plainToInstance(UpdatePhraseCheckDto, body);
+  const errs = await validate(dto, { whitelist: true });
+  return errs.map((e) => e.property);
+}
+
+describe('UpdatePhraseCheckDto', () => {
+  it('валидная правка проходит', async () => {
+    await expect(
+      errorsForUpdate({ rewrite: 'новый добрый ответ' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('пустая строка — валидна (это очистка ответа)', async () => {
+    await expect(errorsForUpdate({ rewrite: '' })).resolves.toEqual([]);
+  });
+
+  it('rewrite обязателен в теле запроса', async () => {
+    await expect(errorsForUpdate({})).resolves.toContain('rewrite');
+  });
+
+  it('rewrite длиннее 3000 — отказ', async () => {
+    await expect(
+      errorsForUpdate({ rewrite: 'я'.repeat(3001) }),
+    ).resolves.toContain('rewrite');
   });
 });

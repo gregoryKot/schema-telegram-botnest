@@ -12,6 +12,9 @@ vi.mock('../../components/ModesHero', () => ({
   INTRO_MODE_ID: 'demanding_critic',
 }));
 
+vi.mock('../../components/myCards/MyCardsSection', () => ({
+  MyCardsSection: () => <div data-testid="my-cards-section" />,
+}));
 vi.mock('../../components/PatternFrequencyList', () => ({
   PatternFrequencyList: ({
     groups,
@@ -44,6 +47,11 @@ describe('ModesTab — группировка режимов пользоват�
   it('без выбранных режимов список групп не рендерится', () => {
     render(<ModesTab {...BASE_PROPS} myModeIds={[]} modeFreq={{}} />);
     expect(screen.queryByTestId('pattern-list')).toBeNull();
+  });
+
+  it('секция «Мои карточки» всегда смонтирована — сама решает, показываться ли', () => {
+    render(<ModesTab {...BASE_PROPS} myModeIds={[]} modeFreq={{}} />);
+    expect(screen.getByTestId('my-cards-section')).toBeTruthy();
   });
 
   it('только группы с реально выбранными режимами попадают в список', () => {
