@@ -3,9 +3,15 @@
 // — сведено в shared, канон безэмодзийный. Тест держит ветвления: веха
 // отмечается data-milestone (акцент числа), insight-блок опционален,
 // share-фолбэк уходит в буфер и трекает неуспех.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { Celebration } from './Celebration';
+
+beforeEach(() => {
+  // Гасим canvas-конфетти (useConfetti): jsdom отдаёт null вместо 2D-контекста,
+  // и rAF-цикл анимации падал unhandled-ошибкой ПОСЛЕ завершения теста (CI).
+  localStorage.setItem('reduce_motion', '1');
+});
 
 const tr = (ty: string, vy: string) => `${ty}|${vy}`;
 const noop = () => {};
@@ -19,6 +25,7 @@ const base = {
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.restoreAllMocks();
 });
 
