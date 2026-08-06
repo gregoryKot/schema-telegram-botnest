@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ToolRow } from '../../components/ToolRow';
 import { buildToolRows, ToolRowsProps } from './toolRows';
 import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
+import { CustomizeButton } from '../../components/plusMenu/CustomizeButton';
 import type { QuickActionId } from '../../utils/quickActions';
 import {
   getHiddenActions,
@@ -64,22 +65,11 @@ export function ToolsList(props: Props) {
         }}
       >
         <div className="section-label">Инструменты</div>
-        <button
+        <CustomizeButton
+          label="Настроить"
+          ariaLabel="Настроить список инструментов"
           onClick={() => setShowCustomize(true)}
-          aria-label="Настроить список инструментов"
-          style={{
-            minHeight: 44,
-            padding: '6px 10px',
-            border: 'none',
-            background: 'none',
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text-sub)',
-          }}
-        >
-          Настроить
-        </button>
+        />
       </div>
 
       {visibleRows.length === 0 ? (

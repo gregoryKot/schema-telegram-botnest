@@ -14,6 +14,7 @@ import {
 } from '../../utils/quickActionPrefs';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
 import { ActionRow } from './ActionRow';
+import { CustomizeButton } from './CustomizeButton';
 
 interface Props {
   onAction: (id: QuickActionId) => void;
@@ -61,23 +62,11 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
             }}
           >
             <div className="d-caps">Быстрое действие</div>
-            <button
+            <CustomizeButton
+              label="Изменить"
+              ariaLabel="Настроить меню быстрых действий"
               onClick={() => setShowCustomize(true)}
-              style={{
-                minHeight: 44,
-                padding: '6px 10px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 700,
-                color: 'var(--accent)',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              Изменить
-            </button>
+            />
           </div>
 
           {visibleGroups.length === 0 ? (
@@ -103,7 +92,6 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
                   {g.actions.map((a) => (
                     <ActionRow
                       key={a.id}
-                      emoji={a.emoji}
                       label={a.label}
                       sub={a.sub}
                       onClick={() => handleAction(a.id)}
