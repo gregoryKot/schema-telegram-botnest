@@ -351,7 +351,7 @@
   "schema-miniapp/src/utils/quickActionPrefs.ts": 54,
   "schema-miniapp/src/utils/quickActions.ts": 138,
   "schema-miniapp/src/utils/reducedMotion.ts": 2,
-  "schema-miniapp/src/utils/safezone.ts": 107,
+  "schema-miniapp/src/utils/safezone.ts": 149,
   "schema-miniapp/src/utils/storageKeys.ts": 2,
   "schema-miniapp/src/utils/telemetryUrl.ts": 2,
   "schema-miniapp/src/utils/theme.ts": 39,
