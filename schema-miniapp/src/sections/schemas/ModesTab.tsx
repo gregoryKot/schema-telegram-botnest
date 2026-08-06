@@ -1,12 +1,10 @@
-import { MODE_GROUPS } from '../../schemaTherapyData';
 import { ModesHero, INTRO_MODE_ID } from '../../components/ModesHero';
-import {
-  PatternFrequencyList,
-  FreqGroup,
-} from '../../components/PatternFrequencyList';
+import { PatternFrequencyList } from '../../components/PatternFrequencyList';
+import { MyCardsSection } from '../../components/myCards/MyCardsSection';
 import { WeekTopSummary } from '../../utils/patternsSummary';
 import { ChipsSkeleton } from './CatalogParts';
 import { SchemasSectionProps } from './types';
+import { buildModeFreqGroups } from './modeGroups';
 
 interface ModesTabProps {
   profileLoading: boolean;
@@ -30,16 +28,7 @@ export function ModesTab({
   onOpenModeIntro,
 }: ModesTabProps) {
   // Режимы пользователя, сгруппированные, с недельной частотой.
-  const groups: FreqGroup[] = MODE_GROUPS.map((group) => ({
-    title: group.group,
-    items: group.items
-      .filter((m) => myModeIds.includes(m.id))
-      .map((m) => ({
-        id: m.id,
-        name: m.name,
-        freq: modeFreq[m.id] ?? 0,
-      })),
-  })).filter((g) => g.items.length > 0);
+  const groups = buildModeFreqGroups(myModeIds, modeFreq);
 
   return (
     <>
@@ -71,6 +60,9 @@ export function ModesTab({
             hint="Полоска рядом с режимом — сколько дней за неделю он включался по дневнику. Это наблюдение, а не оценка."
           />
         ))}
+
+      {/* Заполненные карточки режимов — открыть/отредактировать/поделиться */}
+      <MyCardsSection kind="mode" />
     </>
   );
 }

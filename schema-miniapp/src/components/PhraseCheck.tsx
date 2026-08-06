@@ -19,6 +19,11 @@ import {
 import { MarksStep } from './phraseCheck/MarksStep';
 import { RewriteStep } from './phraseCheck/RewriteStep';
 import { PhraseDoneScreen } from './phraseCheck/DoneScreen';
+import { PhraseCheckHistoryCard } from './phraseCheck/HistoryCard';
+import {
+  PhraseCheckHistoryList,
+  type PhraseCheckHistoryRow,
+} from './phraseCheck/HistoryList';
 
 interface Props {
   onClose: () => void;
@@ -35,9 +40,9 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   // это ровно тот жанр; галочку видно и её можно снять.
   const [inWarmWords, setInWarmWords] = useState(true);
   const [done, setDone] = useState(false);
-  const [history, setHistory] = useState<
-    Array<{ id: number; phrase: string; rewrite: string | null }>
-  >([]);
+  const [history, setHistory] = useState<PhraseCheckHistoryRow[]>([]);
+  // Открытая карточка прошлого разбора (id) — null, пока список неактивен.
+  const [openHistoryId, setOpenHistoryId] = useState<number | null>(null);
 
   useEffect(() => {
     api
@@ -47,12 +52,15 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           rows.slice(0, 3).map((r) => ({
             id: r.id,
             phrase: r.phrase,
+            marks: r.marks,
             rewrite: r.rewrite,
           })),
         ),
       )
       .catch(() => {});
   }, []);
+
+  const openHistoryEntry = history.find((h) => h.id === openHistoryId);
 
   function answer(id: PhraseMarkId, critic: boolean) {
     if (critic) setMarks((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -208,37 +216,10 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
               Проверить →
             </button>
 
-            {history.length > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <div className="section-label" style={{ marginBottom: 8 }}>
-                  Прошлые разборы
-                </div>
-                {history.map((h) => (
-                  <div
-                    key={h.id}
-                    style={{
-                      padding: '10px 14px',
-                      background: 'rgba(var(--fg-rgb),0.03)',
-                      border: '1px solid rgba(var(--fg-rgb),0.06)',
-                      borderRadius: 12,
-                      marginBottom: 7,
-                      fontSize: 13,
-                      lineHeight: 1.45,
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    «{h.phrase}»
-                    {h.rewrite && (
-                      <div
-                        style={{ color: 'var(--accent-green)', marginTop: 4 }}
-                      >
-                        → «{h.rewrite}»
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <PhraseCheckHistoryList
+              history={history}
+              onOpen={setOpenHistoryId}
+            />
           </>
         )}
 
@@ -269,6 +250,21 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           </div>
         )}
       </div>
+
+      {openHistoryEntry && (
+        <PhraseCheckHistoryCard
+          entry={openHistoryEntry}
+          onClose={() => setOpenHistoryId(null)}
+          onUpdated={(id, newRewrite) =>
+            setHistory((prev) =>
+              prev.map((h) =>
+                h.id === id ? { ...h, rewrite: newRewrite } : h,
+              ),
+            )
+          }
+          tr={tr}
+        />
+      )}
     </BottomSheet>
   );
 }
