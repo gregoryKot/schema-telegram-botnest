@@ -10,31 +10,14 @@ export type MoveDir = 'up' | 'down';
 export const PLUS_ACTIONS_ORDER_KEY = 'quick_actions_order_plus';
 export const TOOLS_ACTIONS_ORDER_KEY = 'quick_actions_order_tools';
 
-/** Чистый разбор сырого значения localStorage. Битый JSON/не-массив/не-строки
- * внутри → пустой порядок (значит «как в реестре»). */
-export function parseActionOrder(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((v): v is string => typeof v === 'string');
-  } catch {
-    return [];
-  }
-}
-
-export function serializeActionOrder(ids: string[]): string {
-  return JSON.stringify(ids);
-}
-
-export function getActionOrder(key: string): string[] {
-  return parseActionOrder(localStorage.getItem(key));
-}
-
-function setActionOrder(key: string, order: string[]): void {
-  if (order.length === 0) localStorage.removeItem(key);
-  else localStorage.setItem(key, serializeActionOrder(order));
-}
+// Разбор/сериализация — общий примитив stringArrayStorage (пустой порядок =
+// «как в реестре»). Реэкспорт под прежними именами — API и тесты не меняются.
+export {
+  parseStringArray as parseActionOrder,
+  serializeStringArray as serializeActionOrder,
+  readStringArray as getActionOrder,
+} from './stringArrayStorage';
+import { readStringArray, writeStringArray } from './stringArrayStorage';
 
 /** Элементы, чьи id есть в order, — в начале (в его порядке); остальные —
  * следом, в исходном порядке items (stable). Работает и для группы «плюса»
@@ -90,7 +73,7 @@ export function moveAction(
   const siblings = new Set(displayedSiblingIds);
   const base: string[] = [];
   let insertAt = -1;
-  for (const x of getActionOrder(key)) {
+  for (const x of readStringArray(key)) {
     if (siblings.has(x)) {
       if (insertAt === -1) insertAt = base.length;
     } else {
@@ -99,7 +82,7 @@ export function moveAction(
   }
   if (insertAt === -1) insertAt = base.length;
 
-  setActionOrder(key, [
+  writeStringArray(key, [
     ...base.slice(0, insertAt),
     ...swapped,
     ...base.slice(insertAt),
