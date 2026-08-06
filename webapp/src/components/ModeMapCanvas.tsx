@@ -228,7 +228,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     if (!src) return;
     pushHistory();
     const copy: FlowNode = {
-      ...src, id: `${src.type}_${Date.now()}`,
+      ...src, id: `${src.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, // суффикс: два дубля в одну мс делили id
       position: { x: src.position.x + 40, y: src.position.y + 40 },
       selected: false,
       data: { ...src.data },

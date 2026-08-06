@@ -1,6 +1,21 @@
 import { ArticleSeoMiddleware } from './article-seo.middleware';
 import type { ArticlesService } from './articles.service';
 
+// existsSync/readFileSync экспортируются из 'fs' как non-configurable
+// свойства в текущем Node — jest.spyOn(fs, ...) падает "Cannot redefine
+// property". jest.mock() подменяет весь модуль на уровне резолвера, это
+// работает независимо от дескрипторов свойств рантайма.
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fs = require('fs') as {
+  existsSync: jest.Mock;
+  readFileSync: jest.Mock;
+};
+
 // Minimal index.html mirroring the real one's SEO-relevant tags.
 const BASE_HTML = `<!doctype html>
 <html lang="ru">
@@ -137,5 +152,63 @@ describe('ArticleSeoMiddleware', () => {
     const html = getSent()!;
     expect(html).toContain('<p>ok</p>');
     expect(html).not.toContain('alert(1)');
+  });
+
+  it('includes og:image / JSON-LD image when the article has a heroImage', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      heroImage: 'https://schemehappens.ru/hero.jpg',
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain('"image":"https://schemehappens.ru/hero.jpg"');
+  });
+});
+
+// html() читает dist/index.html с диска и кэширует результат на инстансе —
+// остальные тесты выше обходят это, подставляя cachedHtml напрямую. Здесь
+// мокаем fs, чтобы не зависеть от того, собран ли webapp/dist локально.
+describe('ArticleSeoMiddleware — чтение index.html с диска (html())', () => {
+  afterEach(() => {
+    fs.existsSync.mockReset();
+    fs.readFileSync.mockReset();
+  });
+
+  it('index.html не найден на диске → SPA как есть (next(), без send)', async () => {
+    fs.existsSync.mockReturnValue(false);
+    const service = {
+      findBySlug: jest.fn(),
+    } as unknown as ArticlesService;
+    const mw = new ArticleSeoMiddleware(service);
+    const { req, res } = mockReqRes('/articles/skhemy-yanga-spisok');
+    const next = jest.fn();
+
+    await mw.use(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.send.mock.calls).toEqual([]);
+    expect(fs.readFileSync.mock.calls).toEqual([]);
+    // articles.service не должен даже дёргаться — early return до похода в БД.
+    expect(service.findBySlug.mock.calls).toEqual([]);
+  });
+
+  it('index.html найден на диске → читается, кэшируется, статья инжектится', async () => {
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockReturnValue(BASE_HTML);
+    const service = {
+      findBySlug: jest.fn().mockResolvedValue(ARTICLE),
+    } as unknown as ArticlesService;
+    const mw = new ArticleSeoMiddleware(service);
+
+    const first = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(first.req, first.res, () => {});
+    expect(first.getSent()).toContain('18 схем Янга');
+    expect(fs.readFileSync).toHaveBeenCalledTimes(1);
+
+    // Второй запрос переиспользует закэшированный HTML — файл читается один раз.
+    const second = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(second.req, second.res, () => {});
+    expect(fs.readFileSync).toHaveBeenCalledTimes(1);
   });
 });

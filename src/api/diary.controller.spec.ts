@@ -116,6 +116,28 @@ describe('DiaryController mode diary', () => {
       expect.objectContaining({ modeId: 'critic', situation: 'ситуация' }),
     );
   });
+
+  it('падение фонового checkStreakTasks не мешает ответу', async () => {
+    const { controller, tasksService } = makeController();
+    (tasksService.checkStreakTasks as jest.Mock).mockRejectedValue(
+      new Error('boom'),
+    );
+    const res = await controller.createModeDiary(makeReq(), {
+      modeId: 'critic',
+      situation: 'ситуация',
+    });
+    expect(res).toEqual({ id: 2 });
+    expect(tasksService.checkStreakTasks).toHaveBeenCalled();
+  });
+
+  it('delete — parseId валидирует id, userId берётся из req', async () => {
+    const { controller, diaryService } = makeController();
+    await controller.deleteModeDiary(makeReq(9n), '22');
+    expect(diaryService.deleteModeDiaryEntry).toHaveBeenCalledWith(9n, 22);
+    await expect(
+      controller.deleteModeDiary(makeReq(9n), 'not-a-number'),
+    ).rejects.toThrow(BadRequestException);
+  });
 });
 
 describe('DiaryController gratitude diary', () => {
@@ -147,6 +169,19 @@ describe('DiaryController gratitude diary', () => {
     const { controller, diaryService } = makeController();
     await controller.deleteGratitudeDiary(makeReq(5n), '3');
     expect(diaryService.deleteGratitudeDiaryEntry).toHaveBeenCalledWith(5n, 3);
+  });
+
+  it('падение фонового checkStreakTasks не мешает ответу', async () => {
+    const { controller, tasksService } = makeController();
+    (tasksService.checkStreakTasks as jest.Mock).mockRejectedValue(
+      new Error('boom'),
+    );
+    const res = await controller.createGratitudeDiary(makeReq(), {
+      date: '2026-07-17',
+      items: ['короткий'],
+    });
+    expect(res).toEqual({ id: 3 });
+    expect(tasksService.checkStreakTasks).toHaveBeenCalled();
   });
 });
 

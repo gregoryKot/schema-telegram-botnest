@@ -83,6 +83,20 @@ describe('SettingsController.getSettings', () => {
     expect(res.notifyPausedUntil).toBe('2026-08-01T00:00:00.000Z');
     expect(res.mySchemaIds).toEqual([]);
   });
+
+  it('mySchemaIds/myModeIds уже массив → отдаются как есть', async () => {
+    const { controller } = makeController({
+      botService: {
+        getUserSettings: jest.fn().mockResolvedValue({
+          mySchemaIds: ['abandonment'],
+          myModeIds: ['vulnerable_child', 'punitive_parent'],
+        }),
+      },
+    });
+    const res = await controller.getSettings(makeReq());
+    expect(res.mySchemaIds).toEqual(['abandonment']);
+    expect(res.myModeIds).toEqual(['vulnerable_child', 'punitive_parent']);
+  });
 });
 
 describe('SettingsController.updateSettings — whitelist полей', () => {
@@ -129,6 +143,34 @@ describe('SettingsController.updateSettings — whitelist полей', () => {
       myModeIds: ['ok', 'x'.repeat(100)],
     });
     expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {});
+  });
+});
+
+describe('SettingsController.updateSettings — валидные поля проходят whitelist', () => {
+  it('все допустимые поля сохраняются одним вызовом', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(10n), {
+      notifyReminderEnabled: false,
+      notifyGamified: true,
+      notifyTimezone: 'Europe/Moscow',
+      notifyQuietStart: 23,
+      notifyQuietEnd: 7,
+      mySchemaIds: ['abandonment', 'defectiveness'],
+      myModeIds: ['vulnerable_child'],
+      therapistShareCards: false,
+      therapistShareProfile: false,
+    });
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(10n, {
+      notifyReminderEnabled: false,
+      notifyGamified: true,
+      notifyTimezone: 'Europe/Moscow',
+      notifyQuietStart: 23,
+      notifyQuietEnd: 7,
+      mySchemaIds: ['abandonment', 'defectiveness'],
+      myModeIds: ['vulnerable_child'],
+      therapistShareCards: false,
+      therapistShareProfile: false,
+    });
   });
 });
 

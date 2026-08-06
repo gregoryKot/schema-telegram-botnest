@@ -17,6 +17,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { TherapistRequestService } from './therapist-request.service';
@@ -171,13 +172,42 @@ describe('TherapistRequestService.submit', () => {
 
   it.each([
     ['fullName пустой', { ...INPUT, fullName: '  ' }],
+    ['fullName отсутствует', { ...INPUT, fullName: undefined }],
+    ['qualification пустая', { ...INPUT, qualification: '  ' }],
+    ['qualification отсутствует', { ...INPUT, qualification: undefined }],
+    ['qualification длиннее 500', { ...INPUT, qualification: 'x'.repeat(501) }],
     ['contacts пустой', { ...INPUT, contacts: '' }],
+    ['contacts отсутствует', { ...INPUT, contacts: undefined }],
     ['message длиннее 1000', { ...INPUT, message: 'x'.repeat(1001) }],
   ])('невалидное поле (%s) → BadRequestException', async (_name, bad) => {
     const { svc, users, requests } = makeService();
     users.push({ id: 3n, role: 'CLIENT' });
-    await expect(svc.submit(3n, bad)).rejects.toThrow(BadRequestException);
+    await expect(svc.submit(3n, bad as typeof INPUT)).rejects.toThrow(
+      BadRequestException,
+    );
     expect(requests).toHaveLength(0);
+  });
+
+  it('отсутствующий message (undefined) — не ошибка, сохраняется как null', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 21n, role: 'CLIENT' });
+    const { message: _drop, ...withoutMessage } = INPUT;
+    await svc.submit(21n, withoutMessage);
+    expect(requests[0].message).toBeNull();
+  });
+
+  it('повторная отправка при УЖЕ ОДОБРЕННОЙ заявке отклоняется', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 22n, role: 'CLIENT' });
+    await svc.submit(22n, INPUT);
+    // approve() меняет role пользователя на THERAPIST — обходим через прямую
+    // правку статуса заявки, чтобы проверить ИМЕННО ветку "already approved"
+    // независимо от роли юзера (роль уже THERAPIST даёт другой ConflictException раньше).
+    requests[0].status = 'approved';
+    await expect(svc.submit(22n, INPUT)).rejects.toThrow(
+      'Request already approved',
+    );
+    expect(requests).toHaveLength(1);
   });
 
   it('повторная отправка при pending-заявке отклоняется, карточка не дублируется', async () => {
@@ -340,6 +370,28 @@ describe('approve/reject — только для админа, плюс пове
       NotFoundException,
     );
   });
+
+  it('reject уже решённой (не pending) заявки → ConflictException, статус не трогается', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 15n, role: 'CLIENT' });
+    const { id: reqId } = await svc.submit(15n, INPUT);
+    await svc.approve(ADMIN_ID, reqId);
+    await expect(svc.reject(ADMIN_ID, reqId, 'x')).rejects.toThrow(
+      ConflictException,
+    );
+    expect(requests[0].status).toBe('approved');
+  });
+
+  it('reject без причины (undefined) — rejectReason становится null, сообщение без "Причина"', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 16n, role: 'CLIENT' });
+    const { id: reqId } = await svc.submit(16n, INPUT);
+    await svc.reject(ADMIN_ID, reqId, undefined as unknown as string);
+    expect(requests[0].rejectReason).toBeNull();
+    await flush();
+    const [, opts] = fetchMock.mock.calls.at(-1)!;
+    expect(JSON.parse(opts.body).text).not.toContain('Причина');
+  });
 });
 
 // notifyAdmin — приватный; вызываем через типизированный доступ, без `any`.
@@ -413,5 +465,91 @@ describe('TherapistRequestService.notifyAdmin — доставка заявки 
     await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
 
     expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('BOT_TOKEN не задан → sendTg не бьёт по сети, сразу e-mail-фолбэк', async () => {
+    delete process.env.BOT_TOKEN;
+    const fetchMockLocal = jest.fn();
+    global.fetch = fetchMockLocal;
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fetchMockLocal.mock.calls).toEqual([]);
+    expect(fallback.mock.calls).toHaveLength(1);
+    expect(fallback.mock.calls[0][0]).toContain('#42');
+  });
+
+  it('сетевая ошибка fetch (не HTTP-статус, а reject) → e-mail-фолбэк', async () => {
+    global.fetch = jest.fn(() => Promise.reject(new Error('ECONNRESET')));
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fallback.mock.calls).toHaveLength(1);
+    expect(fallback.mock.calls[0][0]).toContain('Мария Иванова');
+  });
+
+  it('сетевая ошибка fetch НЕ-Error объектом (напр. строкой) — не падает, e-mail-фолбэк', async () => {
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- намеренно не-Error reject
+    global.fetch = jest.fn(() => Promise.reject('boom-string'));
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fallback.mock.calls).toHaveLength(1);
+    expect(fallback.mock.calls[0][0]).toContain('#42');
+  });
+
+  it('Telegram вернул не-ok без description в теле → фолбэк-текст не падает на undefined', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({}),
+      }),
+    );
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    // Раз delivered=false — фолбэк всё равно сработал, и текст фолбэка не
+    // содержит "undefined" (что случилось бы, интерполируй код отсутствующий
+    // err.description напрямую вместо fallback '(no description)').
+    expect(fallback.mock.calls).toHaveLength(1);
+    expect(fallback.mock.calls[0][0]).not.toContain('undefined');
+  });
+});
+
+describe('TherapistRequestService.submit — notifyAdmin падает целиком', () => {
+  it('и сеть, и e-mail-фолбэк недоступны — submit всё равно возвращает результат, ошибка только логируется', async () => {
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const { svc, users, requests } = makeService();
+    users.push({ id: 23n, role: 'CLIENT' });
+    fetchMock.mockRejectedValue(new Error('network down'));
+    fallback.mockRejectedValueOnce(new Error('smtp down'));
+
+    const result = await svc.submit(23n, INPUT);
+    expect(result.status).toBe('pending');
+    expect(requests).toHaveLength(1);
+
+    await flush();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('notifyAdmin failed: smtp down'),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('падение не-Error значением (напр. строкой) тоже логируется без падения submit', async () => {
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const { svc, users } = makeService();
+    users.push({ id: 24n, role: 'CLIENT' });
+    fetchMock.mockRejectedValue(new Error('network down'));
+    fallback.mockRejectedValueOnce('smtp-string-failure');
+
+    const result = await svc.submit(24n, INPUT);
+    expect(result.status).toBe('pending');
+
+    await flush();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('notifyAdmin failed: smtp-string-failure'),
+    );
+    warnSpy.mockRestore();
   });
 });
