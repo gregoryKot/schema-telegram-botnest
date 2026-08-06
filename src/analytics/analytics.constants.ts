@@ -46,6 +46,13 @@
 //                         режима (meta.modeId).
 //   mode_doubt_switched — в «С чем путают режим» нажал «Это ближе» (meta.from
 //                         + meta.to — modeId исходного и выбранного режима).
+//   account_link_started — из мессенджера начал перенос данных со своего
+//                         прежнего аккаунта (meta.host: max|telegram);
+//   account_link_confirmed — подтвердил перенос в браузере (meta.host +
+//                         meta.merged — реально ли что-то переехало);
+//   account_link_failed — перенос не состоялся (meta.host + meta.reason:
+//                         expired|error). Без него в отчёте видно только
+//                         успехи, и «сколько людей не смогли» не измерить.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -74,6 +81,9 @@ export const ANALYTICS_EVENTS = [
   'mode_chain_followup',
   'mode_doubt_opened',
   'mode_doubt_switched',
+  'account_link_started',
+  'account_link_confirmed',
+  'account_link_failed',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -133,6 +143,15 @@ export const HOME_SCREEN_ACTIONS = [
   'added',
 ] as const;
 export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
+
+// Откуда переносят данные (meta.host) и почему не вышло (meta.reason) для
+// событий account_link_*. Парная константа на фронтах —
+// shared/src/share/analytics.ts (синхронно).
+export const ACCOUNT_LINK_HOSTS = ['max', 'telegram'] as const;
+export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
+
+export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
+export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 
 export const HOME_SCREEN_SURFACES = [
   'onboarding',

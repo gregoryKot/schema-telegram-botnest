@@ -8,11 +8,15 @@ import { USER_OWNED_TABLES } from './user-owned-tables';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
-// valid for the new one). Source's rows are simply destroyed.
-// EmailToken тоже здесь: verification-токены старого аккаунта не должны
-// подтверждать e-mail нового, а после DELETE User они стали бы сиротами
-// (у EmailToken нет FK) — найдено spec-сверкой реестров (аудит 2026-07, S-2).
-export const SECURITY_SENSITIVE_TABLES = ['WebSession', 'EmailToken'] as const;
+// valid for the new one). Source's rows are simply destroyed. EmailToken:
+// verification-токены старого аккаунта не должны подтверждать e-mail нового,
+// а после DELETE User стали бы сиротами (FK у него нет) — spec-сверка реестров
+// (аудит 2026-07, S-2). DeviceLinkRequest: код привязки живёт минуты.
+export const SECURITY_SENSITIVE_TABLES = [
+  'WebSession',
+  'EmailToken',
+  'DeviceLinkRequest',
+] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include
 // userId. When source and target both have a row with the same (userId, …key)

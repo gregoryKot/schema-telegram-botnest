@@ -6,12 +6,10 @@
 // получает 401. Приложение при этом молча не работало, а бэкенд на каждый
 // такой 401 слал админу «suspicious_initdata».
 //
-// Лечение: пока initData свежая, меняем её на пару access/refresh (тот же
-// эндпоинт, что у сайта, — /api/auth/telegram/webapp), и дальше запросы ходят
-// с Bearer. Access живёт 15 минут и продлевается refresh-кукой (30 дней) —
-// поэтому свёрнутое на час (и на неделю) приложение продолжает работать.
-// Access-токен держим только в памяти: переживать перезапуск webview — работа
-// refresh-куки, а не localStorage (правило «ключи не лежат где попало»).
+// Лечение: пока initData свежая, меняем её на пару access/refresh (тем же
+// эндпоинтом, что у сайта), дальше запросы ходят с Bearer. Access живёт 15
+// минут и продлевается refresh-кукой (30 дней). Сам access держим только в
+// памяти: переживать перезапуск webview — работа куки, а не localStorage.
 import { getHost } from '../../shared/src/host';
 import { BASE } from './utils/apiBase';
 
@@ -19,10 +17,8 @@ const EXPIRY_SKEW_MS = 60_000; // обновляемся заранее, с за
 const DEAD_SESSION_COOLDOWN_MS = 30_000; // не долбим сервер, если чинить нечем
 
 export const SESSION_EXPIRED_EVENT = 'session-expired';
-/** Строка для AppErrorScreen: «401» переключает его на ветку истёкшей сессии. */
-// Строка уходит в AppErrorScreen, который различает ветки по «401». Слово
-// «Telegram» отсюда убрано: та же строка показывается и в MAX, а название
-// мессенджера экран берёт у хоста.
+/** AppErrorScreen различает ветки по «401». Название мессенджера он берёт у
+ *  хоста — та же строка показывается и в MAX, поэтому «Telegram» тут нет. */
 export const SESSION_EXPIRED_ERROR = 'Не удалось получить доступ (401)';
 
 let accessToken: string | null = null;
@@ -119,6 +115,17 @@ export function renewSession(): Promise<boolean> {
 export function ensureSession(): Promise<boolean> {
   bootstrapped ??= renewSession();
   return bootstrapped;
+}
+
+/**
+ * Принять сессию от привязки к другому аккаунту (device-link). Прежний
+ * стартовый обмен надо забыть: иначе первый же перевыпуск вернул бы человека
+ * в пустой аккаунт мессенджера.
+ */
+export function adoptSession(token: string, expiresIn: number): void {
+  bootstrapped = Promise.resolve(true);
+  inFlight = null;
+  remember(token, expiresIn);
 }
 
 /** Сессию восстановить не удалось — экран обязан сказать это пользователю. */
