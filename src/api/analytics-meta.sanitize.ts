@@ -9,6 +9,8 @@ import {
   CUSTOMIZE_ENTRY_SET,
   HOME_SCREEN_ACTION_SET,
   HOME_SCREEN_SURFACE_SET,
+  QUICK_ACTION_ID_SET,
+  QUICK_ACTION_SURFACE_SET,
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
 } from './dto/analytics.dto';
@@ -188,6 +190,28 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'plus_action') {
+    const action = meta.action;
+    if (typeof action === 'string' && QUICK_ACTION_ID_SET.has(action)) {
+      return { action };
+    }
+    return undefined;
+  }
+  if (name === 'quick_action_toggle') {
+    const action = meta.action;
+    const hidden = meta.hidden;
+    const surface = meta.surface;
+    if (
+      typeof action === 'string' &&
+      QUICK_ACTION_ID_SET.has(action) &&
+      typeof hidden === 'boolean' &&
+      typeof surface === 'string' &&
+      QUICK_ACTION_SURFACE_SET.has(surface)
+    ) {
+      return { action, hidden, surface };
+    }
+    return undefined;
+  }
   if (name === 'account_link_started') {
     const host = meta.host;
     if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
@@ -220,6 +244,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  // breath_start / stop_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
+  // breath_start / stop_start / journey_open / ysq_help_open / plus_open —
+  // без meta; поля отбрасываются.
   return undefined;
 }

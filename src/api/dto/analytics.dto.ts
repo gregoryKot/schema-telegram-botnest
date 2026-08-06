@@ -12,6 +12,8 @@ import {
   SHARE_CARD_KINDS,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
+  QUICK_ACTION_IDS,
+  QUICK_ACTION_SURFACES,
 } from '../../analytics/analytics.constants';
 
 // DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
@@ -54,4 +56,10 @@ export const ACCOUNT_LINK_HOST_SET: ReadonlySet<string> = new Set(
 );
 export const ACCOUNT_LINK_FAIL_REASON_SET: ReadonlySet<string> = new Set(
   ACCOUNT_LINK_FAIL_REASONS,
+);
+export const QUICK_ACTION_ID_SET: ReadonlySet<string> = new Set(
+  QUICK_ACTION_IDS,
+);
+export const QUICK_ACTION_SURFACE_SET: ReadonlySet<string> = new Set(
+  QUICK_ACTION_SURFACES,
 );
