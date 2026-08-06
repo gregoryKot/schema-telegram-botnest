@@ -6,7 +6,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
-import { useSetAddressForm } from '../utils/addressForm';
+import { useSetAddressForm, useTr } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -20,6 +20,8 @@ import {
   quietLabel,
   hourInQuiet,
 } from '../../../shared/src/settings/constants';
+import { SHead, SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './settingsSheet/ui';
+import { inputStyle } from './settingsSheet/inputStyle';
 
 
 interface Props {
@@ -34,6 +36,7 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
@@ -130,7 +133,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   async function submitTherapistRequest() {
     setReqError('');
     if (!reqFullName.trim() || !reqQual.trim() || !reqContacts.trim()) {
-      setReqError('Заполни ФИО, квалификацию и контакты');
+      setReqError(
+        tr(
+          'Заполни ФИО, квалификацию и контакты',
+          'Заполните ФИО, квалификацию и контакты',
+        ),
+      );
       return;
     }
     setReqBusy(true);
@@ -322,7 +330,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div style={{ padding: '10px 0' }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
-                        Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.
+                        {tr(
+                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.',
+                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
@@ -714,86 +725,5 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         </InfoModal>
       )}
     </>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
-  background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-  borderRadius: 7, color: 'var(--text)', fontSize: 14, outline: 'none',
-};
-
-function SHead({ id, label, hint }: { id: string; label: string; hint?: string }) {
-  return (
-    <div id={id} style={{ paddingTop: 40, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
-      <div className="eyebrow">{label}</div>
-      {hint && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
-    </div>
-  );
-}
-
-function SRow({ title, sub, right, onClick, danger }: {
-  title: string; sub?: React.ReactNode; right?: React.ReactNode;
-  onClick?: () => void; danger?: boolean;
-}) {
-  return (
-    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
-      style={{
-      display: 'flex', alignItems: 'center', gap: 16,
-      padding: '13px 0',
-      borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, color: danger ? 'var(--accent-red)' : 'var(--text)' }}>{title}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
-      </div>
-      {right ?? (onClick && <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>)}
-    </div>
-  );
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }} />
-    </div>
-  );
-}
-
-function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-    </div>
-  );
-}
-
-function ChevronVal({ text, small }: { text: string; small?: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: small ? 12 : 14, color: 'var(--text-sub)', textAlign: 'right', maxWidth: 200 }}>{text}</span>
-      <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-    </div>
-  );
-}
-
-function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="settings-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      <div className="settings-modal-box" onClick={e => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}>
-        <div className="settings-modal-handle" />
-        {children}
-      </div>
-    </div>
   );
 }

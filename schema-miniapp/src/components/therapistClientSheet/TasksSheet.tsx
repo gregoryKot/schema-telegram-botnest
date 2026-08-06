@@ -15,6 +15,13 @@ const taskMarkColor = (t: Task) =>
     : taskMark(t) === '✓'
       ? 'var(--text)'
       : undefined;
+// Иконка-глиф '✓'/'×'/'·' не несёт смысла для скринридера — подписываем.
+const taskMarkLabel = (t: Task) =>
+  t.done === true || t.doneToday
+    ? 'Выполнено'
+    : t.done === false
+      ? 'Не выполнено'
+      : 'Ожидает выполнения';
 
 export function TasksSheet({ detail }: TasksSheetProps) {
   const { clientTasks, setShowTasksSheet, setShowAssign } = detail;
@@ -66,6 +73,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                 }}
               >
                 <span
+                  aria-label={taskMarkLabel(task)}
                   style={{
                     fontSize: 16,
                     flexShrink: 0,

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { api } from '../../api';
+import { useTr } from '../../utils/addressForm';
 import type { TherapyClientSummary } from '../../api';
 
 interface Params {
@@ -12,6 +13,7 @@ export interface AddClientCreated {
 }
 
 export function useAddClient({ setClients }: Params) {
+  const tr = useTr();
   const [name, setName] = useState('');
   const [withInvite, setWithInvite] = useState(false);
   const [created, setCreated] = useState<AddClientCreated | null>(null);
@@ -39,7 +41,9 @@ export function useAddClient({ setClients }: Params) {
       setName('');
     } catch (e: unknown) {
       setError(
-        e instanceof Error ? e.message : 'Ошибка. Попробуй ещё раз.',
+        e instanceof Error
+          ? e.message
+          : tr('Ошибка. Попробуй ещё раз.', 'Ошибка. Попробуйте ещё раз.'),
       );
     } finally {
       setSubmitting(false);
