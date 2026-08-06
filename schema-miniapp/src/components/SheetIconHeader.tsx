@@ -1,48 +1,31 @@
 // Шапка BottomSheet-экранов ресурсов (Тёплые слова, Письмо Уязвимому
-// Ребёнку, Безопасное место): квадрат 44×44 с эмодзи в цветной плашке +
-// заголовок + подзаголовок. Одна механика — один компонент (см. CLAUDE.md):
-// раньше разметка была продублирована в каждом экране.
+// Ребёнку, Безопасное место): заголовок + подзаголовок. Одна механика — один
+// компонент (см. CLAUDE.md): раньше разметка была продублирована в каждом
+// экране.
+//
+// Плашки 44×44 с эмодзи больше нет: на трёх соседних экранах она давала три
+// разных цветных пятна на одном месте, и глаз считывал пятно раньше названия.
+// Название набрано серифом — оно и отличает экраны друг от друга.
 interface Props {
-  emoji: string;
-  bg: string;
-  border: string;
   title: React.ReactNode;
   subtitle: React.ReactNode;
 }
 
-export function SheetIconHeader({ emoji, bg, border, title, subtitle }: Props) {
+export function SheetIconHeader({ title, subtitle }: Props) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 20,
-      }}
-    >
+    <div style={{ marginBottom: 20 }}>
+      <div className="d-display" style={{ fontSize: 21, color: 'var(--text)' }}>
+        {title}
+      </div>
       <div
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: 14,
-          background: bg,
-          border: `1px solid ${border}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 22,
-          flexShrink: 0,
+          fontSize: 13,
+          color: 'var(--muted)',
+          marginTop: 4,
+          lineHeight: 1.45,
         }}
       >
-        {emoji}
-      </div>
-      <div>
-        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-          {title}
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-          {subtitle}
-        </div>
+        {subtitle}
       </div>
     </div>
   );

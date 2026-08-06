@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTr } from '../utils/addressForm';
-import { COLORS } from '../types';
-import type { Need, DayHistory } from '../types';
+import { COLORS, type Need, type DayHistory } from '../types';
 import { NeedHistorySheet } from './NeedHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
 import { IndexInfoSheet } from './IndexInfoSheet';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   needs: Need[];
@@ -349,7 +349,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 </button>
               ) : onOpenChildhoodWheel ? (
                 <button onClick={onOpenChildhoodWheel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>🌱 Оценить детство →</span>
+                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>Оценить детство →</span>
                 </button>
               ) : null}
               {onOpenSchemas && (
@@ -395,7 +395,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                     cursor: 'pointer',
                   }}>
                     <div style={{ width: 3, height: 32, borderRadius: 2, background: val > 0 ? color : 'rgba(var(--fg-rgb),0.1)', flexShrink: 0 }} />
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{n.emoji}</span>
+                    <IdentityDot id={n.id} size={14} />
                     <span style={{ flex: 1, fontSize: 15, color: 'var(--text)', fontWeight: 400 }}>{n.chartLabel}</span>
                     {val > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: levelColor }}>{levelLabel}</span>
@@ -443,7 +443,6 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               padding: '14px 0', marginTop: 4,
               borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
             }}>
-              <span style={{ fontSize: 16, color: 'var(--text-faint)' }}>📝</span>
               <span style={{ fontSize: 13, color: noteText ? 'var(--text-sub)' : 'var(--text-faint)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: noteText ? 'normal' : 'italic' }}>
                 {noteText || 'Добавить заметку к этому дню'}
               </span>

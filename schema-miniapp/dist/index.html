@@ -8,7 +8,7 @@
          несёт только один theme_color (светлая тема) — тёмную отрабатывают
          эти статические meta с media (тот же приём, что в webapp/index.html);
          значения — html[data-theme] в src/index.css. -->
-    <meta name="theme-color" content="#f4f0e9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#faf7f3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#191b25" media="(prefers-color-scheme: dark)" />
     <!-- iOS «На экран „Домой“» не читает manifest.icons надёжно — нужен
          явный link. Тот же файл, что у сайта (webapp/public/), одна копия. -->
@@ -18,8 +18,8 @@
          Отдельным файлом, а не инлайном — у нас script-src 'self' без
          unsafe-inline, инлайн CSP заблокировал бы. -->
     <script src="/max-bridge.js"></script>
-    <script type="module" crossorigin src="/app/assets/index-DAAbjNsF.js"></script>
-    <link rel="stylesheet" crossorigin href="/app/assets/index-BNPYjMxG.css">
+    <script type="module" crossorigin src="/app/assets/index.js"></script>
+    <link rel="stylesheet" crossorigin href="/app/assets/index.css">
   <link rel="manifest" href="/app/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>

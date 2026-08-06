@@ -62,7 +62,6 @@ export function DiaryEmptyExplainer({ filter }: { filter: 'all' | DiaryType }) {
               background: `color-mix(in srgb, ${TYPE_COLORS[type]} 4%, transparent)`,
             }}
           >
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{ex.emoji}</span>
             <div style={{ fontSize: 13.5, lineHeight: 1.65 }}>
               <div style={{ color: 'var(--text)' }}>{ex.what}</div>
               <div style={{ color: 'var(--text-sub)', marginTop: 8 }}>

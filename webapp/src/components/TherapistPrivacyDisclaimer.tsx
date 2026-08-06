@@ -27,7 +27,6 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '56px 24px 40px' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <div style={{ fontSize: 52, marginBottom: 16 }}>🕊️</div>
           <h1 style={{
             fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400,
             color: 'var(--text)', lineHeight: 1.2, marginBottom: 14,
@@ -73,28 +72,25 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
           {[
-            ['🔒', 'Шифрование',
+            ['Шифрование',
               'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],
-            ['👤', 'Только ваш доступ',
+            ['Только ваш доступ',
               'Данные каждого клиента видите только вы — они привязаны к вашему аккаунту и не пересекаются с чужими.'],
-            ['🛡️', 'Защищённый вход',
+            ['Защищённый вход',
               'Вход подтверждается подписью Telegram, а попытки подделать сессию мы отслеживаем и отклоняем.'],
-            ['🧹', 'Полное удаление',
+            ['Полное удаление',
               'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.'],
-          ].map(([icon, title, text]) => (
-            <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 18, lineHeight: 1.4, flexShrink: 0 }}>{icon}</div>
-              <div>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
-                <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.65 }}>{text}</div>
-              </div>
+          ].map(([title, text]) => (
+            <div key={title}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.65 }}>{text}</div>
             </div>
           ))}
         </div>
 
         <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.75, marginBottom: 32 }}>
           И всё же самая надёжная защита — когда лишних персональных данных в системе
-          просто нет. 💛
+          просто нет.
         </p>
 
         <button

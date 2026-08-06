@@ -15,13 +15,12 @@ export function DisclaimerHomeScreenStep({
   const offer = useHomeScreenOffer('onboarding');
   return (
     <div style={{ textAlign: 'center', paddingTop: 8 }}>
-      <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>📲</div>
       <div
         style={{
           fontSize: 20,
           fontWeight: 700,
           color: 'var(--text)',
-          marginBottom: 10,
+          marginBottom: 22,
         }}
       >
         {tr('Добавь на главный экран', 'Добавьте на главный экран')}

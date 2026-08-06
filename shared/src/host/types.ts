@@ -35,6 +35,12 @@ export interface HostInsets {
   isFullscreen: boolean;
   /** Хост хоть раз прислал contentTop: значение 0 тоже считается ответом. */
   contentReported: boolean;
+  /**
+   * Хост рисует свои кнопки (закрыть/меню) ПОВЕРХ контента. У таких хостов
+   * нулевой верхний инсет — это «значение не доехало», а не «отступ не нужен»:
+   * поверить ему значит увести шапку под кнопки мессенджера.
+   */
+  overlaysContent: boolean;
 }
 
 export interface HostHaptic {

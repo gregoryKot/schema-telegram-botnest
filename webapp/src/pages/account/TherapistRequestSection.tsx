@@ -66,15 +66,15 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          ⏳ Твоя заявка на рассмотрении. Когда админ её обработает – придёт уведомление в Telegram.
+          Твоя заявка на рассмотрении. Когда админ её обработает – придёт уведомление в Telegram.
         </div>
       ) : req?.status === 'approved' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
-          ✅ Заявка одобрена. Перезайди в приложение.
+          Заявка одобрена. Перезайди в приложение.
         </div>
       ) : !open ? (
         <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          👨‍⚕️ Я психолог – подать заявку
+          Я психолог – подать заявку
         </button>
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>

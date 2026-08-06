@@ -1,6 +1,7 @@
-import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
+import { ALL_SCHEMAS } from '../../../schemaTherapyData';
+import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
-
+import { cm } from '../../../sections/schemas/utils';
 // Блок истории теста на схемы (YSQ) клиента: выраженные/остальные схемы,
 // дельты и таймлайн прохождений. Вынесено из ConceptSheet.tsx (правило №10).
 export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
@@ -31,8 +32,8 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
   return (
     <div
       style={{
-        background: 'rgba(79,163,247,0.07)',
-        border: '1px solid rgba(79,163,247,0.2)',
+        background: cm('var(--accent-blue)', 7),
+        border: `1px solid ${cm('var(--accent-blue)', 20)}`,
         borderRadius: 14,
         padding: '12px 14px',
         marginBottom: 14,
@@ -43,12 +44,12 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: '0.07em',
-          color: 'rgba(79,163,247,0.8)',
+          color: cm('var(--accent-blue)', 80),
           textTransform: 'uppercase',
           marginBottom: 10,
         }}
       >
-        📊 Схемы · {hist.length}{' '}
+        Схемы · {hist.length}{' '}
         {hist.length === 1
           ? 'прохождение'
           : hist.length < 5
@@ -63,16 +64,14 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           <div
             style={{
               fontSize: 10,
-              color: 'rgba(79,163,247,0.7)',
+              color: cm('var(--accent-blue)', 70),
               marginBottom: 6,
             }}
           >
             Выраженные ({activeScores.length})
           </div>
           {activeScores.map((score) => {
-            const meta = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
-              (s) => s.id === score.id,
-            );
+            const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
             const delta = getDelta(score.id);
             return (
               <div key={score.id} style={{ marginBottom: 6 }}>
@@ -91,7 +90,8 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                       fontWeight: 500,
                     }}
                   >
-                    {meta?.emoji} {meta?.name ?? score.id}
+                    <IdentityDot color={meta?.domainColor} size={7} />{' '}
+                    {meta?.name ?? score.id}
                   </span>
                   <div
                     style={{
@@ -119,7 +119,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: 'rgba(79,163,247,0.9)',
+                        color: cm('var(--accent-blue)', 90),
                       }}
                     >
                       {score.pct5plus}%
@@ -129,7 +129,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                 <div
                   style={{
                     height: 3,
-                    background: 'rgba(79,163,247,0.1)',
+                    background: cm('var(--accent-blue)', 10),
                     borderRadius: 2,
                   }}
                 >
@@ -137,7 +137,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                     style={{
                       height: '100%',
                       width: `${score.pct5plus}%`,
-                      background: 'rgba(79,163,247,0.6)',
+                      background: cm('var(--accent-blue)', 60),
                       borderRadius: 2,
                     }}
                   />
@@ -162,9 +162,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {inactiveScores.map((score) => {
-              const meta = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
-                (s) => s.id === score.id,
-              );
+              const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
               const isNearBorder = score.pct5plus >= 30;
               return (
                 <span
@@ -191,14 +189,14 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
       {hist.length >= 2 && (
         <div
           style={{
-            borderTop: '1px solid rgba(79,163,247,0.15)',
+            borderTop: `1px solid ${cm('var(--accent-blue)', 15)}`,
             paddingTop: 10,
           }}
         >
           <div
             style={{
               fontSize: 10,
-              color: 'rgba(79,163,247,0.6)',
+              color: cm('var(--accent-blue)', 60),
               marginBottom: 6,
             }}
           >
@@ -234,8 +232,8 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                     borderRadius: '50%',
                     background:
                       idx === 0
-                        ? 'rgba(79,163,247,0.8)'
-                        : 'rgba(79,163,247,0.25)',
+                        ? cm('var(--accent-blue)', 80)
+                        : cm('var(--accent-blue)', 25),
                     flexShrink: 0,
                   }}
                 />

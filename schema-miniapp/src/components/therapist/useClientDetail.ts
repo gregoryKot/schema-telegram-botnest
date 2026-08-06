@@ -348,11 +348,11 @@ export function useClientDetail({ switchView, setClients }: Params) {
       const s = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find(
         (x) => x.id === id,
       );
-      return s ? `${s.emoji} ${s.name}` : id;
+      return s ? s.name : id;
     });
     const modeNames = activeModeIds.map((id) => {
       const m = MODE_GROUPS.flatMap((g) => g.items).find((x) => x.id === id);
-      return m ? `${m.emoji} ${m.name}` : id;
+      return m ? m.name : id;
     });
     const row = (label: string, value: string | null | undefined) =>
       `${label}\n${value?.trim() || '—'}\n`;

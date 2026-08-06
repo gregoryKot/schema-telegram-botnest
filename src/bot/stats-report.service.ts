@@ -3,6 +3,8 @@ import { ProductMetricsService } from './bot.product-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
+import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
+import { AccountLinkMetricsService } from './account-link-metrics.service';
 
 // Единая склейка второго сообщения /stats (продуктовые метрики + карточки
 // режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
@@ -15,16 +17,21 @@ export class StatsReportService {
     private readonly modeCard: ModeCardMetricsService,
     private readonly modeDiary: ModeDiaryMetricsService,
     private readonly warmWords: WarmWordsMetricsService,
+    private readonly phraseChecks: PhraseCheckMetricsService,
+    private readonly accountLink: AccountLinkMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. */
   async render(): Promise<string> {
-    const [product, modeCard, modeDiary, warmWords] = await Promise.all([
-      this.product.render(),
-      this.modeCard.render(),
-      this.modeDiary.render(),
-      this.warmWords.render(),
-    ]);
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}`;
+    const [product, modeCard, modeDiary, warmWords, phraseChecks, accountLink] =
+      await Promise.all([
+        this.product.render(),
+        this.modeCard.render(),
+        this.modeDiary.render(),
+        this.warmWords.render(),
+        this.phraseChecks.render(),
+        this.accountLink.render(),
+      ]);
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}`;
   }
 }

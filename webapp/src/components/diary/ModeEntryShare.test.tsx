@@ -78,7 +78,7 @@ describe('ModeEntryShare', () => {
 
   it('только healthyResponse → кнопка краткой карточки, без «всей записи»', () => {
     renderShare({ healthyResponse: 'я имею право на отдых' });
-    expect(screen.getByText('Сохранить карточку')).toBeTruthy();
+    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
     expect(screen.queryByText('Поделиться всей записью')).toBeNull();
   });
 
@@ -87,13 +87,13 @@ describe('ModeEntryShare', () => {
       healthyResponse: 'я имею право на отдых',
       entry: { situation: 'Позвонил папа', healthyResponse: 'я имею право на отдых' },
     });
-    expect(screen.getByText('Сохранить карточку')).toBeTruthy();
+    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
     expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
   });
 
   it('entry без healthyResponse → только опция полной записи', () => {
     renderShare({ entry: { situation: 'Позвонил папа' } });
-    expect(screen.queryByText('Сохранить карточку')).toBeNull();
+    expect(screen.queryByText('Поделиться карточкой')).toBeNull();
     expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
   });
 

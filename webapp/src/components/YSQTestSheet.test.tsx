@@ -185,8 +185,13 @@ describe('YSQTestSheet — ты/вы-вилка в совете по схеме 
     const answers = Array(QUESTIONS.length).fill(6);
     localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ date: new Date().toISOString(), answers }));
     renderSheet(vi.fn(), 'vy');
-    await waitFor(() => expect(screen.getAllByText('💡').length).toBeGreaterThan(0));
-    const tips = screen.getAllByText('💡').map(el => el.parentElement?.textContent ?? '');
+    // Каждый блок совета-подсказки лежит в контейнере сразу перед ссылкой
+    // «Читать карточку схемы» — используем эту стабильную видимую подпись,
+    // чтобы найти советы по всем активным схемам без привязки к эмодзи.
+    await waitFor(() => expect(screen.getAllByText('Читать карточку схемы').length).toBeGreaterThan(0));
+    const tips = screen.getAllByText('Читать карточку схемы')
+      .map(el => el.parentElement?.previousElementSibling?.textContent ?? '');
+    expect(tips.length).toBeGreaterThan(0);
     for (const tip of tips) {
       expect(tip).not.toMatch(/[Тт]ы(?:\s|$)|[Тт]еб[еяё]|[Тт]во[йяеё]/);
     }

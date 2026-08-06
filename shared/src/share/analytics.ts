@@ -21,7 +21,9 @@ export type ShareCardKind =
   | 'journey'
   | 'journey_item'
   | 'practice'
-  | 'mode_entry_full';
+  | 'mode_entry_full'
+  | 'phrase_check'
+  | 'phrase_check_full';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
@@ -66,6 +68,13 @@ export const WARM_WORDS_OPEN_EVENT = 'warm_words_open';
 // там же.
 export const MODE_CHAIN_FOLLOWUP_EVENT = 'mode_chain_followup';
 
+// Открыл лист «С чем путают режим» (сравнение с соседями по путанице) с
+// карточки выбранного режима: meta { modeId }. Парный allow-list там же.
+export const MODE_DOUBT_OPENED_EVENT = 'mode_doubt_opened';
+// В листе «С чем путают режим» нажал «Это ближе» — переключил выбор:
+// meta { from, to } — modeId исходного и выбранного режима. Парный allow-list там же.
+export const MODE_DOUBT_SWITCHED_EVENT = 'mode_doubt_switched';
+
 /** meta для mode_entry_saved из значений формы дневника (общий, оба фронта). */
 export function modeEntrySavedMeta(
   fieldValues: string[], // 7 текстовых полей дневника (любой порядок)
@@ -89,3 +98,18 @@ export type OnboardingStep =
   | 'author'
   | 'home_screen'
   | 'done';
+
+// ── Перенос аккаунта из мессенджера (device-link, RFC 8628) ─────────────────
+// Путь идёт через внешний браузер, поэтому мерить надо все три точки: начал в
+// мессенджере, подтвердил в браузере, не вышло. Без последней в отчёте видны
+// только успехи, и «сколько людей не смогли» не измерить.
+// Парный allow-list (ANALYTICS_EVENTS, ACCOUNT_LINK_*) —
+// src/analytics/analytics.constants.ts, при изменении синхронь оба.
+export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
+export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
+export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
+
+/** Мессенджер, из которого переносят: meta.host. */
+export type AccountLinkHost = 'max' | 'telegram';
+/** Почему не вышло: meta.reason. */
+export type AccountLinkFailReason = 'expired' | 'error';

@@ -1,5 +1,6 @@
 import { COLORS } from '../../types';
 import { pressable } from '../../utils/a11y';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { Slider } from './Slider';
 import type { NeedId, NeedMetaEntry } from './types';
 
@@ -44,11 +45,10 @@ export function NeedFillRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 18,
             flexShrink: 0,
           }}
         >
-          {meta.emoji}
+          <IdentityDot id={id} size={12} />
         </div>
         <div style={{ flex: 1 }}>
           <div

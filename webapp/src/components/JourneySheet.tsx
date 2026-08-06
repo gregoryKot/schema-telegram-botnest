@@ -76,7 +76,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                   margin: 0,
                 }}
               >
-                🧭 Мой путь
+                Мой путь
               </h1>
               <span style={{ marginRight: 'auto' }} />
               {j.total > 0 && (

@@ -26,10 +26,7 @@ export function GratitudeCard({
   );
 
   return (
-    <div
-      className="card"
-      style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
-    >
+    <div className="d-entry">
       <div
         {...pressable(() => setOpen((v) => !v))}
         style={{ cursor: 'pointer' }}
@@ -41,10 +38,10 @@ export function GratitudeCard({
             marginBottom: 6,
           }}
         >
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+          <span style={{ fontSize: 12, color: 'var(--faint)' }}>
             {dateLabel}
           </span>
-          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
+          <span style={{ fontSize: 13, color: 'var(--chevron)' }}>
             {open ? '▲' : '▼'}
           </span>
         </div>
@@ -75,11 +72,11 @@ export function GratitudeCard({
             <div
               key={i}
               style={{
-                fontSize: 13,
-                color: 'rgba(var(--fg-rgb),0.75)',
-                marginBottom: 6,
-                paddingLeft: 4,
-                borderLeft: `2px solid ${color}44`,
+                fontSize: 14,
+                color: 'var(--ink-2)',
+                marginBottom: 8,
+                paddingLeft: 12,
+                borderLeft: '1px solid var(--line)',
                 lineHeight: 1.5,
               }}
             >

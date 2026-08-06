@@ -21,7 +21,9 @@ export interface IntroSheetShellProps<T extends Record<string, string>> {
   loadExisting: () => Promise<T | null>;
   saveNote: (data: T) => Promise<unknown>;
   accentColor: string;
-  emoji: string;
+  /** Иконка слева от заголовка: эмодзи схемы или цветной кружок режима
+   *  (`<IdentityDot color={...} />`, волна 6) — см. IntroSheetHeaderProps. */
+  emoji: ReactNode;
   title: string;
   subtitle: string;
   description?: string;

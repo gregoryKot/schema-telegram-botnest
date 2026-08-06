@@ -69,7 +69,7 @@ export function BookingPaidPage() {
   if (failed) {
     body = (
       <>
-        <div style={icon}>😕</div>
+        <div style={icon}>×</div>
         <h1 style={h1}>Оплата не прошла</h1>
         <p style={sub}>Деньги не списаны. Слот держится за вами ещё несколько минут — можно попробовать снова.</p>
         <a href="/#booking" style={primaryBtn}>Вернуться к записи</a>

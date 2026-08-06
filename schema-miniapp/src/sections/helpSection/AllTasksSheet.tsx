@@ -133,8 +133,9 @@ export function AllTasksSheet({
           borderRadius: 14,
           border: 'none',
           background:
-            'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.10))',
-          outline: '1px solid rgba(167,139,250,0.28)',
+            'linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 10%, transparent))',
+          outline:
+            '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
           color: 'var(--accent)',
           fontSize: 15,
           fontWeight: 600,

@@ -56,11 +56,6 @@ describe('Row — с onClick', () => {
 });
 
 describe('Row — опциональные части', () => {
-  it('emoji рендерится, если задан', () => {
-    render(<Row label="С эмодзи" emoji="🎉" />);
-    expect(screen.getByText('🎉')).toBeTruthy();
-  });
-
   it('sub рендерится, если задан', () => {
     render(<Row label="Основной" sub="Подпись" />);
     expect(screen.getByText('Подпись')).toBeTruthy();

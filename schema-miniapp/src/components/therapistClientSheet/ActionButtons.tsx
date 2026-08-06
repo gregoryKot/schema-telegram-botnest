@@ -6,6 +6,58 @@ interface ActionButtonsProps {
   detail: ClientDetail;
 }
 
+/**
+ * Строка-переход кабинета: название, подпись, шеврон. Без иконки-плашки —
+ * различие несут название и подпись (как в ToolRow мини-аппа). После отказа
+ * от эмодзи четыре строки стали структурно одинаковыми, поэтому живут одним
+ * компонентом: правка доезжает до всех сразу.
+ */
+function ActionRow({
+  label,
+  sub,
+  subFaint,
+  onClick,
+}: {
+  label: string;
+  sub?: React.ReactNode;
+  subFaint?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      {...pressable(onClick)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'rgba(var(--fg-rgb),0.04)',
+        border: '1px solid rgba(var(--fg-rgb),0.08)',
+        borderRadius: 14,
+        padding: '13px 16px',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+          {label}
+        </div>
+        {sub && (
+          <div
+            style={{
+              fontSize: 11,
+              color: subFaint ? 'var(--text-faint)' : 'var(--text-sub)',
+              marginTop: 1,
+            }}
+          >
+            {sub}
+          </div>
+        )}
+      </div>
+      <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+    </div>
+  );
+}
+
 export function ActionButtons({ detail }: ActionButtonsProps) {
   const {
     clientTasks,
@@ -19,176 +71,42 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
     setShowClientNotesSheet,
   } = detail;
 
+  const activeTasks = clientTasks.filter(
+    (t) => t.done === null && !t.doneToday,
+  ).length;
+  const clientCards = clientSchemaNotesData.length + clientModeNotesData.length;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div
-        {...pressable(() => setShowTasksSheet(true))}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(var(--fg-rgb),0.04)',
-          border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
-          padding: '13px 16px',
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 18 }}>📋</span>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}
-          >
-            Задания
-          </div>
-          {clientTasks.filter((t) => t.done === null && !t.doneToday).length >
-            0 && (
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                marginTop: 1,
-              }}
-            >
-              {
-                clientTasks.filter((t) => t.done === null && !t.doneToday)
-                  .length
-              }{' '}
-              активных
-            </div>
-          )}
-        </div>
-        <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
-      </div>
-      <div
-        {...pressable(() => setShowNotesSheet(true))}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(var(--fg-rgb),0.04)',
-          border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
-          padding: '13px 16px',
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 18 }}>📝</span>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}
-          >
-            Заметки сессий
-          </div>
-          {notes.length > 0 && (
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                marginTop: 1,
-              }}
-            >
-              {notes.length} заметок
-            </div>
-          )}
-        </div>
-        <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
-      </div>
-      <div
-        {...pressable(() => setShowConceptSheet(true))}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(var(--fg-rgb),0.04)',
-          border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
-          padding: '13px 16px',
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 18 }}>🗂</span>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}
-          >
-            Концептуализация
-          </div>
-          {concept?.updatedAt && (
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                marginTop: 1,
-              }}
-            >
-              Обновлено {fmtDate(concept.updatedAt.slice(0, 10))}
-            </div>
-          )}
-        </div>
-        <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
-      </div>
-      <div
-        {...pressable(() => setShowClientNotesSheet(true))}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(var(--fg-rgb),0.04)',
-          border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
-          padding: '13px 16px',
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 18 }}>📖</span>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}
-          >
-            Записи клиента
-          </div>
-          {clientSchemaNotesData.length + clientModeNotesData.length > 0 ? (
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                marginTop: 1,
-              }}
-            >
-              Схем: {clientSchemaNotesData.length} · Режимов:{' '}
-              {clientModeNotesData.length}
-            </div>
-          ) : (
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-faint)',
-                marginTop: 1,
-              }}
-            >
-              Карточки схем и режимов
-            </div>
-          )}
-        </div>
-        <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
-      </div>
+      <ActionRow
+        label="Задания"
+        sub={activeTasks > 0 ? `${activeTasks} активных` : undefined}
+        onClick={() => setShowTasksSheet(true)}
+      />
+      <ActionRow
+        label="Заметки сессий"
+        sub={notes.length > 0 ? `${notes.length} заметок` : undefined}
+        onClick={() => setShowNotesSheet(true)}
+      />
+      <ActionRow
+        label="Концептуализация"
+        sub={
+          concept?.updatedAt
+            ? `Обновлено ${fmtDate(concept.updatedAt.slice(0, 10))}`
+            : undefined
+        }
+        onClick={() => setShowConceptSheet(true)}
+      />
+      <ActionRow
+        label="Записи клиента"
+        sub={
+          clientCards > 0
+            ? `Схем: ${clientSchemaNotesData.length} · Режимов: ${clientModeNotesData.length}`
+            : 'Карточки схем и режимов'
+        }
+        subFaint={clientCards === 0}
+        onClick={() => setShowClientNotesSheet(true)}
+      />
     </div>
   );
 }

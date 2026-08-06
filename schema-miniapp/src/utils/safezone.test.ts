@@ -23,7 +23,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
     ).toBe(67);
   });
 
-  it('iOS без инсетов (contentTop не сообщён) — фолбэк 56', () => {
+  it('iOS без инсетов (contentTop не сообщён) — фолбэк 96', () => {
     expect(
       computeSafeTop({
         contentTop: undefined,
@@ -32,7 +32,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         ios: true,
         contentReported: false,
       }),
-    ).toBe(56);
+    ).toBe(96);
   });
 
   it('не-iOS без инсетов — 0', () => {
@@ -135,5 +135,169 @@ describe('computeSafeTop — fullscreen, инсеты НЕ пришли (щед�
         contentReported: false,
       }),
     ).toBe(FS_BAND_ANDROID);
+  });
+});
+
+// Скриншот пользователя (2026-08): на iOS в Telegram шапка «Паттерны» уехала
+// под статус-бар и под плавающую кнопку «Закрыть». Хост отчитался нулями —
+// и старая ветка «контентный инсет определён (== 0) → доверяем» вернула 0.
+// Внутри мессенджера ноль не бывает правдой: свои кнопки он рисует всегда.
+describe('computeSafeTop — нулевые инсеты внутри мессенджера (регрессия 2026-08)', () => {
+  const zeros = {
+    contentTop: 0,
+    deviceTop: 0,
+    isFullscreen: false,
+    contentReported: true,
+  };
+
+  it('iOS в мессенджере: ноль не принимаем, держим фолбэк под кнопку закрытия', () => {
+    expect(computeSafeTop({ ...zeros, ios: true, overlaysContent: true })).toBe(
+      96,
+    );
+  });
+
+  it('браузер на iOS: ноль — правда, чёлку закрывает CSS env()', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: true, overlaysContent: false }),
+    ).toBe(0);
+  });
+
+  // Поведение изменено осознанно (2026-08): раньше на Android в мессенджере
+  // отступ не добавляли вовсе. Но кнопки клиента висят поверх контента и там —
+  // признак перекрытия не зависит от системы, поэтому очищаем полосу и здесь.
+  it('Android в мессенджере: кнопки тоже поверх контента — очищаем полосу', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
+    ).toBe(96);
+  });
+
+  it('полный экран с нулевой полосой контента — тоже «не доехало», а не точное значение', () => {
+    // device пришёл, content отчитан нулём: раньше вернули бы 47 и шапка
+    // оказалась бы ровно под кнопками Telegram.
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(123);
+  });
+
+  it('полный экран с обоими ненулевыми инсетами — по-прежнему точное значение', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(93);
+  });
+});
+
+// Регресс к скриншоту 2026-08: заголовок «Паттерны» стоял под пилюлей
+// «Закрыть». Инсеты нулевые, клиент внутри мессенджера — отступ обязан
+// очищать не только статус-бар (~54pt), но и полосу кнопок (низ ~87pt).
+describe('фолбэк очищает кнопки Telegram, а не только статус-бар', () => {
+  const TELEGRAM_BUTTONS_BOTTOM_PT = 87;
+
+  it('нулевые инсеты на iOS в мессенджере → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: false,
+      ios: true,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('в полноэкранном режиме без инсетов — тоже ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: true,
+      ios: true,
+      contentReported: false,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('браузер на iOS лишнего отступа не получает — там чёлку закрывает CSS', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
+  });
+});
+
+// Скриншот 2026-08 (третий подряд): развёрнутый режим Telegram — кнопки висят
+// поверх контента, но isFullscreen=false, а contentSafeAreaInset приходит
+// нулём. Раньше мы верили device-инсету, и шапка оказывалась под пилюлей
+// «Закрыть».
+describe('развёрнутый режим: кнопки поверх контента, полосы контента нет', () => {
+  const BUTTONS_BOTTOM_PT = 87;
+
+  it('device-инсет есть, полоса контента нулевая → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 59,
+      isFullscreen: false,
+      ios: true,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  });
+
+  it('то же на Android — кнопки висят так же, ветка не про iOS', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 24,
+      isFullscreen: false,
+      ios: false,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  });
+
+  it('клиент прислал НЕНУЛЕВУЮ полосу контента — верим ему точно', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 59,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: true,
+      }),
+    ).toBe(105);
+  });
+
+  it('браузер лишнего отступа не получает', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
   });
 });

@@ -33,6 +33,7 @@ const USER_ID_TABLES = [
   'practicePlan',
   'practiceSession',
   'userBeliefCheck',
+  'userPhraseCheck',
   'userLetter',
   'userSafePlace',
   'userFlashcard',

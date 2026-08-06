@@ -35,14 +35,28 @@ function runWait(env: Record<string, string>): {
 }
 
 // Поднимает TCP-listener (127.0.0.1) на заданном (или эфемерном) порту.
+// Ошибка биндинга уходит в reject: без обработчика 'error' EADDRINUSE
+// прилетал необработанным событием и валил весь файл невнятным сообщением.
 function listen(port = 0): { server: Server; port: Promise<number> } {
   const server = createServer((s) => s.end());
-  const bound = new Promise<number>((resolve) =>
+  const bound = new Promise<number>((resolve, reject) => {
+    server.once('error', reject);
     server.listen(port, '127.0.0.1', () =>
       resolve((server.address() as AddressInfo).port),
-    ),
-  );
+    );
+  });
   return { server, port: bound };
+}
+
+// Занимает эфемерный порт и сразу отпускает: ОС выдаёт номер, который прямо
+// сейчас свободен. Нужно там, где порт требуется знать ДО того, как на нём
+// кто-то слушает. Захардкоженная константа (было 58124) делала тест флаки —
+// порт мог держать параллельный jest-воркер или сокет в TIME_WAIT.
+async function reservePort(): Promise<number> {
+  const { server, port } = listen();
+  const p = await port;
+  await new Promise<void>((r) => server.close(() => r()));
+  return p;
 }
 
 const url = (port: number) => `postgresql://u:p@127.0.0.1:${port}/db`;
@@ -76,7 +90,7 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
   it('БД недоступна за отведённый бюджет → выходит с кодом 1 (не виснет)', async () => {
     // Порт, где никто не слушает (connect → ECONNREFUSED), маленький таймаут.
     const { proc, code } = runWait({
-      DATABASE_URL: url(59999),
+      DATABASE_URL: url(await reservePort()),
       DB_WAIT_INTERVAL_MS: '100',
       DB_WAIT_CONNECT_MS: '200',
       DB_WAIT_TIMEOUT_MS: '600',
@@ -86,9 +100,10 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
   }, 20000);
 
   it('БД поднялась позже (та самая гонка старта) → ретраи дожидаются, код 0', async () => {
-    // Фиксированный порт: стартуем ожидание ДО listener, поднимаем его позже —
-    // ровно сценарий инцидента (приложение стартовало раньше Postgres-пода).
-    const PORT = 58124;
+    // Порт известен заранее: стартуем ожидание ДО listener, поднимаем его
+    // позже — ровно сценарий инцидента (приложение стартовало раньше
+    // Postgres-пода).
+    const PORT = await reservePort();
     const { proc, code } = runWait({
       DATABASE_URL: url(PORT),
       DB_WAIT_INTERVAL_MS: '150',
@@ -97,8 +112,9 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
     });
     alive.push(proc);
     await wait(600); // БД ещё «спит» — идут ретраи
-    const { server } = listen(PORT); // «под встал»
-    servers.push(server);
+    const late = listen(PORT); // «под встал»
+    servers.push(late.server);
+    await late.port; // не дождаться биндинга — значит проверять нечего
     expect(await code).toBe(0);
   }, 20000);
 

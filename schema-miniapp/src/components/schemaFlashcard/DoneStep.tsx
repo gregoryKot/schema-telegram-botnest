@@ -29,7 +29,15 @@ export function DoneStep({
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>🌿</div>
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              background: 'var(--calm)',
+              margin: '0 auto 14px',
+            }}
+          />
           <div
             style={{
               fontSize: 18,
@@ -48,7 +56,7 @@ export function DoneStep({
             }}
           >
             {tr(
-              'Ты сделал шаг навстречу себе. Это уже немало.',
+              'Это шаг навстречу себе. Уже немало.',
               'Вы сделали шаг навстречу себе. Это уже немало.',
             )}
           </div>
@@ -65,12 +73,12 @@ export function DoneStep({
           {[
             {
               label: 'Режим',
-              value: `${modeInfo?.emoji} ${modeInfo?.label}`,
+              value: modeInfo?.label ?? '',
             },
             needInfo
               ? {
                   label: 'Потребность',
-                  value: `${needInfo.emoji} ${needInfo.label}`,
+                  value: needInfo.label,
                 }
               : null,
             action ? { label: 'Шаг', value: action } : null,

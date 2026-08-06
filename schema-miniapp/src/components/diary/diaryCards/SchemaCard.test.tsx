@@ -57,7 +57,10 @@ describe('SchemaCard', () => {
     expect(screen.queryByText('Тело')).toBeNull();
   });
 
-  it('длинный триггер обрезается в свёрнутом виде и раскрывается полностью', () => {
+  // Свёрнутая запись — одна строка с многоточием средствами CSS (.d-clamp),
+  // а не обрезка строки в JS: раскрытие ничего не «дорисовывает», текст всегда
+  // целый — из него не пропадёт слово, если сломается вычисление длины.
+  it('длинный триггер показан одной строкой, пока запись свёрнута', () => {
     const longTrigger = 'A'.repeat(120);
     render(
       <SchemaCard
@@ -66,9 +69,10 @@ describe('SchemaCard', () => {
         onDelete={() => {}}
       />,
     );
-    expect(screen.getByText(longTrigger.slice(0, 80) + '…')).toBeTruthy();
-    fireEvent.click(screen.getByText(longTrigger.slice(0, 80) + '…'));
-    expect(screen.getByText(longTrigger)).toBeTruthy();
+    const line = screen.getByText(longTrigger);
+    expect(line.className).toContain('d-clamp');
+    fireEvent.click(line);
+    expect(screen.getByText(longTrigger).className).not.toContain('d-clamp');
   });
 
   it('удаление требует подтверждения: первый клик спрашивает, второй вызывает onDelete', () => {

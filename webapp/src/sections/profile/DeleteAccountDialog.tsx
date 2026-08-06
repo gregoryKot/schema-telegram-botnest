@@ -37,7 +37,6 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
       onClick={() => !deleting && onClose()}
     >
       <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
-        <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
           Все данные будут удалены безвозвратно: дневники, записи, прогресс, настройки. Восстановить невозможно.

@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { api } from '../api';
-import type { PracticePlan } from '../api';
+import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   plan: PracticePlan;
-  needEmoji: string;
+  needColor: string;
   needLabel: string;
   color: string;
   onDone: () => void;
 }
 
-export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Props) {
+export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
@@ -38,12 +38,11 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 28px' }} />
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
-            {tr('Вчера ты планировал', 'Вчера вы планировали')}
+            {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-            {needEmoji} {needLabel}
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <IdentityDot color={needColor} /> {needLabel}
           </div>
         </div>
 
@@ -84,7 +83,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
               color: saving ? 'var(--text-sub)' : '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'default' : 'pointer',
             }}
           >
-            {saving ? 'Сохранение...' : 'Да, сделал ✓'}
+            {saving ? 'Сохранение...' : 'Да, получилось ✓'}
           </button>
         </div>
         {error && (

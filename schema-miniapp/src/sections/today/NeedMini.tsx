@@ -1,5 +1,6 @@
 import { Need, COLORS } from '../../types';
 import { useNeedData } from '../../needData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { hexToRgb } from './helpers';
 
 // ── NeedMini ──────────────────────────────────────────────────────────────────
@@ -76,13 +77,13 @@ export function NeedMini({
         <span
           style={{
             position: 'relative',
-            fontSize: filled ? 14 : 18,
+            fontSize: 14,
             fontWeight: 700,
-            color: filled ? color : 'var(--text-faint)',
+            color,
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {filled ? value : need.emoji}
+          {filled ? value : <IdentityDot id={need.id} size={12} />}
         </span>
         {/* Yesterday delta badge */}
         {delta !== null && delta !== 0 && (
@@ -103,8 +104,7 @@ export function NeedMini({
               padding: '1px 3px',
             }}
           >
-            {delta > 0 ? '+' : ''}
-            {delta}
+            {delta > 0 ? `+${delta}` : delta}
           </div>
         )}
       </div>

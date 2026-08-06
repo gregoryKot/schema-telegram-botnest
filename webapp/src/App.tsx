@@ -20,6 +20,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
+import { LinkDevicePage } from './pages/LinkDevicePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
@@ -133,6 +134,7 @@ const appRoutes = [
   { path: '/auth/recovery',         element: <RecoveryPage /> },
   { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
   { path: '/auth/error',     element: <AuthError /> },
+  { path: '/link',           element: <LinkDevicePage /> },
   {
     element: <RequireAuth />,
     children: [

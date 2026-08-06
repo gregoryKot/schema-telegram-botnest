@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryTextArea } from './DiaryTextArea';
 import { WizardProgress } from '../WizardProgress';
-import { WizardNav } from '../WizardNav';
+import { DiaryWizardNav } from './DiaryWizardNav';
 import {
   buildModeDiarySteps,
   type ModeDiaryFieldKey,
 } from '../../../../shared/src/mode/modeDiarySteps';
 
 /**
- * Визард дневника режимов: один вопрос — один экран (после выбора режима).
+ * Визард дневника режимов: один вопрос — один экран (шаг 3 потока, после
+ * выбора чувства и режима).
  * Последний шаг — Здоровый Взрослый: показываем пример-ориентир, а клиент пишет
  * СВОЁ (не готовый ответ). Обязательна только ситуация; остальное можно
  * пропустить, сохранить можно с любого шага (кнопка в шапке).
@@ -56,7 +56,7 @@ export function ModeDiaryWizard({
   ];
 
   return (
-    <div style={{ marginTop: 18 }}>
+    <div>
       <div style={{ marginBottom: 8 }}>
         <WizardProgress
           segments={progressSegments}
@@ -65,22 +65,13 @@ export function ModeDiaryWizard({
           onSelect={(i) => setStep(i)}
         />
       </div>
-      <div
-        style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 16 }}
-      >
+      <div className="d-caps" style={{ marginBottom: 18 }}>
         Шаг {step + 1} из {TOTAL}
         {optional && ' · можно пропустить'}
       </div>
 
       {/* Вопрос */}
-      <div
-        style={{
-          fontSize: 17,
-          fontWeight: 700,
-          color: 'var(--text)',
-          marginBottom: 4,
-        }}
-      >
+      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
         {isHa
           ? tr(
               'Что бы сказал твой Здоровый Взрослый?',
@@ -88,7 +79,14 @@ export function ModeDiaryWizard({
             )
           : cur!.title}
       </div>
-      <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: 14,
+          color: 'var(--muted)',
+          lineHeight: 1.5,
+          marginBottom: 16,
+        }}
+      >
         {isHa
           ? tr(
               'Своими словами — как поддержал бы тот, кто на твоей стороне.',
@@ -100,27 +98,19 @@ export function ModeDiaryWizard({
       {isHa && (
         <div
           style={{
-            background: 'rgba(52,211,153,0.08)',
-            border: '1px solid rgba(52,211,153,0.2)',
+            background: 'var(--calm)',
             borderRadius: 14,
             padding: '12px 14px',
             marginBottom: 12,
           }}
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'var(--accent-green)',
-              marginBottom: 6,
-            }}
-          >
-            🌿 Например, можно сказать себе
+          <div className="d-caps" style={{ marginBottom: 6 }}>
+            Например, можно сказать себе
           </div>
           <div
             style={{
-              fontSize: 13,
-              color: 'var(--text-sub)',
+              fontSize: 14,
+              color: 'var(--ink-2)',
               lineHeight: 1.6,
               fontStyle: 'italic',
             }}
@@ -141,35 +131,18 @@ export function ModeDiaryWizard({
         rows={isHa ? 3 : cur!.rows}
       />
 
-      <div style={{ marginTop: 16 }}>
-        <WizardNav
-          accentColor={accentColor}
-          onBack={() => {
-            haptic.tap();
-            setStep((s) => Math.max(0, s - 1));
-          }}
-          backDisabled={step === 0}
-          primaryKind={isLast ? 'save' : 'next'}
-          primaryLabel={
-            isLast
-              ? saving
-                ? 'Сохраняю…'
-                : 'Готово'
-              : val.trim() || !optional
-                ? 'Далее →'
-                : 'Пропустить'
-          }
-          onPrimary={
-            isLast
-              ? onSave
-              : () => {
-                  haptic.tap();
-                  setStep((s) => s + 1);
-                }
-          }
-          primaryDisabled={isLast ? !canSave || saving : !canNext}
-        />
-      </div>
+      <DiaryWizardNav
+        accentColor={accentColor}
+        step={step}
+        onStep={setStep}
+        isLast={isLast}
+        filled={val.trim().length > 0}
+        optional={optional}
+        canNext={canNext}
+        canSave={canSave}
+        saving={saving}
+        onSave={onSave}
+      />
     </div>
   );
 }

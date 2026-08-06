@@ -1,3 +1,4 @@
+import { GearIcon } from '../../components/GearIcon';
 interface ProfileHeaderProps {
   firstName: string;
   totalDays: number;
@@ -39,11 +40,9 @@ export function ProfileHeader({
         </div>
         <div>
           <div
+            className="d-display"
             style={{
-              fontSize: 20,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.4px',
+              fontSize: 22,
             }}
           >
             {firstName || 'Я'}
@@ -61,21 +60,21 @@ export function ProfileHeader({
       </div>
       <button
         onClick={onOpenSettings}
+        aria-label="Настройки"
         style={{
-          width: 38,
-          height: 38,
+          width: 44,
+          height: 44,
           borderRadius: 12,
           border: 'none',
           background: 'rgba(var(--fg-rgb),0.06)',
           color: 'var(--text-sub)',
-          fontSize: 18,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        ⚙️
+        <GearIcon />
       </button>
     </div>
   );

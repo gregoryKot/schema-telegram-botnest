@@ -34,7 +34,7 @@ export function DiaryShareButton({ emoji, title, color, entries }: Props) {
 
   return (
     <>
-      <SharePill onClick={() => setOpen(true)} />
+      <SharePill compact onClick={() => setOpen(true)} />
       {open && (
         <ShareCardSheet
           title="Поделиться дневником"

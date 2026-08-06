@@ -1,6 +1,7 @@
 import { useTr } from '../../utils/addressForm';
-import { COLORS } from '../../types';
 import { SectionLabel } from '../SectionLabel';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { needColor } from '../../../../shared/src/needs/needColors';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { TherapyNote } from '../TherapyNote';
 import { pressable } from '../../utils/a11y';
@@ -73,13 +74,12 @@ export function ResultPhase({
       >
         {NEED_IDS.map((id) => {
           const value = ratings[id];
-          const color = COLORS[id] ?? '#888';
           return (
             <div
               key={id}
               style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
-              <span style={{ fontSize: 13 }}>{NEED_META[id].emoji}</span>
+              <IdentityDot id={id} />
               <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                 {NEED_META[id].label.split(' ')[0]}
               </span>
@@ -92,7 +92,7 @@ export function ResultPhase({
                       ? 'var(--accent-red)'
                       : value <= 6
                         ? 'var(--accent-yellow)'
-                        : color,
+                        : needColor(id),
                 }}
               >
                 {value}
@@ -139,7 +139,7 @@ export function ResultPhase({
                     marginBottom: 8,
                   }}
                 >
-                  <span style={{ fontSize: 14 }}>{meta.emoji}</span>
+                  <IdentityDot id={id} />
                   <span
                     style={{
                       fontSize: 13,

@@ -27,27 +27,31 @@ export function DiaryStickyHeader({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingTop: 4,
-        paddingBottom: 12,
-        borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-        marginBottom: 8,
+        paddingBottom: 14,
+        borderBottom: '1px solid var(--border-color)',
+        marginBottom: 12,
       }}
     >
       <div>
-        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
+        <div className="d-display" style={{ fontSize: 20 }}>
           {title}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>{subtitle}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>
+          {subtitle}
+        </div>
       </div>
       <button
         onClick={onSave}
         disabled={!canSave || saving}
         style={{
-          padding: '9px 18px',
-          borderRadius: 12,
+          padding: '12px 18px',
+          minHeight: 48,
+          borderRadius: 14,
           border: 'none',
-          background: canSave ? color : 'rgba(var(--fg-rgb),0.08)',
-          color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-          fontSize: 13,
+          fontFamily: 'inherit',
+          background: canSave ? color : 'var(--surface-2)',
+          color: canSave ? '#fff' : 'var(--text-faint)',
+          fontSize: 14,
           fontWeight: 600,
           cursor: canSave ? 'pointer' : 'default',
           flexShrink: 0,

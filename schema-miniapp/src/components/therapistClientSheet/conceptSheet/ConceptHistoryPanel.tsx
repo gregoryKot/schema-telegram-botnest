@@ -1,5 +1,6 @@
 import { fmtDate } from '../../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../../schemaTherapyData';
+import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
 
 // Панель истории концептуализации (снимки с возможностью восстановить).
@@ -122,7 +123,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                         color,
                       }}
                     >
-                      {schema.emoji} {schema.name}
+                      <IdentityDot color={color} size={7} /> {schema.name}
                     </span>
                   ))}
                 </div>
@@ -155,7 +156,8 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                               color: group.color,
                             }}
                           >
-                            {m.emoji} {m.name}
+                            <IdentityDot color={group.color} size={7} />{' '}
+                            {m.name}
                           </span>
                         ))}
                       </div>

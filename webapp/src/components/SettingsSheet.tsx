@@ -11,43 +11,18 @@ import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { appInviteShare, pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
+import {
+  TIMEZONES,
+  HOURS,
+  FREQ_LABELS,
+  QUIET_PRESETS,
+  pad,
+  quietLabel,
+  hourInQuiet,
+} from '../../../shared/src/settings/constants';
+import { SHead, SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './settingsSheet/ui';
+import { inputStyle } from './settingsSheet/inputStyle';
 
-const TIMEZONES = [
-  { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
-  { label: 'Нью-Йорк (UTC−5)',      iana: 'America/New_York' },
-  { label: 'Лондон (UTC+0)',         iana: 'Europe/London' },
-  { label: 'Берлин (UTC+1)',         iana: 'Europe/Berlin' },
-  { label: 'Киев / Израиль (UTC+2)', iana: 'Europe/Kyiv' },
-  { label: 'Москва (UTC+3)',         iana: 'Europe/Moscow' },
-  { label: 'Дубай (UTC+4)',          iana: 'Asia/Dubai' },
-  { label: 'Ташкент (UTC+5)',        iana: 'Asia/Tashkent' },
-  { label: 'Алматы (UTC+6)',         iana: 'Asia/Almaty' },
-  { label: 'Пекин (UTC+8)',          iana: 'Asia/Shanghai' },
-];
-const HOURS = [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
-function pad(n: number) { return String(n).padStart(2, '0'); }
-
-const FREQ_LABELS = ['Каждый день', 'Через день', 'Пару раз в неделю', 'Раз в неделю'];
-
-// Пресеты тихих часов: start===end → выключены
-const QUIET_PRESETS = [
-  { label: 'Выключены', start: 0, end: 0 },
-  { label: '21:00 – 08:00', start: 21, end: 8 },
-  { label: '22:00 – 08:00', start: 22, end: 8 },
-  { label: '23:00 – 07:00', start: 23, end: 7 },
-  { label: '00:00 – 08:00', start: 0, end: 8 },
-];
-
-function quietLabel(start?: number, end?: number): string {
-  if (start === undefined || end === undefined || start === end) return 'Выключены';
-  return `${pad(start)}:00 – ${pad(end)}:00`;
-}
-
-/** Час уведомления внутри окна тишины? (окно может переходить через полночь) */
-function hourInQuiet(hour: number, start?: number, end?: number): boolean {
-  if (start === undefined || end === undefined || start === end) return false;
-  return start > end ? (hour >= start || hour < end) : (hour >= start && hour < end);
-}
 
 interface Props {
   onClose: () => void;
@@ -491,11 +466,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     {therapistReq?.status === 'pending' ? (
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                        ⏳ Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
+                        Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
                       </div>
                     ) : therapistReq?.status === 'approved' ? (
                       <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
-                        ✅ Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
+                        Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
                       </div>
                     ) : !showReqForm ? (
                       <div>
@@ -648,7 +623,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </a>
                     {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
                     <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат</span>
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
@@ -750,86 +725,5 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         </InfoModal>
       )}
     </>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
-  background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-  borderRadius: 7, color: 'var(--text)', fontSize: 14, outline: 'none',
-};
-
-function SHead({ id, label, hint }: { id: string; label: string; hint?: string }) {
-  return (
-    <div id={id} style={{ paddingTop: 40, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
-      <div className="eyebrow">{label}</div>
-      {hint && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
-    </div>
-  );
-}
-
-function SRow({ title, sub, right, onClick, danger }: {
-  title: string; sub?: React.ReactNode; right?: React.ReactNode;
-  onClick?: () => void; danger?: boolean;
-}) {
-  return (
-    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
-      style={{
-      display: 'flex', alignItems: 'center', gap: 16,
-      padding: '13px 0',
-      borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, color: danger ? 'var(--accent-red)' : 'var(--text)' }}>{title}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
-      </div>
-      {right ?? (onClick && <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>)}
-    </div>
-  );
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }} />
-    </div>
-  );
-}
-
-function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-    </div>
-  );
-}
-
-function ChevronVal({ text, small }: { text: string; small?: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: small ? 12 : 14, color: 'var(--text-sub)', textAlign: 'right', maxWidth: 200 }}>{text}</span>
-      <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-    </div>
-  );
-}
-
-function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="settings-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      <div className="settings-modal-box" onClick={e => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}>
-        <div className="settings-modal-handle" />
-        {children}
-      </div>
-    </div>
   );
 }

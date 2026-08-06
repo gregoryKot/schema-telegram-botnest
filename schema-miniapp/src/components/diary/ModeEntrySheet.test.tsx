@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Правило №7 CLAUDE.md: дневник режимов прогоняет свободный текст через
-// кризисную детекцию. С визардом (Slice 2) поле «ситуация» — первый шаг после
-// выбора режима, поэтому преселектим режим через черновик.
+// кризисную детекцию. Поле «ситуация» живёт на шаге 3 (после выбора
+// состояния и режима), поэтому режим преселектим через черновик.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -24,7 +24,7 @@ afterEach(() => {
   cleanup();
 });
 
-// Преселект режима через черновик → визард открывается на шаге «ситуация».
+// Преселект режима через черновик → поток открывается сразу на шаге записи.
 function seedMode() {
   localStorage.setItem(
     'diary_draft_mode',
@@ -94,9 +94,7 @@ describe('ModeEntrySheet — итог после сохранения (Journey D
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={onClose} onSave={onSave} />);
     fireEvent.click(screen.getByText('Сохранить'));
-    await waitFor(() =>
-      expect(screen.getByText('Запись сохранена')).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled(); // итог, а не закрытие
   });
@@ -130,19 +128,17 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getByText('Сохранить'));
-    await waitFor(() =>
-      expect(screen.getByText('Запись сохранена')).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
 
     fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
 
-    // визард снова открыт на шаге «ситуация» — прежнее значение сохранено
+    // шаг записи снова открыт — прежняя ситуация на месте
     await waitFor(() =>
       expect(
         screen.getByDisplayValue('коллега накричал на созвоне'),
       ).toBeTruthy(),
     );
-    expect(screen.queryByText('Запись сохранена')).toBeNull();
+    expect(screen.queryByText('Записано')).toBeNull();
   });
 
   it('«Другой режим» возвращает на выбор режима с той же ситуацией', async () => {
@@ -150,16 +146,14 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getByText('Сохранить'));
-    await waitFor(() =>
-      expect(screen.getByText('Запись сохранена')).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText('Записано')).toBeTruthy());
 
     fireEvent.click(screen.getByText('Другой режим'));
 
-    // назад на шаг выбора режима (CTA теста снова виден)
+    // назад на шаг 1 — список состояний обычными словами
     await waitFor(() =>
-      expect(screen.getByText('Не знаю, какой режим')).toBeTruthy(),
+      expect(screen.getByText('Что ты сейчас чувствуешь?')).toBeTruthy(),
     );
-    expect(screen.queryByText('Запись сохранена')).toBeNull();
+    expect(screen.queryByText('Записано')).toBeNull();
   });
 });

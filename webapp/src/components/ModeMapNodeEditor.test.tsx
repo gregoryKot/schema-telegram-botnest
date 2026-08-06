@@ -174,17 +174,18 @@ describe('ModeMapNodeEditor — карта пары: выбор партнёра
 });
 
 describe('ModeMapNodeEditor — подсказка критику: ты/вы-вилка (правило CLAUDE.md)', () => {
-  it('форма «вы» — плейсхолдер ответа критику согласован во множественном числе', () => {
+  it('форма «вы» — плейсхолдер ответа критику обращается на «вы»', () => {
     renderEditor(baseNode({ type: 'critic', data: { label: 'Критик' } }), {}, 'vy');
     const field = screen.getByLabelText(/Что сказал бы Здоровый Взрослый/) as HTMLTextAreaElement;
-    expect(field.placeholder).toContain('Вы не обязаны');
-    expect(field.placeholder).not.toMatch(/[Тт]ы не обязан/);
+    expect(field.placeholder).toContain('От вас не требуется');
+    expect(field.placeholder).not.toMatch(/[Тт]ы(?:\s|$)|[Тт]еб[еяё]/);
   });
 
   it('форма «ты» — плейсхолдер в форме «ты»', () => {
     renderEditor(baseNode({ type: 'critic', data: { label: 'Критик' } }), {}, 'ty');
     const field = screen.getByLabelText(/Что сказал бы Здоровый Взрослый/) as HTMLTextAreaElement;
-    expect(field.placeholder).toContain('Ты не обязан');
+    expect(field.placeholder).toContain('От тебя не требуется');
+    expect(field.placeholder).not.toMatch(/[Вв]ас(?:\s|$)/);
   });
 });
 

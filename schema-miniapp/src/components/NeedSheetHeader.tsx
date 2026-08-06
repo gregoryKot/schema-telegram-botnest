@@ -1,6 +1,7 @@
 import { Need } from '../types';
 import { NeedExtra } from '../needData';
 import { pressable } from '../utils/a11y';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   need: Need;
@@ -12,7 +13,7 @@ interface Props {
   keyboardAccessible?: boolean;
 }
 
-// Шапка шита потребности (эмодзи, заголовок, теги, крестик) — общая для
+// Шапка шита потребности (цветная точка, заголовок, теги, крестик) — общая для
 // NeedHistorySheet и NeedTodaySheet (правило №11 CLAUDE.md, jscpd-свип).
 export function NeedSheetHeader({
   need,
@@ -46,10 +47,9 @@ export function NeedSheetHeader({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 22,
         }}
       >
-        {data.emoji}
+        <IdentityDot id={need.id} size={16} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div

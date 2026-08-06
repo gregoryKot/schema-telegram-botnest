@@ -11,13 +11,11 @@ import {
   beginCard,
   header,
   headerHeight,
-  panel,
-  sectionLabel,
   measureWrap,
   clampLines,
-  cardFont,
   footer,
 } from '../cardKit';
+import { fieldPanels, fieldPanelsHeight } from '../kit/fieldPanels';
 import { modeEntryFullShareText } from '../shareTexts';
 import type { ShareCardKind } from '../analytics';
 import {
@@ -77,10 +75,7 @@ export interface ModeEntryFullCardData {
   fields: ModeEntryFullField[];
 }
 
-const LINE_H = 20;
 const PAD_IN = 14;
-const LABEL_BLOCK = 22;
-const FIELD_GAP = 16;
 const MAX_LINES_PER_FIELD = 5;
 
 /** Готовит поля с уже перенесённым текстом (высота — заранее). */
@@ -103,37 +98,16 @@ export function drawModeEntryFullCard(
   d: ModeEntryFullCardData,
 ) {
   const shown = prepareFields(canvas, d.fields);
-  const bodyH = shown.reduce(
-    (s, f) =>
-      s + LABEL_BLOCK + PAD_IN * 2 + f.lines.length * LINE_H + FIELD_GAP,
-    0,
-  );
+  const bodyH = fieldPanelsHeight(shown);
   const H = headerHeight(1, Boolean(d.dateLabel)) + bodyH + 10 + FOOTER_H;
   const c = beginCard(canvas, H, { accent: d.color });
-  const { ctx, th } = c;
-  const panelW = c.W - CARD_PAD * 2;
-
-  let y = header(c, {
+  const y = header(c, {
     eyebrow: 'Дневник режимов',
     title: `${d.emoji} ${d.name}`,
     subtitle: d.dateLabel,
   });
 
-  for (const f of shown) {
-    y = sectionLabel(c, f.label, y + 4, c.accent);
-    const panelH = PAD_IN * 2 + f.lines.length * LINE_H;
-    panel(c, CARD_PAD, y, panelW, panelH, 16);
-
-    ctx.font = cardFont(14);
-    ctx.fillStyle = th.fg(0.85);
-    ctx.textAlign = 'left';
-    let ty = y + PAD_IN + 11;
-    for (const line of f.lines) {
-      ctx.fillText(line, CARD_PAD + PAD_IN, ty);
-      ty += LINE_H;
-    }
-    y += panelH + FIELD_GAP;
-  }
+  fieldPanels(c, shown, y);
 
   footer(c, 'Дневник режимов');
 }

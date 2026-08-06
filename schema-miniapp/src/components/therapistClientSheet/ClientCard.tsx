@@ -26,12 +26,12 @@ export function ClientCard({
     .join('')
     .toUpperCase();
   const avatarColors = [
-    '#a78bfa',
-    '#60a5fa',
-    '#f472b6',
-    '#34d399',
-    '#fb923c',
-    '#facc15',
+    'var(--accent)',
+    'var(--accent-blue)',
+    'var(--accent-pink)',
+    'var(--accent-green)',
+    'var(--accent-orange)',
+    'var(--accent-yellow)',
   ];
   const avatarColor =
     avatarColors[Math.abs(c.telegramId) % avatarColors.length];

@@ -1,5 +1,5 @@
 import { Theme, toggleTheme, resetToSystemTheme } from '../../utils/theme';
-import { Row, Toggle, SettingsLabel } from './ui';
+import { Row, Toggle, ThemeIcon, SettingsLabel } from './ui';
 import { MotionPref } from './types';
 import { useTr } from '../../utils/addressForm';
 
@@ -44,9 +44,7 @@ export function AppearanceSection({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>
-              {theme === 'dark' ? '🌙' : '☀️'}
-            </span>
+            <ThemeIcon theme={theme} />
             <div>
               <div
                 style={{
@@ -135,27 +133,24 @@ export function AppearanceSection({
               justifyContent: 'space-between',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 18 }}>👨‍⚕️</span>
-              <div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'var(--text)',
-                    fontWeight: 500,
-                  }}
-                >
-                  Режим специалиста
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-sub)',
-                    marginTop: 1,
-                  }}
-                >
-                  {therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-                </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: 'var(--text)',
+                  fontWeight: 500,
+                }}
+              >
+                Режим специалиста
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--text-sub)',
+                  marginTop: 1,
+                }}
+              >
+                {therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
               </div>
             </div>
             <div

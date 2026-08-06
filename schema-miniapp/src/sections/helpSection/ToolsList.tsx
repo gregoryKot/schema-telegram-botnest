@@ -14,6 +14,7 @@ interface Props {
   onOpenPractices: () => void;
   onOpenPlans: () => void;
   onOpenBeliefCheck: () => void;
+  onOpenPhraseCheck: () => void;
   onOpenSafePlace: () => void;
   onOpenLetterToSelf: () => void;
   onOpenFlashcard: () => void;
@@ -30,6 +31,7 @@ export function ToolsList({
   onOpenPractices,
   onOpenPlans,
   onOpenBeliefCheck,
+  onOpenPhraseCheck,
   onOpenSafePlace,
   onOpenLetterToSelf,
   onOpenFlashcard,
@@ -42,19 +44,22 @@ export function ToolsList({
         Инструменты
       </div>
       <ToolRow
-        emoji="🎯"
+        label="Критик или забота?"
+        sub="Проверить фразу внутреннего голоса"
+        index={0}
+        onClick={onOpenPhraseCheck}
+      />
+      <ToolRow
         label="Мои цели"
         sub={
           tasksCount === 0
             ? 'Нет активных'
             : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`
         }
-        tint="var(--accent-orange)"
-        index={0}
+        index={1}
         onClick={onOpenTasks}
       />
       <ToolRow
-        emoji="🗂"
         label="Практики"
         sub={
           practiceCount == null
@@ -63,12 +68,10 @@ export function ToolsList({
               ? 'Нет практик'
               : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
         }
-        tint="var(--accent)"
-        index={1}
+        index={2}
         onClick={onOpenPractices}
       />
       <ToolRow
-        emoji="🗓"
         label="Планы"
         sub={
           planCount == null
@@ -77,56 +80,43 @@ export function ToolsList({
               ? 'История пуста'
               : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
         }
-        tint="var(--accent-blue)"
-        index={2}
+        index={3}
         onClick={onOpenPlans}
       />
       <ToolRow
-        emoji="🔍"
         label="Проверка убеждений"
         sub="Правда ли это?"
-        tint="var(--accent-yellow)"
-        index={3}
+        index={4}
         onClick={onOpenBeliefCheck}
       />
       <ToolRow
-        emoji="🏡"
         label="Безопасное место"
         sub="Ресурс в тревожный момент"
-        tint="var(--accent-green)"
-        index={4}
+        index={5}
         onClick={onOpenSafePlace}
       />
       <ToolRow
-        emoji="✉️"
         label="Письмо себе"
         sub="Уязвимому Ребёнку"
-        tint="var(--accent-pink)"
-        index={5}
+        index={6}
         onClick={onOpenLetterToSelf}
       />
       <ToolRow
-        emoji="🆘"
         label="Схема включилась"
         sub="5 шагов чтобы разобраться"
-        tint="var(--accent-indigo)"
-        index={6}
+        index={7}
         onClick={onOpenFlashcard}
       />
       <ToolRow
-        emoji="🌱"
         label="Колесо детства"
         sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-        tint="var(--accent-green)"
-        index={7}
+        index={8}
         onClick={onOpenChildhoodWheel}
       />
       <ToolRow
-        emoji="💛"
         label="Тёплые слова"
         sub="Слова поддержки себе"
-        tint="var(--accent-yellow)"
-        index={8}
+        index={9}
         onClick={onOpenWarmWords}
       />
     </>

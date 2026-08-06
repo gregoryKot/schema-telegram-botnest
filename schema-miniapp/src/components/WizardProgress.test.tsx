@@ -34,6 +34,9 @@ describe('WizardProgress', () => {
     expect(first.style.background).toBe('rgb(167, 139, 250)');
   });
 
+  // Прозрачность считает color-mix, а не склейка hex+альфа: accentColor
+  // приходит и как hex, и как var(--accent) — на второй склейка давала
+  // невалидный цвет, и сегмент/кнопка молча становились прозрачными.
   it('активный незаполненный сегмент — полупрозрачный accent', () => {
     const { container } = render(
       <WizardProgress
@@ -44,7 +47,9 @@ describe('WizardProgress', () => {
     );
     const [, second] = container.firstChild!
       .childNodes as unknown as HTMLElement[];
-    expect(second.style.background).toBe('rgba(167, 139, 250, 0.333)');
+    expect(second.style.background).toBe(
+      'color-mix(in srgb, rgb(167, 139, 250) 34%, transparent)',
+    );
   });
 
   it('неактивный незаполненный сегмент — var(--surface-2)', () => {

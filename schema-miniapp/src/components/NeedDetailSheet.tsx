@@ -1,14 +1,8 @@
 import { BottomSheet } from './BottomSheet';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useNeedData } from '../needData';
-import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-
-const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy: '#4fa3f7',
-  expression: '#facc15',
-  play: '#06d6a0',
-  limits: '#a78bfa',
-};
+import { ALL_SCHEMAS } from '../schemaTherapyData';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 // Schema domains most associated with each core need (schema therapy theory)
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -34,7 +28,7 @@ export function NeedDetailSheet({
 }: Props) {
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = NEED_COLORS[needId] ?? '#a78bfa';
+  const color = needColor(needId);
 
   if (!need) return null;
 
@@ -59,9 +53,9 @@ export function NeedDetailSheet({
 
   // Related schemas from user's active list
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
-  const relatedSchemas = SCHEMA_DOMAINS.filter((d) =>
-    domainIds.includes(d.id),
-  ).flatMap((d) => d.schemas.filter((s) => activeSchemaIds.includes(s.id)));
+  const relatedSchemas = ALL_SCHEMAS.filter(
+    (s) => domainIds.includes(s.domainId) && activeSchemaIds.includes(s.id),
+  );
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
@@ -88,10 +82,9 @@ export function NeedDetailSheet({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 24,
             }}
           >
-            {need.emoji}
+            <IdentityDot id={needId} size={16} />
           </div>
           <div>
             <div
@@ -192,9 +185,7 @@ export function NeedDetailSheet({
                     border: `1px solid ${color}15`,
                   }}
                 >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>
-                    {s.emoji ?? '●'}
-                  </span>
+                  <IdentityDot color={s.domainColor} size={10} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{

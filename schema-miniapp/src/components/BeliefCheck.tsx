@@ -4,6 +4,7 @@ import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
+import { cm } from '../sections/schemas/utils';
 import { EvidenceList } from './beliefCheck/EvidenceList';
 import {
   STORAGE_KEY,
@@ -170,8 +171,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               width: 44,
               height: 44,
               borderRadius: 14,
-              background: 'rgba(96,165,250,0.12)',
-              border: '1px solid rgba(96,165,250,0.2)',
+              background: cm('var(--accent-blue)', 12),
+              border: `1px solid ${cm('var(--accent-blue)', 20)}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -199,8 +200,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div
               style={{
-                background: 'rgba(96,165,250,0.06)',
-                border: '1px solid rgba(96,165,250,0.12)',
+                background: cm('var(--accent-blue)', 6),
+                border: `1px solid ${cm('var(--accent-blue)', 12)}`,
                 borderRadius: 14,
                 padding: '12px 14px',
                 marginBottom: 14,
@@ -230,7 +231,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 width: '100%',
                 boxSizing: 'border-box',
                 background: 'rgba(var(--fg-rgb),0.04)',
-                border: `1px solid ${belief.trim() ? 'rgba(96,165,250,0.3)' : 'rgba(var(--fg-rgb),0.1)'}`,
+                border: `1px solid ${belief.trim() ? cm('var(--accent-blue)', 30) : 'rgba(var(--fg-rgb),0.1)'}`,
                 borderRadius: 14,
                 padding: '13px 14px',
                 color: 'var(--text)',
@@ -252,7 +253,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 borderRadius: 14,
                 border: 'none',
                 background: belief.trim()
-                  ? 'rgba(96,165,250,0.15)'
+                  ? cm('var(--accent-blue)', 15)
                   : 'rgba(var(--fg-rgb),0.06)',
                 color: belief.trim()
                   ? 'var(--accent-blue)'
@@ -272,10 +273,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div
               style={{
-                background:
-                  'color-mix(in srgb, var(--accent-red) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-red) 12%, transparent)',
+                background: cm('var(--accent-red)', 6),
+                border: `1px solid ${cm('var(--accent-red)', 12)}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 marginBottom: 14,
@@ -317,7 +316,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 padding: '13px 0',
                 borderRadius: 14,
                 border: 'none',
-                background: 'rgba(96,165,250,0.15)',
+                background: cm('var(--accent-blue)', 15),
                 color: 'var(--accent-blue)',
                 fontSize: 15,
                 fontWeight: 600,
@@ -334,10 +333,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div
               style={{
-                background:
-                  'color-mix(in srgb, var(--accent-green) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
+                background: cm('var(--accent-green)', 6),
+                border: `1px solid ${cm('var(--accent-green)', 12)}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 marginBottom: 14,
@@ -383,7 +380,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 padding: '13px 0',
                 borderRadius: 14,
                 border: 'none',
-                background: 'rgba(96,165,250,0.15)',
+                background: cm('var(--accent-blue)', 15),
                 color: 'var(--accent-blue)',
                 fontSize: 15,
                 fontWeight: 600,
@@ -400,9 +397,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div
               style={{
-                background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent) 12%, transparent)',
+                background: cm('var(--accent)', 6),
+                border: `1px solid ${cm('var(--accent)', 12)}`,
                 borderRadius: 14,
                 padding: '10px 14px',
                 marginBottom: 14,
@@ -458,8 +454,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 padding: '13px 0',
                 borderRadius: 14,
                 border: 'none',
-                background:
-                  'color-mix(in srgb, var(--accent-green) 15%, transparent)',
+                background: cm('var(--accent-green)', 15),
                 color: 'var(--accent-green)',
                 fontSize: 15,
                 fontWeight: 600,

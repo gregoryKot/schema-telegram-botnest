@@ -1,32 +1,28 @@
 // Типы API webapp (зеркало бэкенда, ранее инлайном в api.ts).
-// Вынесено из api.ts (правило №10). Самодостаточно — без внешних импортов.
+// Вынесено из api.ts (правило №10).
+//
+// Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
+// только ре-экспорт. ConceptSnapshot ещё и импортируется: на него ссылается
+// локальный ClientConceptualization (в webapp он с mode-map, потому локальный).
+import type { ConceptSnapshot } from '../../shared/src/apiTypes';
+export type {
+  UserSettings,
+  StreakData,
+  Achievement,
+  UserPractice,
+  PartnerInfo,
+  PairsData,
+  PracticePlan,
+  UserTask,
+  TherapyRelationInfo,
+  TherapistNote,
+  ConceptSnapshot,
+  YsqHistoryEntry,
+  ClientData,
+  Insights,
+} from '../../shared/src/apiTypes';
 
-// ─── Shared types (mirrored from miniapp, same backend) ──────────────────────
-export interface UserSettings {
-  notifyEnabled: boolean;
-  notifyLocalHour: number;
-  notifyTimezone: string;
-  notifyReminderEnabled: boolean;
-  notifyFrequency?: number;          // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
-  notifyQuietStart?: number;         // тихие часы: начало (локальный час)
-  notifyQuietEnd?: number;           // тихие часы: конец; start===end → выключены
-  notifyGamified?: boolean;          // opt-in игровой режим: серии + «ещё день до вехи»
-  notifyPausedUntil?: string | null; // ISO-дата конца паузы; POST null = возобновить
-  addressForm?: 'ty' | 'vy' | null;  // null = ещё не выбрано → показать выбор
-  pairCardDismissed: boolean;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  therapistShareCards: boolean;
-  therapistShareProfile: boolean;
-}
-export interface StreakData {
-  currentStreak: number;
-  longestStreak: number;
-  totalDays: number;
-  todayDone: boolean;
-  weekDots: boolean[];
-}
-export interface Achievement { id: string; earned: boolean; }
+// ─── Site-only types (booking, articles, mode-map) ───────────────────────────
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
 export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
 export interface AvailabilityRule {
@@ -68,67 +64,6 @@ export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean
 /** Остаток пула канала: на сколько дней хватит ещё не звучавших фраз. */
 export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysLeft: number; }
 export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
-export interface UserPractice { id: number; needId: string; text: string; }
-export interface PartnerInfo {
-  code: string;
-  partnerIndex: number | null;
-  partnerTodayDone: boolean;
-  partnerName: string | null;
-  partnerTelegramId: number | null;
-  partnerWeekAvgs: (number | null)[];
-}
-export interface PairsData { partners: PartnerInfo[]; pendingCode: string | null; }
-export interface PracticePlan {
-  id: number;
-  needId: string;
-  practiceText: string;
-  scheduledDate: string;
-  reminderUtcHour: number | null;
-  done: boolean | null;
-}
-export interface UserTask {
-  id: number;
-  userId: number;
-  assignedBy: number | null;
-  type: string;
-  text: string;
-  targetDays: number | null;
-  needId: string | null;
-  dueDate: string | null;
-  done: boolean | null;
-  completedAt: string | null;
-  createdAt: string;
-  doneToday?: boolean;
-  progress?: number;
-}
-export interface TherapyRelationInfo {
-  role: 'therapist' | 'client';
-  status: string;
-  partnerName: string | null;
-  partnerId: number | null;
-  code: string;
-  nextSession: string | null;
-}
-export interface TherapistNote {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  date: string;
-  text: string;
-  createdAt: string;
-}
-export interface ConceptSnapshot {
-  savedAt: string;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions?: string | null;
-}
 export interface TherapistCustomMode {
   id: number;
   therapistId: number;
@@ -209,19 +144,6 @@ export interface ClientConceptualization {
   history: ConceptSnapshot[];
   updatedAt: string;
 }
-export interface YsqHistoryEntry {
-  id: number;
-  completedAt: string;
-  scores: { id: string; pct5plus: number; avg?: number }[];
-}
-export interface ClientData {
-  name: string | null;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  ysqCompletedAt: string | null;
-  ysqActiveSchemaIds: string[];
-  ysqHistory: YsqHistoryEntry[];
-}
 export interface BeliefCheckEntry {
   id: number;
   belief: string;
@@ -242,15 +164,5 @@ export interface FlashcardEntry {
   reflection: string | null;
   action: string | null;
   createdAt: string;
-}
-export interface Insights {
-  weeklyStats: Array<{
-    needId: string;
-    avg: number | null;
-    trend: '↑' | '↓' | '→';
-  }>;
-  bestDayOfWeek: string | null;
-  worstDayOfWeek: string | null;
-  totalDays: number;
 }
 

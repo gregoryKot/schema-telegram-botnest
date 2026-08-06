@@ -2,14 +2,7 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-
-const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy:   '#4fa3f7',
-  expression: '#facc15',
-  play:       '#06d6a0',
-  limits:     '#a78bfa',
-};
+import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -30,7 +23,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const goBack = useHistorySheet(onClose);
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = NEED_COLORS[needId] ?? '#a78bfa';
+  const color = needColor(needId);
 
   if (!need) return null;
 
@@ -44,7 +37,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
   const relatedSchemas = SCHEMA_DOMAINS
     .filter(d => domainIds.includes(d.id))
-    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)));
+    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainColor: d.color })));
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
@@ -52,7 +45,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
-      eyebrow={`${need.emoji} Потребность`}
+      eyebrow="Потребность"
       eyebrowColor={color}
       title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
       lede={need.explanation}
@@ -89,7 +82,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
                 <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
                   <span className="mode-card-stripe" />
                   <div>
-                    <div className="mode-card-name">{s.emoji ?? '●'} {s.name}</div>
+                    <div className="mode-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
                     <div className="mode-card-short">{s.desc}</div>
                   </div>
                 </div>

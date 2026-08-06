@@ -193,7 +193,6 @@ export function NeedHistorySheet({
               gap: 12,
             }}
           >
-            <div style={{ fontSize: 28, flexShrink: 0 }}>🌱</div>
             <div>
               <div
                 style={{

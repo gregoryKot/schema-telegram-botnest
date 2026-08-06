@@ -58,6 +58,7 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
     name: 'userBeliefCheck',
     fields: ['belief', 'evidenceFor', 'evidenceAgainst', 'reframe'],
   },
+  { name: 'userPhraseCheck', fields: ['phrase', 'rewrite'] },
   { name: 'userLetter', fields: ['text'] },
   { name: 'userSafePlace', fields: ['description'] },
   { name: 'userFlashcard', fields: ['reflection', 'action'] },

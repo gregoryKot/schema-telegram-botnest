@@ -1,16 +1,22 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import {
+  MODE_DESC,
+  POPULAR_MODE_IDS,
+} from '../../../shared/src/mode/modePickerDesc';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
-import { useNeedData } from '../needData';
+import { useNeedData, NEED_ORDER } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { pressable } from '../utils/a11y';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
@@ -19,14 +25,6 @@ const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m =>
 function cm(color: string, pct: number) {
   return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
-const NEED_IDS: { id: string; color: string }[] = [
-  { id: 'attachment', color: '#ff6b9d' },
-  { id: 'autonomy',   color: '#4fa3f7' },
-  { id: 'expression', color: '#facc15' },
-  { id: 'play',       color: '#06d6a0' },
-  { id: 'limits',     color: '#a78bfa' },
-];
-
 function readLocalIds(key: string): string[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
@@ -126,7 +124,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
-            <span style={{ color: 'var(--accent)' }}>● </span>Схема-терапия
+            Схема-терапия
           </div>
           <h1 className="hub-title" style={{ marginBottom: 8 }}>
             Мои<br /><span className="it">паттерны</span>
@@ -134,7 +132,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
         </div>
         <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
-          📖 <span>Библиотека</span>
+          Библиотека
         </button>
       </div>
 
@@ -325,7 +323,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                     WebkitTapHighlightColor: 'transparent',
                     display: 'flex', alignItems: 'center', gap: 5,
                   }}>
-                    <span style={{ fontSize: 14 }}>{m.emoji}</span>
+                    <IdentityDot color={c} />
                     {m.name}
                   </button>
                 );
@@ -343,7 +341,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
               WebkitTapHighlightColor: 'transparent',
             }}>
-              <span style={{ fontSize: 26, flexShrink: 0 }}>🗺️</span>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                   Карта режимов с терапевтом
@@ -387,7 +384,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                             background: active ? cm(c, 22) : cm(c, 14),
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 20,
-                          }}>{m.emoji}</div>
+                          }}><IdentityDot color={c} size={14} /></div>
                           <div style={{ paddingTop: 1 }}>
                             <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)', lineHeight: 1.25 }}>{m.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{m.short}</div>
@@ -415,7 +412,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
           {!hasChildhood && (
             <div {...pressable(() => onOpenChildhoodWheel?.())} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
@@ -424,7 +420,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
           )}
 
-          {NEED_IDS.map(({ id, color }) => {
+          {NEED_ORDER.map((id) => {
+            const color = needColor(id);
             const d = NEED_DATA[id];
             if (!d) return null;
             const childScore = childhoodRatings[id];
@@ -435,7 +432,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  {d.emoji}
+                  <IdentityDot id={id} size={14} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
@@ -520,46 +517,6 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
 
 // ── Mode picker sheet ──────────────────────────────────────────────────────────
 
-const POPULAR_MODE_IDS = ['vulnerable_child', 'detached_protector', 'demanding_critic', 'abandoned_child', 'compliant_surrenderer'];
-
-const MODE_DESC: Record<string, string> = {
-  vulnerable_child:      'Беспомощность, грусть, страх – нуждается в защите',
-  lonely_child:          'Одиночество и непонятость даже среди людей',
-  abandoned_child:       'Страх быть брошенным, тревога при угрозе отношениям',
-  humiliated_child:      'Стыд и ощущение дефективности, страх осуждения',
-  dependent_child:       'Нужна постоянная поддержка, боится самостоятельных решений',
-  angry_child:           'Злость из-за неудовлетворённых потребностей',
-  stubborn_child:        'Упрямое сопротивление требованиям и контролю',
-  enraged_child:         'Неконтролируемая ярость при угрозе или несправедливости',
-  impulsive_child:       'Действует не думая, следует желаниям без учёта последствий',
-  undisciplined_child:   'Избегает скучного, быстро теряет интерес и бросает',
-  compliant_surrenderer: 'Соглашается со всем, чтобы избежать конфликта',
-  helpless_surrenderer:  'Ощущает себя беспомощным, ждёт что другие всё решат',
-  detached_protector:    'Отключается эмоционально, уходит в себя чтобы не чувствовать',
-  detached_self_soother: 'Успокаивает себя через еду, экраны, привычки',
-  avoidant_protector:    'Избегает ситуаций и людей, которые могут причинить боль',
-  angry_protector:       'Отталкивает других злостью, защищаясь от уязвимости',
-  self_aggrandiser:      'Ощущение особости и превосходства над другими',
-  overcontroller:        'Стремится всё контролировать, тревожится от неопределённости',
-  perfectionistic_oc:    'Недостижимые стандарты, страх малейшей ошибки',
-  suspicious_oc:         'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc:         'Отрицает слабость – должен быть сильным всегда',
-  flagellating_oc:       'Наказывает себя за ошибки строже чем нужно',
-  compulsive_oc:         'Навязчивые ритуалы и действия для снижения тревоги',
-  worrying_oc:           'Хроническое беспокойство о будущих катастрофах',
-  bully_attack:          'Добивается своего через запугивание и агрессию',
-  manipulative:          'Влияет на людей косвенно, скрывая истинные намерения',
-  predator:              'Использует других в своих интересах без сочувствия',
-  attention_seeker:      'Постоянно ищет признания и похвалы от окружающих',
-  pollyanna:             'Отрицает проблемы, видит всё в розовом цвете',
-  demanding_critic:      'Внутренний голос завышенных требований и критики',
-  punitive_critic:       'Жёсткое внутреннее осуждение и приговоры себе',
-  guilt_critic:          'Постоянное чувство вины и самообвинения',
-  happy_child:           'Спонтанность, радость и игривость без тревоги',
-  healthy_adult:         'Взвешенные решения, забота о себе и других',
-  good_parent:           'Внутренний поддерживающий голос, ободряет и успокаивает',
-};
-
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -594,7 +551,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
               const c = mode.groupColor; // CSS variable
               return (
                 <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{mode.emoji}</span>
+                  <IdentityDot color={c} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
                     {MODE_DESC[id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[id]}</div>}
@@ -621,7 +578,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
                   const active = ids.includes(m.id);
                   return (
                     <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>{m.emoji}</span>
+                      <IdentityDot color={c} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>
                         {MODE_DESC[m.id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[m.id]}</div>}

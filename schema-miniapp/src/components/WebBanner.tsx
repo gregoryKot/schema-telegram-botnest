@@ -12,13 +12,11 @@ import {
 // пары в webapp нет. Тексты — безличные, вилка ты/вы не нужна.
 export function WebBanner({
   id,
-  emoji,
   title,
   text,
   url,
 }: {
   id: WebBannerId;
-  emoji: string;
   title: string;
   text: string;
   url: string;
@@ -49,9 +47,6 @@ export function WebBanner({
         alignItems: 'flex-start',
       }}
     >
-      <span style={{ fontSize: 20, lineHeight: '24px', flexShrink: 0 }}>
-        {emoji}
-      </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{

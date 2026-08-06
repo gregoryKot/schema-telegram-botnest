@@ -77,6 +77,7 @@ export function createWebHost(): HostBridge {
       isFullscreen: false,
       // Чёлку и home-индикатор закрывает CSS env(safe-area-inset-*).
       contentReported: true,
+      overlaysContent: false,
     }),
     onInsetsChange: () => () => {},
 

@@ -1,11 +1,11 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import { COLORS } from '../types';
-import type { Need } from '../types';
+import { COLORS, type Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 interface Props {
   need: Need;
@@ -63,7 +63,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
-      eyebrow={`${data.emoji} Оцени сейчас`}
+      eyebrow="Оцени сейчас"
       eyebrowColor={color}
       title={<>{need.chartLabel}</>}
       lede={data.question}
@@ -96,7 +96,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           </div>
           {rangeIdx === 2 && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
-              Хороший день – заметь это 🌿
+              Хороший день – заметь это
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
@@ -243,7 +243,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
       {showPlan && (
         <PlanSheet
           needId={need.id}
-          needEmoji={data.emoji}
+          needColor={needColor(need.id)}
           needLabel={need.chartLabel}
           color={color}
           onClose={() => setShowPlan(false)}

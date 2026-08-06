@@ -19,6 +19,9 @@ const YSQ_COMPLETED_AT = new Date(
 vi.mock('../../components/PatternsHero', () => ({
   PatternsHero: () => <div data-testid="patterns-hero" />,
 }));
+vi.mock('../../components/myCards/MyCardsSection', () => ({
+  MyCardsSection: () => <div data-testid="my-cards-section" />,
+}));
 vi.mock('../../components/PatternFrequencyList', () => ({
   PatternFrequencyList: ({
     groups,
@@ -62,6 +65,11 @@ describe('SchemasTab — без выбранных схем и непройде�
     renderWithForm(<SchemasTab {...BASE_PROPS} />);
     expect(screen.queryByText('Тест на схемы')).toBeNull();
     expect(screen.queryByTestId('pattern-list')).toBeNull();
+  });
+
+  it('секция «Мои карточки» всегда смонтирована — сама решает, показываться ли', () => {
+    renderWithForm(<SchemasTab {...BASE_PROPS} />);
+    expect(screen.getByTestId('my-cards-section')).toBeTruthy();
   });
 });
 

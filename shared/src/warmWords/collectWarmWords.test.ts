@@ -85,3 +85,65 @@ describe('collectWarmWords', () => {
     expect(byKey['diary-7'].text).toBe('Держись');
   });
 });
+
+describe('collectWarmWords: разборы фразы', () => {
+  const PHRASE = {
+    id: 3,
+    rewrite: '  вышло неточно, поправлю завтра  ',
+    inWarmWords: true,
+    createdAt: '2026-01-03',
+  };
+
+  it('переписанная фраза попадает в коллекцию, когда её туда позвали', () => {
+    const items = collectWarmWords([], [], [PHRASE]);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      key: 'phrase-3',
+      source: 'phrase',
+      text: 'вышло неточно, поправлю завтра',
+      modeId: '',
+    });
+  });
+
+  it('без флага не попадает — это выбор пользователя, а не автосбор', () => {
+    expect(
+      collectWarmWords([], [], [{ ...PHRASE, inWarmWords: false }]),
+    ).toEqual([]);
+    expect(
+      collectWarmWords([], [], [{ ...PHRASE, inWarmWords: null }]),
+    ).toEqual([]);
+  });
+
+  it('флаг есть, а фразы нет — в коллекцию ничего не кладём', () => {
+    expect(collectWarmWords([], [], [{ ...PHRASE, rewrite: '   ' }])).toEqual(
+      [],
+    );
+    expect(collectWarmWords([], [], [{ ...PHRASE, rewrite: null }])).toEqual(
+      [],
+    );
+  });
+
+  it('третий источник встаёт в общую сортировку по дате, а не в конец списка', () => {
+    const items = collectWarmWords(
+      [{ modeId: 'critic', healthyView: 'старое', updatedAt: '2026-01-01' }],
+      [
+        {
+          id: 9,
+          modeId: 'critic',
+          healthyResponse: 'самое новое',
+          createdAt: '2026-01-05',
+        },
+      ],
+      [PHRASE],
+    );
+    expect(items.map((i) => i.source)).toEqual(['diary', 'phrase', 'card']);
+  });
+
+  it('старый вызов без третьего аргумента продолжает работать', () => {
+    const items = collectWarmWords(
+      [{ modeId: 'critic', healthyView: 'слова', updatedAt: '2026-01-01' }],
+      [],
+    );
+    expect(items).toHaveLength(1);
+  });
+});

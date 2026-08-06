@@ -61,8 +61,6 @@ describe('DisclaimerNeedsWhyStep', () => {
   it('форма «ты»: содержит обращение «Ты отмечаешь»', () => {
     renderWithForm(<DisclaimerNeedsWhyStep />, 'ty');
     expect(screen.getByText(/Ты отмечаешь не фоновое настроение/)).toBeTruthy();
-    // Общий чип времени переиспользован, а не задублирован инлайн.
-    expect(screen.getByText('⏱')).toBeTruthy();
   });
 
   it('форма «вы»: без «ты»-форм', () => {

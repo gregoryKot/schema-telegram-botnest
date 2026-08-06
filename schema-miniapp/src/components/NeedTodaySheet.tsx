@@ -92,8 +92,8 @@ export function NeedTodaySheet({
           }}
         >
           {tr(
-            'Сегодня ты позаботился об этой потребности — заметь это',
-            'Сегодня вы позаботились об этой потребности — заметьте это',
+            'Сегодня эта потребность получила заботу — заметь это',
+            'Сегодня эта потребность получила заботу — заметьте это',
           )}
         </div>
       )}
@@ -401,7 +401,6 @@ export function NeedTodaySheet({
       {showPlan && (
         <PlanSheet
           needId={need.id}
-          needEmoji={data.emoji}
           needLabel={need.chartLabel}
           color={color}
           onClose={() => setShowPlan(false)}

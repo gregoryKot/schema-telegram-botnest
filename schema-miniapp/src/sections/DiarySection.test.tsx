@@ -128,8 +128,8 @@ describe('DiarySection — сохранение записи благодарн�
 
     // Открываем дневник благодарности и создаём новую запись через FAB.
     fireEvent.click(screen.getByText('Дневник благодарности'));
-    await screen.findByText('+ Записать');
-    fireEvent.click(screen.getByText('+ Записать'));
+    await screen.findByText('Записать');
+    fireEvent.click(screen.getByText('Записать'));
 
     const first = await screen.findByPlaceholderText(
       'Что-то хорошее, что произошло сегодня...',
@@ -152,8 +152,8 @@ describe('DiarySection — сохранение записи благодарн�
     await renderLoaded();
 
     fireEvent.click(screen.getByText('Дневник благодарности'));
-    await screen.findByText('+ Записать');
-    fireEvent.click(screen.getByText('+ Записать'));
+    await screen.findByText('Записать');
+    fireEvent.click(screen.getByText('Записать'));
 
     const first = await screen.findByPlaceholderText(
       'Что-то хорошее, что произошло сегодня...',

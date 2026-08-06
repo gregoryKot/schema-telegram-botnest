@@ -112,6 +112,7 @@ model User {
   schemaNotes            UserSchemaNote[]
   modeNotes              UserModeNote[]
   beliefChecks           UserBeliefCheck[]
+  phraseChecks           UserPhraseCheck[]
   letters                UserLetter[]
   safePlace              UserSafePlace?
   flashcards             UserFlashcard[]
@@ -122,6 +123,7 @@ model User {
   ysqHistory             YsqResultHistory[]
   authProviders          AuthProvider[]
   webSessions            WebSession[]
+  deviceLinks            DeviceLinkRequest[]
   drafts                 DiaryDraft[]
   therapistRequest       TherapistRequest?
   // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
@@ -242,6 +244,41 @@ model WebSession {
 
   @@index([userId, revokedAt])
   @@index([family])
+}
+
+// Привязка аккаунта мессенджера к уже существующему (device authorization
+// grant, RFC 8628 — тот же приём, которым телевизор подключают к Netflix).
+//
+// Зачем отдельная таблица, а не подписанный токен: браузер ПОДТВЕРЖДАЕТ, а
+// мини-апп ОПРАШИВАЕТ — им нужно общее изменяемое состояние. В JWT его не
+// положишь.
+//
+// Живёт минуты и содержит только служебное — при merge аккаунтов такие строки
+// удаляются, а не переносятся (SECURITY_SENSITIVE_TABLES, рядом с WebSession).
+// Кодов два, как в самой RFC. Длинный (device_code) знает только мини-апп —
+// им он опрашивает сервер. Короткий (user_code) видит человек, он же едет в
+// ссылке на браузер. Хранятся хэшами: подсмотренная строка в БД не даёт войти.
+model DeviceLinkRequest {
+  id             String    @id @default(cuid())
+  deviceCodeHash String    @unique
+  userCodeHash   String    @unique
+  // Хозяин строки. Сначала это аккаунт мессенджера, попросивший привязку; при
+  // подтверждении хозяин меняется на целевой аккаунт. Иначе строку унесло бы
+  // каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и мини-аппу
+  // нечего было бы забрать.
+  userId         BigInt
+  provider       String    // 'max' | 'telegram' — откуда пришёл запрос
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  // Кто подтвердил в браузере. Он же становится хозяином данных.
+  approvedUserId BigInt?
+  approvedAt     DateTime?
+  // Мини-апп забрал сессию — код больше не действует (одноразовость).
+  consumedAt     DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Note {
@@ -561,6 +598,31 @@ model UserBeliefCheck {
   reframe         String?
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+// Разбор фразы внутреннего голоса по приметам самокритики: сама фраза,
+// отмеченные приметы (id из shared/src/phraseCheck) и переписанный вариант.
+model UserPhraseCheck {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  phrase    String
+  /**
+   * Массив id примет, отмеченных как голос критика (PHRASE_MARK_IDS).
+   * Перечисление, а не свободный текст — поэтому открытым (правило шифрования
+   * в CLAUDE.md), и по нему считается разбивка в /stats.
+   */
+  marks     Json
+  rewrite   String?
+  /**
+   * Забрать переписанную фразу в «Тёплые слова» — выбор пользователя на шаге
+   * переписывания. Отдельный флаг, а не «все rewrite подряд»: в коллекцию
+   * попадает только то, что человек сам счёл словами поддержки.
+   */
+  inWarmWords Boolean @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, createdAt])
 }

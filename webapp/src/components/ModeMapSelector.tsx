@@ -7,10 +7,10 @@ interface Props {
   clientId: number;
 }
 
-const KIND_META: Record<ModeMapKind, { icon: string; label: string; hint: string }> = {
-  personality: { icon: '🧭', label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
-  problem:     { icon: '🎯', label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
-  couple:      { icon: '💞', label: 'Карта пары',      hint: 'Цикл-клэш: как копинг одного партнёра запускает боль другого' },
+const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
+  personality: { label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
+  problem:     { label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
+  couple:      { label: 'Карта пары',      hint: 'Цикл-клэш: как копинг одного партнёра запускает боль другого' },
 };
 const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
@@ -150,7 +150,6 @@ export function ModeMapSelector({ clientId }: Props) {
                     display: 'flex', alignItems: 'center', gap: 5,
                   }}
                 >
-                  <span style={{ fontSize: 12 }}>{KIND_META[m.kind]?.icon ?? '🗺️'}</span>
                   {m.title}
                 </button>
                 {maps.length > 1 && activeId === m.id && (
@@ -199,8 +198,8 @@ export function ModeMapSelector({ clientId }: Props) {
                   borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                  <span>{KIND_META[k].icon}</span>{KIND_META[k].label}
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                  {KIND_META[k].label}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
               </button>
@@ -228,7 +227,6 @@ export function ModeMapSelector({ clientId }: Props) {
                 <button key={k} onClick={() => createMap(k)} disabled={creating}
                   style={{ width: 200, padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
                     background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{KIND_META[k].icon}</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{KIND_META[k].label}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>
                 </button>

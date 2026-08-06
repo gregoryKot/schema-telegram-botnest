@@ -24,7 +24,7 @@ describe('GroundingStep — обращение ты/вы', () => {
         onShowHistory={() => {}}
       />,
     );
-    expect(screen.getByText('Ты сделал правильно')).toBeTruthy();
+    expect(screen.getByText('Всё правильно')).toBeTruthy();
   });
 
   it('форма «вы»: согласованное множественное число', () => {

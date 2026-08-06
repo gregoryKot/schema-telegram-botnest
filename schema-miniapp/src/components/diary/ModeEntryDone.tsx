@@ -25,27 +25,30 @@ export function ModeEntryDone({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ textAlign: 'center', padding: '12px 6px 16px' }}>
-        <div style={{ fontSize: 46, marginBottom: 8 }}>🌿</div>
+        {/* Спокойный зелёный круг вместо эмодзи: цвет и форма, без картинки. */}
         <div
           style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 6,
+            width: 46,
+            height: 46,
+            borderRadius: 23,
+            background: 'var(--calm)',
+            margin: '0 auto 14px',
           }}
-        >
-          Запись сохранена
+        />
+        <div className="d-display" style={{ fontSize: 22, marginBottom: 8 }}>
+          Записано
         </div>
         <div
           style={{
-            fontSize: 13.5,
-            color: 'var(--text-sub)',
+            fontSize: 14,
+            color: 'var(--muted)',
             lineHeight: 1.6,
-            marginBottom: 16,
+            marginBottom: 20,
           }}
         >
-          Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать
-          в любой момент.
+          Заметить режим и назвать его — это уже работа, и она считается. Запись
+          в «Дневнике режимов» и в «Моём пути»: можно открыть и перечитать в
+          любой момент.
         </div>
         <div style={{ textAlign: 'left' }}>
           <ModeEntryShare
@@ -58,16 +61,16 @@ export function ModeEntryDone({
         <button
           onClick={onClose}
           style={{
-            marginTop: 18,
+            marginTop: 20,
             width: '100%',
-            padding: '13px 0',
-            borderRadius: 14,
+            padding: '16px 0',
+            borderRadius: 16,
             border: 'none',
             fontFamily: 'inherit',
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: 600,
             cursor: 'pointer',
-            background: 'rgba(var(--fg-rgb),0.08)',
+            background: 'var(--surface-2)',
             color: 'var(--text)',
           }}
         >

@@ -5,6 +5,7 @@ import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   onClose: () => void;
@@ -18,9 +19,9 @@ function statusColor(done: boolean | null) {
 }
 
 function statusIcon(done: boolean | null) {
-  if (done === true)  return '✅';
-  if (done === false) return '❌';
-  return '⏳';
+  if (done === true)  return '✓';
+  if (done === false) return '×';
+  return '·';
 }
 
 function formatDate(dateStr: string): string {
@@ -68,7 +69,6 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         ) : plans.length === 0 ? (
           /* Empty state */
           <div style={{ paddingTop: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
               Планов пока нет
             </div>
@@ -146,16 +146,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {needData && (
-            <div style={{
-              width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-              background: needColor + '22',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12,
-            }}>
-              {needData.emoji}
-            </div>
-          )}
+          {needData && <IdentityDot id={plan.needId} size={12} />}
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>

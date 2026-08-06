@@ -3,6 +3,8 @@ import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
+import { PhraseCheck } from '../components/PhraseCheck';
+import { CrisisSheet } from './helpSection/CrisisSheet';
 import { SafePlace } from '../components/SafePlace';
 import { WarmWords } from '../components/WarmWords';
 import { TherapyNote } from '../components/TherapyNote';
@@ -11,7 +13,6 @@ import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { ToolRow } from '../components/ToolRow';
@@ -19,7 +20,6 @@ import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
 import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
 import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
-import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { practiceCountLabel } from '../components/PracticeDoneFooter';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
@@ -64,6 +64,7 @@ export function HelpSection({
   const [showCrisis, setShowCrisis] = useState(false);
   const [showSelfHelp, setShowSelfHelp] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
+  const [showPhraseCheck, setShowPhraseCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
   const [showWarmWords, setShowWarmWords] = useState(false);
@@ -194,45 +195,35 @@ export function HelpSection({
     >
       {/* Header */}
       <div style={{ padding: '20px 20px 12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-            }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="d-display" style={{ fontSize: 26 }}>
             Здесь и сейчас
           </div>
           <button
             {...pressable(() => setShowSelfHelp(true))}
             aria-label="О границах самопомощи"
+            // Роль несёт слово, а слову нужна ширина: в круге 26×26 текст не
+            // помещался, и в цель меньше 44 не попасть.
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
+              minHeight: 44,
+              padding: '6px 12px',
+              borderRadius: 999,
               flexShrink: 0,
               border: 'none',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: 15,
-              lineHeight: 1,
+              fontSize: 12,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              color: 'var(--ink-2)',
               background:
                 'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            ⚠️
+            Важное о самопомощи
           </button>
         </div>
         <div
@@ -267,32 +258,26 @@ export function HelpSection({
           Если нужно больше
         </div>
         <ToolRow
-          emoji="🌍"
           label="Заземление 5-4-3-2-1"
           sub={
             practiceCountLabel(practiceCounts?.grounding ?? null) ??
             'вернуться в тело и в комнату'
           }
-          tint="var(--accent-blue)"
           index={0}
           onClick={() => setShowGrounding(true)}
         />
         <ToolRow
-          emoji="🛑"
           label="Техника «Стоп»"
           sub={
             practiceCountLabel(practiceCounts?.stop ?? null) ??
             'пауза между импульсом и действием'
           }
-          tint="var(--accent-orange)"
           index={1}
           onClick={() => setShowStop(true)}
         />
         <ToolRow
-          emoji="📞"
           label="Мне очень плохо"
           sub="контакты помощи прямо сейчас"
-          tint="var(--accent-red)"
           danger
           index={2}
           onClick={() => setShowCrisis(true)}
@@ -343,6 +328,7 @@ export function HelpSection({
           onOpenPractices={onOpenPractices}
           onOpenPlans={onOpenPlans}
           onOpenBeliefCheck={() => setShowBeliefCheck(true)}
+          onOpenPhraseCheck={() => setShowPhraseCheck(true)}
           onOpenSafePlace={() => setShowSafePlace(true)}
           onOpenLetterToSelf={() => setShowLetterToSelf(true)}
           onOpenFlashcard={() => setShowFlashcard(true)}
@@ -365,6 +351,12 @@ export function HelpSection({
       {showBeliefCheck && (
         <BeliefCheck
           onClose={() => setShowBeliefCheck(false)}
+          onComplete={handleTaskComplete}
+        />
+      )}
+      {showPhraseCheck && (
+        <PhraseCheck
+          onClose={() => setShowPhraseCheck(false)}
           onComplete={handleTaskComplete}
         />
       )}
@@ -419,34 +411,7 @@ export function HelpSection({
       {showStop && (
         <QuickPracticeSheet id="stop" onClose={() => setShowStop(false)} />
       )}
-      {showCrisis && (
-        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
-          <div style={{ paddingTop: 4 }}>
-            <div
-              style={{
-                fontSize: 17,
-                fontWeight: 800,
-                color: 'var(--text)',
-                marginBottom: 4,
-              }}
-            >
-              Помощь рядом
-            </div>
-            <CrisisCard />
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-                marginTop: 4,
-              }}
-            >
-              Если есть угроза жизни — 112. Разговор с близким человеком тоже
-              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
-            </div>
-          </div>
-        </BottomSheet>
-      )}
+      {showCrisis && <CrisisSheet onClose={() => setShowCrisis(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {

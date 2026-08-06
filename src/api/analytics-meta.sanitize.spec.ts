@@ -229,6 +229,112 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'punitive_parent' });
   });
 
+  it('mode_doubt_opened: валидный modeId → {modeId}', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'detached_protector' }),
+    ).toEqual({ modeId: 'detached_protector' });
+  });
+
+  it('mode_doubt_opened: невалидный modeId (цифры/пробелы/длина) → undefined', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'evil id 123' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'a'.repeat(65) }),
+    ).toBeUndefined();
+  });
+
+  it('mode_doubt_opened: лишнее поле отброшено', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', {
+        modeId: 'vulnerable_child',
+        note: 'посторонний текст',
+      }),
+    ).toEqual({ modeId: 'vulnerable_child' });
+  });
+
+  it('mode_doubt_switched: from + to из allow-list формата проходят', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'vulnerable_child',
+        to: 'helpless_surrenderer',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
+  });
+
+  it('mode_doubt_switched: невалидный/отсутствующий from или to → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'evil id!',
+        to: 'helpless_surrenderer',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_doubt_switched', { from: 'vulnerable_child' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('mode_doubt_switched', {})).toBeUndefined();
+  });
+
+  it('mode_doubt_switched: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'vulnerable_child',
+        to: 'helpless_surrenderer',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
+  });
+
+  // ── Перенос аккаунта из мессенджера (account_link_*) ────────────────────
+  // Сюда мог бы уехать текст ошибки или адрес — а meta не шифруется. Поэтому
+  // проверяем именно срезание всего лишнего, а не только happy path.
+  it('account_link_started: пропускает только известный мессенджер', () => {
+    expect(sanitizeMeta('account_link_started', { host: 'max' })).toEqual({
+      host: 'max',
+    });
+    expect(
+      sanitizeMeta('account_link_started', { host: 'вконтакте' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('account_link_started', {})).toBeUndefined();
+  });
+
+  it('account_link_started: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('account_link_started', {
+        host: 'max',
+        code: 'ABCD2345',
+        userName: 'Гриша',
+      }),
+    ).toEqual({ host: 'max' });
+  });
+
+  it('account_link_confirmed: нужен и мессенджер, и признак переноса', () => {
+    expect(
+      sanitizeMeta('account_link_confirmed', {
+        host: 'telegram',
+        merged: true,
+      }),
+    ).toEqual({ host: 'telegram', merged: true });
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'telegram' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'max', merged: 'yes' }),
+    ).toBeUndefined();
+  });
+
+  it('account_link_failed: причина — только из списка, свободный текст не проходит', () => {
+    expect(
+      sanitizeMeta('account_link_failed', { host: 'max', reason: 'expired' }),
+    ).toEqual({ host: 'max', reason: 'expired' });
+    expect(
+      sanitizeMeta('account_link_failed', {
+        host: 'max',
+        reason: 'PrismaClientKnownRequestError: user 12345 not found',
+      }),
+    ).toBeUndefined();
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

@@ -106,7 +106,7 @@ describe('ClientNameHeader — переход в режим переименов
     expect(setRenamingAlias).toHaveBeenCalledWith(true);
   });
 
-  it('клик «🗑» зовёт deleteClient', () => {
+  it('клик на кнопку удаления зовёт deleteClient', () => {
     const deleteClient = vi.fn();
     render(
       <ClientNameHeader
@@ -115,7 +115,7 @@ describe('ClientNameHeader — переход в режим переименов
         aliasInputRef={createRef()}
       />,
     );
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    fireEvent.click(screen.getByLabelText('Удалить'));
     expect(deleteClient).toHaveBeenCalled();
   });
 
@@ -127,7 +127,7 @@ describe('ClientNameHeader — переход в режим переименов
         aliasInputRef={createRef()}
       />,
     );
-    const btn = screen.getByLabelText('Удалить клиента');
+    const btn = screen.getByLabelText('Удалить');
     expect(btn.disabled).toBe(true);
   });
 });

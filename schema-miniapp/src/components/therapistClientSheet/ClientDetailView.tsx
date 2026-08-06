@@ -151,7 +151,6 @@ export function ClientDetailView({
         <div style={{ marginTop: 12 }}>
           <WebBanner
             id="mode_map"
-            emoji="🗺"
             title="Карта режимов клиента — на сайте"
             text="Визуальная схема-карта режимов с зонами, переходами и экспортом. В мини-аппе не помещается — редактор открывается в кабинете на сайте."
             url={WEB_CABINET_URL}

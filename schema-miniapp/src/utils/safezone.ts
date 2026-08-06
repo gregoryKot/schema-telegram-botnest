@@ -10,9 +10,10 @@ const FS_BAND_ANDROID = 48;
 // Абсолютный минимум для iOS в fullscreen, когда НЕ пришёл и device-инсет:
 // статус-бар (~47) + полоса кнопок. Без него на notch/Dynamic Island отступа 0.
 const IOS_FULLSCREEN_MIN = 100;
-// Фолбэк для старых НЕ-полноэкранных клиентов на iOS, где кнопка закрытия
-// накладывается поверх контента, а инсеты ещё не пришли.
-const IOS_LEGACY_TOP = 56;
+// Нижняя граница отступа, когда хост рисует свои кнопки поверх контента, а
+// внятной полосы контента от него нет. Пилюля «Закрыть» на iPhone с Dynamic
+// Island заканчивается около 87pt — берём с запасом.
+const OVERLAY_MIN_TOP = 96;
 
 function isIOS(): boolean {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -34,24 +35,48 @@ export function computeSafeTop(p: {
   isFullscreen: boolean;
   ios: boolean;
   contentReported: boolean;
+  /** хост рисует свои кнопки поверх контента (мессенджер, не браузер) */
+  overlaysContent?: boolean;
 }): number {
   const device = p.deviceTop ?? 0;
   const content = p.contentTop ?? 0;
   const real = device + content;
 
   if (p.isFullscreen) {
-    // Оба инсета пришли → доверяем точному значению (без лишнего отступа на
-    // корректных клиентах, включая iPhone SE с маленьким статус-баром).
-    if (p.contentReported && device > 0) return real;
+    // Точному значению доверяем, только когда пришли ОБА инсета ненулевыми
+    // (без лишнего отступа на корректных клиентах, включая iPhone SE с
+    // маленьким статус-баром). Нулевая полоса контента в полноэкранном режиме
+    // — это «не доехало»: свои кнопки клиент рисует всегда.
+    if (p.contentReported && device > 0 && content > 0) return real;
     // Инсеты не доехали → щедрая граница под полосу кнопок Telegram.
     if (p.ios) return Math.max(real, device + FS_BAND_IOS, IOS_FULLSCREEN_MIN);
     return Math.max(real, device + FS_BAND_ANDROID);
   }
 
+  // Мессенджер рисует «Закрыть» и меню ПОВЕРХ контента — приложение всегда
+  // вызывает expand(), и в развёрнутом режиме кнопки висят над страницей, хотя
+  // isFullscreen при этом false. Описывает эти кнопки только
+  // contentSafeAreaInset; вне полноэкранного режима клиенты сплошь и рядом
+  // присылают там ноль. Раньше в этом случае мы верили device-инсету — а он
+  // закрывает лишь чёлку, и шапка всё равно уезжала под пилюлю «Закрыть»
+  // (скриншоты пользователя, 2026-08, три раза подряд).
+  //
+  // Поэтому: точному значению верим, только когда клиент прислал НЕНУЛЕВУЮ
+  // полосу контента. Иначе держим границу, гарантированно очищающую кнопки —
+  // лишние пиксели дешевле перекрытого заголовка. Условие про iOS убрано
+  // намеренно: на Android кнопки висят так же.
+  if (p.overlaysContent) {
+    if (p.contentReported && content > 0) return real;
+    return Math.max(real, OVERLAY_MIN_TOP);
+  }
+
   if (real > 0) return real;
-  // Инсеты нулевые. Если контентный инсет явно определён (== 0) — доверяем ему.
-  if (p.contentTop !== undefined) return 0;
-  return p.ios ? IOS_LEGACY_TOP : 0;
+  // Хост не объявил, перекрывает ли он контент, и инсетов не прислал вовсе —
+  // на iOS держим ту же страховку: адаптер без флага не должен молча вернуть
+  // приложение к перекрытой шапке.
+  if (p.contentTop === undefined && p.ios) return OVERLAY_MIN_TOP;
+  // Браузер: чёлку закрывает CSS env(safe-area-inset-*), лишний отступ вреден.
+  return 0;
 }
 
 function read(): number {
@@ -62,6 +87,7 @@ function read(): number {
     isFullscreen: insets.isFullscreen,
     ios: isIOS(),
     contentReported: insets.contentReported,
+    overlaysContent: insets.overlaysContent,
   });
 }
 

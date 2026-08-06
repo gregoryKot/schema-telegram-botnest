@@ -132,7 +132,7 @@ export function BecomeTherapistSection({
             gap: 6,
           }}
         >
-          <span>👨‍⚕️</span> Я психолог — подать заявку
+          Я психолог — подать заявку
         </button>
       ) : (
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>

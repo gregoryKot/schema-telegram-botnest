@@ -129,8 +129,8 @@ describe('ConceptSheet — история концептуализации', () 
         })}
       />,
     );
-    expect(screen.getByText('🕐 История (2)')).toBeTruthy();
-    fireEvent.click(screen.getByText('🕐 История (2)'));
+    expect(screen.getByText('История (2)')).toBeTruthy();
+    fireEvent.click(screen.getByText('История (2)'));
     expect(setShowHistory).toHaveBeenCalled();
   });
 });
@@ -143,7 +143,7 @@ describe('ConceptSheet — запрос теста YSQ', () => {
         detail={makeDetail()}
       />,
     );
-    expect(screen.getByText('📋 Запросить тест на схемы')).toBeTruthy();
+    expect(screen.getByText('Запросить тест на схемы')).toBeTruthy();
   });
 
   it('тестовый клиент (telegramId<=0) — кнопки запроса нет', () => {
@@ -164,7 +164,7 @@ describe('ConceptSheet — запрос теста YSQ', () => {
         detail={makeDetail({ handleRequestYsq })}
       />,
     );
-    fireEvent.click(screen.getByText('📋 Запросить тест на схемы'));
+    fireEvent.click(screen.getByText('Запросить тест на схемы'));
     expect(handleRequestYsq).toHaveBeenCalled();
   });
 

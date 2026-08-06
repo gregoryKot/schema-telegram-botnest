@@ -80,6 +80,12 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     email: p('дублирует providerId/OAuth-профиль — см. providerId'),
     displayName: p('имя из OAuth-профиля, показывается в /account'),
   },
+  DeviceLinkRequest: {
+    id: ID,
+    deviceCodeHash: TOKEN,
+    userCodeHash: TOKEN,
+    provider: ID,
+  },
   WebSession: {
     id: ID,
     tokenHash: TOKEN,
@@ -206,6 +212,11 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     evidenceFor: e(`${BOT}/exercises.service.ts`),
     evidenceAgainst: e(`${BOT}/exercises.service.ts`),
     reframe: e(`${BOT}/exercises.service.ts`),
+  },
+  UserPhraseCheck: {
+    phrase: e(`${BOT}/phrase-check.service.ts`),
+    marks: p('перечисление id примет (PHRASE_MARK_IDS), свободного текста нет'),
+    rewrite: e(`${BOT}/phrase-check.service.ts`),
   },
   UserLetter: { text: e(`${BOT}/exercises.service.ts`) },
   UserSafePlace: { description: e(`${BOT}/exercises.service.ts`) },

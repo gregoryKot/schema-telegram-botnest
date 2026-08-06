@@ -96,8 +96,9 @@ export function PartnerCard({
               padding: '8px 14px',
               border: 'none',
               borderRadius: 10,
-              background: 'rgba(79,163,247,0.15)',
-              color: '#4fa3f7',
+              background:
+                'color-mix(in srgb, var(--accent-blue) 15%, transparent)',
+              color: 'var(--accent-blue)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',

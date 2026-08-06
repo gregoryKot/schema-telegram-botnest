@@ -55,7 +55,6 @@ export class ErrorBoundary extends Component<Props, State> {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 36 }}>⚠️</div>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
           Раздел «{this.props.section}» не открылся
         </div>

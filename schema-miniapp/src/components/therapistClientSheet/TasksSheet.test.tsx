@@ -2,9 +2,10 @@
 // TasksSheet — лист заданий клиента в кабинете терапевта (0% покрытия).
 // Проверяет: пустой список — реальное «Нет назначенных заданий», а не
 // пустой прямоугольник (правило CLAUDE.md против хардкод-заглушек); статус
-// иконки (✅/❌/⏳) по трём независимым полям задания; прогресс-бар рисуется
-// только когда заданы И progress, И targetDays — типичный источник NaN%,
-// если забыть одно из условий.
+// задания (aria-label «Выполнено»/«Не выполнено»/«Ожидает выполнения») по
+// трём независимым полям задания; прогресс-бар рисуется только когда заданы
+// И progress, И targetDays — типичный источник NaN%, если забыть одно из
+// условий.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { TasksSheet } from './TasksSheet';
@@ -31,7 +32,7 @@ describe('TasksSheet — пустой список', () => {
 });
 
 describe('TasksSheet — список заданий', () => {
-  it('done=true — иконка ✅, показывает срок из dueDate', () => {
+  it('done=true — статус «Выполнено», показывает срок из dueDate', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -48,12 +49,12 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByText('✅')).toBeTruthy();
+    expect(screen.getByLabelText('Выполнено')).toBeTruthy();
     expect(screen.getByText('Дневник схем')).toBeTruthy();
     expect(screen.getByText(/Срок:/)).toBeTruthy();
   });
 
-  it('done=false — иконка ❌', () => {
+  it('done=false — статус «Не выполнено»', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -70,10 +71,10 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByText('❌')).toBeTruthy();
+    expect(screen.getByLabelText('Не выполнено')).toBeTruthy();
   });
 
-  it('done=null, doneToday=true — тоже ✅ (выполнено сегодня, ещё не подтверждено)', () => {
+  it('done=null, doneToday=true — тоже «Выполнено» (выполнено сегодня, ещё не подтверждено)', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -90,10 +91,10 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByText('✅')).toBeTruthy();
+    expect(screen.getByLabelText('Выполнено')).toBeTruthy();
   });
 
-  it('done=null, doneToday=false — иконка ⏳ (ожидание), без dueDate показывает дату создания', () => {
+  it('done=null, doneToday=false — статус «Ожидает выполнения», без dueDate показывает дату создания', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -110,7 +111,7 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByText('⏳')).toBeTruthy();
+    expect(screen.getByLabelText('Ожидает выполнения')).toBeTruthy();
   });
 
   it('заданы progress и targetDays — рисует прогресс-бар с дробью', () => {

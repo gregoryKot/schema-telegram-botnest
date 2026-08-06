@@ -256,7 +256,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               borderRadius: 14,
               border: 'none',
               fontFamily: 'inherit',
-              background: 'linear-gradient(135deg, var(--accent), #60a5fa)',
+              background: 'var(--accent)',
               color: '#fff',
               fontSize: 13,
               fontWeight: 600,

@@ -1,29 +1,19 @@
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { IntroSheetShell } from './IntroSheetShell';
 import { IntroSheetQuestion } from './IntroSheetFlashcard';
 import { buildSchemaIntroExplainer } from '../../../shared/src/schema/schemaFlowExplainers';
 
 const LS_KEY = (id: string) => `schema_intro_${id}`;
 
-const VAR_HEX: Record<string, string> = {
-  'var(--accent-red)': '#f87171',
-  'var(--accent-orange)': '#fb923c',
-  'var(--accent-yellow)': '#facc15',
-  'var(--accent-green)': '#34d399',
-  'var(--accent-indigo)': '#818cf8',
-  'var(--accent-blue)': '#60a5fa',
-  'var(--accent)': '#a78bfa',
-};
-
 function getSchemaById(id: string) {
-  for (const domain of SCHEMA_DOMAINS) {
-    const schema = domain.schemas.find((s) => s.id === id);
-    if (schema)
-      return { ...schema, domainName: domain.domain, color: domain.color };
-  }
-  return null;
+  return (
+    SCHEMA_DOMAINS.flatMap((d) =>
+      d.schemas.map((s) => ({ ...s, domainName: d.domain, color: d.color })),
+    ).find((s) => s.id === id) ?? null
+  );
 }
 
 export interface SchemaIntroData {
@@ -109,8 +99,6 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
   const schema = getSchemaById(schemaId);
   if (!schema) return null;
 
-  const colorHex = VAR_HEX[schema.color] ?? '#a78bfa';
-
   return (
     <IntroSheetShell
       onClose={onClose}
@@ -135,8 +123,8 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
         })
       }
       saveNote={(data) => api.saveSchemaNote({ schemaId, ...data })}
-      accentColor={colorHex}
-      emoji={schema.emoji ?? '●'}
+      accentColor={schema.color}
+      emoji={<IdentityDot color={schema.color} size={20} />}
       title={schema.name}
       subtitle={schema.domainName}
       description={schema.desc}

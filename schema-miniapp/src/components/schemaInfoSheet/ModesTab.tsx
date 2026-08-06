@@ -56,7 +56,7 @@ export function ModesTab() {
         }}
         style={{
           background:
-            'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), rgba(79,163,247,0.1))',
+            'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), color-mix(in srgb, var(--accent-blue) 10%, transparent))',
           border:
             '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
           borderRadius: 16,
@@ -127,7 +127,6 @@ export function ModesTab() {
                   marginBottom: 6,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{m.emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -264,9 +263,6 @@ export function ModesTab() {
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                   }}
                 >
-                  <div style={{ fontSize: 26, marginBottom: 6 }}>
-                    {item.emoji}
-                  </div>
                   <div
                     style={{
                       fontSize: 11,
@@ -308,7 +304,7 @@ export function ModesTab() {
             onClick={(e) => e.stopPropagation()}
             style={{
               background:
-                'linear-gradient(145deg, color-mix(in srgb, var(--accent) 18%, transparent), rgba(79,163,247,0.08))',
+                'linear-gradient(145deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
               borderRadius: 24,
@@ -319,9 +315,6 @@ export function ModesTab() {
               animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)',
             }}
           >
-            <div style={{ fontSize: 56, marginBottom: 12 }}>
-              {checkinMode.emoji}
-            </div>
             <SectionLabel purple mb={8}>
               Режим
             </SectionLabel>

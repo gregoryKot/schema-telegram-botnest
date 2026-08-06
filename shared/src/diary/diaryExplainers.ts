@@ -17,7 +17,6 @@ type Tr = (ty: string, vy: string) => string;
 export type DiaryExplainerType = 'schema' | 'mode' | 'gratitude';
 
 export interface DiaryExplainer {
-  emoji: string;
   /** Откуда это: что за сущность и как она называется в схема-терапии. */
   what: string;
   /** Зачем записывать: что и через сколько записей станет видно. */
@@ -28,7 +27,6 @@ export const buildDiaryExplainers = (
   tr: Tr,
 ): Record<DiaryExplainerType, DiaryExplainer> => ({
   schema: {
-    emoji: '📓',
     what:
       'Схема — так в схема-терапии называют привычную болезненную реакцию ' +
       'родом из детства: «меня отвергнут», «я недостаточно хорош». Схема ' +
@@ -45,7 +43,6 @@ export const buildDiaryExplainers = (
     ),
   },
   mode: {
-    emoji: '🔄',
     what:
       'Режим — состояние, которое включается, когда задета схема: ' +
       'внутренний Критик, Уязвимый Ребёнок, Отстранённый Защитник. Так в ' +
@@ -60,7 +57,6 @@ export const buildDiaryExplainers = (
     ),
   },
   gratitude: {
-    emoji: '🌱',
     what:
       'Дневник благодарности — самая простая практика здесь: три вещи за ' +
       'день, за которые можно сказать спасибо. Даже совсем маленькие.',

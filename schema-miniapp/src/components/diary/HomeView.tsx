@@ -1,19 +1,13 @@
 import { DiaryType } from '../../types';
 import { useSafeTop } from '../../utils/safezone';
-import { fmtDateLong } from '../../utils/format';
 import { haptic } from '../../haptic';
 import { pressable } from '../../utils/a11y';
+import { useTr } from '../../utils/addressForm';
 import { DiaryHubIntro } from './DiaryHubIntro';
-
-interface DiaryMeta {
-  type: DiaryType;
-  emoji: string;
-  title: string;
-  subtitle: string;
-  color: string;
-  count: number;
-  lastDate?: string;
-}
+import { CapsLabel, DiaryPanel, DiaryRow } from './diaryUi';
+import { diaryRowMeta } from './diaryMeta';
+import { plural } from '../../sections/today/helpers';
+import { fmtAgo } from '../../utils/format';
 
 interface Props {
   schemaDiaryCount: number;
@@ -22,104 +16,35 @@ interface Props {
   lastSchemaDiaryDate?: string;
   lastModeDiaryDate?: string;
   lastGratitudeDiaryDate?: string;
+  streak?: number;
+  lastNeedsDate?: string;
   onOpen: (type: DiaryType) => void;
+  onOpenTracker?: () => void;
   onClose?: () => void;
 }
 
-function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
+/** Чип серии: только реальное число из профиля, ноль — не показываем. */
+function StreakChip({ streak }: { streak: number }) {
   return (
     <div
-      {...pressable(() => {
-        haptic.tap();
-        onOpen();
-      })}
-      className="card"
       style={{
-        borderRadius: 20,
-        marginBottom: 12,
-        cursor: 'pointer',
+        flexShrink: 0,
         display: 'flex',
-        alignItems: 'stretch',
-        overflow: 'hidden',
-        WebkitTapHighlightColor: 'transparent',
-        transition: 'opacity 120ms',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2,
+        padding: '8px 14px',
+        borderRadius: 14,
+        background: 'var(--accent-bg)',
+        border: '1px solid rgba(154,91,62,0.28)',
       }}
     >
-      {/* Left color accent bar */}
-      <div
-        style={{
-          width: 4,
-          flexShrink: 0,
-          background: meta.color,
-          opacity: 0.7,
-        }}
-      />
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          padding: '18px 16px',
-          flex: 1,
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            flexShrink: 0,
-            background: `${meta.color}20`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-          }}
-        >
-          {meta.emoji}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: 'var(--text)',
-              marginBottom: 3,
-            }}
-          >
-            {meta.title}
-          </div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}
-          >
-            {meta.subtitle}
-          </div>
-          {meta.count > 0 && (
-            <div
-              style={{
-                fontSize: 11,
-                color: meta.color,
-                marginTop: 6,
-                fontWeight: 500,
-              }}
-            >
-              {meta.count}{' '}
-              {meta.count === 1
-                ? 'запись'
-                : meta.count < 5
-                  ? 'записи'
-                  : 'записей'}
-              {meta.lastDate && ` · последняя ${fmtDateLong(meta.lastDate)}`}
-            </div>
-          )}
-        </div>
-        <div
-          style={{ color: 'var(--text-faint)', fontSize: 20, flexShrink: 0 }}
-        >
-          ›
-        </div>
-      </div>
+      <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--accent)' }}>
+        {streak}
+      </span>
+      <span className="d-caps" style={{ color: 'var(--accent)' }}>
+        {plural(streak, 'день', 'дня', 'дней')}
+      </span>
     </div>
   );
 }
@@ -131,79 +56,124 @@ export function HomeView({
   lastSchemaDiaryDate,
   lastModeDiaryDate,
   lastGratitudeDiaryDate,
+  streak,
+  lastNeedsDate,
   onOpen,
+  onOpenTracker,
   onClose,
 }: Props) {
-  const diaries: DiaryMeta[] = [
+  const tr = useTr();
+  const safeTop = useSafeTop();
+  const empty = schemaDiaryCount + modeDiaryCount + gratitudeDiaryCount === 0;
+
+  const diaries = [
     {
-      type: 'schema',
-      emoji: '📓',
+      type: 'schema' as DiaryType,
       title: 'Дневник схем',
-      subtitle: 'Что-то триггернуло? Запиши — ситуацию, чувства, мысли',
-      color: 'var(--accent-red)',
-      count: schemaDiaryCount,
-      lastDate: lastSchemaDiaryDate,
+      desc: tr(
+        'Что-то задело — запиши ситуацию, чувства, мысли',
+        'Что-то задело — запишите ситуацию, чувства, мысли',
+      ),
+      meta: diaryRowMeta(schemaDiaryCount, lastSchemaDiaryDate),
     },
     {
-      type: 'mode',
-      emoji: '🔄',
+      type: 'mode' as DiaryType,
       title: 'Дневник режимов',
-      subtitle:
-        'Поймал себя в знакомом состоянии? Запиши — кто взял управление',
-      color: 'var(--accent-blue)',
-      count: modeDiaryCount,
-      lastDate: lastModeDiaryDate,
+      desc: tr(
+        'Знакомое состояние взяло верх — запиши, кто внутри',
+        'Знакомое состояние взяло верх — запишите, кто внутри',
+      ),
+      meta: diaryRowMeta(modeDiaryCount, lastModeDiaryDate),
     },
     {
-      type: 'gratitude',
-      emoji: '🌱',
+      type: 'gratitude' as DiaryType,
       title: 'Дневник благодарности',
-      subtitle: 'Три вещи, за которые можно сказать спасибо сегодня',
-      color: 'var(--accent-green)',
-      count: gratitudeDiaryCount,
-      lastDate: lastGratitudeDiaryDate,
+      desc: 'Три вещи, за которые можно сказать спасибо сегодня',
+      meta: diaryRowMeta(gratitudeDiaryCount, lastGratitudeDiaryDate),
     },
   ];
 
-  const safeTop = useSafeTop();
-
   return (
-    <div style={{ padding: `${safeTop + 16}px 16px 32px` }}>
+    <div style={{ minHeight: '100vh', padding: `${safeTop + 16}px 16px 32px` }}>
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: 12,
-          marginBottom: 20,
+          marginBottom: 22,
         }}
       >
         {onClose && (
           <span
             {...pressable(onClose)}
+            aria-label="Назад"
             style={{
               fontSize: 26,
-              color: 'var(--text-sub)',
-              cursor: 'pointer',
               lineHeight: 1,
+              color: 'var(--muted)',
+              cursor: 'pointer',
+              padding: '4px 8px 12px 0',
             }}
           >
             ‹
           </span>
         )}
-        <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>
-          Мои дневники
-        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="d-display" style={{ fontSize: 27 }}>
+            Мои дневники
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: 'var(--muted)',
+              marginTop: 6,
+              lineHeight: 1.45,
+            }}
+          >
+            Место для честного разговора с собой
+          </div>
+        </div>
+        {streak != null && streak > 0 && <StreakChip streak={streak} />}
       </div>
-      <DiaryHubIntro
-        empty={schemaDiaryCount + modeDiaryCount + gratitudeDiaryCount === 0}
-      />
-      {diaries.map((meta) => (
-        <DiaryCard
-          key={meta.type}
-          meta={meta}
-          onOpen={() => onOpen(meta.type)}
-        />
-      ))}
+
+      <DiaryHubIntro empty={empty} />
+
+      <CapsLabel>Записать момент</CapsLabel>
+      <DiaryPanel style={{ marginBottom: 26 }}>
+        {diaries.map((d) => (
+          <DiaryRow
+            key={d.type}
+            title={d.title}
+            desc={d.desc}
+            meta={d.meta}
+            onClick={() => {
+              haptic.tap();
+              onOpen(d.type);
+            }}
+          />
+        ))}
+      </DiaryPanel>
+
+      {onOpenTracker && (
+        <>
+          <CapsLabel>Оценить день</CapsLabel>
+          <DiaryPanel>
+            <DiaryRow
+              title="Трекер потребностей"
+              desc="Пять базовых потребностей — что сегодня питает, что истощает"
+              meta={
+                lastNeedsDate
+                  ? `Последняя отметка · ${fmtAgo(lastNeedsDate)}`
+                  : 'Пока пусто'
+              }
+              onClick={() => {
+                haptic.tap();
+                onOpenTracker();
+              }}
+            />
+          </DiaryPanel>
+        </>
+      )}
     </div>
   );
 }

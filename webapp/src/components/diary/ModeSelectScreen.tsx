@@ -2,17 +2,15 @@ import { useState } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
 import { haptic } from '../../haptic';
-import { ModeTestScreen } from './ModeTestScreen';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
 import { ModeGroupList } from './ModeGroupList';
 
 /**
  * Шаг 1 дневника режимов (webapp): выбор режима.
- * Тест-первым («не знаю какой → определим по чувству») + навигация «по
- * ощущению» (те же 8 семей теста, сразу списком — ModeFeelingBrowse) +
- * свёрнутый полный список групп для тех, кто знает точное название
- * (ModeGroupList). Вынесено из ModeEntrySheet (правило №10). Парный по
- * смыслу с miniapp ModeSelectStep. testOpen/listOpen — локальны.
+ * Выбор = чипы «по ощущению» (9 семей, включая вход «не знаю, что
+ * чувствую» — ModeFeelingBrowse) + свёрнутый полный список групп для тех,
+ * кто знает точное название (ModeGroupList). Вынесено из ModeEntrySheet
+ * (правило №10). Парный по смыслу с miniapp ModeSelectStep. listOpen — локален.
  */
 export function ModeSelectScreen({
   modeId,
@@ -24,12 +22,7 @@ export function ModeSelectScreen({
   onBack: () => void;
 }) {
   const tr = useTr();
-  const [testOpen, setTestOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
-
-  if (testOpen) {
-    return <ModeTestScreen onPick={onPick} onBack={() => setTestOpen(false)} />;
-  }
 
   return (
     <ExScreen
@@ -70,31 +63,11 @@ export function ModeSelectScreen({
         </div>
       }
     >
-      {/* Главное действие: тест по чувству */}
-      <button
-        type="button"
-        className="mode-test-cta"
-        onClick={() => {
-          haptic.select();
-          setTestOpen(true);
-        }}
-      >
-        <span className="mode-test-cta-emoji">🧭</span>
-        <span className="mode-test-cta-text">
-          <span className="mode-test-cta-title">
-            {tr('Не знаешь, какой режим?', 'Не знаете, какой режим?')}
-          </span>
-          <span className="mode-test-cta-sub">
-            Определим по чувству – пара тапов
-          </span>
-        </span>
-      </button>
-
-      {/* Ощущение: та же навигация, что и в тесте выше, без вопросов */}
-      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '2px 0 10px' }}>
+      {/* Главное действие: выбор по ощущению */}
+      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '0 0 10px' }}>
         {tr(
-          'Или найди по ощущению — те же состояния, что и в тесте выше:',
-          'Или найдите по ощущению — те же состояния, что и в тесте выше:',
+          'Что сейчас чувствуешь? Выбери самое близкое:',
+          'Что сейчас чувствуете? Выберите самое близкое:',
         )}
       </div>
       <ModeFeelingBrowse onPick={onPick} />

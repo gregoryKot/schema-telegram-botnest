@@ -121,7 +121,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
                     const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
                     color = domain?.color ?? 'var(--accent)';
-                    title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                    title = schema ? schema.name : (entry.schemaIds?.join(', ') ?? 'Схема');
                     const extra = (entry.schemaIds?.length ?? 0) > 1 ? ` +${(entry.schemaIds?.length ?? 1) - 1}` : '';
                     title += extra;
                     typeLabel = 'Схема-дневник';
@@ -129,7 +129,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     const mode = getModeById(entry.modeId ?? '');
                     const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
                     color = group?.color ?? 'var(--c-plum)';
-                    title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                    title = mode ? mode.name : (entry.modeId ?? 'Режим');
                     typeLabel = 'Режим-дневник';
                   } else {
                     color = 'var(--c-moss)';

@@ -6,30 +6,22 @@ import { useTr } from '../utils/addressForm';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { Topbar } from './SchemaFlashcardTopbar';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const STORAGE_KEY = 'schema_flashcards';
 
-interface FlashcardEntry {
-  id: string | number;
-  date: string;
-  mode: string;
-  reflection: string;
-  needId: string;
-  action: string;
-}
+interface FlashcardEntry { id: string | number; date: string; mode: string; reflection: string; needId: string; action: string }
 
 const buildModes = (tr: (ty: string, vy: string) => string) => [
   {
     id: 'vulnerable_child',
-    emoji: '😢',
     label: 'Уязвимый Ребёнок',
     desc: 'Грустно, страшно, одиноко, беспомощно',
-    response: tr('Здоровый Взрослый слышит тебя: твоя боль настоящая, и ты не один. Позволь себе побыть в этом – без самокритики.', 'Здоровый Взрослый слышит вас: ваша боль настоящая, и вы не один. Позвольте себе побыть в этом – без самокритики.'),
+    response: tr('Здоровый Взрослый слышит тебя: твоя боль настоящая, и справляться с ней в одиночку не нужно. Позволь себе побыть в этом – без самокритики.', 'Здоровый Взрослый слышит вас: ваша боль настоящая, и справляться с ней в одиночку не нужно. Позвольте себе побыть в этом – без самокритики.'),
     color: '#60a5fa',
   },
   {
     id: 'angry_child',
-    emoji: '😡',
     label: 'Злой Ребёнок',
     desc: 'Злость, раздражение, хочется взорваться',
     response: 'Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.',
@@ -37,28 +29,26 @@ const buildModes = (tr: (ty: string, vy: string) => string) => [
   },
   {
     id: 'detached',
-    emoji: '🔇',
     label: 'Отстранённый Защитник',
     desc: 'Пусто, онемело, всё равно, хочется исчезнуть',
-    response: tr('Ты отключился, чтобы не было больно – это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
+    response: tr('Это отключение — чтобы не было больно, и это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
     color: '#94a3b8',
   },
   {
     id: 'critic',
-    emoji: '🪓',
     label: 'Внутренний Критик',
-    desc: 'Стыд, «я облажался», «я недостаточно хорош»',
-    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош – прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
+    desc: 'Стыд, «опять провал», «этого мало»',
+    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: тебя достаточно — прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
     color: '#fb923c',
   },
 ];
 
 const NEEDS = [
-  { id: 'attachment', emoji: '💙', label: 'Привязанность' },
-  { id: 'autonomy',   emoji: '🔑', label: 'Автономия' },
-  { id: 'expression', emoji: '🎨', label: 'Выражение' },
-  { id: 'play',       emoji: '🎉', label: 'Игра и радость' },
-  { id: 'limits',     emoji: '🛡️', label: 'Границы' },
+  { id: 'attachment', label: 'Привязанность' },
+  { id: 'autonomy',   label: 'Автономия' },
+  { id: 'expression', label: 'Выражение' },
+  { id: 'play',       label: 'Игра и радость' },
+  { id: 'limits',     label: 'Границы' },
 ];
 
 type Step = 'mode' | 'response' | 'need' | 'action';
@@ -145,9 +135,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 20, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{viewing.date}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
-              { label: 'Режим',       value: `${modeInfo?.emoji ?? '🧩'} ${modeInfo?.label ?? viewing.mode}` },
+              { label: 'Режим',       value: modeInfo?.label ?? viewing.mode },
               viewing.reflection ? { label: 'Рефлексия',   value: viewing.reflection } : null,
-              needInfo            ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
+              needInfo            ? { label: 'Потребность', value: needInfo.label } : null,
               viewing.action      ? { label: 'Шаг',         value: viewing.action } : null,
             ].filter(Boolean).map((row, i, arr) => row && (
               <div key={row.label} style={{
@@ -188,8 +178,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{card.date}</div>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.4 }}>
-                  {m?.emoji ?? '🧩'} {m?.label ?? card.mode}
-                  {n ? ` · ${n.emoji} ${n.label}` : ''}
+                  {m?.label ?? card.mode}
+                  {n ? ` · ${n.label}` : ''}
                 </div>
                 {card.action && (
                   <div style={{ fontSize: 13, color: 'var(--accent)', marginTop: 6,
@@ -214,15 +204,14 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 32 }}>Сохранено</h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-            {tr('Ты сделал шаг навстречу себе. Это уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
+            {tr('Это шаг навстречу себе. Уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
           </p>
           <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
-              { label: 'Режим',       value: `${modeInfo?.emoji} ${modeInfo?.label}` },
-              needInfo ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
+              { label: 'Режим',       value: modeInfo?.label },
+              needInfo ? { label: 'Потребность', value: needInfo.label } : null,
               action   ? { label: 'Шаг',         value: action } : null,
             ].filter(Boolean).map((row, i, arr) => row && (
               <div key={row.label} style={{
@@ -255,9 +244,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
-            {tr('Ты сделал правильно', 'Вы сделали правильно')}
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12, marginTop: 20 }}>
+            {tr('Всё правильно', 'Вы сделали правильно')}
           </h1>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
             {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br/>Это пройдёт.
@@ -329,7 +317,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
                 fontFamily: 'inherit',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                  <IdentityDot color={m.color} size={16} />
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: m.color }}>{m.label}</span>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-faint)', paddingLeft: 34 }}>{m.desc}</div>
@@ -356,7 +344,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             borderRadius: 20, padding: '20px', marginBottom: 24,
           }}>
             <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 12 }}>
-              {tr('🌿 Говорит тебе', '🌿 Говорит вам')}
+              {tr('Говорит тебе', 'Говорит вам')}
             </div>
             <p style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>
               {modeData?.response}
@@ -406,7 +394,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
                   color: 'var(--text)', fontSize: 15,
                   fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 12,
                 }}>
-                  <span style={{ fontSize: 22 }}>{n.emoji}</span>
+                  <IdentityDot id={n.id} size={16} />
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 18 }}>{n.label}</span>
                 </button>
               );
@@ -433,7 +421,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             background: 'transparent', border: '1px solid var(--line)',
             borderRadius: 14, padding: '14px 18px', marginBottom: 20,
           }}>
-            <span style={{ fontSize: 24 }}>{needInfo.emoji}</span>
+            <IdentityDot id={needInfo.id} size={18} />
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Потребность</div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>{needInfo.label}</div>

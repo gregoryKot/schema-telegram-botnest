@@ -51,7 +51,7 @@ export function DisclaimerNeedsResultStep() {
           padding: '4px 8px',
         }}
       >
-        Заметить — уже первый шаг. 🌱
+        Заметить — уже первый шаг.
       </div>
     </div>
   );

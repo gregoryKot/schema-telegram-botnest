@@ -28,8 +28,8 @@ export default defineConfig({
         start_url: '/app/',
         // Светлая тема мини-аппа (src/index.css, html[data-theme="light"]) —
         // манифест один, тёмную отрабатывает meta theme-color в index.html.
-        theme_color: '#f4f0e9',
-        background_color: '#f4f0e9',
+        theme_color: '#faf7f3',
+        background_color: '#faf7f3',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -47,11 +47,30 @@ export default defineConfig({
         // строится из билд-ассетов (self.__WB_MANIFEST), путей API тут нет
         // и быть не может — этот glob их физически не видит.
         globPatterns: ['**/*.{js,css,html}'],
+        // Имена ассетов без контент-хеша (см. build ниже), поэтому дефолт
+        // здесь опасен: workbox писал бы в прекэш `revision: null` и считал
+        // бандл неизменяемым — PWA навсегда осталась бы на первой версии.
+        // Паттерн ни с чем не совпадает ⇒ revision считается по содержимому.
+        dontCacheBustURLsMatching: /(?!)/,
       },
       devOptions: { enabled: false },
     }),
   ],
   base: '/app/',
+  // Имена ассетов БЕЗ контент-хеша: бастить нечего (ServeStaticModule отдаёт
+  // статику с max-age=0 и ETag), а платили за хеш конфликтами — dist в git,
+  // поэтому у каждой пары параллельных PR имя расходилось и git ловил
+  // rename/rename, который merge-драйвер не чинит. Инварианты под тестом:
+  // src/test-support/gates/miniapp-dist.spec.ts.
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      },
+    },
+  },
   // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
   // node_modules → два инстанса React (hooks dispatcher = null).
   resolve: { dedupe: ['react', 'react-dom'] },

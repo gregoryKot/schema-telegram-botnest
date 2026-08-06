@@ -20,6 +20,7 @@ function makePrisma() {
     'userSchemaNote',
     'userModeNote',
     'userBeliefCheck',
+    'userPhraseCheck',
     'userLetter',
     'userSafePlace',
     'userFlashcard',
@@ -39,6 +40,7 @@ function makePrisma() {
     'diaryDraft',
     'emailToken',
     'analyticsEvent',
+    'deviceLinkRequest',
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',

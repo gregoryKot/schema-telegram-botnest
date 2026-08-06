@@ -1,11 +1,27 @@
 import { ShareCardSheet } from '../../share/ShareCardSheet';
-import {
-  useModeEntryShare,
-  modeEntryShareLinkStyle,
-} from '../../../../shared/src/share/useModeEntryShare';
+import { useModeEntryShare } from '../../../../shared/src/share/useModeEntryShare';
 import type { ModeEntryFullSource } from '../../../../shared/src/share/cards/modeEntryFullCard';
 import type { ModeEntryMode } from '../../../../shared/src/share/cards/modeEntryCard';
 import { botShortUrl } from '../../utils/botConfig';
+
+// Обе кнопки шаринга — ОДИН вид. Раньше первая была плашкой «Сохранить
+// карточку», а вторая — подчёркнутой ссылкой: два соседних действия одного
+// смысла читались как разные элементы (замечание пользователя, 2026-08).
+const shareBtnStyle = (color: string) =>
+  ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    background: `color-mix(in srgb, ${color} 12%, transparent)`,
+    border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
+    borderRadius: 12,
+    minHeight: 40,
+    padding: '0 14px',
+    color,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  }) as const;
 
 /**
  * Сохранить/поделиться записью режима: краткая карточка «Голос Здорового
@@ -52,21 +68,9 @@ export function ModeEntryShare({
                 e.stopPropagation();
                 setShare('short');
               }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: color + '18',
-                border: 'none',
-                borderRadius: 8,
-                padding: '6px 12px',
-                color,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              style={shareBtnStyle(color)}
             >
-              Сохранить карточку
+              Поделиться карточкой
             </button>
           </>
         )}
@@ -77,11 +81,18 @@ export function ModeEntryShare({
                 e.stopPropagation();
                 setShare('full');
               }}
-              style={modeEntryShareLinkStyle}
+              style={shareBtnStyle(color)}
             >
               Поделиться всей записью
             </button>
-            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.5 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-faint)',
+                marginTop: 4,
+                lineHeight: 1.5,
+              }}
+            >
               {fullProps?.hint}
             </div>
           </div>

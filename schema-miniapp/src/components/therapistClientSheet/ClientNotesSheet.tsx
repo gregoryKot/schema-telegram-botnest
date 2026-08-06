@@ -1,5 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
-import { SCHEMA_DOMAINS, getModeById } from '../../schemaTherapyData';
+import { ALL_SCHEMAS, getModeById } from '../../schemaTherapyData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
 
 interface ClientNotesSheetProps {
@@ -24,12 +25,11 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
             marginBottom: 20,
           }}
         >
-          📖 Записи клиента
+          Записи клиента
         </div>
         {clientSchemaNotesData.length === 0 &&
         clientModeNotesData.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
             <div
               style={{
                 fontSize: 14,
@@ -57,9 +57,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                   Схемы · {clientSchemaNotesData.length}
                 </div>
                 {clientSchemaNotesData.map((n) => {
-                  const s = SCHEMA_DOMAINS.flatMap((d) =>
-                    d.schemas.map((x) => ({ ...x, color: d.color })),
-                  ).find((x) => x.id === n.schemaId);
+                  const s = ALL_SCHEMAS.find((x) => x.id === n.schemaId);
                   const filled = [
                     n.triggers,
                     n.feelings,
@@ -88,7 +86,8 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                           marginBottom: 8,
                         }}
                       >
-                        {s?.emoji ?? '●'} {s?.name ?? n.schemaId}
+                        <IdentityDot color={s?.domainColor} size={10} />{' '}
+                        {s?.name ?? n.schemaId}
                       </div>
                       {[
                         { label: 'Триггеры', val: n.triggers },
@@ -176,7 +175,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                           marginBottom: 8,
                         }}
                       >
-                        {m?.emoji ?? '🔄'} {m?.name ?? n.modeId}
+                        {m?.name ?? n.modeId}
                       </div>
                       {[
                         { label: 'Триггеры', val: n.triggers },
