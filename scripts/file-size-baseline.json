@@ -331,7 +331,7 @@
   "schema-miniapp/src/utils/outbox.ts": 103,
   "schema-miniapp/src/utils/patternsSummary.ts": 104,
   "schema-miniapp/src/utils/reducedMotion.ts": 2,
-  "schema-miniapp/src/utils/safezone.ts": 97,
+  "schema-miniapp/src/utils/safezone.ts": 107,
   "schema-miniapp/src/utils/storageKeys.ts": 2,
   "schema-miniapp/src/utils/telemetryUrl.ts": 2,
   "schema-miniapp/src/utils/theme.ts": 39,
