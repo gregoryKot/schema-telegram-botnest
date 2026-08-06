@@ -19,6 +19,7 @@ export type {
   ConceptSnapshot,
   YsqHistoryEntry,
   ClientData,
+  Insights,
 } from '../../shared/src/apiTypes';
 
 // ─── Site-only types (booking, articles, mode-map) ───────────────────────────
@@ -163,15 +164,5 @@ export interface FlashcardEntry {
   reflection: string | null;
   action: string | null;
   createdAt: string;
-}
-export interface Insights {
-  weeklyStats: Array<{
-    needId: string;
-    avg: number | null;
-    trend: '↑' | '↓' | '→';
-  }>;
-  bestDayOfWeek: string | null;
-  worstDayOfWeek: string | null;
-  totalDays: number;
 }
 

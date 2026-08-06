@@ -2,7 +2,12 @@
 // сведены в shared. Тест держит склеенную логику: русская плюрализация
 // длительности и формат «день недели, число месяц · время».
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { calcTherapyDuration, nextSessionLabel } from './clientSheetHelpers';
+import {
+  calcTherapyDuration,
+  nextSessionLabel,
+  indexColor,
+  CONCEPT_FIELDS,
+} from './clientSheetHelpers';
 
 describe('calcTherapyDuration', () => {
   afterEach(() => vi.useRealTimers());
@@ -57,5 +62,33 @@ describe('nextSessionLabel', () => {
 
   it('дата со временем добавляет « · HH:MM»', () => {
     expect(nextSessionLabel('2026-01-15T18:30')).toBe('Чт, 15 янв · 18:30');
+  });
+});
+
+// Сведение 2026-08: раньше indexColor жил в двух версиях (webapp: --c-* и
+// порог 5; мини-апп: accent-* и порог 4) — карточка и спарклайн рядом
+// красились по-разному. Канон — accent-версия, пороги 7/4.
+describe('indexColor', () => {
+  it('высокий индекс (≥7) — зелёный', () => {
+    expect(indexColor(7)).toBe('#06d6a0');
+    expect(indexColor(10)).toBe('#06d6a0');
+  });
+  it('средний (4–6.9) — жёлтый акцент', () => {
+    expect(indexColor(4)).toBe('var(--accent-yellow)');
+    expect(indexColor(6.9)).toBe('var(--accent-yellow)');
+  });
+  it('низкий (<4) — красный акцент', () => {
+    expect(indexColor(3.9)).toBe('var(--accent-red)');
+    expect(indexColor(0)).toBe('var(--accent-red)');
+  });
+});
+
+describe('CONCEPT_FIELDS', () => {
+  it('содержит goals — поле терялось в webapp до сведения', () => {
+    expect(CONCEPT_FIELDS.map((f) => f.key)).toContain('goals');
+  });
+  it('ключи уникальны', () => {
+    const keys = CONCEPT_FIELDS.map((f) => f.key);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
