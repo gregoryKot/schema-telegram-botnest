@@ -1,5 +1,7 @@
 import { IsIn, IsObject, IsOptional } from 'class-validator';
 import {
+  ACCOUNT_LINK_FAIL_REASONS,
+  ACCOUNT_LINK_HOSTS,
   ANALYTICS_EVENTS,
   CRISIS_SURFACES,
   CUSTOMIZE_ENTRY_POINTS,
@@ -46,4 +48,10 @@ export const HOME_SCREEN_ACTION_SET: ReadonlySet<string> = new Set(
 );
 export const HOME_SCREEN_SURFACE_SET: ReadonlySet<string> = new Set(
   HOME_SCREEN_SURFACES,
+);
+export const ACCOUNT_LINK_HOST_SET: ReadonlySet<string> = new Set(
+  ACCOUNT_LINK_HOSTS,
+);
+export const ACCOUNT_LINK_FAIL_REASON_SET: ReadonlySet<string> = new Set(
+  ACCOUNT_LINK_FAIL_REASONS,
 );

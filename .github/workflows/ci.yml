@@ -202,6 +202,7 @@ jobs:
           test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
+          test/device-link.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
