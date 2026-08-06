@@ -34,7 +34,11 @@ export function getHiddenActions(key: string): string[] {
 }
 
 /** Скрывает/возвращает один пункт по id, сохраняя остальные скрытые как есть. */
-export function setActionHidden(key: string, id: string, hidden: boolean): void {
+export function setActionHidden(
+  key: string,
+  id: string,
+  hidden: boolean,
+): void {
   const current = getHiddenActions(key);
   const next = hidden
     ? current.includes(id)

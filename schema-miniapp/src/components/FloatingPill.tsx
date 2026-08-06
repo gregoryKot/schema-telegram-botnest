@@ -56,10 +56,7 @@ export function FloatingPill({ onAction }: Props) {
       </div>
 
       {showMenu && (
-        <PlusMenuSheet
-          onAction={onAction}
-          onClose={() => setShowMenu(false)}
-        />
+        <PlusMenuSheet onAction={onAction} onClose={() => setShowMenu(false)} />
       )}
     </>
   );

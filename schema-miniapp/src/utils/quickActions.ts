@@ -28,7 +28,8 @@ export const QUICK_ACTION_IDS = [
 ] as const;
 export type QuickActionId = (typeof QUICK_ACTION_IDS)[number];
 
-export type QuickActionGroupId = 'capture' | 'rate' | 'calm' | 'understand' | 'support';
+export type QuickActionGroupId =
+  'capture' | 'rate' | 'calm' | 'understand' | 'support';
 
 export interface QuickAction {
   id: QuickActionId;
@@ -43,99 +44,86 @@ export interface QuickActionGroup {
   actions: QuickAction[];
 }
 
+function action(
+  id: QuickActionId,
+  emoji: string,
+  label: string,
+  sub: string,
+): QuickAction {
+  return { id, emoji, label, sub };
+}
+
+function group(
+  id: QuickActionGroupId,
+  title: string,
+  actions: QuickAction[],
+): QuickActionGroup {
+  return { id, title, actions };
+}
+
 // Пункты поверхности «плюс» — 13 действий (childhood_wheel/tasks/practices/
 // plans сюда не входят, это только «Инструменты»). Подписи — существующие
 // тексты продукта (FloatingPill/HelpSection/ToolRow), не переформулированы.
 export function buildPlusActions(tr: Tr): QuickActionGroup[] {
   return [
-    {
-      id: 'capture',
-      title: 'Записать момент',
-      actions: [
-        { id: 'diary_schema', emoji: '🧩', label: 'Схема', sub: 'Когда сработал паттерн' },
-        { id: 'diary_mode', emoji: '🎭', label: 'Режим', sub: 'Какой режим активировался' },
-        { id: 'diary_gratitude', emoji: '🙏', label: 'Благодарность', sub: 'Что было хорошего' },
-      ],
-    },
-    {
-      id: 'rate',
-      title: 'Оценить день',
-      actions: [
-        {
-          id: 'tracker',
-          emoji: '📊',
-          label: 'Трекер потребностей',
-          sub: tr('Оцени день по пяти шкалам', 'Оцените день по пяти шкалам'),
-        },
-      ],
-    },
-    {
-      id: 'calm',
-      title: 'Успокоиться',
-      actions: [
-        {
-          id: 'breathing',
-          emoji: '🌬',
-          label: 'Дыхание 4-4-6',
-          sub: 'вдох короче выдоха — сигнал телу, что опасности нет',
-        },
-        {
-          id: 'grounding',
-          emoji: '🌍',
-          label: 'Заземление 5-4-3-2-1',
-          sub: 'вернуться в тело и в комнату',
-        },
-        {
-          id: 'stop',
-          emoji: '🛑',
-          label: 'Техника «Стоп»',
-          sub: 'пауза между импульсом и действием',
-        },
-      ],
-    },
-    {
-      id: 'understand',
-      title: 'Разобраться',
-      actions: [
-        { id: 'belief_check', emoji: '🔍', label: 'Проверка убеждений', sub: 'Правда ли это?' },
-        {
-          id: 'phrase_check',
-          emoji: '💭',
-          label: 'Критик или забота?',
-          sub: 'Проверить фразу внутреннего голоса',
-        },
-        {
-          id: 'flashcard',
-          emoji: '⚡',
-          label: 'Схема включилась',
-          sub: '5 шагов чтобы разобраться',
-        },
-      ],
-    },
-    {
-      id: 'support',
-      title: 'Поддержать себя',
-      actions: [
-        {
-          id: 'safe_place',
-          emoji: '🏡',
-          label: 'Безопасное место',
-          sub: 'Ресурс в тревожный момент',
-        },
-        {
-          id: 'letter_to_self',
-          emoji: '✉️',
-          label: 'Письмо себе',
-          sub: 'Уязвимому Ребёнку',
-        },
-        {
-          id: 'warm_words',
-          emoji: '💛',
-          label: 'Тёплые слова',
-          sub: 'Слова поддержки себе',
-        },
-      ],
-    },
+    group('capture', 'Записать момент', [
+      action('diary_schema', '🧩', 'Схема', 'Когда сработал паттерн'),
+      action('diary_mode', '🎭', 'Режим', 'Какой режим активировался'),
+      action('diary_gratitude', '🙏', 'Благодарность', 'Что было хорошего'),
+    ]),
+    group('rate', 'Оценить день', [
+      action(
+        'tracker',
+        '📊',
+        'Трекер потребностей',
+        tr('Оцени день по пяти шкалам', 'Оцените день по пяти шкалам'),
+      ),
+    ]),
+    group('calm', 'Успокоиться', [
+      action(
+        'breathing',
+        '🌬',
+        'Дыхание 4-4-6',
+        'вдох короче выдоха — сигнал телу, что опасности нет',
+      ),
+      action(
+        'grounding',
+        '🌍',
+        'Заземление 5-4-3-2-1',
+        'вернуться в тело и в комнату',
+      ),
+      action(
+        'stop',
+        '🛑',
+        'Техника «Стоп»',
+        'пауза между импульсом и действием',
+      ),
+    ]),
+    group('understand', 'Разобраться', [
+      action('belief_check', '🔍', 'Проверка убеждений', 'Правда ли это?'),
+      action(
+        'phrase_check',
+        '💭',
+        'Критик или забота?',
+        'Проверить фразу внутреннего голоса',
+      ),
+      action(
+        'flashcard',
+        '⚡',
+        'Схема включилась',
+        '5 шагов чтобы разобраться',
+      ),
+    ]),
+    group('support', 'Поддержать себя', [
+      action(
+        'safe_place',
+        '🏡',
+        'Безопасное место',
+        'Ресурс в тревожный момент',
+      ),
+      action('letter_to_self', '✉️', 'Письмо себе', 'Уязвимому Ребёнку'),
+      action('warm_words', '💛', 'Тёплые слова', 'Слова поддержки себе'),
+    ]),
   ];
 }
 

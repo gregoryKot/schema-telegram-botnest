@@ -7,7 +7,13 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { QuickActionOverlays } from './QuickActionOverlays';
 
 vi.mock('../QuickPracticeSheet', () => ({
-  QuickPracticeSheet: ({ id, onClose }: { id: string; onClose: () => void }) => (
+  QuickPracticeSheet: ({
+    id,
+    onClose,
+  }: {
+    id: string;
+    onClose: () => void;
+  }) => (
     <div>
       <span>QuickPracticeSheet:{id}</span>
       <button onClick={onClose}>close</button>
@@ -44,7 +50,11 @@ afterEach(cleanup);
 describe('QuickActionOverlays — маршрутизация', () => {
   it('active=null — ничего не рендерит', () => {
     const { container } = render(
-      <QuickActionOverlays active={null} onClose={vi.fn()} onOpenTracker={vi.fn()} />,
+      <QuickActionOverlays
+        active={null}
+        onClose={vi.fn()}
+        onOpenTracker={vi.fn()}
+      />,
     );
     expect(container.textContent).toBe('');
   });

@@ -33,7 +33,11 @@ export function QuickActionCustomizeSheet({
 }: Props) {
   function handleToggle(id: string) {
     const nextHidden = !hidden.includes(id);
-    api.trackEvent('quick_action_toggle', { action: id, hidden: nextHidden, surface });
+    api.trackEvent('quick_action_toggle', {
+      action: id,
+      hidden: nextHidden,
+      surface,
+    });
     onToggle(id, nextHidden);
   }
 
@@ -66,7 +70,11 @@ export function QuickActionCustomizeSheet({
             />
           ))}
         </div>
-        <button className="btn-primary" style={{ marginTop: 16 }} onClick={onClose}>
+        <button
+          className="btn-primary"
+          style={{ marginTop: 16 }}
+          onClick={onClose}
+        >
           Готово
         </button>
       </div>
