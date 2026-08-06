@@ -58,6 +58,28 @@ describe('ExercisesController.getHealthyPhrase', () => {
   });
 });
 
+describe('ExercisesController — GET/DELETE делегируют с userId из req', () => {
+  it('getBeliefChecks/getLetters/getSafePlace/getFlashcards читают под своим userId', async () => {
+    const { controller, exercisesService } = makeController();
+    await controller.getBeliefChecks(makeReq(11n));
+    await controller.getLetters(makeReq(12n));
+    await controller.getSafePlace(makeReq(13n));
+    await controller.getFlashcards(makeReq(14n));
+    expect(exercisesService.getBeliefChecks).toHaveBeenCalledWith(11n);
+    expect(exercisesService.getLetters).toHaveBeenCalledWith(12n);
+    expect(exercisesService.getSafePlace).toHaveBeenCalledWith(13n);
+    expect(exercisesService.getFlashcards).toHaveBeenCalledWith(14n);
+  });
+
+  it('deleteLetter/deleteFlashcard удаляют под userId из req, чужой id не подставляется', async () => {
+    const { controller, exercisesService } = makeController();
+    await controller.deleteLetter(makeReq(7n), '20');
+    await controller.deleteFlashcard(makeReq(7n), '21');
+    expect(exercisesService.deleteLetter).toHaveBeenCalledWith(7n, 20);
+    expect(exercisesService.deleteFlashcard).toHaveBeenCalledWith(7n, 21);
+  });
+});
+
 describe('ExercisesController belief-checks', () => {
   it('фильтрует пустые/пробельные строки из evidence, тримит belief/reframe', async () => {
     const { controller, exercisesService } = makeController();
@@ -172,6 +194,21 @@ describe('ExercisesController flashcards', () => {
       needId: 'attachment',
       reflection: 'мысль',
       action: undefined,
+    });
+  });
+
+  it('без reflection и с action — action тримится, reflection остаётся undefined', async () => {
+    const { controller, exercisesService } = makeController();
+    await controller.createFlashcard(makeReq(6n), {
+      modeId: 'critic',
+      needId: 'attachment',
+      action: '  сделать паузу  ',
+    });
+    expect(exercisesService.createFlashcard).toHaveBeenCalledWith(6n, {
+      modeId: 'critic',
+      needId: 'attachment',
+      reflection: undefined,
+      action: 'сделать паузу',
     });
   });
 });

@@ -58,10 +58,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting]     = useState(false);
+  const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
   const [resignConfirm, setResignConfirm] = useState(false);
   const [resignBusy, setResignBusy] = useState(false);
-  const [savedToast, setSavedToast] = useState(false);
+  const [savedToast, setSavedToast] = useState(false); const [saveError, setSaveError] = useState(false); // «Сохранено» раньше шло даже при отказе api
   const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
   const [therapyJoinCode, setTherapyJoinCode] = useState('');
   const [therapyJoinError, setTherapyJoinError] = useState('');
@@ -102,10 +102,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   async function patch(update: Partial<UserSettings>) {
     if (!settings) return;
-    setSettings(s => s ? { ...s, ...update } : s);
-    await api.updateSettings(update).catch(() => {});
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
+    const prev = settings; setSettings(s => s ? { ...s, ...update } : s);
+    try { await api.updateSettings(update); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
+    catch { setSettings(prev); setSaveError(true); setTimeout(() => setSaveError(false), 2400); }
   }
 
   async function handleCreateInvite() {
@@ -196,8 +195,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
             {subView === 'time' ? 'Время уведомления' : subView === 'tz' ? 'Часовой пояс' : subView === 'freq' ? 'Частота напоминаний' : subView === 'quiet' ? 'Тихие часы' : 'Настройки'}
           </span>
-          <span style={{ fontSize: 13, color: 'var(--accent-green)', fontWeight: 500, opacity: savedToast ? 1 : 0, transition: 'opacity 0.3s' }}>
-            Сохранено ✓
+          <span style={{ fontSize: 13, color: saveError ? 'var(--accent-red)' : 'var(--accent-green)', fontWeight: 500, opacity: savedToast || saveError ? 1 : 0, transition: 'opacity 0.3s' }}>
+            {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
         </div>
 
@@ -634,7 +633,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {/* Данные */}
                 <SHead id="s-data" label="Данные" />
                 <SRow title="Конфиденциальность" sub="Что и как хранится" onClick={() => setShowPrivacy(true)} />
-                <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
+                <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setDeleteError(false); setShowDeleteSheet(true); }} />
 
               </>)}
             </div>
@@ -705,6 +704,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
             Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
           </div>
+          {deleteError && !deleteConfirm && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 12 }}>{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
           {!deleteConfirm ? (
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
@@ -714,9 +714,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
             <div>
               <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
               <button disabled={deleting} onClick={async () => {
-                setDeleting(true);
+                setDeleting(true); setDeleteError(false);
                 try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
-                catch { setDeleting(false); setDeleteConfirm(false); }
+                catch { setDeleting(false); setDeleteConfirm(false); setDeleteError(true); }
               }} style={{ width: '100%', padding: '13px 0', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
                 {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
               </button>

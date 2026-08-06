@@ -5,6 +5,8 @@ import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
+import { SaveErrorNote } from './SaveErrorNote';
+import { SafePlaceSavedView } from './safePlace/SavedView';
 
 const STORAGE_KEY = 'safe_place';
 
@@ -50,6 +52,8 @@ export function SafePlace({ onClose, onComplete }: Props) {
   const [editing, setEditing] = useState(!loadLocal());
   const [text, setText] = useState(() => loadLocal()?.text ?? '');
   const [justSaved, setJustSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api
@@ -73,8 +77,11 @@ export function SafePlace({ onClose, onComplete }: Props) {
       .catch(() => {});
   }, []);
 
-  function handleSave() {
-    if (!text.trim()) return;
+  // Раньше «✓ Сохранено» показывалось сразу после fire-and-forget
+  // api.saveSafePlace().catch(()=>{}) — провал был не виден. localStorage
+  // пишется сразу (офлайн-устойчивость), переход в просмотр — только после успеха.
+  async function handleSave() {
+    if (!text.trim() || saving) return;
     const trimmed = text.trim();
     const data: SafePlaceData = {
       text: trimmed,
@@ -85,100 +92,33 @@ export function SafePlace({ onClose, onComplete }: Props) {
       }),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setSaved(data);
-    // Save to server
-    api.saveSafePlace(trimmed).catch(() => {});
-    setJustSaved(true);
-    setEditing(false);
-    onComplete?.();
-    setTimeout(() => setJustSaved(false), 1800);
+    setSaving(true);
+    setError(false);
+    try {
+      await api.saveSafePlace(trimmed);
+      setSaved(data);
+      setJustSaved(true);
+      setEditing(false);
+      onComplete?.();
+      setTimeout(() => setJustSaved(false), 1800);
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!editing && saved) {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
-          <SheetIconHeader
-            title="Моё безопасное место"
-            subtitle="Прочти — и почувствуй"
-          />
-
-          <div
-            style={{
-              background:
-                'color-mix(in srgb, var(--accent-green) 6%, transparent)',
-              border:
-                '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
-              borderRadius: 16,
-              padding: '16px',
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 15,
-                color: 'rgba(var(--fg-rgb),0.85)',
-                lineHeight: 1.75,
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {saved.text}
-            </div>
-          </div>
-
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-faint)',
-              textAlign: 'center',
-              marginBottom: 16,
-            }}
-          >
-            {justSaved ? '✓ Сохранено' : `Обновлено ${saved.savedAt}`}
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <button
-              onClick={() => {
-                setText(saved.text);
-                setEditing(true);
-              }}
-              style={{
-                flex: 1,
-                padding: '13px 0',
-                borderRadius: 14,
-                border: '1px solid rgba(var(--fg-rgb),0.1)',
-                background: 'transparent',
-                color: 'var(--text-sub)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Изменить
-            </button>
-            <button
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '13px 0',
-                borderRadius: 14,
-                border: 'none',
-                background:
-                  'color-mix(in srgb, var(--accent-green) 15%, transparent)',
-                color: 'var(--accent-green)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Готово
-            </button>
-          </div>
-
-          <TherapyNote compact />
-        </div>
-      </BottomSheet>
+      <SafePlaceSavedView
+        saved={saved}
+        justSaved={justSaved}
+        onClose={onClose}
+        onEdit={() => {
+          setText(saved.text);
+          setEditing(true);
+        }}
+      />
     );
   }
 
@@ -243,9 +183,16 @@ export function SafePlace({ onClose, onComplete }: Props) {
         />
         <CrisisGate texts={[text]} surface="safe_place" />
 
+        {error && (
+          <SaveErrorNote
+            ty="Не удалось сохранить на сервере. Текст остался на этом устройстве — попробуй ещё раз."
+            vy="Не удалось сохранить на сервере. Текст остался на этом устройстве — попробуйте ещё раз."
+          />
+        )}
+
         <button
           onClick={handleSave}
-          disabled={!text.trim()}
+          disabled={!text.trim() || saving}
           style={{
             width: '100%',
             padding: '14px 0',
@@ -259,12 +206,12 @@ export function SafePlace({ onClose, onComplete }: Props) {
               : 'rgba(var(--fg-rgb),0.25)',
             fontSize: 15,
             fontWeight: 600,
-            cursor: text.trim() ? 'pointer' : 'default',
+            cursor: text.trim() && !saving ? 'pointer' : 'default',
             transition: 'all 0.25s',
             marginBottom: 16,
           }}
         >
-          Сохранить
+          {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
 
         <TherapyNote compact />

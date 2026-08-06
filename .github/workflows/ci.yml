@@ -282,10 +282,19 @@ jobs:
             package-lock.json
             webapp/package-lock.json
             schema-miniapp/package-lock.json
+            shared/package-lock.json
       - run: npm ci
       - run: npx prisma generate
       - run: npm ci --prefix webapp
       - run: npm ci --prefix schema-miniapp
+      # shared тоже линтуется храповиком, а зависимости ему не ставили —
+      # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
+      # без node_modules разрешают TS иначе, чем локально. Итог: файл
+      # shared/ проходил локальный прогон и краснел в CI (реальный случай
+      # 2026-08 — лишний каст в useConfetti.test.tsx). Разные вердикты у
+      # одного гейта хуже, чем строгий гейт: локальной проверке перестают
+      # верить.
+      - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
 
   miniapp:

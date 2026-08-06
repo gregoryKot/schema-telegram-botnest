@@ -44,7 +44,7 @@ interface Props {
 
 export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const navigate = useNavigate();
-  const goBack = useHistorySheet(onClose);
+  const goBack = useHistorySheet(onClose); // явный onClose() у navigate() ниже убран — двойной вызов, see useHistorySheet.ts
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
@@ -101,7 +101,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
               {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
             </button>
             <button
-              onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+              onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
               className="ex-btn ex-btn-primary"
               style={{ width: '100%' }}
             >
@@ -145,7 +145,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
         </button>
         <button
-          onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+          onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
           className="ex-btn ex-btn-primary"
         >
           Познакомиться →
