@@ -1,19 +1,17 @@
 import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
 import { telemetryUrl } from './utils/telemetryUrl';
-import type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuickPracticeId } from '../../shared/src/practices/quickPractices';
-import type {
-  UserSchemaNote,
-  UserModeNote,
-  SaveSchemaNoteBody,
-  SaveModeNoteBody,
-} from '../../shared/src/notes/types';
+// Типы, чьи методы переехали в shared-фабрику, здесь остались только ре-экспортом.
 export type {
   UserSchemaNote,
   UserModeNote,
 } from '../../shared/src/notes/types';
 import { exercisesApi } from './apiExercises';
+import {
+  buildSharedApi,
+  type ApiTransport,
+} from '../../shared/src/api/sharedApi';
 import {
   BASE,
   authedFetch,
@@ -27,20 +25,7 @@ import {
 // Типы вынесены в ./apiTypes и ре-экспортируются здесь, чтобы импорты
 // потребителей из '../api' продолжали работать без изменений.
 export * from './apiTypes';
-import type {
-  UserSettings,
-  StreakData,
-  Achievement,
-  UserPractice,
-  PairsData,
-  PracticePlan,
-  UserTask,
-  TherapyRelationInfo,
-  TherapistNote,
-  ClientConceptualization,
-  YsqHistoryEntry,
-  ClientData,
-} from './apiTypes';
+import type { StreakData, ClientConceptualization } from './apiTypes';
 
 // Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
 // прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
@@ -88,34 +73,15 @@ async function rawSaveRating(item: OutboxItem): Promise<SaveRatingResult> {
   return res.json() as Promise<SaveRatingResult>;
 }
 
-export const api = {
-  init: (tzOffset?: number) => post('/api/init', { tzOffset }),
+// Единый транспорт: общие методы приезжают из shared-фабрики (правило №3).
+const transport: ApiTransport = { get, post, postJson, del };
 
-  // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
-  // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
-  trackEvent: (name: string, meta?: Record<string, unknown>): void => {
-    void post('/api/event', { name, meta }).catch(() => undefined);
-  },
-  // Анонимные события (practice_link_click и т.п.) — без initData, userId=null
-  // на сервере. Парно webapp.api.trackPublicEvent (правило №3).
-  trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
-    void post('/api/public-event', { name, meta }).catch(() => undefined);
-  },
+export const api = {
+  // Общие с webapp методы — из shared-фабрики (правило №3).
+  ...buildSharedApi(transport),
 
   // Случайная фраза Здорового взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
-  getDisclaimer: () => get<{ accepted: boolean }>('/api/disclaimer'),
-  acceptDisclaimer: () => post('/api/disclaimer', {}),
-  getYsqProgress: () =>
-    get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
-  saveYsqProgress: (answers: number[], page: number) =>
-    post('/api/ysq-progress', { answers, page }),
-  deleteYsqProgress: () => del('/api/ysq-progress'),
-  needs: () => get<import('./types').Need[]>('/api/needs'),
-  ratings: (date?: string) =>
-    get<Record<string, number>>(
-      `/api/ratings${date ? `?date=${encodeURIComponent(date)}` : ''}`,
-    ),
   saveRating: async (
     needId: string,
     value: number,
@@ -141,169 +107,6 @@ export const api = {
       return { ok: true, allDone: false };
     }
   },
-  history: (days = 7) =>
-    get<import('./types').DayHistory[]>(`/api/history?days=${days}`),
-  getSettings: () => get<UserSettings>('/api/settings'),
-  updateSettings: (body: Partial<UserSettings>) => post('/api/settings', body),
-  getAchievements: () => get<Achievement[]>('/api/achievements'),
-  getNote: (date: string) =>
-    get<{ text: string | null; tags: string[] }>(`/api/note?date=${date}`),
-  saveNote: (date: string, text: string, tags?: string[]) =>
-    post('/api/note', { date, text, tags }),
-  getStreak: () => get<StreakData>('/api/streak'),
-  recordActivity: () => post('/api/activity', {}),
-  getInsights: () =>
-    get<{
-      weeklyStats: Array<{
-        needId: string;
-        avg: number | null;
-        trend: '↑' | '↓' | '→';
-      }>;
-      bestDayOfWeek: string | null;
-      worstDayOfWeek: string | null;
-      totalDays: number;
-    }>('/api/insights'),
-  getExport: () => get<{ text: string }>('/api/export'),
-  getJourney: () =>
-    get<import('../../shared/src/journey/journeyMeta').JourneyData>(
-      '/api/journey',
-    ),
-  getPractices: (needId: string) =>
-    get<UserPractice[]>(`/api/practices?needId=${needId}`),
-  addPractice: (needId: string, text: string) =>
-    post('/api/practices', { needId, text }),
-  deletePractice: (id: number) => del(`/api/practices/${id}`),
-  deleteAllUserData: () => del('/api/user'),
-  getPendingPlans: () => get<PracticePlan[]>('/api/plan/pending'),
-  getPlanHistory: (days = 30) =>
-    get<PracticePlan[]>(`/api/plans/history?days=${days}`),
-  createPlan: (
-    needId: string,
-    practiceText: string,
-    reminderUtcHour?: number,
-  ) => post('/api/plan', { needId, practiceText, reminderUtcHour }),
-  checkinPlan: (id: number, done: boolean) =>
-    post(`/api/plan/${id}/checkin`, { done }),
-  getPair: () => get<PairsData>('/api/pair'),
-  createPairInvite: () =>
-    postJson<{ code: string; url: string }>('/api/pair/invite', {}),
-  joinPair: (code: string) => post('/api/pair/join', { code }),
-  leavePair: (code: string) => del('/api/pair', { code }),
-  getChildhoodRatings: () =>
-    get<Record<string, number>>('/api/childhood-ratings'),
-  saveChildhoodRatings: (ratings: Record<string, number>) =>
-    post('/api/childhood-ratings', ratings),
-  getYsqResult: () =>
-    get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
-  saveYsqResult: (answers: number[]) => post('/api/ysq-result', { answers }),
-  deleteYsqResult: () => del('/api/ysq-result'),
-  getYsqHistory: () => get<YsqHistoryEntry[]>('/api/ysq-history'),
-
-  // ─── Profile ────────────────────────────────────────────────────────────────
-  getProfile: () => get<import('./types').UserProfile>('/api/profile'),
-  updateName: (name: string) =>
-    postJson<{ ok: boolean }>('/api/profile/name', { name }),
-
-  // ─── Diary ──────────────────────────────────────────────────────────────────
-  getSchemaDiary: () =>
-    get<import('./types').SchemaDiaryEntry[]>('/api/diary/schema'),
-  createSchemaDiary: (data: {
-    trigger: string;
-    emotions: import('./types').EmotionEntry[];
-    thoughts?: string;
-    bodyFeelings?: string;
-    actualBehavior?: string;
-    schemaIds: string[];
-    schemaOrigin?: string;
-    healthyView?: string;
-    realProblems?: string;
-    excessiveReactions?: string;
-    healthyBehavior?: string;
-  }) => postJson<import('./types').SchemaDiaryEntry>('/api/diary/schema', data),
-  deleteSchemaDiary: (id: number) => del(`/api/diary/schema/${id}`),
-
-  getModeDiary: () =>
-    get<import('./types').ModeDiaryEntry[]>('/api/diary/mode'),
-  createModeDiary: (data: {
-    modeId: string;
-    situation: string;
-    thoughts?: string;
-    feelings?: string;
-    bodyFeelings?: string;
-    actions?: string;
-    actualNeed?: string;
-    childhoodMemories?: string;
-    healthyResponse?: string;
-  }) => postJson<import('./types').ModeDiaryEntry>('/api/diary/mode', data),
-  deleteModeDiary: (id: number) => del(`/api/diary/mode/${id}`),
-
-  getGratitudeDiary: () =>
-    get<import('./types').GratitudeDiaryEntry[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) =>
-    postJson<import('./types').GratitudeDiaryEntry>('/api/diary/gratitude', {
-      date,
-      items,
-    }),
-  deleteGratitudeDiary: (id: number) => del(`/api/diary/gratitude/${id}`),
-
-  // ─── Therapy / Tasks ─────────────────────────────────────────────────────────
-  createTherapyInvite: () =>
-    postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
-  getTherapyRelation: () =>
-    get<TherapyRelationInfo | null>('/api/therapy/relation'),
-  joinTherapy: (code: string) => post('/api/therapy/join', { code }),
-  leaveTherapy: () => del('/api/therapy/relation'),
-  getTherapyClients: () => get<TherapyClientSummary[]>('/api/therapy/clients'),
-  addClientManually: (clientTelegramId: number) =>
-    postJson<TherapyClientSummary[]>('/api/therapy/clients/add', {
-      clientTelegramId,
-    }),
-  addVirtualClient: (name: string) =>
-    postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', { name }),
-  removeClient: (clientId: number) => del(`/api/therapy/clients/${clientId}`),
-  renameClient: (clientId: number, alias: string) =>
-    post(`/api/therapy/rename-client/${clientId}`, { alias }),
-  requestYsq: (clientId: number) =>
-    post(`/api/therapy/request-ysq/${clientId}`, {}),
-  becomeTherapist: (code: string) =>
-    postJson<{ ok: boolean }>('/api/therapy/become-therapist', { code }),
-  getTherapistRequest: () =>
-    get<{ id: number; status: string; rejectReason: string | null } | null>(
-      '/api/therapy/request',
-    ),
-  submitTherapistRequest: (body: {
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message?: string;
-  }) => postJson<{ ok: boolean }>('/api/therapy/request', body),
-  // Запомнить предпочтение старта терапевта (кабинет vs клиентский режим).
-  setTherapistView: (on: boolean) =>
-    postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
-  // Отказаться от роли терапевта → снова CLIENT.
-  resignTherapist: () => del('/api/therapy/therapist-role'),
-  createTask: (body: {
-    type: string;
-    text: string;
-    targetDays?: number;
-    needId?: string;
-    dueDate?: string;
-    clientId?: number;
-  }) => postJson<UserTask>('/api/therapy/tasks', body),
-  getTasks: () => get<UserTask[]>('/api/therapy/tasks'),
-  getTaskHistory: () => get<UserTask[]>('/api/therapy/tasks/history'),
-  completeTask: (id: number, done: boolean) =>
-    post(`/api/therapy/tasks/${id}/complete`, { done }),
-  getTherapyTasksForClient: (clientId: number) =>
-    get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
-
-  // ─── Therapist Notes ─────────────────────────────────────────────────────────
-  getTherapistNotes: (clientId: number) =>
-    get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
-  createTherapistNote: (clientId: number, date: string, text: string) =>
-    postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
-  deleteTherapistNote: (noteId: number) => del(`/api/therapy/notes/${noteId}`),
-
   // ─── Case Conceptualization ──────────────────────────────────────────────────
   getConceptualization: (clientId: number) =>
     get<ClientConceptualization | null>(
@@ -327,53 +130,7 @@ export const api = {
       `/api/therapy/conceptualization/${clientId}`,
       body,
     ),
-  updateSessionInfo: (
-    clientId: number,
-    body: {
-      therapyStartDate?: string | null;
-      nextSession?: string | null;
-      meetingDays?: number[];
-    },
-  ) => post(`/api/therapy/session-info/${clientId}`, body),
-
-  // ─── Client YSQ / profile data ───────────────────────────────────────────────
-  getTherapyClientData: (clientId: number) =>
-    get<ClientData>(`/api/therapy/client-data/${clientId}`),
-
-  // ─── Schema & Mode Notes ─────────────────────────────────────────────────────
-  getSchemaNotes: () => get<UserSchemaNote[]>('/api/schema-notes'),
-  saveSchemaNote: (body: SaveSchemaNoteBody) => post('/api/schema-notes', body),
-  getModeNotes: () => get<UserModeNote[]>('/api/mode-notes'),
-  saveModeNote: (body: SaveModeNoteBody) => post('/api/mode-notes', body),
-
   ...exercisesApi,
-
-  // ─── Therapist client notes ──────────────────────────────────────────────────
-  getClientSchemaNotes: (clientId: number) =>
-    get<
-      Array<{
-        schemaId: string;
-        triggers: string;
-        feelings: string;
-        thoughts: string;
-        origins: string;
-        reality: string;
-        healthyView: string;
-        behavior: string;
-      }>
-    >(`/api/therapy/client/${clientId}/schema-notes`),
-  getClientModeNotes: (clientId: number) =>
-    get<
-      Array<{
-        modeId: string;
-        triggers: string;
-        feelings: string;
-        thoughts: string;
-        needs: string;
-        behavior: string;
-      }>
-    >(`/api/therapy/client/${clientId}/mode-notes`),
-
   // ─── Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») ─────────────
   recordPracticeSession: (tool: QuickPracticeId) =>
     postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
@@ -382,7 +139,6 @@ export const api = {
   // в jscpd-храповике как клон, каждая новая строка удлиняет дубль.
   getPracticeSessions: () =>
     get<Record<QuickPracticeId, number>>('/api/practice-sessions'),
-
   // ─── Outbox ──────────────────────────────────────────────────────────────────
   // Отправляет отложенные оценки (см. utils/outbox.ts). Вызывается при старте
   // приложения и при возврате online — см. App.tsx.
