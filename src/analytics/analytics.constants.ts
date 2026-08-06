@@ -58,6 +58,8 @@
 //                         QuickActionId).
 //   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
 //                         meta.hidden + meta.surface: 'plus'|'tools').
+//   quick_action_move   — переставил пункт в настройке меню (meta.action +
+//                         meta.surface + meta.dir: 'up'|'down').
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -92,6 +94,7 @@ export const ANALYTICS_EVENTS = [
   'plus_open',
   'plus_action',
   'quick_action_toggle',
+  'quick_action_move',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -245,4 +248,6 @@ export {
   type QuickActionId,
   QUICK_ACTION_SURFACES,
   type QuickActionSurface,
+  QUICK_ACTION_MOVE_DIRS,
+  type QuickActionMoveDir,
 } from './quick-actions.constants';

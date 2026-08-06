@@ -14,6 +14,7 @@ import {
   WEB_BANNER_IDS,
   QUICK_ACTION_IDS,
   QUICK_ACTION_SURFACES,
+  QUICK_ACTION_MOVE_DIRS,
 } from '../../analytics/analytics.constants';
 
 // DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
@@ -62,4 +63,7 @@ export const QUICK_ACTION_ID_SET: ReadonlySet<string> = new Set(
 );
 export const QUICK_ACTION_SURFACE_SET: ReadonlySet<string> = new Set(
   QUICK_ACTION_SURFACES,
+);
+export const QUICK_ACTION_MOVE_DIR_SET: ReadonlySet<string> = new Set(
+  QUICK_ACTION_MOVE_DIRS,
 );
