@@ -39,9 +39,18 @@ interface Props {
   modeId: string;
   onClose: () => void;
   onComplete?: () => void;
+  /** Принудительно открыть портрет режима, даже если он уже был показан
+   *  раньше — используется ссылкой «О режиме» из PatternSheet (справка,
+   *  а не тихий переход сразу к вопросам). */
+  forcePortrait?: boolean;
 }
 
-export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
+export function ModeIntroSheet({
+  modeId,
+  onClose,
+  onComplete,
+  forcePortrait,
+}: Props) {
   const tr = useTr();
   const mode = getModeById(modeId);
   const card = getModeCard(modeId);
@@ -49,7 +58,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   // но честно подписать кнопку при ручном возврате («Про режим» в шапке).
   const seen = Boolean(localStorage.getItem(SEEN_KEY(modeId)));
   const [showPortrait, setShowPortrait] = useState(
-    () => Boolean(card) && !seen,
+    () => Boolean(card) && (forcePortrait || !seen),
   );
   if (!mode) return null;
   const accentColor = mode.groupColor ?? 'var(--accent)';
