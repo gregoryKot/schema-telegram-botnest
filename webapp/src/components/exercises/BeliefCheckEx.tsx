@@ -92,7 +92,7 @@ export function BeliefCheckEx({
   const [reframe, setReframe] = useState('');
   const [forInput, setForInput] = useState('');
   const [againstInput, setAgainstInput] = useState('');
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(false); const [saving, setSaving] = useState(false); const [saveError, setSaveError] = useState(false); // createBeliefCheck раньше глотало отказ и всё равно показывало «Готово»
   const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getBeliefChecks>>>([]);
   const beliefRef = useRef<HTMLTextAreaElement>(null);
   const reframeRef = useRef<HTMLTextAreaElement>(null);
@@ -131,18 +131,13 @@ export function BeliefCheckEx({
   }
 
   async function saveAll() {
+    setSaving(true); setSaveError(false);
     try {
-      await api.createBeliefCheck({
-        belief,
-        evidenceFor: forList,
-        evidenceAgainst: againstList,
-        reframe,
-      });
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-    onComplete?.();
-    setDone(true);
+      await api.createBeliefCheck({ belief, evidenceFor: forList, evidenceAgainst: againstList, reframe });
+      onComplete?.();
+      setDone(true);
+    } catch { setSaveError(true); }
+    finally { setSaving(false); }
   }
 
   const pastChecks = history.filter((h) => h.belief !== belief).slice(0, 3);
@@ -482,6 +477,7 @@ export function BeliefCheckEx({
             rows={6}
           />
           {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
+          {saveError && <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
           <div className="ex-foot">
             <button className="ex-btn ex-btn-ghost" onClick={() => setStep(2)}>
               <GlyphArrowLeft /> Назад
@@ -489,10 +485,10 @@ export function BeliefCheckEx({
             <span className="spacer" />
             <button
               className="ex-btn ex-btn-primary"
-              disabled={!reframe.trim()}
+              disabled={!reframe.trim() || saving}
               onClick={saveAll}
             >
-              Сохранить и закрыть <GlyphCheck />
+              {saving ? 'Сохраняю...' : <>Сохранить и закрыть <GlyphCheck /></>}
             </button>
           </div>
         </>
