@@ -3,8 +3,7 @@ import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
+import { INTRO_MODE_ID } from '../components/ModesHero';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import {
@@ -20,6 +19,7 @@ import { SchemasTab } from './schemas/SchemasTab';
 import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 export function SchemasSection({
   onOpenSchema,
@@ -39,9 +39,9 @@ export function SchemasSection({
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
-  const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
+  const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
+  const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
     null,
@@ -75,6 +75,7 @@ export function SchemasSection({
     api
       .getSchemaDiary()
       .then((entries) => {
+        setSchemaEntries(entries);
         setWeekSummary(weekSchemaSummary(entries));
         setSchemaFreq(weekSchemaFrequency(entries));
       })
@@ -82,6 +83,7 @@ export function SchemasSection({
     api
       .getModeDiary()
       .then((entries) => {
+        setModeEntries(entries);
         setModeSummary(weekModeSummary(entries));
         setModeFreq(weekModeFrequency(entries));
       })
@@ -214,10 +216,11 @@ export function SchemasSection({
             ysqProgressAnswered={ysqProgressAnswered}
             weekSummary={weekSummary}
             schemaFreq={schemaFreq}
+            schemaEntries={schemaEntries}
+            setSchemaEntries={setSchemaEntries}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowSchemaPicker={() => setShowSchemaPicker(true)}
-            onOpenSchemaDetail={(id) => setDetailSchemaId(id)}
           />
         )}
 
@@ -228,10 +231,12 @@ export function SchemasSection({
             myModeIds={myModeIds}
             modeSummary={modeSummary}
             modeFreq={modeFreq}
+            modeEntries={modeEntries}
+            setModeEntries={setModeEntries}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowModePicker={() => setShowModePicker(true)}
-            onOpenModeIntro={(id) => setIntroModeId(id)}
+            onMeetCritic={() => setIntroModeId(INTRO_MODE_ID)}
           />
         )}
 
@@ -270,21 +275,6 @@ export function SchemasSection({
         <ModeIntroSheet
           modeId={introModeId}
           onClose={() => setIntroModeId(null)}
-        />
-      )}
-
-      {detailSchemaId && (
-        <SchemaDetailSheet
-          schemaId={detailSchemaId}
-          onClose={() => setDetailSchemaId(null)}
-          onOpenDiary={() => setIntroSchemaId(detailSchemaId)}
-        />
-      )}
-
-      {introSchemaId && (
-        <SchemaIntroSheet
-          schemaId={introSchemaId}
-          onClose={() => setIntroSchemaId(null)}
         />
       )}
 

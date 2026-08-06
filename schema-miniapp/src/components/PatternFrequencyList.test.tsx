@@ -97,6 +97,39 @@ describe('PatternFrequencyList — клики', () => {
   });
 });
 
+describe('PatternFrequencyList — статус карточки в строке', () => {
+  it('status задан — показывается под названием', () => {
+    render(
+      <PatternFrequencyList
+        groups={[
+          {
+            title: 'Г',
+            items: [
+              { id: 'x', name: 'X', freq: 0, status: 'карточка заполнена' },
+            ],
+          },
+        ]}
+        onSelect={() => {}}
+        addLabel="Добавить"
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.getByText('карточка заполнена')).toBeTruthy();
+  });
+
+  it('status не задан — строка рендерится без второй строки текста', () => {
+    render(
+      <PatternFrequencyList
+        groups={[{ title: 'Г', items: [{ id: 'x', name: 'X', freq: 0 }] }]}
+        onSelect={() => {}}
+        addLabel="Добавить"
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/карточка/)).toBeNull();
+  });
+});
+
 describe('PatternFrequencyList — подсказка (hint)', () => {
   it('anyFreq=false — hint не показывается, даже если передан', () => {
     render(

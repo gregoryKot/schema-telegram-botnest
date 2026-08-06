@@ -1,15 +1,11 @@
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PatternsHero } from '../../components/PatternsHero';
-import {
-  PatternFrequencyList,
-  FreqGroup,
-} from '../../components/PatternFrequencyList';
-import { MyCardsSection } from '../../components/myCards/MyCardsSection';
-import { WeekTopSummary } from '../../utils/patternsSummary';
-import { ChipsSkeleton } from './CatalogParts';
-import { shortName } from './utils';
 import { SchemasSectionProps } from './types';
+import { SchemasPatternSection } from './SchemasPatternSection';
+import { WeekTopSummary } from '../../utils/patternsSummary';
 import { YsqStatusCard } from './YsqStatusCard';
+import type { SchemaDiaryEntry } from '../../types';
 
 interface SchemasTabProps {
   profileLoading: boolean;
@@ -18,10 +14,11 @@ interface SchemasTabProps {
   ysqProgressAnswered: number | null;
   weekSummary: WeekTopSummary | null;
   schemaFreq: Record<string, number>;
+  schemaEntries: SchemaDiaryEntry[];
+  setSchemaEntries: Dispatch<SetStateAction<SchemaDiaryEntry[]>>;
   onOpenSchema: SchemasSectionProps['onOpenSchema'];
   onOpenDiaries?: () => void;
   onShowSchemaPicker: () => void;
-  onOpenSchemaDetail: (id: string) => void;
 }
 
 export function SchemasTab({
@@ -31,24 +28,14 @@ export function SchemasTab({
   ysqProgressAnswered,
   weekSummary,
   schemaFreq,
+  schemaEntries,
+  setSchemaEntries,
   onOpenSchema,
   onOpenDiaries,
   onShowSchemaPicker,
-  onOpenSchemaDetail,
 }: SchemasTabProps) {
   const hasSchemas = allSchemaIds.length > 0 || !!ysqCompletedAt;
-
-  // Схемы пользователя, сгруппированные по домену, с недельной частотой.
-  const groups: FreqGroup[] = SCHEMA_DOMAINS.map((domain) => ({
-    title: domain.domain,
-    items: domain.schemas
-      .filter((sc) => allSchemaIds.includes(sc.id))
-      .map((sc) => ({
-        id: sc.id,
-        name: shortName(sc.name),
-        freq: schemaFreq[sc.id] ?? 0,
-      })),
-  })).filter((g) => g.items.length > 0);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <>
@@ -61,7 +48,7 @@ export function SchemasTab({
           onStartTest={() => onOpenSchema({ startTest: true })}
           onOpenLibrary={() => onOpenSchema()}
           onPickManually={onShowSchemaPicker}
-          onOpenSchemaDetail={(id) => onOpenSchemaDetail(id)}
+          onOpenSchemaDetail={setOpenId}
           onOpenDiaries={onOpenDiaries}
         />
       )}
@@ -75,42 +62,18 @@ export function SchemasTab({
         />
       )}
 
-      {/* Мои схемы по группам с недельной частотой (дизайн-макет «Паттерны») */}
-      {hasSchemas &&
-        (profileLoading ? (
-          <ChipsSkeleton widths={[80, 100, 90, 110]} />
-        ) : groups.length > 0 ? (
-          <PatternFrequencyList
-            groups={groups}
-            selectedId={weekSummary?.id}
-            onSelect={onOpenSchemaDetail}
-            addLabel="+ Добавить схему"
-            onAdd={onShowSchemaPicker}
-            anyFreq={Object.values(schemaFreq).some((v) => v > 0)}
-            hint="Полоска рядом со схемой — сколько дней за неделю она всплывала в дневнике. Это наблюдение, а не оценка."
-          />
-        ) : (
-          <button
-            onClick={onShowSchemaPicker}
-            style={{
-              width: '100%',
-              padding: 15,
-              background: 'transparent',
-              border: '1.5px dashed var(--border-color)',
-              borderRadius: 14,
-              color: 'var(--text-sub)',
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-            }}
-          >
-            + Добавить схему
-          </button>
-        ))}
-
-      {/* Заполненные карточки схем — открыть/отредактировать/поделиться */}
-      <MyCardsSection kind="schema" />
+      <SchemasPatternSection
+        profileLoading={profileLoading}
+        hasSchemas={hasSchemas}
+        allSchemaIds={allSchemaIds}
+        schemaFreq={schemaFreq}
+        schemaEntries={schemaEntries}
+        setSchemaEntries={setSchemaEntries}
+        weekSummary={weekSummary}
+        onShowSchemaPicker={onShowSchemaPicker}
+        openId={openId}
+        onOpenChange={setOpenId}
+      />
     </>
   );
 }
