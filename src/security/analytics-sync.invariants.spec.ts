@@ -98,6 +98,18 @@ const BACKEND_ONLY: Record<string, string> = {
   mode_doubt_switched:
     'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из ModeDoubtButton.tsx (оба фронта) при нажатии «Это ближе»',
+  account_link_started:
+    'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useAccountLink.ts (мини-апп) при нажатии «У меня уже есть ' +
+    'аккаунт»',
+  account_link_confirmed:
+    'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из LinkDevicePage.tsx (сайт) — подтверждение происходит в ' +
+    'браузере, а не в мессенджере, поэтому фронт тут только один',
+  account_link_failed:
+    'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
+    'не ответил',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -124,10 +136,10 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
   it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
     // Потолок поднят с 11 до 13 (mode_entry_saved/mode_test_completed, 2026-07),
     // затем до 15 (warm_words_open/mode_chain_followup, 2026-08), затем до 17
-    // (mode_doubt_opened/mode_doubt_switched, 2026-08) осознанно: те же
-    // кросс-фронтовые события через именованные константы — тот же
-    // легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
-    // не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(17);
+    // (mode_doubt_opened/mode_doubt_switched, 2026-08), затем до 20
+    // (account_link_*, 2026-08) осознанно: те же кросс-фронтовые события
+    // через именованные константы — тот же легитимный паттерн, что и
+    // share_card/onboarding_step/mode_card_saved, не обход правила.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(20);
   });
 });

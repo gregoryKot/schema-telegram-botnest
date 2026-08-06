@@ -20,6 +20,8 @@ vi.mock('../api', () => ({
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getYsqProgress: vi.fn(),
+    getSchemaNotes: vi.fn(),
+    getModeNotes: vi.fn(),
     updateSettings: vi.fn().mockResolvedValue(undefined),
   },
 }));
@@ -53,9 +55,6 @@ vi.mock('../components/ModeIntroSheet', () => ({
 vi.mock('../components/SchemaIntroSheet', () => ({
   SchemaIntroSheet: () => <div data-testid="schema-intro" />,
 }));
-vi.mock('../components/SchemaDetailSheet', () => ({
-  SchemaDetailSheet: () => <div data-testid="schema-detail" />,
-}));
 vi.mock('../components/NeedDetailSheet', () => ({
   NeedDetailSheet: () => <div data-testid="need-detail" />,
 }));
@@ -88,6 +87,8 @@ beforeEach(() => {
   mockApi.getSchemaDiary.mockResolvedValue([]);
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getYsqProgress.mockResolvedValue({ answers: [] });
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getModeNotes.mockResolvedValue([]);
 });
 afterEach(cleanup);
 

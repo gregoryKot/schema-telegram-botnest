@@ -122,8 +122,9 @@ export const TEMPLATES: Template[] = [
   },
 ];
 
+let templateInsertSeq = 0; // Date.now() (1мс) совпадает при двух вставках подряд → id сталкивались бы.
 export function templateToGraph(tpl: Template) {
-  const stamp = Date.now();
+  const stamp = `${Date.now()}_${templateInsertSeq++}`;
   const nodes: ModeMapNode[] = tpl.nodes.map((n, i) => {
     const size = NODE_DEFAULT_SIZES[n.type] ?? {};
     return { id: `${n.id}_${stamp}_${i}`, type: n.type, position: { x: n.x, y: n.y }, data: n.data, ...size };

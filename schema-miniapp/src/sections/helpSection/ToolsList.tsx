@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { ToolRow } from '../../components/ToolRow';
-import { plural } from '../today/helpers';
+import { buildToolRows, ToolRowsProps } from './toolRows';
+import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
+import { CustomizeButton } from '../../components/plusMenu/CustomizeButton';
+import type { QuickActionId } from '../../utils/quickActions';
+import {
+  getHiddenActions,
+  setActionHidden,
+  TOOLS_ACTIONS_HIDDEN_KEY,
+} from '../../utils/quickActionPrefs';
 
-// Блок «Инструменты» экрана «Здесь и сейчас» — 8 строк-переходов в отдельные
-// упражнения/списки. Вынесено из HelpSection.tsx (правило №10, храповик
-// размера файла — долг обязан таять). Поведение, порядок строк, index
-// (каскадная анимация) и тексты не менялись.
-interface Props {
-  tasksCount: number;
-  practiceCount?: number | null;
-  planCount?: number | null;
-  childhoodDone: boolean;
+// Строки блока «Инструменты» живут в toolRows.ts — общий источник для
+// рендера и для листа настройки видимости (QuickActionCustomizeSheet, та
+// же инфраструктура, что у меню «плюс», правило «одна механика — компонент»).
+interface Props extends ToolRowsProps {
   onOpenTasks: () => void;
   onOpenPractices: () => void;
   onOpenPlans: () => void;
@@ -22,103 +26,89 @@ interface Props {
   onOpenWarmWords: () => void;
 }
 
-export function ToolsList({
-  tasksCount,
-  practiceCount,
-  planCount,
-  childhoodDone,
-  onOpenTasks,
-  onOpenPractices,
-  onOpenPlans,
-  onOpenBeliefCheck,
-  onOpenPhraseCheck,
-  onOpenSafePlace,
-  onOpenLetterToSelf,
-  onOpenFlashcard,
-  onOpenChildhoodWheel,
-  onOpenWarmWords,
-}: Props) {
+// props целиком, без деструктуризации: buildToolRows(props) берёт свои 4
+// поля (ToolRowsProps), callbacks — свои 10 колбэков. Короче сигнатура —
+// короче файл (файл уже в бейслайне храповика размера, правило №10).
+export function ToolsList(props: Props) {
+  const [hidden, setHidden] = useState<string[]>(() =>
+    getHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY),
+  );
+  const [showCustomize, setShowCustomize] = useState(false);
+  const callbacks: Partial<Record<QuickActionId, () => void>> = {
+    phrase_check: props.onOpenPhraseCheck,
+    tasks: props.onOpenTasks,
+    practices: props.onOpenPractices,
+    plans: props.onOpenPlans,
+    belief_check: props.onOpenBeliefCheck,
+    safe_place: props.onOpenSafePlace,
+    letter_to_self: props.onOpenLetterToSelf,
+    flashcard: props.onOpenFlashcard,
+    childhood_wheel: props.onOpenChildhoodWheel,
+    warm_words: props.onOpenWarmWords,
+  };
+  const rows = buildToolRows(props);
+  const visibleRows = rows.filter((r) => !hidden.includes(r.id));
+  function handleToggle(id: string, nextHidden: boolean) {
+    setActionHidden(TOOLS_ACTIONS_HIDDEN_KEY, id, nextHidden);
+    setHidden((prev) =>
+      nextHidden ? [...prev, id] : prev.filter((x) => x !== id),
+    );
+  }
   return (
     <>
-      <div className="section-label" style={{ margin: '8px 4px -4px' }}>
-        Инструменты
+      <div
+        style={{
+          margin: '8px 4px -4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div className="section-label">Инструменты</div>
+        <CustomizeButton
+          label="Настроить"
+          ariaLabel="Настроить список инструментов"
+          onClick={() => setShowCustomize(true)}
+        />
       </div>
-      <ToolRow
-        label="Критик или забота?"
-        sub="Проверить фразу внутреннего голоса"
-        index={0}
-        onClick={onOpenPhraseCheck}
-      />
-      <ToolRow
-        label="Мои цели"
-        sub={
-          tasksCount === 0
-            ? 'Нет активных'
-            : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`
-        }
-        index={1}
-        onClick={onOpenTasks}
-      />
-      <ToolRow
-        label="Практики"
-        sub={
-          practiceCount == null
-            ? undefined
-            : practiceCount === 0
-              ? 'Нет практик'
-              : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-        }
-        index={2}
-        onClick={onOpenPractices}
-      />
-      <ToolRow
-        label="Планы"
-        sub={
-          planCount == null
-            ? undefined
-            : planCount === 0
-              ? 'История пуста'
-              : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-        }
-        index={3}
-        onClick={onOpenPlans}
-      />
-      <ToolRow
-        label="Проверка убеждений"
-        sub="Правда ли это?"
-        index={4}
-        onClick={onOpenBeliefCheck}
-      />
-      <ToolRow
-        label="Безопасное место"
-        sub="Ресурс в тревожный момент"
-        index={5}
-        onClick={onOpenSafePlace}
-      />
-      <ToolRow
-        label="Письмо себе"
-        sub="Уязвимому Ребёнку"
-        index={6}
-        onClick={onOpenLetterToSelf}
-      />
-      <ToolRow
-        label="Схема включилась"
-        sub="5 шагов чтобы разобраться"
-        index={7}
-        onClick={onOpenFlashcard}
-      />
-      <ToolRow
-        label="Колесо детства"
-        sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-        index={8}
-        onClick={onOpenChildhoodWheel}
-      />
-      <ToolRow
-        label="Тёплые слова"
-        sub="Слова поддержки себе"
-        index={9}
-        onClick={onOpenWarmWords}
-      />
+
+      {visibleRows.length === 0 ? (
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-sub)',
+            lineHeight: 1.5,
+            padding: 4,
+          }}
+        >
+          Все инструменты скрыты. Вернуть их можно через «Настроить» выше.
+        </div>
+      ) : (
+        visibleRows.map((row, index) => (
+          <ToolRow
+            key={row.id}
+            label={row.label}
+            sub={row.sub}
+            index={index}
+            onClick={() => callbacks[row.id]?.()}
+          />
+        ))
+      )}
+      {showCustomize && (
+        <QuickActionCustomizeSheet
+          title="Какие инструменты показывать"
+          surface="tools"
+          actions={rows.map((r) => ({
+            id: r.id,
+            emoji: r.emoji,
+            label: r.label,
+            sub: r.sub ?? '',
+          }))}
+          hidden={hidden}
+          onToggle={handleToggle}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
     </>
   );
 }

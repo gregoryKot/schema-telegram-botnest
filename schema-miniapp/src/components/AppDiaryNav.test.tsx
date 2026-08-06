@@ -4,7 +4,7 @@
 // и т.п.) уже тестируются отдельно — здесь мокаем их и проверяем ТОЛЬКО
 // правило видимости: любой открытый оверлей (sheets.*) прячет пилюлю/нав,
 // открытие/закрытие карточки записи через onSave зовёт правильный api.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   render,
   screen,
@@ -21,6 +21,7 @@ vi.mock('../api', () => ({
     createSchemaDiary: vi.fn().mockResolvedValue(undefined),
     createModeDiary: vi.fn().mockResolvedValue(undefined),
     createGratitudeDiary: vi.fn().mockResolvedValue(undefined),
+    trackEvent: vi.fn(),
   },
 }));
 vi.mock('./diary/SchemaEntrySheet', () => ({
@@ -70,10 +71,35 @@ vi.mock('./diary/GratitudeEntrySheet', () => ({
     </div>
   ),
 }));
+// Реальные оверлеи (BeliefCheck и т.п.) уже под своими тестами — здесь важна
+// только диспетчеризация id → активный оверлей (см. QuickActionOverlays.test.tsx
+// для проверки самой маршрутизации).
+vi.mock('./plusMenu/QuickActionOverlays', () => ({
+  QuickActionOverlays: ({
+    active,
+    onClose,
+    onOpenTracker,
+  }: {
+    active: string | null;
+    onClose: () => void;
+    onOpenTracker: () => void;
+  }) =>
+    active ? (
+      <div>
+        <span>QuickActionOverlays:{active}</span>
+        <button onClick={onClose}>close-overlay</button>
+        <button onClick={onOpenTracker}>overlay-open-tracker</button>
+      </div>
+    ) : null,
+}));
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+beforeEach(() => {
+  localStorage.clear();
 });
 
 const emptySheets: UseSheetsReturn = {
@@ -208,5 +234,35 @@ describe('AppDiaryNav — открытие пилюлей', () => {
     fireEvent.click(screen.getByLabelText('Быстрое действие'));
     fireEvent.click(screen.getByText('Схема'));
     expect(setNewDiaryEntry).toHaveBeenCalledWith('schema');
+  });
+
+  it('пункт «Техника «Стоп»» открывает QuickActionOverlays и прячет пилюлю/нав', () => {
+    render(<AppDiaryNav {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText('Быстрое действие'));
+    fireEvent.click(screen.getByText('Техника «Стоп»'));
+    expect(screen.getByText('QuickActionOverlays:stop')).toBeTruthy();
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    expect(screen.queryByText('Сегодня')).toBeNull();
+  });
+
+  it('закрытие оверлея возвращает пилюлю и нав', () => {
+    render(<AppDiaryNav {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText('Быстрое действие'));
+    fireEvent.click(screen.getByText('Техника «Стоп»'));
+    fireEvent.click(screen.getByText('close-overlay'));
+    expect(screen.queryByText('QuickActionOverlays:stop')).toBeNull();
+    expect(screen.getByLabelText('Быстрое действие')).toBeTruthy();
+  });
+
+  it('onOpenTracker из оверлея (flashcard) открывает trackerOverlay и закрывает оверлей', () => {
+    const open = vi.fn();
+    render(<AppDiaryNav {...baseProps({ open })} />);
+    fireEvent.click(screen.getByLabelText('Быстрое действие'));
+    fireEvent.click(screen.getByText('Схема включилась'));
+    fireEvent.click(screen.getByText('overlay-open-tracker'));
+    expect(open).toHaveBeenCalledWith('trackerOverlay', {
+      trackerNeedId: null,
+    });
+    expect(screen.queryByText('QuickActionOverlays:flashcard')).toBeNull();
   });
 });

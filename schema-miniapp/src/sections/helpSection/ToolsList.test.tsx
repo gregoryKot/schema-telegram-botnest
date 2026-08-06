@@ -1,16 +1,28 @@
 // @vitest-environment jsdom
-// ToolsList — 9 строк-переходов раздела «Здесь и сейчас». Проверяем
-// плюрализацию подписей (0/1/несколько — русские формы «цель/цели/целей»),
-// null-состояние без выдуманных чисел (правило «никаких хардкод-заглушек»:
-// count=null → подписи нет вовсе, а не «0») и что клик по строке зовёт
-// именно свой обработчик, а не соседний.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+// ToolsList — 10 строк-переходов раздела «Здесь и сейчас», собранных из
+// toolRows.ts (общий источник с листом настройки видимости). Проверяем:
+// плюрализацию подписей (0/1/несколько), null-состояние без выдуманных
+// чисел (правило «никаких хардкод-заглушек»), что клик по строке зовёт
+// именно свой обработчик, скрытие строк через «Настроить»
+// (utils/quickActionPrefs.ts) и пустое состояние, когда всё скрыто.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ToolsList } from './ToolsList';
+import { QUICK_ACTION_IDS } from '../../utils/quickActions';
+import {
+  TOOLS_ACTIONS_HIDDEN_KEY,
+  serializeHiddenActions,
+} from '../../utils/quickActionPrefs';
 
-afterEach(() => {
-  cleanup();
+vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
 });
+afterEach(cleanup);
 
 function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
   const handlers = {
@@ -23,6 +35,7 @@ function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
     onOpenLetterToSelf: vi.fn(),
     onOpenFlashcard: vi.fn(),
     onOpenChildhoodWheel: vi.fn(),
+    onOpenWarmWords: vi.fn(),
   };
   render(
     <ToolsList
@@ -98,5 +111,58 @@ describe('ToolsList — клики по строкам зовут свой об�
     const handlers = renderList();
     fireEvent.click(screen.getByText('Колесо детства'));
     expect(handlers.onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ToolsList — скрытие строк («Настроить»)', () => {
+  it('скрытая строка не рендерится, остальные видны', () => {
+    localStorage.setItem(
+      TOOLS_ACTIONS_HIDDEN_KEY,
+      serializeHiddenActions(['warm_words']),
+    );
+    renderList();
+    expect(screen.queryByText('Тёплые слова')).toBeNull();
+    expect(screen.getByText('Проверка убеждений')).toBeTruthy();
+  });
+
+  it('«Настроить» открывает лист настройки', () => {
+    renderList();
+    fireEvent.click(screen.getByText('Настроить'));
+    expect(screen.getByText('Какие инструменты показывать')).toBeTruthy();
+  });
+
+  it('toggle в листе прячет строку и пишет в localStorage', () => {
+    renderList();
+    fireEvent.click(screen.getByText('Настроить'));
+    // В листе строки помечены их label — берём именно там (после открытия
+    // на экране два «Тёплые слова»: строка списка + строка листа настройки).
+    const rows = screen.getAllByText('Тёплые слова');
+    fireEvent.click(rows[rows.length - 1]);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
+      action: 'warm_words',
+      hidden: true,
+      surface: 'tools',
+    });
+    expect(
+      serializeHiddenActions(
+        JSON.parse(localStorage.getItem(TOOLS_ACTIONS_HIDDEN_KEY) ?? '[]'),
+      ),
+    ).toBe(serializeHiddenActions(['warm_words']));
+    expect(screen.getAllByText('Проверка убеждений').length).toBeGreaterThan(0);
+  });
+
+  it('все строки скрыты — подсказка вместо списка, кнопка «Настроить» остаётся', () => {
+    localStorage.setItem(
+      TOOLS_ACTIONS_HIDDEN_KEY,
+      serializeHiddenActions([...QUICK_ACTION_IDS]),
+    );
+    renderList();
+    expect(screen.queryByText('Проверка убеждений')).toBeNull();
+    expect(
+      screen.getByText(
+        'Все инструменты скрыты. Вернуть их можно через «Настроить» выше.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('Настроить')).toBeTruthy();
   });
 });

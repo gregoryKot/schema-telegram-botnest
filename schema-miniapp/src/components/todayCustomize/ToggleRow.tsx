@@ -1,7 +1,10 @@
 import { pressable } from '../../utils/a11y';
+import { Toggle } from '../settingsSheet/ui';
 
-// Строка-тумблер листа «Настроить экран»: показывать блок или нет.
-// Вынесена из TodayCustomizeSheet (правило №10: файл дробится, а не пухнет).
+// Строка-тумблер листа «Настроить экран»: iOS-ряд внутри группы-карточки,
+// свитч справа — тот же Toggle, что в settingsSheet/ui (правило «один
+// компонент», не третья версия свитча). Клик/фокус — на строке (role=switch);
+// Toggle внутри — inert + aria-hidden, второго tab-стопа и клика нет.
 export function ToggleRow({
   emoji,
   title,
@@ -9,6 +12,7 @@ export function ToggleRow({
   on,
   onToggle,
   highlighted = false,
+  divider = false,
 }: {
   emoji: string;
   title: string;
@@ -16,46 +20,36 @@ export function ToggleRow({
   on: boolean;
   onToggle: () => void;
   highlighted?: boolean;
+  divider?: boolean;
 }) {
   return (
     <div
       {...pressable(onToggle)}
+      role="switch"
+      aria-checked={on}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        padding: '12px 14px',
-        borderRadius: 14,
+        padding: '13px 16px',
         cursor: 'pointer',
+        borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
         background: highlighted
           ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
-          : 'rgba(var(--fg-rgb),0.04)',
-        border: `1.5px solid ${
-          highlighted
-            ? 'color-mix(in srgb, var(--accent) 35%, transparent)'
-            : 'transparent'
-        }`,
+          : undefined,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
       <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>
-          {sub}
-        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{sub}</div>
       </div>
-      <span
-        style={{
-          fontSize: 15,
-          fontWeight: 800,
-          color: on ? 'var(--accent)' : 'var(--text-faint)',
-        }}
-      >
-        {on ? '✓' : '—'}
-      </span>
+      <div aria-hidden inert style={{ pointerEvents: 'none' }}>
+        <Toggle on={on} onClick={() => {}} />
+      </div>
     </div>
   );
 }

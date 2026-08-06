@@ -186,10 +186,13 @@ export function TherapistClientSheet({
           clientName={selectedClient.name ?? undefined}
           onCreated={async () => {
             setShowAssign(false);
+            // Задача уже создана на сервере — сбой этого перечитывания не
+            // должен стирать уже показанный список (был баг: .catch(() => [])
+            // обнулял clientTasks при сетевой ошибке, будто задачи пропали).
             const tasks = await api
               .getTherapyTasksForClient(selectedClient.telegramId)
-              .catch(() => []);
-            setClientTasks(tasks);
+              .catch(() => null);
+            if (tasks) setClientTasks(tasks);
           }}
           onClose={() => setShowAssign(false)}
         />

@@ -1,7 +1,7 @@
 import { Theme, toggleTheme, resetToSystemTheme } from '../../utils/theme';
-import { Row, Toggle, ThemeIcon } from './ui';
-import { SettingsLabel } from './ui';
+import { Row, Toggle, ThemeIcon, SettingsLabel } from './ui';
 import { MotionPref } from './types';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   theme: Theme;
@@ -30,6 +30,7 @@ export function AppearanceSection({
   resignBusy,
   setResignBusy,
 }: Props) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ОФОРМЛЕНИЕ</SettingsLabel>
@@ -226,8 +227,9 @@ export function AppearanceSection({
                   }}
                 >
                   Роль специалиста будет снята: кабинет и доступ к данным
-                  клиентов пропадут. Свои данные не теряешь. Заявку можно подать
-                  заново.
+                  клиентов пропадут.{' '}
+                  {tr('Свои данные не теряешь.', 'Свои данные не теряете.')}{' '}
+                  Заявку можно подать заново.
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
