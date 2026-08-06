@@ -162,10 +162,13 @@ describe('computeSafeTop — нулевые инсеты внутри мессе
     ).toBe(0);
   });
 
-  it('Android в мессенджере: кнопки не поверх контента, отступ не выдумываем', () => {
+  // Поведение изменено осознанно (2026-08): раньше на Android в мессенджере
+  // отступ не добавляли вовсе. Но кнопки клиента висят поверх контента и там —
+  // признак перекрытия не зависит от системы, поэтому очищаем полосу и здесь.
+  it('Android в мессенджере: кнопки тоже поверх контента — очищаем полосу', () => {
     expect(
       computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
-    ).toBe(0);
+    ).toBe(96);
   });
 
   it('полный экран с нулевой полосой контента — тоже «не доехало», а не точное значение', () => {
@@ -228,6 +231,64 @@ describe('фолбэк очищает кнопки Telegram, а не тольк�
   });
 
   it('браузер на iOS лишнего отступа не получает — там чёлку закрывает CSS', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
+  });
+});
+
+// Скриншот 2026-08 (третий подряд): развёрнутый режим Telegram — кнопки висят
+// поверх контента, но isFullscreen=false, а contentSafeAreaInset приходит
+// нулём. Раньше мы верили device-инсету, и шапка оказывалась под пилюлей
+// «Закрыть».
+describe('развёрнутый режим: кнопки поверх контента, полосы контента нет', () => {
+  const BUTTONS_BOTTOM_PT = 87;
+
+  it('device-инсет есть, полоса контента нулевая → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 59,
+      isFullscreen: false,
+      ios: true,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  });
+
+  it('то же на Android — кнопки висят так же, ветка не про iOS', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 24,
+      isFullscreen: false,
+      ios: false,
+      contentReported: true,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  });
+
+  it('клиент прислал НЕНУЛЕВУЮ полосу контента — верим ему точно', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 59,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: true,
+      }),
+    ).toBe(105);
+  });
+
+  it('браузер лишнего отступа не получает', () => {
     expect(
       computeSafeTop({
         contentTop: 0,
