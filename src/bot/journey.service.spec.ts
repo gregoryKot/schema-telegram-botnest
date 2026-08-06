@@ -195,6 +195,76 @@ describe('JourneyService', () => {
     });
   });
 
+  it('остальные источники ленты (заметки, благодарности, тест на убеждения, письма, карточки-подсказки, заметки схем/режимов) попадают в items со своими полями', async () => {
+    const prisma = makePrisma({
+      note: { findMany: jest.fn(async () => [{ date: '2026-07-06' }]) },
+      gratitudeDiaryEntry: {
+        findMany: jest.fn(async () => [{ id: 3, date: '2026-07-07' }]),
+      },
+      userBeliefCheck: {
+        findMany: jest.fn(async () => [
+          { id: 21, createdAt: D('2026-07-08T09:00:00Z') },
+        ]),
+      },
+      userLetter: {
+        findMany: jest.fn(async () => [
+          { id: 22, createdAt: D('2026-07-09T09:00:00Z') },
+        ]),
+      },
+      userFlashcard: {
+        findMany: jest.fn(async () => [
+          {
+            id: 23,
+            createdAt: D('2026-07-10T09:00:00Z'),
+            modeId: 'punitive_parent',
+          },
+        ]),
+      },
+      userSchemaNote: {
+        findMany: jest.fn(async () => [
+          { updatedAt: D('2026-07-11T09:00:00Z'), schemaId: 'defectiveness' },
+        ]),
+      },
+      userModeNote: {
+        findMany: jest.fn(async () => [
+          { updatedAt: D('2026-07-12T09:00:00Z'), modeId: 'healthy_adult' },
+        ]),
+      },
+    });
+    const { counts, items } = await new JourneyService(prisma).getJourney(uid);
+
+    expect(items.find((i) => i.type === 'note')?.at).toBe('2026-07-06');
+    expect(items.find((i) => i.type === 'gratitude')).toEqual({
+      type: 'gratitude',
+      id: 3,
+      at: '2026-07-07',
+    });
+    expect(items.find((i) => i.type === 'belief_check')).toEqual({
+      type: 'belief_check',
+      id: 21,
+      at: '2026-07-08T09:00:00.000Z',
+    });
+    expect(items.find((i) => i.type === 'letter')).toEqual({
+      type: 'letter',
+      id: 22,
+      at: '2026-07-09T09:00:00.000Z',
+    });
+    const flashcard = items.find((i) => i.type === 'flashcard');
+    expect(flashcard?.modeId).toBe('punitive_parent');
+    const schemaNote = items.find((i) => i.type === 'schema_note');
+    expect(schemaNote?.schemaIds).toEqual(['defectiveness']);
+    const modeNote = items.find((i) => i.type === 'mode_note');
+    expect(modeNote?.modeId).toBe('healthy_adult');
+
+    expect(counts.notes).toBe(1);
+    expect(counts.gratitudeDays).toBe(1);
+    expect(counts.beliefChecks).toBe(1);
+    expect(counts.letters).toBe(1);
+    expect(counts.flashcards).toBe(1);
+    expect(counts.schemaNotes).toBe(1);
+    expect(counts.modeNotes).toBe(1);
+  });
+
   it('лента обрезается потолком, счётчики остаются полными', async () => {
     const many = Array.from({ length: 600 }, (_, i) => ({
       createdAt: new Date(Date.UTC(2026, 0, 1) + i * 60_000),

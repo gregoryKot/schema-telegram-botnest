@@ -272,6 +272,23 @@ describe('EmailService — consumeToken', () => {
     );
   });
 
+  it('token with no userId binding → UnauthorizedException (defense in depth)', async () => {
+    const prisma = makeFakePrisma();
+    prisma.tokenRows.push({
+      id: 'tok-orphan',
+      userId: null,
+      tokenHash: hashToken('orphan-raw'),
+      email: 'a@test.com',
+      purpose: 'recovery',
+      expiresAt: new Date(Date.now() + 60_000),
+      usedAt: null,
+    });
+    const service = new EmailService(prisma as never, makeConfig());
+    await expect(
+      service.consumeToken('orphan-raw', 'recovery'),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
   it('missing token → BadRequestException without touching prisma', async () => {
     const prisma = makeFakePrisma();
     const service = new EmailService(prisma as never, makeConfig());

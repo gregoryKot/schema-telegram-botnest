@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTelegramHost } from './telegram';
 import { createMaxHost, resetMaxLaunchParams } from './max';
-import { createWebHost } from './web';
+import { createWebHost, isStandalone } from './web';
 import { detectHostId, getHost, setHost } from './index';
 
 type Listener = () => void;
@@ -113,6 +113,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('определение хоста', () => {
@@ -315,6 +316,66 @@ describe('адаптер Telegram', () => {
       host.backButton.setVisible(true);
       host.homeScreen.add();
       host.backButton.onClick(vi.fn())();
+    }).not.toThrow();
+  });
+
+  it('ready/close уходят в SDK, colorScheme читает тему клиента', () => {
+    const { webApp } = fakeTelegram({ colorScheme: 'dark' });
+    const host = createTelegramHost();
+    host.ready();
+    host.close();
+    expect(webApp.ready).toHaveBeenCalled();
+    expect(webApp.close).toHaveBeenCalled();
+    expect(host.colorScheme()).toBe('dark');
+  });
+
+  it('openLink и saveFile — оба через openLink клиента: скачивания в вебвью нет', () => {
+    const { webApp } = fakeTelegram();
+    const host = createTelegramHost();
+    host.openLink('https://schemehappens.ru/articles/1');
+    expect(webApp.openLink).toHaveBeenCalledWith(
+      'https://schemehappens.ru/articles/1',
+    );
+    host.saveFile('data:text/calendar,BEGIN', 'practice.ics');
+    expect(webApp.openLink).toHaveBeenCalledWith('data:text/calendar,BEGIN');
+  });
+
+  it('тактильный отклик: press/warning/error тоже разложены по типам клиента', () => {
+    const { webApp } = fakeTelegram();
+    const { haptic } = createTelegramHost();
+    haptic.press();
+    haptic.warning();
+    haptic.error();
+    expect(webApp.HapticFeedback.impactOccurred).toHaveBeenCalledWith('medium');
+    expect(webApp.HapticFeedback.notificationOccurred).toHaveBeenCalledWith(
+      'warning',
+    );
+    expect(webApp.HapticFeedback.notificationOccurred).toHaveBeenCalledWith(
+      'error',
+    );
+  });
+
+  it('без window.Telegram вовсе (мост ещё не загрузился) — вызовы тихие, colorScheme и onInsetsChange безопасны', () => {
+    // Явно НЕ вызываем fakeTelegram() — createTelegramHost() создаётся до
+    // того, как скрипт мессенджера успел положить window.Telegram.
+    const host = createTelegramHost();
+    expect(host.colorScheme()).toBeNull();
+    const cb = vi.fn();
+    const offInsets = host.onInsetsChange(cb);
+    expect(() => offInsets()).not.toThrow();
+    expect(cb).not.toHaveBeenCalled();
+
+    const statusCb = vi.fn();
+    host.homeScreen.checkStatus(statusCb);
+    expect(statusCb).not.toHaveBeenCalled();
+    const offAdded = host.homeScreen.onAdded(vi.fn());
+    expect(() => offAdded()).not.toThrow();
+
+    expect(() => {
+      host.ready();
+      host.close();
+      host.openLink('https://schemehappens.ru');
+      host.saveFile('data:text/calendar,BEGIN', 'p.ics');
     }).not.toThrow();
   });
 });
@@ -580,6 +641,72 @@ describe('адаптер браузера', () => {
     const status = vi.fn();
     host.homeScreen.checkStatus(status);
     expect(status).toHaveBeenCalledWith('unsupported');
+  });
+
+  function mockUserAgent(ua: string) {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: ua,
+      configurable: true,
+    });
+  }
+
+  it('платформа определяется по UA — iOS/Android/остальное как «web»', () => {
+    mockUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit',
+    );
+    expect(createWebHost().platform).toBe('ios');
+
+    mockUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit');
+    expect(createWebHost().platform).toBe('android');
+
+    mockUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit');
+    expect(createWebHost().platform).toBe('web');
+  });
+
+  it('openLink открывает новую вкладку без доверия к window.opener', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    createWebHost().openLink('https://schemehappens.ru/articles/1');
+    expect(open).toHaveBeenCalledWith(
+      'https://schemehappens.ru/articles/1',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('полный набор тактильного отклика в установленном приложении', () => {
+    const vibrate = mockVibrate();
+    mockStandalone(true);
+    const { haptic } = createWebHost();
+    haptic.select();
+    haptic.success();
+    haptic.warning();
+    haptic.error();
+    expect(vibrate).toHaveBeenNthCalledWith(1, 5);
+    expect(vibrate).toHaveBeenNthCalledWith(2, [10, 40, 10]);
+    expect(vibrate).toHaveBeenNthCalledWith(3, [20, 40, 20]);
+    expect(vibrate).toHaveBeenNthCalledWith(4, [30, 40, 30]);
+  });
+
+  it('backButton.onClick и homeScreen.onAdded — браузер отдаёт заглушки, отписка не падает', () => {
+    const host = createWebHost();
+    const offClick = host.backButton.onClick(vi.fn());
+    expect(() => offClick()).not.toThrow();
+    const offAdded = host.homeScreen.onAdded(vi.fn());
+    expect(() => offAdded()).not.toThrow();
+  });
+
+  it('SSR-заглушки: без глобального window изоляция не падает и возвращает нейтральные значения', () => {
+    const realWindow = globalThis.window;
+    // isStandalone/urlStartParam защищены от SSR-рендера (typeof window ===
+    // 'undefined') — единственный способ дойти до этой ветки в jsdom-тесте.
+    vi.stubGlobal('window', undefined);
+    try {
+      expect(isStandalone()).toBe(false);
+      const host = createWebHost();
+      expect(host.startParam()).toBeNull();
+    } finally {
+      vi.stubGlobal('window', realWindow);
+    }
   });
 });
 
