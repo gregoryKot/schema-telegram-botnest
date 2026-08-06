@@ -1,13 +1,16 @@
 // Лист «Настроить экран» (волна 2 нейродизайна): что показывать на «Сегодня»
 // и как. Живёт прямо на экране (правило «управление там, где пользователь и
 // так идёт»): выбор главной практики, тема, скрытие серии / баннера кабинета /
-// второстепенного, и вход в общие настройки приложения.
+// второстепенного, и вход в общие настройки приложения. iOS-группы (правило
+// «одна механика — один компонент»): переиспользует Row/Toggle/ThemeIcon/
+// SettingsLabel и стиль `.card` из settingsSheet — та же грамматика, что и в
+// общих настройках.
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
 import { getTheme, toggleTheme, Theme } from '../utils/theme';
-import { pressable } from '../utils/a11y';
 import { ToggleRow } from './todayCustomize/ToggleRow';
+import { Row, SettingsLabel, ThemeIcon, Toggle } from './settingsSheet/ui';
 
 // Какую строку подсветить при открытии: долгое нажатие на блок открывает лист
 // и показывает, где этот блок выключается (иначе жест приводит «куда-то в
@@ -66,185 +69,136 @@ export function TodayCustomizeSheet({
           Главное дело дня — у каждого своё
         </div>
 
-        <div className="section-label" style={{ margin: '16px 4px 8px' }}>
-          Одно дело на сегодня
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {FOCUS_OPTIONS.map((opt) => {
-            const active = opt.id === practice;
-            return (
-              <div
-                key={opt.id}
-                {...pressable(() => onPractice(opt.id))}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 14px',
-                  borderRadius: 14,
-                  cursor: 'pointer',
-                  background: active
-                    ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
-                    : 'rgba(var(--fg-rgb),0.04)',
-                  border: `1.5px solid ${
-                    active
-                      ? 'color-mix(in srgb, var(--accent) 35%, transparent)'
-                      : 'transparent'
-                  }`,
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: active ? 'var(--accent)' : 'var(--text)',
-                    }}
-                  >
-                    {opt.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-sub)',
-                      marginTop: 1,
-                    }}
-                  >
-                    {opt.sub}
-                  </div>
-                </div>
-                {active && (
-                  <span
-                    style={{
-                      color: 'var(--accent)',
-                      fontWeight: 800,
-                      fontSize: 15,
-                    }}
-                  >
-                    ✓
-                  </span>
-                )}
-              </div>
-            );
-          })}
+        <div style={{ marginTop: 16 }}>
+          <SettingsLabel>Одно дело на сегодня</SettingsLabel>
+          <div
+            className="card"
+            style={{ borderRadius: 16, overflow: 'hidden' }}
+          >
+            {FOCUS_OPTIONS.map((opt, i) => {
+              const active = opt.id === practice;
+              return (
+                <Row
+                  key={opt.id}
+                  label={opt.label}
+                  sub={opt.sub}
+                  divider={i > 0}
+                  color={active ? 'var(--accent)' : undefined}
+                  onClick={() => onPractice(opt.id)}
+                  right={
+                    active ? (
+                      <span
+                        style={{
+                          color: 'var(--accent)',
+                          fontWeight: 800,
+                          fontSize: 15,
+                        }}
+                      >
+                        ✓
+                      </span>
+                    ) : (
+                      <span />
+                    )
+                  }
+                />
+              );
+            })}
+          </div>
         </div>
 
-        <div className="section-label" style={{ margin: '16px 4px 8px' }}>
-          Оформление
+        <div style={{ marginTop: 16 }}>
+          <SettingsLabel>Оформление</SettingsLabel>
+          <div
+            className="card"
+            style={{
+              borderRadius: 16,
+              padding: '13px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <ThemeIcon theme={theme} />
+            <div
+              style={{
+                flex: 1,
+                fontSize: 14,
+                fontWeight: 500,
+                color: 'var(--text)',
+              }}
+            >
+              {theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
+            </div>
+            <Toggle
+              on={theme === 'light'}
+              onClick={() => setTheme(toggleTheme())}
+            />
+          </div>
         </div>
-        <div
-          {...pressable(() => setTheme(toggleTheme()))}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '12px 14px',
-            borderRadius: 14,
-            cursor: 'pointer',
-            background: 'rgba(var(--fg-rgb),0.04)',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <span style={{ fontSize: 20, flexShrink: 0 }}>
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </span>
+
+        <div style={{ marginTop: 16 }}>
+          <SettingsLabel>Показывать на главном</SettingsLabel>
           <div
             style={{
-              flex: 1,
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
+              fontSize: 11,
+              color: 'var(--text-faint)',
+              lineHeight: 1.5,
+              margin: '0 4px 8px',
             }}
           >
-            Тема
+            Подсказка: долгое нажатие на любой блок главного экрана открывает
+            эту настройку.
           </div>
-          <span
-            style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 600 }}
+          <div
+            className="card"
+            style={{ borderRadius: 16, overflow: 'hidden' }}
           >
-            {theme === 'dark' ? 'Тёмная' : 'Светлая'}
-          </span>
-        </div>
-
-        <div className="section-label" style={{ margin: '16px 4px 8px' }}>
-          Показывать на главном
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            lineHeight: 1.5,
-            margin: '0 4px 8px',
-          }}
-        >
-          Подсказка: долгое нажатие на любой блок главного экрана открывает эту
-          настройку.
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <ToggleRow
-            emoji="🔥"
-            title="Карточка серии"
-            sub="можно убрать, если счёт дней давит"
-            on={!streakHidden}
-            onToggle={onToggleStreak}
-            highlighted={highlight === 'streak'}
-          />
-          <ToggleRow
-            emoji="💬"
-            title="Фраза для себя"
-            sub="цитата Здорового взрослого на главном"
-            on={!phraseHidden}
-            onToggle={onTogglePhrase}
-            highlighted={highlight === 'phrase'}
-          />
-          <ToggleRow
-            emoji="🗂"
-            title="«Что ещё можно сегодня»"
-            sub="потребности и дневник под сворачиванием"
-            on={secondaryHidden}
-            onToggle={onToggleSecondary}
-          />
-          {showTherapistToggle && (
             <ToggleRow
-              emoji="🧑‍⚕️"
-              title="Кабинет терапевта"
-              sub="баннер входа в кабинет на главном"
-              on={!therapistBannerHidden}
-              onToggle={onToggleTherapistBanner}
+              emoji="🔥"
+              title="Карточка серии"
+              sub="можно убрать, если счёт дней давит"
+              on={!streakHidden}
+              onToggle={onToggleStreak}
+              highlighted={highlight === 'streak'}
             />
-          )}
+            <ToggleRow
+              emoji="💬"
+              title="Фраза для себя"
+              sub="цитата Здорового взрослого на главном"
+              on={!phraseHidden}
+              onToggle={onTogglePhrase}
+              highlighted={highlight === 'phrase'}
+              divider
+            />
+            <ToggleRow
+              emoji="🗂"
+              title="«Что ещё можно сегодня»"
+              sub="потребности и дневник под сворачиванием"
+              on={secondaryHidden}
+              onToggle={onToggleSecondary}
+              divider
+            />
+            {showTherapistToggle && (
+              <ToggleRow
+                emoji="🧑‍⚕️"
+                title="Кабинет терапевта"
+                sub="баннер входа в кабинет на главном"
+                on={!therapistBannerHidden}
+                onToggle={onToggleTherapistBanner}
+                divider
+              />
+            )}
+          </div>
         </div>
 
-        <button
-          {...pressable(onOpenSettings)}
-          style={{
-            marginTop: 16,
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '13px 14px',
-            borderRadius: 14,
-            border: '1px solid var(--border-color)',
-            background: 'var(--surface)',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <span
-            style={{
-              flex: 1,
-              textAlign: 'left',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}
+        <div style={{ marginTop: 16 }}>
+          <div
+            className="card"
+            style={{ borderRadius: 16, overflow: 'hidden' }}
           >
-            Общие настройки приложения
-          </span>
-          <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
-        </button>
+            <Row label="Общие настройки приложения" onClick={onOpenSettings} />
+          </div>
+        </div>
 
         <button
           className="btn-primary"

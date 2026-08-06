@@ -285,6 +285,97 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
   });
 
+  it('plus_action: action из allow-list проходит', () => {
+    expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
+      action: 'tracker',
+    });
+    expect(sanitizeMeta('plus_action', { action: 'plans' })).toEqual({
+      action: 'plans',
+    });
+  });
+
+  it('plus_action: неизвестный action → отброшено', () => {
+    expect(sanitizeMeta('plus_action', { action: 'evil' })).toBeUndefined();
+  });
+
+  it('plus_action: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('plus_action', {
+        action: 'breathing',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ action: 'breathing' });
+  });
+
+  it('quick_action_toggle: валидные action + hidden + surface проходят', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'plans',
+        hidden: true,
+        surface: 'plus',
+      }),
+    ).toEqual({ action: 'plans', hidden: true, surface: 'plus' });
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'tasks',
+        hidden: false,
+        surface: 'tools',
+      }),
+    ).toEqual({ action: 'tasks', hidden: false, surface: 'tools' });
+  });
+
+  it('quick_action_toggle: неизвестный action → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'evil',
+        hidden: true,
+        surface: 'plus',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_toggle: hidden не boolean → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'plans',
+        hidden: 'yes',
+        surface: 'plus',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_toggle: неизвестный surface → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'plans',
+        hidden: true,
+        surface: 'evil',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_toggle: недостающее поле → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', { action: 'plans', hidden: true }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('quick_action_toggle', {})).toBeUndefined();
+  });
+
+  it('quick_action_toggle: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('quick_action_toggle', {
+        action: 'plans',
+        hidden: true,
+        surface: 'plus',
+        note: 'секретный текст пользователя',
+      }),
+    ).toEqual({ action: 'plans', hidden: true, surface: 'plus' });
+  });
+
+  it('plus_open: meta игнорируется (событие без meta)', () => {
+    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

@@ -1,22 +1,17 @@
 import { useState } from 'react';
-import { BottomSheet } from './BottomSheet';
-import { useTr } from '../utils/addressForm';
+import { api } from '../api';
+import { PlusMenuSheet } from './plusMenu/PlusMenuSheet';
+import type { QuickActionId } from '../utils/quickActions';
 
 interface Props {
-  onOpenSchemaDiary: () => void;
-  onOpenModeDiary: () => void;
-  onOpenGratitude: () => void;
-  onOpenTracker: () => void;
+  onAction: (id: QuickActionId) => void;
 }
 
-export function FloatingPill({
-  onOpenSchemaDiary,
-  onOpenModeDiary,
-  onOpenGratitude,
-  onOpenTracker,
-}: Props) {
-  const tr = useTr();
-  const [showPicker, setShowPicker] = useState(false);
+// Кнопка «плюс»: открывает меню быстрых действий (PlusMenuSheet), собранное
+// из единого реестра utils/quickActions.ts — раньше 4 пункта были зашиты
+// прямо здесь.
+export function FloatingPill({ onAction }: Props) {
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <>
@@ -29,7 +24,10 @@ export function FloatingPill({
         }}
       >
         <button
-          onClick={() => setShowPicker(true)}
+          onClick={() => {
+            api.trackEvent('plus_open');
+            setShowMenu(true);
+          }}
           aria-label="Быстрое действие"
           style={{
             width: 60,
@@ -57,120 +55,12 @@ export function FloatingPill({
         </button>
       </div>
 
-      {showPicker && (
-        <BottomSheet onClose={() => setShowPicker(false)} zIndex={200}>
-          <div style={{ paddingTop: 4, paddingBottom: 8 }}>
-            <div className="d-caps" style={{ marginBottom: 10 }}>
-              Записать момент
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                marginBottom: 12,
-              }}
-            >
-              <DiaryTypeButton
-                label="Схема"
-                sub="Когда сработал паттерн"
-                onClick={() => {
-                  setShowPicker(false);
-                  onOpenSchemaDiary();
-                }}
-              />
-              <DiaryTypeButton
-                label="Режим"
-                sub="Какой режим активировался"
-                onClick={() => {
-                  setShowPicker(false);
-                  onOpenModeDiary();
-                }}
-              />
-              <DiaryTypeButton
-                label="Благодарность"
-                sub="Что было хорошего"
-                onClick={() => {
-                  setShowPicker(false);
-                  onOpenGratitude();
-                }}
-              />
-            </div>
-            <div
-              style={{
-                borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-                paddingTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--text-sub)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 10,
-                }}
-              >
-                Оценить день
-              </div>
-              <DiaryTypeButton
-                label="Трекер потребностей"
-                sub={tr(
-                  'Оцени день по пяти шкалам',
-                  'Оцените день по пяти шкалам',
-                )}
-                onClick={() => {
-                  setShowPicker(false);
-                  onOpenTracker();
-                }}
-              />
-            </div>
-          </div>
-        </BottomSheet>
+      {showMenu && (
+        <PlusMenuSheet
+          onAction={onAction}
+          onClose={() => setShowMenu(false)}
+        />
       )}
     </>
-  );
-}
-
-// Строка выбора дневника: название и подпись, без иконки и без своего цвета.
-// Три цветные плашки подряд спорили друг с другом, а выбирают здесь по смыслу.
-function DiaryTypeButton({
-  label,
-  sub,
-  onClick,
-}: {
-  label: string;
-  sub: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        minHeight: 60,
-        padding: '14px 16px',
-        borderRadius: 16,
-        border: '1px solid var(--line)',
-        background: 'var(--surface)',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        textAlign: 'left',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
-          {sub}
-        </div>
-      </div>
-    </button>
   );
 }

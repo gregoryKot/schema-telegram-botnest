@@ -19,6 +19,7 @@ import { PracticesService } from './practices.service';
 import { ExercisesService } from './exercises.service';
 import { PhraseCheckService } from './phrase-check.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
+import { PlusMetricsService } from './plus-metrics.service';
 import { NotesService } from './notes.service';
 import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
@@ -57,6 +58,7 @@ const INTERNAL_PROVIDERS = [
   WarmWordsMetricsService,
   PracticeMetricsService,
   PhraseCheckMetricsService,
+  PlusMetricsService,
 ];
 
 @Module({

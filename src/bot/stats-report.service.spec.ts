@@ -17,17 +17,21 @@ describe('StatsReportService.render', () => {
     const phraseChecks = {
       render: jest.fn().mockResolvedValue('разборы фраз: 7'),
     };
+    const plus = {
+      render: jest.fn().mockResolvedValue('кнопка плюс: 4'),
+    };
     const service = new StatsReportService(
       product as never,
       modeCard as never,
       modeDiary as never,
       warmWords as never,
       phraseChecks as never,
+      plus as never,
     );
 
     await expect(service.render()).resolves.toBe(
       'продуктовые метрики\n\nкарточки режимов: 9\n\nдневник режимов: 5\n\n' +
-        'тёплые слова: 3\n\nразборы фраз: 7',
+        'тёплые слова: 3\n\nразборы фраз: 7\n\nкнопка плюс: 4',
     );
   });
 });

@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import { api } from '../api';
 import { BottomNav, Section } from './BottomNav';
 import { FloatingPill } from './FloatingPill';
 import { SchemaEntrySheet } from './diary/SchemaEntrySheet';
 import { ModeEntrySheet } from './diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from './diary/GratitudeEntrySheet';
+import {
+  QuickActionOverlays,
+  type OverlayQuickActionId,
+} from './plusMenu/QuickActionOverlays';
 import { UseSheetsReturn } from '../hooks/useSheets';
 import { TODAY_DATE } from '../utils/todayConstants';
+import type { QuickActionId } from '../utils/quickActions';
 
 interface Props {
   sheets: UseSheetsReturn;
@@ -31,6 +37,41 @@ export function AppDiaryNav({
   setSection,
   userRole,
 }: Props) {
+  const [activeOverlay, setActiveOverlay] =
+    useState<OverlayQuickActionId | null>(null);
+
+  function handleAction(id: QuickActionId) {
+    switch (id) {
+      case 'diary_schema':
+        setNewDiaryEntry('schema');
+        return;
+      case 'diary_mode':
+        setNewDiaryEntry('mode');
+        return;
+      case 'diary_gratitude':
+        setNewDiaryEntry('gratitude');
+        return;
+      case 'tracker':
+        sheets.open('trackerOverlay', { trackerNeedId: null });
+        return;
+      case 'breathing':
+      case 'grounding':
+      case 'stop':
+      case 'belief_check':
+      case 'phrase_check':
+      case 'flashcard':
+      case 'safe_place':
+      case 'letter_to_self':
+      case 'warm_words':
+        setActiveOverlay(id);
+        return;
+      default:
+        // childhood_wheel/tasks/practices/plans — поверхность «Инструменты»,
+        // из «плюса» недостижимы (см. utils/quickActions.ts).
+        return;
+    }
+  }
+
   return (
     <>
       {/* ── Diary entry sheets (from FloatingPill) ── */}
@@ -61,6 +102,16 @@ export function AppDiaryNav({
         />
       )}
 
+      {/* ── Действие из «плюса», не относящееся к дневникам/трекеру ── */}
+      <QuickActionOverlays
+        active={activeOverlay}
+        onClose={() => setActiveOverlay(null)}
+        onOpenTracker={() => {
+          setActiveOverlay(null);
+          sheets.open('trackerOverlay', { trackerNeedId: null });
+        }}
+      />
+
       {/* ── Floating pill (always above bottom bar) ── */}
       {!therapistMode &&
         !sheets.tracker &&
@@ -70,16 +121,8 @@ export function AppDiaryNav({
         !sheets.practices &&
         !sheets.plans &&
         !sheets.childhoodWheel &&
-        !newDiaryEntry && (
-          <FloatingPill
-            onOpenTracker={() => {
-              sheets.open('trackerOverlay', { trackerNeedId: null });
-            }}
-            onOpenSchemaDiary={() => setNewDiaryEntry('schema')}
-            onOpenModeDiary={() => setNewDiaryEntry('mode')}
-            onOpenGratitude={() => setNewDiaryEntry('gratitude')}
-          />
-        )}
+        !newDiaryEntry &&
+        !activeOverlay && <FloatingPill onAction={handleAction} />}
 
       {!therapistMode &&
         !sheets.tracker &&
@@ -89,7 +132,8 @@ export function AppDiaryNav({
         !sheets.practices &&
         !sheets.plans &&
         !sheets.childhoodWheel &&
-        !newDiaryEntry && (
+        !newDiaryEntry &&
+        !activeOverlay && (
           <BottomNav
             section={section}
             onSelect={setSection}

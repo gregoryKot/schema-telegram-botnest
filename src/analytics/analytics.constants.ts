@@ -46,6 +46,11 @@
 //                         режима (meta.modeId).
 //   mode_doubt_switched — в «С чем путают режим» нажал «Это ближе» (meta.from
 //                         + meta.to — modeId исходного и выбранного режима).
+//   plus_open           — открыл универсальное меню «плюс» (без meta).
+//   plus_action         — выбрал действие в меню «плюс» (meta.action —
+//                         QuickActionId).
+//   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
+//                         meta.hidden + meta.surface: 'plus'|'tools').
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -74,6 +79,9 @@ export const ANALYTICS_EVENTS = [
   'mode_chain_followup',
   'mode_doubt_opened',
   'mode_doubt_switched',
+  'plus_open',
+  'plus_action',
+  'quick_action_toggle',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -209,3 +217,13 @@ export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 // (schema-miniapp/src/utils/webBanner.ts), при добавлении баннера синхронь.
 export const WEB_BANNER_IDS = ['cabinet_full', 'mode_map'] as const;
 export type WebBannerId = (typeof WEB_BANNER_IDS)[number];
+
+// QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
+// вынесены в quick-actions.constants.ts (правило №10: тот файл держим
+// минимальным, парность с фронтом описана прямо там).
+export {
+  QUICK_ACTION_IDS,
+  type QuickActionId,
+  QUICK_ACTION_SURFACES,
+  type QuickActionSurface,
+} from './quick-actions.constants';
