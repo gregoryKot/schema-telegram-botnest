@@ -1,20 +1,22 @@
-import { ModesHero, INTRO_MODE_ID } from '../../components/ModesHero';
-import { PatternFrequencyList } from '../../components/PatternFrequencyList';
-import { MyCardsSection } from '../../components/myCards/MyCardsSection';
+import { useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { ModesHero } from '../../components/ModesHero';
+import { ModesPatternSection } from './ModesPatternSection';
 import { WeekTopSummary } from '../../utils/patternsSummary';
-import { ChipsSkeleton } from './CatalogParts';
 import { SchemasSectionProps } from './types';
-import { buildModeFreqGroups } from './modeGroups';
+import type { ModeDiaryEntry } from '../../types';
 
 interface ModesTabProps {
   profileLoading: boolean;
   myModeIds: string[];
   modeSummary: WeekTopSummary | null;
   modeFreq: Record<string, number>;
+  modeEntries: ModeDiaryEntry[];
+  setModeEntries: Dispatch<SetStateAction<ModeDiaryEntry[]>>;
   onOpenSchema: SchemasSectionProps['onOpenSchema'];
   onOpenDiaries?: () => void;
   onShowModePicker: () => void;
-  onOpenModeIntro: (id: string) => void;
+  onMeetCritic: () => void;
 }
 
 export function ModesTab({
@@ -22,13 +24,14 @@ export function ModesTab({
   myModeIds,
   modeSummary,
   modeFreq,
+  modeEntries,
+  setModeEntries,
   onOpenSchema,
   onOpenDiaries,
   onShowModePicker,
-  onOpenModeIntro,
+  onMeetCritic,
 }: ModesTabProps) {
-  // Режимы пользователя, сгруппированные, с недельной частотой.
-  const groups = buildModeFreqGroups(myModeIds, modeFreq);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <>
@@ -37,32 +40,25 @@ export function ModesTab({
         <ModesHero
           hasModes={myModeIds.length > 0}
           summary={modeSummary}
-          onMeetCritic={() => onOpenModeIntro(INTRO_MODE_ID)}
+          onMeetCritic={onMeetCritic}
           onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
           onPickManually={onShowModePicker}
-          onOpenModeDetail={(id) => onOpenModeIntro(id)}
+          onOpenModeDetail={setOpenId}
           onOpenDiaries={onOpenDiaries}
         />
       )}
 
-      {/* Мои режимы по группам с недельной частотой (дизайн-макет «Паттерны») */}
-      {myModeIds.length > 0 &&
-        (profileLoading ? (
-          <ChipsSkeleton widths={[90, 110, 80]} />
-        ) : (
-          <PatternFrequencyList
-            groups={groups}
-            selectedId={modeSummary?.id}
-            onSelect={onOpenModeIntro}
-            addLabel="+ Добавить режим"
-            onAdd={onShowModePicker}
-            anyFreq={Object.values(modeFreq).some((v) => v > 0)}
-            hint="Полоска рядом с режимом — сколько дней за неделю он включался по дневнику. Это наблюдение, а не оценка."
-          />
-        ))}
-
-      {/* Заполненные карточки режимов — открыть/отредактировать/поделиться */}
-      <MyCardsSection kind="mode" />
+      <ModesPatternSection
+        profileLoading={profileLoading}
+        myModeIds={myModeIds}
+        modeFreq={modeFreq}
+        modeEntries={modeEntries}
+        setModeEntries={setModeEntries}
+        modeSummary={modeSummary}
+        onShowModePicker={onShowModePicker}
+        openId={openId}
+        onOpenChange={setOpenId}
+      />
     </>
   );
 }

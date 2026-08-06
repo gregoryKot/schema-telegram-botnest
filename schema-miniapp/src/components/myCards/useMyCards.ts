@@ -4,44 +4,38 @@
 // выдуманных карточек на чистом аккаунте.
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
-import { SCHEMA_DOMAINS, getModeById } from '../../schemaTherapyData';
+import {
+  schemaMeta,
+  modeMeta,
+  type PatternMeta,
+} from '../patternSheet/patternMeta';
 import {
   noteCardFields,
   SCHEMA_NOTE_FIELD_ORDER,
   MODE_NOTE_FIELD_ORDER,
   type NoteFieldKey,
   type NoteFieldSource,
+  type NoteCardField,
 } from '../../../../shared/src/share/cards/noteCard';
-import type { MyCardItem } from './MyCardsList';
 
 export type MyCardsKind = 'schema' | 'mode';
 
-interface CardMeta {
+export interface MyCardItem {
+  id: string;
   name: string;
-  color: string;
   subtitle?: string;
-}
-
-function schemaMeta(schemaId: string): CardMeta | null {
-  for (const d of SCHEMA_DOMAINS) {
-    const s = d.schemas.find((x) => x.id === schemaId);
-    if (s) return { name: s.name, color: d.color, subtitle: d.domain };
-  }
-  return null;
-}
-
-function modeMeta(modeId: string): CardMeta | null {
-  const m = getModeById(modeId);
-  return m
-    ? { name: m.name, color: m.groupColor, subtitle: m.groupName }
-    : null;
+  color: string;
+  /** Текст первого заполненного поля — выжимка для строки списка. */
+  excerpt: string;
+  /** Все заполненные поля, уже готовые для drawNoteCard. */
+  cardFields: NoteCardField[];
 }
 
 function toItem(
   id: string,
   note: NoteFieldSource,
   order: NoteFieldKey[],
-  meta: CardMeta | null,
+  meta: PatternMeta | null,
 ): MyCardItem | null {
   if (!meta) return null;
   const cardFields = noteCardFields(order, note);

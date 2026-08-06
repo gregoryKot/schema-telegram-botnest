@@ -15,6 +15,10 @@ export interface FreqItem {
   id: string;
   name: string;
   freq: number; // дней за неделю, 0..7
+  /** Статус карточки словами («карточка заполнена · 4 записи») — не только
+   *  цветом, иначе не читается при цветовой слепоте. Необязателен: список
+   *  потребностей/других паттернов без карточек его не передаёт. */
+  status?: string;
 }
 
 export interface FreqGroup {
@@ -117,6 +121,7 @@ export function PatternFrequencyList({
                     {...pressable(() => onSelect(it.id))}
                     style={{
                       width: '100%',
+                      minHeight: 60,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
@@ -133,20 +138,34 @@ export function PatternFrequencyList({
                       WebkitTapHighlightColor: 'transparent',
                     }}
                   >
-                    <span
-                      style={{
-                        flex: 1,
-                        fontSize: 15,
-                        fontWeight: active ? 700 : 500,
-                        color: active
-                          ? 'var(--accent)'
-                          : shown
-                            ? 'var(--text)'
-                            : 'var(--text-sub)',
-                        letterSpacing: '-0.1px',
-                      }}
-                    >
-                      {it.name}
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 15,
+                          fontWeight: active ? 700 : 500,
+                          color: active
+                            ? 'var(--accent)'
+                            : shown
+                              ? 'var(--text)'
+                              : 'var(--text-sub)',
+                          letterSpacing: '-0.1px',
+                        }}
+                      >
+                        {it.name}
+                      </span>
+                      {it.status && (
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 11.5,
+                            color: 'var(--text-faint)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {it.status}
+                        </span>
+                      )}
                     </span>
                     {shown ? (
                       <span
