@@ -7,13 +7,15 @@ import { BottomSheet } from '../BottomSheet';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { buildPlusActions, type QuickActionId } from '../../utils/quickActions';
+import { PLUS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
+import { useHiddenActions } from '../../utils/useHiddenActions';
 import {
-  getHiddenActions,
-  setActionHidden,
-  PLUS_ACTIONS_HIDDEN_KEY,
-} from '../../utils/quickActionPrefs';
+  PLUS_ACTIONS_ORDER_KEY,
+  withMoveFlags,
+} from '../../utils/quickActionOrder';
+import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
-import { ActionRow } from './ActionRow';
+import { PlusActionGroup } from './PlusActionGroup';
 import { CustomizeButton } from './CustomizeButton';
 
 interface Props {
@@ -24,17 +26,13 @@ interface Props {
 export function PlusMenuSheet({ onAction, onClose }: Props) {
   const tr = useTr();
   const groups = buildPlusActions(tr);
-  const [hidden, setHidden] = useState<string[]>(() =>
-    getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY),
-  );
+  const [hidden, handleToggle] = useHiddenActions(PLUS_ACTIONS_HIDDEN_KEY);
   const [showCustomize, setShowCustomize] = useState(false);
-
-  function handleToggle(id: string, nextHidden: boolean) {
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, id, nextHidden);
-    setHidden((prev) =>
-      nextHidden ? [...prev, id] : prev.filter((x) => x !== id),
-    );
-  }
+  const { ordered, onMove } = useQuickActionOrder(
+    PLUS_ACTIONS_ORDER_KEY,
+    groups.map((g) => g.actions),
+  );
+  const orderedGroups = groups.map((g, i) => ({ ...g, actions: ordered[i] }));
 
   function handleAction(id: QuickActionId) {
     api.trackEvent('plus_action', { action: id });
@@ -42,7 +40,7 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
     onAction(id);
   }
 
-  const visibleGroups = groups
+  const visibleGroups = orderedGroups
     .map((g) => ({
       ...g,
       actions: g.actions.filter((a) => !hidden.includes(a.id)),
@@ -82,23 +80,12 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
             </div>
           ) : (
             visibleGroups.map((g) => (
-              <div key={g.id} style={{ marginBottom: 12 }}>
-                <div className="section-label" style={{ margin: '0 4px 8px' }}>
-                  {g.title}
-                </div>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                >
-                  {g.actions.map((a) => (
-                    <ActionRow
-                      key={a.id}
-                      label={a.label}
-                      sub={a.sub}
-                      onClick={() => handleAction(a.id)}
-                    />
-                  ))}
-                </div>
-              </div>
+              <PlusActionGroup
+                key={g.id}
+                title={g.title}
+                actions={g.actions}
+                onAction={handleAction}
+              />
             ))
           )}
         </div>
@@ -108,9 +95,10 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
         <QuickActionCustomizeSheet
           title="Что показывать в «плюсе»"
           surface="plus"
-          actions={groups.flatMap((g) => g.actions)}
+          actions={orderedGroups.flatMap((g) => withMoveFlags(g.actions))}
           hidden={hidden}
           onToggle={handleToggle}
+          onMove={onMove}
           onClose={() => setShowCustomize(false)}
         />
       )}

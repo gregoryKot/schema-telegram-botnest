@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 // QuickActionCustomizeSheet — generic лист «что показывать» (переиспользует
-// ToggleRow, НЕ проверяем его внутреннюю разметку — только текст строки и
-// колбэки). Проверяем: toggle шлёт quick_action_toggle с нужным surface,
-// повторный toggle возвращает пункт (hidden: false), «Готово» закрывает.
+// CustomizeRow = ToggleRow + MoveArrows, не проверяем их внутреннюю разметку
+// — только текст строки и колбэки). Проверяем: toggle шлёт
+// quick_action_toggle, «Готово» закрывает, стрелки двигают порядок и шлют
+// quick_action_move только при успехе, край задизейблен и не кликается,
+// клик по стрелке не переключает тумблер.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
@@ -12,8 +14,22 @@ import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const actions = [
-  { id: 'tracker', emoji: '📊', label: 'Трекер потребностей', sub: 'sub-1' },
-  { id: 'warm_words', emoji: '💛', label: 'Тёплые слова', sub: 'sub-2' },
+  {
+    id: 'tracker',
+    emoji: '📊',
+    label: 'Трекер потребностей',
+    sub: 'sub-1',
+    disabledUp: true,
+    disabledDown: false,
+  },
+  {
+    id: 'warm_words',
+    emoji: '💛',
+    label: 'Тёплые слова',
+    sub: 'sub-2',
+    disabledUp: false,
+    disabledDown: true,
+  },
 ];
 
 beforeEach(() => vi.clearAllMocks());
@@ -28,6 +44,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
+        onMove={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -45,6 +62,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={onToggle}
+        onMove={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -66,6 +84,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={['warm_words']}
         onToggle={onToggle}
+        onMove={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -87,10 +106,96 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
+        onMove={vi.fn()}
         onClose={onClose}
       />,
     );
     fireEvent.click(screen.getByText('Готово'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('стрелка двигает: onMove(id, dir) вызван, при успехе шлёт quick_action_move', () => {
+    const onMove = vi.fn().mockReturnValue(true);
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={vi.fn()}
+        onMove={onMove}
+        onClose={vi.fn()}
+      />,
+    );
+    // У «Трекера» (первая строка) вверх задизейблен, вниз — нет.
+    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    expect(onMove).toHaveBeenCalledWith('tracker', 'down');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+      action: 'tracker',
+      surface: 'plus',
+      dir: 'down',
+    });
+  });
+
+  it('onMove вернул false (внутренний край) — quick_action_move не отправлен', () => {
+    const onMove = vi.fn().mockReturnValue(false);
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="tools"
+        actions={actions}
+        hidden={[]}
+        onToggle={vi.fn()}
+        onMove={onMove}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    expect(onMove).toHaveBeenCalledWith('tracker', 'down');
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'quick_action_move',
+      expect.anything(),
+    );
+  });
+
+  it('задизейбленная стрелка на краю: aria-disabled, клик не вызывает onMove и не шлёт событие', () => {
+    const onMove = vi.fn().mockReturnValue(true);
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={vi.fn()}
+        onMove={onMove}
+        onClose={vi.fn()}
+      />,
+    );
+    // «Трекер» — первая строка, стрелка вверх задизейблена.
+    const upTracker = screen.getAllByLabelText('Выше')[0];
+    expect(upTracker.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(upTracker);
+    expect(onMove).not.toHaveBeenCalled();
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'quick_action_move',
+      expect.anything(),
+    );
+  });
+
+  it('клик по стрелке не переключает тумблер строки', () => {
+    const onToggle = vi.fn();
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={onToggle}
+        onMove={vi.fn().mockReturnValue(true)}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });

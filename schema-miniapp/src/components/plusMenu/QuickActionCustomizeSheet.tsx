@@ -1,10 +1,10 @@
 // Лист «что показывать» — общий для поверхностей «плюс» и «Инструменты»
-// (правило «одна механика — один компонент»: второй поверхностью займётся
-// отдельная задача, но лист уже generic по списку действий/ключу). Строки —
-// переиспользованный ToggleRow (не трогаем/не копируем его).
+// (правило «одна механика — один компонент»). Тонкий мэппер: строка и вся её
+// логика (toggle/move + аналитика) — в CustomizeRow. Порядок/дизейбл краёв
+// стрелок считает родитель (у групп «плюса» и списка «Инструментов» разные
+// границы) — сюда приходит уже готовый список.
 import { BottomSheet } from '../BottomSheet';
-import { ToggleRow } from '../todayCustomize/ToggleRow';
-import { api } from '../../api';
+import { CustomizeRow } from './CustomizeRow';
 import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
 interface CustomizeAction {
@@ -12,6 +12,8 @@ interface CustomizeAction {
   emoji: string;
   label: string;
   sub: string;
+  disabledUp: boolean;
+  disabledDown: boolean;
 }
 
 interface Props {
@@ -20,6 +22,7 @@ interface Props {
   hidden: string[];
   surface: QuickActionSurface;
   onToggle: (id: string, hidden: boolean) => void;
+  onMove: (id: string, dir: 'up' | 'down') => boolean;
   onClose: () => void;
 }
 
@@ -29,18 +32,9 @@ export function QuickActionCustomizeSheet({
   hidden,
   surface,
   onToggle,
+  onMove,
   onClose,
 }: Props) {
-  function handleToggle(id: string) {
-    const nextHidden = !hidden.includes(id);
-    api.trackEvent('quick_action_toggle', {
-      action: id,
-      hidden: nextHidden,
-      surface,
-    });
-    onToggle(id, nextHidden);
-  }
-
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 4 }}>
@@ -60,13 +54,18 @@ export function QuickActionCustomizeSheet({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {actions.map((a) => (
-            <ToggleRow
+            <CustomizeRow
               key={a.id}
+              id={a.id}
               emoji={a.emoji}
-              title={a.label}
+              label={a.label}
               sub={a.sub}
-              on={!hidden.includes(a.id)}
-              onToggle={() => handleToggle(a.id)}
+              hidden={hidden.includes(a.id)}
+              onToggle={onToggle}
+              disabledUp={a.disabledUp}
+              disabledDown={a.disabledDown}
+              onMove={onMove}
+              surface={surface}
             />
           ))}
         </div>
