@@ -7,6 +7,8 @@ export interface ScreenMetrics {
   opensByScreen: Array<{ screen: string; count: number }>;
   /** За месяц: что прячут (hidden=true), по (экран, блок), по убыванию. */
   hiddenByScreenBlock: Array<{ screen: string; block: string; count: number }>;
+  /** Всего: сколько юзеров хоть раз сохранили серверное зеркало настроек. */
+  syncedUsers: number;
 }
 
 // Человеческие подписи экранов и блоков — в отчёте не должно быть id.
@@ -78,8 +80,15 @@ export function formatScreenMetrics(m: ScreenMetrics): string {
     )
     .filter((l): l is string => l !== null);
 
-  if (lines.length === 0) {
-    return '🧩 Настройку экранов пока не трогали.';
+  const out =
+    lines.length === 0
+      ? ['🧩 Настройку экранов пока не трогали.']
+      : [`🧩 <b>Настройка экранов</b> (за месяц)`, ...lines];
+  // Отдельная строка-состояние (не событие за период) — печатаем только при
+  // ненулевом счётчике, чтобы на чистой БД («настройку не трогали») в блоке
+  // не появлялось «0 человек».
+  if (m.syncedUsers > 0) {
+    out.push(`Настройки синхронизированы: ${m.syncedUsers} человек`);
   }
-  return [`🧩 <b>Настройка экранов</b> (за месяц)`, ...lines].join('\n');
+  return out.join('\n');
 }

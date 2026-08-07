@@ -15,14 +15,12 @@ import {
 } from '../utils/todayFocus';
 import { useLongPress } from './useLongPress';
 import type { CustomizeHighlight } from '../components/TodayCustomizeSheet';
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-// Настройка экрана «Сегодня»: что показано, какая практика главная и как
-// открыт лист настройки. Собрано в один хук, потому что раньше это были восемь
-// useState + обработчики прямо в TodaySection (который и так самый большой
-// файл мини-аппа, правило №10).
-//
-// Скрытие блоков — per-device в localStorage (как тема): состояние экрана
-// личное для устройства, а не общее для аккаунта.
+// Настройка экрана «Сегодня» (что показано, какая практика главная) — раньше
+// восемь useState в TodaySection (правило №10), теперь один хук. Хранится
+// per-device в localStorage, синхронизируется между устройствами через
+// uiPrefsSync (notifyPrefsChanged ниже).
 export function useTodayCustomization() {
   const [practice, setPracticeState] =
     useState<FocusPractice>(getFocusPractice);
@@ -57,6 +55,7 @@ export function useTodayCustomization() {
       const next = !current;
       persist(next);
       setState(next);
+      notifyPrefsChanged();
       api.trackEvent('today_block_toggle', { block, hidden: next });
     },
     [],
@@ -79,6 +78,7 @@ export function useTodayCustomization() {
     choosePractice: useCallback((p: FocusPractice) => {
       setFocusPractice(p);
       setPracticeState(p);
+      notifyPrefsChanged();
       api.trackEvent('today_focus_change', { practice: p });
     }, []),
     toggleStreak: useCallback(

@@ -22,9 +22,14 @@ const FULL: ScreenMetrics = {
     { screen: 'profile', block: 'streak', count: 3 },
     { screen: 'profile', block: 'heatmap', count: 1 },
   ],
+  syncedUsers: 0,
 };
 
-const EMPTY: ScreenMetrics = { opensByScreen: [], hiddenByScreenBlock: [] };
+const EMPTY: ScreenMetrics = {
+  opensByScreen: [],
+  hiddenByScreenBlock: [],
+  syncedUsers: 0,
+};
 
 describe('formatScreenMetrics', () => {
   it('пустая БД: ровно одна строка, без NaN и без словарного мусора', () => {
@@ -90,5 +95,28 @@ describe('formatScreenMetrics', () => {
     for (const block of SCREEN_BLOCK_IDS) {
       expect(SCREEN_BLOCK_LABELS[block]).toBeTruthy();
     }
+  });
+});
+
+describe('formatScreenMetrics — syncedUsers (серверное зеркало настроек)', () => {
+  it('syncedUsers = 0 — строка не показывается вовсе (пустое состояние блока не меняем)', () => {
+    const text = formatScreenMetrics({ ...EMPTY, syncedUsers: 0 });
+    expect(text).toBe('🧩 Настройку экранов пока не трогали.');
+    expect(text).not.toMatch(/синхронизир/);
+  });
+
+  it('syncedUsers > 0 при полных данных — строка добавляется последней', () => {
+    const text = formatScreenMetrics({ ...FULL, syncedUsers: 7 });
+    expect(text.split('\n').at(-1)).toBe(
+      'Настройки синхронизированы: 7 человек',
+    );
+  });
+
+  it('syncedUsers > 0, но открытий/скрытий за месяц не было — фиксированное «не трогали» плюс строка синхронизации', () => {
+    const text = formatScreenMetrics({ ...EMPTY, syncedUsers: 5 });
+    expect(text).toBe(
+      '🧩 Настройку экранов пока не трогали.\nНастройки синхронизированы: 5 человек',
+    );
+    expect(text).not.toMatch(/NaN|undefined/);
   });
 });
