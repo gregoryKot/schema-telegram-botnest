@@ -6,6 +6,7 @@ import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
+import { ScreenMetricsService } from './screen-metrics.service';
 
 // Единая склейка второго сообщения /stats (продуктовые метрики + карточки
 // режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
@@ -21,6 +22,7 @@ export class StatsReportService {
     private readonly phraseChecks: PhraseCheckMetricsService,
     private readonly accountLink: AccountLinkMetricsService,
     private readonly plus: PlusMetricsService,
+    private readonly screen: ScreenMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. */
@@ -33,6 +35,7 @@ export class StatsReportService {
       phraseChecks,
       accountLink,
       plus,
+      screen,
     ] = await Promise.all([
       this.product.render(),
       this.modeCard.render(),
@@ -41,7 +44,8 @@ export class StatsReportService {
       this.phraseChecks.render(),
       this.accountLink.render(),
       this.plus.render(),
+      this.screen.render(),
     ]);
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}`;
   }
 }

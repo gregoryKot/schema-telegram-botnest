@@ -60,6 +60,11 @@
 //                         meta.hidden + meta.surface: 'plus'|'tools').
 //   quick_action_move   — переставил пункт в настройке меню (meta.action +
 //                         meta.surface + meta.dir: 'up'|'down').
+//   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.via — переиспользует
+//                         CUSTOMIZE_ENTRY_POINTS).
+//   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.hidden).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -95,6 +100,8 @@ export const ANALYTICS_EVENTS = [
   'plus_action',
   'quick_action_toggle',
   'quick_action_move',
+  'screen_customize_open',
+  'screen_block_toggle',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -251,3 +258,13 @@ export {
   QUICK_ACTION_MOVE_DIRS,
   type QuickActionMoveDir,
 } from './quick-actions.constants';
+
+// SCREEN_BLOCK_IDS/ScreenBlockId/CUSTOMIZABLE_SCREENS/CustomizableScreen —
+// вынесены в screen-blocks.constants.ts (правило №10, тот же приём, что и
+// с QUICK_ACTION_IDS выше).
+export {
+  SCREEN_BLOCK_IDS,
+  type ScreenBlockId,
+  CUSTOMIZABLE_SCREENS,
+  type CustomizableScreen,
+} from './screen-blocks.constants';
