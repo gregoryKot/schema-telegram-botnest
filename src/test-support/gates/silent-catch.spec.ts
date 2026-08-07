@@ -176,6 +176,38 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stderr).not.toContain('L2 [catch-null]');
   });
 
+  // Комментарии не сканируются — в обе стороны. Поймано на первый же день
+  // работы гейта: файл, где ПОЧИНИЛИ тихий catch и объяснили это в шапке,
+  // краснел из-за собственного объяснения. Обратная сторона важнее: комментарий
+  // с именем из аллоу-листа не имеет права прощать соседний живой код —
+  // из-за этого гейт недосчитывал 69 вхождений в 37 файлах.
+  it('упоминание .catch(() => {}) в комментарии — не считается', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        '// Раньше сбой глушился `.catch(() => {})` — юзер видел «сохранено».',
+        '/* Блочный комментарий тоже: .catch(() => []) */',
+        'api.save(x).catch((e) => setError(e));',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  it('имя из аллоу-листа в комментарии не прощает живой код рядом', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        '// см. ctx.reply(...) в соседнем хендлере — там глушить законно',
+        'const settings = await getUserSettings(id).catch(() => null);',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('L2 [catch-null]');
+  });
+
   it('тестовый файл (*.test.tsx) не сканируется', () => {
     const res = runGate('check-silent-catch.mjs', {
       'scripts/silent-catch-baseline.json': JSON.stringify({}),

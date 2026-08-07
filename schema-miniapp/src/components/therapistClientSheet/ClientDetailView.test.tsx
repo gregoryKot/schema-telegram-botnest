@@ -58,6 +58,7 @@ function makeDetail(overrides: Partial<ClientDetail> = {}): ClientDetail {
     setRenamingAlias: vi.fn(),
     setYsqRequested: vi.fn(),
     deleteError: '',
+    clientLoadError: false,
     ...overrides,
   } as unknown as ClientDetail;
 }
@@ -130,5 +131,32 @@ describe('ClientDetailView — ошибка удаления', () => {
       />,
     );
     expect(screen.getByText('Не удалось удалить клиента')).toBeTruthy();
+  });
+});
+
+// Регрессия: fetchClientDetail помечает частичный сбой явным флагом вместо
+// молчаливого фолбэка на []/null — терапевт должен видеть, что не все
+// данные клиента загрузились, а не читать пустоту как «у клиента их нет».
+describe('ClientDetailView — ошибка загрузки данных клиента', () => {
+  it('clientLoadError=false — заметки о сбое нет', () => {
+    render(
+      <ClientDetailView
+        {...baseProps({ detail: makeDetail({ clientLoadError: false }) })}
+      />,
+    );
+    expect(
+      screen.queryByText(/Часть данных клиента не загрузилась/),
+    ).toBeNull();
+  });
+
+  it('clientLoadError=true — показывает предупреждение', () => {
+    render(
+      <ClientDetailView
+        {...baseProps({ detail: makeDetail({ clientLoadError: true }) })}
+      />,
+    );
+    expect(
+      screen.getByText(/Часть данных клиента не загрузилась/),
+    ).toBeTruthy();
   });
 });

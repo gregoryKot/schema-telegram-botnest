@@ -169,6 +169,18 @@ function lineAt(src, index) {
   return src.slice(0, index).split('\n').length;
 }
 
+// Комментарии вычищаем ДО поиска. Иначе гейт ловит сам себя за хвост:
+// строка «раньше её сбой глушился `.catch(() => {})`» — это объяснение
+// починки, ровно то, что хочется поощрять, а гейт считал её нарушением
+// (поймано на первом же дне работы гейта). Содержимое заменяется пробелами,
+// переводы строк сохраняются — номера строк в отчёте остаются верными.
+function stripComments(src) {
+  return src.replace(
+    /\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+    (m) => m.replace(/[^\n]/g, ' '),
+  );
+}
+
 const counts = {};
 const details = {};
 for (const dir of SCAN_DIRS) {
@@ -179,6 +191,7 @@ for (const dir of SCAN_DIRS) {
     } catch {
       continue;
     }
+    src = stripComments(src);
     let n = 0;
     for (const [name, re] of PATTERNS) {
       re.lastIndex = 0;
