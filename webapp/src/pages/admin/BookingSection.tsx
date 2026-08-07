@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../../api';
 import type {
   AvailabilityRule,
@@ -88,9 +88,17 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
 function useSaveFeedback() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Таймер сброса «✓» чистится при анмаунте: без этого setState стрелял по
+  // снятому компоненту (в CI это роняло vitest: «window is not defined»).
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const guard = async (fn: () => Promise<void>) => {
     setError(null);
-    try { await fn(); setSaved(true); setTimeout(() => setSaved(false), 1500); }
+    try {
+      await fn(); setSaved(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setSaved(false), 1500);
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить цену'); }
   };
   const feedback = error
