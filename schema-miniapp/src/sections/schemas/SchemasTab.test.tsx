@@ -1,13 +1,23 @@
 // @vitest-environment jsdom
 // SchemasTab — вкладка «Схемы» каталога: держит openId (единый для Hero и
 // списка), рисует Hero + карточку теста YSQ в трёх состояниях (не начат/
-// начат/пройден). PatternsHero, YsqStatusCard и SchemasPatternSection — свои
+// начат/пройден), оба скрываемые через блоки «Паттернов» (heroes/ysq_status,
+// пропс blocks). PatternsHero, YsqStatusCard и SchemasPatternSection — свои
 // файлы со своими тестами, здесь их мокаем.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
+import type { BlockVisibility } from './blockVisibility';
 import { SchemasTab } from './SchemasTab';
+
+function fakeBlocks(hidden: string[] = []): BlockVisibility {
+  return {
+    isHidden: (id) => hidden.includes(id),
+    holdProps: () =>
+      ({}) as unknown as ReturnType<BlockVisibility['holdProps']>,
+  };
+}
 
 // Дата прохождения теста — относительная (не литерал): fmtDate() рисует её
 // как есть, но литерал в прошлом всё равно однажды перестанет быть валидной
@@ -54,6 +64,7 @@ const BASE_PROPS = {
   setSchemaEntries: () => {},
   onOpenSchema: vi.fn(),
   onShowSchemaPicker: vi.fn(),
+  blocks: fakeBlocks(),
 };
 
 describe('SchemasTab — без выбранных схем и непройденным тестом', () => {
@@ -115,6 +126,34 @@ describe('SchemasTab — во время загрузки', () => {
       />,
     );
     expect(screen.queryByText('hero-open-abandonment')).toBeNull();
+  });
+});
+
+describe('SchemasTab — скрываемые блоки (useScreenBlocks)', () => {
+  it('блок heroes скрыт — Hero не рендерится, список схем на месте', () => {
+    renderWithForm(
+      <SchemasTab {...BASE_PROPS} blocks={fakeBlocks(['heroes'])} />,
+    );
+    expect(screen.queryByText('hero-open-abandonment')).toBeNull();
+    expect(screen.getByTestId('pattern-section')).toBeTruthy();
+  });
+
+  it('блок ysq_status скрыт — карточка теста не рендерится, список схем на месте', () => {
+    renderWithForm(
+      <SchemasTab
+        {...BASE_PROPS}
+        allSchemaIds={['abandon']}
+        blocks={fakeBlocks(['ysq_status'])}
+      />,
+    );
+    expect(screen.queryByText('Тест на схемы')).toBeNull();
+    expect(screen.getByTestId('pattern-section')).toBeTruthy();
+  });
+
+  it('ничего не скрыто — Hero и карточка теста оба на месте', () => {
+    renderWithForm(<SchemasTab {...BASE_PROPS} allSchemaIds={['abandon']} />);
+    expect(screen.getByText('hero-open-abandonment')).toBeTruthy();
+    expect(screen.getByText('Тест на схемы')).toBeTruthy();
   });
 });
 

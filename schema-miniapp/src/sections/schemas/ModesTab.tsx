@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { ModesHero } from '../../components/ModesHero';
+import { ModesHeroSection } from './ModesHeroSection';
 import { ModesPatternSection } from './ModesPatternSection';
 import { WeekTopSummary } from '../../utils/patternsSummary';
 import { SchemasSectionProps } from './types';
+import type { BlockVisibility } from './blockVisibility';
 import type { ModeDiaryEntry } from '../../types';
 
 interface ModesTabProps {
@@ -17,6 +18,7 @@ interface ModesTabProps {
   onOpenDiaries?: () => void;
   onShowModePicker: () => void;
   onMeetCritic: () => void;
+  blocks: BlockVisibility;
 }
 
 export function ModesTab({
@@ -30,24 +32,22 @@ export function ModesTab({
   onOpenDiaries,
   onShowModePicker,
   onMeetCritic,
+  blocks,
 }: ModesTabProps) {
   const [openId, setOpenId] = useState<string | null>(null);
-
   return (
     <>
-      {/* Hero: новичку — знакомство с Критиком; опытному — «чаще всего включается» */}
-      {!profileLoading && (
-        <ModesHero
-          hasModes={myModeIds.length > 0}
-          summary={modeSummary}
-          onMeetCritic={onMeetCritic}
-          onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
-          onPickManually={onShowModePicker}
-          onOpenModeDetail={setOpenId}
-          onOpenDiaries={onOpenDiaries}
-        />
-      )}
-
+      <ModesHeroSection
+        profileLoading={profileLoading}
+        hasModes={myModeIds.length > 0}
+        summary={modeSummary}
+        onMeetCritic={onMeetCritic}
+        onOpenSchema={onOpenSchema}
+        onShowModePicker={onShowModePicker}
+        onOpenModeDetail={setOpenId}
+        onOpenDiaries={onOpenDiaries}
+        blocks={blocks}
+      />
       <ModesPatternSection
         profileLoading={profileLoading}
         myModeIds={myModeIds}
