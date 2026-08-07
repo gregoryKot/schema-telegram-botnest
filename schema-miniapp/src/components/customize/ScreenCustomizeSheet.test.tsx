@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // ScreenCustomizeSheet — generic лист «что показывать» по экрану. Проверяем:
-// рендерит блоки экрана из реестра, клик по строке зовёт onToggle(id),
-// подсветка нужной строки, «Готово» закрывает, «Паттерны» (пустой реестр
-// order пока) не рендерят ни одной строки и не падают.
+// рендерит блоки экрана из реестра (и «Профиль», и «Паттерны» — оба
+// заполнены), клик по строке зовёт onToggle(id), подсветка нужной строки,
+// «Готово» закрывает.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ScreenCustomizeSheet } from './ScreenCustomizeSheet';
@@ -88,7 +88,7 @@ describe('ScreenCustomizeSheet', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('экран «Паттерны» (реестр порядка пока пуст) не рендерит строк и не падает', () => {
+  it('рендерит заголовок и оба блока экрана «Паттерны»', () => {
     render(
       <ScreenCustomizeSheet
         screen="patterns"
@@ -97,6 +97,23 @@ describe('ScreenCustomizeSheet', () => {
         onClose={vi.fn()}
       />,
     );
-    expect(screen.queryAllByRole('switch')).toHaveLength(0);
+    expect(screen.getByText('Настроить экран')).toBeTruthy();
+    expect(screen.getByText('Подсказка сверху')).toBeTruthy();
+    expect(screen.getByText('Тест на схемы')).toBeTruthy();
+    expect(screen.queryAllByRole('switch')).toHaveLength(2);
+  });
+
+  it('клик по строке «Паттернов» вызывает onToggle с правильным id', () => {
+    const onToggle = vi.fn();
+    render(
+      <ScreenCustomizeSheet
+        screen="patterns"
+        hidden={[]}
+        onToggle={onToggle}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText('Тест на схемы'));
+    expect(onToggle).toHaveBeenCalledWith('ysq_status');
   });
 });

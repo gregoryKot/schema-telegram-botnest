@@ -41,9 +41,36 @@ describe('SCREEN_BLOCK_ORDER.profile', () => {
   });
 });
 
+describe('SCREEN_BLOCK_ORDER.patterns', () => {
+  it('каждый id паттернов есть в SCREEN_BLOCK_IDS', () => {
+    for (const id of SCREEN_BLOCK_ORDER.patterns) {
+      expect(SCREEN_BLOCK_IDS).toContain(id);
+    }
+  });
+
+  it('без дублей', () => {
+    const ids = SCREEN_BLOCK_ORDER.patterns;
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('ровно heroes и ysq_status — профильные блоки в паттерны не входят', () => {
+    expect(SCREEN_BLOCK_ORDER.patterns).toEqual(['heroes', 'ysq_status']);
+  });
+});
+
 describe('BLOCK_META', () => {
   it('у каждого блока профиля есть описание (emoji/label/sub)', () => {
     for (const id of SCREEN_BLOCK_ORDER.profile) {
+      const meta = BLOCK_META[id];
+      expect(meta).toBeTruthy();
+      expect(meta?.emoji).toBeTruthy();
+      expect(meta?.label).toBeTruthy();
+      expect(meta?.sub).toBeTruthy();
+    }
+  });
+
+  it('у каждого блока паттернов есть описание (emoji/label/sub)', () => {
+    for (const id of SCREEN_BLOCK_ORDER.patterns) {
       const meta = BLOCK_META[id];
       expect(meta).toBeTruthy();
       expect(meta?.emoji).toBeTruthy();

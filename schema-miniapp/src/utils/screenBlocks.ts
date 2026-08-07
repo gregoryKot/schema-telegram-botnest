@@ -1,7 +1,7 @@
-// Скрываемые блоки экранов «Профиль»/«Паттерны» — generic-контракт с бэком:
-// сначала «Профиль» (эта задача), затем «Паттерны» тем же механизмом (другой
-// агент). SCREEN_BLOCK_IDS парсит sync-спека бэка регулярным выражением —
-// держи ровно этот формат массива, по одному id на строке.
+// Скрываемые блоки экранов «Профиль»/«Паттерны» — generic-контракт с бэком,
+// один и тот же механизм на оба экрана. SCREEN_BLOCK_IDS парсит sync-спека
+// бэка регулярным выражением — держи ровно этот формат массива, по одному id
+// на строке.
 export const SCREEN_BLOCK_IDS = [
   'journey',
   'streak',
@@ -27,15 +27,13 @@ export interface ScreenBlockMeta {
   sub: string;
 }
 
-/** Порядок строк в листе «Настроить экран», по экранам. «Паттерны» заполнит
- * следующая задача (heroes/ysq_status) — реестр уже готов их принять. */
+/** Порядок строк в листе «Настроить экран», по экранам. */
 export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
   profile: ['journey', 'streak', 'heatmap', 'achievements', 'insights'],
-  patterns: [],
+  patterns: ['heroes', 'ysq_status'],
 };
 
-/** Описания блоков для строк листа. Названия — нейтральные (без «ты/вы»).
- * Профильные блоки — эта задача; heroes/ysq_status добавит задача «Паттернов». */
+/** Описания блоков для строк листа. Названия — нейтральные (без «ты/вы»). */
 export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   journey: {
     emoji: '🧭',
@@ -61,5 +59,15 @@ export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
     emoji: '📈',
     label: 'Паттерны',
     sub: 'какие потребности растут, а какие проседают',
+  },
+  heroes: {
+    emoji: '💡',
+    label: 'Подсказка сверху',
+    sub: 'вводная карточка над списком на вкладках «Схемы» и «Режимы»',
+  },
+  ysq_status: {
+    emoji: '📝',
+    label: 'Тест на схемы',
+    sub: 'карточка статуса теста на вкладке «Схемы»',
   },
 };
