@@ -1,14 +1,16 @@
-import { GearIcon } from '../../components/GearIcon';
+import { ProfileHeaderActions } from './ProfileHeaderActions';
 interface ProfileHeaderProps {
   firstName: string;
   totalDays: number;
   onOpenSettings: () => void;
+  onCustomize: () => void;
 }
 
 export function ProfileHeader({
   firstName,
   totalDays,
   onOpenSettings,
+  onCustomize,
 }: ProfileHeaderProps) {
   return (
     <div
@@ -39,12 +41,7 @@ export function ProfileHeader({
           {(firstName || 'Я')[0].toUpperCase()}
         </div>
         <div>
-          <div
-            className="d-display"
-            style={{
-              fontSize: 22,
-            }}
-          >
+          <div className="d-display" style={{ fontSize: 22 }}>
             {firstName || 'Я'}
           </div>
           {totalDays > 0 && (
@@ -58,24 +55,10 @@ export function ProfileHeader({
           )}
         </div>
       </div>
-      <button
-        onClick={onOpenSettings}
-        aria-label="Настройки"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          border: 'none',
-          background: 'rgba(var(--fg-rgb),0.06)',
-          color: 'var(--text-sub)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <GearIcon />
-      </button>
+      <ProfileHeaderActions
+        onOpenSettings={onOpenSettings}
+        onCustomize={onCustomize}
+      />
     </div>
   );
 }

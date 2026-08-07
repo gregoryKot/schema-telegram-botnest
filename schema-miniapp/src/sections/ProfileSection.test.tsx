@@ -11,6 +11,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { ProfileSection } from './ProfileSection';
@@ -21,6 +22,7 @@ vi.mock('../api', () => ({
     getAchievements: vi.fn(),
     getInsights: vi.fn(),
     history: vi.fn(),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -62,6 +64,7 @@ vi.mock('./profile/BestDayInfoSheet', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
   mockApi.getStreak.mockResolvedValue({
     currentStreak: 0,
@@ -82,6 +85,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   setHost(null);
+  vi.useRealTimers();
 });
 
 function baseProps() {
@@ -154,5 +158,81 @@ describe('ProfileSection — обновление по refreshKey', () => {
     mockApi.getStreak.mockClear();
     rerender(<ProfileSection {...baseProps()} refreshKey={2} />);
     await waitFor(() => expect(mockApi.getStreak).toHaveBeenCalled());
+  });
+});
+
+describe('ProfileSection — скрываемые блоки (useScreenBlocks)', () => {
+  it('блок, скрытый в localStorage, не рендерится — остальные видны', async () => {
+    localStorage.setItem('screen_hidden_profile', JSON.stringify(['streak']));
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+    ]);
+    await renderReady();
+    expect(screen.queryByText('всего')).toBeNull();
+    expect(await screen.findByText(/Достижени/)).toBeTruthy();
+  });
+
+  it('клик «Настроить» в шапке открывает лист «Настроить экран»', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    expect(await screen.findByText('Настроить экран')).toBeTruthy();
+  });
+
+  it('тумблер скрывает блок: шлёт screen_block_toggle, пишет localStorage, и после закрытия карточка не рендерится (read-after-write)', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    fireEvent.click(await screen.findByText('Серия дней'));
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_toggle', {
+      screen: 'profile',
+      block: 'streak',
+      hidden: true,
+    });
+    expect(localStorage.getItem('screen_hidden_profile')).toBe('["streak"]');
+    fireEvent.click(screen.getByText('Готово'));
+    expect(screen.queryByText('всего')).toBeNull();
+  });
+
+  it('долгое нажатие на карточку открывает лист с via=longpress', async () => {
+    await renderReady();
+    const journeyCard = screen.getByText(/Мой путь/).closest('.card');
+    const wrapper = journeyCard?.parentElement as HTMLElement;
+    vi.useFakeTimers();
+    fireEvent.pointerDown(wrapper, {
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_customize_open', {
+      screen: 'profile',
+      via: 'longpress',
+    });
+    expect(await screen.findByText('Настроить экран')).toBeTruthy();
+  });
+
+  it('все блоки скрыты — шапка и TherapyNote остаются на месте', async () => {
+    localStorage.setItem(
+      'screen_hidden_profile',
+      JSON.stringify([
+        'journey',
+        'streak',
+        'heatmap',
+        'achievements',
+        'insights',
+      ]),
+    );
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+    ]);
+    render(<ProfileSection {...baseProps()} />);
+    expect(await screen.findByText(/Инструмент самоисследования/)).toBeTruthy();
+    expect(screen.getByText('Аня')).toBeTruthy();
+    expect(screen.queryByText(/Мой путь/)).toBeNull();
+    expect(screen.queryByText('всего')).toBeNull();
+    expect(screen.queryByText(/Достижени/)).toBeNull();
   });
 });
