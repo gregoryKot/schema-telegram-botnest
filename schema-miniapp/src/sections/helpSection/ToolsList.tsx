@@ -4,11 +4,13 @@ import { buildToolRows, ToolRowsProps } from './toolRows';
 import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
 import { CustomizeButton } from '../../components/plusMenu/CustomizeButton';
 import type { QuickActionId } from '../../utils/quickActions';
+import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
+import { useHiddenActions } from '../../utils/useHiddenActions';
 import {
-  getHiddenActions,
-  setActionHidden,
-  TOOLS_ACTIONS_HIDDEN_KEY,
-} from '../../utils/quickActionPrefs';
+  TOOLS_ACTIONS_ORDER_KEY,
+  withMoveFlags,
+} from '../../utils/quickActionOrder';
+import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 
 // Строки блока «Инструменты» живут в toolRows.ts — общий источник для
 // рендера и для листа настройки видимости (QuickActionCustomizeSheet, та
@@ -27,12 +29,9 @@ interface Props extends ToolRowsProps {
 }
 
 // props целиком, без деструктуризации: buildToolRows(props) берёт свои 4
-// поля (ToolRowsProps), callbacks — свои 10 колбэков. Короче сигнатура —
-// короче файл (файл уже в бейслайне храповика размера, правило №10).
+// поля, callbacks — свои 10 колбэков (файл в бейслайне размера, правило №10).
 export function ToolsList(props: Props) {
-  const [hidden, setHidden] = useState<string[]>(() =>
-    getHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY),
-  );
+  const [hidden, handleToggle] = useHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY);
   const [showCustomize, setShowCustomize] = useState(false);
   const callbacks: Partial<Record<QuickActionId, () => void>> = {
     phrase_check: props.onOpenPhraseCheck,
@@ -47,13 +46,11 @@ export function ToolsList(props: Props) {
     warm_words: props.onOpenWarmWords,
   };
   const rows = buildToolRows(props);
-  const visibleRows = rows.filter((r) => !hidden.includes(r.id));
-  function handleToggle(id: string, nextHidden: boolean) {
-    setActionHidden(TOOLS_ACTIONS_HIDDEN_KEY, id, nextHidden);
-    setHidden((prev) =>
-      nextHidden ? [...prev, id] : prev.filter((x) => x !== id),
-    );
-  }
+  const { ordered, onMove } = useQuickActionOrder(TOOLS_ACTIONS_ORDER_KEY, [
+    rows,
+  ]);
+  const orderedRows = ordered[0];
+  const visibleRows = orderedRows.filter((r) => !hidden.includes(r.id));
   return (
     <>
       <div
@@ -98,14 +95,17 @@ export function ToolsList(props: Props) {
         <QuickActionCustomizeSheet
           title="Какие инструменты показывать"
           surface="tools"
-          actions={rows.map((r) => ({
+          actions={withMoveFlags(orderedRows).map((r) => ({
             id: r.id,
             emoji: r.emoji,
             label: r.label,
             sub: r.sub ?? '',
+            disabledUp: r.disabledUp,
+            disabledDown: r.disabledDown,
           }))}
           hidden={hidden}
           onToggle={handleToggle}
+          onMove={onMove}
           onClose={() => setShowCustomize(false)}
         />
       )}

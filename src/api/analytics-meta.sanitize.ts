@@ -11,6 +11,7 @@ import {
   HOME_SCREEN_SURFACE_SET,
   QUICK_ACTION_ID_SET,
   QUICK_ACTION_SURFACE_SET,
+  QUICK_ACTION_MOVE_DIR_SET,
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
 } from './dto/analytics.dto';
@@ -209,6 +210,22 @@ export function sanitizeMeta(
       QUICK_ACTION_SURFACE_SET.has(surface)
     ) {
       return { action, hidden, surface };
+    }
+    return undefined;
+  }
+  if (name === 'quick_action_move') {
+    const action = meta.action;
+    const surface = meta.surface;
+    const dir = meta.dir;
+    if (
+      typeof action === 'string' &&
+      QUICK_ACTION_ID_SET.has(action) &&
+      typeof surface === 'string' &&
+      QUICK_ACTION_SURFACE_SET.has(surface) &&
+      typeof dir === 'string' &&
+      QUICK_ACTION_MOVE_DIR_SET.has(dir)
+    ) {
+      return { action, surface, dir };
     }
     return undefined;
   }

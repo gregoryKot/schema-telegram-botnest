@@ -6,13 +6,24 @@
 // именно свой обработчик, скрытие строк через «Настроить»
 // (utils/quickActionPrefs.ts) и пустое состояние, когда всё скрыто.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
 import { ToolsList } from './ToolsList';
 import { QUICK_ACTION_IDS } from '../../utils/quickActions';
 import {
   TOOLS_ACTIONS_HIDDEN_KEY,
   serializeHiddenActions,
 } from '../../utils/quickActionPrefs';
+import {
+  TOOLS_ACTIONS_ORDER_KEY,
+  getActionOrder,
+  serializeActionOrder,
+} from '../../utils/quickActionOrder';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 import { api } from '../../api';
@@ -37,7 +48,7 @@ function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
     onOpenChildhoodWheel: vi.fn(),
     onOpenWarmWords: vi.fn(),
   };
-  render(
+  const { container } = render(
     <ToolsList
       tasksCount={0}
       practiceCount={null}
@@ -47,7 +58,7 @@ function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
       {...overrides}
     />,
   );
-  return handlers;
+  return { ...handlers, container };
 }
 
 describe('ToolsList — плюрализация и пустые состояния', () => {
@@ -164,5 +175,73 @@ describe('ToolsList — скрытие строк («Настроить»)', () 
       ),
     ).toBeTruthy();
     expect(screen.getByText('Настроить')).toBeTruthy();
+  });
+});
+
+describe('ToolsList — порядок строк', () => {
+  it('сохранённый порядок применяется: поднятая строка рендерится первой', () => {
+    localStorage.setItem(
+      TOOLS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['warm_words']),
+    );
+    const { container } = renderList();
+    const html = container.textContent ?? '';
+    expect(html.indexOf('Тёплые слова')).toBeLessThan(
+      html.indexOf('Критик или забота?'),
+    );
+  });
+
+  it('строки, которых нет в сохранённом порядке, не пропадают', () => {
+    localStorage.setItem(
+      TOOLS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['warm_words']),
+    );
+    renderList();
+    expect(screen.getByText('Критик или забота?')).toBeTruthy();
+    expect(screen.getByText('Мои цели')).toBeTruthy();
+  });
+
+  it('стрелка в листе настройки двигает строку, шлёт quick_action_move и меняет список', () => {
+    // «Мои цели» (tasks) — вторая строка реестра, сосед первой («Критик или
+    // забота?») — соседние строки, чтобы один свап дал видимый результат.
+    const { container } = renderList();
+    fireEvent.click(screen.getByText('Настроить'));
+
+    // Два «Мои цели» на экране: строка списка и строка листа настройки —
+    // последнее вхождение (портал листа монтируется позже) и есть строка листа.
+    const matches = screen.getAllByText('Мои цели');
+    const switchEl = matches[matches.length - 1].closest(
+      '[role="switch"]',
+    ) as HTMLElement;
+    const moveArrows = (switchEl.parentElement as HTMLElement)
+      .nextElementSibling as HTMLElement;
+    fireEvent.click(within(moveArrows).getByLabelText('Выше'));
+
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+      action: 'tasks',
+      surface: 'tools',
+      dir: 'up',
+    });
+    expect(getActionOrder(TOOLS_ACTIONS_ORDER_KEY)[0]).toBe('tasks');
+
+    fireEvent.click(screen.getByText('Готово'));
+    const html = container.textContent ?? '';
+    expect(html.indexOf('Мои цели')).toBeLessThan(
+      html.indexOf('Критик или забота?'),
+    );
+  });
+
+  it('крайняя строка списка: стрелка вверх у первой строки задизейблена', () => {
+    renderList();
+    fireEvent.click(screen.getByText('Настроить'));
+    const matches = screen.getAllByText('Критик или забота?');
+    const switchEl = matches[matches.length - 1].closest(
+      '[role="switch"]',
+    ) as HTMLElement;
+    const moveArrows = (switchEl.parentElement as HTMLElement)
+      .nextElementSibling as HTMLElement;
+    expect(
+      within(moveArrows).getByLabelText('Выше').getAttribute('aria-disabled'),
+    ).toBe('true');
   });
 });

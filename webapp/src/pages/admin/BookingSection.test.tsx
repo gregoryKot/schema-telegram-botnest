@@ -126,6 +126,26 @@ describe('BookingSection — цены сессий', () => {
     expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500);
   });
 
+  it('таймер сброса «✓» чистится при анмаунте (регресс: setState после снятия компонента ронял CI «window is not defined»)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mockApi.adminSetPrice.mockResolvedValue({ ok: true });
+      const { unmount } = render(<BookingSection adminKey="k" />);
+      const priceInput = await screen.findByDisplayValue('3000');
+      fireEvent.change(priceInput, { target: { value: '3500' } });
+      fireEvent.click(
+        within(section('Цены')).getByRole('button', { name: 'Сохранить' }),
+      );
+      await screen.findByText('Цена сохранена ✓');
+
+      unmount();
+      // Утёкший таймер = setState по снятому компоненту через 1.5с.
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('ошибка сохранения цены сессии — видна, «сохранена» не показывается (тот же класс бага, что и в подписке)', async () => {
     mockApi.adminSetPrice.mockRejectedValue(new Error('Не удалось сохранить цену'));
     render(<BookingSection adminKey="k" />);
