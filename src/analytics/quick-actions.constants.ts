@@ -47,3 +47,8 @@ export type QuickActionId = (typeof QUICK_ACTION_IDS)[number];
 // меню-лист «плюс», 'tools' — настройка меню из вкладки инструментов.
 export const QUICK_ACTION_SURFACES = ['plus', 'tools'] as const;
 export type QuickActionSurface = (typeof QUICK_ACTION_SURFACES)[number];
+
+// Направление сдвига пункта при переупорядочивании (meta.dir для
+// quick_action_move).
+export const QUICK_ACTION_MOVE_DIRS = ['up', 'down'] as const;
+export type QuickActionMoveDir = (typeof QUICK_ACTION_MOVE_DIRS)[number];

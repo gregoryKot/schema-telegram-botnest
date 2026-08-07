@@ -7,6 +7,7 @@ import { getTheme, Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { Props, View } from './settingsSheet/types';
+import { usePatchSettings } from './settingsSheet/usePatchSettings';
 import { NotifySubView } from './settingsSheet/NotifyViews';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
 import { NotificationsSection } from './settingsSheet/NotificationsSection';
@@ -126,13 +127,10 @@ export function SettingsSheet({
       .catch(() => setTherapistReq(null));
   }, []);
 
-  async function patch(update: Partial<UserSettings>) {
-    if (!settings) return;
-    setSettings((s) => (s ? { ...s, ...update } : s));
-    await api.updateSettings(update).catch(() => {});
+  const { patch, saveError } = usePatchSettings(settings, setSettings, () => {
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 1800);
-  }
+  });
 
   async function handleCreateInvite() {
     setPairLoading(true);
@@ -279,13 +277,13 @@ export function SettingsSheet({
           <span
             style={{
               fontSize: 12,
-              color: 'var(--accent-green)',
+              color: saveError ? 'var(--accent-red)' : 'var(--accent-green)',
               fontWeight: 600,
-              opacity: savedToast ? 1 : 0,
+              opacity: savedToast || saveError ? 1 : 0,
               transition: 'opacity 0.3s ease',
             }}
           >
-            Сохранено ✓
+            {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
         </div>
 

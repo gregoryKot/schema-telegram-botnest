@@ -1,14 +1,14 @@
 {
   "webapp": {
-    "lines": 67.25,
-    "branches": 59.09
+    "lines": 81.03,
+    "branches": 71.1
   },
   "schema-miniapp": {
-    "lines": 75.89,
-    "branches": 73.45
+    "lines": 88.75,
+    "branches": 82.74
   },
   "shared": {
-    "lines": 92.71,
-    "branches": 85.83
+    "lines": 97.04,
+    "branches": 89.7
   }
 }

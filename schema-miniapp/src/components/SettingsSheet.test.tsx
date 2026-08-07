@@ -208,3 +208,20 @@ describe('SettingsSheet — сохранение показывает тост �
     );
   });
 });
+
+// Регрессия: patch() показывало «Сохранено ✓» независимо от результата
+// api.updateSettings — отказ выглядел как успех (тост зелёный, глазами не
+// отличить). Откат оптимистичного settings проверен отдельно на уровне хука
+// (usePatchSettings.test.tsx, тумблер + aria-checked); здесь — что контейнер
+// показывает видимую ошибку вместо «Сохранено ✓».
+describe('SettingsSheet — сохранение: отказ виден, а не тишина', () => {
+  it('отказ api.updateSettings показывает «Не сохранилось» вместо «Сохранено ✓»', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    await renderReady();
+    fireEvent.click(screen.getByText('address-form-patch'));
+
+    const status = await screen.findByText('Не сохранилось');
+    expect(status.style.opacity).toBe('1');
+    expect(screen.queryByText('Сохранено ✓')).toBeNull();
+  });
+});

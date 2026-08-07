@@ -39,9 +39,16 @@ vi.mock('../components/SchemaFlashcard', () => ({
   ),
 }));
 vi.mock('../components/BeliefCheck', () => ({
-  BeliefCheck: ({ onClose }: { onClose: () => void }) => (
+  BeliefCheck: ({
+    onClose,
+    onComplete,
+  }: {
+    onClose: () => void;
+    onComplete?: () => void;
+  }) => (
     <div data-testid="belief-check">
       <button onClick={onClose}>belief-close</button>
+      <button onClick={onComplete}>belief-complete</button>
     </div>
   ),
 }));
@@ -59,6 +66,13 @@ vi.mock('../components/SafePlace', () => ({
     </div>
   ),
 }));
+vi.mock('../components/PhraseCheck', () => ({
+  PhraseCheck: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="phrase-check">
+      <button onClick={onClose}>phrase-check-close</button>
+    </div>
+  ),
+}));
 vi.mock('../components/WarmWords', () => ({
   WarmWords: ({ onClose }: { onClose: () => void }) => (
     <div data-testid="warm-words">
@@ -67,25 +81,65 @@ vi.mock('../components/WarmWords', () => ({
   ),
 }));
 vi.mock('../components/SchemaIntroSheet', () => ({
-  SchemaIntroSheet: ({ schemaId }: { schemaId: string }) => (
-    <div data-testid="schema-intro">schema={schemaId}</div>
+  SchemaIntroSheet: ({
+    schemaId,
+    onClose,
+    onComplete,
+  }: {
+    schemaId: string;
+    onClose: () => void;
+    onComplete: () => void;
+  }) => (
+    <div data-testid="schema-intro">
+      schema={schemaId}
+      <button onClick={onClose}>schema-intro-close</button>
+      <button onClick={onComplete}>schema-intro-complete</button>
+    </div>
   ),
 }));
 vi.mock('../components/ModeIntroSheet', () => ({
-  ModeIntroSheet: ({ modeId }: { modeId: string }) => (
-    <div data-testid="mode-intro">mode={modeId}</div>
+  ModeIntroSheet: ({
+    modeId,
+    onClose,
+    onComplete,
+  }: {
+    modeId: string;
+    onClose: () => void;
+    onComplete: () => void;
+  }) => (
+    <div data-testid="mode-intro">
+      mode={modeId}
+      <button onClick={onClose}>mode-intro-close</button>
+      <button onClick={onComplete}>mode-intro-complete</button>
+    </div>
   ),
 }));
 vi.mock('../components/SelfHelpDisclaimer', () => ({
-  SelfHelpSheet: ({ onOpenCrisis }: { onOpenCrisis: () => void }) => (
+  SelfHelpSheet: ({
+    onClose,
+    onOpenCrisis,
+  }: {
+    onClose: () => void;
+    onOpenCrisis: () => void;
+  }) => (
     <div data-testid="self-help">
+      <button onClick={onClose}>self-help-close</button>
       <button onClick={onOpenCrisis}>self-help-open-crisis</button>
     </div>
   ),
 }));
 vi.mock('../components/QuickPracticeSheet', () => ({
-  QuickPracticeSheet: ({ id }: { id: string }) => (
-    <div data-testid="quick-practice">id={id}</div>
+  QuickPracticeSheet: ({
+    id,
+    onClose,
+  }: {
+    id: string;
+    onClose: () => void;
+  }) => (
+    <div data-testid="quick-practice">
+      id={id}
+      <button onClick={onClose}>quick-practice-close</button>
+    </div>
   ),
 }));
 vi.mock('../components/TaskCreateSheet', async (importOriginal) => {
@@ -95,9 +149,16 @@ vi.mock('../components/TaskCreateSheet', async (importOriginal) => {
     await importOriginal<typeof import('../components/TaskCreateSheet')>();
   return {
     ...actual,
-    TaskCreateSheet: ({ onCreated }: { onCreated: () => void }) => (
+    TaskCreateSheet: ({
+      onCreated,
+      onClose,
+    }: {
+      onCreated: () => void;
+      onClose: () => void;
+    }) => (
       <div data-testid="task-create">
         <button onClick={onCreated}>task-create-created</button>
+        <button onClick={onClose}>task-create-close</button>
       </div>
     ),
   };
@@ -223,7 +284,7 @@ describe('HelpSection — инструменты открывают правил
   it('заземление открывает QuickPracticeSheet с верным id', async () => {
     await renderReady();
     fireEvent.click(screen.getByText('Заземление 5-4-3-2-1'));
-    expect(screen.getByTestId('quick-practice').textContent).toBe(
+    expect(screen.getByTestId('quick-practice').textContent).toContain(
       'id=grounding',
     );
   });
@@ -239,7 +300,7 @@ describe('HelpSection — клик по задаче терапевта откр
     // Карточка схемы резолвит своё отображаемое название по task.text (id
     // схемы), а не рисует голый task.text — кликаем по резолвнутому тексту.
     fireEvent.click(screen.getByText(/Карточка схемы/));
-    expect(screen.getByTestId('schema-intro').textContent).toBe(
+    expect(screen.getByTestId('schema-intro').textContent).toContain(
       'schema=abandonment',
     );
   });
@@ -268,6 +329,414 @@ describe('HelpSection — лист «Мои цели» и создание но�
     mockApi.getTasks.mockClear();
     fireEvent.click(screen.getByText('task-create-created'));
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
+  });
+});
+
+describe('HelpSection — initialTasks (прогрев из App.tsx) применяется как стартовый список', () => {
+  it('переданный initialTasks сразу отражается без ожидания api.getTasks', async () => {
+    mockApi.getTasks.mockResolvedValue([]);
+    render(
+      <HelpSection
+        {...baseProps()}
+        initialTasks={[
+          task({
+            id: 7,
+            assignedBy: 5,
+            type: 'belief_check',
+            doneToday: false,
+          }),
+        ]}
+      />,
+    );
+    await screen.findByText('От терапевта');
+  });
+});
+
+describe('HelpSection — падение статуса терапии не рушит экран', () => {
+  it('getTherapyRelation отклонился → баннер встречи просто не рисуется', async () => {
+    mockApi.getTherapyRelation.mockRejectedValue(new Error('network down'));
+    await renderReady();
+    expect(screen.queryByText(/Встреча/)).toBeNull();
+  });
+});
+
+describe('HelpSection — открытие задачи терапевта по типу (openTask роутинг, продолжение)', () => {
+  it('tracker_streak вызывает onOpenTracker', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 10,
+        assignedBy: 5,
+        type: 'tracker_streak',
+        text: 'Отмечать потребности 7 дней подряд',
+        doneToday: false,
+      }),
+    ]);
+    const onOpenTracker = vi.fn();
+    await renderReady({ onOpenTracker });
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Отмечать потребности 7 дней подряд'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it('belief_check открывает лист BeliefCheck', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 11,
+        assignedBy: 5,
+        type: 'belief_check',
+        text: 'Проверить убеждение',
+        doneToday: false,
+      }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Проверить убеждение'));
+    expect(screen.getByTestId('belief-check')).toBeTruthy();
+  });
+
+  it('letter_to_self открывает лист LetterToSelf', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 12,
+        assignedBy: 5,
+        type: 'letter_to_self',
+        text: 'Написать письмо Уязвимому Ребёнку',
+        doneToday: false,
+      }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Написать письмо Уязвимому Ребёнку'));
+    expect(screen.getByTestId('letter-to-self')).toBeTruthy();
+  });
+
+  it('safe_place открывает лист SafePlace', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 13,
+        assignedBy: 5,
+        type: 'safe_place',
+        text: 'Описать Безопасное место',
+        doneToday: false,
+      }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Описать Безопасное место'));
+    expect(screen.getByTestId('safe-place')).toBeTruthy();
+  });
+
+  it('childhood_wheel вызывает onOpenChildhoodWheel', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 14,
+        assignedBy: 5,
+        type: 'childhood_wheel',
+        text: 'Колесо детства',
+        doneToday: false,
+      }),
+    ]);
+    const onOpenChildhoodWheel = vi.fn();
+    await renderReady({ onOpenChildhoodWheel });
+    await screen.findByText('От терапевта');
+    // «Колесо детства» есть и в баннере «От терапевта», и отдельным
+    // инструментом в списке ниже — кликаем именно по задаче терапевта
+    // (первая в порядке документа).
+    fireEvent.click(screen.getAllByText('Колесо детства')[0]);
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('mode_intro открывает ModeIntroSheet с id режима из task.text', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 15,
+        assignedBy: 5,
+        type: 'mode_intro',
+        text: 'vulnerable_child',
+      }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка режима/));
+    expect(screen.getByTestId('mode-intro').textContent).toContain(
+      'mode=vulnerable_child',
+    );
+  });
+});
+
+describe('HelpSection — легаси-формат задачи: тип не распознан, но текст — реальный id схемы/режима', () => {
+  it('неизвестный тип с текстом-id схемы всё равно открывает карточку схемы', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 30, assignedBy: 5, type: 'legacy', text: 'abandonment' }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка схемы/));
+    expect(screen.getByTestId('schema-intro').textContent).toContain(
+      'schema=abandonment',
+    );
+  });
+
+  it('неизвестный тип с текстом-id режима открывает карточку режима', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 31, assignedBy: 5, type: 'legacy', text: 'vulnerable_child' }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка режима/));
+    expect(screen.getByTestId('mode-intro').textContent).toContain(
+      'mode=vulnerable_child',
+    );
+  });
+});
+
+describe('HelpSection — завершение задания (handleTaskComplete): перезапрашивает задачи и сообщает наверх', () => {
+  it('завершение назначенной задачи вызывает api.completeTask, перезагружает список и зовёт onTasksChanged', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 20,
+        assignedBy: 5,
+        type: 'belief_check',
+        text: 'Проверить убеждение',
+        doneToday: false,
+      }),
+    ]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    const onTasksChanged = vi.fn();
+    await renderReady({ onTasksChanged });
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Проверить убеждение'));
+    expect(screen.getByTestId('belief-check')).toBeTruthy();
+
+    mockApi.getTasks.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText('belief-complete'));
+
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(20, true),
+    );
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('HelpSection — diary_streak-задача терапевта открывает дневники', () => {
+  it('клик по назначенной diary_streak вызывает onOpenDiaries', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({
+        id: 21,
+        assignedBy: 5,
+        type: 'diary_streak',
+        text: 'Заполнять дневник 7 дней подряд',
+        doneToday: false,
+      }),
+    ]);
+    const onOpenDiaries = vi.fn();
+    await renderReady({ onOpenDiaries });
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Заполнять дневник 7 дней подряд'));
+    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('HelpSection — завершение задачи без активного task-id не бьёт по API (открыто не из баннера терапевта)', () => {
+  it('BeliefCheck, открытый из ToolsList (не из задачи), onComplete не вызывает api.completeTask', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Проверка убеждений'));
+    fireEvent.click(screen.getByText('belief-complete'));
+    expect(mockApi.completeTask).not.toHaveBeenCalled();
+  });
+});
+
+describe('HelpSection — все дочерние листы реально закрываются (не залипают открытыми)', () => {
+  it('«Схема включилась» → лист флешкарты, закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Схема включилась'));
+    expect(screen.getByTestId('flashcard')).toBeTruthy();
+    fireEvent.click(screen.getByText('flashcard-close'));
+    expect(screen.queryByTestId('flashcard')).toBeNull();
+  });
+
+  it('«Проверка убеждений» закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Проверка убеждений'));
+    fireEvent.click(screen.getByText('belief-close'));
+    expect(screen.queryByTestId('belief-check')).toBeNull();
+  });
+
+  it('«Письмо себе» закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Письмо себе'));
+    fireEvent.click(screen.getByText('letter-close'));
+    expect(screen.queryByTestId('letter-to-self')).toBeNull();
+  });
+
+  it('«Безопасное место» закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Безопасное место'));
+    fireEvent.click(screen.getByText('safe-place-close'));
+    expect(screen.queryByTestId('safe-place')).toBeNull();
+  });
+
+  it('«Тёплые слова» закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Тёплые слова'));
+    fireEvent.click(screen.getByText('warm-words-close'));
+    expect(screen.queryByTestId('warm-words')).toBeNull();
+  });
+
+  it('«О границах самопомощи» закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('О границах самопомощи'));
+    fireEvent.click(await screen.findByText('self-help-close'));
+    expect(screen.queryByTestId('self-help')).toBeNull();
+  });
+
+  it('заземление закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Заземление 5-4-3-2-1'));
+    fireEvent.click(screen.getByText('quick-practice-close'));
+    expect(screen.queryByTestId('quick-practice')).toBeNull();
+  });
+
+  it('техника «Стоп» открывается и закрывается', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Техника «Стоп»'));
+    expect(screen.getByTestId('quick-practice').textContent).toContain(
+      'id=stop',
+    );
+    fireEvent.click(screen.getByText('quick-practice-close'));
+    expect(screen.queryByTestId('quick-practice')).toBeNull();
+  });
+
+  it('карточка кризиса «Мне очень плохо» закрывается по Escape', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Мне очень плохо'));
+    await screen.findByText('Помощь рядом');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByText('Помощь рядом')).toBeNull();
+  });
+
+  it('карточка схемы (SchemaIntroSheet) закрывается и завершается', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 22,
+        assignedBy: 5,
+        type: 'schema_intro',
+        text: 'abandonment',
+      }),
+    ]);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка схемы/));
+    expect(screen.getByTestId('schema-intro')).toBeTruthy();
+    fireEvent.click(screen.getByText('schema-intro-close'));
+    expect(screen.queryByTestId('schema-intro')).toBeNull();
+  });
+
+  it('карточка схемы завершается через onComplete (списывает activeTaskId)', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 23,
+        assignedBy: 5,
+        type: 'schema_intro',
+        text: 'abandonment',
+      }),
+    ]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка схемы/));
+    mockApi.getTasks.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText('schema-intro-complete'));
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(23, true),
+    );
+    expect(screen.queryByTestId('schema-intro')).toBeNull();
+  });
+
+  it('карточка режима (ModeIntroSheet) закрывается и завершается', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 24,
+        assignedBy: 5,
+        type: 'mode_intro',
+        text: 'vulnerable_child',
+      }),
+    ]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка режима/));
+    fireEvent.click(screen.getByText('mode-intro-close'));
+    expect(screen.queryByTestId('mode-intro')).toBeNull();
+  });
+
+  it('карточка режима завершается через onComplete (списывает activeTaskId)', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 25,
+        assignedBy: 5,
+        type: 'mode_intro',
+        text: 'vulnerable_child',
+      }),
+    ]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText(/Карточка режима/));
+    mockApi.getTasks.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText('mode-intro-complete'));
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(25, true),
+    );
+    expect(screen.queryByTestId('mode-intro')).toBeNull();
+  });
+});
+
+describe('HelpSection — лист «Мои цели»: закрытие и завершение своей цели изнутри списка', () => {
+  it('закрытие «Мои цели» (Escape) снова прячет лист', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Мои цели'));
+    await screen.findByText('Поставить цель');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByText('Поставить цель')).toBeNull();
+  });
+
+  it('завершение своей (custom) цели прямо из списка перезагружает задачи (onReload)', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 40, type: 'custom', text: 'Пить воду', done: null }),
+    ]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    await renderReady();
+    fireEvent.click(screen.getByText('Мои цели'));
+    await screen.findByText('Пить воду');
+    mockApi.getTasks.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(40, true),
+    );
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('HelpSection — «Проверка фраз» открывает и закрывает лист PhraseCheck', () => {
+  it('клик открывает PhraseCheck, закрытие возвращает на экран', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Критик или забота?'));
+    expect(screen.getByTestId('phrase-check')).toBeTruthy();
+    fireEvent.click(screen.getByText('phrase-check-close'));
+    expect(screen.queryByTestId('phrase-check')).toBeNull();
+  });
+});
+
+describe('HelpSection — создание цели можно отменить без создания', () => {
+  it('«Отмена» в TaskCreateSheet закрывает лист, не перезапрашивая задачи', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Мои цели'));
+    fireEvent.click(await screen.findByText('Поставить цель'));
+    mockApi.getTasks.mockClear();
+    fireEvent.click(screen.getByText('task-create-close'));
+    expect(screen.queryByTestId('task-create')).toBeNull();
+    expect(mockApi.getTasks).not.toHaveBeenCalled();
   });
 });
 

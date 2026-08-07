@@ -16,7 +16,7 @@ export class PlusMetricsService {
 
   async getMetrics(): Promise<PlusMetrics> {
     const since30 = new Date(Date.now() - 30 * 86_400_000);
-    const [opensRows, actionRows, hiddenRows] = await Promise.all([
+    const [opensRows, actionRows, hiddenRows, movesRows] = await Promise.all([
       this.prisma.$queryRaw<Array<{ opens: bigint; users: bigint }>>`
         SELECT count(*)::bigint AS opens,
                count(DISTINCT "userId")::bigint AS users
@@ -38,8 +38,14 @@ export class PlusMetricsService {
           AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'action'
         ORDER BY c DESC`,
+      // Переупорядочивание — без разбивки по пункту, только общий счётчик.
+      this.prisma.$queryRaw<Array<{ moves: bigint }>>`
+        SELECT count(*)::bigint AS moves
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'quick_action_move' AND "createdAt" >= ${since30}`,
     ]);
     const [row] = opensRows;
+    const [moveRow] = movesRows;
     const toList = (
       rows: Array<{ action: string | null; c: bigint }>,
     ): Array<{ action: string; count: number }> =>
@@ -51,6 +57,7 @@ export class PlusMetricsService {
       users30: Number(row?.users ?? 0n),
       actions30: toList(actionRows),
       hidden30: toList(hiddenRows),
+      moves30: Number(moveRow?.moves ?? 0n),
     };
   }
 }

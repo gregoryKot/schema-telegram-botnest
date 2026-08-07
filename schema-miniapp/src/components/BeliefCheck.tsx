@@ -4,15 +4,12 @@ import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
+import { SaveErrorNote } from './SaveErrorNote';
 import { cm } from '../sections/schemas/utils';
 import { EvidenceList } from './beliefCheck/EvidenceList';
-import {
-  STORAGE_KEY,
-  BeliefEntry,
-  fmtDate,
-  loadLocal,
-} from './beliefCheck/storage';
+import { BeliefEntry, fmtDate, loadLocal } from './beliefCheck/storage';
 import { BeliefDoneScreen } from './beliefCheck/DoneScreen';
+import { useSaveBeliefCheck } from './beliefCheck/useSaveBeliefCheck';
 
 type Step = 'belief' | 'for' | 'against' | 'reframe' | 'done';
 
@@ -30,6 +27,10 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
   const [againstInput, setAgainstInput] = useState('');
   const [againstList, setAgainstList] = useState<string[]>([]);
   const [reframe, setReframe] = useState('');
+  const { saving, saveError, save } = useSaveBeliefCheck(
+    () => setStep('done'),
+    onComplete,
+  );
   const [history, setHistory] = useState<BeliefEntry[]>(() =>
     loadLocal().slice(0, 3),
   );
@@ -67,31 +68,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
   }
 
   function handleSave() {
-    const entry: BeliefEntry = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-      }),
-      belief: belief.trim(),
-      for: forList,
-      against: againstList,
-      reframe: reframe.trim(),
-    };
-    // Sync to localStorage immediately
-    const all = [entry, ...loadLocal()].slice(0, 20);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    // Save to server
-    api
-      .createBeliefCheck({
-        belief: entry.belief,
-        evidenceFor: entry.for,
-        evidenceAgainst: entry.against,
-        reframe: entry.reframe || undefined,
-      })
-      .catch(() => {});
-    setStep('done');
-    onComplete?.();
+    void save({ belief, forList, againstList, reframe });
   }
 
   if (step === 'done') {
@@ -447,8 +424,15 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               }}
             />
             <CrisisGate texts={[reframe]} surface="belief_check" />
+            {saveError && (
+              <SaveErrorNote
+                ty="Не удалось сохранить на сервере. Работа осталась на этом устройстве — попробуй ещё раз."
+                vy="Не удалось сохранить на сервере. Работа осталась на этом устройстве — попробуйте ещё раз."
+              />
+            )}
             <button
               onClick={handleSave}
+              disabled={saving}
               style={{
                 width: '100%',
                 padding: '13px 0',
@@ -458,12 +442,13 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 color: 'var(--accent-green)',
                 fontSize: 15,
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: saving ? 'default' : 'pointer',
+                opacity: saving ? 0.7 : 1,
                 transition: 'all 0.2s',
                 marginBottom: 16,
               }}
             >
-              Сохранить
+              {saving ? 'Сохраняю...' : 'Сохранить'}
             </button>
           </>
         )}

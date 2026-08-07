@@ -11,8 +11,11 @@ import {
   HOME_SCREEN_SURFACE_SET,
   QUICK_ACTION_ID_SET,
   QUICK_ACTION_SURFACE_SET,
+  QUICK_ACTION_MOVE_DIR_SET,
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
+  SCREEN_BLOCK_ID_SET,
+  CUSTOMIZABLE_SCREEN_SET,
 } from './dto/analytics.dto';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
@@ -212,6 +215,22 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'quick_action_move') {
+    const action = meta.action;
+    const surface = meta.surface;
+    const dir = meta.dir;
+    if (
+      typeof action === 'string' &&
+      QUICK_ACTION_ID_SET.has(action) &&
+      typeof surface === 'string' &&
+      QUICK_ACTION_SURFACE_SET.has(surface) &&
+      typeof dir === 'string' &&
+      QUICK_ACTION_MOVE_DIR_SET.has(dir)
+    ) {
+      return { action, surface, dir };
+    }
+    return undefined;
+  }
   if (name === 'account_link_started') {
     const host = meta.host;
     if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
@@ -241,6 +260,34 @@ export function sanitizeMeta(
       ACCOUNT_LINK_FAIL_REASON_SET.has(reason)
     ) {
       return { host, reason };
+    }
+    return undefined;
+  }
+  if (name === 'screen_customize_open') {
+    const screen = meta.screen;
+    const via = meta.via;
+    if (
+      typeof screen === 'string' &&
+      CUSTOMIZABLE_SCREEN_SET.has(screen) &&
+      typeof via === 'string' &&
+      CUSTOMIZE_ENTRY_SET.has(via)
+    ) {
+      return { screen, via };
+    }
+    return undefined;
+  }
+  if (name === 'screen_block_toggle') {
+    const screen = meta.screen;
+    const block = meta.block;
+    const hidden = meta.hidden;
+    if (
+      typeof screen === 'string' &&
+      CUSTOMIZABLE_SCREEN_SET.has(screen) &&
+      typeof block === 'string' &&
+      SCREEN_BLOCK_ID_SET.has(block) &&
+      typeof hidden === 'boolean'
+    ) {
+      return { screen, block, hidden };
     }
     return undefined;
   }

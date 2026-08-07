@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
+import { SaveErrorNote } from './SaveErrorNote';
+import { PastLetters } from './letterToSelf/PastLetters';
 
 const STORAGE_KEY = 'letters_to_self';
 
@@ -56,6 +57,8 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
   const PROMPTS = buildPrompts(tr);
   const [text, setText] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
   const [letters, setLetters] = useState<Letter[]>(() => loadLocal());
   const [viewing, setViewing] = useState<Letter | null>(null);
 
@@ -74,8 +77,11 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
       .catch(() => {});
   }, []);
 
-  function handleSave() {
-    if (!text.trim()) return;
+  // Раньше «✓ Сохранено» показывалось сразу после fire-and-forget
+  // api.createLetter().catch(()=>{}) — провал был не виден. localStorage
+  // пишется сразу (офлайн-устойчивость), подтверждение — только после успеха.
+  async function handleSave() {
+    if (!text.trim() || saving) return;
     const trimmed = text.trim();
     const letter: Letter = {
       id: Date.now().toString(),
@@ -86,18 +92,24 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
       }),
       text: trimmed,
     };
-    // Sync to localStorage
     const updated = [letter, ...loadLocal()].slice(0, 30);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setLetters((prev) => [letter, ...prev]);
-    // Save to server
-    api.createLetter(trimmed).catch(() => {});
-    setSaved(true);
-    onComplete?.();
-    setTimeout(() => {
-      setSaved(false);
-      setText('');
-    }, 1800);
+    setSaving(true);
+    setError(false);
+    try {
+      await api.createLetter(trimmed);
+      setSaved(true);
+      onComplete?.();
+      setTimeout(() => {
+        setSaved(false);
+        setText('');
+      }, 1800);
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (viewing) {
@@ -180,9 +192,16 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
         />
         <CrisisGate texts={[text]} surface="letter" />
 
+        {error && (
+          <SaveErrorNote
+            ty="Не удалось сохранить на сервере. Письмо осталось на этом устройстве — попробуй ещё раз."
+            vy="Не удалось сохранить на сервере. Письмо осталось на этом устройстве — попробуйте ещё раз."
+          />
+        )}
+
         <button
           onClick={handleSave}
-          disabled={!text.trim() || saved}
+          disabled={!text.trim() || saved || saving}
           style={{
             width: '100%',
             padding: '14px 0',
@@ -200,68 +219,19 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
                 : 'rgba(var(--fg-rgb),0.25)',
             fontSize: 15,
             fontWeight: 600,
-            cursor: text.trim() && !saved ? 'pointer' : 'default',
+            cursor: text.trim() && !saved && !saving ? 'pointer' : 'default',
             transition: 'all 0.25s',
             marginBottom: 20,
           }}
         >
-          {saved ? '✓ Сохранено' : 'Сохранить письмо'}
+          {saved
+            ? '✓ Сохранено'
+            : saving
+              ? 'Сохранение...'
+              : 'Сохранить письмо'}
         </button>
 
-        {/* Past letters */}
-        {letters.length > 0 && (
-          <div>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--text-faint)',
-                marginBottom: 10,
-              }}
-            >
-              Прошлые письма
-            </div>
-            {letters.slice(0, 5).map((l) => (
-              <div
-                key={l.id}
-                {...pressable(() => setViewing(l))}
-                style={{
-                  padding: '11px 14px',
-                  background: 'rgba(var(--fg-rgb),0.03)',
-                  border: '1px solid rgba(var(--fg-rgb),0.06)',
-                  borderRadius: 12,
-                  marginBottom: 7,
-                  cursor: 'pointer',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                    marginBottom: 4,
-                  }}
-                >
-                  {l.date}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.4,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  }}
-                >
-                  {l.text}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PastLetters letters={letters} onView={setViewing} />
 
         <div style={{ marginTop: 16 }}>
           <TherapyNote compact />

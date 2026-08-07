@@ -6,9 +6,18 @@
 // (MemoryRouter — useHistorySheet требует useNavigate/useLocation),
 // AuthCallback.test.tsx (подмена window.location для window.location.reload).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsSheet } from './SettingsSheet';
+import { AddressFormContext } from '../utils/addressForm';
 
 vi.mock('../api', () => ({
   api: {
@@ -18,6 +27,9 @@ vi.mock('../api', () => ({
     getTherapistRequest: vi.fn(),
     getExport: vi.fn(),
     deleteAllUserData: vi.fn(),
+    updateSettings: vi.fn(),
+    createPairInvite: vi.fn(),
+    joinPair: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -44,6 +56,7 @@ beforeEach(() => {
   mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
+  mockApi.updateSettings.mockResolvedValue(undefined);
   reloadSpy = vi.fn();
   Object.defineProperty(window, 'location', {
     configurable: true,
@@ -53,7 +66,10 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: originalLocation,
+  });
 });
 
 async function renderSheet() {
@@ -66,6 +82,24 @@ async function renderSheet() {
   // компонент застрял бы на <Loader>.
   await screen.findByText('Настройки');
   return utils;
+}
+
+async function renderSheetWithForm(form: 'ty' | 'vy') {
+  const utils = render(
+    <MemoryRouter>
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+        <SettingsSheet onClose={vi.fn()} />
+      </AddressFormContext.Provider>
+    </MemoryRouter>,
+  );
+  await screen.findByText('Настройки');
+  return utils;
+}
+
+/** Находит переключатель (role="switch"), стоящий в одной строке SRow с заголовком title. */
+function toggleForRow(title: string): HTMLElement {
+  const row = screen.getByText(title).parentElement!.parentElement!;
+  return within(row).getByRole('switch');
 }
 
 function openDeleteSheet() {
@@ -108,7 +142,9 @@ describe('SettingsSheet — удаление аккаунта: подтверж�
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
 
-    await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
+    );
   });
 });
 
@@ -142,7 +178,9 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
 
-    await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
+    );
     // Даём микротаскам catch-ветки отработать.
     await act(async () => {});
 
@@ -157,7 +195,9 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
 
-    await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull(),
+    );
     expect(screen.getByRole('button', { name: 'Удалить' })).toBeTruthy();
   });
 });
@@ -199,5 +239,226 @@ describe('сводка для терапевта: отказ API виден по
     );
     // Модалка со сводкой не открывается — показывать нечего.
     expect(screen.queryByText(/Скопировать/i)).toBeNull();
+  });
+});
+
+// ── Сохранение настройки (patch): успех и отказ ──────────────────────────────
+// Регрессия: patch() показывало «Сохранено ✓» независимо от того, удался ли
+// api.updateSettings — отказ сети выглядел как успех. Тест ловит именно это.
+describe('SettingsSheet — сохранение переключателя видно пользователю', () => {
+  it('успех: тумблер переключается, вызывается api.updateSettings, показывается «Сохранено ✓»', async () => {
+    await renderSheet();
+    const toggle = toggleForRow('Итоги дня');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+
+    fireEvent.click(toggle);
+
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({
+        notifyEnabled: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-checked')).toBe('true'),
+    );
+    await screen.findByText('Сохранено ✓');
+  });
+
+  it('отказ сети: показывается «Не сохранилось», тумблер откатывается назад', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    const toggle = toggleForRow('Итоги дня');
+
+    fireEvent.click(toggle);
+
+    // Оптимистичное состояние сразу включается...
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-checked')).toBe('true'),
+    );
+    // ...но после отказа сети откатывается и видна причина, а не молчание.
+    await screen.findByText('Не сохранилось');
+    await waitFor(() =>
+      expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe(
+        'false',
+      ),
+    );
+    expect(screen.queryByText('Сохранено ✓')).toBeNull();
+  });
+});
+
+// ── Переключение подвидов (время уведомления) ────────────────────────────────
+describe('SettingsSheet — переключение вида «Время уведомления»', () => {
+  it('открывает список часов, выбор часа сохраняет и возвращает на главный экран', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Время'));
+    await screen.findByText('Время уведомления');
+
+    fireEvent.click(screen.getByText('09:00'));
+
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({
+        notifyLocalHour: 9,
+      }),
+    );
+    await screen.findByText('Настройки');
+    expect(screen.queryByText('Время уведомления')).toBeNull();
+  });
+
+  it('кнопка «Назад» в подвиде возвращает на главный экран без сохранения', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Время'));
+    await screen.findByText('Время уведомления');
+    fireEvent.click(screen.getByText('← Назад'));
+
+    await screen.findByText('Настройки');
+    expect(mockApi.updateSettings).not.toHaveBeenCalled();
+  });
+});
+
+// ── Пара: приглашение и вход по коду ──────────────────────────────────────────
+// «Пригласить друга»/«Войти» встречаются на странице дважды (партнёр и,
+// отдельно, приглашение в приложение/кабинет терапевта) — скоуп через блок
+// секции «Партнёр» (id="s-partner"), чтобы клик не попадал в чужой обработчик.
+function partnerSectionContent(): HTMLElement {
+  return document.getElementById('s-partner')!
+    .nextElementSibling as HTMLElement;
+}
+
+describe('SettingsSheet — пара: создание приглашения', () => {
+  it('успех: показывает ссылку-приглашение для отправки другу', async () => {
+    mockApi.createPairInvite.mockResolvedValue({
+      code: 'ABC123',
+      url: 'https://schemehappens.ru/p/ABC123',
+    });
+    mockApi.getPair
+      .mockResolvedValueOnce({ partners: [], pendingCode: null })
+      .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
+    await renderSheet();
+
+    fireEvent.click(
+      within(partnerSectionContent()).getByText('Пригласить друга'),
+    );
+
+    await screen.findByText('https://schemehappens.ru/p/ABC123');
+    expect(mockApi.createPairInvite).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SettingsSheet — пара: вход по коду', () => {
+  it('неверный код — видимая ошибка, а не тишина', async () => {
+    mockApi.joinPair.mockRejectedValue(new Error('код не найден'));
+    await renderSheet();
+
+    fireEvent.click(within(partnerSectionContent()).getByText('Ввести код'));
+    fireEvent.change(
+      within(partnerSectionContent()).getByPlaceholderText('Код'),
+      {
+        target: { value: 'zzzzzz' },
+      },
+    );
+    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+
+    await screen.findByText('Код не найден или уже использован');
+  });
+
+  it('верный код — данные партнёра подгружаются заново', async () => {
+    mockApi.joinPair.mockResolvedValue(undefined);
+    mockApi.getPair
+      .mockResolvedValueOnce({ partners: [], pendingCode: null })
+      .mockResolvedValueOnce({
+        partners: [
+          {
+            code: 'XYZ',
+            partnerName: 'Аня',
+            partnerTodayDone: true,
+            partnerIndex: 7.2,
+          },
+        ],
+        pendingCode: null,
+      });
+    await renderSheet();
+
+    fireEvent.click(within(partnerSectionContent()).getByText('Ввести код'));
+    fireEvent.change(
+      within(partnerSectionContent()).getByPlaceholderText('Код'),
+      {
+        target: { value: 'xyz123' },
+      },
+    );
+    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+
+    await screen.findByText('Аня сегодня');
+    expect(mockApi.joinPair).toHaveBeenCalledWith('XYZ123');
+  });
+});
+
+// ── Удаление аккаунта: отказ теперь виден пользователю (не только «сброс») ──
+describe('SettingsSheet — удаление аккаунта: отказ показывает сообщение', () => {
+  it('после ошибки видно "Не удалось удалить данные" на первом шаге, а не тишина', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+
+    await screen.findByText(/Не удалось удалить данные/i);
+  });
+
+  it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    await screen.findByText(/Не удалось удалить данные/i);
+
+    fireEvent.click(screen.getByText('Отмена'));
+    openDeleteSheet();
+
+    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+  });
+
+  it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheetWithForm('ty');
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    await screen.findByText(
+      'Не удалось удалить данные. Проверь связь и попробуй ещё раз',
+    );
+    cleanup();
+
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheetWithForm('vy');
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    await screen.findByText(
+      'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз',
+    );
+  });
+});
+
+// ── ты/вы: валидация заявки на роль специалиста звучит в обеих формах ────────
+describe('SettingsSheet — форма обращения в заявке на роль специалиста', () => {
+  it('форма «ты»: пустая заявка просит на «ты»', async () => {
+    await renderSheetWithForm('ty');
+    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await screen.findByText('Заполни ФИО, квалификацию и контакты');
+  });
+
+  it('форма «вы»: та же проверка звучит на «вы»', async () => {
+    await renderSheetWithForm('vy');
+    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await screen.findByText('Заполните ФИО, квалификацию и контакты');
   });
 });

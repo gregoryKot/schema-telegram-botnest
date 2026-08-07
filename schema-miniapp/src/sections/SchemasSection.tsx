@@ -15,10 +15,14 @@ import {
 } from '../utils/patternsSummary';
 import { readLocalIds } from './schemas/utils';
 import { Tab, SchemasSectionProps as Props } from './schemas/types';
+import { PatternsHeader } from './schemas/PatternsHeader';
 import { SchemasTab } from './schemas/SchemasTab';
 import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
+import { useScreenBlocks } from '../hooks/useScreenBlocks';
+import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
+import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 export function SchemasSection({
@@ -51,6 +55,7 @@ export function SchemasSection({
   const [schemaFreq, setSchemaFreq] = useState<Record<string, number>>({});
   const [modeFreq, setModeFreq] = useState<Record<string, number>>({});
   const safeTop = useSafeTop();
+  const blocks = useScreenBlocks('patterns', SCREEN_HIDDEN_KEYS.patterns);
 
   useEffect(() => {
     api
@@ -117,51 +122,10 @@ export function SchemasSection({
   return (
     <div className="section-pad" style={{ paddingTop: safeTop }}>
       {/* ── Header ── */}
-      <div
-        style={{
-          padding: '24px 20px 0',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div>
-          <div
-            className="d-display"
-            style={{
-              fontSize: 27,
-              lineHeight: 1.15,
-            }}
-          >
-            Паттерны
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>
-            Привычные реакции родом из детства
-          </div>
-        </div>
-        <button
-          onClick={() => onOpenSchema()}
-          className="d-caps"
-          style={{
-            minHeight: 48,
-            padding: '0 14px',
-            borderRadius: 14,
-            border: 'none',
-            background: 'var(--surface-2)',
-            color: 'var(--accent)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            marginTop: 4,
-          }}
-          title="Библиотека схема-терапии"
-          aria-label="Библиотека схема-терапии"
-        >
-          Библиотека
-        </button>
-      </div>
+      <PatternsHeader
+        onOpenSchema={() => onOpenSchema()}
+        onCustomize={blocks.openByGear}
+      />
 
       {/* ── Tab switcher ── */}
       <div style={{ padding: '16px 20px 0' }}>
@@ -221,6 +185,7 @@ export function SchemasSection({
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowSchemaPicker={() => setShowSchemaPicker(true)}
+            blocks={blocks}
           />
         )}
 
@@ -237,6 +202,7 @@ export function SchemasSection({
             onOpenDiaries={onOpenDiaries}
             onShowModePicker={() => setShowModePicker(true)}
             onMeetCritic={() => setIntroModeId(INTRO_MODE_ID)}
+            blocks={blocks}
           />
         )}
 
@@ -284,6 +250,17 @@ export function SchemasSection({
           childhoodRating={childhoodRatings[detailNeedId]}
           activeSchemaIds={allSchemaIds}
           onClose={() => setDetailNeedId(null)}
+        />
+      )}
+
+      {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие) ── */}
+      {blocks.sheet !== null && (
+        <ScreenCustomizeSheet
+          screen="patterns"
+          hidden={blocks.hidden}
+          highlight={blocks.highlight}
+          onToggle={blocks.toggle}
+          onClose={blocks.closeSheet}
         />
       )}
     </div>
