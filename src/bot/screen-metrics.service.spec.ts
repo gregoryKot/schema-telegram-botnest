@@ -6,11 +6,13 @@ describe('ScreenMetricsService.getMetrics', () => {
   const build = (
     opens: Array<{ screen: string | null; c: bigint }>,
     hidden: Array<{ screen: string | null; block: string | null; c: bigint }>,
+    synced: Array<{ c: bigint }> = [{ c: 0n }],
   ) => {
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce(opens)
-      .mockResolvedValueOnce(hidden);
+      .mockResolvedValueOnce(hidden)
+      .mockResolvedValueOnce(synced);
     const prisma = { $queryRaw: queryRaw } as never;
     return { service: new ScreenMetricsService(prisma), queryRaw };
   };
@@ -35,6 +37,7 @@ describe('ScreenMetricsService.getMetrics', () => {
         { screen: 'profile', block: 'streak', count: 3 },
         { screen: 'profile', block: 'heatmap', count: 1 },
       ],
+      syncedUsers: 0,
     });
   });
 
@@ -43,6 +46,7 @@ describe('ScreenMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       opensByScreen: [],
       hiddenByScreenBlock: [],
+      syncedUsers: 0,
     });
   });
 
@@ -57,6 +61,14 @@ describe('ScreenMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       opensByScreen: [],
       hiddenByScreenBlock: [],
+      syncedUsers: 0,
+    });
+  });
+
+  it('syncedUsers — count(User where uiPrefs not null), приведённый к number', async () => {
+    const { service } = build([], [], [{ c: 42n }]);
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      syncedUsers: 42,
     });
   });
 

@@ -147,4 +147,34 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
     expect(other.status).toBe(200);
     expect(other.body.addressForm).not.toBe('vy');
   });
+
+  // Смок на User.uiPrefs (серверное зеркало кастомизации мини-аппа, добавлено
+  // 2026-08-07) — тот же контракт: сохранил → прочитал ровно то же, B не
+  // видит и не может перезаписать настройку A через свой собственный вызов.
+  it('/api/settings uiPrefs: сохранил → прочитал; B не видит и не пишет поверх настройки A', async () => {
+    const updated = await a.post('/api/settings', {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+    });
+    expect(updated.status).toBeLessThan(300);
+    const got = await a.get('/api/settings');
+    expect(got.status).toBe(200);
+    expect(got.body.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+
+    const other = await b.get('/api/settings');
+    expect(other.status).toBe(200);
+    expect(other.body.uiPrefs).not.toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+
+    await b.post('/api/settings', { uiPrefs: { today_streak_hidden: '0' } });
+    const aAfterB = await a.get('/api/settings');
+    expect(aAfterB.body.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+  });
 });
