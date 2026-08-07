@@ -33,7 +33,7 @@ export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
   patterns: ['heroes', 'ysq_status'],
 };
 
-/** Описания блоков для строк листа. Названия — нейтральные (без «ты/вы»). */
+/** Описания блоков для строк листа. Названия — нейтральные, вилка обращения не нужна. */
 export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   journey: {
     emoji: '🧭',
