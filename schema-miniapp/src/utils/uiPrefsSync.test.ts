@@ -82,8 +82,22 @@ describe('applyServerPrefs', () => {
   });
 });
 
-describe('syncFromServer — первичная миграция (сервер null/undefined)', () => {
-  it('есть локальные ключи реестра → немедленный push', () => {
+describe('syncFromServer — первичная миграция (устройство не мигрировало)', () => {
+  it('регресс: реальный контракт бэка — {} (НЕ null), локальные ключи есть → мигрирует, не стирает', async () => {
+    // GET /api/settings всегда отдаёт объект (SettingsController: `?? {}`),
+    // никогда null — без маркера этот кейс стирал бы локальную кастомизацию.
+    localStorage.setItem('today_streak_hidden', '1');
+    syncFromServer({});
+    expect(mockApi.updateSettings).toHaveBeenCalledWith({
+      uiPrefs: { today_streak_hidden: '1' },
+    });
+    expect(localStorage.getItem('today_streak_hidden')).toBe('1');
+    await vi.waitFor(() =>
+      expect(localStorage.getItem('ui_prefs_migrated')).toBe('1'),
+    );
+  });
+
+  it('null/undefined (защитный кейс) с локальными ключами → тоже мигрирует', () => {
     localStorage.setItem('today_streak_hidden', '1');
     syncFromServer(null);
     expect(mockApi.updateSettings).toHaveBeenCalledWith({
@@ -91,17 +105,28 @@ describe('syncFromServer — первичная миграция (сервер n
     });
   });
 
-  it('локально пусто → пуша нет', () => {
+  it('локально пусто → пуша нет, устройство сразу отмечено мигрировавшим', () => {
     syncFromServer(undefined);
     expect(mockApi.updateSettings).not.toHaveBeenCalled();
+    expect(localStorage.getItem('ui_prefs_migrated')).toBe('1');
   });
 });
 
-describe('syncFromServer — сервер прислал объект (server wins)', () => {
+describe('syncFromServer — сервер прислал реальные данные (server wins)', () => {
   it('применяет присланное и НЕ пушит обратно только что применённое', () => {
     localStorage.setItem('today_streak_hidden', '1');
     syncFromServer({ today_phrase_hidden: '1' });
     expect(localStorage.getItem('today_phrase_hidden')).toBe('1');
+    expect(localStorage.getItem('today_streak_hidden')).toBeNull();
+    expect(mockApi.updateSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe('syncFromServer — устройство уже мигрировало раньше', () => {
+  it('пустой ответ теперь — это правда «везде очищено»: server wins, стирает локальное', () => {
+    localStorage.setItem('ui_prefs_migrated', '1');
+    localStorage.setItem('today_streak_hidden', '1');
+    syncFromServer({});
     expect(localStorage.getItem('today_streak_hidden')).toBeNull();
     expect(mockApi.updateSettings).not.toHaveBeenCalled();
   });

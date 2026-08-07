@@ -55,6 +55,17 @@ export function applyServerPrefs(
   }
 }
 
+// Маркер «устройство уже хоть раз синхронизировалось» — НЕ ключ реестра
+// (не уходит на сервер, collectPrefs/applyServerPrefs его не видят). Нужен,
+// потому что GET /api/settings отдаёт uiPrefs ВСЕГДА объектом, никогда null
+// (см. SettingsController.getSettings, ?? {}) — пустой ответ означает и
+// «сервер ещё не видел это устройство» (надо мигрировать локальное), и
+// «уже синхронизировано, реально пусто» (надо применить как есть, стереть
+// локальное). Различаем по этому локальному флагу, а не по ответу сервера —
+// иначе первая же загрузка после деплоя стирала бы кастомизацию всем, у кого
+// она только локальная (server wins над пустым ответом).
+const MIGRATED_KEY = 'ui_prefs_migrated';
+
 const DEBOUNCE_MS = 1500;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -63,6 +74,7 @@ function pushNow(): void {
   try {
     void api
       .updateSettings({ uiPrefs: collectPrefs(localStorage) })
+      .then(() => localStorage.setItem(MIGRATED_KEY, '1'))
       .catch(() => {});
   } catch {
     /* fire-and-forget, как trackEvent — синхронизация не мешает UI */
@@ -78,19 +90,24 @@ export function notifyPrefsChanged(): void {
 
 /**
  * Вызывать один раз при старте с серверным uiPrefs (ответ GET /api/settings).
- * null/undefined — сервер ещё не видел этот девайс: локальные ключи реестра
- * есть → первичная миграция, пушим немедленно; пусто локально → нечего
- * мигрировать. Объект — server wins: применяем и НЕ пушим обратно то, что
- * только что применили (applyServerPrefs не планирует пуш сама).
+ * Пустой ответ И устройство ещё не мигрировало → локальные ключи реестра
+ * есть — пушим немедленно (pushNow сам отметит миграцию по успеху); пусто
+ * локально — мигрировать нечего, отмечаем сразу. Иначе (реальные данные ИЛИ
+ * уже мигрировали раньше) — server wins: применяем и НЕ пушим обратно то,
+ * что только что применили.
  */
 export function syncFromServer(prefs: UiPrefsPatch | null | undefined): void {
   if (timer) {
     clearTimeout(timer);
     timer = null;
   }
-  if (prefs == null) {
+  const server = prefs ?? {};
+  const migrated = localStorage.getItem(MIGRATED_KEY) === '1';
+  if (!migrated && Object.keys(server).length === 0) {
     if (Object.keys(collectPrefs(localStorage)).length > 0) pushNow();
+    else localStorage.setItem(MIGRATED_KEY, '1');
     return;
   }
-  applyServerPrefs(prefs, localStorage);
+  applyServerPrefs(server, localStorage);
+  localStorage.setItem(MIGRATED_KEY, '1');
 }
