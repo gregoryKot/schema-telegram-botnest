@@ -43,6 +43,7 @@ import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
 import { shouldShowLoginScreen } from './utils/loginScreenGate';
 import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
+import { syncFromServer } from './utils/uiPrefsSync';
 
 type TrackerTab = 'today' | 'history';
 
@@ -110,10 +111,9 @@ export default function App() {
   );
   // Роль нужна внутри switchTherapistMode (который объявлен раньше setUserRole).
   const userRoleRef = useRef<'CLIENT' | 'THERAPIST'>('CLIENT');
-  // persist=true — запомнить выбор режима на сервере (source of truth: приложение
-  // должно помнить, в каком режиме ты был; localStorage в Telegram WebView
-  // стирается). Сервер принимает флаг только у THERAPIST — клиент escalation
-  // не получит, поэтому и на клиенте лишний 403-запрос не шлём.
+  // persist=true — запомнить режим на сервере (localStorage в Telegram WebView
+  // стирается). Сервер принимает флаг только у THERAPIST — на клиенте лишний
+  // 403-запрос не шлём.
   const switchTherapistMode = (on: boolean, persist = true) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
@@ -135,11 +135,9 @@ export default function App() {
   );
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
   const [roleLoaded, setRoleLoaded] = useState(false);
-  // Один раз, когда И серверные флаги, И роль загружены, восстанавливаем
-  // запомненный режим терапевта из серверного флага therapistMode (source of
-  // truth — переживает стирание localStorage в Telegram WebView и синхронен
-  // между устройствами). До этого момента показываем быстрый localStorage-хинт,
-  // поэтому в типичном случае (флаг совпадает с localStorage) экран не моргает.
+  // Один раз, когда И серверные флаги, И роль загружены, восстанавливаем режим
+  // терапевта из серверного флага (переживает стирание localStorage в Telegram
+  // WebView). До этого — быстрый localStorage-хинт, экран обычно не моргает.
   const modeReconciledRef = useRef(false);
   useEffect(() => {
     if (modeReconciledRef.current || !flagsLoaded || !roleLoaded) return;
@@ -278,6 +276,8 @@ export default function App() {
         if (s.pairCardDismissed)
           localStorage.setItem('pair_card_dismissed', '1');
         else localStorage.removeItem('pair_card_dismissed');
+        // uiPrefsSync: миграция/server-wins кастомизации (подхватится следующим маунтом вкладки).
+        syncFromServer(s.uiPrefs);
         // Форма обращения ещё не выбрана — спросить ДО онбординга (не чаще раза
         // за сессию), чтобы весь онбординг звучал в выбранной форме.
         if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {

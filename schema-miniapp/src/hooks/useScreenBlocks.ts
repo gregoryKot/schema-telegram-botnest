@@ -7,12 +7,11 @@ import {
   type ScreenBlockId,
   type CustomizableScreen,
 } from '../utils/screenBlocks';
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-// Generic-скрытие блоков экрана: сейчас «Профиль», следующим шагом
-// «Паттерны» — тот же хук, другой screen/storageKey (правило «одна механика —
-// один компонент»). Форма состояния — как в useTodayCustomization (sheet: id |
-// true | null, openByGear/openByHold), только по реестру SCREEN_BLOCK_IDS
-// вместо отдельного useState на каждый блок.
+// Generic-скрытие блоков экрана («Профиль», «Паттерны» — тот же хук, другой
+// screen/storageKey, правило «одна механика — один компонент»). Форма
+// состояния — как в useTodayCustomization, но по реестру SCREEN_BLOCK_IDS.
 export function useScreenBlocks(
   screen: CustomizableScreen,
   storageKey: string,
@@ -45,6 +44,7 @@ export function useScreenBlocks(
         const nextHidden = !prev.includes(id);
         const next = nextHidden ? [...prev, id] : prev.filter((x) => x !== id);
         writeStringArray(storageKey, next);
+        notifyPrefsChanged();
         api.trackEvent('screen_block_toggle', {
           screen,
           block: id,

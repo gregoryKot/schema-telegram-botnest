@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -93,4 +94,12 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   therapistShareProfile?: boolean;
+
+  // Серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS). Форма —
+  // плоский объект { известный ключ → строка-значение }; неизвестные ключи и
+  // невалидные значения отбрасываются в sanitizeUiPrefs (per-key), не здесь —
+  // тут только проверка «это вообще объект».
+  @IsOptional()
+  @IsObject()
+  uiPrefs?: Record<string, unknown>;
 }

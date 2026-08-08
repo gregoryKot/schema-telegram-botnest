@@ -61,6 +61,7 @@ describe('SettingsController.getSettings', () => {
       myModeIds: [],
       therapistShareCards: true,
       therapistShareProfile: true,
+      uiPrefs: {},
     });
   });
 
@@ -96,6 +97,30 @@ describe('SettingsController.getSettings', () => {
     const res = await controller.getSettings(makeReq());
     expect(res.mySchemaIds).toEqual(['abandonment']);
     expect(res.myModeIds).toEqual(['vulnerable_child', 'punitive_parent']);
+  });
+
+  it('uiPrefs сохранённый — отдаётся как есть (прогоняется через sanitizeUiPrefs на чтение)', async () => {
+    const { controller } = makeController({
+      botService: {
+        getUserSettings: jest.fn().mockResolvedValue({
+          uiPrefs: { today_streak_hidden: '1' },
+        }),
+      },
+    });
+    const res = await controller.getSettings(makeReq());
+    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
+  });
+
+  it('uiPrefs с мусором в БД (устаревший/битый ключ) — отфильтровывается на чтение', async () => {
+    const { controller } = makeController({
+      botService: {
+        getUserSettings: jest.fn().mockResolvedValue({
+          uiPrefs: { today_streak_hidden: '1', stale_key: 'x' },
+        }),
+      },
+    });
+    const res = await controller.getSettings(makeReq());
+    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
   });
 });
 
@@ -143,6 +168,47 @@ describe('SettingsController.updateSettings — whitelist полей', () => {
       myModeIds: ['ok', 'x'.repeat(100)],
     });
     expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {});
+  });
+});
+
+describe('SettingsController.updateSettings — uiPrefs (серверное зеркало настроек мини-аппа)', () => {
+  it('валидный набор ключей сохраняется целиком', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(11n), {
+      uiPrefs: {
+        today_streak_hidden: '1',
+        today_focus_practice: 'tracker',
+      },
+    });
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(11n, {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+    });
+  });
+
+  it('невалидное значение внутри uiPrefs отбрасывает только свой ключ (per-key), сохраняет остальное', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(12n), {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'garbage' },
+    });
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(12n, {
+      uiPrefs: { today_streak_hidden: '1' },
+    });
+  });
+
+  it('пустой объект uiPrefs — валидная «очистка всех ключей», сохраняется как {}', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(13n), { uiPrefs: {} });
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(13n, {
+      uiPrefs: {},
+    });
+  });
+
+  it('поле uiPrefs отсутствует в теле — сохранённые настройки не трогаются', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(14n), { addressForm: 'vy' });
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(14n, {
+      addressForm: 'vy',
+    });
   });
 });
 

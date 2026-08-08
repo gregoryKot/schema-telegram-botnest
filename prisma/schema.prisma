@@ -104,6 +104,7 @@ model User {
   modeIntrosShown          Json     @default("[]")  // string[] of mode ids whose intro was viewed
   therapistMode            Boolean  @default(false)
   defaultSection           String?  // last-selected bottom nav section
+  uiPrefs                  Json?    // серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
