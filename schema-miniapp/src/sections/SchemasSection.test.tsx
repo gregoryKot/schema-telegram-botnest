@@ -178,15 +178,15 @@ describe('SchemasSection — открытие библиотеки схема-т
 });
 
 describe('SchemasSection — скрываемые блоки (useScreenBlocks)', () => {
-  it('клик «Настроить» в шапке открывает лист «Настроить экран»', async () => {
+  it('клик по шестерёнке в шапке открывает лист «Настроить экран»', async () => {
     await renderReady();
-    fireEvent.click(screen.getByLabelText('Настроить экран паттернов'));
+    fireEvent.click(screen.getByLabelText('Настроить экран'));
     expect(await screen.findByText('Настроить экран')).toBeTruthy();
   });
 
   it('тумблер скрывает Hero (heroes): шлёт screen_block_toggle, пишет localStorage, и после закрытия Hero не рендерится (read-after-write)', async () => {
     await renderReady();
-    fireEvent.click(screen.getByLabelText('Настроить экран паттернов'));
+    fireEvent.click(screen.getByLabelText('Настроить экран'));
     fireEvent.click(await screen.findByText('Подсказка сверху'));
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_toggle', {
       screen: 'patterns',

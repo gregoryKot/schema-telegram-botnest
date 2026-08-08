@@ -12,6 +12,7 @@ import {
   within,
   fireEvent,
   cleanup,
+  act,
 } from '@testing-library/react';
 import { ToolsList } from './ToolsList';
 import { QUICK_ACTION_IDS } from '../../utils/quickActions';
@@ -139,6 +140,14 @@ describe('ToolsList — скрытие строк («Настроить»)', () 
   it('«Настроить» открывает лист настройки', () => {
     renderList();
     fireEvent.click(screen.getByText('Настроить'));
+    expect(screen.getByText('Какие инструменты показывать')).toBeTruthy();
+  });
+
+  it('шестерёнка шапки HelpSection открывает тот же лист через customizeOpenRef (единый вход)', () => {
+    const customizeOpenRef = { current: () => {} };
+    renderList({ customizeOpenRef });
+    expect(screen.queryByText('Какие инструменты показывать')).toBeNull();
+    act(() => customizeOpenRef.current());
     expect(screen.getByText('Какие инструменты показывать')).toBeTruthy();
   });
 

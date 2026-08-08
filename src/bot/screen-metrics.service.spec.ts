@@ -6,12 +6,14 @@ describe('ScreenMetricsService.getMetrics', () => {
   const build = (
     opens: Array<{ screen: string | null; c: bigint }>,
     hidden: Array<{ screen: string | null; block: string | null; c: bigint }>,
+    moves: Array<{ moves: bigint }> = [{ moves: 0n }],
     synced: Array<{ c: bigint }> = [{ c: 0n }],
   ) => {
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce(opens)
       .mockResolvedValueOnce(hidden)
+      .mockResolvedValueOnce(moves)
       .mockResolvedValueOnce(synced);
     const prisma = { $queryRaw: queryRaw } as never;
     return { service: new ScreenMetricsService(prisma), queryRaw };
@@ -37,6 +39,7 @@ describe('ScreenMetricsService.getMetrics', () => {
         { screen: 'profile', block: 'streak', count: 3 },
         { screen: 'profile', block: 'heatmap', count: 1 },
       ],
+      moves30: 0,
       syncedUsers: 0,
     });
   });
@@ -46,6 +49,7 @@ describe('ScreenMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       opensByScreen: [],
       hiddenByScreenBlock: [],
+      moves30: 0,
       syncedUsers: 0,
     });
   });
@@ -61,12 +65,20 @@ describe('ScreenMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       opensByScreen: [],
       hiddenByScreenBlock: [],
+      moves30: 0,
       syncedUsers: 0,
     });
   });
 
+  it('moves30 — count(screen_block_move за 30 дней), приведённый к number', async () => {
+    const { service } = build([], [], [{ moves: 9n }]);
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      moves30: 9,
+    });
+  });
+
   it('syncedUsers — count(User where uiPrefs not null), приведённый к number', async () => {
-    const { service } = build([], [], [{ c: 42n }]);
+    const { service } = build([], [], [{ moves: 0n }], [{ c: 42n }]);
     await expect(service.getMetrics()).resolves.toMatchObject({
       syncedUsers: 42,
     });
