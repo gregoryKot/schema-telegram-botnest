@@ -429,7 +429,7 @@
   "shared/src/hooks/ysqSchemas.ts": 264,
   "shared/src/hooks/ysqScoring.ts": 88,
   "shared/src/host/haptic.ts": 13,
-  "shared/src/host/index.ts": 54,
+  "shared/src/host/index.ts": 55,
   "shared/src/host/max.ts": 242,
   "shared/src/host/telegram.ts": 191,
   "shared/src/host/types.ts": 111,
