@@ -5,7 +5,11 @@
 
 # ── Stage 1: build ───────────────────────────────────────────────────────────
 FROM node:22-slim AS build
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# openssl (нужен движку Prisma) ставится скриптом с повтором и запасным
+# зеркалом: см. deploy/install-openssl.sh — сеть билдера Amvera до
+# deb.debian.org отваливается, и сборка не обязана падать с первой попытки.
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
 WORKDIR /app
 
 # Облегчение сборки (слабый билдер Amvera ловил OOM на `npm ci --prefix webapp`
@@ -65,7 +69,8 @@ RUN npm prune --production
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM node:22-slim
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
 WORKDIR /app
 ENV NODE_ENV=production
 
