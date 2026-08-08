@@ -16,6 +16,7 @@ const FULL: PlusMetrics = {
     { action: 'breathing', count: 9 },
   ],
   hidden30: [{ action: 'plans', count: 2 }],
+  moves30: 6,
 };
 
 const EMPTY: PlusMetrics = {
@@ -23,6 +24,7 @@ const EMPTY: PlusMetrics = {
   users30: 0,
   actions30: [],
   hidden30: [],
+  moves30: 0,
 };
 
 describe('formatPlusMetrics', () => {
@@ -32,27 +34,43 @@ describe('formatPlusMetrics', () => {
     expect(text).not.toMatch(/NaN|undefined/);
   });
 
-  it('полные данные: открытия, топ действий человеческими именами, что прячут', () => {
+  it('полные данные: открытия, топ действий человеческими именами, что прячут, перестановки', () => {
     const text = formatPlusMetrics(FULL);
     expect(text).toContain('Открывали: 40 раз (12 человек)');
     expect(text).toContain(
       'Чаще всего выбирают: Трекер потребностей — 15 · Дыхание 4-4-6 — 9',
     );
     expect(text).toContain('Убирают из меню: Планы — 2');
+    expect(text).toContain('Меняли порядок пунктов: 6 раз');
     // Язык отчёта — без терминов и внутренних id (правило №8).
     expect(text).not.toMatch(/tracker|breathing|plans/);
   });
 
-  it('нет выбора/скрытий — соответствующие строки не показываются пустыми', () => {
+  it('нет выбора/скрытий/перестановок — соответствующие строки не показываются пустыми', () => {
     const text = formatPlusMetrics({
       opens30: 3,
       users30: 2,
       actions30: [],
       hidden30: [],
+      moves30: 0,
     });
     expect(text).toContain('Открывали: 3 раз (2 человек)');
     expect(text).not.toContain('Чаще всего выбирают');
     expect(text).not.toContain('Убирают из меню');
+    expect(text).not.toContain('Меняли порядок пунктов');
+  });
+
+  it('данные есть только по перестановкам (меню не открывали ни разу за 30 дней) — блок с одной строкой, без «Открывали 0 раз» и без NaN', () => {
+    const text = formatPlusMetrics({
+      opens30: 0,
+      users30: 0,
+      actions30: [],
+      hidden30: [],
+      moves30: 4,
+    });
+    expect(text).toContain('Меняли порядок пунктов: 4 раз');
+    expect(text).not.toContain('Открывали');
+    expect(text).not.toMatch(/NaN|undefined/);
   });
 
   it('неизвестный id не роняет отчёт — печатается как есть', () => {
@@ -61,6 +79,7 @@ describe('formatPlusMetrics', () => {
       users30: 1,
       actions30: [{ action: 'новый_пункт', count: 1 }],
       hidden30: [],
+      moves30: 0,
     });
     expect(text).toContain('новый_пункт — 1');
   });

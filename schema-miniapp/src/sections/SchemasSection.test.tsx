@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 // SchemasSection — экран «Паттерны» (0% покрытия): переключатель трёх вкладок
 // (Схемы/Режимы/Потребности), четыре параллельные загрузки профиля/дневников/
-// YSQ-прогресса и открытие модалок выбора схем/режимов. Вкладки (SchemasTab/
-// ModesTab/NeedsTab) — реальные, у них свои тесты; тяжёлые модалки мокаем.
+// YSQ-прогресса, открытие модалок выбора схем/режимов и скрываемые блоки
+// heroes/ysq_status (useScreenBlocks — реальный хук, не мок, чтобы проверить
+// read-after-write). Вкладки (SchemasTab/ModesTab/NeedsTab) — реальные, у них
+// свои тесты; тяжёлые модалки мокаем.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -23,6 +25,7 @@ vi.mock('../api', () => ({
     getSchemaNotes: vi.fn(),
     getModeNotes: vi.fn(),
     updateSettings: vi.fn().mockResolvedValue(undefined),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -171,5 +174,71 @@ describe('SchemasSection — открытие библиотеки схема-т
     await renderReady({ onOpenSchema });
     fireEvent.click(screen.getByLabelText('Библиотека схема-терапии'));
     expect(onOpenSchema).toHaveBeenCalledWith();
+  });
+});
+
+describe('SchemasSection — скрываемые блоки (useScreenBlocks)', () => {
+  it('клик «Настроить» в шапке открывает лист «Настроить экран»', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран паттернов'));
+    expect(await screen.findByText('Настроить экран')).toBeTruthy();
+  });
+
+  it('тумблер скрывает Hero (heroes): шлёт screen_block_toggle, пишет localStorage, и после закрытия Hero не рендерится (read-after-write)', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран паттернов'));
+    fireEvent.click(await screen.findByText('Подсказка сверху'));
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_toggle', {
+      screen: 'patterns',
+      block: 'heroes',
+      hidden: true,
+    });
+    expect(localStorage.getItem('screen_hidden_patterns')).toBe('["heroes"]');
+    fireEvent.click(screen.getByText('Готово'));
+    expect(screen.queryByText('Узнать свои схемы')).toBeNull();
+  });
+
+  it('скрытый heroes прячет Hero и на вкладке «Режимы» (общий тумблер)', async () => {
+    localStorage.setItem('screen_hidden_patterns', JSON.stringify(['heroes']));
+    await renderReady();
+    fireEvent.click(screen.getByText('Режимы'));
+    expect(screen.queryByText('Встретить своего Критика')).toBeNull();
+  });
+
+  it('скрытая ysq_status: карточка теста не рендерится, а список схем на месте', async () => {
+    localStorage.setItem(
+      'screen_hidden_patterns',
+      JSON.stringify(['ysq_status']),
+    );
+    mockApi.getProfile.mockResolvedValue({
+      ...PROFILE,
+      ysq: { completedAt: null, activeSchemaIds: ['abandonment'] },
+    });
+    await renderReady();
+    await waitFor(() =>
+      expect(screen.getByText('+ Добавить схему')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Тест на схемы')).toBeNull();
+  });
+
+  it('долгое нажатие на Hero открывает лист с via=longpress', async () => {
+    await renderReady();
+    const holdWrapper = screen.getByTestId('hold-heroes');
+    vi.useFakeTimers();
+    fireEvent.pointerDown(holdWrapper, {
+      button: 0,
+      isPrimary: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_customize_open', {
+      screen: 'patterns',
+      via: 'longpress',
+    });
+    expect(await screen.findByText('Настроить экран')).toBeTruthy();
   });
 });

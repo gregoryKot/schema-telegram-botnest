@@ -4,13 +4,24 @@
 // plus_action и зовёт onAction, «Изменить» открывает настройку, пустое
 // состояние (всё скрыто) показывает подсказку вместо групп.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
 import { PlusMenuSheet } from './PlusMenuSheet';
 import { QUICK_ACTION_IDS, buildPlusActions } from '../../utils/quickActions';
 import {
   PLUS_ACTIONS_HIDDEN_KEY,
   serializeHiddenActions,
 } from '../../utils/quickActionPrefs';
+import {
+  PLUS_ACTIONS_ORDER_KEY,
+  getActionOrder,
+  serializeActionOrder,
+} from '../../utils/quickActionOrder';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 import { api } from '../../api';
@@ -104,5 +115,69 @@ describe('PlusMenuSheet — «Изменить»', () => {
     render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Изменить'));
     expect(screen.getByText('Что показывать в «плюсе»')).toBeTruthy();
+  });
+});
+
+describe('PlusMenuSheet — порядок пунктов', () => {
+  it('сохранённый порядок применяется внутри группы: поднятый пункт рендерится первым', () => {
+    // Группа «Успокоиться»: breathing, grounding, stop (порядок реестра).
+    localStorage.setItem(
+      PLUS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['stop']),
+    );
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    // BottomSheet рендерится в document.body через портал (createPortal) —
+    // не потомок container, поэтому берём весь body.
+    const html = document.body.textContent ?? '';
+    const stopIdx = html.indexOf('Техника «Стоп»');
+    expect(stopIdx).toBeGreaterThan(-1);
+    expect(stopIdx).toBeLessThan(html.indexOf('Дыхание 4-4-6'));
+    expect(stopIdx).toBeLessThan(html.indexOf('Заземление 5-4-3-2-1'));
+  });
+
+  it('пункты, которых нет в сохранённом порядке, не пропадают', () => {
+    localStorage.setItem(
+      PLUS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['diary_gratitude']),
+    );
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText('Схема')).toBeTruthy();
+    expect(screen.getByText('Режим')).toBeTruthy();
+    expect(screen.getByText('Благодарность')).toBeTruthy();
+    expect(screen.getByText('Трекер потребностей')).toBeTruthy();
+  });
+
+  it('стрелка в листе настройки двигает пункт внутри его группы, шлёт quick_action_move и меняет меню', () => {
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Изменить'));
+
+    // На экране два «Заземление 5-4-3-2-1»: строка меню (ActionRow) и строка
+    // листа настройки (CustomizeRow, портал BottomSheet монтируется позже —
+    // последнее вхождение и есть строка листа, тот же паттерн, что в
+    // ToolsList.test.tsx «toggle в листе прячет строку»).
+    const matches = screen.getAllByText('Заземление 5-4-3-2-1');
+    const switchEl = matches[matches.length - 1].closest(
+      '[role="switch"]',
+    ) as HTMLElement;
+    const moveArrows = (switchEl.parentElement as HTMLElement)
+      .nextElementSibling as HTMLElement;
+    fireEvent.click(within(moveArrows).getByLabelText('Выше'));
+
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+      action: 'grounding',
+      surface: 'plus',
+      dir: 'up',
+    });
+    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
+      'grounding',
+      'breathing',
+      'stop',
+    ]);
+
+    fireEvent.click(screen.getByText('Готово'));
+    const html = document.body.textContent ?? '';
+    expect(html.indexOf('Заземление 5-4-3-2-1')).toBeLessThan(
+      html.indexOf('Дыхание 4-4-6'),
+    );
   });
 });

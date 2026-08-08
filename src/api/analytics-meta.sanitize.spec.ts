@@ -376,6 +376,67 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
+  it('quick_action_move: валидные action + surface + dir проходят', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'up',
+      }),
+    ).toEqual({ action: 'plans', surface: 'plus', dir: 'up' });
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'tasks',
+        surface: 'tools',
+        dir: 'down',
+      }),
+    ).toEqual({ action: 'tasks', surface: 'tools', dir: 'down' });
+  });
+
+  it('quick_action_move: неизвестный action → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'evil',
+        surface: 'plus',
+        dir: 'up',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: неизвестный surface → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'evil',
+        dir: 'up',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: невалидный dir → отброшено', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'sideways',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('quick_action_move', { action: 'plans', surface: 'plus' }),
+    ).toBeUndefined();
+  });
+
+  it('quick_action_move: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('quick_action_move', {
+        action: 'plans',
+        surface: 'plus',
+        dir: 'up',
+        note: 'секретный текст пользователя',
+      }),
+    ).toEqual({ action: 'plans', surface: 'plus', dir: 'up' });
+  });
+
   // ── Перенос аккаунта из мессенджера (account_link_*) ────────────────────
   // Сюда мог бы уехать текст ошибки или адрес — а meta не шифруется. Поэтому
   // проверяем именно срезание всего лишнего, а не только happy path.
@@ -428,6 +489,113 @@ describe('sanitizeMeta', () => {
 
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
+  });
+
+  it('screen_customize_open: screen + via из allow-list проходят', () => {
+    expect(
+      sanitizeMeta('screen_customize_open', {
+        screen: 'profile',
+        via: 'gear',
+      }),
+    ).toEqual({ screen: 'profile', via: 'gear' });
+    expect(
+      sanitizeMeta('screen_customize_open', {
+        screen: 'patterns',
+        via: 'longpress',
+      }),
+    ).toEqual({ screen: 'patterns', via: 'longpress' });
+  });
+
+  it('screen_customize_open: неизвестный screen → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('screen_customize_open', { screen: 'evil', via: 'gear' }),
+    ).toBeUndefined();
+  });
+
+  it('screen_customize_open: неизвестный/отсутствующий via → отброшено', () => {
+    expect(
+      sanitizeMeta('screen_customize_open', {
+        screen: 'profile',
+        via: 'evil',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('screen_customize_open', { screen: 'profile' }),
+    ).toBeUndefined();
+  });
+
+  it('screen_customize_open: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('screen_customize_open', {
+        screen: 'profile',
+        via: 'gear',
+        note: 'секретный текст пользователя',
+      }),
+    ).toEqual({ screen: 'profile', via: 'gear' });
+  });
+
+  it('screen_block_toggle: screen + block + hidden из allow-list проходят', () => {
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'profile',
+        block: 'streak',
+        hidden: true,
+      }),
+    ).toEqual({ screen: 'profile', block: 'streak', hidden: true });
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'patterns',
+        block: 'heatmap',
+        hidden: false,
+      }),
+    ).toEqual({ screen: 'patterns', block: 'heatmap', hidden: false });
+  });
+
+  it('screen_block_toggle: неизвестный screen → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'evil',
+        block: 'streak',
+        hidden: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('screen_block_toggle: неизвестный block → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'profile',
+        block: 'evil',
+        hidden: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('screen_block_toggle: hidden не boolean → отброшено', () => {
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'profile',
+        block: 'streak',
+        hidden: 'yes',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'profile',
+        block: 'streak',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('screen_block_toggle: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('screen_block_toggle', {
+        screen: 'profile',
+        block: 'insights',
+        hidden: true,
+        note: 'секретный текст пользователя',
+      }),
+    ).toEqual({ screen: 'profile', block: 'insights', hidden: true });
   });
 
   it('today_streak_toggle: hidden не boolean → отброшено', () => {

@@ -21,15 +21,15 @@ import {
   postJson,
   del,
 } from './apiClient';
+import type { UiPrefsPatch } from './utils/uiPrefsSync';
 
-// Типы вынесены в ./apiTypes и ре-экспортируются здесь, чтобы импорты
-// потребителей из '../api' продолжали работать без изменений.
+// Типы вынесены в ./apiTypes и ре-экспортируются здесь — импорты потребителей не меняются.
 export * from './apiTypes';
 import type { StreakData, ClientConceptualization } from './apiTypes';
+import type { UserSettings } from './apiTypes';
 
-// Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
-// прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
-// если краш случился на выгрузке. Никогда не бросает: телеметрия не мешает UI.
+// Отправка пойманной ErrorBoundary ошибки на бэкенд. Без auth, fire-and-forget,
+// keepalive — долетает даже при краше на выгрузке; сама никогда не бросает.
 export function reportClientError(payload: {
   message: string;
   section: string;
@@ -46,10 +46,8 @@ export function reportClientError(payload: {
         stack: payload.stack?.slice(0, 4000),
         componentStack: payload.componentStack?.slice(0, 4000),
         source: 'miniapp',
-        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment. Мини-апп
-        // грузится с `#tgWebAppData=…&hash=<подпись>` — это живая initData
-        // (реплей 1 ч = полная имперсонация), и целиком href уезжал в логи
-        // сервера и в DM админа.
+        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment — там живая
+        // initData (`#tgWebAppData=…&hash=…`), реплей 1 ч = имперсонация.
         url:
           typeof location !== 'undefined'
             ? telemetryUrl(location.href)
@@ -80,6 +78,12 @@ export const api = {
   // Общие с webapp методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
 
+  // uiPrefs — только мини-апп (utils/uiPrefsSync.ts), тип локальный поверх shared.
+  getSettings: () =>
+    get<UserSettings & { uiPrefs?: UiPrefsPatch | null }>('/api/settings'),
+  updateSettings: (body: Partial<UserSettings> & { uiPrefs?: UiPrefsPatch }) =>
+    post('/api/settings', body),
+
   // Случайная фраза Здорового взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   saveRating: async (
@@ -87,19 +91,15 @@ export const api = {
     value: number,
     date?: string,
   ): Promise<SaveRatingResult> => {
-    // Дата фиксируется здесь, на момент вызова: если отправка сорвётся в
-    // сеть и уйдёт в outbox для отложенного флаша, сервер должен записать
-    // именно «сегодня по мнению юзера сейчас», а не «сегодня в момент
-    // флаша» (который может случиться уже на следующий день).
+    // Дата фиксируется здесь: если уйдёт в outbox, сервер должен записать
+    // «сегодня по мнению юзера сейчас», а не «сегодня в момент флаша».
     const dt = date ?? todayStr();
     const item: OutboxItem = { needId, value, date: dt };
     try {
       return await rawSaveRating(item);
     } catch (err) {
-      // 4xx — осмысленная ошибка (невалидные данные и т.п.), кидаем как
-      // раньше. Всё остальное (сетевой обрыв, таймаут, 5xx) — оффлайн-путь:
-      // кладём в outbox и отвечаем успехом (запись идемпотентна по upsert
-      // на сервере, так что доедет при следующем флаше).
+      // 4xx кидаем как раньше; сеть/таймаут/5xx — оффлайн-путь: кладём в
+      // outbox и отвечаем успехом (upsert на сервере идемпотентен).
       const isClientError =
         err instanceof HttpStatusError && err.status >= 400 && err.status < 500;
       if (isClientError) throw err;

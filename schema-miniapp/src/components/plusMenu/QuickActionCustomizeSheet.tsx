@@ -1,10 +1,11 @@
 // Лист «что показывать» — общий для поверхностей «плюс» и «Инструменты»
-// (правило «одна механика — один компонент»: второй поверхностью займётся
-// отдельная задача, но лист уже generic по списку действий/ключу). Строки —
-// переиспользованный ToggleRow (не трогаем/не копируем его).
-import { BottomSheet } from '../BottomSheet';
-import { ToggleRow } from '../todayCustomize/ToggleRow';
-import { api } from '../../api';
+// (правило «одна механика — один компонент»). Тонкий мэппер: строка и вся её
+// логика (toggle/move + аналитика) — в CustomizeRow. Порядок/дизейбл краёв
+// стрелок считает родитель (у групп «плюса» и списка «Инструментов» разные
+// границы) — сюда приходит уже готовый список. Каркас (шапка + «Готово») —
+// общий CustomizeSheetShell, второй потребитель — ScreenCustomizeSheet.
+import { CustomizeSheetShell } from '../CustomizeSheetShell';
+import { CustomizeRow } from './CustomizeRow';
 import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
 interface CustomizeAction {
@@ -12,6 +13,8 @@ interface CustomizeAction {
   emoji: string;
   label: string;
   sub: string;
+  disabledUp: boolean;
+  disabledDown: boolean;
 }
 
 interface Props {
@@ -20,6 +23,7 @@ interface Props {
   hidden: string[];
   surface: QuickActionSurface;
   onToggle: (id: string, hidden: boolean) => void;
+  onMove: (id: string, dir: 'up' | 'down') => boolean;
   onClose: () => void;
 }
 
@@ -29,55 +33,33 @@ export function QuickActionCustomizeSheet({
   hidden,
   surface,
   onToggle,
+  onMove,
   onClose,
 }: Props) {
-  function handleToggle(id: string) {
-    const nextHidden = !hidden.includes(id);
-    api.trackEvent('quick_action_toggle', {
-      action: id,
-      hidden: nextHidden,
-      surface,
-    });
-    onToggle(id, nextHidden);
-  }
-
   return (
-    <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>
-          {title}
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            marginTop: 4,
-            marginBottom: 14,
-            lineHeight: 1.5,
-          }}
-        >
-          Скрытые пункты можно вернуть в любой момент
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {actions.map((a) => (
-            <ToggleRow
-              key={a.id}
-              emoji={a.emoji}
-              title={a.label}
-              sub={a.sub}
-              on={!hidden.includes(a.id)}
-              onToggle={() => handleToggle(a.id)}
-            />
-          ))}
-        </div>
-        <button
-          className="btn-primary"
-          style={{ marginTop: 16 }}
-          onClick={onClose}
-        >
-          Готово
-        </button>
+    <CustomizeSheetShell
+      title={title}
+      subtitle="Скрытые пункты можно вернуть в любой момент"
+      zIndex={300}
+      onClose={onClose}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {actions.map((a) => (
+          <CustomizeRow
+            key={a.id}
+            id={a.id}
+            emoji={a.emoji}
+            label={a.label}
+            sub={a.sub}
+            hidden={hidden.includes(a.id)}
+            onToggle={onToggle}
+            disabledUp={a.disabledUp}
+            disabledDown={a.disabledDown}
+            onMove={onMove}
+            surface={surface}
+          />
+        ))}
       </div>
-    </BottomSheet>
+    </CustomizeSheetShell>
   );
 }

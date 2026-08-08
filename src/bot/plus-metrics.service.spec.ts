@@ -7,17 +7,19 @@ describe('PlusMetricsService.getMetrics', () => {
     opens: Array<{ opens: bigint; users: bigint }>,
     actions: Array<{ action: string | null; c: bigint }>,
     hidden: Array<{ action: string | null; c: bigint }>,
+    moves: Array<{ moves: bigint }> = [{ moves: 0n }],
   ) => {
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce(opens)
       .mockResolvedValueOnce(actions)
-      .mockResolvedValueOnce(hidden);
+      .mockResolvedValueOnce(hidden)
+      .mockResolvedValueOnce(moves);
     const prisma = { $queryRaw: queryRaw } as never;
     return { service: new PlusMetricsService(prisma), queryRaw };
   };
 
-  it('собирает открытия, топ действий и что прячут', async () => {
+  it('собирает открытия, топ действий, что прячут и сколько переставляли', async () => {
     const { service } = build(
       [{ opens: 40n, users: 12n }],
       [
@@ -25,6 +27,7 @@ describe('PlusMetricsService.getMetrics', () => {
         { action: 'breathing', c: 9n },
       ],
       [{ action: 'plans', c: 2n }],
+      [{ moves: 7n }],
     );
     await expect(service.getMetrics()).resolves.toEqual({
       opens30: 40,
@@ -34,6 +37,7 @@ describe('PlusMetricsService.getMetrics', () => {
         { action: 'breathing', count: 9 },
       ],
       hidden30: [{ action: 'plans', count: 2 }],
+      moves30: 7,
     });
   });
 
@@ -44,16 +48,18 @@ describe('PlusMetricsService.getMetrics', () => {
       users30: 0,
       actions30: [],
       hidden30: [],
+      moves30: 0,
     });
   });
 
-  it('пустой результат первого запроса (нет строк) — тоже нули', async () => {
-    const { service } = build([], [], []);
+  it('пустой результат первого/четвёртого запроса (нет строк) — тоже нули', async () => {
+    const { service } = build([], [], [], []);
     await expect(service.getMetrics()).resolves.toEqual({
       opens30: 0,
       users30: 0,
       actions30: [],
       hidden30: [],
+      moves30: 0,
     });
   });
 
@@ -68,6 +74,7 @@ describe('PlusMetricsService.getMetrics', () => {
       users30: 3,
       actions30: [],
       hidden30: [],
+      moves30: 0,
     });
   });
 

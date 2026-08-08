@@ -47,15 +47,22 @@ export function ModeDoubtButton({
           api.trackEvent(MODE_DOUBT_OPENED_EVENT, { modeId });
           setOpen(true);
         }}
+        // Видимая кнопка, а не серая подпись: голый текст 12.5px кнопкой не
+        // читался (в webapp тот же триггер давно ghost-кнопка — правило №3).
+        // Семья стилей — accent-blue, как «Это ближе» в листе сравнения.
         style={{
-          background: 'none',
-          border: 'none',
-          color: 'var(--text-sub)',
-          fontSize: 12.5,
+          width: '100%',
+          minHeight: 44,
+          marginTop: 8,
+          background: cm('var(--accent-blue)', 10),
+          border: `1px solid ${cm('var(--accent-blue)', 35)}`,
+          borderRadius: 12,
+          color: 'var(--accent-blue)',
+          fontSize: 13,
+          fontWeight: 600,
           cursor: 'pointer',
           fontFamily: 'inherit',
-          padding: '8px 2px 4px',
-          textAlign: 'left',
+          padding: '10px 14px',
         }}
       >
         {tr(

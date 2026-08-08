@@ -56,6 +56,12 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
       '@unique + WHERE-лукап при восстановлении — недетерминированное ' +
         'шифрование сломает поиск; осознанный компромисс',
     ),
+    uiPrefs: p(
+      'серверное зеркало кастомизации мини-аппа — плоский объект флагов/id ' +
+        'из фиксированных реестров (SYNCED_PREF_KEYS: видимость/порядок ' +
+        'блоков, фокус-практика), свободный текст отсекает sanitizeUiPrefs ' +
+        '(src/api/ui-prefs.sanitize.ts)',
+    ),
   },
   EmailToken: {
     id: ID,
