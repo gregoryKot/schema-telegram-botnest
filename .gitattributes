@@ -20,6 +20,7 @@ scripts/eslint-baseline.json              merge=ratchet-min
 scripts/weak-assert-baseline.json         merge=ratchet-min
 scripts/jscpd-baseline.json               merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
+scripts/silent-catch-baseline.json        merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max

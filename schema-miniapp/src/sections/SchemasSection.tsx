@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
+import { SaveErrorNote } from '../components/SaveErrorNote';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { INTRO_MODE_ID } from '../components/ModesHero';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import {
   weekSchemaSummary,
   weekSchemaFrequency,
@@ -13,13 +13,13 @@ import {
   weekModeFrequency,
   WeekTopSummary,
 } from '../utils/patternsSummary';
-import { readLocalIds } from './schemas/utils';
 import { Tab, SchemasSectionProps as Props } from './schemas/types';
 import { PatternsHeader } from './schemas/PatternsHeader';
 import { SchemasTab } from './schemas/SchemasTab';
 import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
+import { useMySelections } from './schemas/useMySelections';
 import { useScreenBlocks } from '../hooks/useScreenBlocks';
 import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
 import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
@@ -32,21 +32,23 @@ export function SchemasSection({
   onOpenDiaries,
 }: Props) {
   const [tab, setTab] = useState<Tab>('schemas');
-  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
-    readLocalIds(MY_SCHEMA_IDS_KEY),
-  );
-  const [myModeIds, setMyModeIds] = useState<string[]>(() =>
-    readLocalIds(MY_MODE_IDS_KEY),
-  );
-  const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const {
+    manualSchemaIds,
+    myModeIds,
+    ysqSchemaIds,
+    ysqCompletedAt,
+    profileLoading,
+    schemaSaveError,
+    modeSaveError,
+    saveSchemas,
+    saveModes,
+  } = useMySelections();
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
-  const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
     null,
   );
@@ -59,32 +61,13 @@ export function SchemasSection({
 
   useEffect(() => {
     api
-      .getProfile()
-      .then((p) => {
-        const serverSchemas = p.mySchemaIds ?? [];
-        const serverModes = p.myModeIds ?? [];
-        setManualSchemaIds(serverSchemas);
-        if (serverSchemas.length > 0)
-          localStorage.setItem(
-            MY_SCHEMA_IDS_KEY,
-            JSON.stringify(serverSchemas),
-          );
-        setMyModeIds(serverModes);
-        if (serverModes.length > 0)
-          localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
-        setYsqSchemaIds(p.ysq.activeSchemaIds ?? []);
-        setYsqCompletedAt(p.ysq.completedAt);
-        setProfileLoading(false);
-      })
-      .catch(() => setProfileLoading(false));
-    api
       .getSchemaDiary()
       .then((entries) => {
         setSchemaEntries(entries);
         setWeekSummary(weekSchemaSummary(entries));
         setSchemaFreq(weekSchemaFrequency(entries));
       })
-      .catch(() => {});
+      .catch((e) => console.error('getSchemaDiary failed', e));
     api
       .getModeDiary()
       .then((entries) => {
@@ -92,7 +75,7 @@ export function SchemasSection({
         setModeSummary(weekModeSummary(entries));
         setModeFreq(weekModeFrequency(entries));
       })
-      .catch(() => {});
+      .catch((e) => console.error('getModeDiary failed', e));
     api
       .getYsqProgress()
       .then((progress) =>
@@ -102,16 +85,10 @@ export function SchemasSection({
             : null,
         ),
       )
-      .catch(() => {});
+      .catch((e) => console.error('getYsqProgress failed', e));
   }, []);
 
   const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
-
-  function saveSchemas(ids: string[]) {
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
-    setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => {});
-  }
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'schemas', label: 'Схемы' },
@@ -161,6 +138,15 @@ export function SchemasSection({
             </button>
           ))}
         </div>
+        {((tab === 'schemas' && schemaSaveError) ||
+          (tab === 'modes' && modeSaveError)) && (
+          <div style={{ marginTop: 8 }}>
+            <SaveErrorNote
+              ty="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуй ещё раз."
+              vy="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуйте ещё раз."
+            />
+          </div>
+        )}
       </div>
 
       <div
@@ -228,11 +214,7 @@ export function SchemasSection({
       {showModePicker && (
         <ModePickerSheet
           selected={myModeIds}
-          onSave={(ids) => {
-            localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
-            setMyModeIds(ids);
-            api.updateSettings({ myModeIds: ids }).catch(() => {});
-          }}
+          onSave={saveModes}
           onClose={() => setShowModePicker(false)}
         />
       )}
