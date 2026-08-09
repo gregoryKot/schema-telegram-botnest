@@ -1,50 +1,47 @@
-// Лист «Настроить экран»: скрыть/показать блоки текущего экрана. Generic по
-// CustomizableScreen — сейчас «Профиль», следующим шагом «Паттерны» тем же
-// компонентом (правило «одна механика — один компонент»). Каркас — общий
-// CustomizeSheetShell (второй потребитель — QuickActionCustomizeSheet), строки
-// — ToggleRow напрямую: здесь нет порядка/стрелок, только видимость.
-import { ToggleRow } from '../todayCustomize/ToggleRow';
+// Лист «Настроить экран»: скрыть/показать + переставить блоки текущего
+// экрана. Generic по CustomizableScreen («Профиль»/«Паттерны» — один
+// компонент, правило «одна механика — компонент»). Строка — CustomizeRow,
+// общая с QuickActionCustomizeSheet; порядок — withMoveFlags (тот же
+// generic-примитив, что у меню «плюс»). Каркас — общий CustomizeSheetShell.
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
-import {
-  SCREEN_BLOCK_ORDER,
-  BLOCK_META,
-  type CustomizableScreen,
-  type ScreenBlockId,
-} from '../../utils/screenBlocks';
+import { CustomizeRow } from '../plusMenu/CustomizeRow';
+import { withMoveFlags, type MoveDir } from '../../utils/quickActionOrder';
+import { BLOCK_META, type ScreenBlockId } from '../../utils/screenBlocks';
 
-interface Props {
-  screen: CustomizableScreen;
+export interface ScreenBlocksApi {
   hidden: string[];
+  orderedIds: ScreenBlockId[];
   highlight?: ScreenBlockId;
-  onToggle: (id: ScreenBlockId) => void;
-  onClose: () => void;
+  toggle: (id: ScreenBlockId) => void;
+  move: (id: string, dir: MoveDir) => boolean;
+  closeSheet: () => void;
 }
 
-export function ScreenCustomizeSheet({
-  screen,
-  hidden,
-  highlight,
-  onToggle,
-  onClose,
-}: Props) {
+export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
+  const { hidden, orderedIds, highlight, toggle, move, closeSheet } = blocks;
+  const rows = withMoveFlags(orderedIds.map((id) => ({ id })));
   return (
     <CustomizeSheetShell
       title="Настроить экран"
       subtitle="Скрытые блоки можно вернуть в любой момент"
-      onClose={onClose}
+      onClose={closeSheet}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {SCREEN_BLOCK_ORDER[screen].map((id) => {
+        {rows.map(({ id, disabledUp, disabledDown }) => {
           const meta = BLOCK_META[id];
           if (!meta) return null;
           return (
-            <ToggleRow
+            <CustomizeRow
               key={id}
               emoji={meta.emoji}
-              title={meta.label}
+              label={meta.label}
               sub={meta.sub}
-              on={!hidden.includes(id)}
-              onToggle={() => onToggle(id)}
+              hidden={hidden.includes(id)}
+              onToggle={() => toggle(id)}
+              disabledUp={disabledUp}
+              disabledDown={disabledDown}
+              onMoveUp={() => move(id, 'up')}
+              onMoveDown={() => move(id, 'down')}
               highlighted={highlight === id}
             />
           );

@@ -236,3 +236,79 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
     expect(screen.queryByText(/Достижени/)).toBeNull();
   });
 });
+
+describe('ProfileSection — порядок карточек (useScreenBlocks/useScreenBlockOrder)', () => {
+  it('сохранённый порядок из localStorage применяется к рендеру карточек (read-after-write)', async () => {
+    localStorage.setItem(
+      'screen_order_profile',
+      JSON.stringify(['achievements', 'streak', 'journey']),
+    );
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+    ]);
+    const { container } = await renderReady();
+    const texts = Array.from(container.querySelectorAll('.card')).map(
+      (c) => c.textContent,
+    );
+    const idxAchievements = texts.findIndex((t) => t?.includes('Достижени'));
+    const idxStreak = texts.findIndex((t) => t?.includes('всего'));
+    const idxJourney = texts.findIndex((t) => t?.includes('Мой путь'));
+    expect(idxAchievements).toBeLessThan(idxStreak);
+    expect(idxStreak).toBeLessThan(idxJourney);
+  });
+
+  it('стрелка «Выше» второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
+    const { container } = await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    await screen.findByText('Настроить экран');
+    // Порядок листа по умолчанию: Мой путь, Серия дней, Календарь, Достижения,
+    // Инсайты — «Серия дней» вторая строка.
+    fireEvent.click(screen.getAllByLabelText('Выше')[1]);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
+      screen: 'profile',
+      block: 'streak',
+      dir: 'up',
+    });
+    expect(localStorage.getItem('screen_order_profile')).toBe(
+      JSON.stringify([
+        'streak',
+        'journey',
+        'heatmap',
+        'achievements',
+        'insights',
+      ]),
+    );
+    fireEvent.click(screen.getByText('Готово'));
+    const texts = Array.from(container.querySelectorAll('.card')).map(
+      (c) => c.textContent,
+    );
+    expect(texts.findIndex((t) => t?.includes('всего'))).toBeLessThan(
+      texts.findIndex((t) => t?.includes('Мой путь')),
+    );
+  });
+
+  it('стрелка «Выше» первой строки (край) задизейблена: клик молчит, ничего не персистит', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    await screen.findByText('Настроить экран');
+    const firstUp = screen.getAllByLabelText('Выше')[0];
+    expect(firstUp.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(firstUp);
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'screen_block_move',
+      expect.anything(),
+    );
+    expect(localStorage.getItem('screen_order_profile')).toBeNull();
+  });
+
+  it('клик по стрелке в листе не переключает тумблер строки', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    await screen.findByText('Настроить экран');
+    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'screen_block_toggle',
+      expect.anything(),
+    );
+  });
+});

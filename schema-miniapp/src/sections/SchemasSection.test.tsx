@@ -242,3 +242,53 @@ describe('SchemasSection — скрываемые блоки (useScreenBlocks)',
     expect(await screen.findByText('Настроить экран')).toBeTruthy();
   });
 });
+
+describe('SchemasSection — порядок стопки hero/тест на схемы (useScreenBlockOrder)', () => {
+  it('сохранённый порядок из localStorage переставляет стопку (read-after-write)', async () => {
+    localStorage.setItem(
+      'screen_order_patterns',
+      JSON.stringify(['ysq_status', 'heroes']),
+    );
+    mockApi.getProfile.mockResolvedValue({
+      ...PROFILE,
+      ysq: { completedAt: null, activeSchemaIds: ['abandonment'] },
+    });
+    await renderReady();
+    const hero = await screen.findByTestId('hold-heroes');
+    const ysq = screen.getByTestId('hold-ysq_status');
+    // hero идёт ПОСЛЕ ysq в DOM (DOCUMENT_POSITION_FOLLOWING со стороны ysq).
+    expect(
+      ysq.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('стрелка «Ниже» строки «Подсказка сверху» переставляет, шлёт screen_block_move и персистит', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран'));
+    await screen.findByText('Настроить экран');
+    // Порядок листа по умолчанию: Подсказка сверху, Тест на схемы.
+    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
+      screen: 'patterns',
+      block: 'heroes',
+      dir: 'down',
+    });
+    expect(localStorage.getItem('screen_order_patterns')).toBe(
+      JSON.stringify(['ysq_status', 'heroes']),
+    );
+  });
+
+  it('стрелка «Выше» первой строки (край) задизейблена — клик молчит', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить экран'));
+    await screen.findByText('Настроить экран');
+    const upFirst = screen.getAllByLabelText('Выше')[0];
+    expect(upFirst.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(upFirst);
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'screen_block_move',
+      expect.anything(),
+    );
+    expect(localStorage.getItem('screen_order_patterns')).toBeNull();
+  });
+});

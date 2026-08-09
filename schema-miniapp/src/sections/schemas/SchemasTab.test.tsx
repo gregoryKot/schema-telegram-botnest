@@ -9,6 +9,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 import type { BlockVisibility } from './blockVisibility';
+import { SCREEN_BLOCK_ORDER } from '../../utils/screenBlocks';
 import { SchemasTab } from './SchemasTab';
 
 function fakeBlocks(hidden: string[] = []): BlockVisibility {
@@ -16,6 +17,7 @@ function fakeBlocks(hidden: string[] = []): BlockVisibility {
     isHidden: (id) => hidden.includes(id),
     holdProps: () =>
       ({}) as unknown as ReturnType<BlockVisibility['holdProps']>,
+    orderedIds: SCREEN_BLOCK_ORDER.patterns,
   };
 }
 
