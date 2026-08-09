@@ -65,6 +65,8 @@
 //                         CUSTOMIZE_ENTRY_POINTS).
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.block + meta.hidden).
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //   auth_rejected       — СЕРВЕРНОЕ событие: мини-апп пришёл с пустой
 //                         подписью (meta.reason + meta.host). Пишется только
 //                         guard'ом и всегда с userId = null — по этому
@@ -109,6 +111,7 @@ export const ANALYTICS_EVENTS = [
   'quick_action_move',
   'screen_customize_open',
   'screen_block_toggle',
+  'screen_block_move',
   'auth_rejected',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

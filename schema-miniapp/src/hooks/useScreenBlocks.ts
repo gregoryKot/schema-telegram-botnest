@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { api } from '../api';
 import { readStringArray, writeStringArray } from '../utils/stringArrayStorage';
 import { useLongPress, LongPressProps } from './useLongPress';
+import { useScreenBlockOrder } from './useScreenBlockOrder';
 import {
   SCREEN_BLOCK_IDS,
   type ScreenBlockId,
@@ -9,9 +10,7 @@ import {
 } from '../utils/screenBlocks';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-// Generic-скрытие блоков экрана («Профиль», «Паттерны» — тот же хук, другой
-// screen/storageKey, правило «одна механика — один компонент»). Форма
-// состояния — как в useTodayCustomization, но по реестру SCREEN_BLOCK_IDS.
+// Generic-скрытие+порядок блоков экрана; порядок — хук useScreenBlockOrder (правило «одна механика — компонент», файл-храповик у потолка).
 export function useScreenBlocks(
   screen: CustomizableScreen,
   storageKey: string,
@@ -19,6 +18,7 @@ export function useScreenBlocks(
   const [hidden, setHidden] = useState<string[]>(() =>
     readStringArray(storageKey),
   );
+  const order = useScreenBlockOrder(screen);
   const [sheet, setSheet] = useState<ScreenBlockId | true | null>(null);
 
   const isHidden = useCallback((id: string) => hidden.includes(id), [hidden]);
@@ -56,9 +56,7 @@ export function useScreenBlocks(
     [screen, storageKey],
   );
 
-  // useLongPress вызывается по разу на КАЖДЫЙ id реестра — SCREEN_BLOCK_IDS
-  // фиксирован и не меняется между рендерами, поэтому число и порядок вызовов
-  // хука стабильны (holdProps ниже отдаёт только то, что реально нужно экрану).
+  // useLongPress — по разу на КАЖДЫЙ id реестра (фиксирован, стабильный порядок вызовов хука); holdProps ниже отдаёт только то, что нужно экрану.
   const holdMap = {} as Record<ScreenBlockId, LongPressProps>;
   for (const id of SCREEN_BLOCK_IDS) {
     holdMap[id] = useLongPress(() => openByHold(id));
@@ -68,6 +66,7 @@ export function useScreenBlocks(
     hidden,
     isHidden,
     toggle,
+    ...order,
     sheet,
     highlight: sheet === true ? undefined : (sheet ?? undefined),
     openByGear,

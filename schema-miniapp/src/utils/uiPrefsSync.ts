@@ -1,11 +1,10 @@
 // Межустройственная синхронизация настроек кастомизации мини-аппа. Реестр
-// видимости/порядка (фокус «Сегодня», quick actions, скрытые блоки экранов)
-// жил только per-device в localStorage — на новом устройстве юзер видел
-// дефолт. Бэкенд хранит плоский объект «ключ → строка из localStorage» в
-// User.uiPrefs (settings-эндпоинт, src/settings — параллельная задача).
-//
-// Контракт зафиксирован: SYNCED_PREF_KEYS парсит бэкенд-спека fs-ом — менять
-// состав/формат только синхронно с бэкендом, по ключу на строке.
+// видимости/порядка (фокус «Сегодня», quick actions, скрытые/переставленные
+// блоки экранов) жил только per-device в localStorage — на новом устройстве
+// юзер видел дефолт. Бэкенд хранит плоский объект «ключ → строка из
+// localStorage» в User.uiPrefs (settings-эндпоинт). Контракт зафиксирован:
+// SYNCED_PREF_KEYS парсит бэкенд-спека fs-ом — менять состав/формат только
+// синхронно с бэкендом, по ключу на строке.
 import { api } from '../api';
 
 export const SYNCED_PREF_KEYS = [
@@ -20,6 +19,8 @@ export const SYNCED_PREF_KEYS = [
   'quick_actions_order_tools',
   'screen_hidden_profile',
   'screen_hidden_patterns',
+  'screen_order_profile',
+  'screen_order_patterns',
 ] as const;
 
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
@@ -42,8 +43,7 @@ export function collectPrefs(read: PrefStorage): UiPrefsPatch {
   return out;
 }
 
-/** Server wins: пишет присланные значения, удаляет ключи РЕЕСТРА, которых
- * нет в ответе. Ключи localStorage вне реестра не трогает. */
+/** Server wins: пишет присланные значения, удаляет ключи РЕЕСТРА без ответа; ключи localStorage вне реестра не трогает. */
 export function applyServerPrefs(
   prefs: UiPrefsPatch,
   storage: PrefStorage,

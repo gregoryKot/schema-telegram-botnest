@@ -7,6 +7,8 @@ export interface ScreenMetrics {
   opensByScreen: Array<{ screen: string; count: number }>;
   /** За месяц: что прячут (hidden=true), по (экран, блок), по убыванию. */
   hiddenByScreenBlock: Array<{ screen: string; block: string; count: number }>;
+  /** За месяц: сколько раз переставляли блоки местами (screen_block_move). */
+  moves30: number;
   /** Всего: сколько юзеров хоть раз сохранили серверное зеркало настроек. */
   syncedUsers: number;
 }
@@ -84,6 +86,12 @@ export function formatScreenMetrics(m: ScreenMetrics): string {
     lines.length === 0
       ? ['🧩 Настройку экранов пока не трогали.']
       : [`🧩 <b>Настройка экранов</b> (за месяц)`, ...lines];
+  // Переставляли блоки местами — счётчик за тот же месяц, без разбивки по
+  // экрану/блоку (тот же приём, что и moves30 в plus-metrics.format.ts).
+  // Пустое состояние блока не меняем — строка просто не появляется при 0.
+  if (m.moves30 > 0) {
+    out.push(`Переставляют блоки: ${m.moves30} раз`);
+  }
   // Отдельная строка-состояние (не событие за период) — печатаем только при
   // ненулевом счётчике, чтобы на чистой БД («настройку не трогали») в блоке
   // не появлялось «0 человек».

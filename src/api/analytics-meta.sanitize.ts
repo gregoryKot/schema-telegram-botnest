@@ -14,9 +14,8 @@ import {
   QUICK_ACTION_MOVE_DIR_SET,
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
-  SCREEN_BLOCK_ID_SET,
-  CUSTOMIZABLE_SCREEN_SET,
 } from './dto/analytics.dto';
+import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -263,33 +262,12 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'screen_customize_open') {
-    const screen = meta.screen;
-    const via = meta.via;
-    if (
-      typeof screen === 'string' &&
-      CUSTOMIZABLE_SCREEN_SET.has(screen) &&
-      typeof via === 'string' &&
-      CUSTOMIZE_ENTRY_SET.has(via)
-    ) {
-      return { screen, via };
-    }
-    return undefined;
-  }
-  if (name === 'screen_block_toggle') {
-    const screen = meta.screen;
-    const block = meta.block;
-    const hidden = meta.hidden;
-    if (
-      typeof screen === 'string' &&
-      CUSTOMIZABLE_SCREEN_SET.has(screen) &&
-      typeof block === 'string' &&
-      SCREEN_BLOCK_ID_SET.has(block) &&
-      typeof hidden === 'boolean'
-    ) {
-      return { screen, block, hidden };
-    }
-    return undefined;
+  if (
+    name === 'screen_customize_open' ||
+    name === 'screen_block_toggle' ||
+    name === 'screen_block_move'
+  ) {
+    return sanitizeScreenMeta(name, meta);
   }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open —
   // без meta; поля отбрасываются.

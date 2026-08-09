@@ -21,6 +21,8 @@ export const SYNCED_PREF_KEYS = [
   'quick_actions_order_tools',
   'screen_hidden_profile',
   'screen_hidden_patterns',
+  'screen_order_profile',
+  'screen_order_patterns',
 ] as const;
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
 
@@ -42,6 +44,8 @@ const ID_ARRAY_KEYS: Partial<
   quick_actions_order_tools: { allow: QUICK_ACTION_ID_SET, maxLen: 32 },
   screen_hidden_profile: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
   screen_hidden_patterns: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
+  screen_order_profile: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
+  screen_order_patterns: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
 };
 
 // Значение — сериализованный JSON-массив id, элементы ⊆ allow, длина ≤ maxLen.

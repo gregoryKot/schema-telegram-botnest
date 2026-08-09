@@ -12,9 +12,8 @@ import {
 } from '../../utils/quickActionOrder';
 import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 
-// Строки блока «Инструменты» живут в toolRows.ts — общий источник для
-// рендера и для листа настройки видимости (QuickActionCustomizeSheet, та
-// же инфраструктура, что у меню «плюс», правило «одна механика — компонент»).
+// Строки блока «Инструменты» — из toolRows.ts, общего с листом настройки
+// видимости (QuickActionCustomizeSheet, правило «одна механика — компонент»).
 interface Props extends ToolRowsProps {
   onOpenTasks: () => void;
   onOpenPractices: () => void;
@@ -26,13 +25,14 @@ interface Props extends ToolRowsProps {
   onOpenFlashcard: () => void;
   onOpenChildhoodWheel: () => void;
   onOpenWarmWords: () => void;
+  customizeOpenRef?: React.MutableRefObject<() => void>; // шапка HelpSection
 }
-
-// props целиком, без деструктуризации: buildToolRows(props) берёт свои 4
-// поля, callbacks — свои 10 колбэков (файл в бейслайне размера, правило №10).
+// props целиком, без деструктуризации (файл в бейслайне размера, №10).
 export function ToolsList(props: Props) {
   const [hidden, handleToggle] = useHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY);
   const [showCustomize, setShowCustomize] = useState(false);
+  if (props.customizeOpenRef)
+    props.customizeOpenRef.current = () => setShowCustomize(true);
   const callbacks: Partial<Record<QuickActionId, () => void>> = {
     phrase_check: props.onOpenPhraseCheck,
     tasks: props.onOpenTasks,
