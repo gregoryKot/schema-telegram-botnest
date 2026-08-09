@@ -65,6 +65,8 @@
 //                         CUSTOMIZE_ENTRY_POINTS).
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.block + meta.hidden).
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -102,6 +104,7 @@ export const ANALYTICS_EVENTS = [
   'quick_action_move',
   'screen_customize_open',
   'screen_block_toggle',
+  'screen_block_move',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

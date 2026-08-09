@@ -173,15 +173,7 @@ export function ProfileSection({
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 
       {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие на карточку) ── */}
-      {blocks.sheet !== null && (
-        <ScreenCustomizeSheet
-          screen="profile"
-          hidden={blocks.hidden}
-          highlight={blocks.highlight}
-          onToggle={blocks.toggle}
-          onClose={blocks.closeSheet}
-        />
-      )}
+      {blocks.sheet !== null && <ScreenCustomizeSheet blocks={blocks} />}
     </div>
   );
 }

@@ -254,15 +254,7 @@ export function SchemasSection({
       )}
 
       {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие) ── */}
-      {blocks.sheet !== null && (
-        <ScreenCustomizeSheet
-          screen="patterns"
-          hidden={blocks.hidden}
-          highlight={blocks.highlight}
-          onToggle={blocks.toggle}
-          onClose={blocks.closeSheet}
-        />
-      )}
+      {blocks.sheet !== null && <ScreenCustomizeSheet blocks={blocks} />}
     </div>
   );
 }

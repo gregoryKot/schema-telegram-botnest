@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
@@ -17,14 +17,12 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { ToolRow } from '../components/ToolRow';
 import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
-import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
 import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
-import { useTr } from '../utils/addressForm';
 import { practiceCountLabel } from '../components/PracticeDoneFooter';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
-import { NextSessionBanner } from './helpSection/NextSessionBanner';
+import { HelpHeader } from './helpSection/HelpHeader';
 import { ToolsList } from './helpSection/ToolsList';
 
 interface Props {
@@ -56,8 +54,8 @@ export function HelpSection({
 }: Props) {
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
+  const customizeOpenRef = useRef<() => void>(() => {});
 
-  const tr = useTr();
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [showGrounding, setShowGrounding] = useState(false);
   const [showStop, setShowStop] = useState(false);
@@ -193,55 +191,11 @@ export function HelpSection({
         overflowX: 'hidden',
       }}
     >
-      {/* Header */}
-      <div style={{ padding: '20px 20px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div className="d-display" style={{ fontSize: 26 }}>
-            Здесь и сейчас
-          </div>
-          <button
-            {...pressable(() => setShowSelfHelp(true))}
-            aria-label="О границах самопомощи"
-            // Роль несёт слово, а слову нужна ширина: в круге 26×26 текст не
-            // помещался, и в цель меньше 44 не попасть.
-            style={{
-              minHeight: 44,
-              padding: '6px 12px',
-              borderRadius: 999,
-              flexShrink: 0,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 12,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              color: 'var(--ink-2)',
-              background:
-                'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
-              display: 'flex',
-              alignItems: 'center',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            Важное о самопомощи
-          </button>
-        </div>
-        <div
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            marginTop: 4,
-            lineHeight: 1.5,
-          }}
-        >
-          {tr(
-            'Тяжёлый момент? Начни с одного вдоха',
-            'Тяжёлый момент? Начните с одного вдоха',
-          )}
-        </div>
-        {/* Next session banner for clients */}
-        <NextSessionBanner relation={relation} />
-      </div>
+      <HelpHeader
+        relation={relation}
+        onOpenSelfHelp={() => setShowSelfHelp(true)}
+        onOpenCustomize={() => customizeOpenRef.current()}
+      />
 
       <div
         style={{
@@ -334,6 +288,7 @@ export function HelpSection({
           onOpenFlashcard={() => setShowFlashcard(true)}
           onOpenChildhoodWheel={onOpenChildhoodWheel}
           onOpenWarmWords={() => setShowWarmWords(true)}
+          customizeOpenRef={customizeOpenRef}
         />
 
         <div style={{ paddingBottom: 4 }}>

@@ -5,7 +5,7 @@
 import { sanitizeUiPrefs, SYNCED_PREF_KEYS } from './ui-prefs.sanitize';
 
 describe('sanitizeUiPrefs', () => {
-  it('реестр ключей — 11 штук, ровно как в зафиксированном контракте', () => {
+  it('реестр ключей — 13 штук, ровно как в зафиксированном контракте', () => {
     expect(SYNCED_PREF_KEYS).toEqual([
       'today_focus_practice',
       'today_streak_hidden',
@@ -18,6 +18,8 @@ describe('sanitizeUiPrefs', () => {
       'quick_actions_order_tools',
       'screen_hidden_profile',
       'screen_hidden_patterns',
+      'screen_order_profile',
+      'screen_order_patterns',
     ]);
   });
 
@@ -92,10 +94,12 @@ describe('sanitizeUiPrefs', () => {
     }
   });
 
-  it('screen_hidden_profile/screen_hidden_patterns: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16', () => {
+  it('screen_hidden_*/screen_order_*: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16', () => {
     for (const key of [
       'screen_hidden_profile',
       'screen_hidden_patterns',
+      'screen_order_profile',
+      'screen_order_patterns',
     ] as const) {
       expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak']) })).toEqual({
         [key]: JSON.stringify(['streak']),
