@@ -18,6 +18,9 @@ vi.mock('../../../shared/src/host', () => ({
 import { getHost } from '../../../shared/src/host';
 const mockGetHost = getHost as unknown as ReturnType<typeof vi.fn>;
 
+vi.mock('../api', () => ({ reportClientError: vi.fn() }));
+import { reportClientError } from '../api';
+
 function jsonResponse(status: number, body: unknown): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -37,6 +40,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.mocked(reportClientError).mockClear();
   vi.unstubAllGlobals();
 });
 
@@ -135,6 +139,29 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     expect(screen.getByText('Не удалось войти автоматически')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Попробовать снова' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+  });
+
+  // Парная правка к AppErrorScreen мини-аппа (правило №3). Инцидент
+  // 2026-08-08: вход был сломан у всех пользователей Telegram, экран об этом
+  // говорил пользователю и молчал нам — телеметрия висела только на крашах.
+  it('неудачный вход в мессенджере уезжает в телеметрию', async () => {
+    mockGetHost.mockReturnValue({
+      id: 'telegram',
+      sessionExchange: () => ({
+        path: '/api/auth/telegram/exchange',
+        body: { initData: '' },
+      }),
+    });
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+
+    await screen.findByText(/Ошибка 401/);
+    expect(reportClientError).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(reportClientError).mock.calls[0][0];
+    expect(payload.section).toBe('auth');
+    expect(payload.message).toContain('хост=telegram');
+    expect(payload.message).toContain('подпись ПУСТАЯ');
   });
 
   it('«Попробовать снова» с ошибкой сервера показывает код ответа, не роняет экран', async () => {

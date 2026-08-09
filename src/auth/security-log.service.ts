@@ -18,6 +18,11 @@ export type SecurityEvent =
   | 'csrf_blocked'
   | 'rate_limited'
   | 'suspicious_initdata'
+  // Мини-апп открыт в мессенджере, но прислал пустую подпись — сломан клиент,
+  // а не пользователь (инцидент 2026-08-08: вход не работал у всех
+  // пользователей Telegram, и на сервере это было неотличимо от фонового шума
+  // неавторизованных запросов).
+  | 'empty_signature'
   | 'refresh_token_reuse';
 
 // Events we DM the admin about. Verbose events (success login etc) only
@@ -28,6 +33,7 @@ const ALERT_EVENTS = new Set<SecurityEvent>([
   'therapist_request_submitted',
   'csrf_blocked',
   'suspicious_initdata',
+  'empty_signature',
   'refresh_token_reuse',
 ]);
 
