@@ -212,4 +212,25 @@ describe('notifyAdminWithFallback', () => {
     const body = JSON.parse(sentInit?.body as string);
     expect(body.from).toBe('SchemeHappens <no-reply@schemehappens.ru>');
   });
+
+  describe('skipTelegram', () => {
+    it('минует Telegram и пишет сразу почтой', async () => {
+      // Инцидент 2026-08-09: алерт «Telegram не отвечает» уходил в Telegram.
+      process.env.BOT_TOKEN = 'bot-token';
+      process.env.ADMIN_ID = '42';
+      process.env.RESEND_API_KEY = 'key';
+      process.env.ADMIN_EMAIL = 'admin@example.com';
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValue({ ok: true, status: 200, text: async () => '{}' });
+      global.fetch = fetchMock;
+
+      await notifyAdminWithFallback('канал молчит', 'Канал', {
+        skipTelegram: true,
+      });
+
+      const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+      expect(urls).toEqual(['https://api.resend.com/emails']);
+    });
+  });
 });

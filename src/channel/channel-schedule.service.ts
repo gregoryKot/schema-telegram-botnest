@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import {
+  catchUpSlot,
   dueSlot,
   mskParts,
-  slotForMoment,
   type HealthyAdultSlot,
 } from '../bot/healthy-adult.schedule';
 import { DeliveryLogService } from './delivery-log.service';
@@ -21,6 +21,12 @@ const POST_TZ = 'Europe/Moscow';
 // см. healthy-adult.schedule): время гуляет ото дня ко дню, но переживает
 // рестарт — setTimeout-задержка потерялась бы при деплое.
 const MORNING_CRON = '*/5 9,10 * * *';
+/**
+ * Досылка долга — своим тиком, шире окна публикации. Пост, вышедший на
+ * последнем тике окна, иначе оставался бы недосланным: повторять было уже
+ * нечем (инцидент 2026-08-09).
+ */
+const CATCH_UP_CRON = '*/15 * * * *';
 const EVENING_CRON = '*/5 18,19 * * *';
 /** Имя слота для владельца и для журнала отправок. */
 const SLOT_NAME: Record<HealthyAdultSlot, string> = {
@@ -58,6 +64,17 @@ export class ChannelScheduleService {
     await this.maybePost();
   }
 
+  @Cron(CATCH_UP_CRON, { name: 'healthyAdultCatchUp', timeZone: POST_TZ })
+  async tickCatchUp() {
+    try {
+      await this.catchUp(new Date());
+    } catch (err) {
+      this.logger.error(
+        `healthy-adult catch-up failed: ${(err as Error)?.message}`,
+      );
+    }
+  }
+
   /**
    * Тик расписания: публикует, только если настала запланированная минута слота
    * и в этот слот ещё не постили (ручная публикация из админки и /zv идёт мимо,
@@ -86,6 +103,7 @@ export class ChannelScheduleService {
               (res.failed.length > 0
                 ? '\nПробую дослать в ближайшие минуты.'
                 : ''),
+            res.failed,
           );
         return;
       }
@@ -116,7 +134,7 @@ export class ChannelScheduleService {
    * считается по журналу и досылается только должникам.
    */
   private async catchUp(now: Date): Promise<void> {
-    const slot = slotForMoment(now);
+    const slot = catchUpSlot(now);
     if (!slot) return;
     const key = `${mskParts(now).dateKey}:${slot}:повтор`;
     if (!this.retries.allow(key)) return;
@@ -150,9 +168,18 @@ export class ChannelScheduleService {
    * нормализованному тексту, обрезкой до 300 символов и молчаливым
    * проглатыванием ошибок. Алерт о канале слишком редкий, чтобы его троттлить.
    */
-  private async alert(text: string): Promise<void> {
+  private async alert(
+    text: string,
+    failed: { platform: string }[] = [],
+  ): Promise<void> {
     // warn, а не error: DM уходит явной строкой ниже, дублировать не нужно.
     this.logger.warn(text);
-    await notifyAdminWithFallback(text, 'Канал «Здоровый Взрослый»');
+    // Если упал сам Telegram, DM пойдёт тем же путём, который не работает —
+    // сообщение о недоступности Telegram по Telegram не доставить (инцидент
+    // 2026-08-09: сбои шли три дня, а владелец не знал). Тогда сразу почтой.
+    const telegramDown = failed.some((f) => f.platform === 'telegram');
+    await notifyAdminWithFallback(text, 'Канал «Здоровый Взрослый»', {
+      skipTelegram: telegramDown,
+    });
   }
 }
