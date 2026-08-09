@@ -6,4 +6,7 @@ export {
   useTr,
   pickForm,
 } from '../../../shared/src/utils/addressForm';
-export type { AddressForm, AddressFormCtx } from '../../../shared/src/utils/addressForm';
+export type {
+  AddressForm,
+  AddressFormCtx,
+} from '../../../shared/src/utils/addressForm';
