@@ -14,6 +14,10 @@ const IOS_FULLSCREEN_MIN = 100;
 // внятной полосы контента от него нет. Пилюля «Закрыть» на iPhone с Dynamic
 // Island заканчивается около 87pt — берём с запасом.
 const OVERLAY_MIN_TOP = 96;
+// Когда перечитывать хост и инсеты после монтирования. Не зависит от адаптера
+// намеренно: страховка не должна жить внутри той ветки, которая может не
+// запуститься.
+const LATE_HOST_READS_MS = [150, 500, 1500, 3000];
 
 function isIOS(): boolean {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -101,7 +105,45 @@ function read(): number {
 export function useSafeTop(): number {
   const [safeTop, setSafeTop] = useState<number>(read);
 
-  useEffect(() => getHost().onInsetsChange(() => setSafeTop(read())), []);
+  useEffect(() => {
+    let alive = true;
+    let unsub: (() => void) | null = null;
+    let attachedTo: string | null = null;
+    const apply = () => {
+      if (alive) setSafeTop(read());
+    };
+
+    // Хост может смениться уже ПОСЛЕ монтирования: telegram-web-app.js
+    // грузится асинхронно, и до его прихода WebApp пустой — приложение честно
+    // считает себя открытым в браузере. Подписка браузерного адаптера —
+    // заглушка, поэтому первая же такая гонка навсегда замораживала отступ
+    // нулём, и шапка оказывалась под кнопками мессенджера (три скриншота
+    // подряд, 2026-08). Механизм повторного чтения жил ВНУТРИ телеграмного
+    // адаптера, то есть ровно в той ветке, которая не запускалась.
+    const attach = () => {
+      const host = getHost();
+      if (host.id !== attachedTo) {
+        attachedTo = host.id;
+        unsub?.();
+        unsub = host.onInsetsChange(apply);
+      }
+      apply();
+    };
+
+    attach();
+    const timers = LATE_HOST_READS_MS.map((ms) => setTimeout(attach, ms));
+    // Возврат в приложение и поворот экрана тоже меняют инсеты.
+    document.addEventListener('visibilitychange', apply);
+    window.addEventListener('resize', apply);
+
+    return () => {
+      alive = false;
+      timers.forEach(clearTimeout);
+      document.removeEventListener('visibilitychange', apply);
+      window.removeEventListener('resize', apply);
+      unsub?.();
+    };
+  }, []);
 
   return safeTop;
 }
