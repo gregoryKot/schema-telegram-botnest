@@ -11,6 +11,8 @@ import { AuthService } from '../auth/auth.service';
 import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
 import { applyTelegramInitData, applyMaxInitData } from './init-data-paths';
+import { reportAuthFailure } from './auth-failure.report';
+import { AnalyticsService } from '../analytics/analytics.service';
 import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
@@ -27,6 +29,7 @@ export class TelegramAuthGuard implements CanActivate {
     private readonly authService: AuthService,
     private readonly securityLog: SecurityLogService,
     private readonly maxProvider: MaxProvider,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -73,6 +76,18 @@ export class TelegramAuthGuard implements CanActivate {
       return true;
     }
 
+    // ── Отказ ────────────────────────────────────────────────────────────────
+    // Пустой заголовок подписи проваливается сюда (falsy) — и до 2026-08-08
+    // эта ветка молчала: вход был сломан у всех пользователей Telegram, а на
+    // сервере это выглядело как обычный неавторизованный запрос. Теперь
+    // «мессенджер открыт, а подписи нет» отделено от фонового шума и слышно.
+    reportAuthFailure(req.headers, req.ip, {
+      logger: this.logger,
+      securityLog: this.securityLog,
+      track: (meta) => {
+        void this.analytics.track(null, 'auth_rejected', meta);
+      },
+    });
     throw new UnauthorizedException('Missing authentication');
   }
 }

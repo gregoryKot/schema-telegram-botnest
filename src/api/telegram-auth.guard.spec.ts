@@ -71,14 +71,16 @@ function makeGuard(
   const maxProvider = (opts.maxProvider ?? {
     verifyInitData: jest.fn(),
   }) as MaxProvider;
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
   const guard = new TelegramAuthGuard(
     config,
     prisma,
     authService as any,
     securityLog as any,
     maxProvider,
+    analytics as any,
   );
-  return { guard, prisma, authService, securityLog, maxProvider };
+  return { guard, prisma, authService, securityLog, maxProvider, analytics };
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -348,5 +350,36 @@ describe('путь 3: MAX initData (MAX мини-апп)', () => {
     });
     expect(securityLog.log).not.toHaveBeenCalled();
     expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+  });
+});
+
+// Регресс инцидента 2026-08-08 на серверной стороне шва. Мини-апп в Telegram
+// считал себя открытым в MAX и слал ПУСТУЮ подпись; пустая строка falsy, и
+// запрос уходил в ветку «Missing authentication» — без лога, счётчика и
+// алерта. Вход был сломан у всех пользователей Telegram, а сервер молчал.
+describe('отказ входа: пустая подпись слышна', () => {
+  it('пустой x-max-init-data → 401, алерт админу и серверное событие', async () => {
+    const { guard, securityLog, analytics } = makeGuard();
+    const ctx = makeCtx({ headers: { 'x-max-init-data': '' }, ip: '1.2.3.4' });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'empty_signature',
+      expect.objectContaining({ host: 'max' }),
+    );
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'auth_rejected',
+      expect.objectContaining({ host: 'max', reason: 'empty_signature' }),
+    );
+  });
+
+  it('запрос вообще без заголовков — 401 молча (фон интернета не будит админа)', async () => {
+    const { guard, securityLog, analytics } = makeGuard();
+    const ctx = makeCtx({ headers: {}, ip: '9.9.9.9' });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).not.toHaveBeenCalled();
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });

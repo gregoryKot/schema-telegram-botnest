@@ -1,4 +1,6 @@
 import { getHost } from '../../../shared/src/host';
+import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
+import { reportClientError } from '../api';
 import {
   describeInitDataShape,
   formatInitDataShape,
@@ -30,11 +32,18 @@ export function AppErrorScreen({ error }: { error: string }) {
   // Форма подписи — только при неудаче входа в мессенджере. Значений в ней
   // нет (initDataShape.ts), а различает она две причины, неотличимые по
   // самому сообщению: подпись не в том виде или токен от другого бота.
-  const shape = isAuthError
-    ? describeInitDataShape(
-        (getHost().sessionExchange()?.body.initData as string) ?? '',
-      )
-    : null;
+  const initData = (getHost().sessionExchange()?.body.initData as string) ?? '';
+  const shape = isAuthError ? describeInitDataShape(initData) : null;
+
+  // Обработанная авария молчала громче необработанной: краши ErrorBoundary
+  // доезжали до нас, а сломанный вход — нет (инцидент 2026-08-08, пять суток
+  // вход не работал у всех пользователей Telegram).
+  useAuthFailureReport(
+    reportClientError,
+    isAuthError
+      ? { hostId: getHost().id, signaturePresent: initData !== '', error }
+      : null,
+  );
   return (
     <div
       style={{

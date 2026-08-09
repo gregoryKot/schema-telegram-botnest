@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { getHost } from '../../../shared/src/host';
+import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
+import { reportClientError } from '../api';
 import { MMIcon } from '../components/modeMapIcons';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -29,6 +31,22 @@ export function LoginPage() {
 
   // ── Mini-app fallback ────────────────────────────────────────────────────
   const [miniAppLoading, setMiniAppLoading] = useState(false);
+  // Сломанный вход внутри мессенджера обязан быть слышен нам, а не только
+  // виден пользователю (инцидент 2026-08-08: пять суток вход не работал у
+  // всех пользователей Telegram, и телеметрия молчала — она была только у
+  // крашей ErrorBoundary). Парная правка к AppErrorScreen мини-аппа.
+  useAuthFailureReport(
+    reportClientError,
+    isTelegramContext && error
+      ? {
+          hostId: getHost().id,
+          signaturePresent:
+            ((getHost().sessionExchange()?.body.initData as string) ?? '') !==
+            '',
+          error,
+        }
+      : null,
+  );
   const retryTelegramAuth = async () => {
     setMiniAppLoading(true);
     setError(null);
