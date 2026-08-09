@@ -302,13 +302,21 @@ describe('ChannelScheduleService', () => {
       );
     });
 
-    it('вне окна слота не досылает — публикация давно прошла', async () => {
+    it('досылает и после закрытия окна публикации', async () => {
+      // Инцидент 2026-08-09: пост вышел в 10:55 — на последнем тике окна, и
+      // повторять было уже нечем. Долг тянется до вечера.
+      spyLogger();
+      const { service, retry } = closedSlot([row('max', false)]);
+      await service.maybePost(msk(14, 0));
+      expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
+    });
+
+    it('ночью не досылает — подписчики спят, утром выйдет свежая фраза', async () => {
       spyLogger();
       const { service, retry, slotRows } = closedSlot([row('max', false)]);
-      await service.maybePost(msk(14, 0));
+      await service.maybePost(msk(3, 0));
       expect(retry).not.toHaveBeenCalled();
       expect(slotRows).not.toHaveBeenCalled();
-      // И владельца не дёргаем: вне окна досылать уже поздно.
       expect(alertTexts()).toEqual([]);
     });
 
@@ -337,6 +345,28 @@ describe('ChannelScheduleService', () => {
 
     // now не передан из крона — обёртка не подсовывает свой момент времени.
     expect(spy.mock.calls).toEqual([[], []]);
+  });
+
+  it('про сбой самого Telegram пишем мимо Telegram — почтой', async () => {
+    // Инцидент 2026-08-09: канал падал три дня, а алерты уходили тем же
+    // путём, который и не работал. Сообщение о недоступности Telegram по
+    // Telegram не доставить.
+    spyLogger();
+    const { service } = makeService({
+      ...partialResult,
+      failed: [{ ...delivered('telegram'), reason: 'ETIMEDOUT' }],
+    });
+
+    await service.maybePost(msk(10, 55));
+
+    expect(alerts.mock.calls[0][2]).toEqual({ skipTelegram: true });
+  });
+
+  it('упала другая площадка — DM в Telegram остаётся рабочим путём', async () => {
+    spyLogger();
+    const { service } = makeService(partialResult);
+    await service.maybePost(msk(10, 55));
+    expect(alerts.mock.calls[0][2]).toEqual({ skipTelegram: false });
   });
 
   it('выключенная площадка названа в отчёте, а не пропущена молча', async () => {
