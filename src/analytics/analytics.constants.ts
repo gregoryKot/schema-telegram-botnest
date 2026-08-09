@@ -65,6 +65,15 @@
 //                         CUSTOMIZE_ENTRY_POINTS).
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.block + meta.hidden).
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.dir: 'up'|'down').
+//   auth_rejected       — СЕРВЕРНОЕ событие: мини-апп пришёл с пустой
+//                         подписью (meta.reason + meta.host). Пишется только
+//                         guard'ом и всегда с userId = null — по этому
+//                         признаку отчёт и отличает настоящие отказы от
+//                         возможной подделки с клиента. Инцидент 2026-08-08:
+//                         вход был сломан у всех пользователей Telegram, а
+//                         отказ не считал никто.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -102,6 +111,8 @@ export const ANALYTICS_EVENTS = [
   'quick_action_move',
   'screen_customize_open',
   'screen_block_toggle',
+  'screen_block_move',
+  'auth_rejected',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

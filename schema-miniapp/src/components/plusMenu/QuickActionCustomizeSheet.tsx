@@ -1,11 +1,8 @@
-// Лист «что показывать» — общий для поверхностей «плюс» и «Инструменты»
-// (правило «одна механика — один компонент»). Тонкий мэппер: строка и вся её
-// логика (toggle/move + аналитика) — в CustomizeRow. Порядок/дизейбл краёв
-// стрелок считает родитель (у групп «плюса» и списка «Инструментов» разные
-// границы) — сюда приходит уже готовый список. Каркас (шапка + «Готово») —
-// общий CustomizeSheetShell, второй потребитель — ScreenCustomizeSheet.
+// Лист «что показывать» — общий для «плюса» и «Инструментов»: строка —
+// CustomizeRow (общая со ScreenCustomizeSheet), аналитика — quickActionRowHandlers.
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
 import { CustomizeRow } from './CustomizeRow';
+import { makeQuickActionRowHandlers } from './quickActionRowHandlers';
 import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
 interface CustomizeAction {
@@ -36,6 +33,7 @@ export function QuickActionCustomizeSheet({
   onMove,
   onClose,
 }: Props) {
+  const handlers = makeQuickActionRowHandlers(surface, onToggle, onMove);
   return (
     <CustomizeSheetShell
       title={title}
@@ -44,21 +42,23 @@ export function QuickActionCustomizeSheet({
       onClose={onClose}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {actions.map((a) => (
-          <CustomizeRow
-            key={a.id}
-            id={a.id}
-            emoji={a.emoji}
-            label={a.label}
-            sub={a.sub}
-            hidden={hidden.includes(a.id)}
-            onToggle={onToggle}
-            disabledUp={a.disabledUp}
-            disabledDown={a.disabledDown}
-            onMove={onMove}
-            surface={surface}
-          />
-        ))}
+        {actions.map((a) => {
+          const wasHidden = hidden.includes(a.id);
+          return (
+            <CustomizeRow
+              key={a.id}
+              emoji={a.emoji}
+              label={a.label}
+              sub={a.sub}
+              hidden={wasHidden}
+              onToggle={() => handlers.handleToggle(a.id, wasHidden)}
+              disabledUp={a.disabledUp}
+              disabledDown={a.disabledDown}
+              onMoveUp={() => handlers.handleMove(a.id, 'up')}
+              onMoveDown={() => handlers.handleMove(a.id, 'down')}
+            />
+          );
+        })}
       </div>
     </CustomizeSheetShell>
   );

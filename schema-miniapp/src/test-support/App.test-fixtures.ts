@@ -157,4 +157,8 @@ vi.mock('../api', () => ({
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
   },
+  // Экран ошибки сам отправляет отчёт о сломанном входе (инцидент
+  // 2026-08-08) — без этого мока рендер ошибки падает на несуществующем
+  // экспорте, и «видимая ошибка вместо молчания» перестаёт проверяться.
+  reportClientError: vi.fn(),
 }));

@@ -5,6 +5,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AppErrorScreen } from './AppErrorScreen';
+import { reportClientError } from '../api';
+
+vi.mock('../api', () => ({ reportClientError: vi.fn() }));
 
 const close = vi.fn();
 
@@ -17,6 +20,8 @@ function inTelegram() {
 beforeEach(() => {
   cleanup();
   close.mockClear();
+  vi.mocked(reportClientError).mockClear();
+  delete (globalThis as { WebApp?: unknown }).WebApp;
   delete (window as never as { Telegram?: unknown }).Telegram;
 });
 
@@ -83,5 +88,35 @@ describe('AppErrorScreen', () => {
     render(<AppErrorScreen error="Failed to fetch" />);
     expect(screen.getByRole('button', { name: 'Повторить' })).toBeTruthy();
     expect(screen.getByText('Не удалось загрузить')).toBeTruthy();
+  });
+});
+
+// Инцидент 2026-08-08: вход не работал у всех пользователей Telegram пять
+// суток. Экран у них был, а у нас — тишина: телеметрию слал только
+// ErrorBoundary, то есть КРАШ. Обработанная авария оказалась невидимее
+// необработанной, поэтому теперь экран сам о себе сообщает.
+describe('отчёт о сломанном входе', () => {
+  it('неудача входа уезжает в телеметрию — с площадкой и признаком пустой подписи', () => {
+    (globalThis as { WebApp?: unknown }).WebApp = { initData: '' };
+    render(<AppErrorScreen error="Error: 401" />);
+
+    expect(reportClientError).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(reportClientError).mock.calls[0][0];
+    expect(payload.section).toBe('auth');
+    expect(payload.message).toContain('хост=max');
+    expect(payload.message).toContain('подпись ПУСТАЯ');
+  });
+
+  it('сетевой сбой (не 401) телеметрию входа не будит', () => {
+    render(<AppErrorScreen error="TypeError: Failed to fetch" />);
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  it('один отчёт на показ экрана, а не на каждый перерендер', () => {
+    inTelegram();
+    const { rerender } = render(<AppErrorScreen error="401" />);
+    rerender(<AppErrorScreen error="401" />);
+    rerender(<AppErrorScreen error="401" />);
+    expect(reportClientError).toHaveBeenCalledTimes(1);
   });
 });

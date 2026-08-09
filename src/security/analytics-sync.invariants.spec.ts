@@ -49,6 +49,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'WeeklyCardSheet.tsx/Celebration.tsx/ShareCardSheet.tsx (оба фронта)',
   share_result:
     'константа SHARE_RESULT_EVENT, та же группа файлов, что и share_card',
+  auth_rejected:
+    'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
+    'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
+    'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -140,6 +144,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // (account_link_*, 2026-08) осознанно: те же кросс-фронтовые события
     // через именованные константы — тот же легитимный паттерн, что и
     // share_card/onboarding_step/mode_card_saved, не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(20);
+    // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
+    // слать не может по замыслу (отказ входа фиксирует guard).
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(21);
   });
 });

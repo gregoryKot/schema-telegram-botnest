@@ -22,12 +22,14 @@ const FULL: ScreenMetrics = {
     { screen: 'profile', block: 'streak', count: 3 },
     { screen: 'profile', block: 'heatmap', count: 1 },
   ],
+  moves30: 0,
   syncedUsers: 0,
 };
 
 const EMPTY: ScreenMetrics = {
   opensByScreen: [],
   hiddenByScreenBlock: [],
+  moves30: 0,
   syncedUsers: 0,
 };
 
@@ -95,6 +97,32 @@ describe('formatScreenMetrics', () => {
     for (const block of SCREEN_BLOCK_IDS) {
       expect(SCREEN_BLOCK_LABELS[block]).toBeTruthy();
     }
+  });
+});
+
+describe('formatScreenMetrics — moves30 (переставляли блоки)', () => {
+  it('moves30 = 0 — строка не показывается вовсе (пустое состояние блока не меняем)', () => {
+    const text = formatScreenMetrics({ ...EMPTY, moves30: 0 });
+    expect(text).toBe('🧩 Настройку экранов пока не трогали.');
+    expect(text).not.toMatch(/переставля/i);
+  });
+
+  it('moves30 > 0 при полных данных — строка идёт до syncedUsers, не после', () => {
+    const text = formatScreenMetrics({ ...FULL, moves30: 6, syncedUsers: 7 });
+    const lines = text.split('\n');
+    expect(lines).toContain('Переставляют блоки: 6 раз');
+    expect(lines.indexOf('Переставляют блоки: 6 раз')).toBeLessThan(
+      lines.indexOf('Настройки синхронизированы: 7 человек'),
+    );
+    expect(lines.at(-1)).toBe('Настройки синхронизированы: 7 человек');
+  });
+
+  it('moves30 > 0, но открытий/скрытий за месяц не было — фиксированное «не трогали» плюс строка перестановок', () => {
+    const text = formatScreenMetrics({ ...EMPTY, moves30: 4 });
+    expect(text).toBe(
+      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: 4 раз',
+    );
+    expect(text).not.toMatch(/NaN|undefined/);
   });
 });
 

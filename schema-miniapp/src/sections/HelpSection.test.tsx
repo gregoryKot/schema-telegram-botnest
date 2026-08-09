@@ -793,3 +793,21 @@ describe('HelpSection — баннер следующей встречи из р
     await screen.findByText(/Встреча/);
   });
 });
+
+describe('HelpSection — единый вход «Настроить экран» (фидбек владельца: пилюля у «Инструментов» терялась глубоко по скроллу)', () => {
+  it('шестерёнка в шапке открывает тот же лист настройки инструментов, что и пилюля у «Инструментов»', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить инструменты'));
+    expect(
+      await screen.findByText('Какие инструменты показывать'),
+    ).toBeTruthy();
+  });
+
+  it('контекстная пилюля «Настроить» у «Инструментов» по-прежнему открывает лист', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByLabelText('Настроить список инструментов'));
+    expect(
+      await screen.findByText('Какие инструменты показывать'),
+    ).toBeTruthy();
+  });
+});

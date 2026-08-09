@@ -20,7 +20,7 @@ import { fmtDate, todayStr } from '../utils/format';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
-import { GearIcon } from '../components/GearIcon';
+import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
@@ -197,27 +197,12 @@ export function TodaySection({
           >
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
           </div>
-          <button
-            onClick={today.openByGear}
-            aria-label="Настроить экран"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              border: '1px solid var(--border-color)',
-              background: 'var(--surface)',
-              color: 'var(--text-sub)',
-              fontSize: 17,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              marginTop: -6,
-            }}
-          >
-            <GearIcon />
-          </button>
+          <div style={{ marginTop: -6, flexShrink: 0 }}>
+            <GearButton
+              onClick={today.openByGear}
+              ariaLabel="Настроить экран"
+            />
+          </div>
         </div>
         <div
           style={{

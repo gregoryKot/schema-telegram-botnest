@@ -134,15 +134,45 @@ describe('определение хоста', () => {
     expect(getHost().id).toBe('max');
   });
 
-  // Приоритет намеренно у MAX, а не у Telegram (было наоборот до 2026-08-03).
-  // Телеграмный SDK подключён в index.html безусловно и создаёт свой объект
-  // где угодно, поэтому «Telegram первым» означало «Telegram всегда»: внутри
-  // MAX приложение считало себя телеграмным и обмен подписи MAX не звался.
-  // Признаки MAX подделать телеграмным SDK нельзя — значит они и решают.
-  it('оба объекта сразу — приоритет у MAX', () => {
-    fakeTelegram();
-    fakeMax();
-    expect(detectHostId()).toBe('max');
+  // Спор двух площадок решают стартовые параметры в адресе, а не сам факт
+  // существования объекта. Оба SDK создают свою глобаль слишком легко:
+  // телеграмный подключён в index.html безусловно (поэтому «Telegram первым»
+  // означало «Telegram всегда» и внутри MAX обмен подписи MAX не звался,
+  // 2026-08-03), а мост MAX однажды загрузился в Telegram из-за ошибки
+  // загрузчика и утащил туда же весь Telegram (2026-08-08).
+  describe('оба объекта сразу', () => {
+    function setHash(hash: string) {
+      window.location.hash = hash;
+      resetMaxLaunchParams();
+    }
+
+    afterEach(() => setHash(''));
+
+    it('стартовые параметры MAX в адресе — MAX', () => {
+      setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
+      fakeTelegram();
+      fakeMax();
+      expect(detectHostId()).toBe('max');
+    });
+
+    // Регресс инцидента 2026-08-08: живая телеграмная подпись весит больше,
+    // чем посторонний window.WebApp без параметров запуска MAX.
+    it('параметров MAX в адресе нет, подпись Telegram живая — Telegram', () => {
+      setHash(
+        '#tgWebAppData=user%3D%257B%2522id%2522%253A1%257D&tgWebAppVersion=8.0',
+      );
+      fakeTelegram();
+      fakeMax();
+      expect(detectHostId()).toBe('telegram');
+    });
+
+    // Внутри MAX телеграмный SDK оставляет platform = 'unknown' и пустую
+    // подпись — тогда мост решает даже без параметров в адресе.
+    it('параметров нет и Telegram не настоящий — MAX', () => {
+      fakeTelegram({ platform: 'unknown', initData: '' });
+      fakeMax();
+      expect(detectHostId()).toBe('max');
+    });
   });
 
   it('посторонний window.WebApp без признаков MAX Bridge — не хост MAX', () => {
@@ -728,6 +758,18 @@ describe('MAX: стартовые параметры из адреса', () => {
   it('без моста хост всё равно опознаётся как MAX', () => {
     setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
     expect(detectHostId()).toBe('max');
+  });
+
+  // Telegram передаёт свои стартовые данные тем же фрагментом, и внутри имени
+  // `tgWebAppData` подстрока `WebAppData=` есть. Имя параметра сверяется
+  // целиком — иначе телеграмный запуск читался бы как MAX (инцидент
+  // 2026-08-08: у всех пользователей Telegram «Не удалось войти»).
+  it('телеграмный tgWebAppData за параметр MAX не принимается', () => {
+    setHash(
+      '#tgWebAppData=user%3D%257B%2522id%2522%253A1%257D%26hash%3Dabc&tgWebAppVersion=8.0&tgWebAppPlatform=ios',
+    );
+    expect(detectHostId()).toBe('web');
+    expect(createMaxHost().sessionExchange()).toBeNull();
   });
 
   it('подпись для обмена берётся из адреса, когда моста нет', () => {
