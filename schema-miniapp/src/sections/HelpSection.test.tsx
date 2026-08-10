@@ -516,6 +516,37 @@ describe('HelpSection — завершение задания (handleTaskComplet
     );
     await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
   });
+
+  // Регрессия: раньше вся цепочка completeTask→рефетч глушилась одним
+  // `.catch(() => {})` без единого следа в логах. Сеть упала — задача от
+  // терапевта обязана остаться в списке (а не пропасть и не «зависнуть»
+  // отмеченной), а сбой обязан попасть в console.error, а не потеряться.
+  it('падение api.completeTask не роняет экран и не зовёт onTasksChanged — задача остаётся в списке', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockApi.getTasks.mockResolvedValueOnce([
+      task({
+        id: 22,
+        assignedBy: 5,
+        type: 'belief_check',
+        text: 'Проверить убеждение',
+        doneToday: false,
+      }),
+    ]);
+    mockApi.completeTask.mockRejectedValue(new Error('network'));
+    const onTasksChanged = vi.fn();
+    await renderReady({ onTasksChanged });
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Проверить убеждение'));
+    fireEvent.click(screen.getByText('belief-complete'));
+
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(22, true),
+    );
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    expect(onTasksChanged).not.toHaveBeenCalled();
+    expect(await screen.findByText('Проверить убеждение')).toBeTruthy();
+    errorSpy.mockRestore();
+  });
 });
 
 describe('HelpSection — diary_streak-задача терапевта открывает дневники', () => {

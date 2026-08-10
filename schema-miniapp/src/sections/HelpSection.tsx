@@ -93,7 +93,7 @@ export function HelpSection({
       .then((c) => {
         if (!ignore) setPracticeCounts(c);
       })
-      .catch(() => {});
+      .catch((e) => console.error('getPracticeSessions failed', e));
     return () => {
       ignore = true;
     };
@@ -108,7 +108,7 @@ export function HelpSection({
           setTaskHistory(h);
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('getTasks/getTaskHistory failed', e));
     api
       .getTherapyRelation()
       .then((r) => {
@@ -167,19 +167,26 @@ export function HelpSection({
     }
   }
 
+  // Общий рефетч списка задач — раньше три копии этого Promise.all глушили
+  // ошибку по отдельности молча; теперь один центр логирования.
+  function refreshTasks() {
+    return Promise.all([api.getTasks(), api.getTaskHistory()])
+      .then(([t, h]) => {
+        setTasks(t);
+        setTaskHistory(h);
+        onTasksChanged?.();
+      })
+      .catch((e) => console.error('refreshTasks failed', e));
+  }
+
   function handleTaskComplete() {
     if (activeTaskId === null) return;
     const taskId = activeTaskId;
     setActiveTaskId(null);
     api
       .completeTask(taskId, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => {
-        setTasks(t);
-        setTaskHistory(h);
-        onTasksChanged?.();
-      })
-      .catch(() => {});
+      .then(() => refreshTasks())
+      .catch((e) => console.error('completeTask failed', e));
   }
 
   return (
@@ -371,13 +378,7 @@ export function HelpSection({
         <TaskCreateSheet
           onCreated={() => {
             setShowTaskCreate(false);
-            Promise.all([api.getTasks(), api.getTaskHistory()])
-              .then(([t, h]) => {
-                setTasks(t);
-                setTaskHistory(h);
-                onTasksChanged?.();
-              })
-              .catch(() => {});
+            void refreshTasks();
           }}
           onClose={() => setShowTaskCreate(false)}
         />
@@ -388,15 +389,7 @@ export function HelpSection({
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
           onOpenTask={openTask}
-          onReload={() =>
-            Promise.all([api.getTasks(), api.getTaskHistory()])
-              .then(([t, h]) => {
-                setTasks(t);
-                setTaskHistory(h);
-                onTasksChanged?.();
-              })
-              .catch(() => {})
-          }
+          onReload={() => refreshTasks()}
           onAdd={() => {
             setShowAllTasks(false);
             setShowTaskCreate(true);

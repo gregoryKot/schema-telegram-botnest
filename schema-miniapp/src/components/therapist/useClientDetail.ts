@@ -11,6 +11,11 @@ import type {
 } from '../../api';
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import {
+  fetchClientDetail,
+  type ClientSchemaNoteRow,
+  type ClientModeNoteRow,
+} from './fetchClientDetail';
 
 interface Params {
   switchView: (v: 'list' | 'client') => void;
@@ -29,32 +34,20 @@ export function useClientDetail({ switchView, setClients }: Params) {
   const [showConceptSheet, setShowConceptSheet] = useState(false);
   const [showClientNotesSheet, setShowClientNotesSheet] = useState(false);
   const [clientSchemaNotesData, setClientSchemaNotesData] = useState<
-    Array<{
-      schemaId: string;
-      triggers: string;
-      feelings: string;
-      thoughts: string;
-      origins: string;
-      reality: string;
-      healthyView: string;
-      behavior: string;
-    }>
+    ClientSchemaNoteRow[]
   >([]);
   const [clientModeNotesData, setClientModeNotesData] = useState<
-    Array<{
-      modeId: string;
-      triggers: string;
-      feelings: string;
-      thoughts: string;
-      needs: string;
-      behavior: string;
-    }>
+    ClientModeNoteRow[]
   >([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const [notes, setNotes] = useState<TherapistNote[]>([]);
   const [noteError, setNoteError] = useState('');
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
+  // Хотя бы один из шести запросов карточки клиента упал (см.
+  // fetchClientDetail) — терапевту нужно знать, что видимая пустота может
+  // быть сбоем сети, а не «у клиента правда ничего нет».
+  const [clientLoadError, setClientLoadError] = useState(false);
   const [localConcept, setLocalConcept] = useState<
     Partial<ClientConceptualization>
   >({});
@@ -116,6 +109,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setNoteError('');
     setConcept(null);
     setClientData(null);
+    setClientLoadError(false);
     setLocalConcept({});
     setConceptDirty(false);
     setConceptError('');
@@ -133,26 +127,19 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setLocalStartDate(client.therapyStartDate ?? '');
     switchView('client');
 
-    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn] =
-      await Promise.all([
-        api.getTherapyTasksForClient(clientId).catch(() => []),
-        api.getTherapistNotes(clientId).catch(() => []),
-        api.getConceptualization(clientId).catch(() => null),
-        api.getTherapyClientData(clientId).catch(() => null),
-        api.getClientSchemaNotes(clientId).catch(() => []),
-        api.getClientModeNotes(clientId).catch(() => []),
-      ]);
+    const fetched = await fetchClientDetail(clientId);
 
     // Discard stale results if user switched to a different client
     if (openClientIdRef.current !== clientId) return;
 
-    setClientTasks(tasks);
-    setNotes(fetchedNotes);
-    setConcept(fetchedConcept);
-    setClientData(fetchedData);
-    setClientSchemaNotesData(sn);
-    setClientModeNotesData(mn);
-    if (fetchedConcept) setLocalConcept(fetchedConcept);
+    setClientTasks(fetched.tasks);
+    setNotes(fetched.notes);
+    setConcept(fetched.concept);
+    setClientData(fetched.clientData);
+    setClientSchemaNotesData(fetched.schemaNotes);
+    setClientModeNotesData(fetched.modeNotes);
+    setClientLoadError(fetched.loadError);
+    if (fetched.concept) setLocalConcept(fetched.concept);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────────
@@ -426,6 +413,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setNoteError,
     concept,
     clientData,
+    clientLoadError,
     localConcept,
     setLocalConcept,
     conceptDirty,
