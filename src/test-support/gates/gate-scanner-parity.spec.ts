@@ -33,10 +33,19 @@ function extractScanner(file: string): string {
 }
 
 describe('дублированный сканер stripComments — копии не разошлись', () => {
-  it('check-unwatched-code.mjs и check-public-scripts.mjs байт-в-байт совпадают', () => {
-    const a = extractScanner('check-unwatched-code.mjs');
-    const b = extractScanner('check-public-scripts.mjs');
-    expect(a).toBe(b);
+  // Третья копия приехала в волне 8: check-alert-throttle.mjs искал
+  // `notifyAdminWithFallback(` в СЫРОМ тексте, поэтому упоминание имени в
+  // комментарии или в строке сообщения об ошибке засчитывалось за вызов и
+  // гейт краснел на пустом месте. Ложно-красный гейт отключают через неделю,
+  // так что лечили не симптом (переписать сообщение), а сам поиск.
+  const COPIES = [
+    'check-unwatched-code.mjs',
+    'check-public-scripts.mjs',
+    'check-alert-throttle.mjs',
+  ];
+
+  it.each(COPIES.slice(1))('%s байт-в-байт совпадает с первой копией', (f) => {
+    expect(extractScanner(f)).toBe(extractScanner(COPIES[0]));
   });
 
   it('маркеры реально отделяют непустой блок с функцией (не пустое совпадение)', () => {

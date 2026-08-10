@@ -9,6 +9,8 @@ import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
+import { formatCapabilityReport } from './capability-metrics.format';
+import { buildCapabilityReport } from '../infra/capability-report';
 
 // Единая склейка второго сообщения /stats (продуктовые метрики + карточки
 // режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
@@ -54,6 +56,7 @@ export class StatsReportService {
       this.authHealth.render(),
       this.money.render(),
     ]);
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${money}`;
+    const capability = formatCapabilityReport(buildCapabilityReport());
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${money}\n\n${capability}`;
   }
 }
