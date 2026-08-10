@@ -49,7 +49,9 @@ describe('check-body-dto.mjs', () => {
       ].join('\n'),
     });
     expect(res.status).toBe(0);
-    expect(res.stdout).toContain('✓ гейт DTO у @Body(): 1 параметров, 1 — class-DTO, 0 известных исключений.');
+    expect(res.stdout).toContain(
+      '✓ гейт DTO у @Body(): 1 параметров, 1 — class-DTO, 0 известных исключений.',
+    );
   });
 
   it('нарушение занесено в бейслайн с причиной — exit 0', () => {
@@ -82,7 +84,8 @@ describe('check-body-dto.mjs', () => {
       // Бейслайн ссылается на FooDto, но в дереве FooDto теперь класс —
       // нарушения фактически нет, запись протухла.
       'scripts/body-dto-baseline.json': JSON.stringify({
-        'src/foo.controller.ts:FooDto': 'старая причина, но нарушение уже исправлено',
+        'src/foo.controller.ts:FooDto':
+          'старая причина, но нарушение уже исправлено',
       }),
       'src/foo.controller.ts': [
         "import { Controller, Post, Body } from '@nestjs/common';",
@@ -104,7 +107,7 @@ describe('check-body-dto.mjs', () => {
     expect(res.stderr).toContain('src/foo.controller.ts:FooDto');
   });
 
-  it('@Body(\'field\') — ключеванный body, гейт не срабатывает', () => {
+  it("@Body('field') — ключеванный body, гейт не срабатывает", () => {
     const res = runGate('check-body-dto.mjs', {
       'scripts/body-dto-baseline.json': '{}',
       'src/foo.controller.ts': [

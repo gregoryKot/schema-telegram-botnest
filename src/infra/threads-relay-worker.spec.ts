@@ -20,12 +20,10 @@
 // `new Function`. Логика воркера (sameSecret, fetch-хендлер) не тронута ни
 // байтом — заменяется только форма экспорта.
 import { readFileSync } from 'node:fs';
+import { runInThisContext } from 'node:vm';
 import { resolve } from 'node:path';
 
-const WORKER_PATH = resolve(
-  __dirname,
-  '../../deploy/threads-relay/worker.js',
-);
+const WORKER_PATH = resolve(__dirname, '../../deploy/threads-relay/worker.js');
 const SOURCE = readFileSync(WORKER_PATH, 'utf8');
 
 interface WorkerModule {
@@ -54,7 +52,31 @@ function loadWorker(): WorkerModule {
     'module.exports.default =',
   );
   const module = { exports: {} as { default?: WorkerModule } };
-  new Function('module', 'exports', transformed)(module, module.exports);
+  // runInThisContext, а не конструктор Function (тот ловится no-implied-eval).
+  // Тонкость, на которой этот тест уже один раз сломался: «этот контекст» —
+  // главный контекст Node, а тест-файл jest исполняет в СВОЁМ vm-контексте.
+  // Значит глобали воркера (fetch/Response/URL) резолвились бы в чужом realm,
+  // и подмена global.fetch в тесте до воркера не доезжала — моки молча
+  // игнорировались. Поэтому глобали отдаём явными параметрами: Response и URL
+  // как есть, а fetch — ленивой обёрткой, потому что тесты подменяют его уже
+  // ПОСЛЕ loadWorker(), и брать значение на момент загрузки нельзя.
+  const factory = runInThisContext(
+    `(function (module, exports, fetch, Response, URL) {\n${transformed}\n})`,
+    { filename: WORKER_PATH },
+  ) as (
+    m: typeof module,
+    e: typeof module.exports,
+    f: typeof globalThis.fetch,
+    r: typeof globalThis.Response,
+    u: typeof globalThis.URL,
+  ) => void;
+  factory(
+    module,
+    module.exports,
+    (...args) => global.fetch(...args),
+    global.Response,
+    global.URL,
+  );
   if (!module.exports.default) {
     throw new Error('worker.js: module.exports.default не заполнен');
   }
@@ -94,7 +116,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
       text: () => Promise.resolve('{"id":"1"}'),
       headers: { get: () => 'application/json' },
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const res = await worker.fetch(
       fakeRequest({
@@ -114,7 +136,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
   it('неверный секрет → 403, апстрим не трогаем', async () => {
     const worker = loadWorker();
     const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const res = await worker.fetch(
       fakeRequest({ headers: { 'x-relay-key': 'wrong-guess' } }),
@@ -138,7 +160,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
     async (_label, guess) => {
       const worker = loadWorker();
       const fetchMock = jest.fn();
-      global.fetch = fetchMock as unknown as typeof fetch;
+      global.fetch = fetchMock;
 
       expect(guess).toHaveLength(SECRET.length);
       expect(guess).not.toBe(SECRET);
@@ -156,7 +178,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
   it('заголовок с секретом отсутствует → 403, апстрим не трогаем', async () => {
     const worker = loadWorker();
     const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const res = await worker.fetch(fakeRequest({}), ENV);
 
@@ -166,7 +188,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
 
   it('секрет другой длины (в т.ч. длиннее настоящего) → 403 без исключения', async () => {
     const worker = loadWorker();
-    global.fetch = jest.fn() as unknown as typeof fetch;
+    global.fetch = jest.fn();
 
     const shorter = await worker.fetch(
       fakeRequest({ headers: { 'x-relay-key': SECRET.slice(0, 3) } }),
@@ -184,7 +206,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
   it('RELAY_SECRET не настроен на воркере → 500, до сверки секрета не доходит', async () => {
     const worker = loadWorker();
     const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const res = await worker.fetch(
       fakeRequest({ headers: { 'x-relay-key': SECRET } }),
@@ -198,7 +220,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
   it('метод не GET/POST → 405, даже с верным секретом', async () => {
     const worker = loadWorker();
     const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     const res = await worker.fetch(
       fakeRequest({ method: 'DELETE', headers: { 'x-relay-key': SECRET } }),
@@ -213,7 +235,7 @@ describe('deploy/threads-relay/worker.js (Cloudflare Worker — ретрансл
     const worker = loadWorker();
     global.fetch = jest
       .fn()
-      .mockRejectedValue(new Error('network unreachable')) as unknown as typeof fetch;
+      .mockRejectedValue(new Error('network unreachable'));
 
     const res = await worker.fetch(
       fakeRequest({ headers: { 'x-relay-key': SECRET } }),

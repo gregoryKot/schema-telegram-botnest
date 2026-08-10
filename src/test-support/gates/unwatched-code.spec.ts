@@ -11,7 +11,8 @@
 // список файлов через `git ls-files` — песочница поднимается с git:true.
 import { runGate } from './gate-sandbox';
 
-const UNWATCHED = "const secret = 'not-a-real-secret';\nexports.check = secret;\n";
+const UNWATCHED =
+  "const secret = 'not-a-real-secret';\nexports.check = secret;\n";
 
 // gate-sandbox копирует САМ ПРОВЕРЯЕМЫЙ скрипт в `<tmp>/scripts/…` — а
 // scripts/ не watched-дерево (это буквально предмет проверки: скрипты в
@@ -23,7 +24,8 @@ const UNWATCHED = "const secret = 'not-a-real-secret';\nexports.check = secret;\
 // (текущий спек буквально зовёт `runGate('check-unwatched-code.mjs', …)`).
 const SELF_MENTION = '// смотрит на себя: check-unwatched-code.mjs\n';
 const SELF_BASELINE = {
-  'scripts/check-unwatched-code.mjs': 'копия проверяемого скрипта в песочнице теста',
+  'scripts/check-unwatched-code.mjs':
+    'копия проверяемого скрипта в песочнице теста',
 };
 
 describe('check-unwatched-code.mjs', () => {
@@ -84,8 +86,7 @@ describe('check-unwatched-code.mjs', () => {
           'deploy/threads-relay/worker.js': 'когда-то было нечем тестировать',
         }),
         'deploy/threads-relay/worker.js': UNWATCHED,
-        'test/e2e-support/relay.spec.ts':
-          "it('x', () => 'worker.js');\n",
+        'test/e2e-support/relay.spec.ts': "it('x', () => 'worker.js');\n",
       },
       { git: true },
     );
@@ -103,8 +104,7 @@ describe('check-unwatched-code.mjs', () => {
         }),
         'deploy/threads-relay/worker.js':
           "const secret = 'x';\nexports.check = secret;\n",
-        'test/e2e-support/relay.spec.ts':
-          "it('x', () => 'worker.js');\n",
+        'test/e2e-support/relay.spec.ts': "it('x', () => 'worker.js');\n",
       },
       { git: true },
     );
@@ -121,8 +121,8 @@ describe('check-unwatched-code.mjs', () => {
         // (см. SELF_BASELINE выше) не упомянута ничем — баселиним её явно,
         // иначе сценарий ломается из-за механизма песочницы, а не проверки.
         'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
-        'webapp/public/loader.js': "if (1) {}\n",
-        'src/some.service.js': "module.exports = {};\n",
+        'webapp/public/loader.js': 'if (1) {}\n',
+        'src/some.service.js': 'module.exports = {};\n',
       },
       { git: true },
     );
