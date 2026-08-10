@@ -8,6 +8,7 @@ import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { MoneyMetricsService } from './money-metrics.service';
 
 // Единая склейка второго сообщения /stats (продуктовые метрики + карточки
 // режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
@@ -25,6 +26,7 @@ export class StatsReportService {
     private readonly plus: PlusMetricsService,
     private readonly screen: ScreenMetricsService,
     private readonly authHealth: AuthHealthMetricsService,
+    private readonly money: MoneyMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. */
@@ -39,6 +41,7 @@ export class StatsReportService {
       plus,
       screen,
       authHealth,
+      money,
     ] = await Promise.all([
       this.product.render(),
       this.modeCard.render(),
@@ -49,7 +52,8 @@ export class StatsReportService {
       this.plus.render(),
       this.screen.render(),
       this.authHealth.render(),
+      this.money.render(),
     ]);
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${money}`;
   }
 }
