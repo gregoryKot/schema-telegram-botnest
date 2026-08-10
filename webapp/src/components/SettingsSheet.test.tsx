@@ -30,6 +30,12 @@ vi.mock('../api', () => ({
     updateSettings: vi.fn(),
     createPairInvite: vi.fn(),
     joinPair: vi.fn(),
+    leavePair: vi.fn(),
+    leaveTherapy: vi.fn(),
+    joinTherapy: vi.fn(),
+    createTherapyInvite: vi.fn(),
+    updateName: vi.fn(),
+    deleteYsqResult: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -72,10 +78,10 @@ afterEach(() => {
   });
 });
 
-async function renderSheet() {
+async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
   const utils = render(
     <MemoryRouter>
-      <SettingsSheet onClose={vi.fn()} />
+      <SettingsSheet onClose={vi.fn()} userRole={userRole} />
     </MemoryRouter>,
   );
   // Дожидаемся загрузки настроек (useEffect -> api.getSettings), иначе
@@ -460,5 +466,133 @@ describe('SettingsSheet — форма обращения в заявке на �
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполните ФИО, квалификацию и контакты');
+  });
+});
+
+// ── Регрессии check-silent-catch: провал молча проглатывался, теперь виден ──
+function mockClipboard() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true, writable: true });
+  return writeText;
+}
+
+describe('SettingsSheet — сохранение имени: отказ виден (был: catch намеренно пуст)', () => {
+  it('ошибка api.updateName показывает сообщение, кнопка возвращается в рабочее состояние', async () => {
+    mockApi.updateName.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    const input = screen.getByPlaceholderText('Твоё имя');
+    fireEvent.change(input, { target: { value: 'Новое Имя' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+
+    await screen.findByText('Не удалось сохранить имя');
+    expect(screen.getByText('Сохранить')).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — «Отключиться от терапевта»: отказ виден (был: .catch(() => {}))', () => {
+  it('ошибка api.leaveTherapy показывает сообщение, связь не разрывается визуально', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    mockApi.leaveTherapy.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Анна подключён');
+
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    await screen.findByText(/Не удалось отключиться/);
+    // Всё ещё подключены — не откатились на форму ввода кода молча.
+    expect(screen.getByText('Анна подключён')).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — приглашение клиенту (терапевт): отказ и подделка «Скопировано ✓»', () => {
+  it('ошибка api.createTherapyInvite показывает сообщение', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue(new Error('network down'));
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    await screen.findByText(/Не удалось создать приглашение/);
+  });
+
+  it('регресс: клипборд падает — раньше «Скопировано ✓» показывалось всё равно, теперь видна сама ссылка', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
+    });
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+
+    await screen.findByText('https://t.me/bot?start=abc');
+    expect(screen.queryByText('Скопировано ✓')).toBeNull();
+  });
+
+  it('клипборд успевает — показывает «Скопировано ✓»', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    mockClipboard();
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    await screen.findByText('Скопировано ✓');
+  });
+});
+
+describe('SettingsSheet — «Выйти из пары»: отказ виден (был: .catch(() => {}))', () => {
+  it('ошибка api.leavePair показывает сообщение', async () => {
+    mockApi.getPair.mockResolvedValue({ partners: [{ code: 'ABC', partnerName: 'Друг', partnerTodayDone: false, partnerIndex: null }], pendingCode: null });
+    mockApi.leavePair.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Выйти из пары');
+
+    fireEvent.click(screen.getByText('Выйти из пары'));
+    await screen.findByText(/Не удалось выйти из пары/);
+  });
+});
+
+describe('SettingsSheet — загрузка партнёра: отказ не выглядит как «нет партнёра»', () => {
+  it('регресс: getPair падает — видна ошибка с «Повторить», а не форма приглашения', async () => {
+    mockApi.getPair.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+
+    await screen.findByText('Не удалось загрузить данные о партнёре');
+    // Раньше подключённый пользователь на сбое сети видел форму приглашения
+    // партнёра («Ввести код») — как будто партнёр пропал, а не сбой сети.
+    expect(screen.queryByText('Ввести код')).toBeNull();
+    expect(screen.getByText('Повторить')).toBeTruthy();
+  });
+
+  it('«Повторить» после починки сети загружает данные партнёра', async () => {
+    mockApi.getPair.mockRejectedValueOnce(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Повторить');
+
+    mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
+    fireEvent.click(screen.getByText('Повторить'));
+    await screen.findByText('Пригласить друга');
+  });
+});
+
+describe('SettingsSheet — удаление результатов YSQ: приватность (был: localStorage чистился ДО ответа сервера)', () => {
+  beforeEach(() => {
+    localStorage.setItem('ysq_progress', JSON.stringify({ answers: [1] }));
+  });
+
+  it('ошибка api.deleteYsqResult: localStorage НЕ очищается, видна ошибка, модалка не закрывается', async () => {
+    mockApi.deleteYsqResult.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    await screen.findByText('Удалить результаты теста');
+
+    fireEvent.click(screen.getByText('Удалить результаты теста'));
+    await screen.findByText(/Не удалось удалить/);
+    expect(localStorage.getItem('ysq_progress')).not.toBeNull();
+    // Модалка осталась открытой — кнопка всё ещё видна.
+    expect(screen.getByText(/Удалить результаты теста|Удаляю/)).toBeTruthy();
+  });
+
+  it('успех: localStorage очищается только после подтверждённого удаления', async () => {
+    mockApi.deleteYsqResult.mockResolvedValue(undefined);
+    await renderSheet();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    await screen.findByText('Удалить результаты теста');
+
+    fireEvent.click(screen.getByText('Удалить результаты теста'));
+    await waitFor(() => expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(localStorage.getItem('ysq_progress')).toBeNull());
   });
 });
