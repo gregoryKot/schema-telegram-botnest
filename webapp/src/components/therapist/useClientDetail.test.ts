@@ -18,9 +18,11 @@ vi.mock('../../api', () => ({
     saveConceptualization: vi.fn(), renameClient: vi.fn(),
     updateSessionInfo: vi.fn(), requestYsq: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const makeClient = (o: Partial<Record<string, unknown>> = {}) => ({
@@ -93,6 +95,23 @@ describe('openClient', () => {
     const { result } = await openedHook();
     expect(result.current.notes).toEqual([]);
     expect(result.current.tabLoading).toBe(false);
+  });
+  // РЕГРЕССИЯ (check-silent-catch): раньше .catch(() => []) глотал отказ
+  // молча — [] неотличимо от «у клиента правда нет заметок», и терапевт не
+  // мог понять, что данные не загрузились. Теперь отказ уходит в
+  // reportClientError, оставляя фолбэк-поведение (не роняя остальные вкладки).
+  it('при отказе источника шлёт reportClientError с его именем, не показывая пользователю ошибку', async () => {
+    mockApi.getTherapistNotes.mockRejectedValue(new Error('boom'));
+    await openedHook();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0]).toMatchObject({
+      section: 'therapist.clientDetail',
+      message: expect.stringContaining('заметки'),
+    });
+  });
+  it('при успехе всех источников reportClientError не вызывается', async () => {
+    await openedHook();
+    expect(mockReport).not.toHaveBeenCalled();
   });
   it('игнорирует устаревший ответ, если за это время открыли другого клиента (защита от гонки)', async () => {
     let resolveFirst!: (v: unknown[]) => void;

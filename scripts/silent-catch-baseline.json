@@ -62,11 +62,10 @@
   "webapp/src/components/SchemaFlashcard.tsx": 2,
   "webapp/src/components/SettingsSheet.tsx": 4,
   "webapp/src/components/therapist/useAddClient.ts": 1,
-  "webapp/src/components/therapist/useClientDetail.ts": 10,
+  "webapp/src/components/therapist/useClientDetail.ts": 1,
   "webapp/src/components/TherapistClientSheet.tsx": 2,
   "webapp/src/components/TrackerOverlay.tsx": 2,
   "webapp/src/components/useModeMapExport.ts": 2,
-  "webapp/src/components/WeeklyCardSheet.tsx": 4,
   "webapp/src/hooks/useAsyncData.ts": 2,
   "webapp/src/hooks/useQuizzes.ts": 1,
   "webapp/src/pages/account/TherapistRequestSection.tsx": 1,
@@ -81,7 +80,6 @@
   "webapp/src/pages/tests/QuizPage.tsx": 1,
   "webapp/src/sections/DiarySection.tsx": 2,
   "webapp/src/sections/PracticeSection.tsx": 3,
-  "webapp/src/sections/SchemasSection.tsx": 4,
-  "webapp/src/sections/TherapistTodaySection.tsx": 1,
-  "webapp/src/sections/TodaySection.tsx": 4
+  "webapp/src/sections/SchemasSection.tsx": 1,
+  "webapp/src/sections/TherapistTodaySection.tsx": 1
 }

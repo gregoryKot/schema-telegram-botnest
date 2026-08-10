@@ -21,6 +21,7 @@ vi.mock('../api', () => ({
     trackEvent: vi.fn(),
     getStreak: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
