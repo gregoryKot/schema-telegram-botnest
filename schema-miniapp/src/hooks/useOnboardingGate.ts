@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import { setFlag } from '../useUserFlags';
+import { logErr } from '../utils/logErr';
 import {
   isOnboardingSeenLocally,
   isDisclaimerAcceptedLocally,
@@ -10,10 +11,8 @@ import {
 } from '../utils/onboardingState';
 
 /**
- * Показ первого входа: онбординг + согласие. Вся логика собрана здесь, потому
- * что она размазывалась по App.tsx (два useState, эффект синка серверного флага,
- * ветка в общем init-эффекте) и из-за этого разъезжалась — см. инцидент в
- * шапке utils/onboardingState.ts.
+ * Показ первого входа: онбординг + согласие. Вся логика собрана здесь —
+ * размазанной по App.tsx она разъезжалась, см. utils/onboardingState.ts.
  */
 export function useOnboardingGate(serverDone: boolean, flagsLoaded: boolean) {
   const [consentGiven, setConsentGiven] = useState(isDisclaimerAcceptedLocally);
@@ -42,7 +41,7 @@ export function useOnboardingGate(serverDone: boolean, flagsLoaded: boolean) {
         markDisclaimerAcceptedLocally();
         setConsentGiven(true);
       })
-      .catch(() => {});
+      .catch(logErr('getDisclaimer'));
   }, []);
 
   // Латч: раз открывшись, онбординг держится до финальной кнопки. Согласие
@@ -63,10 +62,10 @@ export function useOnboardingGate(serverDone: boolean, flagsLoaded: boolean) {
   // Идемпотентно: зовётся и на шаге согласий, и на финальной кнопке.
   const persist = useCallback(() => {
     markOnboardingSeenLocally();
-    setFlag('onboardingV2Done', true).catch(() => {});
+    setFlag('onboardingV2Done', true).catch(logErr('onboardingV2Done'));
     if (isDisclaimerAcceptedLocally()) return;
     markDisclaimerAcceptedLocally();
-    api.acceptDisclaimer().catch(() => {});
+    api.acceptDisclaimer().catch(logErr('acceptDisclaimer'));
     setConsentGiven(true);
   }, []);
 

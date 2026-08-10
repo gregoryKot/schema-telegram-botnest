@@ -50,7 +50,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           })),
         );
       })
-      .catch(() => {});
+      .catch((e) => console.error('getBeliefChecks failed', e));
   }, []);
 
   function addFor() {

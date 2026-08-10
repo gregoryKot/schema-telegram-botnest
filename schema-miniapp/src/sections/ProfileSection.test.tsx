@@ -12,6 +12,7 @@ import {
   cleanup,
   waitFor,
   act,
+  within,
 } from '@testing-library/react';
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { ProfileSection } from './ProfileSection';
@@ -158,6 +159,29 @@ describe('ProfileSection — обновление по refreshKey', () => {
     mockApi.getStreak.mockClear();
     rerender(<ProfileSection {...baseProps()} refreshKey={2} />);
     await waitFor(() => expect(mockApi.getStreak).toHaveBeenCalled());
+  });
+});
+
+describe('ProfileSection — провал рефетча не подменяет реальный стрик нулём (regression: check-silent-catch)', () => {
+  it('getStreak падает после смены refreshKey — виден прежний стрик, а не «0»', async () => {
+    mockApi.getStreak.mockResolvedValueOnce({
+      currentStreak: 5,
+      longestStreak: 8,
+      totalDays: 12,
+      todayDone: true,
+      weekDots: [],
+    });
+    const { rerender } = await renderReady({ refreshKey: 1 });
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    const streakCard = screen.getByText('всего').closest('.card')!;
+    expect(within(streakCard).getByText('12')).toBeTruthy();
+
+    mockApi.getStreak.mockRejectedValueOnce(new Error('network'));
+    rerender(<ProfileSection {...baseProps()} refreshKey={2} />);
+
+    await waitFor(() => expect(mockApi.getStreak).toHaveBeenCalledTimes(2));
+    // Раньше streak обнулялся ДО рефетча — провал подменял «12» на «0».
+    expect(within(streakCard).getByText('12')).toBeTruthy();
   });
 });
 

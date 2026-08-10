@@ -18,6 +18,7 @@ import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { Sparkline } from './today/Sparkline';
 import { SkeletonLines } from './today/SkeletonLines';
 import { OnboardingWidget } from './today/OnboardingWidget';
+import { useTaskActions } from './today/useTaskActions';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -60,8 +61,7 @@ export function TodaySection({
   const [recentDiaries,  setRecentDiaries]  = useState<Array<{ type: string; label: string; time: string; dateStr: string }>>([]);
   const [diariesLoaded,  setDiariesLoaded]  = useState(false);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
-  const [tasks,          setTasks]          = useState<UserTask[]>([]);
-  const [taskHistory,    setTaskHistory]    = useState<UserTask[]>([]);
+  const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [introSchemaId,  setIntroSchemaId]  = useState<string | null>(null);
@@ -136,20 +136,11 @@ export function TodaySection({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, [refreshKey]);
 
-  useEffect(() => {
-    Promise.all([api.getTasks(), api.getTaskHistory()])
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); })
-      .catch(() => {});
-  }, [refreshKey]);
-
   function handleTaskComplete() {
     if (activeTaskId === null) return;
     const id = activeTaskId;
     setActiveTaskId(null);
-    api.completeTask(id, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
-      .catch(() => {});
+    completeTask(id, onTasksChanged);
   }
 
   function handleTaskAction(task: UserTask) {
@@ -280,12 +271,20 @@ export function TodaySection({
           </div>
 
           {/* ── Practices section ── */}
-          {(activeTasks.length > 0 || tasks.some(t => t.done !== null)) && (
+          {(activeTasks.length > 0 || tasks.some(t => t.done !== null) || taskError) && (
             <div className="section">
               <div className="section-head">
                 <h3>Практики на сегодня</h3>
                 {activeTasks.length > 0 && <span className="hint">{activeTasks.length} активных</span>}
               </div>
+              {taskError && (
+                <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 10 }}>
+                  {tr(
+                    'Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз',
+                    'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз',
+                  )}
+                </div>
+              )}
               {tasks.slice(0, 5).map(task => {
                 const isDone = task.done === true;
                 const isFail = task.done === false;
@@ -445,7 +444,7 @@ export function TodaySection({
       {showDiaryTask && <TaskCreateSheet defaultType="diary_streak" onCreated={() => setShowDiaryTask(false)} onClose={() => setShowDiaryTask(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); }).catch(() => {}); }}
+          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}
@@ -466,7 +465,7 @@ export function TodaySection({
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
-          onTaskDone={id => api.completeTask(id, true).then(() => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); })).catch(() => {})}
+          onTaskDone={id => completeTask(id)}
           onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
         />
       )}

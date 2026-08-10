@@ -66,6 +66,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [editingNextSession, setEditingNextSession] = useState(false);
   const [localNextSession, setLocalNextSession] = useState('');
   const [sessionInfoSaving, setSessionInfoSaving] = useState(false);
+  const [sessionInfoError, setSessionInfoError] = useState('');
 
   // Alias editing
   const [renamingAlias, setRenamingAlias] = useState(false);
@@ -241,17 +242,16 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     } catch { setAliasError('Не удалось сохранить имя'); } finally { setAliasSaving(false); }
   }
 
-  // ── Session info ───────────────────────────────────────────────────────────────
+  // ── Session info (catch раньше глушил ошибку — кнопка закрывала поле как будто сохранилось; теперь исход возвращается явно) ──
   async function saveSessionInfo(patch: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) {
-    if (!selectedClient) return;
-    setSessionInfoSaving(true);
+    if (!selectedClient) return false;
+    setSessionInfoSaving(true); setSessionInfoError('');
     try {
       await api.updateSessionInfo(selectedClient.telegramId, patch);
-      const updated = { ...selectedClient, ...patch };
-      if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
-      setSelectedClient(updated);
-      setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
-    } catch { /* ignore */ } finally { setSessionInfoSaving(false); }
+      const updated = { ...selectedClient, ...patch }; if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
+      setSelectedClient(updated); setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
+      return true;
+    } catch { setSessionInfoError('Не удалось сохранить дату'); return false; } finally { setSessionInfoSaving(false); }
   }
 
   // ── YSQ ───────────────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     localStartDate, setLocalStartDate,
     editingNextSession, setEditingNextSession,
     localNextSession, setLocalNextSession,
-    sessionInfoSaving,
+    sessionInfoSaving, sessionInfoError,
     renamingAlias, setRenamingAlias,
     aliasInput, setAliasInput,
     aliasSaving, aliasError,

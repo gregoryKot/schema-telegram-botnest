@@ -14,7 +14,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
     clientHistory, setClientTab, setShowAssign,
     editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession,
     editingStartDate, setEditingStartDate, localStartDate, setLocalStartDate,
-    saveSessionInfo, sessionInfoSaving, exportCopied, handleExport,
+    saveSessionInfo, sessionInfoSaving, sessionInfoError, exportCopied, handleExport,
   } = detail;
 
   return (
@@ -31,11 +31,12 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
               style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
+              <button onClick={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                 {sessionInfoSaving ? '...' : 'Сохранить'}
               </button>
               <button onClick={() => setEditingNextSession(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
             </div>
+            {sessionInfoError && <div role="alert" style={{ fontSize: 12, color: 'var(--c-rose)', marginTop: 6 }}>{sessionInfoError}</div>}
           </div>
         ) : (
           <div>
@@ -72,11 +73,12 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
               style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
+              <button onClick={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                 {sessionInfoSaving ? '...' : 'Сохранить'}
               </button>
               <button onClick={() => setEditingStartDate(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
             </div>
+            {sessionInfoError && <div role="alert" style={{ fontSize: 12, color: 'var(--c-rose)', marginTop: 6 }}>{sessionInfoError}</div>}
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -113,15 +115,10 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
               })()}
             </div>
             {clientHistory.length >= 3 && (
-              <ClientSparkline
-                values={clientHistory.slice(0, 14).map(d => d.index).reverse()}
-                color={indexColor(selectedClient.todayIndex)}
-              />
+              <ClientSparkline values={clientHistory.slice(0, 14).map(d => d.index).reverse()} color={indexColor(selectedClient.todayIndex)} />
             )}
             {clientHistory.length > 0 && (
-              <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>
-                {clientHistory.length} дн. · {clientHistory.length} оценок
-              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>{clientHistory.length} дн. · {clientHistory.length} оценок</div>
             )}
           </div>
         </>

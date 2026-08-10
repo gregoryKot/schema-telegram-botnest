@@ -65,8 +65,8 @@ export function NameSection({
                 onNameChanged?.(name);
                 setSavedToast(true);
                 setTimeout(() => setSavedToast(false), 1800);
-              } catch {
-                /* best-effort: ошибку намеренно игнорируем */
+              } catch (e) {
+                console.error('updateName failed', e);
               } finally {
                 setNameSaving(false);
               }

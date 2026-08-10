@@ -251,6 +251,156 @@ describe('buildShareText', () => {
   });
 });
 
+describe('useYsqTest — сетевые сбои не должны молчать (regression: check-silent-catch)', () => {
+  it('провал saveYsqResult: UI всё равно показывает результат, но resultSaveError=true, а прогресс на сервере НЕ удаляется', async () => {
+    // Раньше .catch(() => {}) прятал этот провал — результат выглядел
+    // «сохранённым» (локальный localStorage/phase не зависят от api), а на
+    // сервере его не было. Заодно deleteYsqProgress раньше вызывался
+    // безусловно — то есть при провале сабмита терялся ещё и последний
+    // чекпоинт прогресса. Теперь прогресс не удаляется, пока сабмит не
+    // подтверждён сервером.
+    vi.useFakeTimers();
+    const savedAnswers = Array(QUESTIONS.length).fill(3);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: savedAnswers, page: TOTAL_PAGES - 1 }),
+    );
+    const api = makeApi({
+      saveYsqResult: vi.fn().mockRejectedValue(new Error('network')),
+    });
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(result.current.phase).toBe('result');
+    expect(
+      JSON.parse(localStorage.getItem(YSQ_RESULT_KEY)!).answers[
+        TOTAL_PAGES - 1
+      ],
+    ).toBe(6);
+    expect(result.current.resultSaveError).toBe(true);
+    expect(api.deleteYsqProgress).not.toHaveBeenCalled();
+  });
+
+  it('retrySaveResult: повторная отправка успешна → resultSaveError сбрасывается, прогресс на сервере удаляется', async () => {
+    vi.useFakeTimers();
+    const saveYsqResult = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined);
+    const api = makeApi({ saveYsqResult });
+    const savedAnswers = Array(QUESTIONS.length).fill(3);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: savedAnswers, page: TOTAL_PAGES - 1 }),
+    );
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(result.current.resultSaveError).toBe(true);
+
+    await act(async () => {
+      result.current.retrySaveResult();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.resultSaveError).toBe(false);
+    expect(api.deleteYsqProgress).toHaveBeenCalled();
+  });
+
+  it('провал проверки сохранённого на сервере прогресса при монтировании — resumeCheckFailed=true, phase остаётся intro', async () => {
+    // Раньше .catch(() => {}) означал, что при сетевом сбое приложение
+    // молча вело себя как чистый аккаунт: пользователь без прогресса на
+    // ЭТОМ устройстве видел «Начать тест», а первый же ответ перезаписывал
+    // на сервере прогресс, реально сохранённый на другом устройстве.
+    const api = makeApi({
+      getYsqResult: vi.fn().mockRejectedValue(new Error('network')),
+      getYsqProgress: vi.fn().mockRejectedValue(new Error('network')),
+    });
+    const { result } = renderHook(() => useYsqTest({ api }));
+    await waitFor(() => expect(result.current.resumeCheckFailed).toBe(true));
+    expect(result.current.phase).toBe('intro');
+    expect(result.current.hasProgress).toBe(false);
+  });
+
+  it('retrySaveResult: повтор тоже упал → флаг остаётся, прогресс на сервере НЕ трогаем', async () => {
+    // Важно именно «не трогаем»: удалять серверный прогресс можно только
+    // после подтверждённого сохранения результата. Иначе неудачный повтор
+    // стирает единственную уцелевшую копию 116 ответов.
+    vi.useFakeTimers();
+    const saveYsqResult = vi.fn().mockRejectedValue(new Error('network'));
+    const api = makeApi({ saveYsqResult });
+    const savedAnswers = Array(QUESTIONS.length).fill(3);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: savedAnswers, page: TOTAL_PAGES - 1 }),
+    );
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(result.current.resultSaveError).toBe(true);
+
+    await act(async () => {
+      result.current.retrySaveResult();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.resultSaveError).toBe(true);
+    expect(saveYsqResult).toHaveBeenCalledTimes(2);
+    expect(api.deleteYsqProgress).not.toHaveBeenCalled();
+    // Ответы никуда не делись — экран результата показывает их локально.
+    expect(result.current.phase).toBe('result');
+  });
+
+  it('retryResumeCheck: повтор тоже упал → флаг держится, чистым аккаунтом не притворяемся', async () => {
+    const getYsqProgress = vi.fn().mockRejectedValue(new Error('network'));
+    const api = makeApi({
+      getYsqResult: vi.fn().mockResolvedValue(null),
+      getYsqProgress,
+    });
+    const { result } = renderHook(() => useYsqTest({ api }));
+    await waitFor(() => expect(result.current.resumeCheckFailed).toBe(true));
+
+    await act(async () => {
+      result.current.retryResumeCheck();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.resumeCheckFailed).toBe(true));
+    expect(result.current.hasProgress).toBe(false);
+    expect(result.current.phase).toBe('intro');
+  });
+
+  it('retryResumeCheck: повтор успешен → resumeCheckFailed сбрасывается и найденный прогресс подхватывается', async () => {
+    const savedAnswers = Array(QUESTIONS.length).fill(2);
+    const getYsqProgress = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ answers: savedAnswers, page: 7 });
+    const api = makeApi({
+      getYsqResult: vi.fn().mockResolvedValue(null),
+      getYsqProgress,
+    });
+    const { result } = renderHook(() => useYsqTest({ api }));
+    await waitFor(() => expect(result.current.resumeCheckFailed).toBe(true));
+
+    await act(async () => {
+      result.current.retryResumeCheck();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.resumeCheckFailed).toBe(false));
+    expect(result.current.hasProgress).toBe(true);
+  });
+});
+
 describe('useYsqTest — отложенный переход не переживает закрытие теста', () => {
   it('человек ответил и сразу закрыл тест — прогресс не уезжает на страницу, до которой он не дошёл', async () => {
     // Найдено этим же спеком: таймер автоперехода не отменялся при

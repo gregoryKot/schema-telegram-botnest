@@ -15,8 +15,8 @@ export function AddressFormPicker({ onDone }: Props) {
     setForm(form);
     try {
       await api.updateSettings({ addressForm: form });
-    } catch {
-      /* не блокируем вход */
+    } catch (e) {
+      console.error('updateSettings(addressForm) failed', e); // не блокируем вход
     }
     onDone(form);
   }

@@ -62,10 +62,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
-  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [_homeScreenStatus] = useState<string | null>(null);
-
+  const [loadError, setLoadError] = useState(false);
   // Therapist relation
   const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
 
@@ -86,22 +84,22 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     setStreak(null);
     setAchievements(null);
     setInsights(null);
+    setLoadError(false);
   }
 
+  // Сбой любого фетча раньше глотался поодиночке — экран уходил в "ready" с
+  // молчаливыми нулями вместо реальных данных. Теперь виден баннером.
   useEffect(() => {
     Promise.all([
-      api.getStreak().then(setStreak).catch(() => {}),
-      api.getAchievements().then(setAchievements).catch(() => {}),
-      api.getInsights().then(setInsights).catch(() => {}),
-      api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))).catch(() => {}),
-      api.getTherapyRelation().then(r => setRelation(r)).catch(() => {}),
-      Promise.all([
-        api.getSchemaDiary().catch(() => []),
-        api.getModeDiary().catch(() => []),
-        api.getGratitudeDiary().catch(() => []),
-      ]).then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)).catch(() => {}),
-      api.getYsqHistory().then(h => setYsqCount(h.length)).catch(() => {}),
-    ]).finally(() => setReady(true));
+      api.getStreak().then(setStreak),
+      api.getAchievements().then(setAchievements),
+      api.getInsights().then(setInsights),
+      api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))),
+      api.getTherapyRelation().then(r => setRelation(r)),
+      Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
+        .then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)),
+      api.getYsqHistory().then(h => setYsqCount(h.length)),
+    ]).catch(() => setLoadError(true)).finally(() => setReady(true));
   }, [refreshKey]);
 
   const currentStreak = streak?.currentStreak ?? 0;
@@ -141,6 +139,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             ))}
           </>
         )}
+
+        {ready && loadError && <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 16 }}>{tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')}</div>}
 
         {/* ── Мой путь (архив всей активности) — первым, парно с миниаппом ── */}
         {ready && (

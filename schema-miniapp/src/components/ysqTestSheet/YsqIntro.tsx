@@ -1,4 +1,6 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
+import { YsqSyncErrorNote } from './YsqSyncErrorNote';
+import { YsqAnswerScalePreview } from './YsqAnswerScalePreview';
 
 interface Props {
   hasProgress: boolean;
@@ -6,6 +8,8 @@ interface Props {
   onContinue: () => void;
   onStartFresh: () => void;
   onClose: () => void;
+  resumeCheckFailed?: boolean;
+  onRetryResumeCheck?: () => void;
 }
 
 // ── Intro phase ───────────────────────────────────────────────────────────────
@@ -15,6 +19,8 @@ export function YsqIntro({
   onContinue,
   onStartFresh,
   onClose,
+  resumeCheckFailed,
+  onRetryResumeCheck,
 }: Props) {
   return (
     <div style={{ padding: '8px 0 16px' }}>
@@ -90,66 +96,7 @@ export function YsqIntro({
         ))}
       </div>
 
-      <div
-        style={{
-          background: 'rgba(var(--fg-rgb),0.05)',
-          borderRadius: 14,
-          padding: '12px 16px',
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            fontWeight: 600,
-            marginBottom: 10,
-          }}
-        >
-          Шкала ответов:
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 4,
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} style={{ textAlign: 'center', flex: 1 }}>
-              <div
-                style={{
-                  height: 34,
-                  borderRadius: 10,
-                  background: `color-mix(in srgb, var(--accent) ${6 + n * 13}%, rgba(var(--fg-rgb),0.06))`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: n >= 4 ? 'var(--accent)' : 'var(--text-sub)',
-                  marginBottom: 5,
-                }}
-              >
-                {n}
-              </div>
-              <div
-                style={{
-                  fontSize: 9,
-                  color: 'var(--text-faint)',
-                  lineHeight: 1.3,
-                }}
-              >
-                {n === 1
-                  ? 'Совсем не про меня'
-                  : n === 6
-                    ? 'Полностью про меня'
-                    : ''}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <YsqAnswerScalePreview />
 
       <div
         style={{
@@ -162,6 +109,17 @@ export function YsqIntro({
       >
         Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
       </div>
+
+      {/* Прогресс мог остаться на другом устройстве — без баннера «Начать
+          тест» выглядит безопасным, а ответ перезапишет его на сервере. */}
+      {!hasProgress && resumeCheckFailed && onRetryResumeCheck && (
+        <YsqSyncErrorNote
+          ty="Не удалось проверить, есть ли на сервере сохранённый прогресс — если тест уже начат на другом устройстве, сначала попробуй проверить снова, иначе он будет перезаписан."
+          vy="Не удалось проверить, есть ли на сервере сохранённый прогресс — если тест уже начат на другом устройстве, сначала попробуйте проверить снова, иначе он будет перезаписан."
+          retryLabel="Проверить снова"
+          onRetry={onRetryResumeCheck}
+        />
+      )}
 
       {hasProgress ? (
         <>

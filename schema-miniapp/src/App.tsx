@@ -8,7 +8,7 @@ import { Need, DayHistory } from './types';
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
 syncMotionAttr();
-import { api } from './api';
+import { api, PracticePlan, PairsData, StreakData, UserTask } from './api';
 import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
 import { Section } from './components/BottomNav';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
@@ -19,7 +19,6 @@ import {
   shouldShowChildhoodWheel,
   CHILDHOOD_DONE_KEY,
 } from './components/ChildhoodWheelSheet';
-import { PracticePlan, PairsData, StreakData, UserTask } from './api';
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
@@ -44,6 +43,7 @@ import { useSessionExpired } from './hooks/useSessionExpired';
 import { shouldShowLoginScreen } from './utils/loginScreenGate';
 import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
 import { syncFromServer } from './utils/uiPrefsSync';
+import { logErr } from './utils/logErr';
 
 type TrackerTab = 'today' | 'history';
 
@@ -118,7 +118,7 @@ export default function App() {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
     if (persist && userRoleRef.current === 'THERAPIST') {
-      api.setTherapistView(on).catch(() => {});
+      api.setTherapistView(on).catch(logErr('setTherapistView'));
     }
   };
   // Отказ от роли терапевта → снова CLIENT: закрываем кабинет и переводим UI.
@@ -195,13 +195,13 @@ export default function App() {
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => {
       setIsOffline(false);
-      api.flushOutbox().catch(() => {});
+      api.flushOutbox().catch(logErr('flushOutbox'));
     };
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
     // Флаш и при старте приложения — очередь могла накопиться в прошлой
     // сессии (webview закрылся до восстановления сети).
-    api.flushOutbox().catch(() => {});
+    api.flushOutbox().catch(logErr('flushOutbox'));
     return () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
@@ -233,9 +233,9 @@ export default function App() {
       api
         .init(tzOffset)
         .then(() => sessionStorage.setItem('init_done', '1'))
-        .catch(() => {});
+        .catch(logErr('api.init'));
     }
-    api.recordActivity().catch(() => {});
+    api.recordActivity().catch(logErr('recordActivity'));
     const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
     Promise.all(NEED_IDS.map((id) => api.getPractices(id)))
       .then((r) => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0)))
@@ -301,7 +301,7 @@ export default function App() {
         if (Object.keys(r).length > 0) {
           setChildhoodRatings(r);
           localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
-          setServerFlag('childhoodWheelDone', true).catch(() => {});
+          setServerFlag('childhoodWheelDone', true).catch(logErr('cwDone'));
         }
       })
       .catch((e) => console.error('getChildhoodRatings failed', e));
@@ -316,7 +316,7 @@ export default function App() {
             setShowYsqBanner(true);
         }
       })
-      .catch(() => {});
+      .catch(logErr('getYsqProgress/getYsqResult'));
     api
       .getProfile()
       .then((p) => {
@@ -354,10 +354,10 @@ export default function App() {
                 myName: null,
               });
             })
-            .catch(() => {});
+            .catch(logErr('getTherapyRelation'));
         }
       })
-      .catch(() => {});
+      .catch(logErr('getProfile'));
     api
       .getTasks()
       .then(setHelpTasks)
@@ -372,7 +372,7 @@ export default function App() {
             setPairData(data);
             localStorage.removeItem('pair_card_dismissed');
             setPairCardDismissed(false);
-            api.updateSettings({ pairCardDismissed: false }).catch(() => {});
+            api.updateSettings({ pairCardDismissed: false }).catch(logErr('u'));
           }),
         )
         .catch((e) => console.error('joinPair failed', e));
@@ -383,7 +383,7 @@ export default function App() {
     }
     if (startParam?.startsWith('therapy_')) {
       const code = startParam.replace('therapy_', '');
-      api.joinTherapy(code).catch(() => {});
+      api.joinTherapy(code).catch(logErr('joinTherapy'));
     }
   }, []);
 
@@ -391,7 +391,7 @@ export default function App() {
     if (pairData && pairData.partners.length > 0) {
       localStorage.removeItem('pair_card_dismissed');
       setPairCardDismissed(false);
-      api.updateSettings({ pairCardDismissed: false }).catch(() => {});
+      api.updateSettings({ pairCardDismissed: false }).catch(logErr('upd'));
     }
   }, [pairData?.partners.length]);
 

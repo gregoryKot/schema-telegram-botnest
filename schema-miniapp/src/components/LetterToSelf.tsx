@@ -74,7 +74,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
           })),
         );
       })
-      .catch(() => {});
+      .catch((e) => console.error('getLetters failed', e));
   }, []);
 
   // Раньше «✓ Сохранено» показывалось сразу после fire-and-forget

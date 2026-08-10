@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { logErr } from '../utils/logErr';
+import { loadIntroSheetData } from './introSheetLoad';
 
-// Общая логика "интро-карточки" (ModeIntroSheet / SchemaIntroSheet):
-// автосохранение ответов на вопросы-флэшкарты в localStorage + бэкенд.
-// Вынесено по правилу №11 CLAUDE.md (jscpd-свип 2026-07) — было
-// продублировано между режимами и схемами почти 1:1.
+// Общая логика "интро-карточки" (ModeIntroSheet / SchemaIntroSheet) —
+// автосохранение ответов в localStorage + бэкенд (правило №11 CLAUDE.md).
 export interface UseIntroSheetDataArgs<T extends Record<string, string>> {
   storageKey: string;
   emptyData: T;
@@ -22,6 +22,7 @@ export function useIntroSheetData<T extends Record<string, string>>({
   const [data, setData] = useState<T>(emptyData);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -32,22 +33,13 @@ export function useIntroSheetData<T extends Record<string, string>>({
   );
 
   useEffect(() => {
-    const fallbackToLocalStorage = () => {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          setData(JSON.parse(stored) as T);
-        } catch {
-          /* best-effort: ошибку намеренно игнорируем */
-        }
-      }
-    };
-    loadExisting()
+    loadIntroSheetData<T>(storageKey, loadExisting)
       .then((note) => {
         if (note) setData(note);
-        else fallbackToLocalStorage();
       })
-      .catch(fallbackToLocalStorage);
+      // Сам загрузчик ошибки уже глотает и логирует; этот catch — на случай,
+      // если упадёт localStorage (приватный режим). Без него no-floating-promises.
+      .catch(logErr('loadIntroSheetData'));
   }, [storageKey]);
 
   function set(key: keyof T, value: string) {
@@ -56,11 +48,11 @@ export function useIntroSheetData<T extends Record<string, string>>({
     localStorage.setItem(storageKey, JSON.stringify(next));
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      saveNote(next).catch(() => {});
+      saveNote(next).catch((e) => console.error('autosave failed', e));
     }, 1500);
   }
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     if (autoSaveTimer.current) {
       clearTimeout(autoSaveTimer.current);
       autoSaveTimer.current = null;
@@ -69,16 +61,21 @@ export function useIntroSheetData<T extends Record<string, string>>({
     localStorage.setItem(storageKey, JSON.stringify(data));
     try {
       await saveNote(data);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
+      setSaveError(false);
+      setSaved(true);
+      onComplete?.();
+      setTimeout(() => setSaved(false), 1800);
+      return true;
+    } catch (e) {
+      console.error('saveNote failed', e);
+      setSaveError(true);
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setSaved(true);
-    onComplete?.();
-    setTimeout(() => setSaved(false), 1800);
   }
 
   const hasAny = Object.values(data).some((v) => v.trim().length > 0);
 
-  return { data, set, handleSave, saving, saved, hasAny };
+  return { data, set, handleSave, saving, saved, saveError, hasAny };
 }

@@ -3,7 +3,13 @@
 // проходить через кризисную детекцию. Тест проверяет только появление
 // карточки.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from '@testing-library/react';
 import { WeeklyQuestion, shouldShowWeeklyQuestion } from './WeeklyQuestion';
 
 vi.mock('../api', () => ({
@@ -94,7 +100,7 @@ describe('WeeklyQuestion — сохранение ответа', () => {
     expect(screen.getByText('Сохранить').hasAttribute('disabled')).toBe(true);
   });
 
-  it('заполненный ответ уходит в api.saveNote вместе с текстом вопроса, карточка гасится на неделю', () => {
+  it('заполненный ответ уходит в api.saveNote вместе с текстом вопроса, карточка гасится на неделю', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 3));
     const onDismiss = vi.fn();
@@ -105,7 +111,11 @@ describe('WeeklyQuestion — сохранение ответа', () => {
     fireEvent.change(textarea, { target: { value: 'больше отдыхал' } });
     expect(screen.getByText('Сохранить').hasAttribute('disabled')).toBe(false);
 
-    fireEvent.click(screen.getByText('Сохранить'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
 
     expect(mockApi.saveNote).toHaveBeenCalledTimes(1);
     const [date, noteText] = mockApi.saveNote.mock.calls[0];
@@ -113,5 +123,29 @@ describe('WeeklyQuestion — сохранение ответа', () => {
     expect(noteText).toContain('больше отдыхал');
     expect(onDismiss).toHaveBeenCalledTimes(1);
     expect(shouldShowWeeklyQuestion()).toBe(false);
+  });
+
+  it('провал api.saveNote: карточка НЕ гасится, ответ не потерян, видна ошибка (regression: check-silent-catch)', async () => {
+    // Раньше .catch(() => {}) прятал провал — неделя помечалась отвеченной
+    // и карточка закрывалась, хотя ответ на сервер не долетел (терялся).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 3));
+    mockApi.saveNote.mockRejectedValue(new Error('network'));
+    const onDismiss = vi.fn();
+    render(<WeeklyQuestion date="2026-08-03" onDismiss={onDismiss} />);
+    fireEvent.change(
+      screen.getByPlaceholderText('Напиши, что приходит в голову...'),
+      { target: { value: 'больше отдыхал' } },
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(shouldShowWeeklyQuestion()).toBe(true);
+    expect(screen.getByText('Не сохранилось, попробуй ещё раз')).toBeTruthy();
   });
 });

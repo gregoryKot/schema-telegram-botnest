@@ -50,27 +50,27 @@ export function ProfileSection({
   const blocks = useScreenBlocks('profile', SCREEN_HIDDEN_KEYS.profile);
 
   useEffect(() => {
+    // Раньше streak/achievements/insights обнулялись перед рефетчем — провал
+    // повторного запроса подменял реальный стрик показанным «0». Скелетон
+    // и так управляется отдельным ready, обнулять данные не нужно.
     setReady(false);
-    setStreak(null);
-    setAchievements(null);
-    setInsights(null);
     void Promise.all([
       api
         .getStreak()
         .then(setStreak)
-        .catch(() => {}),
+        .catch((e) => console.error('getStreak failed', e)),
       api
         .getAchievements()
         .then(setAchievements)
-        .catch(() => {}),
+        .catch((e) => console.error('getAchievements failed', e)),
       api
         .getInsights()
         .then(setInsights)
-        .catch(() => {}),
+        .catch((e) => console.error('getInsights failed', e)),
       api
         .history(112)
         .then((h) => setActiveDates(new Set(h.map((d) => d.date))))
-        .catch(() => {}),
+        .catch((e) => console.error('history failed', e)),
     ]).finally(() => setReady(true));
   }, [refreshKey]);
 

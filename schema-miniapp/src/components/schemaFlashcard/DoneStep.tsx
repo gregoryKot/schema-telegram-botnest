@@ -1,4 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
+import { SaveErrorNote } from '../SaveErrorNote';
+import { DoneSummaryCard } from './DoneSummaryCard';
 import { NEEDS } from './constants';
 import type { ModeData } from './types';
 
@@ -11,6 +13,7 @@ interface DoneStepProps {
   onClose: () => void;
   onOpenTracker?: () => void;
   onNew: () => void;
+  saveError?: boolean;
 }
 
 export function DoneStep({
@@ -22,6 +25,7 @@ export function DoneStep({
   onClose,
   onOpenTracker,
   onNew,
+  saveError,
 }: DoneStepProps) {
   const modeInfo = modes.find((m) => m.id === selectedMode);
   const needInfo = NEEDS.find((n) => n.id === selectedNeed);
@@ -61,68 +65,17 @@ export function DoneStep({
             )}
           </div>
         </div>
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 20,
-            padding: '16px',
-            marginBottom: 20,
-          }}
-        >
-          {[
-            {
-              label: 'Режим',
-              value: modeInfo?.label ?? '',
-            },
-            needInfo
-              ? {
-                  label: 'Потребность',
-                  value: needInfo.label,
-                }
-              : null,
-            action ? { label: 'Шаг', value: action } : null,
-          ]
-            .filter(Boolean)
-            .map(
-              (row, i, arr) =>
-                row && (
-                  <div
-                    key={row.label}
-                    style={{
-                      paddingBottom: i < arr.length - 1 ? 12 : 0,
-                      marginBottom: i < arr.length - 1 ? 12 : 0,
-                      borderBottom:
-                        i < arr.length - 1
-                          ? '1px solid var(--border-color)'
-                          : undefined,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.07em',
-                        textTransform: 'uppercase',
-                        color: 'var(--text-faint)',
-                        marginBottom: 3,
-                      }}
-                    >
-                      {row.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: 'var(--text)',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {row.value}
-                    </div>
-                  </div>
-                ),
-            )}
-        </div>
+        <DoneSummaryCard
+          modeLabel={modeInfo?.label ?? ''}
+          needLabel={needInfo?.label}
+          action={action}
+        />
+        {saveError && (
+          <SaveErrorNote
+            ty="Не удалось сохранить на сервере — карточка осталась на этом устройстве."
+            vy="Не удалось сохранить на сервере — карточка осталась на этом устройстве."
+          />
+        )}
         {onOpenTracker && (
           <button
             onClick={() => {
