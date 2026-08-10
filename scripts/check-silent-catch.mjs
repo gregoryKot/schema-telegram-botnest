@@ -58,21 +58,21 @@ const ARG = '(?:\\(\\s*\\)|\\(?[A-Za-z_$][\\w$]*\\)?)';
 const PATTERNS = [
   [
     'catch-empty-object',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\{\\s*\\}\\s*\\)`, 'g'),
+    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\{\\s*\\}\\s*,?\\s*\\)`, 'g'),
   ],
   [
     'catch-empty-array',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\[\\]\\s*\\)`, 'g'),
+    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\[\\]\\s*,?\\s*\\)`, 'g'),
   ],
-  ['catch-null', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*null\\s*\\)`, 'g')],
+  ['catch-null', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*null\\s*,?\\s*\\)`, 'g')],
   [
     'catch-undefined',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*undefined\\s*\\)`, 'g'),
+    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*undefined\\s*,?\\s*\\)`, 'g'),
   ],
-  ['catch-zero', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*0\\s*\\)`, 'g')],
+  ['catch-zero', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*0\\s*,?\\s*\\)`, 'g')],
   [
     'catch-false',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*false\\s*\\)`, 'g'),
+    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*false\\s*,?\\s*\\)`, 'g'),
   ],
   // (?<!\.) отделяет statement-catch (try/catch) от promise .catch(...) —
   // без него "catch(() => {})" сам матчился бы как "пустой catch со своими

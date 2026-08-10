@@ -208,6 +208,24 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stderr).toContain('L2 [catch-null]');
   });
 
+  // Слепое пятно, найденное при разборе долга: prettier переносит длинный
+  // вызов и ставит висячую запятую — `.catch(\n  () => null,\n)`. Форма та же,
+  // а регэксп требовал `null)` без запятой, и вхождение уезжало мимо счёта.
+  // Гейт, который не видит форму из-за форматирования, неотличим от чистого кода.
+  it('висячая запятая перед закрывающей скобкой не прячет вхождение', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        'await notifyApplicant(id, status).catch(',
+        '  () => null,',
+        ');',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[catch-null]');
+  });
+
   it('тестовый файл (*.test.tsx) не сканируется', () => {
     const res = runGate('check-silent-catch.mjs', {
       'scripts/silent-catch-baseline.json': JSON.stringify({}),

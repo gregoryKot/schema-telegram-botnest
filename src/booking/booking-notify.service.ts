@@ -172,7 +172,7 @@ export class BookingNotifyService {
     const plain = html.replace(/<[^>]+>/g, '');
     await this.email
       .sendAdminNotification('Уведомление о записи', plain)
-      .catch(() => null);
+      .catch((e) => this.logger.error('Admin e-mail alert also failed', e));
   }
 }
 
