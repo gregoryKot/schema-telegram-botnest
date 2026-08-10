@@ -120,6 +120,18 @@ describe('ModeIntroSheet — сохранение карточки видно п
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('провал saveModeNote: остаётся на форме, а не показывает «Готово» (regression: check-silent-catch)', async () => {
+    // Раньше handleSave шёл на экран «Готово» при любом исходе — провал
+    // сохранения на сервере выглядел как успех, хотя карточка осталась
+    // только локально.
+    mockApi.saveModeNote.mockRejectedValue(new Error('network'));
+    await fillAndSave();
+    expect(screen.queryByText('Карточка сохранена')).toBeNull();
+    expect(
+      screen.getByText('Не сохранилось — попробовать ещё раз'),
+    ).toBeTruthy();
+  });
+
   it('пустая карточка: кнопка выключена и сказано, чего не хватает', async () => {
     await openFirstQuestion();
     for (let i = 0; i < 6; i++)

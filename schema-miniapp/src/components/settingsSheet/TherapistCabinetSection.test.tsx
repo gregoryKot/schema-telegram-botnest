@@ -75,6 +75,22 @@ describe('TherapistCabinetSection — приглашение клиента', ()
     );
   });
 
+  it('провал createTherapyInvite виден на кнопке, а не молчит (regression: check-silent-catch)', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue(new Error('network'));
+    render(
+      <TherapistCabinetSection
+        therapyInviteUrl=""
+        setTherapyInviteUrl={() => {}}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByText('Не получилось')).toBeTruthy();
+  });
+
   it('уже сохранённый url показывается обрезанным', () => {
     const longUrl = 'https://t.me/schema_bot?start=' + 'x'.repeat(60);
     render(

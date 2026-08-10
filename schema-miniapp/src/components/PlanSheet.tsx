@@ -100,11 +100,11 @@ export function PlanSheet({
     api
       .getPractices(needId)
       .then(setUserPractices)
-      .catch(() => {});
+      .catch((e) => console.error('getPractices failed', e));
     api
       .getSettings()
       .then((s) => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
-      .catch(() => {});
+      .catch((e) => console.error('getSettings failed', e));
   }, [needId]);
 
   const curated = CURATED[needId] ?? [];

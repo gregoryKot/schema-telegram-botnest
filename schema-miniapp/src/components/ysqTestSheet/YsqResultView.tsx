@@ -3,11 +3,12 @@ import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
 import { YsqResultTopBar } from '../../../../shared/src/components/YsqResultTopBar';
-import { YsqActiveSchemaCard } from './YsqActiveSchemaCard';
+import { YsqActiveDomainList } from './YsqActiveDomainList';
 import { YsqInactiveSchemas } from './YsqInactiveSchemas';
 import { YsqTherapyCta } from './YsqTherapyCta';
 import { YsqHistoryTimeline } from './YsqHistoryTimeline';
 import { YsqResultActions } from './YsqResultActions';
+import { YsqSyncErrorNote } from './YsqSyncErrorNote';
 import type { ResultView, Scores, YsqHistoryEntry } from './types';
 
 interface Props {
@@ -23,6 +24,8 @@ interface Props {
   onClose: () => void;
   onShare: () => void;
   onRetake: () => void;
+  resultSaveError?: boolean;
+  onRetrySaveResult?: () => void;
 }
 
 // ── Result phase ──────────────────────────────────────────────────────────────
@@ -39,6 +42,8 @@ export function YsqResultView({
   onClose,
   onShare,
   onRetake,
+  resultSaveError,
+  onRetrySaveResult,
 }: Props) {
   const cta = contactCta();
   const tr = useTr();
@@ -59,6 +64,17 @@ export function YsqResultView({
         onShare={onShare}
         onHelpOpen={() => api.trackEvent('ysq_help_open')}
       />
+
+      {/* Результат виден локально независимо от сервера — без баннера
+          выглядит как «сохранено», а при смене устройства пропадёт. */}
+      {resultSaveError && onRetrySaveResult && (
+        <YsqSyncErrorNote
+          ty="Результат посчитан и виден только на этом устройстве — отправить его на сервер не получилось. Попробуй ещё раз, чтобы не потерять при смене устройства."
+          vy="Результат посчитан и виден только на этом устройстве — отправить его на сервер не получилось. Попробуйте ещё раз, чтобы не потерять при смене устройства."
+          retryLabel="Отправить ещё раз"
+          onRetry={onRetrySaveResult}
+        />
+      )}
 
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
@@ -94,33 +110,14 @@ export function YsqResultView({
       )}
 
       {/* Active schemas grouped by domain */}
-      {activeByDomain.map((domain) => (
-        <div key={domain.needId} style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'var(--text-sub)',
-              letterSpacing: '0.07em',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-            }}
-          >
-            {domain.label}
-          </div>
-          {domain.schemas.map((schema) => (
-            <YsqActiveSchemaCard
-              key={schema.name}
-              schema={schema}
-              score={scores[schema.name]}
-              delta={getSchemaDelta(schema.name)}
-              diaryRating={ratings?.[schema.needId]}
-              onViewSchemas={onViewSchemas}
-              onClose={onClose}
-            />
-          ))}
-        </div>
-      ))}
+      <YsqActiveDomainList
+        activeByDomain={activeByDomain}
+        scores={scores}
+        getSchemaDelta={getSchemaDelta}
+        ratings={ratings}
+        onViewSchemas={onViewSchemas}
+        onClose={onClose}
+      />
 
       {/* Inactive schemas — collapsed */}
       <YsqInactiveSchemas

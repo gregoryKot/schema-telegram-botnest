@@ -20,9 +20,19 @@ export interface WarmWordsDeps {
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
 
+export interface WarmWordsState {
+  /** null — ещё грузим (экран показывает скелетон). */
+  items: WarmWordsItem[] | null;
+  /** Запрос упал. Без этого флага пустой список читается как «слов нет»,
+   *  хотя человек их писал — та же ложь, что «✓ Сохранено» на упавшем
+   *  запросе, только наоборот. */
+  failed: boolean;
+}
+
 /** Грузит и собирает «тёплые слова», трекает открытие один раз. */
-export function useWarmWords(deps: WarmWordsDeps): WarmWordsItem[] | null {
+export function useWarmWords(deps: WarmWordsDeps): WarmWordsState {
   const [items, setItems] = useState<WarmWordsItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -39,13 +49,16 @@ export function useWarmWords(deps: WarmWordsDeps): WarmWordsItem[] | null {
           count: Math.min(collected.length, 1000),
         });
       })
-      .catch(() => {
-        if (!ignore) setItems([]);
+      .catch((e) => {
+        if (ignore) return;
+        console.error('useWarmWords load failed', e);
+        setFailed(true);
+        setItems([]);
       });
     return () => {
       ignore = true;
     };
   }, []);
 
-  return items;
+  return { items, failed };
 }

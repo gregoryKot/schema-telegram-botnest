@@ -143,6 +143,20 @@ describe('PhraseCheck', () => {
     expect(screen.getByText('СТАЛО')).toBeTruthy();
   });
 
+  it('createPhraseCheck падает: финальный экран всё равно виден, но с предупреждением (regression: check-silent-catch)', async () => {
+    // Раньше .catch(() => {}) прятал провал целиком — экран «Разобрано»
+    // выглядел одинаково успешно вне зависимости от исхода запроса.
+    vi.mocked(api.createPhraseCheck).mockRejectedValue(new Error('network'));
+    renderWithForm(<PhraseCheck onClose={() => {}} />);
+    startWith('ни на что не гожусь');
+    for (const c of PHRASE_CRITERIA)
+      fireEvent.click(screen.getByText(c.critic));
+    fireEvent.click(screen.getByText('Сохранить разбор'));
+
+    expect(screen.getByText('БЫЛО')).toBeTruthy();
+    await screen.findByText(/Не удалось сохранить разбор на сервере/);
+  });
+
   it('все ответы «забота» → переписывать не предлагается, приметы пустые', () => {
     renderWithForm(<PhraseCheck onClose={() => {}} />);
     startWith('вышло неточно, поправлю завтра');

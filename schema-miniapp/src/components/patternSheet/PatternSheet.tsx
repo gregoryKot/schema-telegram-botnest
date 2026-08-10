@@ -16,11 +16,11 @@ import { drawNoteCard } from '../../../../shared/src/share/cards/noteCard';
 import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import { botShortUrl } from '../../utils/botConfig';
-import { api } from '../../api';
 import { patternMeta } from './patternMeta';
 import { PatternSheetHeader } from './PatternSheetHeader';
 import { PatternCardSection } from './PatternCardSection';
 import { PatternEntriesSection } from './PatternEntriesSection';
+import { usePatternEntryDelete } from './usePatternEntryDelete';
 import type { MyCardsKind, MyCardItem } from '../myCards/useMyCards';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 
@@ -76,15 +76,13 @@ export function PatternSheet({
     reload();
   }
 
-  function deleteEntry(entryId: number) {
-    if (kind === 'schema') {
-      api.deleteSchemaDiary(entryId).catch(() => {});
-      setSchemaEntries?.((prev) => prev.filter((e) => e.id !== entryId));
-    } else {
-      api.deleteModeDiary(entryId).catch(() => {});
-      setModeEntries?.((prev) => prev.filter((e) => e.id !== entryId));
-    }
-  }
+  const deleteEntry = usePatternEntryDelete({
+    kind,
+    schemaEntries,
+    setSchemaEntries,
+    modeEntries,
+    setModeEntries,
+  });
 
   if (subView === 'edit')
     return kind === 'schema' ? (

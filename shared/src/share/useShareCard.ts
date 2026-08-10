@@ -50,9 +50,9 @@ export function useShareCard(
   useEffect(() => {
     if (!canvasRef.current) return;
     try {
-      draw(canvasRef.current);
-    } catch {
-      // Отрисовка карточки не должна ронять весь экран
+      draw(canvasRef.current); // не роняем экран при ошибке отрисовки
+    } catch (e) {
+      console.error('share card draw failed', e);
     }
   }, [draw, canvasRef]);
 

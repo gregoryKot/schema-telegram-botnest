@@ -122,6 +122,10 @@ describe('SchemaFlashcard — весь путь mode → response → need → a
     await waitFor(() => expect(mockApi.createFlashcard).toHaveBeenCalled());
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(stored[0].action).toBe('Позвонить другу');
+    // regression: check-silent-catch — раньше провал не был виден вообще.
+    await waitFor(() =>
+      expect(screen.getByText(/Не удалось сохранить на сервере/)).toBeTruthy(),
+    );
   });
 });
 

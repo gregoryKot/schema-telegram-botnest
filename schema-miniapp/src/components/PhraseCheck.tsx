@@ -1,11 +1,8 @@
 // Упражнение «Критик или забота?»: записать реплику внутреннего голоса →
-// проверить её по девяти приметам → увидеть вердикт и переписать в
-// самокоррекцию. Приметы — построчно таблица «разрушительная самокритика ↔
-// помогающая самокоррекция» (phraseCheck/criteria.ts).
-//
-// Шаги вынесены в подкомпоненты (правило №10), вердикт — чистая функция
-// (verdict.ts, покрыта тестом). Свободный текст проходит кризисный гейт
-// (правило №7) и уезжает на сервер зашифрованным (phrase-check.service.ts).
+// проверить по девяти приметам (phraseCheck/criteria.ts) → вердикт →
+// переписать в самокоррекцию. Шаги — в подкомпонентах (правило №10),
+// вердикт — чистая функция (verdict.ts). Свободный текст проходит
+// кризисный гейт (правило №7), уезжает зашифрованным на сервер.
 import { useEffect, useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { CrisisGate } from './CrisisGate';
@@ -36,12 +33,11 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   const [markIndex, setMarkIndex] = useState(-1); // -1 — ещё на вводе фразы
   const [marks, setMarks] = useState<PhraseMarkId[]>([]);
   const [rewrite, setRewrite] = useState('');
-  // Переписанную фразу предлагаем забрать в «Тёплые слова» — по умолчанию да,
-  // это ровно тот жанр; галочку видно и её можно снять.
+  // Переписанную фразу предлагаем забрать в «Тёплые слова» — можно снять.
   const [inWarmWords, setInWarmWords] = useState(true);
   const [done, setDone] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [history, setHistory] = useState<PhraseCheckHistoryRow[]>([]);
-  // Открытая карточка прошлого разбора (id) — null, пока список неактивен.
   const [openHistoryId, setOpenHistoryId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -57,7 +53,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           })),
         ),
       )
-      .catch(() => {});
+      .catch((e) => console.error('getPhraseChecks failed', e));
   }, []);
 
   const openHistoryEntry = history.find((h) => h.id === openHistoryId);
@@ -74,7 +70,10 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
       rewrite: rewrite.trim() || undefined,
       inWarmWords: inWarmWords && Boolean(rewrite.trim()),
     };
-    api.createPhraseCheck(body).catch(() => {});
+    api.createPhraseCheck(body).catch((e) => {
+      console.error('createPhraseCheck failed', e);
+      setSaveError(true);
+    });
     setDone(true);
     onComplete?.();
   }
@@ -87,6 +86,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
         rewrite={rewrite}
         onClose={onClose}
         tr={tr}
+        saveError={saveError}
       />
     );
   }

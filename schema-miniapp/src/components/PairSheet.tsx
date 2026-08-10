@@ -12,6 +12,18 @@ interface Props {
   onClose: () => void;
 }
 
+// Было продублировано под pending- и invite-ссылку (правило «одна механика —
+// один компонент»). Провал буфера — best-effort: текст всё равно selectable.
+async function copyToClipboard(text: string, setCopied: (v: boolean) => void) {
+  try {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  } catch {
+    /* best-effort: ошибку намеренно игнорируем */
+  }
+}
+
 export function PairSheet({ onClose }: Props) {
   const [data, setData] = useState<PairsData | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -25,6 +37,7 @@ export function PairSheet({ onClose }: Props) {
   const [copiedPending, setCopiedPending] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(null);
+  const [createError, setCreateError] = useState(false);
 
   useEffect(() => {
     api
@@ -35,6 +48,7 @@ export function PairSheet({ onClose }: Props) {
 
   async function handleCreateInvite() {
     setLoading(true);
+    setCreateError(false);
     try {
       const { code, url } = await api.createPairInvite();
       setInviteUrl(url);
@@ -42,33 +56,15 @@ export function PairSheet({ onClose }: Props) {
       api
         .getPair()
         .then(setData)
-        .catch(() => {});
+        .catch((e) => console.error('getPair failed', e));
       // Красивая карточка-приглашение вместо голого текста
       setShowInviteShare(true);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
+    } catch (e) {
+      // Раньше стоял «best-effort» по ошибке — кнопка молча ничего не делала.
+      console.error('createPairInvite failed', e);
+      setCreateError(true);
     }
     setLoading(false);
-  }
-
-  async function handleCopyPending(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedPending(true);
-      setTimeout(() => setCopiedPending(false), 2000);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-  }
-
-  async function handleCopyInvite(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedInvite(true);
-      setTimeout(() => setCopiedInvite(false), 2000);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
   }
 
   async function handleJoin() {
@@ -90,10 +86,10 @@ export function PairSheet({ onClose }: Props) {
     try {
       await api.leavePair(code);
       setData(await api.getPair());
-      setConfirmLeaveCode(null);
-    } catch {
-      setConfirmLeaveCode(null);
+    } catch (e) {
+      console.error('leavePair failed', e);
     }
+    setConfirmLeaveCode(null);
   }
 
   const pendingUrl = data?.pendingCode
@@ -176,7 +172,7 @@ export function PairSheet({ onClose }: Props) {
                   {pendingUrl}
                 </div>
                 <button
-                  onClick={() => handleCopyPending(pendingUrl)}
+                  onClick={() => copyToClipboard(pendingUrl, setCopiedPending)}
                   style={{
                     width: '100%',
                     padding: '10px',
@@ -243,9 +239,11 @@ export function PairSheet({ onClose }: Props) {
                   >
                     {loading
                       ? '...'
-                      : data.partners.length > 0
-                        ? 'Пригласить ещё друга'
-                        : 'Создать приглашение'}
+                      : createError
+                        ? 'Не получилось — попробовать ещё раз'
+                        : data.partners.length > 0
+                          ? 'Пригласить ещё друга'
+                          : 'Создать приглашение'}
                   </button>
                 )}
 
@@ -280,7 +278,9 @@ export function PairSheet({ onClose }: Props) {
                       {inviteUrl}
                     </div>
                     <button
-                      onClick={() => handleCopyInvite(inviteUrl)}
+                      onClick={() =>
+                        copyToClipboard(inviteUrl, setCopiedInvite)
+                      }
                       style={{
                         width: '100%',
                         padding: '10px',

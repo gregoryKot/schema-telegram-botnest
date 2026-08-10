@@ -33,7 +33,7 @@ function fmtDate(d: Date): string {
 // момент. Только чтение: детекция кризиса была на этапе записи (правило №7).
 export function WarmWords({ onClose }: Props) {
   const tr = useTr();
-  const items = useWarmWords(api);
+  const { items, failed } = useWarmWords(api);
 
   return (
     <BottomSheet onClose={onClose}>
@@ -64,7 +64,25 @@ export function WarmWords({ onClose }: Props) {
 
         {items === null && <SkeletonList rows={4} h={92} />}
 
-        {items !== null && items.length === 0 && (
+        {failed && (
+          <div
+            role="alert"
+            style={{
+              textAlign: 'center',
+              padding: '20px 8px',
+              fontSize: 13,
+              color: 'var(--text-sub)',
+              lineHeight: 1.6,
+            }}
+          >
+            {tr(
+              'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
+              'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
+            )}
+          </div>
+        )}
+
+        {!failed && items !== null && items.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px 8px' }}>
             <div
               style={{

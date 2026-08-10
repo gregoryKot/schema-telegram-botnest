@@ -76,19 +76,27 @@ describe('ChildhoodWheelSheet — стартовая фаза', () => {
     expect(mockApi.getChildhoodRatings).not.toHaveBeenCalled();
   });
 
-  it('колесо уже пройдено — сразу ResultPhase и подгружает сохранённые оценки', async () => {
+  it('колесо уже пройдено — сначала скелетон, потом ResultPhase с подгруженными оценками', async () => {
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     mockApi.getChildhoodRatings.mockResolvedValue({ attachment: 3 });
     render(<ChildhoodWheelSheet onClose={() => {}} onOpenSchemas={() => {}} />);
-    expect(screen.getByTestId('result-phase')).toBeTruthy();
+    // До ответа сервера — скелетон, не ResultPhase с нейтральным дефолтом
+    // (иначе «5» на секунду выглядел бы как реальный сохранённый ответ).
+    expect(screen.queryByTestId('result-phase')).toBeNull();
     await waitFor(() => expect(screen.getByText('attachment-3')).toBeTruthy());
   });
 
-  it('сбой api.getChildhoodRatings — остаётся на дефолтных значениях, не падает', async () => {
+  it('сбой api.getChildhoodRatings — показывает ResultPhase с дефолтом, но помечает: данные могли не загрузиться (regression: check-silent-catch)', async () => {
+    // Раньше провал молчал полностью: пользователь видел дефолтные «5» как
+    // будто это его реальный сохранённый ответ (запрещённый CLAUDE.md
+    // паттерн «заглушка вместо реальных данных»).
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     mockApi.getChildhoodRatings.mockRejectedValue(new Error('network'));
     render(<ChildhoodWheelSheet onClose={() => {}} onOpenSchemas={() => {}} />);
     await waitFor(() => expect(screen.getByText('attachment-5')).toBeTruthy());
+    expect(
+      screen.getByText(/Не удалось загрузить сохранённый результат/),
+    ).toBeTruthy();
   });
 });
 
@@ -138,19 +146,21 @@ describe('ChildhoodWheelSheet — переходы intro → fill → result', (
     expect(screen.getByTestId('result-phase')).toBeTruthy();
   });
 
-  it('«edit» из ResultPhase возвращает на FillPhase', () => {
+  it('«edit» из ResultPhase возвращает на FillPhase', async () => {
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     mockApi.getChildhoodRatings.mockResolvedValue({});
     render(<ChildhoodWheelSheet onClose={() => {}} onOpenSchemas={() => {}} />);
+    await screen.findByText('edit');
     fireEvent.click(screen.getByText('edit'));
     expect(screen.getByTestId('fill-phase')).toBeTruthy();
   });
 
-  it('«done» из ResultPhase помечает пройденным и закрывает', () => {
+  it('«done» из ResultPhase помечает пройденным и закрывает', async () => {
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     mockApi.getChildhoodRatings.mockResolvedValue({});
     const onClose = vi.fn();
     render(<ChildhoodWheelSheet onClose={onClose} onOpenSchemas={() => {}} />);
+    await screen.findByText('done');
     fireEvent.click(screen.getByText('done'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });

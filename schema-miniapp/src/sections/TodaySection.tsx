@@ -106,7 +106,7 @@ export function TodaySection({
           );
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('getProfile failed', e));
 
     Promise.all([
       api.getSchemaDiary(),
@@ -149,7 +149,7 @@ export function TodaySection({
           gratitude: gratitude.some((e) => e.date === today),
         });
       })
-      .catch(() => {})
+      .catch((e) => console.error('diaries load failed', e))
       .finally(() => {
         if (!ignore) setDiariesLoaded(true);
       });

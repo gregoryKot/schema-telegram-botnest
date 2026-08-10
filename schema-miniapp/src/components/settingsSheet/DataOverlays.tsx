@@ -1,4 +1,5 @@
 import { api } from '../../api';
+import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
 
@@ -95,7 +96,6 @@ export function PrivacyOverlay({
         >
           Данные и конфиденциальность
         </div>
-
         {[
           {
             title: 'Что хранится на сервере',
@@ -154,7 +154,7 @@ export function PrivacyOverlay({
               onClick={() => {
                 localStorage.removeItem(YSQ_PROGRESS_KEY);
                 localStorage.removeItem(YSQ_RESULT_KEY);
-                api.deleteYsqResult().catch(() => {});
+                api.deleteYsqResult().catch(logErr('deleteYsq'));
                 onDeletedYsq();
               }}
               style={{

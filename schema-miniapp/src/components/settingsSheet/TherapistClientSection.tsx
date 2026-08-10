@@ -73,7 +73,7 @@ export function TherapistClientSection({
                 api
                   .leaveTherapy()
                   .then(() => setTherapyRelation(null))
-                  .catch(() => {});
+                  .catch((e) => console.error('leaveTherapy failed', e));
               }}
               style={{
                 background:

@@ -22,7 +22,7 @@ function fmtDate(d: Date): string {
 export function WarmWordsEx({ onBack }: { onBack: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const items = useWarmWords(api);
+  const { items, failed } = useWarmWords(api);
 
   return (
     <ExScreen
@@ -49,7 +49,25 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {items !== null && items.length === 0 && (
+      {failed && (
+        <div
+          role="alert"
+          style={{
+            textAlign: 'center',
+            padding: '20px 8px',
+            fontSize: 14,
+            color: 'var(--text-sub)',
+            lineHeight: 1.6,
+          }}
+        >
+          {tr(
+            'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
+            'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
+          )}
+        </div>
+      )}
+
+      {!failed && items !== null && items.length === 0 && (
         <p className="text-sm muted" style={{ lineHeight: 1.6 }}>
           {tr(
             'Здесь пока пусто. Слова появятся, когда сохранишь ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',

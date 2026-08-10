@@ -66,6 +66,10 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  // Подстраховка: если тест с vi.useFakeTimers() упадёт до своего локального
+  // vi.useRealTimers(), следующий тест иначе виснет — findBy/waitFor внутри
+  // testing-library ждут реальных таймеров (см. регрессионный набор ниже).
+  vi.useRealTimers();
 });
 
 describe('YSQTestSheet — открытие (интро)', () => {
@@ -184,6 +188,61 @@ describe('YSQTestSheet — история прохождений', () => {
 
     await screen.findByText('Эмоциональная депривация');
     expect(await screen.findByText('История прохождений')).toBeTruthy();
+  });
+});
+
+describe('YSQTestSheet — сетевые сбои видны пользователю (regression: check-silent-catch)', () => {
+  it('провал проверки прогресса на сервере показывает баннер и кнопку «Проверить снова» на интро', async () => {
+    mockApi.getYsqResult.mockRejectedValue(new Error('network'));
+    mockApi.getYsqProgress.mockRejectedValue(new Error('network'));
+    render(<YSQTestSheet onClose={vi.fn()} />);
+
+    expect(
+      await screen.findByText(/Не удалось проверить, есть ли на сервере/),
+    ).toBeTruthy();
+    const retryBtn = screen.getByRole('button', { name: 'Проверить снова' });
+
+    mockApi.getYsqResult.mockResolvedValue(null);
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    fireEvent.click(retryBtn);
+
+    await act(async () => {});
+    expect(
+      screen.queryByText(/Не удалось проверить, есть ли на сервере/),
+    ).toBeNull();
+  });
+
+  it('провал отправки результата на сервере: результат виден локально, показан баннер с кнопкой повтора', async () => {
+    vi.useFakeTimers();
+    mockApi.saveYsqResult.mockRejectedValue(new Error('network'));
+    const savedAnswers = buildAnswers(DEPRIVATION_IDXS);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: savedAnswers, page: 115 }),
+    );
+    render(<YSQTestSheet onClose={vi.fn()} autoResume />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Часто так' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    // Результат виден несмотря на провал сохранения (данные не потеряны для юзера)
+    expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
+    const retryBtn = screen.getByRole('button', { name: 'Отправить ещё раз' });
+    expect(mockApi.deleteYsqProgress).not.toHaveBeenCalled();
+
+    mockApi.saveYsqResult.mockResolvedValue(undefined);
+    fireEvent.click(retryBtn);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(mockApi.deleteYsqProgress).toHaveBeenCalled();
+    expect(
+      screen.queryByRole('button', { name: 'Отправить ещё раз' }),
+    ).toBeNull();
+    vi.useRealTimers();
   });
 });
 

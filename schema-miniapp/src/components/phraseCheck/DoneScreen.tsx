@@ -1,8 +1,9 @@
-// Финальный экран разбора: было → стало. Смысл упражнения виден именно на
-// этом экране, поэтому обе фразы показываются рядом, дословно — и отсюда же
-// разбором делятся (краткой карточкой или целиком).
+// Финальный экран разбора: было → стало, обе фразы дословно рядом; отсюда же
+// делятся разбором (краткой карточкой или целиком).
 import { BottomSheet } from '../BottomSheet';
+import { SaveErrorNote } from '../SaveErrorNote';
 import { PhraseCheckShare } from './PhraseCheckShare';
+import { QuoteCard } from './QuoteCard';
 import { buildVerdict } from '../../../../shared/src/phraseCheck/verdict';
 import type { PhraseMarkId } from '../../../../shared/src/phraseCheck/criteria';
 
@@ -12,12 +13,14 @@ export function PhraseDoneScreen({
   rewrite,
   onClose,
   tr,
+  saveError,
 }: {
   phrase: string;
   marks: PhraseMarkId[];
   rewrite: string;
   onClose: () => void;
   tr: (ty: string, vy: string) => string;
+  saveError?: boolean;
 }) {
   const verdict = buildVerdict(marks);
   return (
@@ -53,65 +56,14 @@ export function PhraseDoneScreen({
               )}
         </div>
 
-        <div
-          style={{
-            background: 'color-mix(in srgb, var(--accent-red) 6%, transparent)',
-            border:
-              '1px solid color-mix(in srgb, var(--accent-red) 14%, transparent)',
-            borderRadius: 16,
-            padding: '13px 15px',
-            textAlign: 'left',
-            marginBottom: 10,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              color: 'var(--accent-red)',
-              marginBottom: 5,
-            }}
-          >
-            БЫЛО
-          </div>
-          <div
-            style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-sub)' }}
-          >
-            «{phrase}»
-          </div>
-        </div>
-
+        <QuoteCard label="БЫЛО" color="var(--accent-red)" text={phrase} />
         {rewrite.trim() && (
-          <div
-            style={{
-              background:
-                'color-mix(in srgb, var(--accent-green) 6%, transparent)',
-              border:
-                '1px solid color-mix(in srgb, var(--accent-green) 16%, transparent)',
-              borderRadius: 16,
-              padding: '13px 15px',
-              textAlign: 'left',
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                color: 'var(--accent-green)',
-                marginBottom: 5,
-              }}
-            >
-              СТАЛО
-            </div>
-            <div
-              style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text)' }}
-            >
-              «{rewrite}»
-            </div>
-          </div>
+          <QuoteCard
+            label="СТАЛО"
+            color="var(--accent-green)"
+            text={rewrite}
+            bright
+          />
         )}
 
         <PhraseCheckShare
@@ -119,6 +71,13 @@ export function PhraseDoneScreen({
           marks={marks}
           rewrite={rewrite.trim() || undefined}
         />
+
+        {saveError && (
+          <SaveErrorNote
+            ty="Не удалось сохранить разбор на сервере — в истории его не будет. Текст выше ещё виден, можешь скопировать вручную."
+            vy="Не удалось сохранить разбор на сервере — в истории его не будет. Текст выше ещё виден, можете скопировать вручную."
+          />
+        )}
 
         <button
           onClick={onClose}

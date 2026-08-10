@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { api, UserPractice } from '../api';
+import { useState } from 'react';
 import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
@@ -7,6 +6,7 @@ import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
+import { usePracticesData } from '../hooks/usePracticesData';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -26,52 +26,19 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const tr = useTr();
   const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);
-  const [practices, setPractices] = useState<UserPractice[] | null>(null);
   const [input, setInput] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [addedToast, setAddedToast] = useState(false);
-  const [errorToast, setErrorToast] = useState(false);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    api
-      .ratings()
-      .then(setRatings)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    setPractices(null);
-    api
-      .getPractices(NEED_IDS[needIdx])
-      .then(setPractices)
-      .catch(() => setPractices([]));
-  }, [needIdx]);
+  const {
+    practices,
+    ratings,
+    addedToast,
+    errorToast,
+    saving,
+    addPractice,
+    deletePractice: handleDelete,
+  } = usePracticesData(NEED_IDS[needIdx]);
 
   async function handleAdd() {
-    const text = input.trim();
-    if (!text || saving) return;
-    setSaving(true);
-    try {
-      await api.addPractice(NEED_IDS[needIdx], text);
-      setInput('');
-      setAddedToast(true);
-      setTimeout(() => setAddedToast(false), 2000);
-      api
-        .getPractices(NEED_IDS[needIdx])
-        .then(setPractices)
-        .catch(() => {});
-    } catch {
-      setErrorToast(true);
-      setTimeout(() => setErrorToast(false), 2500);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleDelete(id: number) {
-    setPractices((prev) => prev?.filter((x) => x.id !== id) ?? null);
-    api.deletePractice(id).catch(() => {});
+    if (await addPractice(input.trim())) setInput('');
   }
 
   const needId = NEED_IDS[needIdx];
