@@ -3,7 +3,22 @@
 // напрямую; RobokassaService — настоящий (как в robokassa.service.spec.ts,
 // с тестовыми паролями), а не мок — иначе тест не проверял бы саму подпись.
 // booking/donation/subscription — фейки-шпионы.
-import { ConflictException } from '@nestjs/common';
+//
+// Этот файл — золотая зона mutation-тестирования (stryker.config.json,
+// щит-волна 5). Причина: волна 3 (docs/archive/, PR #308) нашла здесь
+// ЗЕЛЁНЫЙ тест с утверждением в названии — «ошибка mark-paid доната → FAIL,
+// без алерта на этом уровне (алертит сам DonationService)». В
+// DonationService не было ни одного try/catch: он алертит на успехе и на
+// расхождении суммы, а когда падает сам запрос в БД — молчит. Тест не
+// пропускал дыру, а обосновывал её — покрытие было зелёным, а защиты не
+// было. Обычный гейт эту разницу не ловит: он умеет проверять, что тест
+// СУЩЕСТВУЕТ и ЗЕЛЁНЫЙ, но не умеет отличить верное утверждение от уверенно
+// сформулированного неверного. Mutation-тестирование умеет: вырежи алерт
+// из кода — тест, который его действительно проверяет, покраснеет. Зона
+// покрывает три денежных/алертинговых файла разом (payment.controller.ts,
+// donation.service.ts, security-log.service.ts) — там же, где резинка
+// зелёного теста рвётся молча.
+import { ConflictException, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
 import { PaymentAmountMismatchError } from './booking.service';
@@ -80,6 +95,29 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
 
     expect(res).toBe('FAIL7');
     expect(booking.confirm).not.toHaveBeenCalled();
+  });
+
+  // Текст этого лога специально стабильный (см. комментарий в
+  // payment.controller.ts): каждый Logger.error() в проде уходит в
+  // AlertLogger (main.ts: NestFactory.create(..., { logger: new AlertLogger() })),
+  // который дедуплицирует DM админу ПО ТЕКСТУ сообщения (60с окно). Если
+  // текст поплывёт — шквал неверных подписей перестанет схлопываться в один
+  // DM и снова замьютит админский чат (тот же класс, что и инцидент
+  // 2026-07-29). errorSpy стоит здесь, а не проверяется через мок AlertLogger,
+  // потому что контроллер в юнит-тесте инстанцирован напрямую, без бутстрапа
+  // Nest-приложения — сам факт вызова .error() с ТОЧНЫМ текстом и есть
+  // контракт с интеграцией.
+  it('неверная подпись → лог с точным, стабильным текстом (для дедупа AlertLogger)', async () => {
+    const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    try {
+      const { controller } = makeController();
+      await controller.handleResult('4000.00', '7', 'deadbeef');
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Robokassa webhook: invalid signature',
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('InvId не число → "FAIL<InvId>" без обращения к booking', async () => {
