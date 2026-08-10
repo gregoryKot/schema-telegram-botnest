@@ -31,13 +31,20 @@ describe('useWarmWords', () => {
   it('собирает слова из трёх источников и трекает открытие с их числом', async () => {
     const d = deps({
       getModeNotes: vi.fn().mockResolvedValue([
-        { modeId: 'healthy_adult', healthyAdultReply: 'ты справишься', updatedAt: '2024-05-05' },
+        {
+          modeId: 'healthy_adult',
+          healthyAdultReply: 'ты справишься',
+          updatedAt: '2024-05-05',
+        },
       ]),
-      getPhraseChecks: vi
-        .fn()
-        .mockResolvedValue([
-          { id: 1, rewrite: 'я могу ошибаться', inWarmWords: true, createdAt: '2024-05-06' },
-        ]),
+      getPhraseChecks: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          rewrite: 'я могу ошибаться',
+          inWarmWords: true,
+          createdAt: '2024-05-06',
+        },
+      ]),
     });
     const { result } = renderHook(() => useWarmWords(d));
 
