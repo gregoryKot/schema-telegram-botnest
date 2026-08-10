@@ -74,6 +74,17 @@
 //                         возможной подделки с клиента. Инцидент 2026-08-08:
 //                         вход был сломан у всех пользователей Telegram, а
 //                         отказ не считал никто.
+//   auth_success        — СЕРВЕРНОЕ событие: guard подтвердил вход по JWT,
+//                         Telegram или MAX initData (meta.host:
+//                         telegram|max|web). Пишется только guard'ом
+//                         (src/api/auth-success.report.ts), всегда с
+//                         userId = null (тот же приём, что у auth_rejected)
+//                         и с троттлингом раз в 5 минут на userId+площадку —
+//                         это счётчик СЕССИЙ входа, не запросов. Пара к
+//                         auth_rejected для блока «Вход в мессенджере»:
+//                         падение входа не всегда выглядит ростом отказов,
+//                         иногда клиент просто перестаёт доезжать до
+//                         сервера — тогда виден провал именно этого счётчика.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -113,6 +124,7 @@ export const ANALYTICS_EVENTS = [
   'screen_block_toggle',
   'screen_block_move',
   'auth_rejected',
+  'auth_success',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

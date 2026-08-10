@@ -53,6 +53,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
     'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
     'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
+  auth_success:
+    'серверное событие: пишет только TelegramAuthGuard после подтверждённого ' +
+    'JWT/Telegram/MAX входа (src/api/auth-success.report.ts), с троттлингом ' +
+    'per userId+host. Фронт его не шлёт и не должен — та же защита userId = ' +
+    'null, что и у auth_rejected',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -145,7 +150,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // через именованные константы — тот же легитимный паттерн, что и
     // share_card/onboarding_step/mode_card_saved, не обход правила.
     // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
-    // слать не может по замыслу (отказ входа фиксирует guard).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(21);
+    // слать не может по замыслу (отказ входа фиксирует guard). 22 —
+    // auth_success: пара к нему, тот же guard, тот же приём userId = null.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(22);
   });
 });

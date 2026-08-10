@@ -33,11 +33,15 @@ function makeGuard() {
     findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
   };
   const securityLog = { log: jest.fn() };
+  const maxProvider = { verifyInitData: jest.fn() };
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
   return new TelegramAuthGuard(
     config,
     prisma,
     authService as any,
     securityLog as any,
+    maxProvider as any,
+    analytics as any,
   );
 }
 

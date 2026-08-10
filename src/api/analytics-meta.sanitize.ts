@@ -269,6 +269,18 @@ export function sanitizeMeta(
   ) {
     return sanitizeScreenMeta(name, meta);
   }
+  if (name === 'auth_success') {
+    // Событие в реальности пишет только guard (userId = null, см.
+    // analytics.constants.ts) — эта ветка на клиентский путь POST /api/event
+    // не должна попасть. Whitelist здесь defence in depth: если бы кто-то
+    // всё же прислал это имя с фронта, meta ограничена площадкой и ничем
+    // больше, никакого свободного текста/PII.
+    const host = meta.host;
+    if (host === 'telegram' || host === 'max' || host === 'web') {
+      return { host };
+    }
+    return undefined;
+  }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open —
   // без meta; поля отбрасываются.
   return undefined;
