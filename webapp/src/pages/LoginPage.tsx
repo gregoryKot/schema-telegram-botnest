@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { getHost } from '../../../shared/src/host';
+import { AuthFailureHelp } from '../../../shared/src/components/AuthFailureHelp';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
 import { MMIcon } from '../components/modeMapIcons';
@@ -101,13 +102,11 @@ export function LoginPage() {
   if (isTelegramContext) {
     return (
       <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
-          {miniAppLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
-        </p>
+        <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>{miniAppLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}</p>
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center', maxWidth: 320 }}>{error}</p>}
-        <button className="btn-outline" onClick={retryTelegramAuth} disabled={miniAppLoading}>
-          Попробовать снова
-        </button>
+        <button className="btn-outline" onClick={retryTelegramAuth} disabled={miniAppLoading}>Попробовать снова</button>
+        {/* Экран обязан назвать, кому написать (пара к AppErrorScreen, правило №3). */}
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center', maxWidth: 320 }}><AuthFailureHelp hostId={getHost().id} /></div>
       </div>
     );
   }
