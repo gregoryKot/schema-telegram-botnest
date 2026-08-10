@@ -1,44 +1,15 @@
 #!/usr/bin/env node
 // Гейт: исполняемый код вне наблюдаемых деревьев обязан быть под тестом
-// (класс из инцидента 2026-08-08, см. scripts/check-public-scripts.mjs).
+// (класс из инцидента 2026-08-08, см. check-public-scripts.mjs — закрыл
+// только `public/**/*.js`; `deploy/threads-relay/worker.js` в проде не видел
+// ни check-dead-files.mjs, ни check-public-scripts.mjs — то же молчание).
 //
-// Инцидент закрыл только `public/**/*.js` — браузерный код, который грузит
-// index.html. Тот же класс остался открытым в СОСЕДНЕЙ директории:
-// `deploy/threads-relay/worker.js` — Cloudflare Worker, реально работающий в
-// проде, содержащий `sameSecret` (сверку секрета на auth-пути к ретранслятору
-// Threads) — и на него не смотрит НИ ОДИН существующий гейт:
-//   - check-dead-files.mjs ходит только по src/webapp-src/miniapp-src/shared-src
-//     и только по *.ts(x) — .js вне этих деревьев ему не видно вообще;
-//   - check-public-scripts.mjs ходит только по webapp/public,
-//     schema-miniapp/public, game/public — deploy/ вне его PUBLIC_DIRS.
-// Файл лежал вне обоих полей зрения: не в coverage, не в гейте мёртвых
-// файлов, не в одном тесте. Ровно то же самое молчание, что пять суток
-// прятало сломанный вход в мини-апп.
-//
-// Что делает гейт:
-//   1) берёт список git-tracked файлов *.js/*.mjs/*.cjs/*.sh;
-//   2) исключает деревья, за которыми УЖЕ следит другой гейт (см. WATCHED
-//      выше) и служебные (dist/, node_modules/, game/ — заморожен, .github/ —
-//      YAML-конфиг, не исполняемый код репозитория);
-//   3) для каждого оставшегося файла ищет упоминание его имени в тестовых
-//      деревьях (src/**/*.spec.ts, test/**/*.ts, {webapp,schema-miniapp,shared}
-//      /src/**/*.test.*) — так же, как check-public-scripts.mjs;
-//   4) без упоминания — нарушение, если не вписано в бейслайн с причиной;
-//   5) протухшая запись бейслайна (файл удалён или обзавёлся тестом) тоже
-//      роняет гейт — иначе бейслайн стал бы кладбищем, а не списком
-//      осознанных исключений.
-//
-// `.config.ts` файлы (vite.config.ts, jest.config.ts и т.п.) сюда осознанно
-// НЕ входят — расширение фильтра `/\.(js|mjs|cjs|sh)$/` их не ловит: у них
-// уже есть tsc/сборка, которая исполняет и типизирует их на каждый прогон,
-// это другой класс риска, чем «код, который никто вообще не трогает».
-//
-// Починить: написать тест, который читает файл с диска и исполняет его
-// (образец — webapp/src/maxBridgeLoader.test.ts, src/infra/front-server.spec.ts)
-// либо, если это конфиг сборки/линтера без пользовательской логики, вписать
-// причину:
-//   node scripts/check-unwatched-code.mjs --update
-// Посмотреть, что именно попало в проверку: --verbose
+// 1) git-tracked *.js/*.mjs/*.cjs/*.sh; 2) минус деревья под другим гейтом
+// (WATCHED) и служебные; 3) ищет имя файла в тестах — ИСКЛЮЧАЯ комментарии
+// (stripComments): `//`/`/* */`-упоминание не значит, что файл исполняется;
+// 4) без упоминания — нарушение без записи в бейслайне; 5) протухшая запись
+// тоже роняет гейт. Починить: тест (образец — maxBridgeLoader.test.ts) либо:
+//   node scripts/check-unwatched-code.mjs --update   (--verbose — детали)
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
@@ -50,16 +21,10 @@ const verbose = process.argv.includes('--verbose');
 
 const CODE_EXT = /\.(js|mjs|cjs|sh)$/;
 
-// Деревья, за которыми уже следит другой гейт (см. комментарий выше) —
-// префиксы repo-relative путей.
+// Деревья, за которыми уже следит другой гейт — префиксы repo-relative путей.
 const WATCHED_PREFIXES = [
-  'src/',
-  'webapp/src/',
-  'schema-miniapp/src/',
-  'shared/src/',
-  'webapp/public/',
-  'schema-miniapp/public/',
-  'game/public/',
+  'src/', 'webapp/src/', 'schema-miniapp/src/', 'shared/src/',
+  'webapp/public/', 'schema-miniapp/public/', 'game/public/',
 ];
 // Деревья вне гейта в принципе (не прод-код репозитория или заморожены).
 const EXCLUDED_PREFIXES = ['game/', '.github/'];
@@ -84,7 +49,50 @@ const scope = all
   .filter((rel) => !isSegmentExcluded(rel))
   .sort();
 
-// ── тестовые деревья ────────────────────────────────────────────────────────
+// Дублированный сканер — держать идентичным check-public-scripts.mjs (гейты
+// однофайловые, общий модуль не вынести; parity: gate-scanner-parity.spec.ts).
+// Регэксп-литералы (`/…/`) тоже учтены: без этого кавычка внутри символьного
+// класса (`/['"]/`) сбивает отслеживание строк и глушит вырезание дальше по
+// файлу — реальный случай, найденный на src/security/*.invariants.spec.ts.
+// gate-scanner-dup:start
+function stripComments(text) {
+  const n = text.length;
+  let out = '', i = 0, quote = null, prev = ''; // prev — для эвристики regex-vs-деление
+  while (i < n) {
+    const c = text[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && i + 1 < n) { out += text[i + 1]; i += 2; continue; }
+      if (c === quote) quote = null;
+      i++; continue;
+    }
+    if (c === "'" || c === '"' || c === '`') { quote = c; out += c; prev = c; i++; continue; }
+    if (c === '/' && text[i + 1] === '/') { while (i < n && text[i] !== '\n') i++; continue; }
+    if (c === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i++;
+      i = Math.min(i + 2, n); out += ' '; continue;
+    }
+    if (c === '/' && !/[\w$)\]]/.test(prev)) {
+      let j = i + 1, cls = false;
+      while (j < n && text[j] !== '\n' && (cls || text[j] !== '/')) {
+        if (text[j] === '\\') j++;
+        else if (text[j] === '[') cls = true;
+        else if (text[j] === ']') cls = false;
+        j++;
+      }
+      if (j < n && text[j] === '/') j++;
+      while (j < n && /[a-z]/i.test(text[j])) j++;
+      out += text.slice(i, j); prev = text[j - 1] || prev; i = j;
+      continue;
+    }
+    if (c > ' ') prev = c;
+    out += c; i++;
+  }
+  return out;
+}
+// gate-scanner-dup:end
+
 const isTestFile = (rel) =>
   (rel.startsWith('src/') && rel.endsWith('.spec.ts')) ||
   (rel.startsWith('test/') && rel.endsWith('.ts')) ||
@@ -92,28 +100,19 @@ const isTestFile = (rel) =>
   (rel.startsWith('schema-miniapp/src/') && /\.test\.[jt]sx?$/.test(rel)) ||
   (rel.startsWith('shared/src/') && /\.test\.[jt]sx?$/.test(rel));
 
-const testText = all
-  .filter(isTestFile)
-  // git ls-files перечисляет и то, что удалено в рабочем дереве (файл ещё в
-  // индексе). Без этого гейт падал стектрейсом ENOENT вместо внятного отчёта —
-  // ровно в тот момент, когда тест удалили, то есть когда он и нужен.
-  .flatMap((rel) => {
-    const abs = join(ROOT, rel);
-    return existsSync(abs) ? [readFileSync(abs, 'utf8')] : [];
-  })
-  .join('\n');
+// existsSync — на удалённое из рабочего дерева. stripComments ДО поиска.
+const testText = stripComments(
+  all
+    .filter(isTestFile)
+    .flatMap((rel) => {
+      const abs = join(ROOT, rel);
+      return existsSync(abs) ? [readFileSync(abs, 'utf8')] : [];
+    })
+    .join('\n'),
+);
 
-/**
- * Упоминает ли тест этот файл. Полный путь — точное совпадение; голое имя
- * файла засчитывается только на границе (гейты зовутся из песочницы как
- * `runGate('check-x.mjs')`, без каталога).
- *
- * Границей считаем НЕ-часть имени файла: `/`, кавычка, пробел, скобка. Буква,
- * цифра, `_`, `.` и `-` границей НЕ являются — иначе `worker.js` засчитался бы
- * упоминанием `service-worker.js`. Это тот же промах, что уронил вход в
- * инциденте 2026-08-08 (`indexOf('WebAppData=')` находил `tgWebAppData=`):
- * совпадение подстроки — не проверка имени (правило CLAUDE.md).
- */
+// Упоминает ли тест файл в реальном коде. Путь — точное совпадение; имя —
+// на границе (иначе `worker.js` засчитал бы `service-worker.js`, правило CLAUDE.md).
 const mentioned = (rel) => {
   if (testText.includes(rel)) return true;
   const name = rel.split('/').pop();
@@ -147,8 +146,7 @@ const stale = Object.keys(base).filter((rel) => !uncovered.includes(rel));
 
 if (unexpected.length === 0 && stale.length === 0) {
   console.log(
-    `✓ исполняемый код вне наблюдаемых деревьев: ${scope.length} файлов, ` +
-      `все под тестом (исключений ${Object.keys(base).length}).`,
+    `✓ исполняемый код вне наблюдаемых деревьев: ${scope.length} файлов, все под тестом (исключений ${Object.keys(base).length}).`,
   );
   process.exit(0);
 }
@@ -161,12 +159,11 @@ if (unexpected.length) {
       'deploy/threads-relay/worker.js):',
   );
   for (const rel of unexpected) {
-    console.error(`   ${rel} — ни один тест не упоминает этот файл`);
+    console.error(`   ${rel} — ни один тест не упоминает этот файл (в реальном коде)`);
   }
   console.error(
-    'Напиши тест, который читает файл с диска и исполняет его (образец: ' +
-      'webapp/src/maxBridgeLoader.test.ts, src/infra/front-server.spec.ts) либо,\n' +
-      'если это конфиг сборки/линтера без пользовательской логики, впиши причину:',
+    'Напиши тест, который читает файл с диска и исполняет его (образец: webapp/src/maxBridgeLoader.test.ts) ' +
+      'либо, если это конфиг сборки/линтера без пользовательской логики, впиши причину:',
   );
 }
 

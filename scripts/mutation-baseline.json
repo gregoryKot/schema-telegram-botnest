@@ -12,6 +12,9 @@
     "src/notification/notification.planner.service.ts": 91.52,
     "src/subscription/subscription.service.ts": 84.44,
     "src/booking/pricing.service.ts": 89.47,
-    "src/booking/slot.service.ts": 93.69
+    "src/booking/slot.service.ts": 93.69,
+    "src/booking/payment.controller.ts": 87.95,
+    "src/auth/security-log.service.ts": 95.74,
+    "src/donation/donation.service.ts": 94.44
   }
 }

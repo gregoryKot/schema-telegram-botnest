@@ -207,6 +207,27 @@ describe('SecurityLogService — DM-бюджет по имени события'
     expect(lastText).toContain('ещё 7 за окно');
   });
 
+  // Свежий бюджет (suppressed=0) — хвост «ещё N за окно» вообще не должен
+  // появляться. Точный toBe (не toContain) нужен, чтобы поймать мутанта,
+  // подменяющего '' (пустую ветку тернарника) на непустую строку — toContain
+  // такую подмену не ловит, если сам искомый текст не задет.
+  it('первый DM в свежем окне: точный текст — заголовок + поля через \\n, без хвоста подавления', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('csrf_blocked', { endpoint: 'refresh', method: 'POST' });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nmethod: POST');
+  });
+
+  it('значение длиннее 80 символов обрезается в DM (защита от раздутого/injection-подобного значения)', async () => {
+    const service = new SecurityLogService(() => 0);
+    const longValue = 'x'.repeat(200);
+    service.log('csrf_blocked', { payload: longValue });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).toBe(`🔐 csrf_blocked\npayload: ${'x'.repeat(80)}`);
+  });
+
   it('разные имена событий не делят один бюджет', async () => {
     let now = 0;
     const service = new SecurityLogService(() => now);
@@ -226,5 +247,21 @@ describe('SecurityLogService — DM-бюджет по имени события'
       '🔐 Security: csrf_blocked',
       '🔐 Security: refresh_token_reuse',
     ]);
+  });
+
+  // Отрицательная ветка счётчика. Тест выше проверяет, что «ещё N за окно»
+  // ПОЯВЛЯЕТСЯ, — и этого мало: мутация «приписывать всегда» (`suppressed >= 0`)
+  // его переживала, потому что случай «ничего не подавлено» никто не смотрел.
+  // Цена ошибки не косметическая: приписка «ещё 0 за окно» в каждом обычном
+  // алерте — это ложный сигнал «часть событий проглочена» там, где ничего не
+  // проглочено, то есть ровно та потеря доверия к каналу, ради которой бюджет
+  // и заводился.
+  it('обычный алерт (ничего не подавлено) — без приписки про окно', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('merge_confirmed', { userId: 1 });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).toContain('merge_confirmed');
+    expect(text).not.toContain('за окно');
   });
 });

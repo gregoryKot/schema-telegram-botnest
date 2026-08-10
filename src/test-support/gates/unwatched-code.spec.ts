@@ -22,7 +22,15 @@ const UNWATCHED =
 // из-за сценария, а из-за самого механизма песочницы. В реальном репозитории
 // этой сложности нет: `check-unwatched-code.mjs` покрыт этим же файлом
 // (текущий спек буквально зовёт `runGate('check-unwatched-code.mjs', …)`).
-const SELF_MENTION = '// смотрит на себя: check-unwatched-code.mjs\n';
+//
+// SELF_MENTION обязана быть РЕАЛЬНЫМ кодом, не комментарием — гейт вырезает
+// комментарии (stripComments) до поиска, и упоминание в `//` тут не считается
+// точно так же, как и для любого другого проверяемого файла (см. тесты ниже
+// про упоминание-только-в-комментарии).
+const SELF_MENTION =
+  "readFileSync('scripts/check-unwatched-code.mjs', 'utf8');\n";
+const SELF_MENTION_AS_COMMENT =
+  '// смотрит на себя: check-unwatched-code.mjs\n';
 const SELF_BASELINE = {
   'scripts/check-unwatched-code.mjs':
     'копия проверяемого скрипта в песочнице теста',
@@ -55,6 +63,97 @@ describe('check-unwatched-code.mjs', () => {
         'test/e2e-support/relay.spec.ts':
           "import { readFileSync } from 'fs';\nconst src = readFileSync('deploy/threads-relay/worker.js', 'utf8');\nit('исполняется', () => src);\n" +
           SELF_MENTION,
+      },
+      { git: true },
+    );
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('все под тестом');
+  });
+
+  it('копия гейта упомянута ТОЛЬКО в комментарии (не в реальном коде) — exit 1', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': '{}',
+        'deploy/threads-relay/worker.js': UNWATCHED,
+        'test/e2e-support/relay.spec.ts':
+          "import { readFileSync } from 'fs';\nconst src = readFileSync('deploy/threads-relay/worker.js', 'utf8');\nit('исполняется', () => src);\n" +
+          SELF_MENTION_AS_COMMENT,
+      },
+      { git: true },
+    );
+    // Комментарий не покрывает ни deploy-файл (он упомянут в реальном коде —
+    // остаётся зелёным сам по себе), ни копию гейта (упомянута ТОЛЬКО в
+    // комментарии) — вот она и падает без бейслайна.
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('scripts/check-unwatched-code.mjs');
+  });
+
+  it('файл упомянут ТОЛЬКО в `//` комментарии — не считается упоминанием, exit 1', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+        'deploy/threads-relay/worker.js': UNWATCHED,
+        'test/e2e-support/relay.spec.ts':
+          '// упоминаю deploy/threads-relay/worker.js только в комментарии,\n' +
+          "// код его не читает и не исполняет\nit('пусто', () => 1);\n",
+      },
+      { git: true },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('deploy/threads-relay/worker.js');
+    expect(res.stderr).toContain('ни один тест не упоминает этот файл');
+  });
+
+  it('файл упомянут ТОЛЬКО в /* */ блочном комментарии — тоже не считается, exit 1', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+        'deploy/threads-relay/worker.js': UNWATCHED,
+        'test/e2e-support/relay.spec.ts':
+          '/* TODO: покрыть deploy/threads-relay/worker.js тестом */\n' +
+          "it('пусто', () => 1);\n",
+      },
+      { git: true },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('deploy/threads-relay/worker.js');
+  });
+
+  it('тот же файл, но упомянутый в РЕАЛЬНОМ коде (readFileSync) — гейт зелёный', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+        'deploy/threads-relay/worker.js': UNWATCHED,
+        'test/e2e-support/relay.spec.ts':
+          "import { readFileSync } from 'fs';\n" +
+          "const src = readFileSync('deploy/threads-relay/worker.js', 'utf8');\n" +
+          "it('исполняется', () => src);\n",
+      },
+      { git: true },
+    );
+    expect(res.status).toBe(0);
+  });
+
+  // Регрессионный тест на сам сканер: наивное построчное вырезание `//...$`
+  // без учёта строк превратило бы `'https://…'` в комментарий и съело бы
+  // остаток строки — включая реальное упоминание файла сразу после URL на
+  // той же строке. stripComments обязан отличать `//` внутри строки от
+  // настоящего начала комментария.
+  it('URL со `//` внутри строки не ломает поиск реального упоминания на той же строке', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+        'deploy/threads-relay/worker.js': UNWATCHED,
+        'test/e2e-support/relay.spec.ts':
+          "import { readFileSync } from 'fs';\n" +
+          "const cdn = 'https://cdn.example.com/lib.js'; " +
+          "const src = readFileSync('deploy/threads-relay/worker.js', 'utf8');\n" +
+          "it('исполняется', () => src);\n",
       },
       { git: true },
     );

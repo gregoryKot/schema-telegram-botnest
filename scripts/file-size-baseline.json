@@ -411,7 +411,7 @@
   "scripts/check-robot-phrases.mjs": 176,
   "scripts/check-route-collisions.mjs": 52,
   "scripts/check-silent-catch.mjs": 278,
-  "scripts/check-unwatched-code.mjs": 180,
+  "scripts/check-unwatched-code.mjs": 177,
   "scripts/check-weak-assert-ratchet.mjs": 267,
   "scripts/encrypt-existing.ts": 273,
   "scripts/generate-pwa-icons.mjs": 82,
