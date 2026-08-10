@@ -75,6 +75,25 @@ describe('onModuleInit — 30с catch-up планировщика', () => {
       expect.stringContaining('Startup planner catch-up failed'),
     );
   });
+
+  // Регрессия флака e2e-джобы `migrations` (щит, волна 6): каждый e2e-boot
+  // регистрирует этот таймер заново; --runInBand гоняет несколько spec-файлов
+  // подряд в одном процессе, и unref'нутый 30с таймер прошлого boot'а
+  // стрелял в уже закрытый Prisma-пул следующего. onModuleDestroy (вызывается
+  // Nest'ом на КАЖДЫЙ app.close(), см. nest-application-context.js) обязан
+  // снимать таймер ДО того, как он сработает.
+  it('onModuleDestroy снимает таймер — scheduleDailyReminders не срабатывает после закрытия приложения', async () => {
+    const accountService = {
+      getAllUsersWithSettings: jest.fn().mockResolvedValue([]),
+    };
+    const { service } = makeService({ accountService });
+    service.onModuleInit();
+    expect((service as any).catchupTimer.isArmed()).toBe(true);
+    service.onModuleDestroy();
+    expect((service as any).catchupTimer.isArmed()).toBe(false);
+    await jest.advanceTimersByTimeAsync(30_000);
+    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+  });
 });
 
 describe('processQueue — верхнеуровневый catch (не путь конкретного уведомления)', () => {

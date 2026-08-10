@@ -81,6 +81,7 @@ jobs:
           npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
+          test/scheduler-teardown
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -181,16 +182,46 @@ jobs:
       # и новому call site не нужно об этом помнить.
       - run: node scripts/check-alert-throttle.mjs
       # Деплой-шов (правило №14 CLAUDE.md): Dockerfile/.dockerignore/amvera.yml
-      # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Ни одна джоба CI
-      # не гоняет `docker build` (дорого, нужен демон, и ловит другой класс
-      # поломок — не рассинхрон путей). Гейт статически проверяет, что то, что
-      # Dockerfile копирует (COPY/`cp -r`), существует в репозитории или
-      # производится сборкой, что назначение мини-аппа совпадает с rootPath
-      # ServeStaticModule в src/app.module.ts, что .dockerignore не исключает
-      # то, что COPY тут же копирует, и что amvera.yml согласован с
-      # deploy/entrypoint.mjs. Сегодня этот класс дефекта красит только
-      # сборку на Amvera — уже после мержа, перед живыми пользователями.
+      # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Гейт статически
+      # проверяет, что то, что Dockerfile копирует (COPY/`cp -r`), существует
+      # в репозитории или производится сборкой, что назначение мини-аппа
+      # совпадает с rootPath ServeStaticModule в src/app.module.ts, что
+      # .dockerignore не исключает то, что COPY тут же копирует, и что
+      # amvera.yml согласован с deploy/entrypoint.mjs. Это ловит рассинхрон
+      # ПУТЕЙ за миллисекунды, но не докажет, что образ вообще собирается —
+      # синтаксис Dockerfile, версии пакетов, реестр — за это отвечает джоба
+      # `docker` ниже (щит, волна 6): раньше этот класс дефекта красил только
+      # сборку на Amvera, уже после мержа, перед живыми пользователями.
       - run: node scripts/check-deploy-paths.mjs
+
+  # Щит, волна 6: `docker build` реально собирает прод-образ. До этой джобы
+  # ни одна не гоняла настоящую сборку — check-deploy-paths.mjs (джоба
+  # `checks`, выше) статически сверяет ПУТИ за миллисекунды, но не исполняет
+  # Dockerfile; синтаксис RUN-команд, версии npm-пакетов, доступность
+  # deb.debian.org/реестра — всё это красило только сборку на Amvera, уже
+  # после мержа, перед живыми пользователями. Джобы дополняют друг друга, а
+  # не дублируют: без этой джобы push в main мог сломать сборку, и первым об
+  # этом узнавал прод.
+  #
+  # docker/build-push-action с GitHub Actions cache (а не голый `docker
+  # build`): у образа 20+ шагов (три npm ci, три сборки фронтендов) и без
+  # кэша слоёв каждый прогон CI пересобирал бы всё с нуля — минуты впустую на
+  # шагах, которые PR не менял. push:false — только собрать и проверить,
+  # реестр не нужен (сам деплой делает Amvera по push в main, см. CLAUDE.md
+  # «Деплой webapp»).
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: schema-telegram-botnest:ci-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
