@@ -23,6 +23,7 @@ import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { MoneyMetricsService } from './money-metrics.service';
 import { NotesService } from './notes.service';
 import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
@@ -65,6 +66,7 @@ const INTERNAL_PROVIDERS = [
   PlusMetricsService,
   ScreenMetricsService,
   AuthHealthMetricsService,
+  MoneyMetricsService,
 ];
 
 @Module({
