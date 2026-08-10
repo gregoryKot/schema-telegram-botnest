@@ -68,4 +68,56 @@ describe('TelegramChannelTarget', () => {
       'ETIMEDOUT',
     );
   });
+
+  describe('повторы при сетевом сбое', () => {
+    // Инцидент 2026-08-09: Telegram — единственная площадка, ходившая мимо
+    // общего HTTP-слоя, и повторов у неё не было. Связь до api.telegram.org
+    // с хостинга моргает: пост падал с ETIMEDOUT, а соседние площадки в те же
+    // секунды принимали его.
+    const netError = () =>
+      Object.assign(new Error('request to api.telegram.org failed'), {
+        code: 'ETIMEDOUT',
+      });
+
+    const post = {
+      text: 'фраза',
+      image: () => Promise.resolve(Buffer.from('')),
+    };
+
+    it('таймаут — пробуем ещё раз, и пост уходит', async () => {
+      const sendMessage = jest
+        .fn()
+        .mockRejectedValueOnce(netError())
+        .mockResolvedValueOnce(undefined);
+      const bot = { telegram: { sendMessage } } as never;
+
+      await new TelegramChannelTarget(bot).send(post, '@ch');
+
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+      expect(sendMessage).toHaveBeenLastCalledWith('@ch', 'фраза');
+    });
+
+    it('сеть не поднялась — три попытки и внятная причина', async () => {
+      const sendMessage = jest.fn().mockRejectedValue(netError());
+      const bot = { telegram: { sendMessage } } as never;
+
+      await expect(
+        new TelegramChannelTarget(bot).send(post, '@ch'),
+      ).rejects.toThrow('failed');
+      expect(sendMessage).toHaveBeenCalledTimes(3);
+    });
+
+    it('ответ API не повторяется — пост мог уже выйти', async () => {
+      // 400 значит, что запрос дошёл: повтор рискует вторым сообщением.
+      const sendMessage = jest.fn().mockRejectedValue({
+        response: { error_code: 400, description: 'chat not found' },
+      });
+      const bot = { telegram: { sendMessage } } as never;
+
+      await expect(
+        new TelegramChannelTarget(bot).send(post, '@ch'),
+      ).rejects.toMatchObject({ response: { error_code: 400 } });
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+    });
+  });
 });

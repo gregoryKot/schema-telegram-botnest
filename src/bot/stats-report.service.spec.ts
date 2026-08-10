@@ -29,8 +29,11 @@ describe('StatsReportService.render', () => {
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
     };
+    const money = {
+      render: jest.fn().mockResolvedValue('деньги: поддержали 3 раза'),
+    };
     return {
-      blocks: { accountLink, plus, screen, authHealth },
+      blocks: { accountLink, plus, screen, authHealth, money },
       service: new StatsReportService(
         product as never,
         modeCard as never,
@@ -41,6 +44,7 @@ describe('StatsReportService.render', () => {
         plus as never,
         screen as never,
         authHealth as never,
+        money as never,
       ),
     };
   };
@@ -52,7 +56,7 @@ describe('StatsReportService.render', () => {
       'продуктовые метрики\n\nкарточки режимов: 9\n\nдневник режимов: 5\n\n' +
         'тёплые слова: 3\n\nразборы фраз: 7\n\nперенос данных: 2\n\n' +
         'кнопка плюс: 4\n\nнастройка экранов: 1\n\n' +
-        'вход в мессенджере: всё хорошо',
+        'вход в мессенджере: всё хорошо\n\nденьги: поддержали 3 раза',
     );
   });
 
@@ -65,9 +69,11 @@ describe('StatsReportService.render', () => {
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
+    expect(blocks.money.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('вход в мессенджере: всё хорошо');
+    expect(out).toContain('деньги: поддержали 3 раза');
   });
 });

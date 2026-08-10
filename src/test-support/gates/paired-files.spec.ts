@@ -13,7 +13,7 @@ const PAIRS = [
   'utils/crisisMarkers.test.ts',
   'utils/todayInsight.ts',
   'utils/drafts.ts',
-  'utils/addressForm.tsx',
+  'utils/addressForm.ts',
   'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
