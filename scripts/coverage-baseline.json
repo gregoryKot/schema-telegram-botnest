@@ -1,11 +1,11 @@
 {
-  "lines": 96.58,
-  "branches": 85.97,
+  "lines": 96.6,
+  "branches": 86.11,
   "floors": {
     "src/auth": 97.46,
-    "src/utils": 96.19,
+    "src/utils": 96.4,
     "src/therapy": 96.19,
-    "src/api": 94.78,
-    "src/booking": 93.95
+    "src/api": 94.74,
+    "src/booking": 94.22
   }
 }
