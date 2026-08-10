@@ -163,6 +163,17 @@ jobs:
       # AUTH-путь) не видел ни один из них. Тест-лекарство —
       # src/infra/threads-relay-worker.spec.ts.
       - run: node scripts/check-unwatched-code.mjs
+      # Троттлинг сигнализации живёт в КАНАЛЕ ДОСТАВКИ, а не у вызывающего
+      # (инцидент 2026-07-29: шквал одинаковых DM «suspicious_initdata»
+      # замьютил чат админу — фикс завели точечно, и он не защитил соседние
+      # вызовы того же notifyAdminWithFallback: `csrf_blocked`
+      # (auth-http.util.ts) слал DM вообще без троттлинга — регрессия
+      # cookie/SameSite после деплоя ломает CSRF для КАЖДОЙ авторизованной
+      # записи КАЖДОГО пользователя разом, то есть DM на каждый запрос).
+      # Теперь бюджет (K=3 за 15 минут на имя события) встроен в
+      # SecurityLogService — единственный канал DM для событий безопасности —
+      # и новому call site не нужно об этом помнить.
+      - run: node scripts/check-alert-throttle.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
