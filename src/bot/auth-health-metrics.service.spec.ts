@@ -1,6 +1,6 @@
-// Агрегат отказов входа: маппинг bigint→number и то, что запрос считает
-// только серверные строки. Prisma мокается (образец —
-// account-link-metrics.service.spec.ts).
+// Агрегат здоровья входа: маппинг bigint→number и то, что запрос считает
+// только серверные строки (auth_rejected + auth_success). Prisma мокается
+// (образец — account-link-metrics.service.spec.ts).
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 
 describe('AuthHealthMetricsService.getMetrics', () => {
@@ -10,13 +10,22 @@ describe('AuthHealthMetricsService.getMetrics', () => {
     return { service: new AuthHealthMetricsService(prisma), queryRaw };
   };
 
-  it('раскладывает счётчики по площадкам и окнам', async () => {
+  it('раскладывает счётчики отказов и успехов по площадкам/окнам', async () => {
     const { service } = build([
-      { tg_day: 12n, max_day: 0n, tg_week: 300n, max_week: 4n },
+      {
+        tg_day: 12n,
+        max_day: 0n,
+        tg_week: 300n,
+        max_week: 4n,
+        success_day: 80n,
+        success_week: 900n,
+      },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
       day: { telegram: 12, max: 0 },
       week: { telegram: 300, max: 4 },
+      successDay: 80,
+      successWeek: 900,
     });
   });
 
@@ -25,20 +34,31 @@ describe('AuthHealthMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       day: { telegram: 0, max: 0 },
       week: { telegram: 0, max: 0 },
+      successDay: 0,
+      successWeek: 0,
     });
   });
 
   // Ключевой инвариант: /api/event открыт авторизованным клиентам, и без
-  // фильтра по userId любой из них мог бы накрутить отчёт о здоровье входа.
-  it('считает только серверные строки — auth_rejected с userId IS NULL', async () => {
+  // фильтра по userId любой из них мог бы накрутить отчёт о здоровье входа —
+  // в любую сторону, раздув либо отказы, либо успехи.
+  it('считает только серверные строки — auth_rejected/auth_success с userId IS NULL', async () => {
     const { service, queryRaw } = build([
-      { tg_day: 0n, max_day: 0n, tg_week: 0n, max_week: 0n },
+      {
+        tg_day: 0n,
+        max_day: 0n,
+        tg_week: 0n,
+        max_week: 0n,
+        success_day: 0n,
+        success_week: 0n,
+      },
     ]);
     await service.getMetrics();
     const sql = (
       queryRaw.mock.calls[0][0] as { join?: unknown } & string[]
     ).join('?');
     expect(sql).toContain(`"name" = 'auth_rejected'`);
+    expect(sql).toContain(`"name" = 'auth_success'`);
     expect(sql).toContain('"userId" IS NULL');
   });
 });

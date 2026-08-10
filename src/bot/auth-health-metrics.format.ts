@@ -6,13 +6,25 @@
 // авария выглядела как обычные 401: их никто не считал. Теперь «мини-апп
 // открыт, а подписи нет» — отдельная строка отчёта.
 //
-// Язык простой: «приложение не смогло войти», а не «empty_signature events».
+// Успехи (auth_success) добавлены рядом с отказами не для красоты: рост
+// отказов виден, только если клиент ДОХОДИТ до guard'а. Клиент, который до
+// сервера вообще не доехал (сломанный бандл, DNS, мёртвое вебвью), не пишет
+// ни отказ, ни успех — такую аварию видно ТОЛЬКО как провал числа успехов,
+// а не как скачок отказов. Отсюда пара и отсюда доля успешных — не просто
+// число, а ориентир «сколько вообще входов было, чтобы отказы было с чем
+// сравнивать».
+//
+// Язык простой: «вошли N раз, не смогли M», а не «auth_success events».
 
 export interface AuthHealthMetrics {
   /** За сутки: сколько раз мини-апп пришёл без подписи (по площадкам). */
   day: { telegram: number; max: number };
   /** За неделю — то же, чтобы видеть, разовый это сбой или тянется. */
   week: { telegram: number; max: number };
+  /** Сколько раз вход прошёл успешно — сессии, а не запросы (троттлинг в
+   *  src/api/auth-success.report.ts). */
+  successDay: number;
+  successWeek: number;
 }
 
 const HOSTS = [
@@ -23,10 +35,17 @@ const HOSTS = [
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatAuthHealth(m: AuthHealthMetrics): string {
   const lines = ['🔑 <b>Вход в мессенджере</b>'];
-  const weekTotal = m.week.telegram + m.week.max;
+  const failWeek = m.week.telegram + m.week.max;
 
-  if (weekTotal === 0) {
-    lines.push('За неделю все входы прошли нормально.');
+  // Пусто с обеих сторон — не «всё хорошо», а «сравнивать не с чем»: на
+  // чистой БД (или в первую неделю после установки) входов ещё не было.
+  if (failWeek === 0 && m.successWeek === 0) {
+    lines.push('За неделю никто не пытался войти — сравнивать пока не с чем.');
+    return lines.join('\n');
+  }
+
+  if (failWeek === 0) {
+    lines.push(`За неделю вошли ${m.successWeek} раз, ни одного сбоя.`);
     return lines.join('\n');
   }
 
@@ -40,6 +59,11 @@ export function formatAuthHealth(m: AuthHealthMetrics): string {
     if (week === 0) continue;
     lines.push(`${title}: за сутки ${day}, за неделю ${week}`);
   }
+  const totalWeek = m.successWeek + failWeek;
+  const pct = Math.round((m.successWeek / totalWeek) * 100);
+  lines.push(
+    `Успешных входов за неделю: ${m.successWeek} из ${totalWeek} (${pct}%).`,
+  );
   if (m.day.telegram + m.day.max > 0) {
     lines.push(
       'Это происходит прямо сейчас — открой приложение и проверь вход.',
