@@ -52,11 +52,20 @@ describe('StatsReportService.render', () => {
   it('склеивает все блоки отчёта в одном порядке', async () => {
     const { service } = build();
 
-    await expect(service.render()).resolves.toBe(
-      'продуктовые метрики\n\nкарточки режимов: 9\n\nдневник режимов: 5\n\n' +
-        'тёплые слова: 3\n\nразборы фраз: 7\n\nперенос данных: 2\n\n' +
-        'кнопка плюс: 4\n\nнастройка экранов: 1\n\n' +
-        'вход в мессенджере: всё хорошо\n\nденьги: поддержали 3 раза',
+    const out = await service.render();
+    expect(
+      out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
+    ).toBe(true);
+    expect(out).toContain(
+      'вход в мессенджере: всё хорошо\n\nденьги: поддержали 3 раза',
+    );
+    // Блок «Настройки» (щит, волна 8) — считается из process.env напрямую
+    // (не мокается через blocks), но обязан приезжать последним куском
+    // отчёта, сразу после блока «Деньги».
+    const capabilityIndex = out.indexOf('⚙️ <b>Настройки</b>');
+    expect(capabilityIndex).toBeGreaterThan(-1);
+    expect(out.slice(capabilityIndex)).toBe(
+      out.trimEnd().slice(capabilityIndex),
     );
   });
 

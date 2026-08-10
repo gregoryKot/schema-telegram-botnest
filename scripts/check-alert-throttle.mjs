@@ -58,6 +58,45 @@ const ALLOWED_CHANNELS = new Set([
   'src/auth/security-log.service.ts',
 ]);
 
+// gate-scanner-dup:start
+function stripComments(text) {
+  const n = text.length;
+  let out = '', i = 0, quote = null, prev = ''; // prev — для эвристики regex-vs-деление
+  while (i < n) {
+    const c = text[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && i + 1 < n) { out += text[i + 1]; i += 2; continue; }
+      if (c === quote) quote = null;
+      i++; continue;
+    }
+    if (c === "'" || c === '"' || c === '`') { quote = c; out += c; prev = c; i++; continue; }
+    if (c === '/' && text[i + 1] === '/') { while (i < n && text[i] !== '\n') i++; continue; }
+    if (c === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i++;
+      i = Math.min(i + 2, n); out += ' '; continue;
+    }
+    if (c === '/' && !/[\w$)\]]/.test(prev)) {
+      let j = i + 1, cls = false;
+      while (j < n && text[j] !== '\n' && (cls || text[j] !== '/')) {
+        if (text[j] === '\\') j++;
+        else if (text[j] === '[') cls = true;
+        else if (text[j] === ']') cls = false;
+        j++;
+      }
+      if (j < n && text[j] === '/') j++;
+      while (j < n && /[a-z]/i.test(text[j])) j++;
+      out += text.slice(i, j); prev = text[j - 1] || prev; i = j;
+      continue;
+    }
+    if (c > ' ') prev = c;
+    out += c; i++;
+  }
+  return out;
+}
+// gate-scanner-dup:end
+
 const CALL_RE = /\bnotifyAdminWithFallback\s*\(/g;
 const TEST = /\.(spec|test)\.tsx?$/;
 
@@ -83,7 +122,11 @@ for (const file of walk(SRC)) {
   // и он же в списке разрешённых каналов, так что даже без спецразбора
   // объявления гейт бы его не тронул. Пропускаем явно ради ясности.
   if (rel === 'src/utils/admin-alert.ts') continue;
-  const text = readFileSync(file, 'utf8');
+  // stripComments ДО поиска: упоминание имени в комментарии или в тексте
+  // сообщения об ошибке — не вызов. Ложно-красный гейт отключают через
+  // неделю, а это ровно тот класс подстрочного совпадения, что уронил вход
+  // в инциденте 2026-08-08 (`indexOf('WebAppData=')` находил `tgWebAppData=`).
+  const text = stripComments(readFileSync(file, 'utf8'));
   CALL_RE.lastIndex = 0;
   const hits = [];
   for (let m = CALL_RE.exec(text); m; m = CALL_RE.exec(text)) {
