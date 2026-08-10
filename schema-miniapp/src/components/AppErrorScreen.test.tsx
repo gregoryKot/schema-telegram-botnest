@@ -70,6 +70,22 @@ describe('AppErrorScreen', () => {
     delete (globalThis as { WebApp?: unknown }).WebApp;
   });
 
+  // «Напиши нам» не говорило, кому и куда: человек упирался в тупик, который
+  // обещал помощь и не давал адреса (скриншот владельца, 2026-08-10).
+  it('при неудаче входа называет адрес, а не «нам»', () => {
+    inTelegram();
+    render(<AppErrorScreen error="401" />);
+    const link = screen.getByRole('link', { name: /@kotlarewski/ });
+    expect(link.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    expect(screen.queryByText(/напиши нам/)).toBeNull();
+  });
+
+  it('при сетевом сбое адреса поддержки нет — там дело не в нас', () => {
+    inTelegram();
+    render(<AppErrorScreen error="Failed to fetch" />);
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
   it('при сетевом сбое форму подписи не показывает — она там ни при чём', () => {
     inTelegram();
     render(<AppErrorScreen error="Failed to fetch" />);
