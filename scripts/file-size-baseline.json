@@ -227,7 +227,7 @@
   "schema-miniapp/src/components/TherapistClientSheet.tsx": 202,
   "schema-miniapp/src/components/therapistClientSheet/ActionButtons.tsx": 112,
   "schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx": 131,
-  "schema-miniapp/src/components/therapistClientSheet/ClientDetailView.tsx": 162,
+  "schema-miniapp/src/components/therapistClientSheet/ClientDetailView.tsx": 178,
   "schema-miniapp/src/components/therapistClientSheet/ClientListView.tsx": 507,
   "schema-miniapp/src/components/therapistClientSheet/ClientNameHeader.tsx": 169,
   "schema-miniapp/src/components/therapistClientSheet/ClientNotesSheet.tsx": 224,
