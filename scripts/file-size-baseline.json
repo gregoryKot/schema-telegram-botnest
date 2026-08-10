@@ -778,7 +778,7 @@
   "src/telegram/telegram.notify-settings.service.ts": 148,
   "src/telegram/telegram.providers.ts": 33,
   "src/telegram/telegram.quiz.service.ts": 219,
-  "src/telegram/telegram.schedule.service.ts": 399,
+  "src/telegram/telegram.schedule.service.ts": 398,
   "src/telegram/telegram.service.ts": 825,
   "src/telegram/telegram.settings.service.ts": 310,
   "src/test-support/fake-prisma.spec-helper.ts": 261,
