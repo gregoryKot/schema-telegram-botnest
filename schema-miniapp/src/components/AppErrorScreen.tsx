@@ -18,6 +18,8 @@ const BTN_STYLE = {
   cursor: 'pointer',
 } as const;
 
+const SUB_TEXT = { fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 };
+
 // Полноэкранный экран ошибки загрузки App.tsx (истёкшая сессия vs. сетевой
 // сбой). Перенесено из App.tsx как есть (этап 3 REMEDIATION_PLAN).
 export function AppErrorScreen({ error }: { error: string }) {
@@ -62,9 +64,7 @@ export function AppErrorScreen({ error }: { error: string }) {
       {isAuthError ? (
         <AuthFailureHelp hostId={getHost().id} />
       ) : (
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-          Проверь подключение и попробуй ещё раз
-        </div>
+        <div style={SUB_TEXT}>Проверь подключение и попробуй ещё раз</div>
       )}
       {shape ? (
         <div
