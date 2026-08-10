@@ -141,6 +141,28 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
   });
 
+  // Пара к AppErrorScreen мини-аппа: экран-тупик обязан назвать адрес, а не
+  // отправлять «нам» (скриншот владельца, 2026-08-10).
+  it('называет, кому написать, если retry не помогает', () => {
+    mockGetHost.mockReturnValue({
+      id: 'telegram',
+      sessionExchange: () => ({ path: '/api/auth/telegram/exchange', body: { initData: 'x' } }),
+    });
+    renderPage();
+    expect(screen.getByRole('link', { name: /@kotlarewski/ }).getAttribute('href'))
+      .toBe('https://t.me/kotlarewski');
+  });
+
+  it('в MAX даёт почту — телеграмной ссылки там не открыть', () => {
+    mockGetHost.mockReturnValue({
+      id: 'max',
+      sessionExchange: () => ({ path: '/api/auth/max/webapp', body: { initData: 'x' } }),
+    });
+    renderPage();
+    expect(screen.getByRole('link', { name: /gregorykot@gmail\.com/ }).getAttribute('href'))
+      .toBe('mailto:gregorykot@gmail.com');
+  });
+
   // Парная правка к AppErrorScreen мини-аппа (правило №3). Инцидент
   // 2026-08-08: вход был сломан у всех пользователей Telegram, экран об этом
   // говорил пользователю и молчал нам — телеметрия висела только на крашах.
