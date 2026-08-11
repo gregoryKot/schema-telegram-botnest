@@ -119,6 +119,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
     'не ответил',
+  client_error:
+    'серверное событие: пишет только ClientErrorsController при ' +
+    'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
+    'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
+    'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
+    'auth_rejected/auth_success',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -152,6 +158,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
     // слать не может по замыслу (отказ входа фиксирует guard). 22 —
     // auth_success: пара к нему, тот же guard, тот же приём userId = null.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(22);
+    // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
+    // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(23);
   });
 });

@@ -85,6 +85,11 @@
 //                         падение входа не всегда выглядит ростом отказов,
 //                         иногда клиент просто перестаёт доезжать до
 //                         сервера — тогда виден провал именно этого счётчика.
+//   client_error        — СЕРВЕРНОЕ: посчитанная поломка фронтенда,
+//                         meta.source + meta.section (бакет, см.
+//                         client-error-section.ts). Пишет только
+//                         ClientErrorsController, userId = null, троттлинг
+//                         по source+section+ip — счётчик, не лог.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -125,6 +130,7 @@ export const ANALYTICS_EVENTS = [
   'screen_block_move',
   'auth_rejected',
   'auth_success',
+  'client_error',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
