@@ -8,7 +8,7 @@ import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
 import { useHiddenActions } from '../../utils/useHiddenActions';
 import {
   TOOLS_ACTIONS_ORDER_KEY,
-  withMoveFlags,
+  withDragRange,
 } from '../../utils/quickActionOrder';
 import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 
@@ -46,7 +46,7 @@ export function ToolsList(props: Props) {
     warm_words: props.onOpenWarmWords,
   };
   const rows = buildToolRows(props);
-  const { ordered, onMove } = useQuickActionOrder(TOOLS_ACTIONS_ORDER_KEY, [
+  const { ordered, onReorder } = useQuickActionOrder(TOOLS_ACTIONS_ORDER_KEY, [
     rows,
   ]);
   const orderedRows = ordered[0];
@@ -95,17 +95,17 @@ export function ToolsList(props: Props) {
         <QuickActionCustomizeSheet
           title="Какие инструменты показывать"
           surface="tools"
-          actions={withMoveFlags(orderedRows).map((r) => ({
+          actions={withDragRange([orderedRows]).map((r) => ({
             id: r.id,
             emoji: r.emoji,
             label: r.label,
             sub: r.sub ?? '',
-            disabledUp: r.disabledUp,
-            disabledDown: r.disabledDown,
+            rangeMin: r.rangeMin,
+            rangeMax: r.rangeMax,
           }))}
           hidden={hidden}
           onToggle={handleToggle}
-          onMove={onMove}
+          onReorder={onReorder}
           onClose={() => setShowCustomize(false)}
         />
       )}

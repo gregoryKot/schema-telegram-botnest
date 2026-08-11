@@ -281,13 +281,15 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(idxStreak).toBeLessThan(idxJourney);
   });
 
-  it('стрелка «Выше» второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
+  it('ArrowUp на ручке второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
     const { container } = await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
     // Порядок листа по умолчанию: Мой путь, Серия дней, Календарь, Достижения,
     // Инсайты — «Серия дней» вторая строка.
-    fireEvent.click(screen.getAllByLabelText('Выше')[1]);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Серия дней'), {
+      key: 'ArrowUp',
+    });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
       screen: 'profile',
       block: 'streak',
@@ -311,13 +313,13 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     );
   });
 
-  it('стрелка «Выше» первой строки (край) задизейблена: клик молчит, ничего не персистит', async () => {
+  it('ArrowUp на ручке первой строки (край) — no-op, ничего не персистит', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    const firstUp = screen.getAllByLabelText('Выше')[0];
-    expect(firstUp.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(firstUp);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+      key: 'ArrowUp',
+    });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'screen_block_move',
       expect.anything(),
@@ -325,11 +327,13 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(localStorage.getItem('screen_order_profile')).toBeNull();
   });
 
-  it('клик по стрелке в листе не переключает тумблер строки', async () => {
+  it('клавиша на ручке в листе не переключает тумблер строки', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+      key: 'ArrowDown',
+    });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'screen_block_toggle',
       expect.anything(),

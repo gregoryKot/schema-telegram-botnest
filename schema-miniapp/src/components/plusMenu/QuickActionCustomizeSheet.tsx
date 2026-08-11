@@ -1,7 +1,9 @@
 // Лист «что показывать» — общий для «плюса» и «Инструментов»: строка —
-// CustomizeRow (общая со ScreenCustomizeSheet), аналитика — quickActionRowHandlers.
+// CustomizeRow (общая со ScreenCustomizeSheet), аналитика —
+// quickActionRowHandlers, порядок — drag&drop (useQuickActionDragRows).
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
 import { CustomizeRow } from './CustomizeRow';
+import { useQuickActionDragRows } from './quickActionDragRows';
 import { makeQuickActionRowHandlers } from './quickActionRowHandlers';
 import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
@@ -10,8 +12,8 @@ interface CustomizeAction {
   emoji: string;
   label: string;
   sub: string;
-  disabledUp: boolean;
-  disabledDown: boolean;
+  rangeMin: number;
+  rangeMax: number;
 }
 
 interface Props {
@@ -20,7 +22,7 @@ interface Props {
   hidden: string[];
   surface: QuickActionSurface;
   onToggle: (id: string, hidden: boolean) => void;
-  onMove: (id: string, dir: 'up' | 'down') => boolean;
+  onReorder: (id: string, toIndex: number) => 'up' | 'down' | false;
   onClose: () => void;
 }
 
@@ -30,10 +32,11 @@ export function QuickActionCustomizeSheet({
   hidden,
   surface,
   onToggle,
-  onMove,
+  onReorder,
   onClose,
 }: Props) {
-  const handlers = makeQuickActionRowHandlers(surface, onToggle, onMove);
+  const handlers = makeQuickActionRowHandlers(surface, onToggle, onReorder);
+  const { rowProps } = useQuickActionDragRows(actions, handlers.handleReorder);
   return (
     <CustomizeSheetShell
       title={title}
@@ -52,10 +55,7 @@ export function QuickActionCustomizeSheet({
               sub={a.sub}
               hidden={wasHidden}
               onToggle={() => handlers.handleToggle(a.id, wasHidden)}
-              disabledUp={a.disabledUp}
-              disabledDown={a.disabledDown}
-              onMoveUp={() => handlers.handleMove(a.id, 'up')}
-              onMoveDown={() => handlers.handleMove(a.id, 'down')}
+              {...rowProps(a)}
             />
           );
         })}

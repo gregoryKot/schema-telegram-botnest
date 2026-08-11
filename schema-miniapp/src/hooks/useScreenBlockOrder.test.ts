@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Хук порядка блоков экрана: без сохранённого порядка — реестр
-// SCREEN_BLOCK_ORDER, move свопает СРЕДИ ВСЕХ блоков экрана, персистит
-// (read-after-write) и шлёт screen_block_move только при успехе; край —
-// no-op без записи/события.
+// SCREEN_BLOCK_ORDER, reorder переставляет СРЕДИ ВСЕХ блоков экрана,
+// персистит (read-after-write) и шлёт screen_block_move только при успехе;
+// no-op (toIndex не меняет позицию) — без записи/события.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useScreenBlockOrder } from './useScreenBlockOrder';
@@ -33,11 +33,11 @@ describe('useScreenBlockOrder', () => {
     expect(result.current.orderedIds).toEqual(['heroes', 'ysq_status']);
   });
 
-  it('move свопает соседей, персистит и шлёт screen_block_move (read-after-write)', () => {
+  it('reorder переставляет, персистит и шлёт screen_block_move с dir="up" (read-after-write)', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     let moved = false;
     act(() => {
-      moved = result.current.move('streak', 'up');
+      moved = result.current.reorder('streak', 0);
     });
     expect(moved).toBe(true);
     expect(result.current.orderedIds[0]).toBe('streak');
@@ -58,22 +58,35 @@ describe('useScreenBlockOrder', () => {
     });
   });
 
-  it('край (первый вверх) — false, localStorage и событие не трогает', () => {
+  it('reorder на больший индекс шлёт dir="down"', () => {
+    const { result } = renderHook(() => useScreenBlockOrder('profile'));
+    act(() => {
+      result.current.reorder('journey', 2);
+    });
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
+      screen: 'profile',
+      block: 'journey',
+      dir: 'down',
+    });
+  });
+
+  it('toIndex === текущий индекс — false, localStorage и событие не трогает', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     let moved = true;
     act(() => {
-      moved = result.current.move('journey', 'up');
+      moved = result.current.reorder('journey', 0);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();
     expect(mockApi.trackEvent).not.toHaveBeenCalled();
   });
 
-  it('край (последний вниз) — false, событие не отправлено', () => {
+  it('toIndex за пределом списка клэмпится к последней позиции — событие не отправлено, если итог не изменился', () => {
     const { result } = renderHook(() => useScreenBlockOrder('patterns'));
     let moved = true;
     act(() => {
-      moved = result.current.move('ysq_status', 'down');
+      // 'ysq_status' уже последний (индекс 1) — клэмп к 1 не меняет позицию.
+      moved = result.current.reorder('ysq_status', 999);
     });
     expect(moved).toBe(false);
     expect(mockApi.trackEvent).not.toHaveBeenCalled();
@@ -84,13 +97,13 @@ describe('useScreenBlockOrder', () => {
       useScreenBlockOrder('profile'),
     );
     act(() => {
-      result.current.move('heatmap', 'up');
+      result.current.reorder('heatmap', 0);
     });
     unmount();
     const { result: second } = renderHook(() => useScreenBlockOrder('profile'));
     expect(second.current.orderedIds).toEqual([
-      'journey',
       'heatmap',
+      'journey',
       'streak',
       'achievements',
       'insights',

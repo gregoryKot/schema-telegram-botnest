@@ -11,7 +11,7 @@ import { PLUS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
 import { useHiddenActions } from '../../utils/useHiddenActions';
 import {
   PLUS_ACTIONS_ORDER_KEY,
-  withMoveFlags,
+  withDragRange,
 } from '../../utils/quickActionOrder';
 import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
@@ -28,7 +28,7 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
   const groups = buildPlusActions(tr);
   const [hidden, handleToggle] = useHiddenActions(PLUS_ACTIONS_HIDDEN_KEY);
   const [showCustomize, setShowCustomize] = useState(false);
-  const { ordered, onMove } = useQuickActionOrder(
+  const { ordered, onReorder } = useQuickActionOrder(
     PLUS_ACTIONS_ORDER_KEY,
     groups.map((g) => g.actions),
   );
@@ -95,10 +95,10 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
         <QuickActionCustomizeSheet
           title="Что показывать в «плюсе»"
           surface="plus"
-          actions={orderedGroups.flatMap((g) => withMoveFlags(g.actions))}
+          actions={withDragRange(orderedGroups.map((g) => g.actions))}
           hidden={hidden}
           onToggle={handleToggle}
-          onMove={onMove}
+          onReorder={onReorder}
           onClose={() => setShowCustomize(false)}
         />
       )}
