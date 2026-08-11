@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../../api';
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
@@ -124,17 +124,17 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setTabLoading(true);
     onOpenClient?.(clientId);
     switchView('client');
-
-    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
-      api.getTherapyTasksForClient(clientId).catch(() => []),
-      api.getTherapistNotes(clientId).catch(() => []),
-      api.getConceptualization(clientId).catch(() => null),
-      api.getTherapyClientData(clientId).catch(() => null),
-      api.getClientSchemaNotes(clientId).catch(() => []),
-      api.getClientModeNotes(clientId).catch(() => []),
-      api.getTherapyClientHistory(clientId).catch(() => []),
-      api.getClientDiary(clientId).catch(() => []),
-    ]);
+    // Ловим каждый источник отдельно (тест «не роняя остальные»); фолбэк [] неотличим от «данных нет» — копим упавшие, шлём одним отчётом.
+    const failed: string[] = []; const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
+      api.getTherapyTasksForClient(clientId).catch(() => { failed.push('задачи'); return []; }),
+      api.getTherapistNotes(clientId).catch(() => { failed.push('заметки'); return []; }),
+      api.getConceptualization(clientId).catch(() => { failed.push('концептуализация'); return null; }),
+      api.getTherapyClientData(clientId).catch(() => { failed.push('данные клиента'); return null; }),
+      api.getClientSchemaNotes(clientId).catch(() => { failed.push('карточки схем'); return []; }),
+      api.getClientModeNotes(clientId).catch(() => { failed.push('карточки режимов'); return []; }),
+      api.getTherapyClientHistory(clientId).catch(() => { failed.push('история'); return []; }),
+      api.getClientDiary(clientId).catch(() => { failed.push('дневник'); return []; }),
+    ]); if (failed.length) reportClientError({ message: `client detail partial load fail: ${failed.join(', ')}`, section: 'therapist.clientDetail' });
 
     if (openClientIdRef.current !== clientId) return;
 
@@ -306,7 +306,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       await navigator.clipboard.writeText(text);
       setExportCopied(true);
       setTimeout(() => setExportCopied(false), 2500);
-    } catch { /* ignore */ }
+    } catch { reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }); }
   }
 
   return {

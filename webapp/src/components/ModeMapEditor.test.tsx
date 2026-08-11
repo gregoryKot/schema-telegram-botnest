@@ -6,7 +6,7 @@
 // узел → открылась форма редактора → изменения долетают до debounced
 // api.updateModeMap (read-after-write, CLAUDE.md).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { ModeMapEditor } from './ModeMapEditor';
 import type { ModeMapNode, ModeMapEdge } from '../api';
 import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
@@ -145,15 +145,20 @@ describe('ModeMapEditor — выбор узла открывает редакт�
 
 describe('ModeMapEditor — удаление узла снимает и его рёбра (read-after-write)', () => {
   it('«Удалить ноду» в редакторе убирает узел и его связи из сохранённой модели', async () => {
+    renderEditor(
+      [
+        mmNode('n1', 'trigger', 'Триггер'),
+        mmNode('n2', 'behavior', 'Поведение'),
+      ],
+      [mmEdge('e1', 'n1', 'n2')],
+    );
+    // ModeMapPalette фетчит режимы клиента/кастомные режимы в mount-эффекте
+    // (промисы, не таймеры) — даём им долетать на настоящих часах, прежде
+    // чем подменить время: иначе их setState гонится с планировщиком React
+    // под фейковым временем (флаки под нагрузкой полного прогона).
+    await act(async () => {});
     vi.useFakeTimers();
     try {
-      renderEditor(
-        [
-          mmNode('n1', 'trigger', 'Триггер'),
-          mmNode('n2', 'behavior', 'Поведение'),
-        ],
-        [mmEdge('e1', 'n1', 'n2')],
-      );
       fireEvent.click(
         screen.getByText('Триггер').closest('.react-flow__node')!,
       );
@@ -186,15 +191,17 @@ describe('ModeMapEditor — горячие клавиши', () => {
   });
 
   it('Backspace удаляет выбранный узел вместе с его рёбрами', async () => {
+    renderEditor(
+      [
+        mmNode('n1', 'trigger', 'Триггер'),
+        mmNode('n2', 'behavior', 'Поведение'),
+      ],
+      [mmEdge('e1', 'n1', 'n2')],
+    );
+    // См. комментарий у теста «Удалить ноду» выше — тот же mount-race.
+    await act(async () => {});
     vi.useFakeTimers();
     try {
-      renderEditor(
-        [
-          mmNode('n1', 'trigger', 'Триггер'),
-          mmNode('n2', 'behavior', 'Поведение'),
-        ],
-        [mmEdge('e1', 'n1', 'n2')],
-      );
       fireEvent.click(
         screen.getByText('Триггер').closest('.react-flow__node')!,
       );

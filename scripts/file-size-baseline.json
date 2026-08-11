@@ -981,7 +981,7 @@
   "webapp/src/components/useIsMobile.ts": 13,
   "webapp/src/components/useModeMapExport.ts": 51,
   "webapp/src/components/useModeMapHistory.ts": 49,
-  "webapp/src/components/WeeklyCardSheet.tsx": 240,
+  "webapp/src/components/WeeklyCardSheet.tsx": 234,
   "webapp/src/components/YSQTestSheet.tsx": 413,
   "webapp/src/haptic.ts": 2,
   "webapp/src/hooks/useAsyncData.ts": 66,

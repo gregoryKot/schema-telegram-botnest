@@ -3,6 +3,7 @@
 // уведомлений НИКОГДА не должны падать наружу (см. .catch-конвенцию) — сама
 // бронь уже создана/оплачена, потерять её из-за сбоя Telegram нельзя.
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
 
@@ -205,11 +206,20 @@ describe('BookingNotifyService — фолбэк Telegram → e-mail, ошибк�
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 
-  it('и Telegram, и e-mail упали — метод не бросает исключение наружу (эффект уведомления не должен ронять вызывающий код)', async () => {
+  it('и Telegram, и e-mail упали — метод не бросает исключение наружу, а сбой уходит в лог (иначе оба канала молчат без следа)', async () => {
     const { service, telegram, email } = makeService();
+    const smtpError = new Error('smtp down');
     telegram.notifyAdmin.mockResolvedValueOnce(false);
-    email.sendAdminNotification.mockRejectedValueOnce(new Error('smtp down'));
+    email.sendAdminNotification.mockRejectedValueOnce(smtpError);
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     await expect(service.alertAdmin('boom')).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Admin e-mail alert also failed',
+      smtpError,
+    );
+    errorSpy.mockRestore();
   });
 });
 

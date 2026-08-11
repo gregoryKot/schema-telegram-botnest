@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
 import { useNeedData } from '../needData';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
@@ -93,7 +93,7 @@ export function TodaySection({
         setManualSchemaIds(p.mySchemaIds);
         localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
       }
-    }).catch(() => {});
+    }).catch(() => reportClientError({ message: 'today profile background load failed', section: 'today' }));
 
     Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
       .then(([schema, mode, gratitude]) => {
@@ -108,10 +108,10 @@ export function TodaySection({
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
       })
-      .catch(() => {})
+      .catch(() => reportClientError({ message: 'today diaries background load failed', section: 'today' }))
       .finally(() => { if (!ignore) setDiariesLoaded(true); });
 
-    api.getTherapyRelation().then(r => { if (!ignore && r) setTherapyRelation(r); }).catch(() => {});
+    api.getTherapyRelation().then(r => { if (!ignore && r) setTherapyRelation(r); }).catch(() => reportClientError({ message: 'today therapy relation load failed', section: 'today' }));
 
     api.history(14).then(days => {
       if (ignore) return;
@@ -130,7 +130,7 @@ export function TodaySection({
         vals.push(avg);
       }
       setHistory14(vals);
-    }).catch(() => {});
+    }).catch(() => reportClientError({ message: 'today history background load failed', section: 'today' }));
 
     return () => { ignore = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами

@@ -23,9 +23,11 @@ vi.mock('../api', () => ({
     completeTask: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 const NEEDS = [
   { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привяз.' },
@@ -181,6 +183,24 @@ describe('TodaySection — ошибки API не роняют экран', () =>
     renderSection();
     await waitFor(() => expect(mockApi.history).toHaveBeenCalled());
     expect(screen.getByText('Индекс сегодня')).toBeTruthy();
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): фоновые загрузки экрана «Сегодня» раньше
+  // глотали отказ молча (.catch(() => {})) — экран выглядел рабочим, но
+  // отказ не был виден нигде. Теперь каждый фоновый источник шлёт
+  // reportClientError, не показывая пользователю ошибку (экран по-прежнему
+  // работает с фолбэками — см. тесты выше).
+  it('отказ любого фонового источника уходит в reportClientError, не показывая ошибку на экране', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('network down'));
+    mockApi.getTherapyRelation.mockRejectedValue(new Error('network down'));
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
+    mockApi.history.mockRejectedValue(new Error('network down'));
+    renderSection();
+    await waitFor(() => expect(mockReport).toHaveBeenCalled());
+    const sections = mockReport.mock.calls.map((c) => c[0].section);
+    expect(sections.every((s) => s === 'today')).toBe(true);
+    expect(mockReport.mock.calls.length).toBeGreaterThanOrEqual(4);
+    expect(screen.getByText('Потребности сегодня')).toBeTruthy();
   });
 });
 

@@ -213,7 +213,7 @@ export class TelegramQuizService implements OnModuleInit {
     if (!rawId) return 'ty';
     const settings = await this.botService
       .getUserSettings(BigInt(rawId))
-      .catch(() => null);
+      .catch((e) => (this.logger.warn('quiz getForm failed', e), null));
     return normalizeAddressForm(settings?.addressForm);
   }
 }

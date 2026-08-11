@@ -4,7 +4,7 @@ import {
   POPULAR_MODE_IDS,
 } from '../../../shared/src/mode/modePickerDesc';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { useNeedData, NEED_ORDER } from '../needData';
@@ -101,7 +101,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       }
       setProfileLoading(false);
     }).catch(() => setProfileLoading(false));
-    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => {});
+    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => reportClientError({ message: 'schemas mode-map count load failed', section: 'schemas' }));
   }, []);
 
   const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
@@ -112,7 +112,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   function saveSchemas(ids: string[]) {
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
     setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => {});
+    api.updateSettings({ mySchemaIds: ids }).catch(() => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
   }
 
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
@@ -465,7 +465,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {showModePicker && (
         <ModePickerSheet
           selected={myModeIds}
-          onSave={ids => { localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids)); setMyModeIds(ids); api.updateSettings({ myModeIds: ids }).catch(() => {}); }}
+          onSave={ids => { localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids)); setMyModeIds(ids); api.updateSettings({ myModeIds: ids }).catch(() => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' })); }}
           onClose={() => setShowModePicker(false)}
         />
       )}

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import {
   drawWeeklyCard,
   buildWeeklyShareText,
@@ -36,16 +36,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
     api
       .getStreak()
       .then((s) => setStreak(s.currentStreak))
-      .catch(() => {});
+      .catch(() => reportClientError({ message: 'weekly card streak load failed', section: 'weeklyCard' }));
   }, []);
 
   useEffect(() => {
     if (!canvasRef.current || history.length === 0) return;
     try {
       drawWeeklyCard(canvasRef.current, needs, history, streak);
-    } catch {
-      // Отрисовка карточки не должна ронять весь экран
-    }
+    } catch { reportClientError({ message: 'weekly card draw failed', section: 'weeklyCard' }); } // не роняем экран
   }, [needs, history, streak]);
 
   async function handleShare() {
@@ -67,9 +65,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
+      } catch { reportClientError({ message: 'weekly card clipboard write failed', section: 'weeklyCard' }); }
       setFallbackText(text);
     } finally {
       setSharing(false);
@@ -212,9 +208,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   await navigator.clipboard.writeText(fallbackText);
                   setFallbackCopied(true);
                   setTimeout(() => setFallbackCopied(false), 2000);
-                } catch {
-                  /* best-effort: ошибку намеренно игнорируем */
-                }
+                } catch { reportClientError({ message: 'weekly card fallback clipboard write failed', section: 'weeklyCard' }); }
               }}
               style={{
                 width: '100%',
