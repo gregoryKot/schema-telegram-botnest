@@ -2,9 +2,16 @@ import { Logger, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { Agent } from 'https';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { TELEGRAF_BOT } from './telegram.constants';
 
 const logger = new Logger('TelegramProviders');
+
+/**
+ * Адрес исходящего прокси для запросов в Telegram: `http://user:pass@host:port`.
+ * Не задан — идём напрямую.
+ */
+const PROXY_ENV = 'TELEGRAM_PROXY_URL';
 
 /**
  * Клиент бота ходит в Telegram только по IPv4 и переиспользует соединение.
@@ -17,7 +24,19 @@ const logger = new Logger('TelegramProviders');
  * рукопожатия: пост уходит по уже живому соединению.
  */
 export function telegramAgent(): Agent {
+  const proxy = process.env[PROXY_ENV]?.trim();
+  // Прокси — крайняя мера, когда маршрут до Telegram с хостинга не работает
+  // совсем. Именно прокси, а не ретранслятор как у Threads: ретранслятору
+  // пришлось бы отдать BOT_TOKEN, то есть полный доступ к боту и переписке
+  // пользователей. Прокси видит только шифрованный трафик — токен остаётся
+  // внутри TLS и наружу не выходит.
+  if (proxy) return new HttpsProxyAgent(proxy, { keepAlive: true });
   return new Agent({ keepAlive: true, family: 4 });
+}
+
+/** Идут ли запросы через прокси — нужно для отчёта о сбое. */
+export function telegramViaProxy(): boolean {
+  return Boolean(process.env[PROXY_ENV]?.trim());
 }
 
 export const TELEGRAM_PROVIDERS: Provider[] = [

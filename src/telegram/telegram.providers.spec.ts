@@ -16,7 +16,11 @@ jest.mock('telegraf', () => ({
   })),
 }));
 
-import { TELEGRAM_PROVIDERS, telegramAgent } from './telegram.providers';
+import {
+  TELEGRAM_PROVIDERS,
+  telegramAgent,
+  telegramViaProxy,
+} from './telegram.providers';
 import { TELEGRAF_BOT } from './telegram.constants';
 
 function makeConfig(token: string | undefined) {
@@ -77,6 +81,26 @@ describe('TELEGRAM_PROVIDERS[TELEGRAF_BOT] — useFactory', () => {
   });
 
   describe('telegramAgent', () => {
+    const OLD = process.env.TELEGRAM_PROXY_URL;
+    afterEach(() => {
+      if (OLD === undefined) delete process.env.TELEGRAM_PROXY_URL;
+      else process.env.TELEGRAM_PROXY_URL = OLD;
+    });
+
+    it('с прокси запросы уходят через него, а не напрямую', () => {
+      // Крайняя мера, когда маршрут до Telegram с хостинга не работает совсем.
+      process.env.TELEGRAM_PROXY_URL = 'http://user:pass@proxy.example:3128';
+      const agent = telegramAgent() as unknown as { proxy: URL };
+      expect(agent.proxy.host).toBe('proxy.example:3128');
+      expect(telegramViaProxy()).toBe(true);
+    });
+
+    it('без прокси идём напрямую', () => {
+      delete process.env.TELEGRAM_PROXY_URL;
+      expect(telegramViaProxy()).toBe(false);
+      expect(telegramAgent().options.family).toBe(4);
+    });
+
     // Инцидент 2026-08-11: пост в канал падал с ETIMEDOUT пятнадцать попыток
     // подряд, а бот при этом отвечал на команды — работало уже открытое
     // соединение опроса, а каждое новое не устанавливалось. Так выглядит битый
