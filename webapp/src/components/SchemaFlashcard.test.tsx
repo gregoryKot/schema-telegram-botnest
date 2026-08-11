@@ -3,7 +3,7 @@
 // "reflection" на шаге ответа Здорового Взрослого — второй свободнотекстовый
 // стейт (action) тестируется в BeliefCheckEx/FlashcardEx на том же паттерне.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaFlashcard } from './SchemaFlashcard';
 
@@ -123,5 +123,126 @@ describe('SchemaFlashcard — кризисная детекция (reflection)',
     const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
     fireEvent.change(textarea, { target: { value: 'Стало немного легче' } });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('кризисная фраза в шаге действия тоже показывает CrisisCard', () => {
+    renderToResponseStep();
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    const textarea = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...');
+    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
+    expect(screen.getByRole('status')).toBeTruthy();
+  });
+});
+
+describe('SchemaFlashcard — история карточек (read-after-write)', () => {
+  // Реальная запись приходит с бэка (api.getFlashcards) — не только только что
+  // сохранённая в localStorage. Тест бьёт по связке «сохранил → нашёл в истории».
+  const ROW = {
+    id: 42,
+    createdAt: '2026-07-20T10:00:00Z',
+    modeId: 'vulnerable_child',
+    reflection: 'Мне грустно',
+    needId: 'attachment',
+    action: 'Позвонить другу',
+  };
+
+  it('карточки с бэка видны в истории — заголовок «История карточек (N)» на экране заземления', async () => {
+    mockApi.getFlashcards.mockResolvedValue([ROW]);
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('История карточек (1)')).toBeTruthy();
+  });
+
+  it('открытие истории и клика по карточке показывает её детали, «Назад» возвращает в историю', async () => {
+    mockApi.getFlashcards.mockResolvedValue([ROW]);
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText('История карточек (1)'));
+    expect(screen.getByText('История карточек')).toBeTruthy();
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок · Привязанность'));
+    expect(screen.getByText('Мне грустно')).toBeTruthy();
+    expect(screen.getByText('Позвонить другу')).toBeTruthy();
+    fireEvent.click(screen.getByText('К истории'));
+    expect(screen.getByText('История карточек')).toBeTruthy();
+  });
+
+  it('«История» доступна и на шаге 1 (выбор режима), когда карточки уже есть', async () => {
+    mockApi.getFlashcards.mockResolvedValue([ROW]);
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText('Стало чуть лучше – разобраться →'));
+    fireEvent.click(screen.getByText('История'));
+    expect(screen.getByText('История карточек')).toBeTruthy();
+  });
+
+  it('пустая история (без карточек) не показывает кнопку истории на экране заземления', async () => {
+    mockApi.getFlashcards.mockResolvedValue([]);
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await act(async () => {});
+    expect(screen.queryByText(/История карточек/)).toBeNull();
+  });
+});
+
+describe('SchemaFlashcard — «Ещё одну» сбрасывает мастер', () => {
+  it('после сохранения «Ещё одну» возвращает на шаг 1, поля очищены', () => {
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Стало чуть лучше – разобраться →'));
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(
+      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'),
+      { target: { value: 'выйти подышать' } },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    expect(screen.getByText('Сохранено')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Ещё одну'));
+    // Назад на самый первый экран (заземление), а не сразу на выбор режима.
+    expect(screen.getByText('Стало чуть лучше – разобраться →')).toBeTruthy();
+  });
+});
+
+describe('SchemaFlashcard — «Открыть трекер →» на экране «Сохранено»', () => {
+  it('закрывает лист и вызывает onOpenTracker', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    const onOpenTracker = vi.fn();
+    render(
+      <MemoryRouter>
+        <SchemaFlashcard onClose={vi.fn()} onOpenTracker={onOpenTracker} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Стало чуть лучше – разобраться →'));
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(
+      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'),
+      { target: { value: 'выйти подышать' } },
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+
+    fireEvent.click(screen.getByText('Открыть трекер →'));
+    vi.advanceTimersByTime(100);
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });

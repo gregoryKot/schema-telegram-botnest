@@ -41,7 +41,7 @@ const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaim
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
-import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '../api';
+import type { PracticePlan, StreakData, TherapyClientSummary } from '../api';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
@@ -180,9 +180,6 @@ export function AppShell() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
-  const [_helpPracticeCount, setHelpPracticeCount] = useState<number | null>(null);
-  const [_helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
-  const [_helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -267,10 +264,6 @@ export function AppShell() {
     api.getDisclaimer().then(d => {
       if (!d.accepted) api.acceptDisclaimer().catch(() => {});
     }).catch(() => {});
-    const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
-    Promise.all(NEED_IDS.map(id => api.getPractices(id)))
-      .then(r => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0))).catch(() => setHelpPracticeCount(0));
-    api.getPlanHistory(30).then(p => setHelpPlanCount(p.length)).catch(() => setHelpPlanCount(0));
     Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
       .then(([n, r, yR]) => {
         setNeeds(n);
@@ -330,7 +323,6 @@ export function AppShell() {
         }).catch(() => {});
       }
     }).catch(() => {});
-    api.getTasks().then(setHelpTasks).catch(() => setHelpTasks([]));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
@@ -633,7 +625,7 @@ export function AppShell() {
                   onOpenDiaries={() => setShowDiaries(true)}
                   onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setShowSchemaInfo(true); }}
                   refreshKey={helpTasksKey}
-                  onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
+                  onTasksChanged={() => setHelpTasksKey(k => k + 1)}
                 />
               </ErrorBoundary>
             )}

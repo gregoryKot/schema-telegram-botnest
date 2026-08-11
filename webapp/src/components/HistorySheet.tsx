@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import type { PracticePlan, StreakData } from '../api';
 import { api } from '../api';
 import { COLORS, type Need, type DayHistory } from '../types';
-import { Loader } from './Loader';
+import { HistorySheetSkeleton } from './HistorySheetSkeleton';
 import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
@@ -75,8 +75,8 @@ export function HistorySheet({
         </div>
 
         {historyLoading
-          ? <Loader minHeight="60vh" />
-          : <Suspense fallback={<Loader minHeight="60vh" />}>
+          ? <HistorySheetSkeleton />
+          : <Suspense fallback={<HistorySheetSkeleton />}>
               <HistoryView
                 needs={needs}
                 history={history}

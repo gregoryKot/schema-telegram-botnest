@@ -43,6 +43,11 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     d?.healthyResponse ?? '',
   );
   const [saving, setSaving] = useState(false);
+  // Отказ раньше сообщался ТОЛЬКО вибрацией haptic.error() — на сайте в
+  // браузере (в отличие от Telegram/установленного PWA) вибрации нет вовсе,
+  // и человек считал, что запись сохранена, хотя черновик просто завис
+  // (тот же баг, что был в GratitudeEntrySheet, см. её комментарий).
+  const [saveError, setSaveError] = useState(false);
   const [done, setDone] = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);
 
@@ -106,6 +111,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
@@ -121,24 +127,12 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
-      api.trackEvent(
-        MODE_ENTRY_SAVED_EVENT,
-        modeEntrySavedMeta(
-          [
-            situation,
-            thoughts,
-            feelings,
-            bodyFeelings,
-            actions,
-            actualNeed,
-            childhoodMemories,
-          ],
-          healthyResponse,
-        ),
-      );
+      const fields = [situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories];
+      api.trackEvent(MODE_ENTRY_SAVED_EVENT, modeEntrySavedMeta(fields, healthyResponse));
       setDone(true); // итог вместо молчаливого закрытия (не «всё исчезло»)
     } catch {
       haptic.error();
+      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
     }
@@ -195,6 +189,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       healthyResponse={healthyResponse}
       setHealthyResponse={setHealthyResponse}
       saving={saving}
+      saveError={saveError}
       canSave={canSave}
       onSave={handleSave}
       onBack={goBack}

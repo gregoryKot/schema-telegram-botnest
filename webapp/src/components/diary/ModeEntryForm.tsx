@@ -11,10 +11,9 @@ import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints'
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 
 // Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран
-// (правило онбординга «одно главное действие на экран», низкий порог для СДВГ).
-// Обязательна только ситуация; остальное можно пропустить или сохранить рано.
-// Шаги/тексты/примеры — из общего конфига shared/mode/modeDiarySteps (правило №3).
-// Состояние живёт в родителе (ModeEntrySheet): автосейв черновика, сохранение.
+// (правило онбординга «одно действие на экран», низкий порог для СДВГ).
+// Обязательна только ситуация; шаги/тексты — из shared/mode/modeDiarySteps
+// (правило №3). Состояние живёт в родителе (ModeEntrySheet): автосейв, сохранение.
 
 export interface ModeFormFields {
   situation: string; thoughts: string; feelings: string; bodyFeelings: string;
@@ -30,15 +29,14 @@ interface Props {
   set: (key: FieldKey, value: string) => void;
   healthyResponse: string;
   setHealthyResponse: (value: string) => void;
-  saving: boolean;
-  canSave: boolean;
+  saving: boolean; saveError?: boolean; canSave: boolean;
   onSave: () => void;
   onBack: () => void;
   onChangeMode: () => void;
   onSwitchMode: (id: string) => void;
 }
 
-export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, canSave, onSave, onBack, onChangeMode, onSwitchMode }: Props) {
+export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, saveError, canSave, onSave, onBack, onChangeMode, onSwitchMode }: Props) {
   const tr = useTr();
   const steps = buildModeDiarySteps(tr);
   const modeColor = selectedMode?.color ?? 'var(--c-slate)';
@@ -109,9 +107,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <div className="flash-eyebrow" style={{ color: modeColor }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: 'currentColor' }} />
           Шаг {stepIdx + 1} из {totalSteps}
-          {curRequired
-            ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span>
-            : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
+          {curRequired ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span> : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
           <span className="flash-counter">{filledCount} / {totalSteps} заполнено</span>
         </div>
         {isHealthyStep ? (
@@ -161,6 +157,9 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         curRequired={curRequired}
         onNext={goNext}
       />
+      {saveError && (
+        <div role="status" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--accent-red)' }}>{tr('Не удалось сохранить. Черновик остался — попробуй ещё раз.', 'Не удалось сохранить. Черновик остался — попробуйте ещё раз.')}</div>
+      )}
     </ExScreen>
   );
 }

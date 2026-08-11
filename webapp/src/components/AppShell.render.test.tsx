@@ -59,6 +59,17 @@ describe('AppShell — ошибка загрузки видна пользова
     // пустой/сломанный контент вместо явного сообщения об ошибке.
     expect(screen.queryByTestId('today-section')).toBeNull();
   });
+
+  it('«Повторить» на экране ошибки перезагружает страницу', async () => {
+    mockApi.needs.mockRejectedValueOnce(new Error('network down'));
+    const reload = vi.fn();
+    vi.stubGlobal('location', { ...window.location, reload });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByText('Повторить')).toBeTruthy());
+    fireEvent.click(screen.getByText('Повторить'));
+    expect(reload).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('AppShell — роутинг: URL решает, какая секция показана', () => {

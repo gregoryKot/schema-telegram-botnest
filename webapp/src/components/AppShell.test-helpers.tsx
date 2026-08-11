@@ -1,10 +1,7 @@
-// Общий сетап для тестов AppShell.tsx. Реальные секции/оверлеи слишком тяжелы
-// (свои API-вызовы, xyflow, canvas) и уже покрыты собственными тестами —
-// здесь мокаем каждую (в т.ч. лениво загруженную) заглушкой-кнопочницей: тест
-// видит именно логику самого AppShell (роутинг, data-fetch эффекты, состояние
-// оверлеев/селебрейшена), а не чужую. Типы пропов берём через `ComponentProps`
-// с type-only импортом реального компонента — так подпись не расходится с
-// продакшен-кодом, а сам импорт не тянет модуль в рантайме (не ломает vi.mock).
+// Общий сетап для тестов AppShell.tsx. Реальные секции/оверлеи (свои API-вызовы,
+// xyflow, canvas) уже покрыты собственными тестами — мокаем каждую заглушкой-
+// кнопочницей, чтобы тест видел логику самого AppShell, а не чужую. Типы
+// пропов берём через `ComponentProps` (type-only, не тянет модуль в рантайме).
 import { vi } from 'vitest';
 import type { ComponentProps } from 'react';
 import { render } from '@testing-library/react';
@@ -30,10 +27,13 @@ import type { TaskCreateSheet as TaskCreateSheetT } from './TaskCreateSheet';
 import type { CommandPalette as CommandPaletteT } from './CommandPalette';
 import type { ChildhoodWheelEx as ChildhoodWheelExT } from './exercises/ChildhoodWheelEx';
 
-/** Заглушка любого мокнутого экрана: рендерит по кнопке на каждый колбэк из `map`. */
-function Btns({ testid, map }: { testid: string; map: Record<string, () => void> }) {
+/** Заглушка мокнутого экрана: кнопка на каждый колбэк из `map`, плюс
+ *  опциональный JSON-дамп `state` — read-after-write/парное состояние,
+ *  которое тест обязан сверить целиком, а не только «колбэк вызван». */
+function Btns({ testid, map, state }: { testid: string; map: Record<string, () => void>; state?: unknown }) {
   return (
     <div data-testid={testid}>
+      {state !== undefined && <div data-testid={`${testid}-state`}>{JSON.stringify(state)}</div>}
       {Object.entries(map).map(([k, fn]) => (
         <button key={k} data-testid={`${testid}-${k}`} onClick={fn}>{k}</button>
       ))}
@@ -78,12 +78,13 @@ vi.mock('../sections/ProfileSection', () => ({
 }));
 vi.mock('../sections/PracticeSection', () => ({
   PracticeSection: (p: ComponentProps<typeof PracticeSectionT>) => (
-    <Btns testid="practice-section" map={{
+    <Btns testid="practice-section" state={p.refreshKey} map={{
       childhood: () => p.onOpenChildhoodWheel(),
       practices: () => p.onOpenPractices(),
       plans: () => p.onOpenPlans(),
       tracker: () => p.onOpenTracker(),
       diaries: () => p.onOpenDiaries(),
+      schema: () => p.onOpenSchema?.({ startTest: true }),
       tasksChanged: () => p.onTasksChanged?.(),
     }} />
   ),
@@ -96,8 +97,9 @@ vi.mock('../sections/TherapistTodaySection', () => ({
 
 vi.mock('./TrackerOverlay', () => ({
   TrackerOverlay: (p: ComponentProps<typeof TrackerOverlayT>) => (
-    <Btns testid="tracker-overlay" map={{
+    <Btns testid="tracker-overlay" state={{ attachmentRating: p.ratings.attachment ?? null, attachmentSaved: p.saved.attachment ?? null }} map={{
       close: () => p.onClose(),
+      change: () => p.onChange('attachment', 5),
       saveWithStreak: () => p.onSaved('attachment', { currentStreak: 3, longestStreak: 3, totalDays: 6, todayDone: true, weekDots: [] }),
       saveNoStreak: () => p.onSaved('attachment', { currentStreak: 0, longestStreak: 2, totalDays: 1, todayDone: true, weekDots: [] }),
       note: () => p.onOpenNote?.(),
@@ -108,7 +110,7 @@ vi.mock('./TrackerOverlay', () => ({
 }));
 vi.mock('./HistorySheet', () => ({
   HistorySheet: (p: ComponentProps<typeof HistorySheetT>) => (
-    <Btns testid="history-sheet" map={{
+    <Btns testid="history-sheet" state={{ historyLoading: p.historyLoading, historyLen: p.history.length, pendingPlanIds: p.pendingPlans.map(pl => pl.id) }} map={{
       close: () => p.onClose(),
       tracker: () => p.onOpenTracker(),
       schemas: () => p.onOpenSchemas(),
@@ -142,8 +144,11 @@ vi.mock('./PlansScreen', () => ({
   ),
 }));
 vi.mock('./SchemaInfoSheet', () => ({
+  // state — три пропа, которые AppShell выставляет тремя setState (правило №4).
   SchemaInfoSheet: (p: ComponentProps<typeof SchemaInfoSheetT>) => (
-    <Btns testid="schema-info-sheet" map={{ close: () => p.onClose() }} />
+    <Btns testid="schema-info-sheet" state={{ autoStartTest: p.autoStartTest ?? false, initialTab: p.initialTab, highlightSchema: p.highlightSchema ?? null }} map={{
+      close: () => p.onClose(),
+    }} />
   ),
 }));
 vi.mock('./exercises/ChildhoodWheelEx', () => ({
@@ -152,8 +157,9 @@ vi.mock('./exercises/ChildhoodWheelEx', () => ({
   ),
 }));
 vi.mock('./TherapistClientSheet', () => ({
+  // state (view/openClientId) — routing-состояние кабинета, а не только «URL куда-то поменялся».
   TherapistClientSheet: (p: ComponentProps<typeof TherapistClientSheetT>) => (
-    <Btns testid="therapist-client-sheet" map={{
+    <Btns testid="therapist-client-sheet" state={{ view: p.view, openClientId: p.openClientId }} map={{
       close: () => p.onClose(),
       toList: () => p.onViewChange('list'),
       openClient: () => p.onOpenClient?.(42),
@@ -194,21 +200,16 @@ vi.mock('./CommandPalette', () => ({
 }));
 vi.mock('./DonateNudge', () => ({ DonateNudge: () => null }));
 
-// Дефолтные резолвы api — покрывают ВСЕ вызовы из начального эффекта AppShell,
-// чтобы неотмоканный тест не падал на `.then` от undefined. Переопределяется
-// через `mockResolvedValueOnce` в конкретных тестах. ВАЖНО: вызов vi.mock
-// обязан быть на верхнем уровне модуля (не в функции) — иначе не попадёт под
-// hoisting и сработает уже ПОСЛЕ того, как статический `import { AppShell }`
-// выше в этом файле успеет подтянуть настоящий '../api' (баг, пойманный при
-// разработке этого хелпера: обёртка в функцию регистрировала мок слишком поздно).
+// Дефолтные резолвы api — покрывают все вызовы начального эффекта AppShell;
+// переопределяются через mockResolvedValueOnce в конкретных тестах. vi.mock
+// обязан быть на верхнем уровне (не в функции) — иначе попадёт под hoisting
+// позже статического `import { AppShell }` и подтянется настоящий '../api'.
 vi.mock('../api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     recordActivity: vi.fn().mockResolvedValue(undefined),
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
-    getPractices: vi.fn().mockResolvedValue([]),
-    getPlanHistory: vi.fn().mockResolvedValue([]),
     needs: vi.fn().mockResolvedValue([]),
     ratings: vi.fn().mockResolvedValue({}),
     getPendingPlans: vi.fn().mockResolvedValue([]),
@@ -218,7 +219,6 @@ vi.mock('../api', () => ({
     getProfile: vi.fn().mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] }),
     getTherapyClients: vi.fn().mockResolvedValue([]),
     getTherapyRelation: vi.fn().mockResolvedValue(null),
-    getTasks: vi.fn().mockResolvedValue([]),
     setTherapistView: vi.fn().mockResolvedValue({ ok: true }),
     resignTherapist: vi.fn().mockResolvedValue(undefined),
     history: vi.fn().mockResolvedValue([]),
@@ -226,9 +226,8 @@ vi.mock('../api', () => ({
   }, reportClientError: vi.fn(),
 }));
 
-/** Рендерит AppShell в маршрутах, повторяющих реальную схему из App.tsx —
- *  useParams(':clientId') читает параметр, только когда путь реально совпал
- *  с описанным Route (иначе всегда {}), поэтому '/cabinet/:clientId' обязателен. */
+/** Маршруты повторяют схему App.tsx — useParams(':clientId') читает параметр
+ *  только когда путь совпал с описанным Route, поэтому он обязателен. */
 export function renderAppShell(initialPath = '/today') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>

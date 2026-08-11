@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiarySection } from './DiarySection';
+import { saveDraft, clearDraft } from '../utils/drafts';
 
 // SchemaEntrySheet/ModeEntrySheet/GratitudeEntrySheet используют
 // useHistorySheet (нужен Router) — оборачиваем все рендеры.
@@ -17,6 +18,35 @@ function renderSection() {
     </MemoryRouter>,
   );
 }
+
+// Листы создания записи — тяжёлые формы (не в скоупе этого файла).
+// Мокаем кнопочницей, чтобы проверить только то, что решает сам
+// DiarySection: onSave добавляет запись в список и закрывает лист.
+vi.mock('../components/diary/SchemaEntrySheet', () => ({
+  SchemaEntrySheet: (p: { onClose: () => void; onSave: (d: { trigger: string; emotions: string[]; schemaIds: string[] }) => Promise<void> }) => (
+    <div data-testid="schema-entry-sheet">
+      <button onClick={() => p.onSave({ trigger: 'Новый триггер', emotions: [], schemaIds: [] })}>Сохранить схему</button>
+      <button onClick={p.onClose}>Закрыть лист схемы</button>
+    </div>
+  ),
+}));
+vi.mock('../components/diary/ModeEntrySheet', () => ({
+  ModeEntrySheet: (p: { onClose: () => void; onSave: (d: { situation: string; modeId: string }) => Promise<void> }) => (
+    <div data-testid="mode-entry-sheet">
+      <button onClick={() => p.onSave({ situation: 'Новая ситуация', modeId: 'critic' })}>Сохранить режим</button>
+      <button onClick={p.onClose}>Закрыть лист режима</button>
+    </div>
+  ),
+}));
+vi.mock('../components/diary/GratitudeEntrySheet', () => ({
+  GratitudeEntrySheet: (p: { onClose: () => void; date: string; existingItems?: string[]; onSave: (date: string, items: string[]) => Promise<void> }) => (
+    <div data-testid="gratitude-entry-sheet">
+      <div data-testid="gratitude-existing">{JSON.stringify(p.existingItems ?? null)}</div>
+      <button onClick={() => p.onSave(p.date, ['Новый пункт'])}>Сохранить благодарность</button>
+      <button onClick={p.onClose}>Закрыть лист благодарности</button>
+    </div>
+  ),
+}));
 
 vi.mock('../api', () => ({
   api: {
@@ -161,9 +191,7 @@ describe('DiarySection — новая запись', () => {
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
     fireEvent.click(screen.getByText('+ Новая запись'));
-    // Собственный eyebrow SchemaEntrySheet ("· новая запись") отличает его от
-    // одноимённой карточки быстрого добавления на хабе.
-    await screen.findByText('Дневник схем · новая запись');
+    await screen.findByTestId('schema-entry-sheet');
   });
 
   it('карточка "Три вещи" открывает лист благодарности', async () => {
@@ -171,7 +199,130 @@ describe('DiarySection — новая запись', () => {
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
     fireEvent.click(screen.getByText('Три вещи'));
-    await screen.findByText(/за которые сегодня/);
+    await screen.findByTestId('gratitude-entry-sheet');
+  });
+
+  it('сохранение записи схемы добавляет её в список и закрывает лист (read-after-write)', async () => {
+    mockApi.createSchemaDiary.mockResolvedValue(schemaEntry({ id: 99, trigger: 'Новый триггер' }));
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(await screen.findByText('Сохранить схему'));
+
+    await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
+    await screen.findByText('Новый триггер');
+  });
+
+  it('карточка "Записать режим" открывает лист режима, сохранение добавляет запись', async () => {
+    mockApi.createModeDiary.mockResolvedValue(modeEntry({ id: 98, situation: 'Новая ситуация' }));
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Записать режим'));
+    await screen.findByTestId('mode-entry-sheet');
+    fireEvent.click(screen.getByText('Сохранить режим'));
+
+    await waitFor(() => expect(screen.queryByTestId('mode-entry-sheet')).toBeNull());
+    await screen.findByText('Новая ситуация');
+  });
+
+  it('сохранение благодарности добавляет её в архив, existingItems пусты на чистый день', async () => {
+    mockApi.createGratitudeDiary.mockResolvedValue(gratitudeEntry({ id: 97, items: ['Новый пункт'] }));
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Три вещи'));
+    expect((await screen.findByTestId('gratitude-existing')).textContent).toBe('null');
+    fireEvent.click(screen.getByText('Сохранить благодарность'));
+
+    await waitFor(() => expect(screen.queryByTestId('gratitude-entry-sheet')).toBeNull());
+    await screen.findByText('Новый пункт');
+  });
+
+  it('уже есть запись благодарности за сегодня — лист открывается с её пунктами (existingItems)', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ date: today, items: ['Уже записано'] })]);
+    renderSection();
+    await screen.findByText('Уже записано');
+
+    fireEvent.click(screen.getByText('Три вещи'));
+    expect((await screen.findByTestId('gratitude-existing')).textContent).toBe(JSON.stringify(['Уже записано']));
+  });
+
+  it('закрытие листа без сохранения возвращает на хаб (архив не меняется)', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(await screen.findByText('Закрыть лист схемы'));
+
+    await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
+    expect(mockApi.createSchemaDiary).not.toHaveBeenCalled();
+  });
+});
+
+describe('DiarySection — профиль недоступен при загрузке (не роняет экран)', () => {
+  it('ошибка getProfile — записи схем всё равно загружаются', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('network down'));
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Видно несмотря на сбой профиля' })]);
+    renderSection();
+    await screen.findByText('Видно несмотря на сбой профиля');
+  });
+});
+
+describe('DiarySection — удаление записей режима и благодарности', () => {
+  it('удаление записи режима убирает её из списка', async () => {
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockResolvedValue(undefined);
+    renderSection();
+
+    const entry = await screen.findByText('Критика на работе');
+    fireEvent.click(entry);
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    await waitFor(() => expect(mockApi.deleteModeDiary).toHaveBeenCalledWith(55));
+    await waitFor(() => expect(screen.queryByText('Критика на работе')).toBeNull());
+  });
+
+  it('удаление записи благодарности убирает её из списка', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ id: 33, items: ['Удаляемый пункт'] })]);
+    mockApi.deleteGratitudeDiary.mockResolvedValue(undefined);
+    renderSection();
+
+    const entry = await screen.findByText('Удаляемый пункт');
+    fireEvent.click(entry);
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    await waitFor(() => expect(mockApi.deleteGratitudeDiary).toHaveBeenCalledWith(33));
+    await waitFor(() => expect(screen.queryByText('Удаляемый пункт')).toBeNull());
+  });
+});
+
+describe('DiarySection — черновики: продолжить/удалить', () => {
+  it('черновик схемы: «Продолжить →» открывает лист схемы', async () => {
+    saveDraft('schema', { trigger: 'Черновик-триггер' });
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+
+    await screen.findByText('Продолжить →');
+    fireEvent.click(screen.getByText('Продолжить →'));
+    await screen.findByTestId('schema-entry-sheet');
+    clearDraft('schema');
+  });
+
+  it('черновик схемы: удаление (два клика — × затем подтверждение) убирает баннер', async () => {
+    saveDraft('schema', { trigger: 'Черновик-триггер' });
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    await screen.findByText('Продолжить →');
+
+    fireEvent.click(screen.getByLabelText('Удалить черновик'));
+    fireEvent.click(screen.getByText('удалить'));
+    await waitFor(() => expect(screen.queryByText('Продолжить →')).toBeNull());
+    clearDraft('schema');
   });
 });
 

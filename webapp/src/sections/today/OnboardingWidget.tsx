@@ -110,10 +110,10 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
     setSelectedId(null);
   }
 
-  // Pending steps in order (not done, not postponed)
+  // Pending steps in order (not done, not postponed). Все отложены → пусты — но это не «нечего показывать».
   const pendingSteps = STEPS.filter(s => !s.isDone(profile, ctx) && !skipped.includes(s.id));
-  const visibleStep  = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep;
-  if (!visibleStep) return null;
+  const visibleStep = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep ?? null;
+  if (!visibleStep && skipped.length === 0) return null;
 
   return (
     <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
@@ -126,7 +126,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
       {STEPS.map(s => {
         const isDone    = s.isDone(profile, ctx);
         const isSkipped = skipped.includes(s.id) && !isDone;
-        const isCurrent = s.id === visibleStep.id;
+        const isCurrent = s.id === visibleStep?.id;
         return (
           <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
                {...pressable(() => setSelectedId(s.id))}>
@@ -152,7 +152,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleSkip(s); }}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSkip(s); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleSkip(s); } }}
                 >
                   отложить
                 </span>
@@ -161,7 +161,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleAction(s); }}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(s); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleAction(s); } }}
                 >
                   начать →
                 </span>
