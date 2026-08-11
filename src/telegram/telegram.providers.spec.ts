@@ -16,7 +16,7 @@ jest.mock('telegraf', () => ({
   })),
 }));
 
-import { TELEGRAM_PROVIDERS } from './telegram.providers';
+import { TELEGRAM_PROVIDERS, telegramAgent } from './telegram.providers';
 import { TELEGRAF_BOT } from './telegram.constants';
 
 function makeConfig(token: string | undefined) {
@@ -74,5 +74,19 @@ describe('TELEGRAM_PROVIDERS[TELEGRAF_BOT] — useFactory', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('getMe failed at startup'),
     );
+  });
+
+  describe('telegramAgent', () => {
+    // Инцидент 2026-08-11: пост в канал падал с ETIMEDOUT пятнадцать попыток
+    // подряд, а бот при этом отвечал на команды — работало уже открытое
+    // соединение опроса, а каждое новое не устанавливалось. Так выглядит битый
+    // маршрут IPv6.
+    it('ходит только по IPv4 — без развилки на битый IPv6', () => {
+      expect(telegramAgent().options.family).toBe(4);
+    });
+
+    it('держит соединение живым — пост не платит за новое рукопожатие', () => {
+      expect(telegramAgent().options.keepAlive).toBe(true);
+    });
   });
 });
