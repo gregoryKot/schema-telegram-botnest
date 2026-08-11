@@ -3,53 +3,8 @@ import { api } from '../api';
 import { SectionLabel } from './SectionLabel';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
-
-const buildQuestions = (tr: (ty: string, vy: string) => string) => [
-  'Что было самым трудным на этой неделе?',
-  tr(
-    'Что дало тебе энергию на этой неделе?',
-    'Что дало вам энергию на этой неделе?',
-  ),
-  tr(
-    'Было ли что-то, что получилось именно так, как ты хочешь — не потому что нужно или ждут?',
-    'Было ли что-то, что получилось именно так, как вы хотите — не потому что нужно или ждут?',
-  ),
-  tr('Что хотелось бы сделать иначе?', 'Что вы хотели бы сделать иначе?'),
-  'Что хочется взять с собой в следующую неделю?',
-  tr(
-    'В чём была твоя забота о себе на этой неделе?',
-    'В чём была ваша забота о себе на этой неделе?',
-  ),
-  tr('Что нового ты замечаешь о себе?', 'Что нового вы замечаете о себе?'),
-  'Какая потребность требовала больше всего внимания?',
-];
-
-function getWeekKey() {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(
-    ((now.getTime() - startOfYear.getTime()) / 86400000 +
-      startOfYear.getDay() +
-      1) /
-      7,
-  );
-  return `weekly_q_${now.getFullYear()}_${week}`;
-}
-
-function getQuestion(tr: (ty: string, vy: string) => string): string {
-  const now = new Date();
-  const week = Math.ceil(
-    (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 604800000,
-  );
-  const questions = buildQuestions(tr);
-  return questions[week % questions.length];
-}
-
-function shouldShow(): boolean {
-  if (localStorage.getItem(getWeekKey())) return false;
-  const dow = new Date().getDay(); // 1 = Monday
-  return dow === 1;
-}
+import { SaveErrorNote } from './SaveErrorNote';
+import { getWeekKey, getQuestion, shouldShow } from './weeklyQuestion.helpers';
 
 interface Props {
   date: string; // today's date YYYY-MM-DD
@@ -60,16 +15,21 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
   const tr = useTr();
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const question = getQuestion(tr);
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true);
-    localStorage.setItem(getWeekKey(), '1');
-    api
-      .saveNote(date, `[Вопрос недели] ${question}\n\n${text.trim()}`)
-      .catch(() => {});
-    setSaving(false);
-    onDismiss();
+    setSaveError(false);
+    try {
+      await api.saveNote(date, `[Вопрос недели] ${question}\n\n${text.trim()}`);
+      localStorage.setItem(getWeekKey(), '1');
+      onDismiss();
+    } catch (e) {
+      console.error('saveNote (weekly) failed', e);
+      setSaveError(true);
+      setSaving(false);
+    }
   }
 
   function handleSkip() {
@@ -125,6 +85,12 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
         }}
       />
       <CrisisGate texts={[text]} surface="weekly" />
+      {saveError && (
+        <SaveErrorNote
+          ty="Не сохранилось, попробуй ещё раз"
+          vy="Не сохранилось, попробуйте ещё раз"
+        />
+      )}
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={handleSkip}

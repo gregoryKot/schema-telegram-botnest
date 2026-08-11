@@ -19,7 +19,7 @@
 // такого запроса в БД была бы вектором на её раздувание.
 import { Logger } from '@nestjs/common';
 import type { Request } from 'express';
-import { AlertThrottle } from './initdata-alert';
+import { AlertThrottle } from '../utils/alert-throttle';
 import { SecurityLogService } from '../auth/security-log.service';
 
 export type EmptySignatureHost = 'telegram' | 'max';

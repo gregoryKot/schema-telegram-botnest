@@ -16,9 +16,11 @@ vi.mock('../../api', () => ({
     saveConceptualization: vi.fn(), renameClient: vi.fn(),
     updateSessionInfo: vi.fn(), requestYsq: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const makeClient = (o: Partial<Record<string, unknown>> = {}) => ({
@@ -221,13 +223,35 @@ describe('saveSessionInfo', () => {
     const updater = setClients.mock.calls.at(-1)![0];
     expect(updater([{ telegramId: 3, nextSession: null }])).toEqual([result.current.selectedClient]);
   });
-  it('ошибка api молча игнорируется (не бросает, снимает флаг загрузки)', async () => {
+  // РЕГРЕССИЯ (check-silent-catch): catch раньше был `{ /* ignore */ }`, и
+  // обе кнопки в ClientOverviewSidebar делали `await saveSessionInfo(...);
+  // setEditingNextSession(false)` без проверки исхода — поле редактирования
+  // закрывалось, будто дата сохранилась, хотя api упал и selectedClient не
+  // обновился. Теперь функция возвращает false и заполняет sessionInfoError,
+  // а закрывать поле обязан вызывающий — только при true.
+  it('ошибка api: возвращает false, выставляет sessionInfoError, selectedClient не меняется', async () => {
     mockApi.updateSessionInfo.mockRejectedValue(new Error('fail'));
-    const { result } = await openedHook();
-    await expect(act(async () => {
-      await result.current.saveSessionInfo({ nextSession: '2026-08-01' });
-    })).resolves.not.toThrow();
+    const { result } = await openedHook({ nextSession: null });
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.saveSessionInfo({ nextSession: '2026-08-01' });
+    });
+    expect(ok).toBe(false);
+    expect(result.current.sessionInfoError).not.toBe('');
+    expect(result.current.selectedClient?.nextSession).toBeNull();
     expect(result.current.sessionInfoSaving).toBe(false);
+  });
+
+  it('успех возвращает true и сбрасывает предыдущую sessionInfoError', async () => {
+    mockApi.updateSessionInfo.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce(undefined);
+    const { result } = await openedHook();
+    await act(async () => { await result.current.saveSessionInfo({ nextSession: '2026-08-01' }); });
+    expect(result.current.sessionInfoError).not.toBe('');
+
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.saveSessionInfo({ nextSession: '2026-08-02' }); });
+    expect(ok).toBe(true);
+    expect(result.current.sessionInfoError).toBe('');
   });
 });
 
@@ -282,6 +306,24 @@ describe('handleExport', () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
     expect(result.current.exportCopied).toBe(false);
+  });
+  // РЕГРЕССИЯ (check-silent-catch): catch у записи в буфер раньше был
+  // `/* ignore */` — при отказе clipboard.writeText (частая причина: страница
+  // не в фокусе) кнопка «Экспорт» молча ничего не делала, exportCopied не
+  // включался, и терапевт не получал вообще никакого сигнала. Теперь отказ
+  // уходит в reportClientError; UI по-прежнему не показывает ошибку (нет
+  // отдельного состояния под неё), но факт отказа больше не тонет бесследно.
+  it('при отказе clipboard.writeText шлёт reportClientError и не выставляет exportCopied', async () => {
+    mockApi.getConceptualization.mockResolvedValue({
+      id: 1, schemaIds: [], modeIds: [], earlyExperience: 'опыт', updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+    (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('denied'));
+    const { result } = await openedHook();
+    await act(async () => { await result.current.handleExport(); });
+    expect(result.current.exportCopied).toBe(false);
+    expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'therapist.clientDetail', message: expect.stringContaining('clipboard') }),
+    );
   });
   it('использует navigator.share вместо буфера обмена, если он доступен', async () => {
     mockApi.getConceptualization.mockResolvedValue({

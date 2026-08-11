@@ -249,12 +249,45 @@ describe('useIntroSheetData — handleSave()', () => {
     expect(saveNote).toHaveBeenCalledTimes(1);
   });
 
-  it('saveNote упал — handleSave не бросает, saved всё равно true', async () => {
+  it('saveNote упал — handleSave не бросает, но не притворяется успехом (regression: check-silent-catch)', async () => {
+    // Раньше saved всегда становился true и handleSave ничего не
+    // возвращал — IntroSheetShell шёл на экран «Готово» даже когда
+    // сохранение на сервере провалилось (данные — только в localStorage).
     const loadExisting = vi.fn().mockResolvedValue(null);
     const saveNote = vi.fn().mockRejectedValue(new Error('offline'));
+    const onComplete = vi.fn();
     const { result } = renderHook(() =>
       useIntroSheetData({
         storageKey: 'k9',
+        emptyData,
+        loadExisting,
+        saveNote,
+        onComplete,
+      }),
+    );
+    await flushLoad();
+
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.handleSave();
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.saving).toBe(false);
+    expect(result.current.saved).toBe(false);
+    expect(result.current.saveError).toBe(true);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('handleSave успешен после провала — saveError сбрасывается', async () => {
+    const loadExisting = vi.fn().mockResolvedValue(null);
+    const saveNote = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(undefined);
+    const { result } = renderHook(() =>
+      useIntroSheetData({
+        storageKey: 'k10',
         emptyData,
         loadExisting,
         saveNote,
@@ -265,8 +298,14 @@ describe('useIntroSheetData — handleSave()', () => {
     await act(async () => {
       await result.current.handleSave();
     });
+    expect(result.current.saveError).toBe(true);
 
-    expect(result.current.saving).toBe(false);
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.handleSave();
+    });
+    expect(ok).toBe(true);
+    expect(result.current.saveError).toBe(false);
     expect(result.current.saved).toBe(true);
   });
 });

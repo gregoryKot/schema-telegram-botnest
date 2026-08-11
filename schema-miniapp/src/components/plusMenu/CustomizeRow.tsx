@@ -1,23 +1,18 @@
 import { ToggleRow } from '../todayCustomize/ToggleRow';
-import { MoveArrows } from './MoveArrows';
+import { DragHandle } from './DragHandle';
+import type { DragHandleProps } from '../../hooks/useDragReorder';
 
-// Одна строка листа настройки: ToggleRow (скрыть/показать) + MoveArrows
-// (порядок). Аналитика — инъекцией через колбэки (не хардкожена здесь):
-// quick actions трекают quick_action_toggle/move в QuickActionCustomizeSheet,
-// экранные блоки — screen_block_toggle/move в useScreenBlocks/*Order — общий
-// для обоих листов (правило «одна механика — один компонент»). Стрелки
-// снаружи ToggleRow — общий компонент не трогаем, у него есть второй
-// потребитель (TodayCustomizeSheet).
+// Строка листа настройки: ToggleRow (скрыть/показать) + ручка «≡» (порядок,
+// DragHandle — место MoveArrows, удалённого правилом №11).
 export function CustomizeRow({
   emoji,
   label,
   sub,
   hidden,
   onToggle,
-  disabledUp,
-  disabledDown,
-  onMoveUp,
-  onMoveDown,
+  dragHandleProps,
+  rowRef,
+  drag: { offsetY, lifted },
   highlighted,
 }: {
   emoji: string;
@@ -25,14 +20,23 @@ export function CustomizeRow({
   sub: string;
   hidden: boolean;
   onToggle: () => void;
-  disabledUp: boolean;
-  disabledDown: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  dragHandleProps: DragHandleProps;
+  rowRef: (el: HTMLElement | null) => void;
+  drag: { offsetY: number; lifted: boolean };
   highlighted?: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
+    <div
+      ref={rowRef}
+      style={{
+        display: 'flex',
+        gap: 4,
+        transform: `translateY(${offsetY}px)${lifted ? ' scale(1.02)' : ''}`,
+        transition: lifted ? 'none' : 'transform 150ms ease',
+        boxShadow: lifted ? '0 8px 24px rgba(var(--fg-rgb),0.18)' : undefined,
+        zIndex: lifted ? 1 : undefined,
+      }}
+    >
       <div style={{ flex: 1, minWidth: 0 }}>
         <ToggleRow
           emoji={emoji}
@@ -43,12 +47,7 @@ export function CustomizeRow({
           highlighted={highlighted}
         />
       </div>
-      <MoveArrows
-        disabledUp={disabledUp}
-        disabledDown={disabledDown}
-        onUp={onMoveUp}
-        onDown={onMoveDown}
-      />
+      <DragHandle {...dragHandleProps} />
     </div>
   );
 }

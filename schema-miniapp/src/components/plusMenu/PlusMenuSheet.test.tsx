@@ -4,13 +4,7 @@
 // plus_action и зовёт onAction, «Изменить» открывает настройку, пустое
 // состояние (всё скрыто) показывает подсказку вместо групп.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  render,
-  screen,
-  within,
-  fireEvent,
-  cleanup,
-} from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PlusMenuSheet } from './PlusMenuSheet';
 import { QUICK_ACTION_IDS, buildPlusActions } from '../../utils/quickActions';
 import {
@@ -147,7 +141,7 @@ describe('PlusMenuSheet — порядок пунктов', () => {
     expect(screen.getByText('Трекер потребностей')).toBeTruthy();
   });
 
-  it('стрелка в листе настройки двигает пункт внутри его группы, шлёт quick_action_move и меняет меню', () => {
+  it('клавиша ArrowUp на ручке в листе настройки двигает пункт внутри его группы, шлёт quick_action_move и меняет меню', () => {
     render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Изменить'));
 
@@ -155,13 +149,11 @@ describe('PlusMenuSheet — порядок пунктов', () => {
     // листа настройки (CustomizeRow, портал BottomSheet монтируется позже —
     // последнее вхождение и есть строка листа, тот же паттерн, что в
     // ToolsList.test.tsx «toggle в листе прячет строку»).
-    const matches = screen.getAllByText('Заземление 5-4-3-2-1');
-    const switchEl = matches[matches.length - 1].closest(
-      '[role="switch"]',
-    ) as HTMLElement;
-    const moveArrows = (switchEl.parentElement as HTMLElement)
-      .nextElementSibling as HTMLElement;
-    fireEvent.click(within(moveArrows).getByLabelText('Выше'));
+    const matches = screen.getAllByLabelText(
+      'Переставить: Заземление 5-4-3-2-1',
+    );
+    const handle = matches[matches.length - 1];
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
 
     expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'grounding',
@@ -179,5 +171,28 @@ describe('PlusMenuSheet — порядок пунктов', () => {
     expect(html.indexOf('Заземление 5-4-3-2-1')).toBeLessThan(
       html.indexOf('Дыхание 4-4-6'),
     );
+  });
+
+  it('группы «плюса»: жест ручки за границу своей группы прижимается к её краю, соседняя группа не задета', () => {
+    // Группа «Успокоиться» (breathing, grounding, stop) — последняя строка
+    // «Техника «Стоп»» не должна перепрыгнуть в следующую группу «Разобраться»
+    // (belief_check первая) даже при большом смещении вниз.
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Изменить'));
+    const matches = screen.getAllByLabelText('Переставить: Техника «Стоп»');
+    const handle = matches[matches.length - 1] as HTMLElement & {
+      setPointerCapture: () => void;
+    };
+    handle.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 5000, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 5000, pointerId: 1 });
+
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'quick_action_move',
+      expect.anything(),
+    );
+    // Порядок «плюса» не тронут — прижатие к границе своей группы, а не запись.
+    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([]);
   });
 });

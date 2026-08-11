@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
-import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
+import type { UserSettings } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
@@ -22,6 +22,8 @@ import {
 } from '../../../shared/src/settings/constants';
 import { SHead, SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './settingsSheet/ui';
 import { inputStyle } from './settingsSheet/inputStyle';
+import { usePairSettings } from './settingsSheet/usePairSettings';
+import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 
 
 interface Props {
@@ -40,13 +42,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const goBack = useHistorySheet(onClose);
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
-  const [pairData, setPairData]     = useState<PairsData | null>(null);
-  const [pairLoading, setPairLoading] = useState(true);
-  const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const [pairInviteCopied, setPairInviteCopied] = useState(false);
-  const [joinCode, setJoinCode]     = useState('');
-  const [joinView, setJoinView]     = useState<'main' | 'join'>('main');
-  const [joinError, setJoinError]   = useState(false);
+  const pair = usePairSettings(userRole);
+  const {
+    pairData, pairLoading, pairLoadError, pairInviteUrl, pairInviteCopied, setPairInviteCopied,
+    joinCode, setJoinCode, joinView, setJoinView, joinError, leaveError: leavePairError,
+    handleCreateInvite, handleJoin, leavePair, retryLoad: retryPairLoad,
+  } = pair;
   const [exportText, setExportText] = useState<string | null>(null);
   // Сводка собирается на сервере: сеть может отвалиться. Без этого состояния
   // отказ выглядел как «ничего не произошло» — обработчик падал
@@ -56,18 +57,20 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
   const [exportCopied, setExportCopied] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [ysqDeleting, setYsqDeleting] = useState(false); const [ysqDeleteError, setYsqDeleteError] = useState(false); // раньше локально стиралось раньше запроса к серверу
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
   const [resignConfirm, setResignConfirm] = useState(false);
   const [resignBusy, setResignBusy] = useState(false);
   const [savedToast, setSavedToast] = useState(false); const [saveError, setSaveError] = useState(false); // «Сохранено» раньше шло даже при отказе api
-  const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
-  const [therapyJoinCode, setTherapyJoinCode] = useState('');
-  const [therapyJoinError, setTherapyJoinError] = useState('');
-  const [therapyInviteUrl, setTherapyInviteUrl] = useState('');
+  const {
+    therapyRelation, therapyJoinCode, setTherapyJoinCode, therapyJoinError,
+    leaveTherapyError, therapyInviteUrl, inviteCopied, inviteError,
+    leaveTherapy, joinTherapy, createInvite,
+  } = useTherapyRelationSettings(userRole);
   const [editName, setEditName] = useState(displayName ?? '');
-  const [nameSaving, setNameSaving] = useState(false);
+  const [nameSaving, setNameSaving] = useState(false); const [nameError, setNameError] = useState(false); // отказ раньше не был виден
   const [theme, setTheme] = useState<Theme>(getTheme);
   const motion = useReducedMotionPref(() => {
     setSavedToast(true);
@@ -83,18 +86,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
 
-  // Re-show the pair loading state when the role context changes. Adjusting
-  // state during render (not in an effect) keeps this off set-state-in-effect;
-  // on mount pairLoading already starts true.
-  const [seenRole, setSeenRole] = useState(userRole);
-  if (userRole !== seenRole) { setSeenRole(userRole); setPairLoading(true); }
-
   useEffect(() => {
     api.getSettings()
       .then(setSettings)
       .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
-    api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
-    api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
     if (userRole !== 'THERAPIST') {
       api.getTherapistRequest().then(r => setTherapistReq(r)).catch(() => setTherapistReq(null));
     }
@@ -107,26 +102,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     catch { setSettings(prev); setSaveError(true); setTimeout(() => setSaveError(false), 2400); }
   }
 
-  async function handleCreateInvite() {
-    setPairLoading(true);
-    try {
-      const { code, url } = await api.createPairInvite();
-      await api.getPair().then(setPairData);
-      setPairInviteUrl(url);
-      // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо
-      // голого текста: пользователь видит превью и делится картинкой.
-      setPairShare({ code, url });
-    } finally { setPairLoading(false); }
-  }
-
-  async function handleJoin() {
-    if (!joinCode.trim()) return;
-    setPairLoading(true); setJoinError(false);
-    try {
-      await api.joinPair(joinCode.trim().toUpperCase());
-      await api.getPair().then(setPairData);
-      setJoinView('main');
-    } catch { setJoinError(true); } finally { setPairLoading(false); }
+  // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо голого
+  // текста: пользователь видит превью и делится картинкой.
+  async function createInviteAndShare() {
+    const r = await handleCreateInvite();
+    if (r) setPairShare(r);
   }
 
   async function submitTherapistRequest() {
@@ -363,14 +343,15 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <button disabled={nameSaving || !editName.trim()}
                       onClick={async () => {
                         const name = editName.trim(); if (!name) return;
-                        setNameSaving(true);
+                        setNameSaving(true); setNameError(false);
                         try { await api.updateName(name); onNameChanged?.(name); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
-                        catch { /* best-effort: ошибку намеренно игнорируем */ } finally { setNameSaving(false); }
+                        catch { setNameError(true); } finally { setNameSaving(false); }
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}
                     >{nameSaving ? '...' : 'Сохранить'}</button>
                   )}
                 </div>
+                {nameError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', padding: '4px 0' }}>{tr('Не удалось сохранить имя', 'Не удалось сохранить имя')}</div>}
 
                 {/* Уведомления */}
                 <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
@@ -425,10 +406,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                       <SRow title="Карточки схем и режимов" sub="Личные карточки и заметки" right={<SmallToggle on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
                       <SRow title="Профиль и схемы" sub="Активные схемы и результаты теста" right={<SmallToggle on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
-                      <button onClick={() => { api.leaveTherapy().then(() => setTherapyRelation(null)).catch(() => {}); }}
+                      <button onClick={leaveTherapy}
                         style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         Отключиться от терапевта
                       </button>
+                      {leaveTherapyError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{tr('Не удалось отключиться. Проверь связь и попробуй ещё раз', 'Не удалось отключиться. Проверьте связь и попробуйте ещё раз')}</div>}
                     </div>
                   ) : (
                     <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
@@ -445,12 +427,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                           placeholder="ABCDEF" maxLength={8}
                           style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, borderRadius: 7, padding: '8px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'monospace', letterSpacing: 3, outline: 'none' }}
                         />
-                        <button onClick={async () => {
-                          if (!therapyJoinCode.trim()) return;
-                          setTherapyJoinError('');
-                          try { await api.joinTherapy(therapyJoinCode.trim()); const rel = await api.getTherapyRelation(); setTherapyRelation(rel); setTherapyJoinCode(''); }
-                          catch { setTherapyJoinError('Неверный код'); }
-                        }} style={{ background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '8px 16px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <button onClick={joinTherapy}
+                          style={{ background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '8px 16px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                           Войти
                         </button>
                       </div>
@@ -517,12 +495,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <SHead id="s-cabinet" label="Кабинет терапевта" />
                   <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
                   <div style={{ padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
-                    <button onClick={async () => {
-                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch { /* best-effort: ошибку намеренно игнорируем */ } } catch { /* best-effort: ошибку намеренно игнорируем */ }
-                    }} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    <button onClick={createInvite} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                       + Создать приглашение клиенту
                     </button>
-                    {therapyInviteUrl && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>Скопировано ✓</div>}
+                    {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
+                    {therapyInviteUrl && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8, wordBreak: 'break-all' }}>{inviteCopied ? 'Скопировано ✓' : therapyInviteUrl}</div>}
+                    {inviteError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{tr('Не удалось создать приглашение. Попробуй ещё раз', 'Не удалось создать приглашение. Попробуйте ещё раз')}</div>}
                   </div>
                 </>)}
 
@@ -531,6 +509,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   {pairLoading && !pairData ? (
                     <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>Загрузка...</div>
+                  ) : pairLoadError && !pairData ? (
+                    // Раньше сбой getPair() молча падал в "нет партнёра", и
+                    // подключённый пользователь на сетевой ошибке видел
+                    // "пригласить друга", будто связь пропала.
+                    <div>
+                      <div style={{ fontSize: 13, color: 'var(--accent-red)', marginBottom: 8 }}>{tr('Не удалось загрузить данные о партнёре', 'Не удалось загрузить данные о партнёре')}</div>
+                      <button onClick={retryPairLoad} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Повторить</button>
+                    </div>
                   ) : pairData && pairData.partners.length > 0 ? (
                     pairData.partners.map(p => (
                       <div key={p.code} style={{ marginBottom: 16 }}>
@@ -539,16 +525,17 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                           ? <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span></div>
                           : <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>Ещё не заполнил</div>
                         }
-                        <button onClick={() => { api.leavePair(p.code).catch(() => {}); api.getPair().then(setPairData).catch(() => {}); }}
+                        <button onClick={() => leavePair(p.code)}
                           style={{ background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                           Выйти из пары
                         </button>
+                        {leavePairError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>{tr('Не удалось выйти из пары. Попробуй ещё раз', 'Не удалось выйти из пары. Попробуйте ещё раз')}</div>}
                       </div>
                     ))
                   ) : joinView === 'main' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={handleCreateInvite} disabled={pairLoading}
+                        <button onClick={createInviteAndShare} disabled={pairLoading}
                           style={{ padding: '8px 16px', border: 'none', borderRadius: 7, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer', opacity: pairLoading ? 0.7 : 1, fontFamily: 'inherit' }}>
                           {pairLoading ? '...' : pairData?.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
                         </button>
@@ -686,12 +673,24 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b.text}</div>
             </div>
           ))}
-          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-            <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
-              style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
-              Удалить результаты теста
+          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (<>
+            {/* Раньше localStorage чистился ДО ответа сервера — при отказе api
+                пользователь видел «удалено», хотя результаты теста оставались
+                на сервере (приватность). Теперь локально чистим только после
+                подтверждённого удаления. */}
+            <button disabled={ysqDeleting} onClick={async () => {
+              setYsqDeleting(true); setYsqDeleteError(false);
+              try {
+                await api.deleteYsqResult();
+                localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY);
+                setShowPrivacy(false);
+              } catch { setYsqDeleteError(true); } finally { setYsqDeleting(false); }
+            }}
+              style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: ysqDeleting ? 'default' : 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
+              {ysqDeleting ? 'Удаляю...' : 'Удалить результаты теста'}
             </button>
-          )}
+            {ysqDeleteError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: -4, marginBottom: 10 }}>{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
+          </>)}
           <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Это образовательный инструмент.</div>
         </InfoModal>
       )}

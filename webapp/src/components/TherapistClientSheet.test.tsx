@@ -33,6 +33,7 @@ vi.mock('../api', () => ({
     renameClient: vi.fn(),
     removeClient: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -384,6 +385,32 @@ describe('TherapistClientSheet — сайдбар «Обзор»: индекс �
     fireEvent.click(screen.getByText('Сохранить'));
 
     await waitFor(() => expect(mockApi.updateSessionInfo).toHaveBeenCalledWith(7, { nextSession: '2026-08-10T10:00' }));
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): раньше кнопка «Сохранить» закрывала поле
+  // редактирования сразу после await, не проверяя исход — терапевт видел
+  // «Не установлена» смениться на закрытую форму, будто дата сохранилась,
+  // хотя запрос упал. Теперь поле остаётся открытым и видна ошибка.
+  it('провал api.updateSessionInfo: поле редактирования не закрывается, видна ошибка', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна', nextSession: null })]);
+    mockApi.updateSessionInfo.mockRejectedValue(new Error('network down'));
+    renderSheet();
+    await screen.findByText('Анна');
+    fireEvent.click(screen.getByText('Анна'));
+    await screen.findByText('Обзор');
+    await screen.findByText('Не установлена');
+
+    fireEvent.click(screen.getByText('Изменить →'));
+    const input = screen.getByDisplayValue('') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2026-08-10T10:00' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+
+    await screen.findByRole('alert');
+    // Поле осталось в режиме редактирования (кнопка «Сохранить» всё ещё видна).
+    expect(screen.getByText('Сохранить')).toBeTruthy();
+    // «Не установлена» не вернулось — потому что мы и не выходили из формы,
+    // но серверное значение точно не сменилось на новую дату.
+    expect(screen.queryByText(/2026.*10:00/)).toBeNull();
   });
 });
 

@@ -646,7 +646,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             if (isPermanent) {
               await this.accountService
                 .markUserBlocked(BigInt(uid))
-                .catch(() => null);
+                .catch((e) => this.logger.warn('markUserBlocked failed', e));
             }
           }
           await new Promise((r) => setTimeout(r, 50));
@@ -727,7 +727,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (n > 0)
           this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
       })
-      .catch(() => null);
+      .catch((e) => this.logger.error('cancelAllPreReminders failed', e));
   }
 
   /** Отправить сообщение администратору. Возвращает true, если доставлено. */

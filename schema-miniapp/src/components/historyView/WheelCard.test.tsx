@@ -2,15 +2,14 @@
 // WheelCard — карточка колеса потребностей + ссылки «детство»/«что за этим
 // стоит». Проверяет три состояния ссылки на колесо детства (нет данных без
 // колбэка → пусто; нет данных с колбэком → приглашение оценить; есть данные
-// → ссылка «детство») — их легко перепутать местами при правке условия.
+// → ссылка «детство») и обе клавиатурные ветки (Enter/Space) на всех трёх
+// интерактивных ссылках — их легко перепутать местами при правке условия.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { WheelCard } from './WheelCard';
 import type { Need } from '../../types';
 
-afterEach(() => {
-  cleanup();
-});
+afterEach(cleanup);
 
 const NEEDS: Need[] = [
   {
@@ -52,16 +51,62 @@ describe('WheelCard — ссылка на колесо детства', () => {
     expect(onOpenChildhoodWheel).toHaveBeenCalled();
   });
 
+  it('приглашение «Оценить детство» реагирует и на клавиатуру (пробел)', () => {
+    const onOpenChildhoodWheel = vi.fn();
+    render(
+      <WheelCard
+        {...BASE_PROPS}
+        childhoodRatings={{}}
+        onOpenChildhoodWheel={onOpenChildhoodWheel}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText(/Оценить детство/), { key: ' ' });
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+
   it('есть данные детства — показывает пунктирную ссылку «детство»', () => {
+    const onOpenChildhoodWheel = vi.fn();
     render(
       <WheelCard
         {...BASE_PROPS}
         childhoodRatings={{ attachment: 5 }}
-        onOpenChildhoodWheel={() => {}}
+        onOpenChildhoodWheel={onOpenChildhoodWheel}
       />,
     );
-    expect(screen.getByText('детство')).toBeTruthy();
+    const link = screen.getByText('детство');
+    expect(link).toBeTruthy();
     expect(screen.queryByText(/Оценить детство/)).toBeNull();
+
+    fireEvent.click(link);
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('ссылка «детство» реагирует на Enter и на пробел', () => {
+    const onOpenChildhoodWheel = vi.fn();
+    render(
+      <WheelCard
+        {...BASE_PROPS}
+        childhoodRatings={{ attachment: 5 }}
+        onOpenChildhoodWheel={onOpenChildhoodWheel}
+      />,
+    );
+    const link = screen.getByText('детство');
+    fireEvent.keyDown(link, { key: 'Enter' });
+    fireEvent.keyDown(link, { key: ' ' });
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(2);
+  });
+
+  it('ссылка «детство» игнорирует прочие клавиши', () => {
+    const onOpenChildhoodWheel = vi.fn();
+    render(
+      <WheelCard
+        {...BASE_PROPS}
+        childhoodRatings={{ attachment: 5 }}
+        onOpenChildhoodWheel={onOpenChildhoodWheel}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('детство'), { key: 'Tab' });
+    expect(onOpenChildhoodWheel).not.toHaveBeenCalled();
   });
 });
 
@@ -82,5 +127,20 @@ describe('WheelCard — «что за этим стоит»', () => {
     );
     fireEvent.click(screen.getByText(/Что за этим стоит/));
     expect(onOpenSchemas).toHaveBeenCalled();
+  });
+
+  it('клавиатурная активация (Enter) тоже зовёт onOpenSchemas', () => {
+    const onOpenSchemas = vi.fn();
+    render(
+      <WheelCard
+        {...BASE_PROPS}
+        childhoodRatings={{}}
+        onOpenSchemas={onOpenSchemas}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText(/Что за этим стоит/), {
+      key: 'Enter',
+    });
+    expect(onOpenSchemas).toHaveBeenCalledTimes(1);
   });
 });

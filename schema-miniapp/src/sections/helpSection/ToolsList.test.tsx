@@ -9,7 +9,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
   screen,
-  within,
   fireEvent,
   cleanup,
   act,
@@ -210,21 +209,17 @@ describe('ToolsList — порядок строк', () => {
     expect(screen.getByText('Мои цели')).toBeTruthy();
   });
 
-  it('стрелка в листе настройки двигает строку, шлёт quick_action_move и меняет список', () => {
+  it('клавиша ArrowUp на ручке в листе настройки двигает строку, шлёт quick_action_move и меняет список', () => {
     // «Мои цели» (tasks) — вторая строка реестра, сосед первой («Критик или
-    // забота?») — соседние строки, чтобы один свап дал видимый результат.
+    // забота?») — соседние строки, чтобы один шаг дал видимый результат.
     const { container } = renderList();
     fireEvent.click(screen.getByText('Настроить'));
 
     // Два «Мои цели» на экране: строка списка и строка листа настройки —
     // последнее вхождение (портал листа монтируется позже) и есть строка листа.
-    const matches = screen.getAllByText('Мои цели');
-    const switchEl = matches[matches.length - 1].closest(
-      '[role="switch"]',
-    ) as HTMLElement;
-    const moveArrows = (switchEl.parentElement as HTMLElement)
-      .nextElementSibling as HTMLElement;
-    fireEvent.click(within(moveArrows).getByLabelText('Выше'));
+    const matches = screen.getAllByLabelText('Переставить: Мои цели');
+    const handle = matches[matches.length - 1];
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
 
     expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'tasks',
@@ -240,17 +235,35 @@ describe('ToolsList — порядок строк', () => {
     );
   });
 
-  it('крайняя строка списка: стрелка вверх у первой строки задизейблена', () => {
+  it('крайняя строка списка: ArrowUp на ручке первой строки — no-op (событие не отправлено)', () => {
     renderList();
     fireEvent.click(screen.getByText('Настроить'));
-    const matches = screen.getAllByText('Критик или забота?');
-    const switchEl = matches[matches.length - 1].closest(
-      '[role="switch"]',
-    ) as HTMLElement;
-    const moveArrows = (switchEl.parentElement as HTMLElement)
-      .nextElementSibling as HTMLElement;
-    expect(
-      within(moveArrows).getByLabelText('Выше').getAttribute('aria-disabled'),
-    ).toBe('true');
+    const matches = screen.getAllByLabelText('Переставить: Критик или забота?');
+    const handle = matches[matches.length - 1];
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
+      'quick_action_move',
+      expect.anything(),
+    );
+  });
+
+  it('жест ручки (pointerdown→move→up) в листе настройки — read-after-write в localStorage и на экране', () => {
+    const { container } = renderList();
+    fireEvent.click(screen.getByText('Настроить'));
+    const matches = screen.getAllByLabelText('Переставить: Критик или забота?');
+    const handle = matches[matches.length - 1] as HTMLElement & {
+      setPointerCapture: () => void;
+    };
+    handle.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 60, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 60, pointerId: 1 });
+
+    expect(getActionOrder(TOOLS_ACTIONS_ORDER_KEY)[1]).toBe('phrase_check');
+    fireEvent.click(screen.getByText('Готово'));
+    const html = container.textContent ?? '';
+    expect(html.indexOf('Мои цели')).toBeLessThan(
+      html.indexOf('Критик или забота?'),
+    );
   });
 });

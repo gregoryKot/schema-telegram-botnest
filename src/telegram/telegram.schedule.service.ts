@@ -4,10 +4,12 @@ import {
   Inject,
   Optional,
   OnModuleInit,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { CatchupTimer } from './telegram.catchup-timer';
 import { BotService, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
@@ -32,7 +34,7 @@ import {
 import { normalizeAddressForm } from '../notification/address-form';
 
 @Injectable()
-export class TelegramScheduleService implements OnModuleInit {
+export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramScheduleService.name);
 
   constructor(
@@ -49,20 +51,24 @@ export class TelegramScheduleService implements OnModuleInit {
   ) {}
 
   private isProcessing = false;
+  private readonly catchupTimer = new CatchupTimer();
 
   onModuleInit() {
-    // Catch-up: if midnight cron was missed (deploy/restart), run the planner.
-    // Delay 30s: give CNPG time to come up after a container restart, and let
-    // the bot finish connecting.  Use warn (not error) so a transient DB blip
-    // at deploy time doesn't page the admin — the cron retries at midnight.
-    // planDay is idempotent per local day (cadence notifyLastEvalDate + hasPending guards).
-    setTimeout(() => {
+    // Catch-up: планировщик пропустил полночь (деплой/рестарт) — досчитать
+    // через 30с (прогрев CNPG/бота). planDay идемпотентен, warn не будит админа.
+    this.catchupTimer.arm(() => {
       this.scheduleDailyReminders().catch((e) =>
         this.logger.warn(
           `Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`,
         ),
       );
-    }, 30_000).unref(); // не держать процесс (jest/e2e воркеры не выходили)
+    }, 30_000);
+  }
+
+  // Иначе таймер стреляет в закрытый Prisma-пул после app.close() — см.
+  // комментарий в telegram.catchup-timer.ts.
+  onModuleDestroy() {
+    this.catchupTimer.clear();
   }
 
   /** Reschedule reminder for a single user (called after settings change). */
@@ -224,11 +230,8 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
-  /**
-   * Midnight UTC: единый дневной планировщик. Вся логика приоритетов (пауза,
-   * перерывы, weekly, donate, напоминание, инсайты) — в NotificationPlannerService,
-   * который гарантирует максимум одно проактивное уведомление в день.
-   */
+  // Midnight UTC: единый дневной планировщик — приоритеты (пауза, перерывы,
+  // weekly/donate/напоминание/инсайты) в NotificationPlannerService, максимум одно уведомление в день.
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
@@ -354,14 +357,10 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
-  /**
-   * Парный триггер (аудит 2026-07, этап 4.5): юзер заполнил трекер —
-   * мягко подсказать активным напарникам, без сравнения и соревнования.
-   * Ограничители: уведомления напарника включены; напарник сегодня ещё
-   * не заполнил сам; максимум одно pair_activity в день (по его таймзоне);
-   * тихие часы уважает очередь (тип не quiet-exempt), дневной бюджет —
-   * PROACTIVE_TYPES.
-   */
+  // Парный триггер (аудит 2026-07, этап 4.5): юзер заполнил трекер — мягко
+  // подсказать активным напарникам. Ограничители: уведомления партнёра
+  // включены; партнёр сегодня ещё не заполнил сам; максимум один
+  // pair_activity в день (по его таймзоне); тихие часы/бюджет — через очередь.
   async maybeNotifyPairPartners(userId: bigint): Promise<void> {
     const pairs = await this.pairsService.getUserPairs(userId);
     for (const pair of pairs) {

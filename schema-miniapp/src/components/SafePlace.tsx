@@ -74,7 +74,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
           setEditing(false);
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('getSafePlace failed', e));
   }, []);
 
   // Раньше «✓ Сохранено» показывалось сразу после fire-and-forget

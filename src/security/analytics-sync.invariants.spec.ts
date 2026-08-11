@@ -53,6 +53,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
     'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
     'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
+  auth_success:
+    'серверное событие: пишет только TelegramAuthGuard после подтверждённого ' +
+    'JWT/Telegram/MAX входа (src/api/auth-success.report.ts), с троттлингом ' +
+    'per userId+host. Фронт его не шлёт и не должен — та же защита userId = ' +
+    'null, что и у auth_rejected',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -114,6 +119,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
     'не ответил',
+  client_error:
+    'серверное событие: пишет только ClientErrorsController при ' +
+    'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
+    'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
+    'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
+    'auth_rejected/auth_success',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -145,7 +156,10 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // через именованные константы — тот же легитимный паттерн, что и
     // share_card/onboarding_step/mode_card_saved, не обход правила.
     // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
-    // слать не может по замыслу (отказ входа фиксирует guard).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(21);
+    // слать не может по замыслу (отказ входа фиксирует guard). 22 —
+    // auth_success: пара к нему, тот же guard, тот же приём userId = null.
+    // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
+    // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(23);
   });
 });

@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import type { Request, Response, NextFunction } from 'express';
@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
+import { logCapabilityReport } from './infra/capability-boot-log';
 import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
@@ -141,6 +142,11 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+
+  // Реестр возможностей, зависящих от конфигурации (щит, волна 8): раз при
+  // старте видно, что выключено и почему — мёртвая сигнализация (оба канала
+  // admin-alert.ts) отдельной ERROR-строкой, остальное — info.
+  logCapabilityReport(new Logger('CapabilityReport'));
 
   // Run after listen so PrismaService.onModuleInit has already connected.
   // Idempotent — skips rows already encrypted. Doesn't block startup.

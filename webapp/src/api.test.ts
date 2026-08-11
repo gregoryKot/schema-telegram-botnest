@@ -605,3 +605,329 @@ describe('adminReq — запрос с телом и обработка ошиб
     await expect(api.adminGetPrices('key')).rejects.toThrow('API error: 500');
   });
 });
+
+// ── Терапевтические эндпоинты (клиент/концептуализация/дневник) — TEST_COVERAGE_PLAN этап 4 ──
+describe('терапевтические эндпоинты — URL и метод', () => {
+  it('getAllTherapyTasks: GET /api/therapy/tasks/all', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getAllTherapyTasks();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/tasks/all');
+    expect(fetchMock.mock.calls[0][1].method).toBeUndefined(); // GET по умолчанию
+  });
+
+  it('getConceptualization: GET по clientId в пути', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, null));
+    await api.getConceptualization(42);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/conceptualization/42');
+  });
+
+  it('saveConceptualization: POST с телом концептуализации', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.saveConceptualization(42, { schemaIds: ['abandonment'], modeIds: [] });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/therapy/conceptualization/42');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ schemaIds: ['abandonment'], modeIds: [] });
+  });
+
+  it('getTherapyClientHistory: GET по clientId', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getTherapyClientHistory(7);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/client-history/7');
+  });
+
+  it('getClientDiary: GET по clientId', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getClientDiary(7);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/client/7/diary');
+  });
+});
+
+// ── Личный контент (разборы фраз, убеждения, письма, безопасное место, карточки) ──
+describe('личный контент — URL, метод, тело запроса', () => {
+  it('getPhraseChecks: GET /api/phrase-checks', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getPhraseChecks();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/phrase-checks');
+  });
+
+  it('getBeliefChecks: GET /api/belief-checks', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getBeliefChecks();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/belief-checks');
+  });
+
+  it('deleteBeliefCheck: DELETE по id', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deleteBeliefCheck(3);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/belief-checks/3');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('getLetters / createLetter / deleteLetter', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getLetters();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/letters');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createLetter('дорогой я');
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({ text: 'дорогой я' });
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deleteLetter(9);
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/letters/9');
+  });
+
+  it('getSafePlace / saveSafePlace', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, null));
+    await api.getSafePlace();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/safe-place');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.saveSafePlace('тихая комната');
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({ description: 'тихая комната' });
+  });
+
+  it('getFlashcards / createFlashcard / deleteFlashcard', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getFlashcards();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/flashcards');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createFlashcard({ modeId: 'critic', needId: 'safety' });
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({ modeId: 'critic', needId: 'safety' });
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deleteFlashcard(5);
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/flashcards/5');
+  });
+});
+
+// ── Бронирование, донаты, подписка ────────────────────────────────────────────
+describe('бронирование / донаты / подписка — тело и URL', () => {
+  it('submitBooking: POST с телом заявки', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.submitBooking({ name: 'Аня', contact: '@anna', message: 'привет' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking');
+    expect(JSON.parse(init.body)).toEqual({ name: 'Аня', contact: '@anna', message: 'привет' });
+  });
+
+  it('getBookingOptions: GET /api/booking/options', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.getBookingOptions();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/booking/options');
+  });
+
+  it('bookSlot: POST с полным телом слота', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, cancelToken: 'tok', heldUntil: null, status: 'held' }));
+    await api.bookSlot({ startsAt: '2026-01-01T10:00:00Z', clientName: 'Аня', clientContact: '@anna' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking/book');
+    expect(JSON.parse(init.body)).toEqual({ startsAt: '2026-01-01T10:00:00Z', clientName: 'Аня', clientContact: '@anna' });
+  });
+
+  it('getBookingByToken: GET по токену', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { status: 'confirmed' }));
+    await api.getBookingByToken('tok123');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/booking/by-token/tok123');
+  });
+
+  it('cancelBooking: POST по токену', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.cancelBooking('tok123');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking/cancel/tok123');
+    expect(init.method).toBe('POST');
+  });
+
+  it('donate: POST с суммой доната', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, paymentUrl: null }));
+    await api.donate({ amount: 500, source: 'app' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/donation');
+    expect(JSON.parse(init.body)).toEqual({ amount: 500, source: 'app' });
+  });
+
+  it('getSubscriptionOptions: GET /api/subscription/options', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { enabled: true, options: [] }));
+    await api.getSubscriptionOptions();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/subscription/options');
+  });
+
+  it('subscribe: POST с периодом подписки', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, cancelToken: 'tok', paymentUrl: null }));
+    await api.subscribe({ period: 'month' });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/subscription');
+    expect(JSON.parse(init.body)).toEqual({ period: 'month' });
+  });
+
+  it('getSubscriptionByToken / cancelSubscription', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { status: 'active' }));
+    await api.getSubscriptionByToken('sub-tok');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/subscription/by-token/sub-tok');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.cancelSubscription('sub-tok');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/api/subscription/cancel/sub-tok');
+  });
+});
+
+// ── Админ: цены/правила/статьи/контент сайта/фразы канала/кастом-режимы/карты режимов ──
+describe('админские эндпоинты — оставшиеся методы', () => {
+  it('adminGetSubPrices / adminSetSubPrice', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.adminGetSubPrices('key');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/booking/admin/sub-prices');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetSubPrice('key', 'year', 9000);
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({ period: 'year', amount: 9000 });
+  });
+
+  it('adminListRules / adminCreateRule / adminToggleRule', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.adminListRules('key');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/booking/admin/rules');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminCreateRule('key', { dayOfWeek: 1, startHour: 9, endHour: 18 });
+    const [, createInit] = fetchMock.mock.calls[1];
+    expect(JSON.parse(createInit.body)).toEqual({ dayOfWeek: 1, startHour: 9, endHour: 18 });
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminToggleRule('key', 5, false);
+    const [toggleUrl, toggleInit] = fetchMock.mock.calls[2];
+    expect(String(toggleUrl)).toContain('/api/booking/admin/rules/5');
+    expect(JSON.parse(toggleInit.body)).toEqual({ isActive: false });
+  });
+
+  it('adminConfirm: POST по id брони', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminConfirm('key', 8);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/booking/admin/confirm/8');
+  });
+
+  it('listArticles / getArticle — публичные, без ключа', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.listArticles();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/articles');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.getArticle('trevoga-i-telo');
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/api/articles/trevoga-i-telo');
+  });
+
+  it('adminListArticles / adminCreateArticle / adminUpdateArticle / adminDeleteArticle', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.adminListArticles('key');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/articles/admin/list');
+
+    const dto = { slug: 's', title: 'T', description: 'd', content: '<p></p>', date: '2026-01-01', readMin: 5 };
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminCreateArticle('key', dto);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(dto);
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminUpdateArticle('key', 3, { title: 'Новый заголовок' });
+    const [updUrl, updInit] = fetchMock.mock.calls[2];
+    expect(String(updUrl)).toContain('/api/articles/admin/3');
+    expect(JSON.parse(updInit.body)).toEqual({ title: 'Новый заголовок' });
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.adminDeleteArticle('key', 3);
+    expect(String(fetchMock.mock.calls[3][0])).toContain('/api/articles/admin/3');
+  });
+
+  it('getSiteContent / adminSetHeroPhoto / adminSetMarquee', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { heroPhoto: null, marqueeTopicsA: [], marqueeTopicsB: [] }));
+    await api.getSiteContent();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/site-content');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetHeroPhoto('key', 'data:image/jpeg;base64,X');
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ dataUri: 'data:image/jpeg;base64,X' });
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetMarquee('key', 'A', [{ label: 'Тревога', href: '/articles/anx' }]);
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ group: 'A', topics: [{ label: 'Тревога', href: '/articles/anx' }] });
+  });
+
+  it('adminListPhrases / adminCreatePhrase / adminUpdatePhrase / adminDeletePhrase', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.adminListPhrases('key');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/healthy-adult/admin/list');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminCreatePhrase('key', 'Ты справишься');
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ text: 'Ты справишься' });
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.adminUpdatePhrase('key', 2, { enabled: false });
+    const [updUrl, updInit] = fetchMock.mock.calls[2];
+    expect(String(updUrl)).toContain('/api/healthy-adult/admin/2');
+    expect(JSON.parse(updInit.body)).toEqual({ enabled: false });
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.adminDeletePhrase('key', 2);
+    expect(String(fetchMock.mock.calls[3][0])).toContain('/api/healthy-adult/admin/2');
+  });
+
+  it('adminTestPhrasePost / adminImportPhrases / adminPhrasePoolStatus', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true, message: 'ок' }));
+    await api.adminTestPhrasePost('key');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/healthy-adult/admin/test-post');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { created: [], message: 'готово' }));
+    await api.adminImportPhrases('key', 'фраза1\nфраза2');
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ text: 'фраза1\nфраза2' });
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { enabled: 10, unused: 3, daysLeft: 1 }));
+    await api.adminPhrasePoolStatus('key');
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/healthy-adult/admin/pool-status');
+  });
+
+  it('listCustomModes / createCustomMode / deleteCustomMode', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.listCustomModes();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/custom-modes');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createCustomMode({ name: 'Внутренний критик 2', emoji: '😡' });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ name: 'Внутренний критик 2', emoji: '😡' });
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deleteCustomMode(4);
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/therapy/custom-modes/4');
+  });
+
+  it('listModeMaps / getModeMap / deleteModeMap — CRUD по картам режимов', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.listModeMaps(11);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/mode-maps/11');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.getModeMap(99);
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/api/therapy/mode-maps/map/99');
+
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deleteModeMap(99);
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/therapy/mode-maps/map/99');
+  });
+
+  it('listMyModeMaps / getMyModeMap — карты клиента, доступные только для чтения', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []));
+    await api.listMyModeMaps();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/therapy/my-mode-maps');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.getMyModeMap(99);
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/api/therapy/my-mode-maps/99');
+  });
+});

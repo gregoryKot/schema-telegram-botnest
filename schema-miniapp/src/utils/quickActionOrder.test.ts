@@ -1,4 +1,4 @@
-// Тесты порядка пунктов быстрых действий (per-device, стрелки ↑/↓,
+// Тесты порядка пунктов быстрых действий (per-device, drag/клавиатура,
 // localStorage). Модель — та же generic-по-ключу схема, что у скрытия
 // (quickActionPrefs.test.ts): пустой порядок = порядок реестра, новый id
 // реестра — в конец, stable.
@@ -8,8 +8,8 @@ import {
   serializeActionOrder,
   getActionOrder,
   applyActionOrder,
-  withMoveFlags,
-  moveAction,
+  withDragRange,
+  applyReorderToIndex,
   PLUS_ACTIONS_ORDER_KEY,
   TOOLS_ACTIONS_ORDER_KEY,
 } from './quickActionOrder';
@@ -96,85 +96,100 @@ describe('applyActionOrder', () => {
   });
 });
 
-describe('withMoveFlags', () => {
-  it('первый — disabledUp, последний — disabledDown, середина — оба false', () => {
-    const flagged = withMoveFlags([{ id: 'a' }, { id: 'b' }, { id: 'c' }]);
-    expect(flagged[0]).toMatchObject({
-      disabledUp: true,
-      disabledDown: false,
-    });
-    expect(flagged[1]).toMatchObject({
-      disabledUp: false,
-      disabledDown: false,
-    });
-    expect(flagged[2]).toMatchObject({
-      disabledUp: false,
-      disabledDown: true,
-    });
+describe('withDragRange', () => {
+  it('одна группа — все элементы делят один диапазон [0, length-1]', () => {
+    const flagged = withDragRange([[{ id: 'a' }, { id: 'b' }, { id: 'c' }]]);
+    expect(flagged).toEqual([
+      { id: 'a', rangeMin: 0, rangeMax: 2 },
+      { id: 'b', rangeMin: 0, rangeMax: 2 },
+      { id: 'c', rangeMin: 0, rangeMax: 2 },
+    ]);
   });
 
-  it('единственный элемент — задизейблены обе стрелки', () => {
-    const flagged = withMoveFlags([{ id: 'a' }]);
-    expect(flagged[0]).toMatchObject({ disabledUp: true, disabledDown: true });
+  it('несколько групп — диапазон каждой это её сегмент в плоском списке', () => {
+    const flagged = withDragRange([
+      [{ id: 'a' }, { id: 'b' }],
+      [{ id: 'c' }],
+      [{ id: 'd' }, { id: 'e' }, { id: 'f' }],
+    ]);
+    expect(flagged).toEqual([
+      { id: 'a', rangeMin: 0, rangeMax: 1 },
+      { id: 'b', rangeMin: 0, rangeMax: 1 },
+      { id: 'c', rangeMin: 2, rangeMax: 2 },
+      { id: 'd', rangeMin: 3, rangeMax: 5 },
+      { id: 'e', rangeMin: 3, rangeMax: 5 },
+      { id: 'f', rangeMin: 3, rangeMax: 5 },
+    ]);
+  });
+
+  it('пустая группа не сдвигает нумерацию следующих (offset не растёт)', () => {
+    const flagged = withDragRange([[], [{ id: 'a' }]]);
+    expect(flagged).toEqual([{ id: 'a', rangeMin: 0, rangeMax: 0 }]);
   });
 });
 
-describe('moveAction', () => {
-  it('сдвиг вниз с пустого порядка сохраняет полный список со свопом', () => {
-    const moved = moveAction(
+describe('applyReorderToIndex', () => {
+  it('перестановка с пустого порядка сохраняет полный список в новом месте', () => {
+    const moved = applyReorderToIndex(
       PLUS_ACTIONS_ORDER_KEY,
       ['a', 'b', 'c'],
       'a',
-      'down',
+      1,
     );
     expect(moved).toBe(true);
     expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'a', 'c']);
   });
 
-  it('сдвиг вверх', () => {
-    moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c'], 'c', 'up');
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['a', 'c', 'b']);
+  it('перестановка через несколько позиций разом (не только на соседа)', () => {
+    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c', 'd'], 'a', 3);
+    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
+      'b',
+      'c',
+      'd',
+      'a',
+    ]);
   });
 
-  it('край: вверх у первого — false, localStorage не тронут', () => {
-    const moved = moveAction(
+  it('toIndex === текущий индекс — false, localStorage не тронут', () => {
+    const moved = applyReorderToIndex(
       PLUS_ACTIONS_ORDER_KEY,
       ['a', 'b', 'c'],
-      'a',
-      'up',
+      'b',
+      1,
     );
     expect(moved).toBe(false);
     expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([]);
   });
 
-  it('край: вниз у последнего — false', () => {
-    const moved = moveAction(
+  it('toIndex вне диапазона клэмпится к границе списка', () => {
+    const moved = applyReorderToIndex(
       PLUS_ACTIONS_ORDER_KEY,
       ['a', 'b', 'c'],
-      'c',
-      'down',
+      'a',
+      999,
     );
-    expect(moved).toBe(false);
+    expect(moved).toBe(true);
+    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'c', 'a']);
   });
 
   it('id не среди siblings — false, no-op', () => {
-    expect(moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'z', 'up')).toBe(
-      false,
-    );
+    expect(
+      applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'z', 1),
+    ).toBe(false);
   });
 
   it('read-after-write: повторный вызов двигает дальше от уже сохранённого', () => {
-    moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c'], 'c', 'up'); // a c b
-    moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'c', 'b'], 'c', 'up'); // c a b
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['c', 'a', 'b']);
+    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c'], 'c', 0); // c a b
+    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['c', 'a', 'b'], 'b', 0); // b c a
+    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'c', 'a']);
   });
 
-  it('свопнутый блок встаёт на место первого вхождения siblings, остальные id не двигаются', () => {
+  it('переставленный блок встаёт на место первого вхождения siblings, остальные id не двигаются', () => {
     localStorage.setItem(
       PLUS_ACTIONS_ORDER_KEY,
       serializeActionOrder(['x', 'a', 'y', 'b', 'z']),
     );
-    moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'a', 'down');
+    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'a', 1);
     expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
       'x',
       'b',
@@ -189,7 +204,12 @@ describe('moveAction', () => {
       PLUS_ACTIONS_ORDER_KEY,
       serializeActionOrder(['x', 'y']),
     );
-    const moved = moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'b', 'up');
+    const moved = applyReorderToIndex(
+      PLUS_ACTIONS_ORDER_KEY,
+      ['a', 'b'],
+      'b',
+      0,
+    );
     expect(moved).toBe(true);
     expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
       'x',
@@ -200,8 +220,8 @@ describe('moveAction', () => {
   });
 
   it('два ключа-поверхности не задевают друг друга', () => {
-    moveAction(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'b', 'up');
-    moveAction(TOOLS_ACTIONS_ORDER_KEY, ['p', 'q'], 'q', 'up');
+    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'b', 0);
+    applyReorderToIndex(TOOLS_ACTIONS_ORDER_KEY, ['p', 'q'], 'q', 0);
     expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'a']);
     expect(getActionOrder(TOOLS_ACTIONS_ORDER_KEY)).toEqual(['q', 'p']);
   });

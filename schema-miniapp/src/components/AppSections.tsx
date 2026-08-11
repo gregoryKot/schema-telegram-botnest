@@ -128,7 +128,7 @@ export function AppSections({
               api
                 .getTasks()
                 .then(setHelpTasks)
-                .catch(() => {});
+                .catch((e) => console.error('getTasks failed', e));
               setHelpTasksKey((k) => k + 1);
             }}
             userRole={userRole}

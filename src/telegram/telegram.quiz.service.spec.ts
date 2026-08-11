@@ -1,6 +1,7 @@
 // Мини-тесты в боте: список → интро → вопросы → результат, всё stateless
 // через callback_data. Проверяем и связку «прошёл тест → событие аналитики»
 // (правило №8), и устойчивость к мусорному callback_data.
+import { Logger } from '@nestjs/common';
 import { TelegramQuizService } from './telegram.quiz.service';
 import {
   makeFakeBot,
@@ -135,10 +136,16 @@ describe('TelegramQuizService', () => {
     expect(analytics.track).not.toHaveBeenCalled();
   });
 
-  it('ошибка БД не роняет хендлер: форма падает в «ты», тест работает', async () => {
+  it('ошибка БД не роняет хендлер: форма падает в «ты», сбой уходит в лог', async () => {
     boot();
-    botService.getUserSettings.mockRejectedValue(new Error('db down'));
+    const dbError = new Error('db down');
+    botService.getUserSettings.mockRejectedValue(dbError);
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
     const ctx = await runAction(fakeBot, 'qz:list');
     expect(flat(ctx)).toContain('Выбирай:');
+    expect(warnSpy).toHaveBeenCalledWith('quiz getForm failed', dbError);
+    warnSpy.mockRestore();
   });
 });

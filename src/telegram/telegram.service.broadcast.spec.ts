@@ -190,4 +190,30 @@ describe('TelegramService — /broadcast (только админ)', () => {
     expect(summary).toContain('1 доставлено');
     expect(summary).toContain('1 ошибок');
   }, 10_000);
+
+  it('markUserBlocked падает — рассылка всё равно завершается и сбой попадает в лог', async () => {
+    process.env.ADMIN_ID = '999';
+    const dbError = new Error('db down');
+    const { service, fakeBot, accountService } = makeDeps({
+      accountService: {
+        getBroadcastUserIds: jest.fn().mockResolvedValue([2]),
+        markUserBlocked: jest.fn().mockRejectedValue(dbError),
+      },
+    });
+    service.onModuleInit();
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    fakeBot.telegram.sendMessage.mockRejectedValueOnce({
+      response: { error_code: 403 },
+    });
+    const ctx = await runCommand(fakeBot, 'broadcast', {
+      from: { id: 999 },
+      message: { text: '/broadcast всем привет' },
+    });
+    expect(accountService.markUserBlocked).toHaveBeenCalledWith(2n);
+    expect(warnSpy).toHaveBeenCalledWith('markUserBlocked failed', dbError);
+    const summary = ctx.reply.mock.calls.at(-1)![0];
+    expect(summary).toContain('1 ошибок');
+  }, 10_000);
 });

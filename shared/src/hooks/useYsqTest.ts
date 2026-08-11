@@ -2,20 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 // Общая логика теста на схемы (116 утверждений, скоринг, персист прогресса и
 // результата, история прохождений) — парный файл для webapp и schema-miniapp
-// (правило №3 CLAUDE.md). UI (вёрстка/стили/тексты) остаётся в каждом
-// YSQTestSheet.tsx отдельно; сюда вынесено только то, что должно совпадать
-// побайтово: вопросы/страницы, вычисления скоринга, сохранение/восстановление
-// прогресса, сабмит в api.
-//
-// Разница окружений (api-клиент конкретного фронтенда) приходит параметром
-// хука — этот файл не импортирует ничего фронтенд-специфичного кроме react.
-
-// Вопросы, схемы и скоринг вынесены в соседние модули (правило №10) и
-// ре-экспортируются здесь, чтобы существующие импорты из этого файла
-// (оба фронтенда, правило №3) продолжали работать без изменений.
+// (правило №3). UI остаётся в каждом YSQTestSheet.tsx отдельно; api-клиент
+// приходит параметром хука — файл не импортирует ничего фронтенд-специфичного.
+// Вопросы/схемы/скоринг/шаринг — в соседних модулях (правило №10),
+// ре-экспортируются здесь, чтобы импорты потребителей не менялись.
 export * from './ysqQuestions';
 export * from './ysqSchemas';
 export * from './ysqScoring';
+export * from './ysqShareText';
 
 import { QUESTIONS, TOTAL_PAGES } from './ysqQuestions';
 import {
@@ -29,7 +23,6 @@ import {
   computeScores,
   isSchemaScoreActive,
   type Phase,
-  type SchemaScore,
   type YsqHistoryEntry,
 } from './ysqScoring';
 
@@ -100,6 +93,12 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   const [hasProgress, setHasProgress] = useState(false);
   const [inactiveExpanded, setInactiveExpanded] = useState(false);
   const [retakeConfirm, setRetakeConfirm] = useState(false);
+  // Не удалось проверить сохранённый на сервере прогресс/результат — без
+  // флага «Начать тест» выглядит безопасным, а первый ответ перезаписывает
+  // на сервере то, что реально отвечено на другом устройстве (upsert).
+  const [resumeCheckFailed, setResumeCheckFailed] = useState(false);
+  // Сабмит результата упал: localStorage уже обновлён, но на сервере его нет.
+  const [resultSaveError, setResultSaveError] = useState(false);
 
   const progressAnswered = answers.filter((a) => a > 0).length;
 
@@ -107,6 +106,52 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     setSlideDir(dir);
     setSlideKey((k) => k + 1);
     setPage(newPage);
+  };
+
+  // Отдельная функция (не только тело mount-эффекта), чтобы кнопка
+  // «Проверить снова» могла повторить её после сетевого сбоя.
+  const checkServerState = () => {
+    Promise.all([api.getYsqResult(), api.getYsqProgress()])
+      .then(([serverResult, serverProgress]) => {
+        setResumeCheckFailed(false);
+        if (userStartedRef.current) return;
+        const serverHasProgress =
+          serverProgress?.answers &&
+          Array.isArray(serverProgress.answers) &&
+          serverProgress.answers.length === QUESTIONS.length;
+        if (serverHasProgress) {
+          localStorage.setItem(
+            YSQ_PROGRESS_KEY,
+            JSON.stringify({
+              answers: serverProgress.answers,
+              page: serverProgress.page,
+            }),
+          );
+          setHasProgress(true);
+        }
+        if (autoResume && serverHasProgress) {
+          setAnswers(serverProgress.answers);
+          setPage(serverProgress.page);
+          setPhase('test');
+        } else if (
+          serverResult?.answers &&
+          Array.isArray(serverResult.answers) &&
+          serverResult.answers.length === QUESTIONS.length
+        ) {
+          const dateStr = serverResult.completedAt ?? new Date().toISOString();
+          localStorage.setItem(
+            YSQ_RESULT_KEY,
+            JSON.stringify({ date: dateStr, answers: serverResult.answers }),
+          );
+          setAnswers(serverResult.answers);
+          setCompletedAt(dateStr);
+          setPhase('result');
+        } else if (serverHasProgress) {
+          setAnswers(serverProgress.answers);
+          setPage(serverProgress.page);
+        }
+      })
+      .catch(() => setResumeCheckFailed(true));
   };
 
   // Загрузка сохранённого состояния. autoResume означает «сразу к месту, где
@@ -161,49 +206,9 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         .then((h) => {
           if (h) setHistory(h);
         })
-        .catch(() => {});
+        .catch((e) => console.error('getYsqHistory failed', e));
 
-      Promise.all([api.getYsqResult(), api.getYsqProgress()])
-        .then(([serverResult, serverProgress]) => {
-          if (userStartedRef.current) return;
-          const serverHasProgress =
-            serverProgress?.answers &&
-            Array.isArray(serverProgress.answers) &&
-            serverProgress.answers.length === QUESTIONS.length;
-          if (serverHasProgress) {
-            localStorage.setItem(
-              YSQ_PROGRESS_KEY,
-              JSON.stringify({
-                answers: serverProgress.answers,
-                page: serverProgress.page,
-              }),
-            );
-            setHasProgress(true);
-          }
-          if (autoResume && serverHasProgress) {
-            setAnswers(serverProgress.answers);
-            setPage(serverProgress.page);
-            setPhase('test');
-          } else if (
-            serverResult?.answers &&
-            Array.isArray(serverResult.answers) &&
-            serverResult.answers.length === QUESTIONS.length
-          ) {
-            const dateStr =
-              serverResult.completedAt ?? new Date().toISOString();
-            localStorage.setItem(
-              YSQ_RESULT_KEY,
-              JSON.stringify({ date: dateStr, answers: serverResult.answers }),
-            );
-            setAnswers(serverResult.answers);
-            setCompletedAt(dateStr);
-            setPhase('result');
-          } else if (serverHasProgress) {
-            setAnswers(serverProgress.answers);
-            setPage(serverProgress.page);
-          }
-        })
-        .catch(() => {});
+      checkServerState();
     }
   }, []);
 
@@ -263,25 +268,34 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         const next = page + 1;
         goToPage(next, 'forward');
         saveProgress(newAnswers, next);
-        api.saveYsqProgress(newAnswers, next).catch(() => {});
+        // Локальный прогресс уже записан строкой выше — фон, не потеря
+        // данных на этом устройстве, но лог нужен ловить рассинхрон между.
+        api
+          .saveYsqProgress(newAnswers, next)
+          .catch((e) => console.error('saveYsqProgress failed', e));
       } else {
         const dateStr = new Date().toISOString();
         localStorage.setItem(
           YSQ_RESULT_KEY,
           JSON.stringify({ date: dateStr, answers: newAnswers }),
         );
+        // Локальный результат уже показан вне зависимости от ответа
+        // сервера — resultSaveError показывает баннер с кнопкой повтора.
         api
           .saveYsqResult(newAnswers)
-          .then(() =>
+          .then(() => {
+            setResultSaveError(false);
             api
               .getYsqHistory()
               .then((h) => {
                 if (h) setHistory(h);
               })
-              .catch(() => {}),
-          )
-          .catch(() => {});
-        api.deleteYsqProgress().catch(() => {});
+              .catch((e) => console.error('getYsqHistory failed', e));
+            api
+              .deleteYsqProgress()
+              .catch((e) => console.error('deleteYsqProgress failed', e));
+          })
+          .catch(() => setResultSaveError(true));
         localStorage.removeItem(YSQ_PROGRESS_KEY);
         setAnswers(newAnswers);
         setCompletedAt(dateStr);
@@ -290,12 +304,27 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     }, ANSWER_ADVANCE_DELAY);
   };
 
+  // Повтор отправки после сбоя — локальные ответы уже верны.
+  const retrySaveResult = () => {
+    api
+      .saveYsqResult(answers)
+      .then(() => {
+        setResultSaveError(false);
+        api
+          .deleteYsqProgress()
+          .catch((e) => console.error('deleteYsqProgress failed', e));
+      })
+      .catch(() => setResultSaveError(true));
+  };
+
   const handleBack = () => {
     if (page > 0) {
       const prev = page - 1;
       goToPage(prev, 'back');
       saveProgress(answers, prev);
-      api.saveYsqProgress(answers, prev).catch(() => {});
+      api
+        .saveYsqProgress(answers, prev)
+        .catch((e) => console.error('saveYsqProgress failed', e));
     } else {
       setPhase('intro');
     }
@@ -304,8 +333,8 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   const handleRetake = () => {
     localStorage.removeItem(YSQ_RESULT_KEY);
     localStorage.removeItem(YSQ_PROGRESS_KEY);
-    api.deleteYsqResult().catch(() => {});
-    api.deleteYsqProgress().catch(() => {});
+    api.deleteYsqResult().catch((e) => console.error('deleteYsqResult', e));
+    api.deleteYsqProgress().catch((e) => console.error('deleteYsqProgress', e));
     setAnswers(Array(QUESTIONS.length).fill(0));
     setPage(0);
     setHasProgress(false);
@@ -397,40 +426,9 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     handleRetake,
     scores,
     resultView,
+    resumeCheckFailed,
+    retryResumeCheck: checkServerState,
+    resultSaveError,
+    retrySaveResult,
   };
-}
-
-// ── Шаринг результата ────────────────────────────────────────────────────────
-// Картинка и короткий текст — shared/src/share/cards/ysqCard.ts через общий
-// ShareCardSheet. Здесь только подробный текстовый фолбэк.
-
-// Развёрнутый текст (фолбэк «поделиться текстом»): обе метрики по каждой
-// выраженной схеме. Формулировки нейтральные (без ты/вы) — текст уходит
-// третьим лицам.
-export function buildShareText(
-  scores: Record<string, SchemaScore>,
-  dateLabel: string | null,
-): string {
-  const active = SCHEMAS.filter((s) => isSchemaScoreActive(scores[s.name]));
-  const lines: string[] = [
-    `Мой результат теста на схемы${dateLabel ? ` — ${dateLabel}` : ''}`,
-    '',
-  ];
-  if (active.length === 0) {
-    lines.push('Выраженных схем не обнаружено.');
-  } else {
-    lines.push(`Выраженные схемы (${active.length}):`);
-    for (const s of active) {
-      const sc = scores[s.name];
-      lines.push(
-        `• ${s.name} — средний балл ${sc.avg} из 6 (ответов «5–6»: ${sc.n5plus} из ${sc.nQuestions})`,
-      );
-    }
-  }
-  lines.push(
-    '',
-    'Средний балл — насколько утверждения схемы в среднем про меня (от 4 из 6 — выражена).',
-    'Образовательный опросник для самонаблюдения, не диагноз. schemehappens.ru',
-  );
-  return lines.join('\n');
 }

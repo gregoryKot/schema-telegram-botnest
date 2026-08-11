@@ -115,7 +115,7 @@ export function SettingsSheet({
     api
       .getPair()
       .then(setPairData)
-      .catch(() => {})
+      .catch((e) => console.error('getPair failed', e))
       .finally(() => setPairLoading(false));
     api
       .getTherapyRelation()
@@ -177,11 +177,11 @@ export function SettingsSheet({
   }
 
   async function handleLeave(code: string) {
-    await api.leavePair(code).catch(() => {});
+    await api.leavePair(code).catch((e) => console.error('leavePair', e));
     await api
       .getPair()
       .then(setPairData)
-      .catch(() => {});
+      .catch((e) => console.error('getPair failed', e));
   }
 
   if (!settings) {

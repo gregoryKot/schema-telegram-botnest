@@ -47,7 +47,7 @@ export function TherapistClientSheet({
     api
       .getTherapyClients()
       .then(setClients)
-      .catch(() => {})
+      .catch((e) => console.error('getTherapyClients failed', e))
       .finally(() => setLoading(false));
   }, []);
 

@@ -1,15 +1,13 @@
 import { api } from '../../api';
 import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
-// Обработчики строки листа «плюс»/«Инструменты»: аналитика
-// (quick_action_toggle/move) инъекцией в CustomizeRow — общий компонент со
-// ScreenCustomizeSheet (у того своя аналитика, screen_block_*, в
-// useScreenBlocks/useScreenBlockOrder). Вынесено из QuickActionCustomizeSheet,
-// чтобы лист остался тонким мэппером (правило «одна механика — компонент»).
+// Обработчики строки листа «плюс»/«Инструменты»: аналитика инъекцией в
+// CustomizeRow — общий компонент со ScreenCustomizeSheet (у того своя,
+// screen_block_*, в useScreenBlocks/*). Лист остаётся тонким мэппером.
 export function makeQuickActionRowHandlers(
   surface: QuickActionSurface,
   onToggle: (id: string, hidden: boolean) => void,
-  onMove: (id: string, dir: 'up' | 'down') => boolean,
+  onReorder: (id: string, toIndex: number) => 'up' | 'down' | false,
 ) {
   function handleToggle(id: string, wasHidden: boolean) {
     const nextHidden = !wasHidden;
@@ -21,11 +19,12 @@ export function makeQuickActionRowHandlers(
     onToggle(id, nextHidden);
   }
 
-  function handleMove(id: string, dir: 'up' | 'down') {
-    if (onMove(id, dir)) {
+  function handleReorder(id: string, toIndex: number) {
+    const dir = onReorder(id, toIndex);
+    if (dir) {
       api.trackEvent('quick_action_move', { action: id, surface, dir });
     }
   }
 
-  return { handleToggle, handleMove };
+  return { handleToggle, handleReorder };
 }

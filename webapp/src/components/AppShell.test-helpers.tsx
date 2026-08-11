@@ -223,7 +223,7 @@ vi.mock('../api', () => ({
     resignTherapist: vi.fn().mockResolvedValue(undefined),
     history: vi.fn().mockResolvedValue([]),
     trackEvent: vi.fn(),
-  },
+  }, reportClientError: vi.fn(),
 }));
 
 /** Рендерит AppShell в маршрутах, повторяющих реальную схему из App.tsx —

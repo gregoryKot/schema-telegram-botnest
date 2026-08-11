@@ -18,9 +18,11 @@ vi.mock('../api', () => ({
     updateSettings: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 function profile(overrides: Partial<{ mySchemaIds: string[]; myModeIds: string[]; activeSchemaIds: string[]; completedAt: string | null }> = {}) {
   return {
@@ -164,6 +166,23 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     fireEvent.click(addButtons[0]);
     await screen.findByText(/Выбери схемы, которые тебе близки/);
   });
+
+  // РЕГРЕССИЯ (check-silent-catch): та же дыра, что у режимов ниже — отказ
+  // записи mySchemaIds тонул молча.
+  it('отказ api.updateSettings при сохранении схем уходит в reportClientError', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    renderSection();
+    const addButtons = await screen.findAllByText('+ Добавить');
+    fireEvent.click(addButtons[0]);
+    await screen.findByText(/Выбери схемы, которые тебе близки/);
+    const options = screen.getAllByText('Покинутость / Нестабильность');
+    fireEvent.click(options[options.length - 1]);
+    fireEvent.click(screen.getByText(/Сохранить/));
+
+    await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
+    ));
+  });
 });
 
 describe('SchemasSection — карта режимов от терапевта', () => {
@@ -183,6 +202,18 @@ describe('SchemasSection — карта режимов от терапевта',
     fireEvent.click(screen.getByText('Карта режимов с терапевтом'));
     // ModeMapViewer лениво грузится внутри листа — лист открылся (заголовок листа).
     await waitFor(() => expect(screen.getAllByText('Карта режимов').length).toBeGreaterThanOrEqual(1));
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): .catch(() => {}) глотал отказ molча —
+  // блок карт молча выглядел «карт нет», неотличимо от честного нуля.
+  it('отказ listMyModeMaps уходит в reportClientError, экран остаётся рабочим', async () => {
+    mockApi.listMyModeMaps.mockRejectedValue(new Error('network down'));
+    renderSection();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
+    expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mode-map') }),
+    );
+    expect(screen.queryByText('Карта режимов с терапевтом')).toBeNull();
   });
 });
 
@@ -220,5 +251,24 @@ describe('SchemasSection — пикер режимов', () => {
     fireEvent.click(screen.getByText('Сохранить · 1'));
 
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalledWith({ myModeIds: ['vulnerable_child'] }));
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): .catch(() => {}) при отказе записи не
+  // сообщал ни пользователю, ни логам — локальный выбор расходился с
+  // сервером незаметно для всех. Оптимистичное обновление UI сохраняем
+  // (это осознанный выбор — не блокировать закрытие листа на медленной
+  // записи), но отказ теперь виден в reportClientError.
+  it('отказ api.updateSettings при сохранении режимов уходит в reportClientError', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    renderSection();
+    fireEvent.click((await screen.findAllByText('+ Добавить'))[1]);
+    await screen.findByText('С чего начать');
+    const matches = screen.getAllByText('Уязвимый Ребёнок');
+    fireEvent.click(matches[matches.length - 1]);
+    fireEvent.click(screen.getByText('Сохранить · 1'));
+
+    await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('myModeIds') }),
+    ));
   });
 });

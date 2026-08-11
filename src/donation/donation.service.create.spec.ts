@@ -126,6 +126,41 @@ describe('DonationService.create — Robokassa включена', () => {
   });
 });
 
+// email/comment попадают дальше в текст DM админу (markPaid) — их точное
+// сохранение (trim, схлопывание пустоты в null, а не в '') mutation-тестирование
+// поймало как дыру: без этого теста `dto.email?.trim() || null` можно было
+// заменить на `dto.email` (без trim) или на всегда-true/false ветку тернарника
+// незаметно для сюит.
+describe('DonationService.create — email/comment: trim и схлопывание в null (кормят DM администратора)', () => {
+  it('email и comment сохраняются trimmed', async () => {
+    const { service, prisma } = makeService({ robokassaEnabled: false });
+    await service.create({
+      amount: 50,
+      email: '  a@b.ru  ',
+      comment: '  привет  ',
+    });
+    const created = prisma.donation.create.mock.calls[0][0].data;
+    expect(created.email).toBe('a@b.ru');
+    expect(created.comment).toBe('привет');
+  });
+
+  it('пустая строка/только пробелы — null, а не ""', async () => {
+    const { service, prisma } = makeService({ robokassaEnabled: false });
+    await service.create({ amount: 50, email: '   ', comment: '' });
+    const created = prisma.donation.create.mock.calls[0][0].data;
+    expect(created.email).toBeNull();
+    expect(created.comment).toBeNull();
+  });
+
+  it('email/comment не переданы вовсе — тоже null', async () => {
+    const { service, prisma } = makeService({ robokassaEnabled: false });
+    await service.create({ amount: 50 });
+    const created = prisma.donation.create.mock.calls[0][0].data;
+    expect(created.email).toBeNull();
+    expect(created.comment).toBeNull();
+  });
+});
+
 describe('DonationService.isDonationInvId', () => {
   it('true на границах диапазона [BASE, 2e9)', () => {
     expect(DonationService.isDonationInvId(DONATION_INVID_BASE)).toBe(true);

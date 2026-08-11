@@ -113,7 +113,7 @@ export function AllTasksSheet({
                       api
                         .completeTask(task.id, true)
                         .then(onReload)
-                        .catch(() => {})
+                        .catch((e) => console.error('completeTask failed', e))
                   : undefined
               }
             />

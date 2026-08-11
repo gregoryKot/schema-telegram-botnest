@@ -3,6 +3,7 @@ import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { SCHEMA_BELIEFS } from '../schemaBeliefs';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
+import { logErr } from '../utils/logErr';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
@@ -52,14 +53,13 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
 
   const beliefs = SCHEMA_BELIEFS[schemaId] ?? [];
   const domainColor = domainEntry.color;
-
   function toggleSchema() {
     const next = isAdded
       ? myIds.filter((id) => id !== schemaId)
       : [...myIds, schemaId];
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(next));
     setMyIds(next);
-    api.updateSettings({ mySchemaIds: next }).catch(() => {});
+    api.updateSettings({ mySchemaIds: next }).catch(logErr('mySchemaIds'));
   }
 
   return (

@@ -147,6 +147,34 @@ describe('ProfileSection — реальные данные пользовате�
   });
 });
 
+describe('ProfileSection — сбой части загрузки (регресс check-silent-catch)', () => {
+  // Было: каждый фетч глотал свою ошибку по отдельности — экран уходил в
+  // "ready" и молча показывал 0 вместо реальных данных, будто это настоящий
+  // прогресс пользователя. Теперь сбой виден баннером, а данные, которые
+  // всё же успешно загрузились, всё равно отображаются.
+  it('падение одного из фетчей (getStreak) показывает баннер ошибки, а не тихий 0', async () => {
+    mockApi.getStreak.mockRejectedValue(new Error('network down'));
+    mockApi.getAchievements.mockResolvedValue([{ id: 'first_day', earned: true }]);
+    await act(async () => { renderSection(); });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить часть данных/);
+    // Достижения всё же успели загрузиться и отображаются несмотря на сбой стрика.
+    expect(screen.getByText('Первый шаг')).toBeTruthy();
+  });
+
+  it('на «вы» баннер звучит в форме «вы»', async () => {
+    mockApi.getInsights.mockRejectedValue(new Error('network down'));
+    await act(async () => { renderSection({}, 'vy'); });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Не удалось загрузить часть данных. Обновите страницу.');
+  });
+
+  it('все фетчи успешны — баннера нет', async () => {
+    await act(async () => { renderSection(); });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
 describe('ProfileSection — обновление (refreshKey)', () => {
   it('смена refreshKey сбрасывает экран в состояние загрузки (скелетон) заново', async () => {
     mockApi.getStreak.mockResolvedValue({ currentStreak: 2, longestStreak: 2, totalDays: 2, todayDone: false, weekDots: [] });

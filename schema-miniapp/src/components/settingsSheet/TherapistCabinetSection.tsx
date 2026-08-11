@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { api } from '../../api';
 import { SettingsLabel } from './ui';
 
@@ -12,6 +13,7 @@ export function TherapistCabinetSection({
   therapyInviteUrl,
   setTherapyInviteUrl,
 }: Props) {
+  const [inviteError, setInviteError] = useState(false);
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
@@ -67,13 +69,11 @@ export function TherapistCabinetSection({
               try {
                 const { url } = await api.createTherapyInvite();
                 setTherapyInviteUrl(url);
-                try {
-                  await navigator.clipboard.writeText(url);
-                } catch {
-                  /* ignore */
-                }
-              } catch {
-                /* ignore */
+                setInviteError(false);
+                navigator.clipboard.writeText(url).catch(() => {});
+              } catch (e) {
+                console.error('createTherapyInvite', e);
+                setInviteError(true);
               }
             }}
             style={{
@@ -87,7 +87,7 @@ export function TherapistCabinetSection({
               cursor: 'pointer',
             }}
           >
-            + Создать приглашение клиенту
+            {inviteError ? 'Не получилось' : '+ Создать приглашение клиенту'}
           </button>
           {therapyInviteUrl && (
             <div

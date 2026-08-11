@@ -1,9 +1,30 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { AlertBudget } from '../utils/alert-throttle';
 
 // Lightweight audit channel: posts security-relevant events to the admin
 // Telegram chat (with e-mail fallback), plus structured server logs. Use
 // sparingly — admin will mute everything if we spam.
+//
+// The DM is budgeted HERE, in the delivery channel, not at each call site —
+// call sites forget (see incident below). The structured `logger.log` line
+// stays ALWAYS unthrottled: logs are cheap and go nowhere near a human's
+// muted chat, DMs are the scarce channel that suffers from flooding.
+//
+// Инцидент 2026-07-29 (suspicious_initdata) научил, что шквал одинаковых DM
+// = замьюченный чат = ноль алертов. Урок применили точечно (initdata-alert.ts,
+// auth-failure.report.ts), но `csrf_blocked` (auth-http.util.ts) и
+// `refresh_token_reuse` (auth.service.ts) слали DM БЕЗ единого троттлинга —
+// регрессия домена cookie/SameSite после деплоя ломает CSRF для каждой
+// авторизованной записи каждого пользователя разом, то есть DM на каждый
+// запрос, админ мьютит чат, и алертинг молчит ровно во время аварии.
+//
+// Один слот на событие (как AlertThrottle) не годится: `merge_confirmed`,
+// `role_changed`, `therapist_request_submitted` — редкие, и КАЖДЫЙ важен
+// по отдельности (двое разных пользователей слили аккаунты в один час — оба
+// DM обязаны дойти). Поэтому здесь AlertBudget: до ALERT_BUDGET_MAX_PER_WINDOW
+// алертов ОДНОГО имени события за окно доставляются все, дальше глушатся
+// счётчиком, который всплывает в следующем допущенном алерте.
 
 export type SecurityEvent =
   | 'login_success'
@@ -37,15 +58,35 @@ const ALERT_EVENTS = new Set<SecurityEvent>([
   'refresh_token_reuse',
 ]);
 
+/** Сколько DM одного и того же события пропускаем за окно, прежде чем
+ *  начать глушить счётчиком. Редкие события (merge_confirmed и т.п.) сюда
+ *  никогда не упираются — потолок бьёт только по шквалу. */
+const ALERT_BUDGET_MAX_PER_WINDOW = 3;
+/** Ширина окна бюджета — 15 минут (см. заголовок файла). */
+const ALERT_BUDGET_WINDOW_MS = 15 * 60_000;
+
 @Injectable()
 export class SecurityLogService {
   private readonly logger = new Logger('SecurityAudit');
+  private readonly budget = new AlertBudget(
+    ALERT_BUDGET_WINDOW_MS,
+    ALERT_BUDGET_MAX_PER_WINDOW,
+  );
+
+  // Инжектируемые часы — по образцу auth-failure.report.ts: тесты бюджета
+  // обязаны быть детерминированными, без реальных таймеров. @Optional(),
+  // потому что Nest не знает провайдера для типа `() => number` — без него
+  // DI бросил бы UnknownDependenciesException при сборке модуля.
+  constructor(@Optional() private readonly now: () => number = Date.now) {}
 
   log(event: SecurityEvent, data: Record<string, unknown>): void {
     const line = `[${event}] ${JSON.stringify(this.redact(data))}`;
+    // Структурный лог — ВСЕГДА без троттлинга: логи дёшевы, а бюджет ниже
+    // защищает только скудный канал (DM админу).
     this.logger.log(line);
     if (ALERT_EVENTS.has(event)) {
-      this.alertAdmin(event, data).catch(() => null);
+      const { allow, suppressed } = this.budget.take(event, this.now());
+      if (allow) this.alertAdmin(event, data, suppressed).catch(() => null);
     }
   }
 
@@ -73,13 +114,17 @@ export class SecurityLogService {
   private async alertAdmin(
     event: SecurityEvent,
     data: Record<string, unknown>,
+    suppressed: number,
   ): Promise<void> {
     const redacted = this.redact(data);
     const text =
       `🔐 ${event}\n` +
       Object.entries(redacted)
         .map(([k, v]) => `${k}: ${String(v).slice(0, 80)}`)
-        .join('\n');
+        .join('\n') +
+      // Непустой счётчик — значит, бюджет предыдущего окна упирался в
+      // потолок; сообщаем, сколько таких же DM проглотили молча.
+      (suppressed > 0 ? `\n\nещё ${suppressed} за окно` : '');
     // Telegram first, e-mail fallback so security events are never lost.
     await notifyAdminWithFallback(text, `🔐 Security: ${event}`);
   }

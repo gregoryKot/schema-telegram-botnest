@@ -31,7 +31,8 @@ export function ClientDetailView({
   startDateInputRef,
   nextSessionInputRef,
 }: ClientDetailViewProps) {
-  const { setRenamingAlias, setYsqRequested, deleteError } = detail;
+  const { setRenamingAlias, setYsqRequested, deleteError, clientLoadError } =
+    detail;
 
   return (
     <div
@@ -111,6 +112,21 @@ export function ClientDetailView({
             }}
           >
             {deleteError}
+          </div>
+        )}
+
+        {/* fetchClientDetail: часть данных не загрузилась — не путать с «у клиента их нет» */}
+        {clientLoadError && (
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--accent-red)',
+              marginTop: 4,
+              textAlign: 'center',
+            }}
+          >
+            Часть данных клиента не загрузилась. Обновится при повторном
+            открытии карточки.
           </div>
         )}
 

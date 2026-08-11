@@ -75,7 +75,7 @@ function pushNow(): void {
     void api
       .updateSettings({ uiPrefs: collectPrefs(localStorage) })
       .then(() => localStorage.setItem(MIGRATED_KEY, '1'))
-      .catch(() => {});
+      .catch((e) => console.error('updateSettings(uiPrefs) failed', e));
   } catch {
     /* fire-and-forget, как trackEvent — синхронизация не мешает UI */
   }

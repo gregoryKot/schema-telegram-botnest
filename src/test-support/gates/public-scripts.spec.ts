@@ -20,6 +20,46 @@ describe('check-public-scripts.mjs', () => {
     expect(res.stderr).toContain('webapp/public/loader.js');
   });
 
+  it('скрипт упомянут ТОЛЬКО в `//` комментарии — не считается, exit 1', () => {
+    const res = runGate('check-public-scripts.mjs', {
+      'scripts/public-scripts-baseline.json': '{}',
+      'webapp/public/loader.js': LOADER,
+      'webapp/src/loader.test.ts':
+        '// TODO: написать тест на loader.js, пока руки не дошли\n' +
+        "it('заглушка', () => 1);\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/public/loader.js');
+  });
+
+  it('скрипт упомянут ТОЛЬКО в /* */ блочном комментарии — тоже не считается, exit 1', () => {
+    const res = runGate('check-public-scripts.mjs', {
+      'scripts/public-scripts-baseline.json': '{}',
+      'webapp/public/loader.js': LOADER,
+      'webapp/src/loader.test.ts':
+        '/* см. public/loader.js — здесь пока пусто */\n' +
+        "it('заглушка', () => 1);\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/public/loader.js');
+  });
+
+  // Регрессионный тест на сам сканер: наивное построчное вырезание `//...$`
+  // без учёта строк превратило бы `'https://…'` в комментарий и съело бы
+  // остаток строки — включая реальное упоминание файла на той же строке.
+  it('URL со `//` внутри строки не ломает поиск реального упоминания на той же строке', () => {
+    const res = runGate('check-public-scripts.mjs', {
+      'scripts/public-scripts-baseline.json': '{}',
+      'webapp/public/loader.js': LOADER,
+      'webapp/src/loader.test.ts':
+        "const cdn = 'https://cdn.example.com/lib.js'; " +
+        "const SRC = read('../public/loader.js');\n" +
+        "it('грузится', () => SRC);\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('все под тестом');
+  });
+
   it('на скрипт есть тест — гейт зелёный', () => {
     const res = runGate('check-public-scripts.mjs', {
       'scripts/public-scripts-baseline.json': '{}',

@@ -153,6 +153,35 @@ describe('openClient', () => {
     expect(result.current.selfSchemaIds).toEqual(['x']);
   });
 
+  // Регрессия: раньше `.catch(() => [])`/`.catch(() => null)` на каждый из
+  // шести запросов терял факт сбоя — терапевт видел пустой список заметок и
+  // не мог отличить «у клиента правда ничего нет» от «сеть подвела». Теперь
+  // fetchClientDetail помечает это явным флагом.
+  it('при отказе хотя бы одного запроса выставляет clientLoadError=true', async () => {
+    mockApi.getTherapistNotes.mockRejectedValue(new Error('boom'));
+    const { result } = await openedHook();
+    expect(result.current.clientLoadError).toBe(true);
+  });
+
+  it('когда все запросы успешны — clientLoadError=false', async () => {
+    const { result } = await openedHook();
+    expect(result.current.clientLoadError).toBe(false);
+  });
+
+  it('открытие следующего клиента без ошибок сбрасывает clientLoadError в false', async () => {
+    mockApi.getTherapistNotes.mockRejectedValueOnce(new Error('boom'));
+    const { result } = setup();
+    await act(async () => {
+      await result.current.openClient(makeClient({ telegramId: 1 }));
+    });
+    expect(result.current.clientLoadError).toBe(true);
+
+    await act(async () => {
+      await result.current.openClient(makeClient({ telegramId: 2 }));
+    });
+    expect(result.current.clientLoadError).toBe(false);
+  });
+
   it('игнорирует устаревший ответ, если за это время открыли другого клиента (защита от гонки)', async () => {
     let resolveFirst!: (v: unknown[]) => void;
     const pending = new Promise<unknown[]>((res) => {

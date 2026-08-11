@@ -12,6 +12,7 @@ import {
   cleanup,
   waitFor,
   act,
+  within,
 } from '@testing-library/react';
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { ProfileSection } from './ProfileSection';
@@ -161,6 +162,29 @@ describe('ProfileSection — обновление по refreshKey', () => {
   });
 });
 
+describe('ProfileSection — провал рефетча не подменяет реальный стрик нулём (regression: check-silent-catch)', () => {
+  it('getStreak падает после смены refreshKey — виден прежний стрик, а не «0»', async () => {
+    mockApi.getStreak.mockResolvedValueOnce({
+      currentStreak: 5,
+      longestStreak: 8,
+      totalDays: 12,
+      todayDone: true,
+      weekDots: [],
+    });
+    const { rerender } = await renderReady({ refreshKey: 1 });
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    const streakCard = screen.getByText('всего').closest('.card')!;
+    expect(within(streakCard).getByText('12')).toBeTruthy();
+
+    mockApi.getStreak.mockRejectedValueOnce(new Error('network'));
+    rerender(<ProfileSection {...baseProps()} refreshKey={2} />);
+
+    await waitFor(() => expect(mockApi.getStreak).toHaveBeenCalledTimes(2));
+    // Раньше streak обнулялся ДО рефетча — провал подменял «12» на «0».
+    expect(within(streakCard).getByText('12')).toBeTruthy();
+  });
+});
+
 describe('ProfileSection — скрываемые блоки (useScreenBlocks)', () => {
   it('блок, скрытый в localStorage, не рендерится — остальные видны', async () => {
     localStorage.setItem('screen_hidden_profile', JSON.stringify(['streak']));
@@ -257,13 +281,15 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(idxStreak).toBeLessThan(idxJourney);
   });
 
-  it('стрелка «Выше» второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
+  it('ArrowUp на ручке второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
     const { container } = await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
     // Порядок листа по умолчанию: Мой путь, Серия дней, Календарь, Достижения,
     // Инсайты — «Серия дней» вторая строка.
-    fireEvent.click(screen.getAllByLabelText('Выше')[1]);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Серия дней'), {
+      key: 'ArrowUp',
+    });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
       screen: 'profile',
       block: 'streak',
@@ -287,13 +313,13 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     );
   });
 
-  it('стрелка «Выше» первой строки (край) задизейблена: клик молчит, ничего не персистит', async () => {
+  it('ArrowUp на ручке первой строки (край) — no-op, ничего не персистит', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    const firstUp = screen.getAllByLabelText('Выше')[0];
-    expect(firstUp.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(firstUp);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+      key: 'ArrowUp',
+    });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'screen_block_move',
       expect.anything(),
@@ -301,11 +327,13 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(localStorage.getItem('screen_order_profile')).toBeNull();
   });
 
-  it('клик по стрелке в листе не переключает тумблер строки', async () => {
+  it('клавиша на ручке в листе не переключает тумблер строки', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+      key: 'ArrowDown',
+    });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'screen_block_toggle',
       expect.anything(),

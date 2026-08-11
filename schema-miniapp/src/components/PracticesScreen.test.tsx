@@ -142,6 +142,24 @@ describe('PracticesScreen — удаление практики', () => {
     expect(screen.queryByText('Медитация')).toBeNull();
     expect(deletePractice).toHaveBeenCalledWith(5);
   });
+
+  it('провал deletePractice возвращает практику в список и показывает ошибку (regression: check-silent-catch)', async () => {
+    // Раньше .catch(() => {}) молча проглатывал провал — практика исчезала
+    // из UI навсегда, хотя на сервере оставалась (revert для optimistic
+    // update — класс бага из CLAUDE.md).
+    getPractices.mockResolvedValue([
+      { id: 5, needId: 'attachment', text: 'Медитация' },
+    ]);
+    deletePractice.mockRejectedValue(new Error('network'));
+    renderScreen();
+    await screen.findByText('Медитация');
+
+    fireEvent.click(screen.getByText('×'));
+    expect(screen.queryByText('Медитация')).toBeNull();
+
+    expect(await screen.findByText('Медитация')).toBeTruthy();
+    expect(await screen.findByText('Ошибка сохранения')).toBeTruthy();
+  });
 });
 
 describe('PracticesScreen — кризисная детекция поля «добавить практику» (правило №7)', () => {
