@@ -29,11 +29,14 @@ describe('StatsReportService.render', () => {
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
     };
+    const clientErrors = {
+      render: jest.fn().mockResolvedValue('поломки на клиенте: не было'),
+    };
     const money = {
       render: jest.fn().mockResolvedValue('деньги: поддержали 3 раза'),
     };
     return {
-      blocks: { accountLink, plus, screen, authHealth, money },
+      blocks: { accountLink, plus, screen, authHealth, clientErrors, money },
       service: new StatsReportService(
         product as never,
         modeCard as never,
@@ -44,6 +47,7 @@ describe('StatsReportService.render', () => {
         plus as never,
         screen as never,
         authHealth as never,
+        clientErrors as never,
         money as never,
       ),
     };
@@ -57,7 +61,7 @@ describe('StatsReportService.render', () => {
       out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
     ).toBe(true);
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nденьги: поддержали 3 раза',
+      'вход в мессенджере: всё хорошо\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза',
     );
     // Блок «Настройки» (щит, волна 8) — считается из process.env напрямую
     // (не мокается через blocks), но обязан приезжать последним куском
@@ -78,11 +82,13 @@ describe('StatsReportService.render', () => {
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
+    expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
     expect(blocks.money.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('вход в мессенджере: всё хорошо');
+    expect(out).toContain('поломки на клиенте: не было');
     expect(out).toContain('деньги: поддержали 3 раза');
   });
 });

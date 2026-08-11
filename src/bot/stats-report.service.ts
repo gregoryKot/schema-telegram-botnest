@@ -8,6 +8,7 @@ import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
@@ -28,6 +29,7 @@ export class StatsReportService {
     private readonly plus: PlusMetricsService,
     private readonly screen: ScreenMetricsService,
     private readonly authHealth: AuthHealthMetricsService,
+    private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
   ) {}
 
@@ -43,6 +45,7 @@ export class StatsReportService {
       plus,
       screen,
       authHealth,
+      clientErrors,
       money,
     ] = await Promise.all([
       this.product.render(),
@@ -54,9 +57,10 @@ export class StatsReportService {
       this.plus.render(),
       this.screen.render(),
       this.authHealth.render(),
+      this.clientErrors.render(),
       this.money.render(),
     ]);
     const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${money}\n\n${capability}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${capability}`;
   }
 }
