@@ -151,13 +151,13 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
     ]);
   });
 
-  it('move свопает соседей, персистит в screen_order_profile и шлёт screen_block_move (read-after-write)', () => {
+  it('reorder переставляет, персистит в screen_order_profile и шлёт screen_block_move (read-after-write)', () => {
     const { result } = renderHook(() =>
       useScreenBlocks('profile', 'screen_hidden_profile'),
     );
     let moved = false;
     act(() => {
-      moved = result.current.move('streak', 'up');
+      moved = result.current.reorder('streak', 0);
     });
     expect(moved).toBe(true);
     expect(result.current.orderedIds[0]).toBe('streak');
@@ -169,13 +169,13 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
     });
   });
 
-  it('move на краю — false, без localStorage и без события', () => {
+  it('reorder на месте (toIndex не меняет позицию) — false, без localStorage и без события', () => {
     const { result } = renderHook(() =>
       useScreenBlocks('profile', 'screen_hidden_profile'),
     );
     let moved = true;
     act(() => {
-      moved = result.current.move('journey', 'up');
+      moved = result.current.reorder('journey', 0);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();

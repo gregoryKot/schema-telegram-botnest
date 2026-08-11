@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // ScreenCustomizeSheet — generic лист «что показывать/в каком порядке» по
 // экрану. Принимает готовый `blocks` (форма useScreenBlocks): рендерит блоки
-// в blocks.orderedIds, клик по строке зовёт toggle(id), стрелки — move(id,
-// dir) и дизейблены на краях orderedIds, подсветка нужной строки, «Готово»
-// закрывает.
+// в blocks.orderedIds, клик по строке зовёт toggle(id), ручка (клавиатура)
+// зовёт reorder(id, toIndex) и клэмпится на границах списка, подсветка нужной
+// строки, «Готово» закрывает.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import {
@@ -28,7 +28,7 @@ function baseBlocks(overrides: Partial<ScreenBlocksApi> = {}): ScreenBlocksApi {
     hidden: [],
     orderedIds: PROFILE_ORDER,
     toggle: vi.fn(),
-    move: vi.fn().mockReturnValue(true),
+    reorder: vi.fn().mockReturnValue(true),
     closeSheet: vi.fn(),
     ...overrides,
   };
@@ -120,35 +120,47 @@ describe('ScreenCustomizeSheet', () => {
     expect(labels[1]).toContain('Мой путь');
   });
 
-  it('первая строка — стрелка вверх задизейблена, последняя — вниз', () => {
-    render(<ScreenCustomizeSheet blocks={baseBlocks()} />);
-    const ups = screen.getAllByLabelText('Выше');
-    const downs = screen.getAllByLabelText('Ниже');
-    expect(ups[0].getAttribute('aria-disabled')).toBe('true');
-    expect(downs[downs.length - 1].getAttribute('aria-disabled')).toBe('true');
-    expect(ups[ups.length - 1].getAttribute('aria-disabled')).toBe('false');
-    expect(downs[0].getAttribute('aria-disabled')).toBe('false');
+  it('ArrowDown на ручке первой строки вызывает reorder(id, 1)', () => {
+    const reorder = vi.fn().mockReturnValue(true);
+    render(<ScreenCustomizeSheet blocks={baseBlocks({ reorder })} />);
+    const handle = screen.getByLabelText('Переставить: Мой путь');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(reorder).toHaveBeenCalledWith('journey', 1);
   });
 
-  it('клик по стрелке «Ниже» первой строки вызывает move(id, "down")', () => {
-    const move = vi.fn().mockReturnValue(true);
-    render(<ScreenCustomizeSheet blocks={baseBlocks({ move })} />);
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
-    expect(move).toHaveBeenCalledWith('journey', 'down');
+  it('ArrowUp на ручке первой строки (край списка) — reorder не вызывается', () => {
+    const reorder = vi.fn().mockReturnValue(true);
+    render(<ScreenCustomizeSheet blocks={baseBlocks({ reorder })} />);
+    const handle = screen.getByLabelText('Переставить: Мой путь');
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(reorder).not.toHaveBeenCalled();
   });
 
-  it('задизейбленная стрелка на краю: клик не вызывает move', () => {
-    const move = vi.fn().mockReturnValue(true);
-    render(<ScreenCustomizeSheet blocks={baseBlocks({ move })} />);
-    fireEvent.click(screen.getAllByLabelText('Выше')[0]);
-    expect(move).not.toHaveBeenCalled();
+  it('ArrowDown на ручке последней строки (край списка) — reorder не вызывается', () => {
+    const reorder = vi.fn().mockReturnValue(true);
+    render(<ScreenCustomizeSheet blocks={baseBlocks({ reorder })} />);
+    const handle = screen.getByLabelText('Переставить: Паттерны');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(reorder).not.toHaveBeenCalled();
   });
 
-  it('клик по стрелке не переключает тумблер строки', () => {
+  it('клавиша на ручке не переключает тумблер строки', () => {
     const toggle = vi.fn();
-    const move = vi.fn().mockReturnValue(true);
-    render(<ScreenCustomizeSheet blocks={baseBlocks({ toggle, move })} />);
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    const reorder = vi.fn().mockReturnValue(true);
+    render(<ScreenCustomizeSheet blocks={baseBlocks({ toggle, reorder })} />);
+    const handle = screen.getByLabelText('Переставить: Мой путь');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it('касание/жест ручки (pointerdown→move→up) не переключает тумблер строки', () => {
+    const toggle = vi.fn();
+    render(<ScreenCustomizeSheet blocks={baseBlocks({ toggle })} />);
+    const handle = screen.getByLabelText('Переставить: Мой путь');
+    handle.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 60, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 60, pointerId: 1 });
     expect(toggle).not.toHaveBeenCalled();
   });
 });
