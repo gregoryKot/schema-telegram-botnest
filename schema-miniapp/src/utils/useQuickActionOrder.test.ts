@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-// Хук порядка: применяет order к группам, onMove свопает СРЕДИ СОСЕДЕЙ
-// СВОЕЙ ГРУППЫ и обновляет state (read-after-write — новый рендер хука
-// видит уже свопнутый порядок).
+// Хук порядка: применяет order к группам, onReorder сохраняет перестановку
+// СРЕДИ СОСЕДЕЙ СВОЕЙ ГРУППЫ (toIndex — локальный индекс внутри группы) и
+// возвращает netto-направление 'up'/'down' для аналитики (read-after-write —
+// новый рендер хука видит уже переставленный порядок).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useQuickActionOrder } from './useQuickActionOrder';
@@ -21,28 +22,44 @@ describe('useQuickActionOrder', () => {
     ]);
   });
 
-  it('onMove свопает пункт с соседом внутри его группы и перерисовывает hook', () => {
+  it('onReorder переставляет пункт на toIndex внутри его группы и перерисовывает hook, возвращает "up"', () => {
     const { result } = renderHook(() =>
       useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }], [{ id: 'c' }]]),
     );
-    let moved = false;
+    let dir: 'up' | 'down' | false = false;
     act(() => {
-      moved = result.current.onMove('b', 'up');
+      dir = result.current.onReorder('b', 0);
     });
-    expect(moved).toBe(true);
+    expect(dir).toBe('up');
     expect(result.current.ordered[0]).toEqual([{ id: 'b' }, { id: 'a' }]);
     expect(result.current.ordered[1]).toEqual([{ id: 'c' }]);
   });
 
-  it('на краю группы (единственный элемент) — false, ничего не меняется', () => {
+  it('toIndex больше исходного — возвращает "down"', () => {
+    const { result } = renderHook(() =>
+      useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }, { id: 'c' }]]),
+    );
+    let dir: 'up' | 'down' | false = false;
+    act(() => {
+      dir = result.current.onReorder('a', 2);
+    });
+    expect(dir).toBe('down');
+    expect(result.current.ordered[0]).toEqual([
+      { id: 'b' },
+      { id: 'c' },
+      { id: 'a' },
+    ]);
+  });
+
+  it('toIndex === текущий индекс (единственный элемент группы) — false, ничего не меняется', () => {
     const { result } = renderHook(() =>
       useQuickActionOrder(KEY, [[{ id: 'a' }], [{ id: 'c' }]]),
     );
-    let moved = true;
+    let dir: 'up' | 'down' | false = 'up';
     act(() => {
-      moved = result.current.onMove('c', 'down');
+      dir = result.current.onReorder('c', 0);
     });
-    expect(moved).toBe(false);
+    expect(dir).toBe(false);
     expect(result.current.ordered).toEqual([[{ id: 'a' }], [{ id: 'c' }]]);
   });
 
@@ -50,10 +67,28 @@ describe('useQuickActionOrder', () => {
     const { result } = renderHook(() =>
       useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }]]),
     );
-    let moved = true;
+    let dir: 'up' | 'down' | false = 'up';
     act(() => {
-      moved = result.current.onMove('z', 'up');
+      dir = result.current.onReorder('z', 0);
     });
-    expect(moved).toBe(false);
+    expect(dir).toBe(false);
+  });
+
+  it('read-after-write: новый рендер хука видит сохранённый порядок', () => {
+    const { result, unmount } = renderHook(() =>
+      useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }, { id: 'c' }]]),
+    );
+    act(() => {
+      result.current.onReorder('c', 0);
+    });
+    unmount();
+    const { result: second } = renderHook(() =>
+      useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }, { id: 'c' }]]),
+    );
+    expect(second.current.ordered[0]).toEqual([
+      { id: 'c' },
+      { id: 'a' },
+      { id: 'b' },
+    ]);
   });
 });

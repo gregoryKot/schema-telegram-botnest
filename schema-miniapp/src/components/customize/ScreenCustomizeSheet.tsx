@@ -1,11 +1,9 @@
-// Лист «Настроить экран»: скрыть/показать + переставить блоки текущего
-// экрана. Generic по CustomizableScreen («Профиль»/«Паттерны» — один
-// компонент, правило «одна механика — компонент»). Строка — CustomizeRow,
-// общая с QuickActionCustomizeSheet; порядок — withMoveFlags (тот же
-// generic-примитив, что у меню «плюс»). Каркас — общий CustomizeSheetShell.
+// Лист «Настроить экран»: скрыть/показать + переставить (drag&drop) блоки
+// экрана. Строка — CustomizeRow, общая с QuickActionCustomizeSheet; порядок —
+// useDragReorder (тот же примитив, что у меню «плюс»/«Инструментов»).
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
 import { CustomizeRow } from '../plusMenu/CustomizeRow';
-import { withMoveFlags, type MoveDir } from '../../utils/quickActionOrder';
+import { useDragReorder } from '../../hooks/useDragReorder';
 import { BLOCK_META, type ScreenBlockId } from '../../utils/screenBlocks';
 
 export interface ScreenBlocksApi {
@@ -13,13 +11,14 @@ export interface ScreenBlocksApi {
   orderedIds: ScreenBlockId[];
   highlight?: ScreenBlockId;
   toggle: (id: ScreenBlockId) => void;
-  move: (id: string, dir: MoveDir) => boolean;
+  reorder: (id: string, toIndex: number) => boolean;
   closeSheet: () => void;
 }
 
 export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
-  const { hidden, orderedIds, highlight, toggle, move, closeSheet } = blocks;
-  const rows = withMoveFlags(orderedIds.map((id) => ({ id })));
+  const { hidden, orderedIds, highlight, toggle, reorder, closeSheet } = blocks;
+  const d = useDragReorder({ ids: orderedIds, onReorder: reorder });
+  const range = { min: 0, max: orderedIds.length - 1 };
   return (
     <CustomizeSheetShell
       title="Настроить экран"
@@ -27,7 +26,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
       onClose={closeSheet}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rows.map(({ id, disabledUp, disabledDown }) => {
+        {orderedIds.map((id) => {
           const meta = BLOCK_META[id];
           if (!meta) return null;
           return (
@@ -38,10 +37,9 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
               sub={meta.sub}
               hidden={hidden.includes(id)}
               onToggle={() => toggle(id)}
-              disabledUp={disabledUp}
-              disabledDown={disabledDown}
-              onMoveUp={() => move(id, 'up')}
-              onMoveDown={() => move(id, 'down')}
+              dragHandleProps={d.handleProps(id, meta.label, range)}
+              rowRef={d.registerRow(id)}
+              drag={{ offsetY: d.offsetFor(id), lifted: d.drag?.id === id }}
               highlighted={highlight === id}
             />
           );

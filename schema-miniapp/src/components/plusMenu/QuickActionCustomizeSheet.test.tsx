@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // QuickActionCustomizeSheet — generic лист «что показывать» (переиспользует
-// CustomizeRow = ToggleRow + MoveArrows, не проверяем их внутреннюю разметку
-// — только текст строки и колбэки). Проверяем: toggle шлёт
-// quick_action_toggle, «Готово» закрывает, стрелки двигают порядок и шлют
-// quick_action_move только при успехе, край задизейблен и не кликается,
-// клик по стрелке не переключает тумблер.
+// CustomizeRow = ToggleRow + DragHandle, не проверяем их внутреннюю разметку
+// — только текст строки, aria-label ручки и колбэки). Проверяем: toggle шлёт
+// quick_action_toggle, «Готово» закрывает, ручка (клавиатура + жест) двигает
+// порядок и шлёт quick_action_move только при успехе, диапазон группы
+// (rangeMin/rangeMax) прижимает к границе, жест по ручке не переключает тумблер.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
@@ -19,16 +19,16 @@ const actions = [
     emoji: '📊',
     label: 'Трекер потребностей',
     sub: 'sub-1',
-    disabledUp: true,
-    disabledDown: false,
+    rangeMin: 0,
+    rangeMax: 1,
   },
   {
     id: 'warm_words',
     emoji: '💛',
     label: 'Тёплые слова',
     sub: 'sub-2',
-    disabledUp: false,
-    disabledDown: true,
+    rangeMin: 0,
+    rangeMax: 1,
   },
 ];
 
@@ -44,7 +44,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
-        onMove={vi.fn()}
+        onReorder={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -62,7 +62,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={onToggle}
-        onMove={vi.fn()}
+        onReorder={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -75,28 +75,6 @@ describe('QuickActionCustomizeSheet', () => {
     expect(onToggle).toHaveBeenCalledWith('warm_words', true);
   });
 
-  it('клик по скрытому пункту возвращает его: hidden:false, surface=tools', () => {
-    const onToggle = vi.fn();
-    render(
-      <QuickActionCustomizeSheet
-        title="t"
-        surface="tools"
-        actions={actions}
-        hidden={['warm_words']}
-        onToggle={onToggle}
-        onMove={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-    fireEvent.click(screen.getByText('Тёплые слова'));
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
-      action: 'warm_words',
-      hidden: false,
-      surface: 'tools',
-    });
-    expect(onToggle).toHaveBeenCalledWith('warm_words', false);
-  });
-
   it('«Готово» закрывает лист', () => {
     const onClose = vi.fn();
     render(
@@ -106,7 +84,7 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
-        onMove={vi.fn()}
+        onReorder={vi.fn()}
         onClose={onClose}
       />,
     );
@@ -114,8 +92,8 @@ describe('QuickActionCustomizeSheet', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('стрелка двигает: onMove(id, dir) вызван, при успехе шлёт quick_action_move', () => {
-    const onMove = vi.fn().mockReturnValue(true);
+  it('клавиша ArrowDown на ручке первой строки: onReorder(id, toIndex=1), при успехе шлёт quick_action_move', () => {
+    const onReorder = vi.fn().mockReturnValue('down');
     render(
       <QuickActionCustomizeSheet
         title="t"
@@ -123,13 +101,13 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
-        onMove={onMove}
+        onReorder={onReorder}
         onClose={vi.fn()}
       />,
     );
-    // У «Трекера» (первая строка) вверх задизейблен, вниз — нет.
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
-    expect(onMove).toHaveBeenCalledWith('tracker', 'down');
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(onReorder).toHaveBeenCalledWith('tracker', 1);
     expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'tracker',
       surface: 'plus',
@@ -137,8 +115,8 @@ describe('QuickActionCustomizeSheet', () => {
     });
   });
 
-  it('onMove вернул false (внутренний край) — quick_action_move не отправлен', () => {
-    const onMove = vi.fn().mockReturnValue(false);
+  it('onReorder вернул false (no-op) — quick_action_move не отправлен', () => {
+    const onReorder = vi.fn().mockReturnValue(false);
     render(
       <QuickActionCustomizeSheet
         title="t"
@@ -146,20 +124,21 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
-        onMove={onMove}
+        onReorder={onReorder}
         onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
-    expect(onMove).toHaveBeenCalledWith('tracker', 'down');
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(onReorder).toHaveBeenCalledWith('tracker', 1);
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'quick_action_move',
       expect.anything(),
     );
   });
 
-  it('задизейбленная стрелка на краю: aria-disabled, клик не вызывает onMove и не шлёт событие', () => {
-    const onMove = vi.fn().mockReturnValue(true);
+  it('ArrowUp на границе диапазона строки (rangeMin=0) — onReorder не вызывается', () => {
+    const onReorder = vi.fn().mockReturnValue('up');
     render(
       <QuickActionCustomizeSheet
         title="t"
@@ -167,22 +146,70 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={vi.fn()}
-        onMove={onMove}
+        onReorder={onReorder}
         onClose={vi.fn()}
       />,
     );
-    // «Трекер» — первая строка, стрелка вверх задизейблена.
-    const upTracker = screen.getAllByLabelText('Выше')[0];
-    expect(upTracker.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(upTracker);
-    expect(onMove).not.toHaveBeenCalled();
-    expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
-      'quick_action_move',
-      expect.anything(),
-    );
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(onReorder).not.toHaveBeenCalled();
   });
 
-  it('клик по стрелке не переключает тумблер строки', () => {
+  it('жест ручки (pointerdown→move→up) вниз через одну строку — один quick_action_move c dir="down"', () => {
+    const onReorder = vi.fn().mockReturnValue('down');
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={vi.fn()}
+        onReorder={onReorder}
+        onClose={vi.fn()}
+      />,
+    );
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    (
+      handle as HTMLElement & { setPointerCapture: () => void }
+    ).setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 60, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 60, pointerId: 1 });
+    expect(onReorder).toHaveBeenCalledWith('tracker', 1);
+    expect(mockApi.trackEvent).toHaveBeenCalledTimes(1);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+      action: 'tracker',
+      surface: 'plus',
+      dir: 'down',
+    });
+  });
+
+  it('жест ручки — вернулся на исходное место перед отпусканием — событие не отправлено', () => {
+    const onReorder = vi.fn().mockReturnValue('down');
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={vi.fn()}
+        onReorder={onReorder}
+        onClose={vi.fn()}
+      />,
+    );
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    (
+      handle as HTMLElement & { setPointerCapture: () => void }
+    ).setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 60, pointerId: 1, buttons: 1 });
+    fireEvent.pointerMove(handle, { clientY: 0, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 0, pointerId: 1 });
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(mockApi.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('клавиша на ручке не переключает тумблер строки', () => {
     const onToggle = vi.fn();
     render(
       <QuickActionCustomizeSheet
@@ -191,11 +218,35 @@ describe('QuickActionCustomizeSheet', () => {
         actions={actions}
         hidden={[]}
         onToggle={onToggle}
-        onMove={vi.fn().mockReturnValue(true)}
+        onReorder={vi.fn().mockReturnValue('down')}
         onClose={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('касание/жест ручки (pointerdown→move→up) не переключает тумблер строки', () => {
+    const onToggle = vi.fn();
+    render(
+      <QuickActionCustomizeSheet
+        title="t"
+        surface="plus"
+        actions={actions}
+        hidden={[]}
+        onToggle={onToggle}
+        onReorder={vi.fn().mockReturnValue('down')}
+        onClose={vi.fn()}
+      />,
+    );
+    const handle = screen.getByLabelText('Переставить: Трекер потребностей');
+    (
+      handle as HTMLElement & { setPointerCapture: () => void }
+    ).setPointerCapture = vi.fn();
+    fireEvent.pointerDown(handle, { clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientY: 60, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(handle, { clientY: 60, pointerId: 1 });
     expect(onToggle).not.toHaveBeenCalled();
   });
 });

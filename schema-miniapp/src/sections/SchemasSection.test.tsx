@@ -262,12 +262,14 @@ describe('SchemasSection — порядок стопки hero/тест на сх
     ).toBeTruthy();
   });
 
-  it('стрелка «Ниже» строки «Подсказка сверху» переставляет, шлёт screen_block_move и персистит', async () => {
+  it('ArrowDown на ручке строки «Подсказка сверху» переставляет, шлёт screen_block_move и персистит', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран'));
     await screen.findByText('Настроить экран');
     // Порядок листа по умолчанию: Подсказка сверху, Тест на схемы.
-    fireEvent.click(screen.getAllByLabelText('Ниже')[0]);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Подсказка сверху'), {
+      key: 'ArrowDown',
+    });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
       screen: 'patterns',
       block: 'heroes',
@@ -278,13 +280,13 @@ describe('SchemasSection — порядок стопки hero/тест на сх
     );
   });
 
-  it('стрелка «Выше» первой строки (край) задизейблена — клик молчит', async () => {
+  it('ArrowUp на ручке первой строки (край) — no-op', async () => {
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран'));
     await screen.findByText('Настроить экран');
-    const upFirst = screen.getAllByLabelText('Выше')[0];
-    expect(upFirst.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(upFirst);
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Подсказка сверху'), {
+      key: 'ArrowUp',
+    });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(
       'screen_block_move',
       expect.anything(),

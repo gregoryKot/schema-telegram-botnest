@@ -1,6 +1,7 @@
 // makeQuickActionRowHandlers: handleToggle всегда шлёт quick_action_toggle и
-// зовёт onToggle с инвертированным hidden; handleMove шлёт quick_action_move
-// ТОЛЬКО когда onMove вернул true (край листа — молча, без события).
+// зовёт onToggle с инвертированным hidden; handleReorder шлёт
+// quick_action_move ТОЛЬКО когда onReorder вернул 'up'/'down' (truthy) — с
+// этим же dir в meta; false (no-op) — молча.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { makeQuickActionRowHandlers } from './quickActionRowHandlers';
 
@@ -42,11 +43,15 @@ describe('makeQuickActionRowHandlers', () => {
     });
   });
 
-  it('handleMove: onMove вернул true — шлёт quick_action_move', () => {
-    const onMove = vi.fn().mockReturnValue(true);
-    const { handleMove } = makeQuickActionRowHandlers('plus', vi.fn(), onMove);
-    handleMove('tracker', 'down');
-    expect(onMove).toHaveBeenCalledWith('tracker', 'down');
+  it('handleReorder: onReorder вернул "down" — шлёт quick_action_move с dir="down"', () => {
+    const onReorder = vi.fn().mockReturnValue('down');
+    const { handleReorder } = makeQuickActionRowHandlers(
+      'plus',
+      vi.fn(),
+      onReorder,
+    );
+    handleReorder('tracker', 2);
+    expect(onReorder).toHaveBeenCalledWith('tracker', 2);
     expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'tracker',
       surface: 'plus',
@@ -54,10 +59,29 @@ describe('makeQuickActionRowHandlers', () => {
     });
   });
 
-  it('handleMove: onMove вернул false (край) — событие не отправлено', () => {
-    const onMove = vi.fn().mockReturnValue(false);
-    const { handleMove } = makeQuickActionRowHandlers('plus', vi.fn(), onMove);
-    handleMove('tracker', 'up');
+  it('handleReorder: onReorder вернул "up" — шлёт quick_action_move с dir="up"', () => {
+    const onReorder = vi.fn().mockReturnValue('up');
+    const { handleReorder } = makeQuickActionRowHandlers(
+      'tools',
+      vi.fn(),
+      onReorder,
+    );
+    handleReorder('tracker', 0);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+      action: 'tracker',
+      surface: 'tools',
+      dir: 'up',
+    });
+  });
+
+  it('handleReorder: onReorder вернул false (no-op/край группы) — событие не отправлено', () => {
+    const onReorder = vi.fn().mockReturnValue(false);
+    const { handleReorder } = makeQuickActionRowHandlers(
+      'plus',
+      vi.fn(),
+      onReorder,
+    );
+    handleReorder('tracker', 0);
     expect(mockApi.trackEvent).not.toHaveBeenCalled();
   });
 });
