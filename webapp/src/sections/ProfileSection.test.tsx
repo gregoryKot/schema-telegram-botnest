@@ -8,7 +8,7 @@
 // (в т.ч. дефект — ошибка API при удалении не показывается пользователю).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { ProfileSection } from './ProfileSection';
 
@@ -33,6 +33,18 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockLogout = vi.fn();
 vi.mock('../auth/authContext', () => ({
   useAuth: () => ({ logout: mockLogout }),
+}));
+
+// JourneySheet — тяжёлый общий компонент (собственные API-вызовы, canvas
+// шаринг-карточки), не в скоупе этого файла — мокаем заглушкой-кнопочницей,
+// чтобы проверить только то, что решает сам ProfileSection: открывается ли
+// он по клику и закрывается ли по onClose.
+vi.mock('../components/JourneySheet', () => ({
+  JourneySheet: (p: { onClose: () => void }) => (
+    <div data-testid="journey-sheet">
+      <button onClick={p.onClose}>Закрыть путь</button>
+    </div>
+  ),
 }));
 
 function emptyMocks() {
@@ -139,11 +151,76 @@ describe('ProfileSection — реальные данные пользовате�
     expect(screen.getByText('5/7')).toBeTruthy();
   });
 
-  it('паттерны: клик по «?» у лучшего дня открывает тултип-пояснение', async () => {
+  it('паттерны: клик по «?» у лучшего дня открывает тултип-пояснение, клик по фону закрывает', async () => {
     fillMocks();
     await act(async () => { renderSection(); });
     fireEvent.click(screen.getByText('?'));
     expect(screen.getByText(/выше всего/)).toBeTruthy();
+
+    fireEvent.click(document.querySelectorAll('[role="presentation"]')[0]);
+    expect(screen.queryByText(/выше всего/)).toBeNull();
+  });
+
+  it('модалка достижений закрывается кликом по фону', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+    expect(screen.getByText('5/7')).toBeTruthy();
+
+    fireEvent.click(document.querySelectorAll('[role="presentation"]')[0]);
+    expect(screen.queryByText('5/7')).toBeNull();
+  });
+
+  it('клик по заработанному достижению открывает детальную карточку (AchievementDetail)', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+    // «Первый шаг» дублируется — в полосе достижений на странице и в
+    // открывшейся модалке; берём последнее вхождение (из модалки).
+    const cards = screen.getAllByText('Первый шаг');
+    const before = screen.getAllByText('Первая запись в дневнике').length;
+    fireEvent.click(cards[cards.length - 1]);
+    // AchievementDetail рендерится ПОВЕРХ модалки (обе видны одновременно) —
+    // проверяем, что описание достижения появилось ещё раз (не просто «уже было»).
+    await waitFor(() => expect(screen.getAllByText('Первая запись в дневнике').length).toBe(before + 1));
+  });
+
+  it('прогресс к недостигнутым достижениям (стрик/всего) показывает реальные числа, а не заглушку', async () => {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 4, longestStreak: 4, totalDays: 8, todayDone: true, weekDots: [] });
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'streak_3', earned: true }, { id: 'streak_7', earned: false },
+      { id: 'streak_14', earned: false }, { id: 'total_10', earned: false }, { id: 'total_50', earned: false },
+    ]);
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+
+    expect(screen.getByText('4/7')).toBeTruthy();
+    expect(screen.getByText('4/14')).toBeTruthy();
+    expect(screen.getByText('8/10')).toBeTruthy();
+    expect(screen.getByText('8/50')).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — терапевт: следующая сессия', () => {
+  it('клиент с активной связью и датой сессии видит форматированную дату/время', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+      nextSession: '2026-09-03T14:30:00',
+    });
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Терапевт')).toBeTruthy();
+    expect(screen.getByText('Анна')).toBeTruthy();
+    // Чт, 3 сен · 14:30 (2026-09-03 — четверг).
+    expect(screen.getByText(/Чт, 3 сен · 14:30/)).toBeTruthy();
+  });
+
+  it('без даты сессии блок терапевта показан, но строка "Следующая сессия" — нет', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x', nextSession: null,
+    });
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Терапевт')).toBeTruthy();
+    expect(screen.queryByText('Следующая сессия')).toBeNull();
   });
 });
 
@@ -242,5 +319,30 @@ describe('ProfileSection — действия', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Не удалось удалить аккаунт/);
     expect(alert.textContent).toMatch(/Данные на месте/);
+  });
+
+  it('«Мой путь» открывает JourneySheet, закрытие убирает его', async () => {
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Мой путь'));
+    await screen.findByTestId('journey-sheet');
+
+    fireEvent.click(screen.getByText('Закрыть путь'));
+    expect(screen.queryByTestId('journey-sheet')).toBeNull();
+  });
+
+  it('«Аккаунт и привязки» переходит на маршрут /account', async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={['/profile']}>
+          <Routes>
+            <Route path="/profile" element={<ProfileSection />} />
+            <Route path="/account" element={<div>Экран аккаунта</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Аккаунт и привязки'));
+    await screen.findByText('Экран аккаунта');
   });
 });

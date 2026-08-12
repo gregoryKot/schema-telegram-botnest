@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
 import { api } from '../api';
-import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -92,6 +92,22 @@ describe('AppShell — денормализованный mySchemaIds синхр
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBeNull();
+  });
+});
+
+describe('AppShell — оценки колеса детства, пришедшие с бэкенда, помечают тест пройденным', () => {
+  it('непустой ответ getChildhoodRatings выставляет CHILDHOOD_DONE_KEY (не показываем колесо заново)', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValueOnce({ safety: 5, autonomy: 7 });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    await waitFor(() => expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBe('1'));
+  });
+
+  it('пустой ответ getChildhoodRatings ничего не помечает (колесо ещё не пройдено)', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValueOnce({});
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBeNull();
   });
 });
 

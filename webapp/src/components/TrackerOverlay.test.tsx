@@ -210,3 +210,117 @@ describe('дельта «вчера» — только из реальных д�
     expect(screen.queryByText(/вчера/i)).toBeTruthy();
   });
 });
+
+describe('TrackerOverlay — навигация по футеру', () => {
+  it('«←» переключает на предыдущую потребность и неактивна на первой', () => {
+    renderOverlay({ initialNeedId: 'autonomy' });
+    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
+    const prevBtn = screen.getByText('←').closest('button')!;
+    fireEvent.click(prevBtn);
+    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+    expect(prevBtn.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('«далее: …» переключает на следующую нерасчитанную потребность', () => {
+    renderOverlay();
+    fireEvent.click(screen.getByText(/далее:/));
+    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
+  });
+
+  it('когда всё оценено — «Готово» открывает экран завершения с итоговым индексом', () => {
+    renderOverlay({ ratings: { attachment: 5, autonomy: 7 } });
+    fireEvent.click(screen.getByText(/Готово/));
+    expect(screen.getByText('Заполнено')).toBeTruthy();
+  });
+
+  it('«К незаполненным» прыгает на первую неоценённую потребность', () => {
+    renderOverlay({ initialNeedId: 'autonomy', ratings: { autonomy: 4 } });
+    fireEvent.click(screen.getByText(/К незаполненным/));
+    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — топбар: заметка/история', () => {
+  it('кнопка «Заметка» вызывает onOpenNote', () => {
+    const onOpenNote = vi.fn();
+    renderOverlay({ onOpenNote });
+    fireEvent.click(screen.getByLabelText('Заметка'));
+    expect(onOpenNote).toHaveBeenCalledTimes(1);
+  });
+
+  it('кнопка «История» одновременно открывает историю и закрывает трекер', () => {
+    const onOpenHistory = vi.fn();
+    const onClose = vi.fn();
+    renderOverlay({ onOpenHistory, onClose });
+    fireEvent.click(screen.getByLabelText('История'));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TrackerOverlay — детальный лист потребности', () => {
+  it('клик по заголовку потребности открывает NeedTodaySheet поверх трекера', () => {
+    renderOverlay();
+    fireEvent.click(screen.getByRole('button', { name: 'Привязанность' }));
+    expect(screen.getByText('Назад к дневнику')).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — офлайн: не пытается сохранить', () => {
+  it('isOffline=true не вызывает api.saveRating после debounce', async () => {
+    renderOverlay({ isOffline: true });
+    fireEvent.click(screen.getByText('7'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(mockApi.saveRating).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrackerOverlay — бэкафилл: сохранение оценки прошлого дня', () => {
+  it('оценка во время бэкафилла сохраняется через api.saveRating(needId, v, date)', async () => {
+    mockApi.ratings.mockResolvedValue({});
+    renderOverlay({ date: '2026-07-10' });
+    await act(async () => {});
+    fireEvent.click(screen.getByText('6'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 6, '2026-07-10');
+  });
+
+  it('ошибка сохранения оценки бэкафилла не роняет экран', async () => {
+    mockApi.ratings.mockResolvedValue({});
+    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    renderOverlay({ date: '2026-07-10' });
+    await act(async () => {});
+    fireEvent.click(screen.getByText('6'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — мобильная раскладка', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+  });
+
+  it('на узком экране рендерит мобильный лейаут (без десктопных трёх колонок)', () => {
+    renderOverlay();
+    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+    expect(screen.getByText('вопрос дня')).toBeTruthy();
+  });
+
+  it('свайп влево переключает на следующую потребность', () => {
+    const { container } = renderOverlay();
+    const root = container.firstElementChild as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 300, clientY: 100 }] });
+    fireEvent.touchEnd(root, { changedTouches: [{ clientX: 100, clientY: 100 }] });
+    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
+  });
+});

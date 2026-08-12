@@ -4,11 +4,39 @@
 // ты/вы-вилка в подписи стрика, черновики дневника, ошибки API не роняют
 // экран, оверлей «Все задания», кабинет терапевта.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { TodaySection } from './TodaySection';
 import { saveDraft, clearDraft } from '../utils/drafts';
+import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
+
+/** Дата N дней назад от реального «сегодня» теста (без хардкода абсолютной даты). */
+function daysAgoStr(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+vi.mock('../components/exercises/FlashcardEx', () => ({
+  SchemaEx: (p: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) => (
+    <div data-testid="schema-ex">
+      <div data-testid="schema-ex-id">{p.initialSchemaId}</div>
+      <button onClick={p.onBack}>Назад</button>
+      <button onClick={() => p.onComplete?.()}>Завершить карточку схемы</button>
+    </div>
+  ),
+  ModeEx: (p: { onBack: () => void; initialModeId?: string; onComplete?: () => void }) => (
+    <div data-testid="mode-ex">
+      <div data-testid="mode-ex-id">{p.initialModeId}</div>
+      <button onClick={p.onBack}>Назад</button>
+      <button onClick={() => p.onComplete?.()}>Завершить карточку режима</button>
+    </div>
+  ),
+}));
 
 vi.mock('../api', () => ({
   api: {
@@ -21,6 +49,7 @@ vi.mock('../api', () => ({
     getTasks: vi.fn(),
     getTaskHistory: vi.fn(),
     completeTask: vi.fn(),
+    createTask: vi.fn(),
     trackEvent: vi.fn(),
   },
   reportClientError: vi.fn(),
@@ -91,6 +120,8 @@ beforeEach(() => {
   mockApi.history.mockResolvedValue([]);
   mockApi.getTasks.mockResolvedValue([]);
   mockApi.getTaskHistory.mockResolvedValue([]);
+  mockApi.completeTask.mockResolvedValue(undefined);
+  mockApi.createTask.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -261,5 +292,270 @@ describe('TodaySection — кабинет терапевта', () => {
     renderSection({ userRole: 'CLIENT' });
     await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
     expect(screen.queryByText('Кабинет терапевта')).toBeNull();
+  });
+});
+
+describe('TodaySection — refreshKey: смена ключа снова показывает скелетон дневников (read-after-write)', () => {
+  it('после смены refreshKey профиль и дневники перезагружаются с нуля', async () => {
+    const { rerender } = render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
+            onOpenChildhoodWheel={vi.fn()} refreshKey={1}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await screen.findByText('Замечать моменты, когда схема активируется – главная практика');
+
+    mockApi.getGratitudeDiary.mockReturnValue(new Promise(() => {}));
+    rerender(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
+            onOpenChildhoodWheel={vi.fn()} refreshKey={2}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    // Скелетон снова показан — состояние действительно сбросилось, а не
+    // осталось «старым готовым» списком.
+    expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
+  });
+});
+
+describe('TodaySection — mySchemaIds из профиля синхронизируются в localStorage (правило №4)', () => {
+  it('непустой mySchemaIds из профиля пишется в MY_SCHEMA_IDS_KEY', async () => {
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment', 'mistrust'] }));
+    renderSection();
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]')).toEqual(['abandonment', 'mistrust']),
+    );
+  });
+});
+
+describe('TodaySection — «Последние записи»: реальные записи схем/режимов/благодарностей отсортированы по времени', () => {
+  it('показывает реальные записи (не пустое состояние), самая свежая — первой', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([{ trigger: 'коллега не ответил', createdAt: '2026-01-01T09:00:00Z' }]);
+    mockApi.getModeDiary.mockResolvedValue([{ situation: 'опоздал на встречу', createdAt: '2026-01-02T10:00:00Z' }]);
+    mockApi.getGratitudeDiary.mockResolvedValue([{ items: ['утренний кофе'], date: '2026-01-03' }]);
+    renderSection();
+
+    await screen.findByText('опоздал на встречу');
+    expect(screen.getByText('коллега не ответил')).toBeTruthy();
+    expect(screen.getByText('утренний кофе')).toBeTruthy();
+    expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
+  });
+});
+
+describe('TodaySection — индекс дня: спарклайн из реальной истории (не заглушка)', () => {
+  it('7 дней с ненулевыми оценками (включая сегодня) — спарклайн виден с подписью «7 дней»', async () => {
+    // Сегодняшняя дата включена явно — иначе компонент сам добивает её
+    // отдельной записью и итог «съезжает» на день больше мокнутых.
+    mockApi.history.mockResolvedValue(
+      Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 5 + i } })),
+    );
+    renderSection();
+    await screen.findByText('7 дней');
+  });
+
+  it('неделя лучше предыдущей — показывает положительную дельту "+N.N за неделю"', async () => {
+    const days = [
+      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(13 - i), ratings: { attachment: 3 } })),
+      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 8 } })),
+    ];
+    mockApi.history.mockResolvedValue(days);
+    renderSection();
+    await screen.findByText('+5.0 за неделю');
+  });
+});
+
+describe('TodaySection — терапевт: ближайшая встреча в блоке «Следующая встреча»', () => {
+  it('встреча завтра — подпись «завтра», имя и кнопка «Написать» видны', async () => {
+    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    mockApi.getTherapyRelation.mockResolvedValue({
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: tomorrow,
+    });
+    renderSection();
+    await screen.findByText('Анна');
+    await screen.findByText('завтра');
+    expect(screen.getByText('Написать').getAttribute('href')).toBe('tg://user?id=42');
+  });
+
+  it('встреча сегодня — подпись «сегодня»', async () => {
+    const inHours = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+    mockApi.getTherapyRelation.mockResolvedValue({
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: inHours,
+    });
+    renderSection();
+    await screen.findByText('сегодня');
+  });
+});
+
+describe('TodaySection — потребность: клик по строке открывает трекер сразу на этой потребности', () => {
+  it('onOpenTrackerAt получает id потребности из клика по строке', async () => {
+    const onOpenTrackerAt = vi.fn();
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{ attachment: 5 }} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
+            onOpenChildhoodWheel={vi.fn()} onOpenTrackerAt={onOpenTrackerAt}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Привязанность').closest('[role="button"]') ?? screen.getByText('Привязанность'));
+    expect(onOpenTrackerAt).toHaveBeenCalledWith('attachment');
+  });
+
+  it('без onOpenTrackerAt клик по строке падает на общий onOpenTracker', async () => {
+    const onOpenTracker = vi.fn();
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{ attachment: 5 }} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={vi.fn()} onOpenTracker={onOpenTracker} onOpenDiaries={vi.fn()}
+            onOpenChildhoodWheel={vi.fn()}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Привязанность').closest('[role="button"]') ?? screen.getByText('Привязанность'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TodaySection — задания: каждый тип «начать →» открывает свой правильный экран', () => {
+  function renderWithHandlers(overrides: Partial<{ onOpenTracker: () => void; onOpenDiaries: () => void; onOpenChildhoodWheel: () => void; onOpenAdvanced: () => void }> = {}) {
+    return render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={overrides.onOpenAdvanced ?? vi.fn()}
+            onOpenTracker={overrides.onOpenTracker ?? vi.fn()}
+            onOpenDiaries={overrides.onOpenDiaries ?? vi.fn()}
+            onOpenChildhoodWheel={overrides.onOpenChildhoodWheel ?? vi.fn()}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+  }
+
+  /** «начать →» встречается и в OnboardingWidget — скоуп через заголовок раздела задач. */
+  async function clickTaskStart() {
+    const heading = await screen.findByText('Практики на сегодня');
+    const section = heading.closest('.section')!;
+    fireEvent.click(within(section).getByText('начать →'));
+  }
+
+  it('tracker_streak → onOpenTracker', async () => {
+    const onOpenTracker = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ type: 'tracker_streak', text: 'Трекать 7 дней' })]);
+    renderWithHandlers({ onOpenTracker });
+    await clickTaskStart();
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it('diary_streak → onOpenDiaries', async () => {
+    const onOpenDiaries = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
+    renderWithHandlers({ onOpenDiaries });
+    await clickTaskStart();
+    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
+  });
+
+  it('childhood_wheel → onOpenChildhoodWheel', async () => {
+    const onOpenChildhoodWheel = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ type: 'childhood_wheel', text: 'Колесо детства' })]);
+    renderWithHandlers({ onOpenChildhoodWheel });
+    await clickTaskStart();
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('belief_check/letter_to_self/safe_place → onOpenAdvanced', async () => {
+    const onOpenAdvanced = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ type: 'letter_to_self', text: 'Письмо себе' })]);
+    renderWithHandlers({ onOpenAdvanced });
+    await clickTaskStart();
+    expect(onOpenAdvanced).toHaveBeenCalledTimes(1);
+  });
+
+  it('schema_intro → открывает карточку схемы с реальным id из задания, завершение вызывает completeTask', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
+    renderWithHandlers();
+    await clickTaskStart();
+
+    expect((await screen.findByTestId('schema-ex-id')).textContent).toBe('abandonment');
+    fireEvent.click(screen.getByText('Завершить карточку схемы'));
+
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(5, true));
+    await waitFor(() => expect(screen.queryByTestId('schema-ex')).toBeNull());
+  });
+
+  it('schema_intro «Назад» закрывает карточку без завершения задания', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
+    renderWithHandlers();
+    await clickTaskStart();
+    fireEvent.click(await screen.findByText('Назад'));
+
+    expect(screen.queryByTestId('schema-ex')).toBeNull();
+    expect(mockApi.completeTask).not.toHaveBeenCalled();
+  });
+
+  it('mode_intro → открывает карточку режима с реальным id из задания, завершение вызывает completeTask', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 6, type: 'mode_intro', text: 'vulnerable_child' })]);
+    renderWithHandlers();
+    await clickTaskStart();
+
+    expect((await screen.findByTestId('mode-ex-id')).textContent).toBe('vulnerable_child');
+    fireEvent.click(screen.getByText('Завершить карточку режима'));
+
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
+  });
+});
+
+describe('TodaySection — «+ Поставить цель» открывает создание задания дневника', () => {
+  it('клик открывает TaskCreateSheet, закрытие возвращает на экран', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
+    renderSection();
+    fireEvent.click(await screen.findByText('+ Поставить цель'));
+    await screen.findByText('Новое задание');
+
+    fireEvent.click(screen.getByText('Назад к кабинету'));
+    await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
+  });
+});
+
+describe('TodaySection — оверлей «Все задания»: отметка выполненного и добавление новой цели', () => {
+  it('«Готово» у назначенной custom-задачи вызывает completeTask и уходит из активных', async () => {
+    mockApi.getTasks
+      .mockResolvedValueOnce(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` })))
+      .mockResolvedValue([]);
+    renderSection();
+    fireEvent.click(await screen.findByText('Все задания (6) →'));
+    await screen.findByText('Все задания');
+
+    fireEvent.click(screen.getAllByText('Готово')[0]);
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(1, true));
+  });
+
+  it('«+ Поставить цель» внутри оверлея открывает TaskCreateSheet поверх него', async () => {
+    mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
+    renderSection();
+    fireEvent.click(await screen.findByText('Все задания (6) →'));
+    const overlay = await screen.findByText('Все задания');
+    fireEvent.click(overlay.parentElement!.parentElement!.querySelector('.ex-btn-primary')!);
+
+    await screen.findByText('Новое задание');
   });
 });

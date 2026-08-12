@@ -45,7 +45,7 @@
   "webapp/src/auth/AuthProvider.tsx": 1,
   "webapp/src/auth/clearLocalData.ts": 1,
   "webapp/src/components/AddressFormPicker.tsx": 2,
-  "webapp/src/components/AppShell.tsx": 12,
+  "webapp/src/components/AppShell.tsx": 11,
   "webapp/src/components/BookingPicker.tsx": 1,
   "webapp/src/components/CommandPalette.tsx": 1,
   "webapp/src/components/exercises/BeliefCheckEx.tsx": 1,

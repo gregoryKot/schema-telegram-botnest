@@ -872,8 +872,8 @@
   "webapp/src/auth/clearLocalData.ts": 21,
   "webapp/src/components/AchievementDetail.tsx": 94,
   "webapp/src/components/AddressFormPicker.tsx": 60,
-  "webapp/src/components/AppShell.test-helpers.tsx": 247,
-  "webapp/src/components/AppShell.tsx": 802,
+  "webapp/src/components/AppShell.test-helpers.tsx": 246,
+  "webapp/src/components/AppShell.tsx": 794,
   "webapp/src/components/BookingPicker.tsx": 317,
   "webapp/src/components/BottomNav.tsx": 149,
   "webapp/src/components/Celebration.tsx": 24,
@@ -888,9 +888,9 @@
   "webapp/src/components/diary/ModeChainSuggestion.tsx": 70,
   "webapp/src/components/diary/ModeDoubtButton.tsx": 195,
   "webapp/src/components/diary/ModeEntryDone.tsx": 62,
-  "webapp/src/components/diary/ModeEntryForm.tsx": 166,
+  "webapp/src/components/diary/ModeEntryForm.tsx": 165,
   "webapp/src/components/diary/ModeEntryShare.tsx": 109,
-  "webapp/src/components/diary/ModeEntrySheet.tsx": 205,
+  "webapp/src/components/diary/ModeEntrySheet.tsx": 200,
   "webapp/src/components/diary/ModeFeelingBrowse.tsx": 81,
   "webapp/src/components/diary/ModeGroupList.tsx": 48,
   "webapp/src/components/diary/ModeSelectScreen.tsx": 90,
@@ -910,6 +910,7 @@
   "webapp/src/components/exercises/SafePlaceEx.tsx": 262,
   "webapp/src/components/exercises/WarmWordsEx.tsx": 117,
   "webapp/src/components/HistorySheet.tsx": 129,
+  "webapp/src/components/HistorySheetSkeleton.tsx": 28,
   "webapp/src/components/HistoryView.tsx": 524,
   "webapp/src/components/IndexInfoSheet.tsx": 30,
   "webapp/src/components/JourneySheet.tsx": 141,
@@ -1088,5 +1089,5 @@
   "webapp/src/utils/theme.ts": 37,
   "webapp/src/utils/therapistContact.ts": 2,
   "webapp/src/utils/todayInsight.ts": 2,
-  "webapp/vite.config.ts": 53
+  "webapp/vite.config.ts": 56
 }

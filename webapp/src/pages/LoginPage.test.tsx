@@ -7,7 +7,13 @@
 // затирает любую попытку подменить его через setHost в jsdom-окружении, где
 // window.Telegram нет.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { LoginPage } from './LoginPage';
@@ -179,7 +185,11 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
 
     await screen.findByText(/Ошибка 401/);
-    expect(reportClientError).toHaveBeenCalledTimes(1);
+    // Ждём именно отчёт, а не текст ошибки: это два отдельных следствия
+    // одного провала, и порядок между ними не гарантирован. Дождавшись
+    // текста, тест раньше сразу проверял телеметрию — под нагрузкой на
+    // раннере отчёт ещё не успевал уйти (флак 2026-08-11).
+    await waitFor(() => expect(reportClientError).toHaveBeenCalledTimes(1));
     const payload = vi.mocked(reportClientError).mock.calls[0][0];
     expect(payload.section).toBe('auth');
     expect(payload.message).toContain('хост=telegram');

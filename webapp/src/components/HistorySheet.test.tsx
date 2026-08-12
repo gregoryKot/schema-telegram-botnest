@@ -65,9 +65,13 @@ afterEach(() => cleanup());
 beforeEach(() => vi.clearAllMocks());
 
 describe('HistorySheet', () => {
-  it('пока historyLoading=true — скелетон-лоадер, HistoryView не рендерится', () => {
-    renderSheet({ historyLoading: true });
+  it('пока historyLoading=true — скелетон по форме колеса потребностей, а не спиннер/пустота', () => {
+    const { container } = renderSheet({ historyLoading: true });
     expect(screen.queryByText('Пусто.')).toBeNull();
+    // Правило CLAUDE.md «скелетоны по форме, не спиннеры»: круглый силуэт
+    // колеса потребностей + строки списка, не .spinner.
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
+    expect(container.querySelector('.spinner')).toBeNull();
   });
 
   it('после загрузки рендерит HistoryView (лениво, через Suspense)', async () => {

@@ -246,6 +246,27 @@ describe('ModeMapEditor — горячие клавиши', () => {
       .filter((el) => el.closest('.react-flow__node'));
     expect(onCanvas).toHaveLength(2);
   });
+
+  it('⌘⇧Z (shift) повторяет отменённое действие через redo', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Удалить ноду'));
+    expect(screen.queryByText('Триггер')).toBeNull();
+    fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo — вернули узел
+    expect(screen.getByText('Триггер')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'z', metaKey: true, shiftKey: true }); // redo — снова удалён
+    expect(screen.queryByText('Триггер')).toBeNull();
+  });
+
+  it('⌘Y тоже повторяет отменённое действие (альтернативный redo)', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Удалить ноду'));
+    fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo
+    expect(screen.getByText('Триггер')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'y', metaKey: true }); // redo
+    expect(screen.queryByText('Триггер')).toBeNull();
+  });
 });
 
 describe('ModeMapEditor — мобильная раскладка', () => {
@@ -262,5 +283,25 @@ describe('ModeMapEditor — мобильная раскладка', () => {
     renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
     fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
     expect(screen.getByLabelText('Название')).toBeTruthy();
+  });
+
+  it('на мобильном клик по затемнённому фону закрывает драйвер палитры', () => {
+    window.innerWidth = 500;
+    renderEditor();
+    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
+    expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();
+    const backdrop = screen
+      .getAllByLabelText('Закрыть')
+      .find((el) => el.tagName === 'DIV')!;
+    fireEvent.click(backdrop);
+    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
+  });
+
+  it('на мобильном кнопка «Скрыть» внутри драйвера палитры закрывает его', () => {
+    window.innerWidth = 500;
+    renderEditor();
+    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
+    fireEvent.click(screen.getByLabelText('Скрыть'));
+    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
   });
 });
