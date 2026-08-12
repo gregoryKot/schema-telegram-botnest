@@ -43,10 +43,9 @@ describe('buildToolRows — реестр строк', () => {
     ]);
   });
 
-  it('10 строк, у каждой непустой emoji', () => {
+  it('10 строк', () => {
     const rows = buildToolRows(BASE_PROPS);
     expect(rows).toHaveLength(10);
-    for (const row of rows) expect(row.emoji.length).toBeGreaterThan(0);
   });
 });
 

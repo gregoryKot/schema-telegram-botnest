@@ -5,8 +5,9 @@ import { Toggle } from '../settingsSheet/ui';
 // свитч справа — тот же Toggle, что в settingsSheet/ui (правило «один
 // компонент», не третья версия свитча). Клик/фокус — на строке (role=switch);
 // Toggle внутри — inert + aria-hidden, второго tab-стопа и клика нет.
+// Без эмодзи (фидбек владельца): в листах настройки выбирают по смыслу,
+// названия + подписи достаточно — то же правило, что у строк меню «плюс».
 export function ToggleRow({
-  emoji,
   title,
   sub,
   on,
@@ -14,7 +15,6 @@ export function ToggleRow({
   highlighted = false,
   divider = false,
 }: {
-  emoji: string;
   title: string;
   sub: string;
   on: boolean;
@@ -40,7 +40,6 @@ export function ToggleRow({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
           {title}

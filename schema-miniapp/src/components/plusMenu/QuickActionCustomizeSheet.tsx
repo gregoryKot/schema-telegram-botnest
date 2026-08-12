@@ -9,7 +9,6 @@ import type { QuickActionSurface } from '../../utils/quickActionPrefs';
 
 interface CustomizeAction {
   id: string;
-  emoji: string;
   label: string;
   sub: string;
   rangeMin: number;
@@ -50,7 +49,6 @@ export function QuickActionCustomizeSheet({
           return (
             <CustomizeRow
               key={a.id}
-              emoji={a.emoji}
               label={a.label}
               sub={a.sub}
               hidden={wasHidden}

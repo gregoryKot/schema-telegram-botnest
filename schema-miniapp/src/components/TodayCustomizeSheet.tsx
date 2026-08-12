@@ -154,7 +154,6 @@ export function TodayCustomizeSheet({
             style={{ borderRadius: 16, overflow: 'hidden' }}
           >
             <ToggleRow
-              emoji="🔥"
               title="Карточка серии"
               sub="можно убрать, если счёт дней давит"
               on={!streakHidden}
@@ -162,7 +161,6 @@ export function TodayCustomizeSheet({
               highlighted={highlight === 'streak'}
             />
             <ToggleRow
-              emoji="💬"
               title="Фраза для себя"
               sub="цитата Здорового взрослого на главном"
               on={!phraseHidden}
@@ -171,7 +169,6 @@ export function TodayCustomizeSheet({
               divider
             />
             <ToggleRow
-              emoji="🗂"
               title="«Что ещё можно сегодня»"
               sub="потребности и дневник под сворачиванием"
               on={secondaryHidden}
@@ -180,7 +177,6 @@ export function TodayCustomizeSheet({
             />
             {showTherapistToggle && (
               <ToggleRow
-                emoji="🧑‍⚕️"
                 title="Кабинет терапевта"
                 sub="баннер входа в кабинет на главном"
                 on={!therapistBannerHidden}

@@ -15,7 +15,6 @@ describe('ToggleRow', () => {
   it('включено — role=switch, aria-checked=true', () => {
     render(
       <ToggleRow
-        emoji="📊"
         title="Серия дней"
         sub="Показывать карточку серии"
         on={true}
@@ -28,7 +27,6 @@ describe('ToggleRow', () => {
   it('выключено — role=switch, aria-checked=false', () => {
     render(
       <ToggleRow
-        emoji="📊"
         title="Серия дней"
         sub="Показывать карточку серии"
         on={false}
@@ -42,7 +40,6 @@ describe('ToggleRow', () => {
     const onToggle = vi.fn();
     render(
       <ToggleRow
-        emoji="📊"
         title="Серия дней"
         sub="Показывать карточку серии"
         on={false}
@@ -56,7 +53,6 @@ describe('ToggleRow', () => {
   it('один tab-стоп: вложенный визуал свитча не виден как второй switch', () => {
     render(
       <ToggleRow
-        emoji="📊"
         title="Серия дней"
         sub="Показывать карточку серии"
         on={true}

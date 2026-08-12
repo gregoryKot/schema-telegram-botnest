@@ -97,7 +97,6 @@ export function ToolsList(props: Props) {
           surface="tools"
           actions={withDragRange([orderedRows]).map((r) => ({
             id: r.id,
-            emoji: r.emoji,
             label: r.label,
             sub: r.sub ?? '',
             rangeMin: r.rangeMin,
