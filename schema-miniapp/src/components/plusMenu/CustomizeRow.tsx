@@ -5,7 +5,6 @@ import type { DragHandleProps } from '../../hooks/useDragReorder';
 // Строка листа настройки: ToggleRow (скрыть/показать) + ручка «≡» (порядок,
 // DragHandle — место MoveArrows, удалённого правилом №11).
 export function CustomizeRow({
-  emoji,
   label,
   sub,
   hidden,
@@ -15,7 +14,6 @@ export function CustomizeRow({
   drag: { offsetY, lifted },
   highlighted,
 }: {
-  emoji: string;
   label: string;
   sub: string;
   hidden: boolean;
@@ -39,7 +37,6 @@ export function CustomizeRow({
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <ToggleRow
-          emoji={emoji}
           title={label}
           sub={sub}
           on={!hidden}

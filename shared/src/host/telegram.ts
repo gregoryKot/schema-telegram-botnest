@@ -25,6 +25,7 @@ type TgWebApp = {
   expand?(): void;
   close?(): void;
   disableVerticalSwipes?(): void;
+  enableVerticalSwipes?(): void;
   openLink?(url: string): void;
   addToHomeScreen?(): void;
   checkHomeScreenStatus?(cb: (status: HomeScreenStatus) => void): void;
@@ -73,6 +74,11 @@ export function createTelegramHost(): HostBridge {
   const tg = () => telegramWebApp();
   // Факт события важнее числа: contentTop может прийти нулём.
   let contentReported = false;
+  // Bot API 7.7+; в старых клиентах методов может не быть — вызов через `?.`.
+  const setVerticalSwipes = (enabled: boolean) => {
+    if (enabled) tg()?.enableVerticalSwipes?.();
+    else tg()?.disableVerticalSwipes?.();
+  };
 
   return {
     id: 'telegram',
@@ -96,9 +102,10 @@ export function createTelegramHost(): HostBridge {
     // сворачивает всё приложение.
     expand: () => {
       tg()?.expand?.();
-      tg()?.disableVerticalSwipes?.();
+      setVerticalSwipes(false);
     },
     close: () => tg()?.close?.(),
+    setVerticalSwipes,
 
     user(): HostUser | null {
       const u = tg()?.initDataUnsafe?.user;

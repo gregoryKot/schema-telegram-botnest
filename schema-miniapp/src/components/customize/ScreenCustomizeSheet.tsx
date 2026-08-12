@@ -32,7 +32,6 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
           return (
             <CustomizeRow
               key={id}
-              emoji={meta.emoji}
               label={meta.label}
               sub={meta.sub}
               hidden={hidden.includes(id)}

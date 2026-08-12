@@ -28,6 +28,7 @@ function fakeTelegram(overrides: Record<string, unknown> = {}) {
     expand: vi.fn(),
     close: vi.fn(),
     disableVerticalSwipes: vi.fn(),
+    enableVerticalSwipes: vi.fn(),
     openLink: vi.fn(),
     addToHomeScreen: vi.fn(),
     checkHomeScreenStatus: vi.fn(),
@@ -236,6 +237,19 @@ describe('адаптер Telegram', () => {
     expect(webApp.disableVerticalSwipes).toHaveBeenCalled();
   });
 
+  // Баг с живого устройства (Telegram iOS): драг строки за ручку «≡» тем же
+  // жестом сворачивал мини-приложение. setVerticalSwipes — явный переключатель
+  // для useDragReorder, отдельный от гашения при expand().
+  it('setVerticalSwipes переключает enable/disableVerticalSwipes клиента', () => {
+    const { webApp } = fakeTelegram();
+    const host = createTelegramHost();
+    host.setVerticalSwipes(false);
+    expect(webApp.disableVerticalSwipes).toHaveBeenCalledTimes(1);
+    expect(webApp.enableVerticalSwipes).not.toHaveBeenCalled();
+    host.setVerticalSwipes(true);
+    expect(webApp.enableVerticalSwipes).toHaveBeenCalledTimes(1);
+  });
+
   it('тактильный отклик разложен по типам клиента', () => {
     const { webApp } = fakeTelegram();
     const { haptic } = createTelegramHost();
@@ -332,6 +346,7 @@ describe('адаптер Telegram', () => {
       BackButton: undefined,
       addToHomeScreen: undefined,
       disableVerticalSwipes: undefined,
+      enableVerticalSwipes: undefined,
     });
     const host = createTelegramHost();
     expect(host.capabilities).toEqual({
@@ -346,6 +361,8 @@ describe('адаптер Telegram', () => {
       host.backButton.setVisible(true);
       host.homeScreen.add();
       host.backButton.onClick(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
   });
 
@@ -406,6 +423,8 @@ describe('адаптер Telegram', () => {
       host.close();
       host.openLink('https://schemehappens.ru');
       host.saveFile('data:text/calendar,BEGIN', 'p.ics');
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
   });
 });
@@ -469,6 +488,18 @@ describe('адаптер MAX', () => {
     expect(host.capabilities.close).toBe(false);
     expect(host.capabilities.homeScreen).toBe(false);
     expect(host.capabilities.backButton).toBe(true);
+  });
+
+  // Мост площадки (webapp/public/max-bridge.js проверен) не даёт аналога
+  // Telegram-свайпов — setVerticalSwipes тихий no-op, страховку от жеста
+  // хоста на этой площадке несёт touchmove-листенер в useDragReorder.
+  it('setVerticalSwipes — тихий no-op, вызовы не падают', () => {
+    fakeMax();
+    const host = createMaxHost();
+    expect(() => {
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
+    }).not.toThrow();
   });
 
   it('тактильный отклик разложен по типам клиента', () => {
@@ -579,6 +610,8 @@ describe('адаптер MAX', () => {
       host.homeScreen.add();
       host.homeScreen.checkStatus(vi.fn());
       host.homeScreen.onAdded(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
     expect(host.capabilities).toEqual({
       haptics: false,
@@ -667,6 +700,8 @@ describe('адаптер браузера', () => {
       host.backButton.setVisible(true);
       host.homeScreen.add();
       host.onInsetsChange(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
     const status = vi.fn();
     host.homeScreen.checkStatus(status);

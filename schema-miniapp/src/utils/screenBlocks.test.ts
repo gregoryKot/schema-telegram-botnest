@@ -59,21 +59,19 @@ describe('SCREEN_BLOCK_ORDER.patterns', () => {
 });
 
 describe('BLOCK_META', () => {
-  it('у каждого блока профиля есть описание (emoji/label/sub)', () => {
+  it('у каждого блока профиля есть описание (label/sub)', () => {
     for (const id of SCREEN_BLOCK_ORDER.profile) {
       const meta = BLOCK_META[id];
       expect(meta).toBeTruthy();
-      expect(meta?.emoji).toBeTruthy();
       expect(meta?.label).toBeTruthy();
       expect(meta?.sub).toBeTruthy();
     }
   });
 
-  it('у каждого блока паттернов есть описание (emoji/label/sub)', () => {
+  it('у каждого блока паттернов есть описание (label/sub)', () => {
     for (const id of SCREEN_BLOCK_ORDER.patterns) {
       const meta = BLOCK_META[id];
       expect(meta).toBeTruthy();
-      expect(meta?.emoji).toBeTruthy();
       expect(meta?.label).toBeTruthy();
       expect(meta?.sub).toBeTruthy();
     }

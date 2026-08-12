@@ -16,7 +16,6 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const actions = [
   {
     id: 'tracker',
-    emoji: '📊',
     label: 'Трекер потребностей',
     sub: 'sub-1',
     rangeMin: 0,
@@ -24,7 +23,6 @@ const actions = [
   },
   {
     id: 'warm_words',
-    emoji: '💛',
     label: 'Тёплые слова',
     sub: 'sub-2',
     rangeMin: 0,

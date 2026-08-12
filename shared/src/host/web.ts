@@ -60,6 +60,9 @@ export function createWebHost(): HostBridge {
     ready: () => {},
     expand: () => {},
     close: () => {},
+    // Браузер не перехватывает вертикальные жесты как «свернуть» — гасить
+    // нечего, страховку на время драга берёт вызывающий код.
+    setVerticalSwipes: () => {},
 
     user: () => null,
     startParam: urlStartParam,

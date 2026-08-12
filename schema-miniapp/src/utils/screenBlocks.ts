@@ -22,7 +22,6 @@ export const SCREEN_HIDDEN_KEYS: Record<CustomizableScreen, string> = {
 };
 
 export interface ScreenBlockMeta {
-  emoji: string;
   label: string;
   sub: string;
 }
@@ -36,37 +35,30 @@ export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
 /** Описания блоков для строк листа. Названия — нейтральные, вилка обращения не нужна. */
 export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   journey: {
-    emoji: '🧭',
     label: 'Мой путь',
     sub: 'архив дневников, практик и тестов',
   },
   streak: {
-    emoji: '🔥',
     label: 'Серия дней',
     sub: 'дни подряд без пропуска и лучший результат',
   },
   heatmap: {
-    emoji: '📅',
     label: 'Календарь активности',
     sub: 'карта заходов за последние недели',
   },
   achievements: {
-    emoji: '🏆',
     label: 'Достижения',
     sub: 'значки за пройденный путь',
   },
   insights: {
-    emoji: '📈',
     label: 'Паттерны',
     sub: 'какие потребности растут, а какие проседают',
   },
   heroes: {
-    emoji: '💡',
     label: 'Подсказка сверху',
     sub: 'вводная карточка над списком на вкладках «Схемы» и «Режимы»',
   },
   ysq_status: {
-    emoji: '📝',
     label: 'Тест на схемы',
     sub: 'карточка статуса теста на вкладке «Схемы»',
   },

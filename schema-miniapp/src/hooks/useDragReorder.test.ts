@@ -16,6 +16,13 @@ const mockHaptic = haptic as unknown as Record<
   ReturnType<typeof vi.fn>
 >;
 
+// Баг с живого устройства (Telegram iOS): драг строки за ручку «≡» сворачивал
+// всё мини-приложение — жест хоста, не остановленный touch-action: none.
+const mockSetVerticalSwipes = vi.hoisted(() => vi.fn());
+vi.mock('../../../shared/src/host', () => ({
+  getHost: () => ({ setVerticalSwipes: mockSetVerticalSwipes }),
+}));
+
 beforeEach(() => vi.clearAllMocks());
 
 function fakeHandle() {
@@ -237,6 +244,112 @@ describe('useDragReorder — pointer', () => {
       } as never),
     );
     expect(onReorder).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDragReorder — страховка от жеста хоста (сворачивание свайпом)', () => {
+  const ids = ['a', 'b', 'c'];
+
+  function down(result: { current: ReturnType<typeof useDragReorder> }) {
+    act(() =>
+      result.current.handleProps('a', 'A', { min: 0, max: 2 }).onPointerDown({
+        clientY: 0,
+        pointerId: 1,
+        stopPropagation: vi.fn(),
+        currentTarget: fakeHandle(),
+      } as never),
+    );
+  }
+
+  it('pointerdown гасит вертикальные свайпы хоста и вешает touchmove passive:false', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    down(result);
+    expect(mockSetVerticalSwipes).toHaveBeenCalledWith(false);
+    expect(addSpy).toHaveBeenCalledWith('touchmove', expect.any(Function), {
+      passive: false,
+    });
+  });
+
+  it('pointerup возвращает свайпы и снимает тот же touchmove-листенер', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    down(result);
+    const attached = addSpy.mock.calls[0][1];
+    act(() =>
+      result.current.handleProps('a', 'A', { min: 0, max: 2 }).onPointerUp({
+        clientY: 0,
+        pointerId: 1,
+        stopPropagation: vi.fn(),
+      } as never),
+    );
+    expect(mockSetVerticalSwipes).toHaveBeenLastCalledWith(true);
+    expect(removeSpy).toHaveBeenCalledWith('touchmove', attached);
+  });
+
+  it('pointercancel тоже возвращает свайпы и снимает листенер', () => {
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    down(result);
+    act(() =>
+      result.current
+        .handleProps('a', 'A', { min: 0, max: 2 })
+        .onPointerCancel({ stopPropagation: vi.fn() } as never),
+    );
+    expect(mockSetVerticalSwipes).toHaveBeenLastCalledWith(true);
+    expect(removeSpy).toHaveBeenCalledWith('touchmove', expect.any(Function));
+  });
+
+  it('размонтирование посреди драга возвращает свайпы и снимает листенер (не остаётся висящим)', () => {
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    const { result, unmount } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    down(result);
+    mockSetVerticalSwipes.mockClear();
+    unmount();
+    expect(mockSetVerticalSwipes).toHaveBeenCalledWith(true);
+    expect(removeSpy).toHaveBeenCalledWith('touchmove', expect.any(Function));
+  });
+
+  it('размонтирование без активного драга не трогает свайпы хоста', () => {
+    const { unmount } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    unmount();
+    expect(mockSetVerticalSwipes).not.toHaveBeenCalled();
+  });
+
+  it('клавиатурный путь свайпы хоста не трогает', () => {
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    act(() =>
+      result.current.handleProps('a', 'A', { min: 0, max: 2 }).onKeyDown({
+        key: 'ArrowDown',
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as never),
+    );
+    expect(mockSetVerticalSwipes).not.toHaveBeenCalled();
+  });
+
+  it('двойной pointerdown/pointerup не вешает второй листенер и не шлёт лишний setVerticalSwipes(true)', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    down(result);
+    down(result); // повторный pointerdown той же ручки — guard уже активен
+    const touchmoveAdds = addSpy.mock.calls.filter((c) => c[0] === 'touchmove');
+    expect(touchmoveAdds).toHaveLength(1);
   });
 });
 
