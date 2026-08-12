@@ -4,7 +4,6 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -13,6 +12,7 @@ import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
 import { REFRESH_COOKIE, cookieOptions, getCookie } from './auth-http.util';
+import { signOAuthState, readOAuthState } from './oauth-state';
 
 export type SignInOutcome =
   | {
@@ -152,18 +152,21 @@ export class AuthFlowService {
     );
   }
 
-  // Достаёт linkUserId из подписанного state (base64url JSON). Битый/чужой
-  // state → null (аноним-вход), не бросаем — три колбэка разбирали это
-  // одинаковым копипастом с `JSON.parse(...).linkUserId as any`.
+  // linkUserId в link-флоу едет через ПОДПИСАННЫЙ носитель (OAuth-`state` и
+  // `tg_link_user`-куку). Неподписанный носитель давал захват аккаунта — крипта
+  // и разбор в oauth-state.ts (C1). Единая точка: ни один редирект/кука не
+  // должны вернуться к сырому значению.
+  private stateSecret(): string {
+    return this.config.getOrThrow<string>('JWT_SECRET');
+  }
   linkUserIdFromState(state: string): bigint | null {
-    try {
-      const parsed = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-        linkUserId?: string | null;
-      };
-      return parsed.linkUserId ? BigInt(parsed.linkUserId) : null;
-    } catch {
-      return null;
-    }
+    return readOAuthState(this.stateSecret(), state);
+  }
+  buildLinkState(linkUserId: bigint | null): string {
+    return signOAuthState(this.stateSecret(), linkUserId);
+  }
+  readLinkState(raw: string | null | undefined): bigint | null {
+    return readOAuthState(this.stateSecret(), raw);
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
@@ -185,12 +188,7 @@ export class AuthFlowService {
       throw new BadRequestException(
         `Provider ${provider} doesn't support OAuth`,
       );
-    const state = Buffer.from(
-      JSON.stringify({
-        nonce: randomBytes(16).toString('hex'),
-        linkUserId: req.webUser?.userId?.toString() ?? null,
-      }),
-    ).toString('base64url');
+    const state = this.buildLinkState(req.webUser?.userId ?? null);
     res.cookie('oauth_state', state, {
       httpOnly: true,
       secure: true,

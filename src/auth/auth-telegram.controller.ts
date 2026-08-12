@@ -77,16 +77,13 @@ export class AuthTelegramController {
     let linkUserId = req.webUser?.userId ?? null;
     const tgLinkCookie = getCookie(req, 'tg_link_user');
     if (!linkUserId && tgLinkCookie) {
-      try {
-        linkUserId = BigInt(tgLinkCookie);
-      } catch {
-        /* ignore */
-      }
+      // Подпись проверяется (C1): сырой BigInt(cookie) давал подделку linkUserId.
+      linkUserId = this.flow.readLinkState(tgLinkCookie);
     }
     res.clearCookie('tg_link_user', { path: '/api/auth' });
 
     const outcome = await this.flow.signInOrLinkOrMerge('telegram', identity, {
-      linkUserId: linkUserId ? BigInt(String(linkUserId)) : null,
+      linkUserId,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
     });
@@ -132,10 +129,12 @@ export class AuthTelegramController {
     // which browsers never send to the server. The frontend page reads window.location.hash
     // and calls /api/auth/telegram/widget directly.
     const returnTo = `${frontendBase}/auth/telegram`;
-    // Persist linkUserId in a short-lived cookie so we can restore it after redirect
-    const linkUserId = req.webUser?.userId?.toString() ?? null;
+    // Persist linkUserId in a short-lived SIGNED cookie so we can restore it
+    // after redirect. Signed (C1): a raw userId here was client-forgeable and
+    // let an attacker link their Telegram to the victim's account.
+    const linkUserId = req.webUser?.userId ?? null;
     if (linkUserId) {
-      res.cookie('tg_link_user', linkUserId, {
+      res.cookie('tg_link_user', this.flow.buildLinkState(linkUserId), {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
@@ -212,9 +211,10 @@ try {
 
       const identity = telegramHandler.verifyClientData(fields);
 
-      const savedLinkUserId = getCookie(req, 'tg_link_user') ?? null;
+      const savedLinkCookie = getCookie(req, 'tg_link_user');
       res.clearCookie('tg_link_user', { path: '/api/auth' });
-      const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
+      // Проверяем подпись куки (C1) вместо сырого BigInt(cookie).
+      const linkUserId = this.flow.readLinkState(savedLinkCookie);
 
       const outcome = await this.flow.signInOrLinkOrMerge(
         'telegram',

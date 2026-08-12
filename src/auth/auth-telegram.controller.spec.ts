@@ -29,6 +29,8 @@ const BOT_TOKEN = '12345:TEST_SECRET';
 interface FlowMocks {
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
+  buildLinkState: jest.Mock;
+  readLinkState: jest.Mock;
 }
 
 interface SecurityLogMocks {
@@ -58,6 +60,8 @@ function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
   const mocks: FlowMocks = {
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
+    buildLinkState: jest.fn().mockReturnValue('signed-link-state'),
+    readLinkState: jest.fn().mockReturnValue(null),
   };
   return { flow: mocks as unknown as AuthFlowService, mocks };
 }
@@ -234,6 +238,9 @@ describe('AuthTelegramController.telegramWidget — resolveLinkUserId и outcome
   it('нет webUser, но есть cookie tg_link_user → linkUserId из cookie', async () => {
     const { flow, flowMocks, providers } = setup();
     flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    // Кука несёт подписанный state (C1) — сырое значение куки для контроллера
+    // больше ничего не значит, значение даёт flow.readLinkState.
+    flowMocks.readLinkState.mockReturnValue(222n);
     const controller = makeController({ providers, flow });
     const req = makeReq({
       headers: { 'x-requested-with': 'XMLHttpRequest' },
@@ -351,17 +358,18 @@ describe('AuthTelegramController.telegramRedirect', () => {
     );
   });
 
-  it('с webUser: ставит tg_link_user cookie со строковым userId', () => {
-    const { flow } = makeFlow();
+  it('с webUser: ставит tg_link_user cookie с подписанным state', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
     const controller = makeController({ providers: makeProviders({}), flow });
     const req = makeReq({ webUser: { userId: 777n } } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
     controller.telegramRedirect(req, res);
 
+    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(777n);
     expect(resMocks.cookie).toHaveBeenCalledWith(
       'tg_link_user',
-      '777',
+      'signed-link-state',
       expect.objectContaining({ httpOnly: true }),
     );
   });
