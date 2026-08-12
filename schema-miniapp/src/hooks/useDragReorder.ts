@@ -1,15 +1,25 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   PointerEvent as ReactPointerEvent,
   KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { haptic } from '../haptic';
+import { getHost } from '../../../shared/src/host';
 import { targetIndexFromOffset } from '../utils/dragReorder';
 
 // Перетаскивание строки листа настройки — ручка «≡» (замена MoveArrows,
 // правило №11): pointer-жест + клавиатура ArrowUp/ArrowDown, один хук на все
 // 4 листа («одна механика»). Математика — utils/dragReorder.ts (без React/DOM).
 const DEFAULT_ROW_HEIGHT = 56;
+
+// Живое устройство (Telegram iOS): свайп вниз за ручку сворачивает всё
+// мини-приложение — это жест ХОСТА, `touch-action: none` на ручке гасит
+// только скролл страницы. Host API (setVerticalSwipes) выключает его там,
+// где есть; на площадках без API (MAX, браузер) документный touchmove с
+// preventDefault — единственная страховка от жеста хоста.
+function preventTouchMove(e: TouchEvent) {
+  e.preventDefault();
+}
 
 export interface DragRange {
   min: number;
@@ -45,11 +55,33 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
   const dragRef = useRef<DragRowState | null>(null);
   const originYRef = useRef(0);
   const rowsRef = useRef(new Map<string, HTMLElement>());
+  const guardingRef = useRef(false);
 
   function apply(next: DragRowState | null) {
     dragRef.current = next;
     setDrag(next);
   }
+
+  function beginSwipeGuard() {
+    if (guardingRef.current) return;
+    guardingRef.current = true;
+    getHost().setVerticalSwipes(false);
+    document.addEventListener('touchmove', preventTouchMove, {
+      passive: false,
+    });
+  }
+
+  function endSwipeGuard() {
+    if (!guardingRef.current) return;
+    guardingRef.current = false;
+    getHost().setVerticalSwipes(true);
+    document.removeEventListener('touchmove', preventTouchMove);
+  }
+
+  // Размонтирование листа посреди драга (например переход на другой экран)
+  // не должно оставить приложение со свёрнутыми свайпами и висящим
+  // листенером — снимаем guard, если он ещё активен.
+  useEffect(() => endSwipeGuard, []);
 
   function registerRow(id: string) {
     return (el: HTMLElement | null) => {
@@ -100,6 +132,7 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
         originYRef.current = e.clientY;
         e.currentTarget.setPointerCapture(e.pointerId);
         haptic.tap();
+        beginSwipeGuard();
         apply({ id, startIndex, offsetY: 0, targetIndex: startIndex });
       },
       onPointerMove: (e) => {
@@ -122,6 +155,7 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
         e.stopPropagation();
         const prev = dragRef.current;
         apply(null);
+        endSwipeGuard();
         if (prev && prev.id === id && prev.targetIndex !== prev.startIndex) {
           onReorder(id, prev.targetIndex);
         }
@@ -129,6 +163,7 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
       onPointerCancel: (e) => {
         e.stopPropagation();
         apply(null);
+        endSwipeGuard();
       },
       onKeyDown: (e) => {
         if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;

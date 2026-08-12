@@ -75,6 +75,14 @@ export interface HostBridge {
   ready(): void;
   expand(): void;
   close(): void;
+  /**
+   * Хост может ловить вертикальный свайп как жест «свернуть приложение» —
+   * например пока пользователь тащит строку за ручку «≡». `false` просит
+   * хост не перехватывать вертикальные жесты на время драга, `true`
+   * возвращает поведение по умолчанию. У площадок без такого API — no-op,
+   * страховку берёт на себя вызывающий код (см. useDragReorder).
+   */
+  setVerticalSwipes(enabled: boolean): void;
 
   user(): HostUser | null;
   /** Параметр глубокой ссылки (Telegram start_param). */

@@ -33,7 +33,6 @@ export type QuickActionGroupId =
 
 export interface QuickAction {
   id: QuickActionId;
-  emoji: string;
   label: string;
   sub: string;
 }
@@ -44,13 +43,8 @@ export interface QuickActionGroup {
   actions: QuickAction[];
 }
 
-function action(
-  id: QuickActionId,
-  emoji: string,
-  label: string,
-  sub: string,
-): QuickAction {
-  return { id, emoji, label, sub };
+function action(id: QuickActionId, label: string, sub: string): QuickAction {
+  return { id, label, sub };
 }
 
 function group(
@@ -67,14 +61,13 @@ function group(
 export function buildPlusActions(tr: Tr): QuickActionGroup[] {
   return [
     group('capture', 'Записать момент', [
-      action('diary_schema', '🧩', 'Схема', 'Когда сработал паттерн'),
-      action('diary_mode', '🎭', 'Режим', 'Какой режим активировался'),
-      action('diary_gratitude', '🙏', 'Благодарность', 'Что было хорошего'),
+      action('diary_schema', 'Схема', 'Когда сработал паттерн'),
+      action('diary_mode', 'Режим', 'Какой режим активировался'),
+      action('diary_gratitude', 'Благодарность', 'Что было хорошего'),
     ]),
     group('rate', 'Оценить день', [
       action(
         'tracker',
-        '📊',
         'Трекер потребностей',
         tr('Оцени день по пяти шкалам', 'Оцените день по пяти шкалам'),
       ),
@@ -82,47 +75,29 @@ export function buildPlusActions(tr: Tr): QuickActionGroup[] {
     group('calm', 'Успокоиться', [
       action(
         'breathing',
-        '🌬',
         'Дыхание 4-4-6',
         'вдох короче выдоха — сигнал телу, что опасности нет',
       ),
       action(
         'grounding',
-        '🌍',
         'Заземление 5-4-3-2-1',
         'вернуться в тело и в комнату',
       ),
-      action(
-        'stop',
-        '🛑',
-        'Техника «Стоп»',
-        'пауза между импульсом и действием',
-      ),
+      action('stop', 'Техника «Стоп»', 'пауза между импульсом и действием'),
     ]),
     group('understand', 'Разобраться', [
-      action('belief_check', '🔍', 'Проверка убеждений', 'Правда ли это?'),
+      action('belief_check', 'Проверка убеждений', 'Правда ли это?'),
       action(
         'phrase_check',
-        '💭',
         'Критик или забота?',
         'Проверить фразу внутреннего голоса',
       ),
-      action(
-        'flashcard',
-        '⚡',
-        'Схема включилась',
-        '5 шагов чтобы разобраться',
-      ),
+      action('flashcard', 'Схема включилась', '5 шагов чтобы разобраться'),
     ]),
     group('support', 'Поддержать себя', [
-      action(
-        'safe_place',
-        '🏡',
-        'Безопасное место',
-        'Ресурс в тревожный момент',
-      ),
-      action('letter_to_self', '✉️', 'Письмо себе', 'Уязвимому Ребёнку'),
-      action('warm_words', '💛', 'Тёплые слова', 'Слова поддержки себе'),
+      action('safe_place', 'Безопасное место', 'Ресурс в тревожный момент'),
+      action('letter_to_self', 'Письмо себе', 'Уязвимому Ребёнку'),
+      action('warm_words', 'Тёплые слова', 'Слова поддержки себе'),
     ]),
   ];
 }

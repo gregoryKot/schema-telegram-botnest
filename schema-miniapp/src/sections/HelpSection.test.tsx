@@ -228,9 +228,9 @@ describe('HelpSection — кризисный вход (правило №7)', ()
     expect(screen.getByText(/112/)).toBeTruthy();
   });
 
-  it('из листа «О границах самопомощи» тоже можно перейти в кризисную карточку', async () => {
+  it('из листа «Важное о самопомощи» тоже можно перейти в кризисную карточку', async () => {
     await renderReady();
-    fireEvent.click(screen.getByLabelText('О границах самопомощи'));
+    fireEvent.click(screen.getByLabelText('Важное о самопомощи'));
     fireEvent.click(await screen.findByText('self-help-open-crisis'));
     await screen.findByText('Помощь рядом');
   });
@@ -614,9 +614,9 @@ describe('HelpSection — все дочерние листы реально за
     expect(screen.queryByTestId('warm-words')).toBeNull();
   });
 
-  it('«О границах самопомощи» закрывается', async () => {
+  it('«Важное о самопомощи» закрывается', async () => {
     await renderReady();
-    fireEvent.click(screen.getByLabelText('О границах самопомощи'));
+    fireEvent.click(screen.getByLabelText('Важное о самопомощи'));
     fireEvent.click(await screen.findByText('self-help-close'));
     expect(screen.queryByTestId('self-help')).toBeNull();
   });

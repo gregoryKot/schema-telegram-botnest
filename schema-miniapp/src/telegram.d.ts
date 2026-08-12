@@ -39,6 +39,8 @@ declare global {
         expand(): void;
         close(): void;
         disableVerticalSwipes(): void;
+        // Bot API 7.7+.
+        enableVerticalSwipes(): void;
         openLink(url: string, options?: { try_instant_view?: boolean }): void;
         BackButton: {
           isVisible: boolean;

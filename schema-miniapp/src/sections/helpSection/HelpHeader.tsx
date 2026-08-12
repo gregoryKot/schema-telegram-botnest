@@ -4,10 +4,12 @@ import { GearButton } from '../../components/GearButton';
 import { TherapyRelationInfo } from '../../api';
 import { NextSessionBanner } from './NextSessionBanner';
 
-// Шапка «Здесь и сейчас»: заголовок + чип «Важное о самопомощи» + заметная
-// шестерёнка настройки инструментов — второй (быстрый) вход в тот же лист,
-// что и пилюля «Настроить» у «Инструментов» ниже по экрану (владелец не
-// находил её — слишком глубоко по скроллу). Вынесено из HelpSection.tsx —
+// Шапка «Здесь и сейчас»: заголовок + значок ⚠️ «Важное о самопомощи»
+// (открывает SelfHelpSheet; был широким чипом с текстом — по фидбеку
+// владельца сузили до компактной кнопки-значка) + заметная шестерёнка
+// настройки инструментов — второй (быстрый) вход в тот же лист, что и
+// пилюля «Настроить» у «Инструментов» ниже по экрану (владелец не находил
+// её — слишком глубоко по скроллу). Вынесено из HelpSection.tsx —
 // файл-храповик у потолка (правило №10 CLAUDE.md).
 interface Props {
   relation: TherapyRelationInfo | null | undefined;
@@ -29,27 +31,25 @@ export function HelpHeader({
         </div>
         <button
           {...pressable(onOpenSelfHelp)}
-          aria-label="О границах самопомощи"
+          aria-label="Важное о самопомощи"
           style={{
-            minHeight: 44,
-            padding: '6px 12px',
+            width: 44,
+            height: 44,
             borderRadius: 999,
             flexShrink: 0,
             border: 'none',
             cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontSize: 12,
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
+            fontSize: 20,
             color: 'var(--ink-2)',
             background:
               'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          Важное о самопомощи
+          ⚠️
         </button>
         <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <GearButton

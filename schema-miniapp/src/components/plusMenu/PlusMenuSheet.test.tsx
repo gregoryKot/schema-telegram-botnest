@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PlusMenuSheet } from './PlusMenuSheet';
-import { QUICK_ACTION_IDS, buildPlusActions } from '../../utils/quickActions';
+import { QUICK_ACTION_IDS } from '../../utils/quickActions';
 import {
   PLUS_ACTIONS_HIDDEN_KEY,
   serializeHiddenActions,
@@ -40,19 +40,6 @@ describe('PlusMenuSheet — группы', () => {
     expect(screen.getByText('Дыхание 4-4-6')).toBeTruthy();
     expect(screen.getByText('Проверка убеждений')).toBeTruthy();
     expect(screen.getByText('Безопасное место')).toBeTruthy();
-  });
-
-  it('строки меню — без эмодзи: выбирают по смыслу (правило из FloatingPill)', () => {
-    // Регресс на правило «название и подпись, без иконки»: эмодзи реестра
-    // живут только в листах настройки, в самом меню их быть не должно.
-    const { container } = render(
-      <PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />,
-    );
-    for (const g of buildPlusActions((ty) => ty)) {
-      for (const a of g.actions) {
-        expect(container.textContent).not.toContain(a.emoji);
-      }
-    }
   });
 
   it('скрытый пункт не рендерится, остальные пункты его группы видны', () => {
