@@ -105,6 +105,43 @@ describe('BotAnalyticsService.getAdminStats — fillRate = Math.round(todayCount
   });
 });
 
+describe('BotAnalyticsService.getAdminStats — активное ядро (≥3 разных дня из последних 7)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_DATE);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('считает того, кто набрал 3 дня ВНУТРИ окна недели, но не того, чьи 3 дня старше окна (fillsByDow тянет 30 дней, окно ядра — 7)', async () => {
+    const prisma = makePrismaForChurnAndDow();
+    prisma.rating.findMany = jest.fn(({ where, distinct }: any) => {
+      if (where.date?.lt !== undefined)
+        return Promise.resolve([{ userId: 3n }, { userId: 5n }]); // activeOlder
+      if (distinct?.includes('date'))
+        return Promise.resolve([
+          { userId: 10n, date: d(1) },
+          { userId: 10n, date: d(2) },
+          { userId: 10n, date: d(3) }, // 3 разных дня внутри недели → ядро
+          { userId: 20n, date: d(9) },
+          { userId: 20n, date: d(10) },
+          { userId: 20n, date: d(11) }, // 3 дня, но все старше окна недели → не ядро
+          { userId: 30n, date: d(0) },
+          { userId: 30n, date: d(1) }, // только 2 дня внутри окна → не ядро
+        ]);
+      return Promise.resolve([
+        { userId: 10n },
+        { userId: 20n },
+        { userId: 30n },
+      ]); // week7Ratings
+    });
+    const svc = new BotAnalyticsService(prisma);
+    const report = await svc.getAdminStats();
+    expect(report).toContain(
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 1 из 3 заходивших за неделю',
+    );
+  });
+});
+
 describe('BotAnalyticsService.getBestDayOfWeek / getWorstDayOfWeek — граница «≥3 разных дней недели»', () => {
   it('ровно 3 разных дня недели — уже достаточно для ответа (не null)', async () => {
     const prisma: any = {

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NeedId, NEED_IDS } from './bot.service';
 import { localDate } from '../utils/tz';
 import { formatAdminStats } from './admin-stats.format';
+import { countActiveCore } from './active-core-metrics';
 import {
   formatRetentionBlock,
   RetentionStats,
@@ -648,6 +649,12 @@ export class BotAnalyticsService {
     const fillRate =
       month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
 
+    // «Активное ядро» (docs/LAUNCH_STRATEGY.md §5): ≥3 разных дня дневника за
+    // последние 7 — тот же cutoff d7, что и week7Count (согласованные окна),
+    // тот же список пар (userId, date), что и bestDow (fillsByDow) — второй
+    // запрос к БД не заводим.
+    const activeCoreCount = countActiveCore(fillsByDow, d7);
+
     const report = formatAdminStats({
       today,
       totalUsers,
@@ -658,6 +665,7 @@ export class BotAnalyticsService {
       todayCount,
       fillRate,
       week7Count: week7Ratings.length,
+      activeCoreCount,
       month30Count,
       churnRisk,
       ret1,
