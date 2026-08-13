@@ -273,6 +273,36 @@ describe('BotAnalyticsService', () => {
     });
   });
 
+  describe('getDayOfWeekExtremes (H4: best+worst за один скан)', () => {
+    it('возвращает best и worst из одного прохода по истории', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0), value: 8 }, // среда — самый высокий
+        { date: d(0), value: 9 },
+        { date: d(1), value: 3 }, // вторник — самый низкий
+        { date: d(2), value: 5 }, // понедельник
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getDayOfWeekExtremes(1)).toEqual({
+        best: 'среда',
+        worst: 'вторник',
+      });
+    });
+
+    it('null/null при <3 разных днях недели', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0), value: 8 },
+        { date: d(1), value: 3 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getDayOfWeekExtremes(1)).toEqual({
+        best: null,
+        worst: null,
+      });
+    });
+  });
+
   describe('getFillDaysInLast', () => {
     it('counts distinct fill days within the window', async () => {
       const prisma = makePrisma();

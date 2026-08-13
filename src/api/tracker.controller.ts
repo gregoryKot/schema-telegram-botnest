@@ -130,17 +130,17 @@ export class TrackerController {
 
   @Get('insights')
   async getInsights(@Req() req: AuthRequest) {
-    const [weeklyStats, bestDayOfWeek, worstDayOfWeek, streak] =
-      await Promise.all([
-        this.analyticsService.getWeeklyStats(uid(req)),
-        this.analyticsService.getBestDayOfWeek(uid(req)),
-        this.analyticsService.getWorstDayOfWeek(uid(req)),
-        this.analyticsService.getStreakData(uid(req)),
-      ]);
+    const id = uid(req);
+    // Один скан истории на best+worst (аудит 2026-08, H4) вместо двух.
+    const [weeklyStats, dow, streak] = await Promise.all([
+      this.analyticsService.getWeeklyStats(id),
+      this.analyticsService.getDayOfWeekExtremes(id),
+      this.analyticsService.getStreakData(id),
+    ]);
     return {
       weeklyStats,
-      bestDayOfWeek,
-      worstDayOfWeek,
+      bestDayOfWeek: dow.best,
+      worstDayOfWeek: dow.worst,
       totalDays: streak.totalDays,
     };
   }
