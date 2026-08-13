@@ -5,6 +5,7 @@ import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
+import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
@@ -31,6 +32,7 @@ export class StatsReportService {
     private readonly authHealth: AuthHealthMetricsService,
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
+    private readonly signupSource: SignupSourceMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. */
@@ -47,6 +49,7 @@ export class StatsReportService {
       authHealth,
       clientErrors,
       money,
+      signupSource,
     ] = await Promise.all([
       this.product.render(),
       this.modeCard.render(),
@@ -59,8 +62,9 @@ export class StatsReportService {
       this.authHealth.render(),
       this.clientErrors.render(),
       this.money.render(),
+      this.signupSource.render(),
     ]);
     const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${capability}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
   }
 }

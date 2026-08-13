@@ -487,6 +487,19 @@ describe('sanitizeMeta', () => {
     ).toBeUndefined();
   });
 
+  it('signup_source: src — только из allow-list, свободный slug не проходит', () => {
+    expect(sanitizeMeta('signup_source', { src: 'seed1' })).toEqual({
+      src: 'seed1',
+    });
+    expect(sanitizeMeta('signup_source', { src: 'other' })).toEqual({
+      src: 'other',
+    });
+    expect(
+      sanitizeMeta('signup_source', { src: 'скидка_от_знакомого' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('signup_source', {})).toBeUndefined();
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

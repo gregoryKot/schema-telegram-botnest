@@ -11,6 +11,7 @@ import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
+import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -62,6 +63,7 @@ const INTERNAL_PROVIDERS = [
   ModeDiaryMetricsService,
   WarmWordsMetricsService,
   AccountLinkMetricsService,
+  SignupSourceMetricsService,
   PracticeMetricsService,
   PhraseCheckMetricsService,
   PlusMetricsService,
