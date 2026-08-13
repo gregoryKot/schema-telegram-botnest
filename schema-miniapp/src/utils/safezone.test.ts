@@ -138,10 +138,11 @@ describe('computeSafeTop — fullscreen, инсеты НЕ пришли (щед�
   });
 });
 
-// Скриншот пользователя (2026-08): на iOS в Telegram шапка «Паттерны» уехала
-// под статус-бар и под плавающую кнопку «Закрыть». Хост отчитался нулями —
-// и старая ветка «контентный инсет определён (== 0) → доверяем» вернула 0.
-// Внутри мессенджера ноль не бывает правдой: свои кнопки он рисует всегда.
+// Четвёртый заход (скриншот 2026-08-12): в sheet-режиме Telegram рисует
+// СПЛОШНУЮ шапку над webview — полоса контента честно нулевая, а страховка
+// 96px давала дыру над заголовком. Правило: способному клиенту (полоса
+// контента прислана, пусть и нулём) верим точно; страховка — только тем,
+// кто полосу прислать не умеет (contentTop undefined, Bot API < 8.0).
 describe('computeSafeTop — нулевые инсеты внутри мессенджера (регрессия 2026-08)', () => {
   const zeros = {
     contentTop: 0,
@@ -150,25 +151,35 @@ describe('computeSafeTop — нулевые инсеты внутри мессе
     contentReported: true,
   };
 
-  it('iOS в мессенджере: ноль не принимаем, держим фолбэк под кнопку закрытия', () => {
+  it('iOS, sheet-режим со сплошной шапкой: честному нулю верим — без дыры 96px', () => {
     expect(computeSafeTop({ ...zeros, ios: true, overlaysContent: true })).toBe(
-      96,
+      0,
     );
+  });
+
+  it('Android, способный клиент с нулевой полосой — тоже без дыры', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
+    ).toBe(0);
+  });
+
+  it('клиент полосу прислать НЕ умеет — страховка под пилюлю «Закрыть»', () => {
+    expect(
+      computeSafeTop({
+        contentTop: undefined,
+        deviceTop: 0,
+        isFullscreen: false,
+        contentReported: false,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(96);
   });
 
   it('браузер на iOS: ноль — правда, чёлку закрывает CSS env()', () => {
     expect(
       computeSafeTop({ ...zeros, ios: true, overlaysContent: false }),
     ).toBe(0);
-  });
-
-  // Поведение изменено осознанно (2026-08): раньше на Android в мессенджере
-  // отступ не добавляли вовсе. Но кнопки клиента висят поверх контента и там —
-  // признак перекрытия не зависит от системы, поэтому очищаем полосу и здесь.
-  it('Android в мессенджере: кнопки тоже поверх контента — очищаем полосу', () => {
-    expect(
-      computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
-    ).toBe(96);
   });
 
   it('полный экран с нулевой полосой контента — тоже «не доехало», а не точное значение', () => {
@@ -201,18 +212,18 @@ describe('computeSafeTop — нулевые инсеты внутри мессе
 });
 
 // Регресс к скриншоту 2026-08: заголовок «Паттерны» стоял под пилюлей
-// «Закрыть». Инсеты нулевые, клиент внутри мессенджера — отступ обязан
-// очищать не только статус-бар (~54pt), но и полосу кнопок (низ ~87pt).
+// «Закрыть» на клиенте, который полосу контента прислать не умел — отступ
+// обязан очищать не только статус-бар (~54pt), но и полосу кнопок (низ ~87pt).
 describe('фолбэк очищает кнопки Telegram, а не только статус-бар', () => {
   const TELEGRAM_BUTTONS_BOTTOM_PT = 87;
 
-  it('нулевые инсеты на iOS в мессенджере → отступ ниже кнопок', () => {
+  it('клиент без полосы контента на iOS в мессенджере → отступ ниже кнопок', () => {
     const top = computeSafeTop({
-      contentTop: 0,
+      contentTop: undefined,
       deviceTop: 0,
       isFullscreen: false,
       ios: true,
-      contentReported: true,
+      contentReported: false,
       overlaysContent: true,
     });
     expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
@@ -244,35 +255,35 @@ describe('фолбэк очищает кнопки Telegram, а не тольк�
   });
 });
 
-// Скриншот 2026-08 (третий подряд): развёрнутый режим Telegram — кнопки висят
-// поверх контента, но isFullscreen=false, а contentSafeAreaInset приходит
-// нулём. Раньше мы верили device-инсету, и шапка оказывалась под пилюлей
-// «Закрыть».
+// Развёрнутый (не полноэкранный) режим. Клиент, НЕ умеющий присылать полосу
+// контента, получает страховку под кнопки; способный клиент с честным нулём
+// (сплошная шапка над webview) — точное значение, включая device-инсет.
 describe('развёрнутый режим: кнопки поверх контента, полосы контента нет', () => {
   const BUTTONS_BOTTOM_PT = 87;
 
-  it('device-инсет есть, полоса контента нулевая → отступ ниже кнопок', () => {
+  it('клиент без полосы контента, device есть → отступ ниже кнопок', () => {
     const top = computeSafeTop({
-      contentTop: 0,
+      contentTop: undefined,
       deviceTop: 59,
       isFullscreen: false,
       ios: true,
-      contentReported: true,
+      contentReported: false,
       overlaysContent: true,
     });
     expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
   });
 
-  it('то же на Android — кнопки висят так же, ветка не про iOS', () => {
-    const top = computeSafeTop({
-      contentTop: 0,
-      deviceTop: 24,
-      isFullscreen: false,
-      ios: false,
-      contentReported: true,
-      overlaysContent: true,
-    });
-    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  it('способный клиент: полоса нулевая, device есть → ровно device, без страховки', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 59,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: true,
+      }),
+    ).toBe(59);
   });
 
   it('клиент прислал НЕНУЛЕВУЮ полосу контента — верим ему точно', () => {
