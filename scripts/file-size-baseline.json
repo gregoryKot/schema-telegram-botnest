@@ -689,7 +689,7 @@
   "src/bot/admin-stats.format.ts": 63,
   "src/bot/auth-health-metrics.format.ts": 75,
   "src/bot/auth-health-metrics.service.ts": 71,
-  "src/bot/bot.analytics.service.ts": 697,
+  "src/bot/bot.analytics.service.ts": 704,
   "src/bot/bot.client-overview.service.ts": 126,
   "src/bot/bot.module.ts": 80,
   "src/bot/bot.product-metrics.service.ts": 259,

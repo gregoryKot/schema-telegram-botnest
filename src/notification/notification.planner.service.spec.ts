@@ -207,6 +207,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
         await svc.planDay(makeUser(), NOW);
         expect(deps.analytics.getDaysSinceLastFill).toHaveBeenCalledWith(
           BigInt(42),
+          'Europe/Moscow',
         );
         expect(deps.notifications.schedule).not.toHaveBeenCalled();
         expect(deps.cadence.nextReminderSeq).not.toHaveBeenCalled();
