@@ -6,6 +6,7 @@
 // Проверяются оба исхода: гейт краснеет на регрессе И зеленеет на чистом
 // дереве. Второй не менее важен — ложно-красный гейт отключают через неделю.
 import { runGate } from './gate-sandbox';
+import { loadNamedPatterns, loadRegexList } from './pattern-loader';
 
 describe('check-gendered-forms.mjs', () => {
   it('новый файл с «ты сделал» — exit 1', () => {
@@ -173,5 +174,91 @@ describe('check-gendered-forms.mjs', () => {
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
+  });
+});
+
+// Механизм вместо добросовестности (как shared/src/utils/crisisMarkers.test.ts):
+// тесты выше бьют по CLI через известные строки и НЕ пинят каждый паттерн —
+// замер 2026-08-13 показал, что отключение регэкспа 4 из 10 паттернов
+// (bud-ty-past, ty-irregular, ya-past, ya-short-adj) не роняло ни один из них.
+// Поэтому здесь у КАЖДОГО паттерна PATTERNS и каждого исключения ALLOW —
+// живой образец, который ловит/гасит именно он. Новый паттерн без образца в
+// POSITIVE роняет первый тест ниже сразу.
+describe('каждый паттерн и ALLOW-исключение пойманы своим образцом', () => {
+  const PATTERNS = loadNamedPatterns('check-gendered-forms.mjs', 'PATTERNS');
+  const ALLOW = loadRegexList('check-gendered-forms.mjs', 'ALLOW');
+
+  const POSITIVE: Record<string, string> = {
+    'ty-past': 'Ты сделал первый шаг',
+    'bud-ty-past': 'Даже если бы ты остался, ничего бы не изменилось',
+    'ty-irregular': 'Ты вырос из этого страха',
+    'ty-short-adj': 'Ты не обязан быть в форме сегодня',
+    'ya-past': 'Скажи себе: «Я забыл, каково это»',
+    'ya-short-adj': 'Ругаю себя: я плохой',
+    'inf-adj-m': 'Позволь себе не быть сильным',
+    'child-self-m': 'Дорогой маленький я,',
+    'dropped-subject-past': 'Чувства было опасно показывать. Научился прятать.',
+    brackets: 'Я обречён(а) быть в одиночестве',
+  };
+
+  it('в PATTERNS нет имени без образца в POSITIVE', () => {
+    const missing = PATTERNS.map((p) => p.name).filter((n) => !(n in POSITIVE));
+    expect(missing).toEqual([]);
+  });
+
+  it.each(PATTERNS.map((p) => [p.name] as const))(
+    'паттерн «%s» ловит свой образец',
+    (name) => {
+      const p = PATTERNS.find((x) => x.name === name)!;
+      const re = new RegExp(p.source, p.flags);
+      expect(re.test(POSITIVE[name])).toBe(true);
+    },
+  );
+
+  // Задокументированные в комментариях исключения: паттерн НЕ обязан их ловить.
+  it.each([
+    ['ty-past', 'Ты психолог', 'существительное на «ог» — не прошедшее время'],
+    [
+      'ty-past',
+      'Ты помог мне сегодня',
+      '«ог/ёг» намеренно исключены из PAST_M',
+    ],
+    ['ya-past', 'Я психолог и работаю со схемами', 'то же для «я»'],
+    [
+      'child-self-m',
+      'Один маленький шаг — уже много',
+      'прилагательное при существительном — законно',
+    ],
+    [
+      'child-self-m',
+      'нужна забота — как ребёнку, которого не обнимали',
+      'то же',
+    ],
+    [
+      'dropped-subject-past',
+      'Внутренний Критик перестал атаковать',
+      'явное подлежащее — род принадлежит ему',
+    ],
+  ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
+    const p = PATTERNS.find((x) => x.name === name)!;
+    const re = new RegExp(p.source, p.flags);
+    expect(re.test(text)).toBe(false);
+  });
+
+  it('у каждого ALLOW-исключения есть образец, который оно распознаёт', () => {
+    const CORPUS = [
+      'рядом живой человек, а не бот',
+      'рядом оказывался стабильный взрослый',
+      'Клиент должен сам решить, что делать',
+      'кто должен быть близким',
+      'нужно любому',
+      'который я создал',
+      'что он важен',
+      'кто готов слушать',
+    ];
+    const unmatched = ALLOW.filter(
+      (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
+    );
+    expect(unmatched).toEqual([]);
   });
 });
