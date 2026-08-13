@@ -55,6 +55,7 @@ function makeConfig(webappUrl = 'https://schemehappens.ru'): ConfigService {
   return {
     getOrThrow: jest.fn((key: string) => {
       if (key === 'WEBAPP_URL') return webappUrl;
+      if (key === 'JWT_SECRET') return 'test-jwt-secret';
       throw new Error(`unexpected config key ${key}`);
     }),
   } as unknown as ConfigService;
@@ -343,31 +344,33 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
 });
 
 describe('AuthFlowService.linkUserIdFromState', () => {
-  const svc = makeService({});
-
-  it('валидный base64url JSON с linkUserId → возвращает BigInt', () => {
-    const state = Buffer.from(JSON.stringify({ linkUserId: '42' })).toString(
-      'base64url',
-    );
+  // state теперь — подписанный JWT (oauth-state.ts, C1), не base64url JSON.
+  // Крипта сама покрыта oauth-state.spec.ts; здесь — сквозной roundtrip через
+  // AuthFlowService (buildLinkState/linkUserIdFromState делят один stateSecret()).
+  it('roundtrip: buildLinkState → linkUserIdFromState сохраняет linkUserId', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(42n);
     expect(svc.linkUserIdFromState(state)).toBe(42n);
   });
 
-  it('валидный JSON без linkUserId (анонимный вход) → null', () => {
-    const state = Buffer.from(JSON.stringify({ nonce: 'x' })).toString(
-      'base64url',
-    );
+  it('buildLinkState(null) (анонимный вход) → linkUserIdFromState возвращает null', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(null);
     expect(svc.linkUserIdFromState(state)).toBeNull();
   });
 
-  it('linkUserId: null явно в state → null', () => {
-    const state = Buffer.from(JSON.stringify({ linkUserId: null })).toString(
-      'base64url',
-    );
-    expect(svc.linkUserIdFromState(state)).toBeNull();
+  it('РЕГРЕССИЯ C1: неподписанный base64url JSON (старый формат = вектор атаки) → null', () => {
+    const svc = makeService({});
+    // Ровно то, что слал бы атакующий: linkUserId=<жертва> без подписи.
+    const forged = Buffer.from(
+      JSON.stringify({ nonce: 'x', linkUserId: '999' }),
+    ).toString('base64url');
+    expect(svc.linkUserIdFromState(forged)).toBeNull();
   });
 
-  it('битый (не-JSON) state → null, не бросает', () => {
-    expect(svc.linkUserIdFromState('not-valid-base64url-json!!!')).toBeNull();
+  it('битый state → null, не бросает', () => {
+    const svc = makeService({});
+    expect(svc.linkUserIdFromState('garbage!!!')).toBeNull();
   });
 });
 
@@ -396,11 +399,11 @@ describe('AuthFlowService.oauthRedirect', () => {
         path: '/api/auth',
       }),
     );
+    // state — подписанный JWT (C1), не самоописывающийся JSON — читаем его
+    // тем же путём, что и продовый код (svc.linkUserIdFromState), а не
+    // Buffer/JSON.parse напрямую.
     const state = res.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-      linkUserId: string | null;
-    };
-    expect(decoded.linkUserId).toBe('999');
+    expect(svc.linkUserIdFromState(state)).toBe(999n);
     expect(buildAuthUrl).toHaveBeenCalledWith(state);
     expect(res.redirect).toHaveBeenCalledWith(
       'https://accounts.google.com/o/authorize?x=1',
@@ -420,10 +423,7 @@ describe('AuthFlowService.oauthRedirect', () => {
 
     svc.oauthRedirect('google', req, res);
     const state = res.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-      linkUserId: string | null;
-    };
-    expect(decoded.linkUserId).toBeNull();
+    expect(svc.linkUserIdFromState(state)).toBeNull();
   });
 
   it('провайдер не поддерживает OAuth (нет buildAuthUrl) → BadRequestException', () => {

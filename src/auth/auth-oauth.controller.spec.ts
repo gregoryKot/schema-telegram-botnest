@@ -30,6 +30,8 @@ interface FlowMocks {
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
   linkUserIdFromState: jest.Mock;
+  buildLinkState: jest.Mock;
+  readLinkState: jest.Mock;
 }
 
 interface ResMocks {
@@ -52,6 +54,8 @@ function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
     linkUserIdFromState: jest.fn().mockReturnValue(null),
+    buildLinkState: jest.fn().mockReturnValue('signed-oauth-state'),
+    readLinkState: jest.fn().mockReturnValue(null),
   };
   return { flow: mocks as unknown as AuthFlowService, mocks };
 }
@@ -270,8 +274,8 @@ describe('AuthOauthController.vkCallback', () => {
 });
 
 describe('AuthOauthController.telegramOidcRedirect', () => {
-  it('без webUser: state без linkUserId, обе cookie ставятся, редирект на buildAuthUrl(state, challenge)', () => {
-    const { flow } = makeFlow();
+  it('без webUser: state строит flow.buildLinkState(null), обе cookie ставятся, редирект на buildAuthUrl(state, challenge)', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
     const { provider, mocks: tgMocks } = makeTgOidcProvider();
     const controller = makeController(
       makeProviders({ 'telegram-oidc': provider }),
@@ -283,9 +287,12 @@ describe('AuthOauthController.telegramOidcRedirect', () => {
     controller.telegramOidcRedirect(req, res);
 
     expect(tgMocks.generatePkce).toHaveBeenCalled();
+    // Подписанный state (C1): аноним → buildLinkState(null); значение куки —
+    // ровно то, что вернул buildLinkState, а не самодельный base64url JSON.
+    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(null);
     expect(resMocks.cookie).toHaveBeenCalledWith(
       'oauth_state',
-      expect.any(String),
+      'signed-oauth-state',
       expect.objectContaining({ httpOnly: true }),
     );
     expect(resMocks.cookie).toHaveBeenCalledWith(
@@ -293,21 +300,17 @@ describe('AuthOauthController.telegramOidcRedirect', () => {
       'verifier-1',
       expect.objectContaining({ httpOnly: true }),
     );
-
-    const stateArg = resMocks.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(
-      Buffer.from(stateArg, 'base64url').toString(),
-    ) as { linkUserId: string | null };
-    expect(decoded.linkUserId).toBeNull();
-
-    expect(tgMocks.buildAuthUrl).toHaveBeenCalledWith(stateArg, 'challenge-1');
+    expect(tgMocks.buildAuthUrl).toHaveBeenCalledWith(
+      'signed-oauth-state',
+      'challenge-1',
+    );
     expect(resMocks.redirect).toHaveBeenCalledWith(
-      `https://oauth.telegram.org/auth?state=${stateArg}&challenge=challenge-1`,
+      'https://oauth.telegram.org/auth?state=signed-oauth-state&challenge=challenge-1',
     );
   });
 
-  it('с webUser: state кодирует linkUserId как строку', () => {
-    const { flow } = makeFlow();
+  it('с webUser: linkUserId уходит в flow.buildLinkState (подписанный state, не сырой id)', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
     const { provider } = makeTgOidcProvider();
     const controller = makeController(
       makeProviders({ 'telegram-oidc': provider }),
@@ -318,11 +321,12 @@ describe('AuthOauthController.telegramOidcRedirect', () => {
 
     controller.telegramOidcRedirect(req, res);
 
-    const stateArg = resMocks.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(
-      Buffer.from(stateArg, 'base64url').toString(),
-    ) as { linkUserId: string | null };
-    expect(decoded.linkUserId).toBe('42');
+    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(42n);
+    expect(resMocks.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      'signed-oauth-state',
+      expect.objectContaining({ httpOnly: true }),
+    );
   });
 });
 
