@@ -107,11 +107,20 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
       },
     });
     service.onModuleInit();
-    await runCommand(fakeBot, 'start', {
+    const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 42 },
       startPayload: 'src_seed1',
     });
+    // Голого not.toHaveBeenCalled() недостаточно: он же прошёл бы, если бы
+    // isReturning вообще не считался и track() не вызывался никогда — тест
+    // должен убедиться, что ветка src_ реально дошла до проверки isReturning
+    // (а не была пропущена целиком) и что обычный сценарий возврата не
+    // сломан: юзер всё равно получает приветствие «с возвращением».
     expect(analyticsEvents.track).not.toHaveBeenCalled();
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringContaining('С возвращением'),
+      expect.anything(),
+    );
   });
 
   it('пишется ДО гейта согласия — событие есть, даже если согласие ещё не принято', async () => {
@@ -154,7 +163,14 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
   it('/start без payload — событие не пишется вовсе', async () => {
     const { fakeBot, service, analyticsEvents } = makeDeps();
     service.onModuleInit();
-    await runCommand(fakeBot, 'start', { from: { id: 42 } });
+    const ctx = await runCommand(fakeBot, 'start', { from: { id: 42 } });
     expect(analyticsEvents.track).not.toHaveBeenCalled();
+    // ...и обычный онбординг всё равно идёт — гейт согласия показывается,
+    // отсутствие payload не глушит хендлер молча (не «упал раньше» из-за
+    // необработанного undefined-пейлоада).
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringContaining('Соглашение'),
+      expect.anything(),
+    );
   });
 });

@@ -56,10 +56,19 @@ describe('SignupSourceMetricsService.getMetrics', () => {
     expect(other.count30).toBe(2);
   });
 
-  it('ходит в БД один раз', async () => {
+  it('ходит в БД один раз, передавая обе границы окна (7 и 30 дней) датами', async () => {
     const { service, queryRaw } = build([{ src: 'seed1', c7: 1n, c30: 1n }]);
     await service.getMetrics();
     expect(queryRaw).toHaveBeenCalledTimes(1);
+    // Голое toHaveBeenCalledTimes(1) не ловит перепутанные/захардкоженные
+    // границы окна — проверяем, что вторым и третьим аргументом тега
+    // ушли реальные Date, и что граница «7 дней назад» строго позже
+    // границы «30 дней назад» (иначе c7/c30 в SQL-фильтре перепутаны
+    // местами и /stats покажет неверные окна).
+    const [, since7, since30] = queryRaw.mock.calls[0] as [unknown, Date, Date];
+    expect(since7).toBeInstanceOf(Date);
+    expect(since30).toBeInstanceOf(Date);
+    expect(since7.getTime()).toBeGreaterThan(since30.getTime());
   });
 
   it('в запросе фильтрует ровно событие signup_source', async () => {
