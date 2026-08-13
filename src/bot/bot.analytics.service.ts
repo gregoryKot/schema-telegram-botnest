@@ -45,10 +45,11 @@ export class BotAnalyticsService {
   async getHistoryRatings(
     userId: bigint,
     days: number,
+    tzArg?: string,
   ): Promise<
     Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>
   > {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -71,8 +72,9 @@ export class BotAnalyticsService {
     userId: bigint,
     threshold: number,
     days: number,
+    tzArg?: string,
   ): Promise<NeedId[]> {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -89,8 +91,8 @@ export class BotAnalyticsService {
     });
   }
 
-  async getConsecutiveDays(userId: bigint): Promise<number> {
-    const tz = await this.userTimezone(userId);
+  async getConsecutiveDays(userId: bigint, tzArg?: string): Promise<number> {
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const rows = await this.prisma.rating.findMany({
       where: { userId },
       select: { date: true },
@@ -118,14 +120,14 @@ export class BotAnalyticsService {
     return rows.length;
   }
 
-  async getDaysSinceLastFill(userId: bigint): Promise<number> {
+  async getDaysSinceLastFill(userId: bigint, tzArg?: string): Promise<number> {
     const last = await this.prisma.rating.findFirst({
       where: { userId },
       orderBy: { date: 'desc' },
       select: { date: true },
     });
     if (!last) return -1;
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const today = this.localDateString(tz);
     const diffMs =
       new Date(today + 'T00:00:00Z').getTime() -
@@ -134,8 +136,12 @@ export class BotAnalyticsService {
   }
 
   /** Сколько разных дней с записями за последние N локальных дней (включая сегодня) */
-  async getFillDaysInLast(userId: bigint, days: number): Promise<number> {
-    const tz = await this.userTimezone(userId);
+  async getFillDaysInLast(
+    userId: bigint,
+    days: number,
+    tzArg?: string,
+  ): Promise<number> {
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
@@ -169,10 +175,11 @@ export class BotAnalyticsService {
 
   async getWeeklyStats(
     userId: bigint,
+    tzArg?: string,
   ): Promise<
     Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>
   > {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const last14 = Array.from({ length: 14 }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
