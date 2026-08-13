@@ -145,10 +145,13 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'auth/auth-2fa.controller.ts:113': "одиночное поле @Body('email')",
   'auth/auth-2fa.controller.ts:145': "одиночное поле @Body('email')",
   'auth/auth-2fa.controller.ts:156': "одиночное поле @Body('token')",
-  'auth/auth-account.controller.ts:47': "одиночное поле @Body('email')",
-  'auth/auth-account.controller.ts:96': "одиночное поле @Body('email')",
-  'auth/auth-account.controller.ts:113': "одиночное поле @Body('initData')",
-  'auth/auth-account.controller.ts:148': "одиночное поле @Body('token')",
+  // Строки auth-account.controller.ts сдвинуты H1 (EmailTokenService DI) —
+  // те же нарушения, обновлены номера строк вместе с рефактором (см.
+  // комментарий выше: список не удаляется втихую при сдвиге).
+  'auth/auth-account.controller.ts:49': "одиночное поле @Body('email')",
+  'auth/auth-account.controller.ts:102': "одиночное поле @Body('email')",
+  'auth/auth-account.controller.ts:119': "одиночное поле @Body('initData')",
+  'auth/auth-account.controller.ts:154': "одиночное поле @Body('token')",
   'auth/auth-account.controller.ts:231':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',

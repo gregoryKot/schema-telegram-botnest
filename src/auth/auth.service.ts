@@ -12,7 +12,7 @@ import { EmailService } from './email.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
-import { encrypt as encField, decrypt as decField } from '../utils/crypto';
+import { encrypt as encField } from '../utils/crypto';
 
 const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -155,64 +155,6 @@ export class AuthService {
     return { ok: true };
   }
 
-  // Consume a login or link_email_auth token.
-  // Returns tokens + purpose so the controller can decide where to redirect.
-  async consumeEmailToken(
-    rawToken: string,
-    ip?: string,
-    userAgent?: string,
-  ): Promise<{
-    tokens: TokenPair;
-    purpose: string;
-    userId: bigint;
-  }> {
-    if (!rawToken) throw new UnauthorizedException('Missing token');
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
-    const row = await this.prisma.emailToken.findUnique({
-      where: { tokenHash },
-    });
-
-    if (!row) throw new UnauthorizedException('Token not found');
-    if (row.usedAt) throw new UnauthorizedException('Token already used');
-    if (row.expiresAt < new Date())
-      throw new UnauthorizedException('Token expired');
-    if (!['login', 'link_email_auth'].includes(row.purpose))
-      throw new UnauthorizedException('Token purpose mismatch');
-    if (!row.userId) throw new UnauthorizedException('No user bound to token');
-
-    await this.prisma.emailToken.update({
-      where: { id: row.id },
-      data: { usedAt: new Date() },
-    });
-
-    const rowEmail = decField(row.email) ?? row.email;
-    if (row.purpose === 'link_email_auth') {
-      // Link email as auth provider to the existing (already-authed) user.
-      const result = await this.linkProviderToUser(
-        row.userId,
-        'email',
-        rowEmail,
-        rowEmail,
-        rowEmail,
-      );
-      if (!result.ok) {
-        throw new ConflictException(
-          'Этот email уже привязан к другому аккаунту',
-        );
-      }
-    }
-
-    const tokens = await this.issueTokens(row.userId, ip, userAgent);
-    return {
-      tokens,
-      purpose: row.purpose,
-      userId: row.userId,
-    };
-  }
-
   // Send a magic link that links email as auth provider (not a new login).
   // The token has purpose='link_email_auth' so the callback knows what to do.
   async linkEmailToAccount(
@@ -255,16 +197,6 @@ export class AuthService {
         ),
       );
     return { ok: true };
-  }
-
-  // Keep the old name as an alias so nothing breaks if referenced elsewhere
-  async consumeEmailLoginToken(
-    rawToken: string,
-    ip?: string,
-    userAgent?: string,
-  ): Promise<TokenPair> {
-    const { tokens } = await this.consumeEmailToken(rawToken, ip, userAgent);
-    return tokens;
   }
 
   // ─── Find or create user ───────────────────────────────────────────────────

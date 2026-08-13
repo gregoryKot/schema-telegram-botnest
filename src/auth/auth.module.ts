@@ -9,6 +9,7 @@ import { AuthDeviceLinkController } from './auth-device-link.controller';
 import { DeviceLinkService } from './device-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
+import { EmailTokenService } from './email-token.service';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
@@ -27,6 +28,7 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [
     AuthService,
     AuthFlowService,
+    EmailTokenService,
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,

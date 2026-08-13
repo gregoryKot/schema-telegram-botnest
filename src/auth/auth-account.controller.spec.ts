@@ -22,6 +22,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import { EmailTokenService } from './email-token.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
@@ -35,7 +36,6 @@ const FAKE_TOKENS: TokenPair = {
 type AuthMock = Pick<
   AuthService,
   | 'requestEmailLogin'
-  | 'consumeEmailToken'
   | 'linkEmailToAccount'
   | 'verifyTelegramWebAppData'
   | 'findOrCreateUserByProvider'
@@ -46,7 +46,6 @@ type AuthMock = Pick<
   | 'unlinkProvider'
 > & {
   requestEmailLogin: jest.Mock;
-  consumeEmailToken: jest.Mock;
   linkEmailToAccount: jest.Mock;
   verifyTelegramWebAppData: jest.Mock;
   findOrCreateUserByProvider: jest.Mock;
@@ -64,16 +63,15 @@ type MergeMock = Pick<MergeService, 'merge' | 'summarize'> & {
 
 type SecurityLogMock = Pick<SecurityLogService, 'log'> & { log: jest.Mock };
 
+type EmailTokensMock = Pick<EmailTokenService, 'consumeEmailToken'> & {
+  consumeEmailToken: jest.Mock;
+};
+
 type ProvidersMock = { get: jest.Mock; list: jest.Mock };
 
 function makeAuth(): AuthMock {
   return {
     requestEmailLogin: jest.fn().mockResolvedValue({ ok: true }),
-    consumeEmailToken: jest.fn().mockResolvedValue({
-      tokens: FAKE_TOKENS,
-      purpose: 'login',
-      userId: 1n,
-    }),
     linkEmailToAccount: jest.fn().mockResolvedValue({ ok: true }),
     verifyTelegramWebAppData: jest
       .fn()
@@ -110,6 +108,17 @@ function makeConfig(): ConfigService {
 
 function makeSecurityLog(): SecurityLogMock {
   return { log: jest.fn() };
+}
+
+function makeEmailTokens(): EmailTokensMock {
+  return {
+    consumeEmailToken: jest.fn().mockResolvedValue({
+      kind: 'tokens',
+      tokens: FAKE_TOKENS,
+      purpose: 'login',
+      userId: 1n,
+    }),
+  };
 }
 
 function makeProviders(
@@ -151,14 +160,24 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
   const providers = opts.providers ?? makeProviders();
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
+  const emailTokens = makeEmailTokens();
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
     providers as unknown as AuthProviderRegistry,
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
+    emailTokens as unknown as EmailTokenService,
   );
-  return { controller, auth, config, providers, merge, securityLog };
+  return {
+    controller,
+    auth,
+    config,
+    providers,
+    merge,
+    securityLog,
+    emailTokens,
+  };
 }
 
 describe('AuthAccountController.emailLoginLink', () => {
@@ -180,8 +199,9 @@ describe('AuthAccountController.emailLoginLink', () => {
 
 describe('AuthAccountController.emailLoginCallback', () => {
   it('purpose="login" → cookie выставлена, редирект на /auth/callback с access_token', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockResolvedValue({
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'tokens',
       tokens: FAKE_TOKENS,
       purpose: 'login',
       userId: 1n,
@@ -199,8 +219,9 @@ describe('AuthAccountController.emailLoginCallback', () => {
   });
 
   it('purpose="link_email_auth" → редирект на /account?linked=email', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockResolvedValue({
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'tokens',
       tokens: FAKE_TOKENS,
       purpose: 'link_email_auth',
       userId: 1n,
@@ -212,9 +233,27 @@ describe('AuthAccountController.emailLoginCallback', () => {
     );
   });
 
+  // H1 (аудит 2026-08): login при включённом TOTP не выдаёт сессию сразу —
+  // клиент уходит на экран ввода 2FA-кода с одноразовым challengeToken.
+  it('kind="totp_challenge" → редирект на /auth/2fa с challengeToken, cookie НЕ выставлена', async () => {
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'totp_challenge',
+      challengeToken: 'ch-tok',
+      purpose: 'login',
+      userId: 1n,
+    });
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
+    );
+  });
+
   it('просроченный/невалидный токен → редирект на /auth/error, без cookie', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockRejectedValue(new Error('expired'));
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
       controller.emailLoginCallback('bad-tok', makeReq(), res),
