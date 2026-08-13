@@ -16,6 +16,10 @@ model Rating {
 
   @@unique([userId, date, needId])
   @@index([userId, date])
+  // Индекс по голому date (аудит M2): /stats фильтрует Rating по date без
+  // userId (COUNT DISTINCT userId за день, ретеншен-GROUP BY), и userId-ведущий
+  // индекс выше для этого не годится — был seq-scan самой растущей таблицы.
+  @@index([date])
 }
 
 model YsqProgress {
