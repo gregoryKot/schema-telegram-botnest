@@ -17,6 +17,7 @@ import {
   QUICK_ACTION_MOVE_DIRS,
   SCREEN_BLOCK_IDS,
   CUSTOMIZABLE_SCREENS,
+  SIGNUP_SOURCES,
 } from '../../analytics/analytics.constants';
 
 // DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
@@ -75,3 +76,4 @@ export const SCREEN_BLOCK_ID_SET: ReadonlySet<string> = new Set(
 export const CUSTOMIZABLE_SCREEN_SET: ReadonlySet<string> = new Set(
   CUSTOMIZABLE_SCREENS,
 );
+export const SIGNUP_SOURCE_SET: ReadonlySet<string> = new Set(SIGNUP_SOURCES);

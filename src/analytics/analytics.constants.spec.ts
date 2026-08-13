@@ -20,8 +20,10 @@ import {
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
+  SIGNUP_SOURCES,
 } from './analytics.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
+import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
 
 /** Все перечислимые реестры events/enum'ов этого модуля — сверяются одинаково. */
 const REGISTRIES: Record<string, readonly string[]> = {
@@ -38,6 +40,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
+  SIGNUP_SOURCES,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -83,5 +86,15 @@ describe('CRISIS_SURFACES реэкспортирован без искажени
     // — реэкспорт легко может «протухнуть» (забыть обновить при рефакторинге
     // импортов), тест ловит расхождение.
     expect(CRISIS_SURFACES).toEqual(CRISIS_SURFACES_DIRECT);
+  });
+});
+
+describe('SIGNUP_SOURCES реэкспортирован без искажений', () => {
+  it('analytics.constants.ts отдаёт тот же массив, что и signup-sources.constants.ts', () => {
+    expect(SIGNUP_SOURCES).toEqual(SIGNUP_SOURCES_DIRECT);
+  });
+
+  it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
+    expect(SIGNUP_SOURCES).toContain('other');
   });
 });

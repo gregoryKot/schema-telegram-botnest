@@ -26,6 +26,9 @@ function makeService(launch: jest.Mock) {
     {} as any,
     {} as any,
     {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
   );
   return service;
 }

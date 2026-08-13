@@ -63,6 +63,15 @@ function makeDeps(overrides: Record<string, any> = {}) {
       .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
     ...overrides.healthyAdultService,
   };
+  const channelCheck = {
+    log: jest.fn().mockResolvedValue(''),
+    checkOne: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
+    ...overrides.channelCheck,
+  };
+  const analyticsEvents = {
+    track: jest.fn().mockResolvedValue(undefined),
+    ...overrides.analyticsEvents,
+  };
   const fakeBot = makeFakeBot();
   const service = new TelegramService(
     fakeBot.bot,
@@ -76,6 +85,8 @@ function makeDeps(overrides: Record<string, any> = {}) {
     notificationService,
     therapistRequestService,
     publisher,
+    channelCheck,
+    analyticsEvents,
   );
   return {
     service,
@@ -89,6 +100,8 @@ function makeDeps(overrides: Record<string, any> = {}) {
     analyticsService,
     statsReport,
     healthyAdultService,
+    channelCheck,
+    analyticsEvents,
   };
 }
 

@@ -90,6 +90,14 @@
 //                         client-error-section.ts). Пишет только
 //                         ClientErrorsController, userId = null, троттлинг
 //                         по source+section+ip — счётчик, не лог.
+//   signup_source        — СЕРВЕРНОЕ: атрибуция посева, meta.src — слаг из
+//                         SIGNUP_SOURCES. Пишет только бот в /start, когда
+//                         payload — deep-link `src_<slug>` (parseSourceSlug,
+//                         src/telegram/start-source.ts), и ровно один раз —
+//                         при первом касании нового юзера (до гейта
+//                         согласия, чтобы видеть и конверсию в «принял
+//                         соглашение»). Возвращающийся по той же ссылке
+//                         повторно не считается.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -131,6 +139,7 @@ export const ANALYTICS_EVENTS = [
   'auth_rejected',
   'auth_success',
   'client_error',
+  'signup_source',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -297,3 +306,7 @@ export {
   CUSTOMIZABLE_SCREENS,
   type CustomizableScreen,
 } from './screen-blocks.constants';
+
+// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts
+// (правило №10, тот же приём, что и с CRISIS_SURFACES выше).
+export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';
