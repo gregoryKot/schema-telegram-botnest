@@ -5,7 +5,7 @@
 // схемы клиента реально пишутся в выбранный узел, undo/redo реально
 // восстанавливает модель — а не просто «кнопка есть».
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, fireEvent, cleanup } from '@testing-library/react';
+import { screen, fireEvent, cleanup, act } from '@testing-library/react';
 import {
   renderCanvas,
   mmNode,
@@ -185,6 +185,16 @@ describe('ModeMapCanvas — шаблоны', () => {
 });
 
 describe('ModeMapCanvas — схемы клиента', () => {
+  // Клик по «Схемы клиента» дёргает api.getConceptualization, и обновление
+  // списка схем прилетает из-под await, вне act — опрос findByText
+  // (timeout 8000) с этим обновлением иногда расходится. clickToolbarButton
+  // ищет кнопку по всплывающей подсказке (наведение → проверка текста →
+  // уход курсора), и это само по себе синхронная последовательность рендеров:
+  // если завернуть весь вызов в act(async), React откладывает их флаш до
+  // конца колбэка, и подсказка для queryByText внутри хелпера ещё не
+  // существует — кнопка «не находится». Поэтому клик остаётся как есть, а
+  // ждём именно то, чего не хватало: `await act(async () => {})` сливает
+  // очередь промисов и синхронизирует состояние перед ассертом.
   it('без выбранного узла кнопки схем неактивны и не патчат узел', async () => {
     getConceptualization.mockResolvedValue({ schemaIds: ['abandonment'] });
     const { container } = renderCanvas({
@@ -194,13 +204,8 @@ describe('ModeMapCanvas — схемы клиента', () => {
       container,
       'Схемы клиента — привязать к выбранному режиму',
     );
-    expect(
-      await screen.findByText(
-        'Покинутость / Нестабильность',
-        {},
-        { timeout: 8000 },
-      ),
-    ).toBeTruthy();
+    await act(async () => {});
+    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
     expect(readModel(container).nodes[0]).not.toHaveProperty('schemaId');
   });
@@ -215,13 +220,8 @@ describe('ModeMapCanvas — схемы клиента', () => {
       container,
       'Схемы клиента — привязать к выбранному режиму',
     );
-    fireEvent.click(
-      await screen.findByText(
-        'Покинутость / Нестабильность',
-        {},
-        { timeout: 8000 },
-      ),
-    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
     // Бейдж со схемой рисуется прямо в узле (NodeLabel) — видимое следствие патча.
     expect(
       screen.getAllByText('Покинутость / Нестабильность').length,
@@ -237,12 +237,9 @@ describe('ModeMapCanvas — схемы клиента', () => {
       container,
       'Схемы клиента — привязать к выбранному режиму',
     );
+    await act(async () => {});
     expect(
-      await screen.findByText(
-        'У клиента пока нет отмеченных схем',
-        {},
-        { timeout: 8000 },
-      ),
+      screen.getByText('У клиента пока нет отмеченных схем'),
     ).toBeTruthy();
   });
 });
