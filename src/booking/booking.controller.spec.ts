@@ -95,6 +95,22 @@ describe('BookingController.getSlots', () => {
     ).rejects.toThrow(BadRequestException);
     expect(slots.getSlots).not.toHaveBeenCalled();
   });
+
+  it('гигантский диапазон → BadRequestException, перебор по суткам не запускается (D1 DoS)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2000-01-01', '9999-12-31'),
+    ).rejects.toThrow(BadRequestException);
+    // Ключевое: НЕ доходим до getSlots — event-loop не блокируется.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('диапазон в пределах 92 дней проходит к сервису', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([]);
+    await controller.getSlots('2026-08-01', '2026-10-01'); // ~61 день
+    expect(slots.getSlots).toHaveBeenCalled();
+  });
 });
 
 describe('BookingController.bookSlot', () => {
