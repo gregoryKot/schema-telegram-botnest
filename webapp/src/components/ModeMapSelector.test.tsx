@@ -11,6 +11,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { ModeMapSelector } from './ModeMapSelector';
 import type { ModeMapMeta, ModeMapFull } from '../api';
@@ -58,13 +59,17 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
+// Список карт грузится в mount-эффекте (listModeMaps / getModeMap) —
+// обновление прилетает из-под await, вне act, и опрос findByText/findByTestId
+// (timeout 8000) с ним иногда расходится. Оборачиваем сам render (или клик,
+// когда именно он дёргает api) в act(async): дальше ассерт синхронный.
 describe('ModeMapSelector — пустое состояние', () => {
   it('без карт показывает выбор типа первой карты', async () => {
     listModeMaps.mockResolvedValue([]);
-    render(<ModeMapSelector clientId={1} />);
-    expect(
-      await screen.findByText('Нет карт режимов', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    await act(async () => {
+      render(<ModeMapSelector clientId={1} />);
+    });
+    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
     expect(screen.getByText('Карта личности')).toBeTruthy();
     expect(screen.getByText('Карта ситуации')).toBeTruthy();
     expect(screen.getByText('Карта пары')).toBeTruthy();
@@ -73,8 +78,10 @@ describe('ModeMapSelector — пустое состояние', () => {
   it('клик по типу карты в пустом состоянии создаёт и открывает её', async () => {
     listModeMaps.mockResolvedValue([]);
     createModeMap.mockResolvedValue(full(9, 'Карта личности', 'personality'));
-    render(<ModeMapSelector clientId={1} />);
-    await screen.findByText('Нет карт режимов', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={1} />);
+    });
+    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
     fireEvent.click(screen.getByText('Карта личности'));
     expect(createModeMap).toHaveBeenCalledWith(
       1,
@@ -108,8 +115,10 @@ describe('ModeMapSelector — список карт и переключение'
     getModeMap
       .mockResolvedValueOnce(full(1, 'Карта А'))
       .mockResolvedValueOnce(full(2, 'Карта Б'));
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByText('Карта Б'));
     await waitFor(() =>
       expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
@@ -124,8 +133,10 @@ describe('ModeMapSelector — создание новой карты через 
     listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
     createModeMap.mockResolvedValue(full(2, 'Пара 1', 'couple'));
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByText('Новая карта'));
     fireEvent.click(screen.getByText('Карта пары'));
     expect(createModeMap).toHaveBeenCalledWith(5, 'Пара 1', 'couple');
@@ -142,16 +153,20 @@ describe('ModeMapSelector — переименование и удаление �
     listModeMaps.mockResolvedValue([meta(1, 'Старое имя')]);
     getModeMap.mockResolvedValue(full(1, 'Старое имя'));
     updateModeMap.mockResolvedValue(full(1, 'Новое имя'));
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.doubleClick(screen.getByText('Старое имя'));
     const input = screen.getByDisplayValue('Старое имя');
     fireEvent.change(input, { target: { value: 'Новое имя' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    // Enter вызывает api.updateModeMap — оборачиваем в act(async), чтобы
+    // дождаться промиса вместо опроса findByText.
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+    });
     expect(updateModeMap).toHaveBeenCalledWith(1, { title: 'Новое имя' });
-    expect(
-      await screen.findByText('Новое имя', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    expect(screen.getByText('Новое имя')).toBeTruthy();
   });
 
   it('удаление подтверждённой картой убирает её из списка и открывает следующую', async () => {
@@ -161,8 +176,10 @@ describe('ModeMapSelector — переименование и удаление �
       .mockResolvedValueOnce(full(2, 'Карта Б'));
     deleteModeMap.mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
     expect(deleteModeMap).toHaveBeenCalledWith(1);
     await waitFor(() =>
@@ -177,8 +194,10 @@ describe('ModeMapSelector — переименование и удаление �
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
     vi.spyOn(window, 'confirm').mockReturnValue(false);
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
     expect(deleteModeMap).not.toHaveBeenCalled();
     expect(screen.getByText('Карта А')).toBeTruthy();
@@ -187,8 +206,10 @@ describe('ModeMapSelector — переименование и удаление �
   it('единственная карта не показывает кнопку удаления', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Единственная')]);
     getModeMap.mockResolvedValue(full(1, 'Единственная'));
-    render(<ModeMapSelector clientId={5} />);
-    await screen.findByTestId('mm-editor-stub', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     expect(screen.queryByLabelText('Удалить карту')).toBeNull();
   });
 });
@@ -201,12 +222,17 @@ describe('ModeMapSelector — смена клиента сбрасывает и 
     getModeMap
       .mockResolvedValueOnce(full(1, 'Карта клиента 1'))
       .mockResolvedValueOnce(full(2, 'Карта клиента 2'));
-    const { rerender } = render(<ModeMapSelector clientId={1} />);
-    await screen.findByText('Карта клиента 1', {}, { timeout: 8000 });
-    rerender(<ModeMapSelector clientId={2} />);
-    expect(
-      await screen.findByText('Карта клиента 2', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    let rerender!: ReturnType<typeof render>['rerender'];
+    await act(async () => {
+      ({ rerender } = render(<ModeMapSelector clientId={1} />));
+    });
+    expect(screen.getByText('Карта клиента 1')).toBeTruthy();
+    // Смена clientId запускает новый mount-эффект (новый listModeMaps) —
+    // тот же промис вне act, тот же приём: оборачиваем rerender.
+    await act(async () => {
+      rerender(<ModeMapSelector clientId={2} />);
+    });
+    expect(screen.getByText('Карта клиента 2')).toBeTruthy();
     expect(listModeMaps).toHaveBeenCalledWith(2);
   });
 });

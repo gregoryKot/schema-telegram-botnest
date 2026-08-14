@@ -94,8 +94,20 @@ describe('ModeMapEditor — массовое добавление и смена 
     getConceptualization.mockResolvedValue({
       modeIds: ['vulnerable_child', 'demanding_critic'],
     });
-    renderEditor();
-    await screen.findByText('▼ 2', {}, { timeout: 8000 });
+    // Список режимов клиента приезжает из api.getConceptualization в mount-
+    // эффекте палитры — обновление прилетает из-под await, вне act, и опрос
+    // findByText (timeout 8000) с ним иногда расходится. Оборачиваем сам
+    // рендер в act(async): он дожидается промиса, дальше ассерт синхронный.
+    // '▼ 2' не годится для проверки — то же самое число показывает статичный
+    // счётчик группы «Копинг: Капитуляция» (2 стандартных режима), совпадение
+    // текста делает ассерт неоднозначным. Кнопка «Вынести все» рендерится
+    // только вместе с блоком режимов клиента — по ней и проверяем.
+    await act(async () => {
+      renderEditor();
+    });
+    expect(
+      screen.getByLabelText('Вынести все режимы клиента на карту'),
+    ).toBeTruthy();
     fireEvent.click(
       screen.getByLabelText('Вынести все режимы клиента на карту'),
     );
