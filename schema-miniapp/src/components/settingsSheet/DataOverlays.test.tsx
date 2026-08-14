@@ -11,7 +11,6 @@ import {
   fireEvent,
   cleanup,
   waitFor,
-  act,
 } from '@testing-library/react';
 import { ExportOverlay, PrivacyOverlay, DeleteOverlay } from './DataOverlays';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
@@ -35,16 +34,15 @@ beforeEach(() => {
 });
 
 describe('ExportOverlay', () => {
-  it('показывает текст сводки и по клику копирует его в буфер', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
-    const setExportCopied = vi.fn();
+  it('показывает текст сводки и по клику зовёт onCopy', () => {
+    const onCopy = vi.fn();
 
     render(
       <ExportOverlay
         exportText="Сводка: оценки за неделю"
         exportCopied={false}
-        setExportCopied={setExportCopied}
+        exportFailed={false}
+        onCopy={onCopy}
         onClose={() => {}}
       />,
     );
@@ -52,10 +50,7 @@ describe('ExportOverlay', () => {
     expect(screen.getByText('Сводка: оценки за неделю')).toBeTruthy();
     fireEvent.click(screen.getByText('Скопировать'));
 
-    await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith('Сводка: оценки за неделю'),
-    );
-    expect(setExportCopied).toHaveBeenCalledWith(true);
+    expect(onCopy).toHaveBeenCalledTimes(1);
   });
 
   it('exportCopied=true — кнопка показывает подтверждение', () => {
@@ -63,31 +58,25 @@ describe('ExportOverlay', () => {
       <ExportOverlay
         exportText="x"
         exportCopied={true}
-        setExportCopied={() => {}}
+        exportFailed={false}
+        onCopy={() => {}}
         onClose={() => {}}
       />,
     );
     expect(screen.getByText('✓ Скопировано')).toBeTruthy();
   });
 
-  it('буфер обмена недоступен/отклонён — не падает и не сообщает об успехе', async () => {
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    Object.assign(navigator, { clipboard: { writeText } });
-    const setExportCopied = vi.fn();
-
+  it('exportFailed=true — виден отказ (был: молча проглочен)', () => {
     render(
       <ExportOverlay
         exportText="x"
         exportCopied={false}
-        setExportCopied={setExportCopied}
+        exportFailed={true}
+        onCopy={() => {}}
         onClose={() => {}}
       />,
     );
-    fireEvent.click(screen.getByText('Скопировать'));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalled());
-    await act(async () => {});
-    expect(setExportCopied).not.toHaveBeenCalled();
+    expect(screen.getByText('Не получилось')).toBeTruthy();
   });
 });
 

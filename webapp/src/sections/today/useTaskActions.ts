@@ -11,7 +11,7 @@ import type { UserTask } from '../../api';
 // полностью: сбой уходит в reportClientError, чтобы он был виден в логах,
 // а не терялся навсегда. Действие, которое юзер только что выполнил сам
 // (completeTask/afterCreate) — обязано сказать явно, через taskError.
-export function useTaskActions(refreshKey: number | undefined) {
+export function useTaskActions(refreshKey: number | undefined, section = 'today.tasks') {
   const [tasks, setTasks] = useState<UserTask[]>([]);
   const [taskHistory, setTaskHistory] = useState<UserTask[]>([]);
   const [taskError, setTaskError] = useState(false);
@@ -25,8 +25,8 @@ export function useTaskActions(refreshKey: number | undefined) {
   );
 
   useEffect(() => {
-    load().catch(() => reportClientError({ message: 'today tasks background load failed', section: 'today.tasks' }));
-  }, [refreshKey, load]);
+    load().catch(() => reportClientError({ message: 'tasks background load failed', section }));
+  }, [refreshKey, load, section]);
 
   const completeTask = useCallback(
     (id: number, onDone?: () => void) => {

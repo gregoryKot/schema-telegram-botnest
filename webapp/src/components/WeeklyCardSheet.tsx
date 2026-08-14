@@ -15,6 +15,7 @@ import {
   SHARE_CARD_EVENT,
   SHARE_RESULT_EVENT,
 } from '../../../shared/src/share/analytics';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../utils/botConfig';
 
 interface Props {
@@ -28,9 +29,13 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streak, setStreak] = useState(0);
   const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card clipboard write failed', section: 'weeklyCard' }),
+  });
   const [fallbackText, setFallbackText] = useState<string | null>(null);
-  const [fallbackCopied, setFallbackCopied] = useState(false);
+  const { copied: fallbackCopied, copy: copyFallback } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card fallback clipboard write failed', section: 'weeklyCard' }),
+  });
 
   useEffect(() => {
     api
@@ -61,11 +66,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
     } catch {
       api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: false });
       const text = buildWeeklyShareText(needs, history, streak, true, botShortUrl);
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch { reportClientError({ message: 'weekly card clipboard write failed', section: 'weeklyCard' }); }
+      await copy(text);
       setFallbackText(text);
     } finally {
       setSharing(false);
@@ -148,10 +149,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             display: 'flex',
             alignItems: 'flex-end',
           }}
-          onClick={() => {
-            setFallbackText(null);
-            setFallbackCopied(false);
-          }}
+          onClick={() => setFallbackText(null)}
         >
           <div
             role="presentation"
@@ -203,13 +201,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               {fallbackText}
             </pre>
             <button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(fallbackText);
-                  setFallbackCopied(true);
-                  setTimeout(() => setFallbackCopied(false), 2000);
-                } catch { reportClientError({ message: 'weekly card fallback clipboard write failed', section: 'weeklyCard' }); }
-              }}
+              onClick={() => void copyFallback(fallbackText)}
               style={{
                 width: '100%',
                 padding: '13px 0',

@@ -4,11 +4,14 @@
 // терапевта, свои цели, оверлей «Все цели», баннер ближайшей сессии,
 // ты/вы-вилка в подзаголовке (CLAUDE.md, обязательное правило).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
 
+// Мок фабрики `../api` возвращает только `{ api: {...} }` по умолчанию, но
+// хук useTaskActions (используемый внутри PracticeSection) импортирует ещё и
+// reportClientError — без него тесты падают на undefined.
 vi.mock('../api', () => ({
   api: {
     getTasks: vi.fn(),
@@ -25,8 +28,10 @@ vi.mock('../api', () => ({
     createTask: vi.fn(),
     getFlashcards: vi.fn(),
     createFlashcard: vi.fn(),
+    createLetter: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -76,6 +81,7 @@ beforeEach(() => {
   mockApi.createTask.mockResolvedValue(undefined);
   mockApi.getFlashcards.mockResolvedValue([]);
   mockApi.createFlashcard.mockResolvedValue(undefined);
+  mockApi.createLetter.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -160,6 +166,51 @@ describe('PracticeSection — задания от терапевта', () => {
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
     expect(onOpenTracker).toHaveBeenCalled();
+  });
+});
+
+describe('PracticeSection — регрессия: та же механика завершения задания, что в TodaySection (общий хук useTaskActions)', () => {
+  // Раньше handleTaskComplete в PracticeSection дублировал механику
+  // useTaskActions инлайн и глотал сбой (`.catch(() => {})`): лист
+  // упражнения закрывался как будто задание засчиталось, хотя на сервере
+  // ничего не менялось. Теперь секция берёт общий хук — сбой видим.
+  it('completeTask отклоняется → на экране видима ошибка, onTasksChanged не вызван', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ id: 30, assignedBy: 9, type: 'letter_to_self' })]);
+    mockApi.completeTask.mockRejectedValue(new Error('network down'));
+    renderSection({ onTasksChanged });
+
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getAllByText('начать →')[0]);
+    const textarea = await screen.findByPlaceholderText('…');
+    fireEvent.change(textarea, { target: { value: 'Здравствуй, малыш.' } });
+
+    await act(async () => { fireEvent.click(screen.getByText(/Запечатать письмо/)); });
+    await act(async () => { fireEvent.click(screen.getByText('Закрыть')); });
+
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить изменение задания');
+    expect(onTasksChanged).not.toHaveBeenCalled();
+  });
+
+  it('completeTask резолвится → ошибки нет, onTasksChanged вызван, список перезапрошен', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks
+      .mockResolvedValueOnce([task({ id: 31, assignedBy: 9, type: 'letter_to_self' })])
+      .mockResolvedValue([]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    renderSection({ onTasksChanged });
+
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getAllByText('начать →')[0]);
+    const textarea = await screen.findByPlaceholderText('…');
+    fireEvent.change(textarea, { target: { value: 'Здравствуй, малыш.' } });
+
+    await act(async () => { fireEvent.click(screen.getByText(/Запечатать письмо/)); });
+    await act(async () => { fireEvent.click(screen.getByText('Закрыть')); });
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onTasksChanged).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('От терапевта')).toBeNull();
   });
 });
 

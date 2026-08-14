@@ -23,6 +23,7 @@ function baseProps(
     handleCreateInvite: vi.fn(),
     pairInviteUrl: '',
     pairInviteCopied: false,
+    pairInviteLabel: 'Скопировать ссылку',
     handleCopyPairInvite: vi.fn(),
     joinView: 'main' as const,
     setJoinView: vi.fn(),
@@ -162,10 +163,24 @@ describe('PartnerSection — пусто, экран приглашения', () 
           pairData: { partners: [], pendingCode: 'XYZ' },
           pairInviteUrl: 'https://t.me/bot?start=xyz',
           pairInviteCopied: true,
+          pairInviteLabel: '✓ Скопировано',
         })}
       />,
     );
     expect(screen.getByText('✓ Скопировано')).toBeTruthy();
+  });
+
+  it('отказ буфера виден в подписи кнопки (был: молча проглочен)', () => {
+    render(
+      <PartnerSection
+        {...baseProps({
+          pairData: { partners: [], pendingCode: 'XYZ' },
+          pairInviteUrl: 'https://t.me/bot?start=xyz',
+          pairInviteLabel: 'Не скопировалось',
+        })}
+      />,
+    );
+    expect(screen.getByText(/Не скопировалось/)).toBeTruthy();
   });
 
   it('клик по ссылке-кнопке копирования зовёт handleCopyPairInvite', () => {

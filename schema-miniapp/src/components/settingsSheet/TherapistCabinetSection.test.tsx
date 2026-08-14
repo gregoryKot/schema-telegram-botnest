@@ -3,6 +3,7 @@
 // приглашения. Read-after-write: показанный (обрезанный) URL — это URL ИЗ
 // ОТВЕТА сервера, а не выдуманный. Открытие кабинета — отдельный клик, не
 // путается с кнопкой приглашения.
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -89,6 +90,33 @@ describe('TherapistCabinetSection — приглашение клиента', ()
       await Promise.resolve();
     });
     expect(screen.getByText('Не получилось')).toBeTruthy();
+  });
+
+  it('клипборд падает — URL создан, но подпись «Не скопировалось» (был: молча проглочен)', async () => {
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    mockApi.createTherapyInvite.mockResolvedValue({
+      url: 'https://t.me/schema_bot?start=invite_denied',
+    });
+
+    function Host() {
+      const [url, setUrl] = useState('');
+      return (
+        <TherapistCabinetSection
+          therapyInviteUrl={url}
+          setTherapyInviteUrl={setUrl}
+        />
+      );
+    }
+    render(<Host />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByText(/Не скопировалось:/)).toBeTruthy();
   });
 
   it('уже сохранённый url показывается обрезанным', () => {

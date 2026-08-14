@@ -9,6 +9,7 @@ interface Props {
   handleCreateInvite: () => Promise<void> | void;
   pairInviteUrl: string;
   pairInviteCopied: boolean;
+  pairInviteLabel: string;
   handleCopyPairInvite: () => Promise<void> | void;
   joinView: 'main' | 'join';
   setJoinView: (v: 'main' | 'join') => void;
@@ -26,6 +27,7 @@ export function PartnerSection({
   handleCreateInvite,
   pairInviteUrl,
   pairInviteCopied,
+  pairInviteLabel,
   handleCopyPairInvite,
   joinView,
   setJoinView,
@@ -113,13 +115,7 @@ export function PartnerSection({
             ))}
           </div>
         ) : joinView === 'main' ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div
               style={{
                 fontSize: 13,
@@ -195,7 +191,7 @@ export function PartnerSection({
                     cursor: 'pointer',
                   }}
                 >
-                  {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
+                  {pairInviteLabel}
                 </button>
               </div>
             )}
