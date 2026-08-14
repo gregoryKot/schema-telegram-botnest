@@ -25,7 +25,6 @@
   "shared/src/utils/addressFormCache.ts": 1,
   "shared/src/utils/drafts.ts": 1,
   "src/api/throttler.guard.ts": 2,
-  "src/auth/auth-telegram.controller.ts": 1,
   "src/auth/jwt.guard.ts": 2,
   "src/auth/providers/vk.provider.ts": 1,
   "src/auth/security-log.service.ts": 1,

@@ -23,7 +23,8 @@ import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
 
 // src/test-support/gates → корень репозитория на 3 уровня выше.
-const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
+// export: reused by pattern-loader.ts to locate the same real scripts.
+export const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
 
 export interface GateResult {
   status: number | null;

@@ -17,7 +17,8 @@
 //   node scripts/check-gendered-forms.mjs --update
 // Посмотреть, что именно насчитано: --verbose
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'gendered-forms-baseline.json');
@@ -35,7 +36,8 @@ const R = '(?![А-Яа-яЁё])';
 const PAST_M = '(?:ал|ял|ил|ел|ыл|ёл|ул|рос|ался|ился|ялся|улся|ёлся)';
 const FILLER = '(?:не\\s+|бы\\s+|уже\\s+|сам\\s+|тогда\\s+|сегодня\\s+|снова\\s+|всё\\s+ещё\\s+)*';
 
-const PATTERNS = [
+// Экспорт ради gendered-forms.spec.ts — пинит каждый паттерн/ALLOW образцом.
+export const PATTERNS = [
   // «ты сделал», «ты бы остался», «ты вернулся»
   ['ty-past', new RegExp(`${L}[Тт]ы\\s+${FILLER}[а-яё]+${PAST_M}${R}`, 'g')],
   ['bud-ty-past', new RegExp(`${L}бы\\s+ты\\s+${FILLER}[а-яё]+(?:л|лся|рос)${R}`, 'g')],
@@ -105,7 +107,7 @@ const PATTERNS = [
 // Строки, где мужской род принадлежит не читателю, а другому существительному
 // («живой человек», «стабильный взрослый»), либо автору сайта, который пишет
 // о себе. Это законный мужской род — его переписывать нечего.
-const ALLOW = [
+export const ALLOW = [
   /живой\s+(?:человек|контакт)/i,
   /(?:оказывался|стабильный|здоровый|Здоровый|рядом)\s+взрослый/i,
   /Клиент\s+должен/i,
@@ -139,6 +141,8 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте PATTERNS/ALLOW).
+function main() {
 const counts = {};
 const details = {};
 for (const dir of SCAN_DIRS) {
@@ -240,3 +244,6 @@ console.log(
     ? `✓ Храповик мужского рода: ${total} < ${baseTotal} — стало лучше, зафиксируй: node scripts/check-gendered-forms.mjs --update`
     : `✓ Храповик мужского рода: ${total} (без роста)`,
 );
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();
