@@ -119,7 +119,26 @@ export class TotpService {
 
     const trimmed = code.trim();
     const secret = decrypt(row.totpSecret);
-    if (secret && authenticator.check(trimmed, secret)) return true;
+    if (secret) {
+      // Anti-replay (L2 аудита 2026-08): authenticator.check пускал ОДИН и тот
+      // же код всё окно валидности (~90с). checkDelta даёт смещение шага, из
+      // него — абсолютный time-step принятого кода. Двигаем totpLastStep вперёд
+      // АТОМАРНО (updateMany с фильтром lt/null = CAS): повтор того же шага (или
+      // более раннего) не проходит условие и получает false.
+      const delta = authenticator.checkDelta(trimmed, secret);
+      if (delta !== null) {
+        const stepSeconds = authenticator.options.step ?? 30;
+        const step = Math.floor(Date.now() / 1000 / stepSeconds) + delta;
+        const res = await this.prisma.user.updateMany({
+          where: {
+            id: userId,
+            OR: [{ totpLastStep: null }, { totpLastStep: { lt: step } }],
+          },
+          data: { totpLastStep: step },
+        });
+        return res.count > 0;
+      }
+    }
 
     // Not a valid TOTP — maybe a recovery code.
     const raw = row.totpRecoveryCodes;

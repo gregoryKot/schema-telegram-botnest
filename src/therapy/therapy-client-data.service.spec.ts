@@ -479,6 +479,23 @@ describe('доступ терапевта к карточкам клиента (
     expect(db.userSchemaNote.findMany).not.toHaveBeenCalled();
   });
 
+  it('therapistShareCards=false → дневник ТОЖЕ пуст, записи не читаются (L1)', async () => {
+    const { svc, users, schemaDiary, db } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: false });
+    schemaDiary.push(mkDiaryRow(CLIENT_A, ['abandonment'], 'триггер А'));
+    // Диари-путь раньше терял этот флаг — отдавал клинический текст в обход
+    // opt-out клиента. Теперь гейт срабатывает ДО чтения строк дневника.
+    expect(await svc.getClientDiaryEntries(T1, CID_A)).toEqual([]);
+    expect(db.schemaDiaryEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it('therapistShareCards=null → дневник отдаётся (гейт условный, не всегда пусто) (L1)', async () => {
+    const { svc, users, schemaDiary } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: null });
+    schemaDiary.push(mkDiaryRow(CLIENT_A, ['abandonment'], 'триггер А'));
+    expect(await svc.getClientDiaryEntries(T1, CID_A)).toHaveLength(1);
+  });
+
   it('therapistShareCards=null (дефолт «делюсь», поле не задано) → заметки отдаются', async () => {
     const { svc, users, schemaNotes } = makeService([relA]);
     users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: null });
