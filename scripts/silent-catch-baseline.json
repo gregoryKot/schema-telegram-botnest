@@ -40,7 +40,7 @@
   "src/therapy/therapist-request.service.ts": 2,
   "src/utils/admin-alert.ts": 1,
   "src/utils/crypto.ts": 1,
-  "webapp/src/api.ts": 6,
+  "webapp/src/api.ts": 3,
   "webapp/src/auth/AuthProvider.tsx": 1,
   "webapp/src/auth/clearLocalData.ts": 1,
   "webapp/src/components/AddressFormPicker.tsx": 2,
