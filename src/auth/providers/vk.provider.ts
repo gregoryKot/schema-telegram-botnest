@@ -16,6 +16,13 @@ import { AuthProviderHandler, ProviderIdentity } from './types';
 // PKCE verifiers are kept in a short-lived in-memory map keyed by state.
 // 10-min TTL — matches the state-cookie expiry. Works on a single instance;
 // for horizontal scaling move into Redis or sign-in-cookie.
+
+// L9 (аудит 2026-08): аварийный потолок стора верификаторов. prune() чистит
+// только протухшие, а всплеск buildAuthUrl без парных колбэков (в пределах
+// 10-мин TTL) рос бы неограниченно. Нормальная нагрузка — десятки одновременно;
+// 5000 = явный флуд, тогда выкидываем старейшие (как AlertThrottle.maxKeys).
+const MAX_VERIFIERS = 5000;
+
 @Injectable()
 export class VkProvider implements AuthProviderHandler {
   readonly id = 'vk';
@@ -53,6 +60,13 @@ export class VkProvider implements AuthProviderHandler {
       verifier,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
+    // Сверх потолка (L9) выкидываем старейшие — Map хранит порядок вставки,
+    // так что первые ключи и есть самые старые.
+    if (this.verifiers.size > MAX_VERIFIERS) {
+      const excess = this.verifiers.size - MAX_VERIFIERS;
+      for (const k of [...this.verifiers.keys()].slice(0, excess))
+        this.verifiers.delete(k);
+    }
 
     const params = new URLSearchParams({
       response_type: 'code',
