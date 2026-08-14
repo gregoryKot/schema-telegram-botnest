@@ -63,20 +63,20 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [schemasOpen, setSchemasOpen] = useState(false);
-  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | null>(null);
+  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | 'failed' | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const tplWrapRef = useRef<HTMLDivElement>(null);
   const dlWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
   const schemasWrapRef = useRef<HTMLDivElement>(null);
 
-  // Lazy-load the client's identified schemas the first time the panel opens
+  // Схемы клиента грузятся при первом открытии панели; 'failed' ≠ пустой список
   const openSchemas = useCallback(() => {
     setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
     if (clientSchemaIds === null) {
       api.getConceptualization(clientId)
         .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
-        .catch(() => setClientSchemaIds([]));
+        .catch(() => setClientSchemaIds('failed')); // не [] — иначе «схем нет» вместо «не загрузилось»
     }
   }, [clientId, clientSchemaIds]);
   // Desktop (fine pointer) — keyboard hints only make sense there
@@ -404,8 +404,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                     {selectedNodeId ? 'Нажми, чтобы привязать к выбранному режиму' : 'Сначала выбери режим на холсте'}
                   </div>
                   {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
-                  {clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
-                  {clientSchemaIds?.map(sid => {
+                  {clientSchemaIds === 'failed' ? <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent-red)' }}>Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
+                  {Array.isArray(clientSchemaIds) && clientSchemaIds.map(sid => {
                     const s = getSchemaById(sid);
                     if (!s) return null;
                     return (
