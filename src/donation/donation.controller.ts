@@ -8,14 +8,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { DonationService } from './donation.service';
-
-interface DonateDto {
-  amount: number;
-  source?: 'app' | 'game';
-  email?: string;
-  comment?: string;
-  website?: string; // honeypot
-}
+import { DonateDto } from './donation.dto';
 
 @Controller('api/donation')
 export class DonationController {

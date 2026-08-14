@@ -28,6 +28,26 @@ describe('SaveNoteDto', () => {
       }),
     ).resolves.toContain('text');
   });
+
+  it('tags: больше 50 штук — отказ (L5, ArrayMaxSize)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: Array.from({ length: 51 }, (_, i) => `t${i}`),
+      }),
+    ).resolves.toContain('tags');
+  });
+
+  it('tags: элемент длиннее 100 символов — отказ (L5)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: ['x'.repeat(101)],
+      }),
+    ).resolves.toContain('tags');
+  });
 });
 
 describe('SchemaNoteDto', () => {
