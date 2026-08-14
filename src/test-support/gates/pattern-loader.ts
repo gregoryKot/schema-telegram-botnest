@@ -79,3 +79,14 @@ export function loadRegexList(
   );
   return JSON.parse(stdout) as RawPattern[];
 }
+
+/** Loads a `Set<string>`/`string[]` export (e.g. `ALLOWED_CHANNELS`,
+ * `REGISTERED_FILES`) as a plain array — for gates whose "list of rules" is
+ * a set of file paths rather than regexes. */
+export function loadStringList(
+  scriptName: string,
+  exportName: string,
+): string[] {
+  const stdout = importExport(scriptName, exportName, '(s) => [...s]');
+  return JSON.parse(stdout) as string[];
+}
