@@ -139,4 +139,59 @@ describe('check-dead-files.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ гейт мёртвых файлов');
   });
+
+  // IMPORT_RE ловит три формы; до этого теста фикстуры использовали только
+  // `from '...'` — require()/динамический import() были не покрыты ни одним
+  // тестом (замер 2026-08: сузить регэксп до одной формы ни один тест не ловил).
+  it("require('./x') и import('./x') тоже считаются потреблением", () => {
+    const res = runGate('check-dead-files.mjs', {
+      'scripts/dead-files-baseline.json': baseline({
+        'src/entry.ts': ENTRY_REASON,
+      }),
+      'src/entry.ts': [
+        "const req = require('./reqHelper');",
+        "const dyn = () => import('./dynHelper');",
+        'export const entry = { req, dyn };',
+        '',
+      ].join('\n'),
+      'src/reqHelper.ts': 'export const reqValue = 1;\n',
+      'src/dynHelper.ts': 'export const dynValue = 2;\n',
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ гейт мёртвых файлов: 3 файлов, без потребителя — только 1 известных',
+    );
+  });
+
+  // TEST регексп ловит и .spec., и .test. — фикстуры выше проверяли только
+  // .spec.ts (см. заголовок файла). Файл, потреблённый ТОЛЬКО своим .test.ts,
+  // обязан остаться орфаном ровно как в .spec.ts-кейсе.
+  it('файл, импортируемый ТОЛЬКО своим .test.ts — exit 1 (test не потребитель)', () => {
+    const res = runGate('check-dead-files.mjs', {
+      'scripts/dead-files-baseline.json': baseline(),
+      'src/entry.ts': ENTRY_FILE,
+      'src/helper.ts': HELPER_FILE,
+      'src/dead.ts': 'export const deadValue = 3;\n',
+      'src/dead.test.ts':
+        "import { deadValue } from './dead';\nit('x', () => deadValue);\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('src/dead.ts');
+  });
+
+  // .d.ts исключены из сканирования — они описывают типы, а не рантайм-код,
+  // и требовать у них "потребителя" бессмысленно. Ни один тест этого не
+  // проверял: убрать исключение ни один тест не ловил.
+  it('.d.ts файл без потребителя не считается мёртвым — исключён из сканирования', () => {
+    const res = runGate('check-dead-files.mjs', {
+      'scripts/dead-files-baseline.json': baseline(),
+      'src/entry.ts': ENTRY_FILE,
+      'src/helper.ts': HELPER_FILE,
+      'src/globals.d.ts': 'declare const FOO: string;\n',
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ гейт мёртвых файлов: 2 файлов, без потребителя — только 1 известных',
+    );
+  });
 });

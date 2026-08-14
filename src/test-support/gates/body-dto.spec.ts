@@ -124,4 +124,54 @@ describe('check-body-dto.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('0 параметров');
   });
+
+  // readType сканирует посимвольно, отслеживая глубину `<...>`, чтобы верно
+  // остановиться на запятой/скобке ВНЕ générик-скобок (см. комментарий в
+  // скрипте) — иначе `Record<string, number>` обрежется на внутренней
+  // запятой и в сообщении об ошибке появится обрубок `Record<string`.
+  it('@Body() dto: Record<string, number> — тип с внутренней запятой распознаётся целиком', () => {
+    const res = runGate('check-body-dto.mjs', {
+      'scripts/body-dto-baseline.json': '{}',
+      'src/foo.controller.ts': [
+        "import { Controller, Post, Body } from '@nestjs/common';",
+        '',
+        "@Controller('foo')",
+        'export class FooController {',
+        '  @Post()',
+        '  handle(@Body() dto: Record<string, number>) {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('Record<string, number>');
+  });
+
+  // noReason (причина короче 20 символов) — до этого теста была покрыта
+  // только положительная ветка (длинная причина, exit 0). Короткая причина
+  // на реальном, не-протухшем нарушении никем не проверялась.
+  it('причина в бейслайне короче 20 символов на реальном нарушении — exit 1', () => {
+    const res = runGate('check-body-dto.mjs', {
+      'scripts/body-dto-baseline.json': JSON.stringify({
+        'src/foo.controller.ts:FooDto': 'коротко',
+      }),
+      'src/foo.controller.ts': [
+        "import { Controller, Post, Body } from '@nestjs/common';",
+        '',
+        'interface FooDto {',
+        '  amount: number;',
+        '}',
+        '',
+        "@Controller('foo')",
+        'export class FooController {',
+        '  @Post()',
+        '  handle(@Body() dto: FooDto) {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('исключение без внятной причины');
+    expect(res.stderr).toContain('src/foo.controller.ts:FooDto');
+  });
 });
