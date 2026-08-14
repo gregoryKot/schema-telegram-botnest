@@ -218,14 +218,15 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   клинической истории. На будущее — либо не кэшировать чувствительный текст
   совсем (лоадер до ответа сервера), либо шифровать кэш ключом, живущим только
   в памяти сессии.
-- **Нет Content-Security-Policy.** `webapp/index.html` отдаётся без CSP. CSP —
-  defense-in-depth: при XSS ограничивает, откуда грузятся скрипты и куда уходят
-  данные. Включать осторожно (приложение на инлайн-стилях — обязателен
-  `style-src 'unsafe-inline'`), проверив рендер в браузере. Лучше отдавать
-  HTTP-заголовком, не мета-тегом. Стартовая политика:
-  `default-src 'self'; script-src 'self' https://telegram.org;
-  style-src 'self' 'unsafe-inline'; connect-src 'self' <VITE_API_URL>;
-  img-src 'self' data:; base-uri 'self'; frame-ancestors 'self' https://*.telegram.org`.
+- **Content-Security-Policy — есть, через helmet** (`src/main.ts`, HTTP-заголовком
+  на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
+  с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
+  `script-src` — allowlist (`telegram.org`, `mc.yandex.ru`, `st.max.ru`);
+  `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
+  `frame-ancestors 'self' https://max.ru https://*.max.ru` (+ `frameguard:false`) —
+  клик-джекинг закрыт списком источников (L12 аудита 2026-08). Инлайн-стили живут:
+  `style-src` наследует дефолт helmet с `'unsafe-inline'`. Тонкую настройку менять
+  осторожно, проверяя рендер в браузере.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
   `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth токен приходит
   во фрагменте URL и сразу вычищается (`AuthCallback.tsx`, `replaceState`).
@@ -241,10 +242,13 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 
 ## 12. Открытые задачи
 
-- **CSP для webapp** (§11) — включить отдельной задачей с проверкой рендера
-  в браузере.
+- ~~**CSP для webapp** (§11)~~ — ✅ сделано: helmet отдаёт CSP с `frame-ancestors`
+  на все ответы (L12 аудита 2026-08). Дальнейшая тонкая настройка директив — по
+  мере надобности, не отдельной большой задачей.
 - **localStorage-кэш клинического текста** (§11) — решить, кэшировать ли его
-  вообще; если да — шифровать ключом из сессии.
+  вообще; если да — шифровать ключом из сессии. (Смягчено: выход зовёт
+  `clearLocalData()` — кэш стирается; на общем устройстве после logout чужой не
+  прочитает. Остаётся риск «не разлогинился на чужом браузере».)
 
 ---
 
