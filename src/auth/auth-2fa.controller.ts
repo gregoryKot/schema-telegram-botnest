@@ -18,6 +18,7 @@ import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
+import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
@@ -110,11 +111,11 @@ export class Auth2faController {
   @HttpCode(200)
   async recoveryEmailStart(
     @Req() req: Request,
-    @Body('email') email: string,
+    @Body() dto: EmailBodyDto,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'recovery-email/start', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    return this.emailSvc.sendVerificationLink(webUser.userId, email);
+    return this.emailSvc.sendVerificationLink(webUser.userId, dto.email);
   }
 
   @Get('recovery-email/verify')
@@ -142,8 +143,8 @@ export class Auth2faController {
     long: { limit: 10, ttl: 24 * 3_600_000 },
   })
   @HttpCode(200)
-  async recoveryRequest(@Body('email') email: string): Promise<{ ok: true }> {
-    return this.emailSvc.sendRecoveryLink(email);
+  async recoveryRequest(@Body() dto: EmailBodyDto): Promise<{ ok: true }> {
+    return this.emailSvc.sendRecoveryLink(dto.email);
   }
 
   // Confirm a recovery magic link → issue a session for that user. They land
@@ -153,10 +154,10 @@ export class Auth2faController {
   async recoveryConfirm(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    @Body('token') token: string,
+    @Body() dto: TokenBodyDto,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     requireCsrf(req, 'recovery/confirm', this.securityLog);
-    const { userId } = await this.emailSvc.consumeToken(token, 'recovery');
+    const { userId } = await this.emailSvc.consumeToken(dto.token, 'recovery');
     // Recovery DOES skip 2FA — the email proves possession of a separate
     // factor. Otherwise losing TOTP + all providers = unrecoverable account.
     const tokens = await this.auth.issueTokens(

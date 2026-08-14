@@ -133,6 +133,13 @@ function countBodyParams(): number {
 // рефакторинг рядом может сдвинуть номер строки; в этом случае запись просто
 // обновляется вместе с рефактором, а не удаляется втихую. Список может
 // только СОКРАЩАТЬСЯ — чинить нарушителя (завести DTO) и убрать отсюда.
+// Список сокращён аудитом 2026-08 (L4): единичные @Body('email'/'token'/
+// 'initData') в auth-account/auth-2fa переведены на EmailBodyDto/TokenBodyDto/
+// InitDataBodyDto, а inline DonateDto/SubscribeDto — на class-DTO. Записи убраны
+// (список может только СОКРАЩАТЬСЯ). auth-account Record сдвинут :231→:238 тем же
+// L4-импортом. Остаются осознанные: два Telegram-payload'а (whitelist сломал бы
+// hash-верификацию), admin-gated CreateRuleDto, вебхук Robokassa (подпись руками),
+// и ручные Record api/tracker с проверкой по allowlist.
 const VIOLATIONS_LEGACY: Record<string, string> = {
   'api/api.controller.ts:115':
     'inline-тип Record<string, unknown> (user-flags) — уже с ручной ' +
@@ -142,14 +149,7 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
     'проверка по NEED_IDS в коде, но не DTO',
   'api/booking.controller.ts:33':
     'BookingDto — локальный interface в контроллере, не DTO-класс',
-  'auth/auth-2fa.controller.ts:113': "одиночное поле @Body('email')",
-  'auth/auth-2fa.controller.ts:145': "одиночное поле @Body('email')",
-  'auth/auth-2fa.controller.ts:156': "одиночное поле @Body('token')",
-  'auth/auth-account.controller.ts:47': "одиночное поле @Body('email')",
-  'auth/auth-account.controller.ts:96': "одиночное поле @Body('email')",
-  'auth/auth-account.controller.ts:113': "одиночное поле @Body('initData')",
-  'auth/auth-account.controller.ts:148': "одиночное поле @Body('token')",
-  'auth/auth-account.controller.ts:231':
+  'auth/auth-account.controller.ts:238':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',
   'auth/auth-telegram.controller.ts:51':
@@ -164,10 +164,6 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'booking/payment.controller.ts:64':
     "одиночное поле @Body('SignatureValue') — вебхук Robokassa, подпись " +
     'проверяется вручную в RobokassaService',
-  'donation/donation.controller.ts:28':
-    'DonateDto — локальный interface в контроллере, не DTO-класс',
-  'subscription/subscription.controller.ts:40':
-    'SubscribeDto — локальный interface в контроллере, не DTO-класс',
 };
 
 describe('трипваер: @Body() типизирован DTO с class-validator (правило №6)', () => {
@@ -184,6 +180,6 @@ describe('трипваер: @Body() типизирован DTO с class-validato
   });
 
   it('VIOLATIONS_LEGACY не разросся сверх известного (может только сокращаться)', () => {
-    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(18);
+    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(9);
   });
 });

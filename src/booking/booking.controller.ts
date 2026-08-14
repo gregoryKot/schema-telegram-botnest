@@ -34,8 +34,8 @@ export class BookingController {
   /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */
   @Get('slots')
   async getSlots(@Query('from') from: string, @Query('to') to: string) {
-    const fromDate = from ? new Date(from) : new Date();
-    const toDate = to ? new Date(to) : addDays(fromDate, 14);
+    const fromDate = parseSlotDate(from) ?? new Date();
+    const toDate = parseSlotDate(to) ?? addDays(fromDate, 14);
     const list = await this.slots.getSlots(fromDate, toDate);
     return list.map((s) => ({
       startsAt: s.startsAt.toISOString(),
@@ -90,4 +90,18 @@ function addDays(d: Date, n: number): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
   return r;
+}
+
+// L11 аудита 2026-08: сырой query-параметр уходил в new Date() и на кривой
+// строке давал Invalid Date → Prisma 500 на неавторизованном GET. Пускаем
+// только YYYY-MM-DD (формат из доккоммента эндпоинта); пусто → null (дефолт
+// вызывающего), мусор → 400 (контролируемый ответ вместо 500).
+function parseSlotDate(v: string | undefined): Date | null {
+  if (!v) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v))
+    throw new BadRequestException('Некорректная дата, ожидается YYYY-MM-DD');
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime()))
+    throw new BadRequestException('Некорректная дата');
+  return d;
 }

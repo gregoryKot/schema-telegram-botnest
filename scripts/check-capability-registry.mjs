@@ -17,14 +17,8 @@
 //   node scripts/check-capability-registry.mjs            # проверка
 //   node scripts/check-capability-registry.mjs --update    # зафиксировать бейслайн
 //   node scripts/check-capability-registry.mjs --verbose   # что именно найдено, file:line
-import {
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-  existsSync,
-} from 'fs';
-import { dirname, join, relative } from 'path';
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'fs';
+import { dirname, join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,11 +28,11 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 // Зеркало `files` из src/infra/capability-report.ts — файлы, чьи молчаливые
-// ветки уже представлены в реестре возможностей и видны в /stats + при
-// старте (capability-boot-log.ts). Гейты в этом репозитории однофайловые
-// (gate-sandbox копирует ровно один .mjs), поэтому список хардкожен здесь по
-// образцу ALLOWED_CHANNELS в check-alert-throttle.mjs, а не импортируется.
-const REGISTERED_FILES = new Set([
+// ветки уже видны в /stats + при старте (capability-boot-log.ts). Гейты тут
+// однофайловые (gate-sandbox копирует ровно один .mjs), поэтому список
+// хардкожен по образцу ALLOWED_CHANNELS, а не импортируется. Экспорт ради
+// структурной проверки в capability-registry.spec.ts.
+export const REGISTERED_FILES = new Set([
   'src/utils/admin-alert.ts',
   'src/auth/email.service.ts',
   'src/booking/meeting.service.ts',
@@ -88,6 +82,8 @@ function findSilentBranches(text) {
   return hits;
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте REGISTERED_FILES).
+function main() {
 const flagged = new Map(); // rel path -> [line, ...]
 for (const file of walk(SRC)) {
   const rel = relative(ROOT, file).split('\\').join('/');
@@ -178,3 +174,6 @@ console.log(
     `${REGISTERED_FILES.size} зарегистрированы в capability-report.ts, ` +
     `${unregistered.length} в бейслайне.`,
 );
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

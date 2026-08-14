@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import type { TherapyRelationInfo } from '../../api';
 
 // Логика разделов «Мой терапевт» (подключение по коду, отключение) и
@@ -15,9 +16,8 @@ export function useTherapyRelationSettings(userRole: 'CLIENT' | 'THERAPIST' | un
   const [therapyJoinCode, setTherapyJoinCode] = useState('');
   const [therapyJoinError, setTherapyJoinError] = useState('');
   const [leaveTherapyError, setLeaveTherapyError] = useState(false);
-  const [therapyInviteUrl, setTherapyInviteUrl] = useState('');
-  const [inviteCopied, setInviteCopied] = useState(false);
-  const [inviteError, setInviteError] = useState(false);
+  const [therapyInviteUrl, setTherapyInviteUrl] = useState(''); const [inviteError, setInviteError] = useState(false);
+  const { copied: inviteCopied, copy: copyInvite } = useCopyToClipboard();
 
   useEffect(() => {
     api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
@@ -39,11 +39,11 @@ export function useTherapyRelationSettings(userRole: 'CLIENT' | 'THERAPIST' | un
   }
 
   async function createInvite() {
-    setInviteError(false); setInviteCopied(false);
+    setInviteError(false);
     try {
       const { url } = await api.createTherapyInvite();
       setTherapyInviteUrl(url);
-      try { await navigator.clipboard.writeText(url); setInviteCopied(true); } catch { setInviteCopied(false); }
+      await copyInvite(url);
     } catch { setInviteError(true); }
   }
 

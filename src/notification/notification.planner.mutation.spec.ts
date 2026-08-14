@@ -224,11 +224,13 @@ describe('NotificationPlannerService — low_streak_insight: lowest без optio
       BigInt(42),
       5,
       3,
+      'Europe/Moscow',
     );
     expect(deps.analytics.getLowStreakNeeds).toHaveBeenCalledWith(
       BigInt(42),
       5,
       10,
+      'Europe/Moscow',
     );
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
   });

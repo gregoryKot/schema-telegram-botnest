@@ -30,14 +30,8 @@
 //   node scripts/check-alert-throttle.mjs            # проверка
 //   node scripts/check-alert-throttle.mjs --update    # зафиксировать бейслайн
 //   node scripts/check-alert-throttle.mjs --verbose   # что именно найдено, file:line
-import {
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-  existsSync,
-} from 'fs';
-import { dirname, join, relative } from 'path';
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'fs';
+import { dirname, join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,12 +41,11 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 // Каналы, где `notifyAdminWithFallback(` УЖЕ бюджетирован (или сам является
-// примитивом бюджетирования) — им бейслайн не нужен:
-//  - admin-alert.ts   — сам примитив доставки, точка, куда всё стекается;
-//  - alert.logger.ts  — свой троттлинг по нормализованному тексту (60с/ключ);
-//  - security-log.service.ts — единственный канал DM для событий
-//    безопасности, с AlertBudget (K=3 за 15 минут на имя события).
-const ALLOWED_CHANNELS = new Set([
+// примитивом бюджетирования) — им бейслайн не нужен: admin-alert.ts (сам
+// примитив доставки), alert.logger.ts (троттлинг по тексту, 60с/ключ),
+// security-log.service.ts (AlertBudget K=3/15мин). Экспорт ради структурной
+// проверки в alert-throttle.spec.ts (приём REGISTERED_FILES-корпуса).
+export const ALLOWED_CHANNELS = new Set([
   'src/utils/admin-alert.ts',
   'src/logger/alert.logger.ts',
   'src/auth/security-log.service.ts',
@@ -114,6 +107,8 @@ function lineOf(text, index) {
   return text.slice(0, index).split('\n').length;
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте ALLOWED_CHANNELS).
+function main() {
 const callSites = new Map(); // rel path -> [{line}]
 for (const file of walk(SRC)) {
   const rel = relative(ROOT, file).split('\\').join('/');
@@ -215,3 +210,6 @@ console.log(
     `notifyAdminWithFallback(), ${ALLOWED_CHANNELS.size} бюджетированных ` +
     `канала, ${direct.length} известных прямых исключений.`,
 );
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

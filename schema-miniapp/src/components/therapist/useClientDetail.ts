@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { getHost } from '../../../../shared/src/host';
 import { useTr } from '../../utils/addressForm';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import type {
   TherapyClientSummary,
   UserTask,
@@ -11,6 +11,7 @@ import type {
 } from '../../api';
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import {
   fetchClientDetail,
   type ClientSchemaNoteRow,
@@ -80,8 +81,13 @@ export function useClientDetail({ switchView, setClients }: Params) {
   // YSQ / Export
   const [ysqRequested, setYsqRequested] = useState(false);
   const [ysqError, setYsqError] = useState('');
-  const [exportCopied, setExportCopied] = useState(false);
-
+  const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
+    onError: () =>
+      reportClientError({
+        message: 'export clipboard failed',
+        section: 'therapist.clientDetail',
+      }),
+  });
   // Delete
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -382,13 +388,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     } catch {
       /* fallthrough */
     }
-    try {
-      await navigator.clipboard.writeText(text);
-      setExportCopied(true);
-      setTimeout(() => setExportCopied(false), 2500);
-    } catch {
-      /* ignore */
-    }
+    await copyExport(text);
   }
 
   return {

@@ -21,7 +21,7 @@ function loadMetrika() {
   s.src = `https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`;
   document.head.appendChild(s);
   w.ym(YM_ID, 'init', {
-    webvisor: true,
+    webvisor: false, // аудит H2: Webvisor слал бы клинический текст SPA в Яндекс
     clickmap: true,
     accurateTrackBounce: true,
     trackLinks: true,
@@ -84,7 +84,7 @@ export function CookieBanner() {
               Немного о куки
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
+              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики включаем только с вашего согласия.{' '}
               <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
                 Подробнее
               </a>

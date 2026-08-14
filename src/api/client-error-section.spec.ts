@@ -7,6 +7,7 @@ describe('classifyClientErrorSection', () => {
   it('маппит все известные литералы обоих фронтендов в свои бакеты', () => {
     expect(classifyClientErrorSection('auth')).toBe('auth');
     expect(classifyClientErrorSection('today.tasks')).toBe('today');
+    expect(classifyClientErrorSection('practice.tasks')).toBe('practice');
     expect(classifyClientErrorSection('Сегодня')).toBe('today');
     expect(classifyClientErrorSection('Дневник')).toBe('diary');
     expect(classifyClientErrorSection('Паттерны')).toBe('schemas');

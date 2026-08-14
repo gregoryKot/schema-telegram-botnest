@@ -108,6 +108,7 @@ export class NotificationService {
     const rows = await this.prisma.scheduledNotification.findMany({
       where: { sendAt: { lte: new Date() }, sentAt: null, cancelledAt: null },
       orderBy: { sendAt: 'asc' },
+      take: 500, // M3: бэклог после даунтайма дренируется батчами, старейшие первыми
     });
     return rows.map((r) => ({ ...r, userId: Number(r.userId) }));
   }

@@ -22,6 +22,8 @@ import { NotificationService } from '../notification/notification.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
 import { ChannelCheckService } from '../channel/channel-check.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { parseSourceSlug } from './start-source';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -100,6 +102,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly therapistRequestService: TherapistRequestService,
     private readonly publisher: ChannelPublisherService,
     private readonly channelCheck: ChannelCheckService,
+    private readonly analyticsEvents: AnalyticsService,
   ) {}
 
   private stopping = false;
@@ -152,6 +155,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await this.accountService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as Context & { startPayload?: string })
           .startPayload;
+        // Атрибуция посева (src_<slug>) — ровно один раз, при первом
+        // касании нового юзера, ДО гейта согласия (чтобы видеть и конверсию
+        // «переход → принял соглашение»). Возвращающийся по той же ссылке
+        // повторно не считается — isReturning уже вычислен выше.
+        const sourceSlug = parseSourceSlug(payload);
+        if (sourceSlug && !isReturning) {
+          void this.analyticsEvents.track(userId, 'signup_source', {
+            src: sourceSlug,
+          });
+        }
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
           const hasConsent =

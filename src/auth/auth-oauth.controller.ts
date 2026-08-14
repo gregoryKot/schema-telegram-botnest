@@ -9,7 +9,6 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
@@ -105,12 +104,9 @@ export class AuthOauthController {
     const provider = this.providers.get(
       'telegram-oidc',
     ) as TelegramOidcProvider;
-    const state = Buffer.from(
-      JSON.stringify({
-        nonce: randomBytes(16).toString('hex'),
-        linkUserId: req.webUser?.userId?.toString() ?? null,
-      }),
-    ).toString('base64url');
+    // Подписанный state (C1): linkUserId нельзя подделать, иначе привязка чужого
+    // провайдера к аккаунту жертвы = захват. Единая точка — flow.buildLinkState.
+    const state = this.flow.buildLinkState(req.webUser?.userId ?? null);
     const { verifier, challenge } = provider.generatePkce();
     res.cookie('oauth_state', state, {
       httpOnly: true,

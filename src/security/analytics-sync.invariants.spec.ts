@@ -125,6 +125,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
     'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
     'auth_rejected/auth_success',
+  signup_source:
+    'серверное событие: пишет только бот в /start, когда payload — ' +
+    'deep-link `src_<slug>` (parseSourceSlug, src/telegram/start-source.ts), ' +
+    'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
+    'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
+    'подделать через POST /api/event',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -160,6 +166,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // auth_success: пара к нему, тот же guard, тот же приём userId = null.
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(23);
+    // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
+    // /start, тот же приём (серверное событие, фронт не шлёт).
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(24);
   });
 });

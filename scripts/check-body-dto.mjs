@@ -52,13 +52,6 @@ for (const file of allTsFiles) {
   for (const m of text.matchAll(/\bclass\s+(\w+)/g)) classNames.add(m[1]);
 }
 
-// Встроенные/обобщённые типы, у которых по определению нет декораторов
-// class-validator — фиксируем явно, чтобы сообщение об ошибке называло
-// причину точно, а не «класс не нашёлся».
-const BUILTIN_TYPES = new Set(['any', 'unknown', 'object']);
-const isBuiltinContainer = (type) =>
-  /^Record</.test(type) || /^Partial</.test(type) || /^Array</.test(type);
-
 // Достаёт тип параметра после `name:` — сканирует посимвольно, чтобы верно
 // остановиться на запятой/скобке ВНЕ `<...>` (иначе `Record<string, number>`
 // обрежется на внутренней запятой).

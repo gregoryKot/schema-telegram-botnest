@@ -5,6 +5,7 @@
 // (suspicious_initdata), только на call site, до которого точечный фикс не
 // доехал.
 import { runGate } from './gate-sandbox';
+import { loadStringList } from './pattern-loader';
 
 describe('check-alert-throttle.mjs', () => {
   it('новый прямой вызов notifyAdminWithFallback() в обход бюджетированного канала — exit 1, называет файл', () => {
@@ -91,4 +92,55 @@ describe('check-alert-throttle.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('0 файлов зовут');
   });
+
+  // stripComments — тот самый класс подстрочного совпадения, что уронил вход
+  // в инциденте 2026-08-08 (indexOf('WebAppData=') находил tgWebAppData=), но
+  // применённый наоборот: без него имя функции в комментарии/строке читается
+  // как настоящий вызов. До этого теста stripComments был вообще не покрыт —
+  // выключение всей функции ни один тест не ловил.
+  it('упоминание notifyAdminWithFallback() в комментарии — не вызов, не считается', () => {
+    const res = runGate('check-alert-throttle.mjs', {
+      'scripts/alert-throttle-baseline.json': '{}',
+      'src/some-flood-prone.service.ts': [
+        "// TODO: раньше здесь был notifyAdminWithFallback('boom', 'subj')",
+        'export async function onEveryRequest() {}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('0 файлов зовут');
+  });
+});
+
+// Механизм вместо добросовестности (как REGISTERED_FILES в
+// check-capability-registry.mjs): у КАЖДОГО бюджетированного канала обязан
+// быть живой пример. Замер 2026-08: alert.logger.ts можно было выкинуть из
+// ALLOWED_CHANNELS бесследно — единственный тест на «известный канал»
+// проверял только security-log.service.ts.
+describe('каждый ALLOWED_CHANNELS пойман своим образцом', () => {
+  const ALLOWED_CHANNELS = loadStringList(
+    'check-alert-throttle.mjs',
+    'ALLOWED_CHANNELS',
+  );
+
+  const CALL_SNIPPET = (rel: string) => ({
+    'scripts/alert-throttle-baseline.json': '{}',
+    [rel]: [
+      "import { notifyAdminWithFallback } from '../utils/admin-alert';",
+      '',
+      'export async function alertAdmin() {',
+      "  await notifyAdminWithFallback('boom', 'subj');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+
+  it.each(ALLOWED_CHANNELS.map((rel) => [rel] as const))(
+    'канал «%s» не требует бейслайна',
+    (rel) => {
+      const res = runGate('check-alert-throttle.mjs', CALL_SNIPPET(rel));
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('0 известных прямых исключений');
+    },
+  );
 });

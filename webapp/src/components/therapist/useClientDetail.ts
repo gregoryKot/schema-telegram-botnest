@@ -3,6 +3,7 @@ import { api, reportClientError } from '../../api';
 import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../../api';
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
@@ -77,7 +78,9 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   // YSQ / Export
   const [ysqRequested, setYsqRequested] = useState(false);
   const [ysqError, setYsqError] = useState('');
-  const [exportCopied, setExportCopied] = useState(false);
+  const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
+  });
 
   // Delete
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -302,11 +305,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       if (navigator.share) { await navigator.share({ text }); return; }
     } catch { /* fallthrough */ }
-    try {
-      await navigator.clipboard.writeText(text);
-      setExportCopied(true);
-      setTimeout(() => setExportCopied(false), 2500);
-    } catch { reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }); }
+    await copyExport(text);
   }
 
   return {

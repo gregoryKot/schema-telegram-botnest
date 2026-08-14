@@ -20,13 +20,13 @@ export const CLIENT_ERROR_SECTIONS = [
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
 
 // Известные литералы обоих фронтендов → канонический бакет (сверено грепом
-// по webapp/src и schema-miniapp/src на дату волны 9). Новый экран заведёт
-// секцию не из списка — она осядет в 'other', отчёт не потеряет счёт, просто
-// не разложит его дальше; расширять список стоит, когда 'other' в /stats
-// станет заметной долей.
+// по webapp/src и schema-miniapp/src). Новый экран заведёт секцию не из
+// списка — она осядет в 'other', просто не разложится дальше; расширять
+// список стоит, когда 'other' в /stats станет заметной долей.
 const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   auth: 'auth', // AUTH_FAILURE_SECTION, shared/src/host/authFailureReport.ts
   'today.tasks': 'today', // webapp/src/sections/today/useTaskActions.ts
+  'practice.tasks': 'practice', // webapp/src/sections/PracticeSection.tsx (useTaskActions)
   Сегодня: 'today', // schema-miniapp/src/components/AppSections.tsx
   Дневник: 'diary', // webapp/src/components/AppShell.tsx, DiariesOverlay.tsx
   Паттерны: 'schemas', // оба фронтенда

@@ -4,6 +4,7 @@ import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
 import { AddMode } from '../therapist/useAddClient';
 import { TherapistInviteShare } from '../../share/TherapistInviteShare';
+import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
 import { ClientDetail, AddClient } from './types';
 import { WebBanner } from '../WebBanner';
 import { WEB_CABINET_URL } from '../../utils/webBanner';
@@ -50,7 +51,7 @@ export function ClientListView({
     inviteUrl,
     setInviteUrl,
     inviteCopied,
-    setInviteCopied,
+    inviteCopyFailed,
     inviteLoading,
     inviteInputRef,
     openAddMode,
@@ -300,11 +301,9 @@ export function ClientListView({
                       </button>
                       <TherapistInviteShare inviteUrl={inviteUrl} />
                     </div>
+                    <CopyFailedHint show={inviteCopyFailed} />
                     <button
-                      onClick={() => {
-                        setInviteUrl('');
-                        setInviteCopied(false);
-                      }}
+                      onClick={() => setInviteUrl('')}
                       style={{
                         width: '100%',
                         marginTop: 8,

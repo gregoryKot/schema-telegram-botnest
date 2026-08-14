@@ -22,6 +22,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import { EmailTokenService } from './email-token.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
@@ -35,7 +36,6 @@ const FAKE_TOKENS: TokenPair = {
 type AuthMock = Pick<
   AuthService,
   | 'requestEmailLogin'
-  | 'consumeEmailToken'
   | 'linkEmailToAccount'
   | 'verifyTelegramWebAppData'
   | 'findOrCreateUserByProvider'
@@ -46,7 +46,6 @@ type AuthMock = Pick<
   | 'unlinkProvider'
 > & {
   requestEmailLogin: jest.Mock;
-  consumeEmailToken: jest.Mock;
   linkEmailToAccount: jest.Mock;
   verifyTelegramWebAppData: jest.Mock;
   findOrCreateUserByProvider: jest.Mock;
@@ -64,16 +63,15 @@ type MergeMock = Pick<MergeService, 'merge' | 'summarize'> & {
 
 type SecurityLogMock = Pick<SecurityLogService, 'log'> & { log: jest.Mock };
 
+type EmailTokensMock = Pick<EmailTokenService, 'consumeEmailToken'> & {
+  consumeEmailToken: jest.Mock;
+};
+
 type ProvidersMock = { get: jest.Mock; list: jest.Mock };
 
 function makeAuth(): AuthMock {
   return {
     requestEmailLogin: jest.fn().mockResolvedValue({ ok: true }),
-    consumeEmailToken: jest.fn().mockResolvedValue({
-      tokens: FAKE_TOKENS,
-      purpose: 'login',
-      userId: 1n,
-    }),
     linkEmailToAccount: jest.fn().mockResolvedValue({ ok: true }),
     verifyTelegramWebAppData: jest
       .fn()
@@ -110,6 +108,17 @@ function makeConfig(): ConfigService {
 
 function makeSecurityLog(): SecurityLogMock {
   return { log: jest.fn() };
+}
+
+function makeEmailTokens(): EmailTokensMock {
+  return {
+    consumeEmailToken: jest.fn().mockResolvedValue({
+      kind: 'tokens',
+      tokens: FAKE_TOKENS,
+      purpose: 'login',
+      userId: 1n,
+    }),
+  };
 }
 
 function makeProviders(
@@ -151,28 +160,38 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
   const providers = opts.providers ?? makeProviders();
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
+  const emailTokens = makeEmailTokens();
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
     providers as unknown as AuthProviderRegistry,
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
+    emailTokens as unknown as EmailTokenService,
   );
-  return { controller, auth, config, providers, merge, securityLog };
+  return {
+    controller,
+    auth,
+    config,
+    providers,
+    merge,
+    securityLog,
+    emailTokens,
+  };
 }
 
 describe('AuthAccountController.emailLoginLink', () => {
   it('без CSRF-заголовка → UnauthorizedException, письмо не отправляется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.emailLoginLink('a@b.ru', makeReq({ csrf: false })),
+      controller.emailLoginLink({ email: 'a@b.ru' }, makeReq({ csrf: false })),
     ).rejects.toThrow(UnauthorizedException);
     expect(auth.requestEmailLogin).not.toHaveBeenCalled();
   });
 
   it('валидный запрос → делегирует в auth.requestEmailLogin', async () => {
     const { controller, auth } = makeController();
-    const res = await controller.emailLoginLink('a@b.ru', makeReq());
+    const res = await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru');
     expect(res).toEqual({ ok: true });
   });
@@ -180,8 +199,9 @@ describe('AuthAccountController.emailLoginLink', () => {
 
 describe('AuthAccountController.emailLoginCallback', () => {
   it('purpose="login" → cookie выставлена, редирект на /auth/callback с access_token', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockResolvedValue({
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'tokens',
       tokens: FAKE_TOKENS,
       purpose: 'login',
       userId: 1n,
@@ -199,8 +219,9 @@ describe('AuthAccountController.emailLoginCallback', () => {
   });
 
   it('purpose="link_email_auth" → редирект на /account?linked=email', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockResolvedValue({
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'tokens',
       tokens: FAKE_TOKENS,
       purpose: 'link_email_auth',
       userId: 1n,
@@ -212,9 +233,27 @@ describe('AuthAccountController.emailLoginCallback', () => {
     );
   });
 
+  // H1 (аудит 2026-08): login при включённом TOTP не выдаёт сессию сразу —
+  // клиент уходит на экран ввода 2FA-кода с одноразовым challengeToken.
+  it('kind="totp_challenge" → редирект на /auth/2fa с challengeToken, cookie НЕ выставлена', async () => {
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'totp_challenge',
+      challengeToken: 'ch-tok',
+      purpose: 'login',
+      userId: 1n,
+    });
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
+    );
+  });
+
   it('просроченный/невалидный токен → редирект на /auth/error, без cookie', async () => {
-    const { controller, auth } = makeController();
-    auth.consumeEmailToken.mockRejectedValue(new Error('expired'));
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
       controller.emailLoginCallback('bad-tok', makeReq(), res),
@@ -231,7 +270,7 @@ describe('AuthAccountController.emailLinkToAccount', () => {
     const { controller, auth } = makeController();
     await expect(
       controller.emailLinkToAccount(
-        'a@b.ru',
+        { email: 'a@b.ru' },
         makeReq({ csrf: false, webUser: { userId: 1n } }),
       ),
     ).rejects.toThrow(UnauthorizedException);
@@ -241,7 +280,7 @@ describe('AuthAccountController.emailLinkToAccount', () => {
   it('валидный запрос → делегирует в auth.linkEmailToAccount', async () => {
     const { controller, auth } = makeController();
     const res = await controller.emailLinkToAccount(
-      'a@b.ru',
+      { email: 'a@b.ru' },
       makeReq({ webUser: { userId: 9n } }),
     );
     expect(auth.linkEmailToAccount).toHaveBeenCalledWith(9n, 'a@b.ru');
@@ -253,7 +292,7 @@ describe('AuthAccountController.telegramWebApp', () => {
   it('без initData → BadRequestException, подпись не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.telegramWebApp('', makeReq(), makeRes()),
+      controller.telegramWebApp({ initData: '' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.verifyTelegramWebAppData).not.toHaveBeenCalled();
   });
@@ -262,7 +301,11 @@ describe('AuthAccountController.telegramWebApp', () => {
     const { controller, auth } = makeController();
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.telegramWebApp('init-data', req, res);
+    const result = await controller.telegramWebApp(
+      { initData: 'init-data' },
+      req,
+      res,
+    );
     expect(auth.verifyTelegramWebAppData).toHaveBeenCalledWith('init-data');
     expect(auth.findOrCreateUserByProvider).toHaveBeenCalledWith(
       'telegram',
@@ -290,7 +333,11 @@ describe('AuthAccountController.confirmMerge', () => {
   it('без CSRF-заголовка → UnauthorizedException, токен не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.confirmMerge('tok-1', makeReq({ csrf: false }), makeRes()),
+      controller.confirmMerge(
+        { token: 'tok-1' },
+        makeReq({ csrf: false }),
+        makeRes(),
+      ),
     ).rejects.toThrow(UnauthorizedException);
     expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
@@ -298,7 +345,7 @@ describe('AuthAccountController.confirmMerge', () => {
   it('пустой токен → BadRequestException, verifyMergeToken не вызывается', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.confirmMerge('', makeReq(), makeRes()),
+      controller.confirmMerge({ token: '' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
@@ -307,7 +354,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, merge } = makeController();
     const req = makeReq({ webUser: { userId: 999n } }); // target из токена = 1n
     await expect(
-      controller.confirmMerge('tok-1', req, makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, req, makeRes()),
     ).rejects.toThrow(UnauthorizedException);
     expect(merge.merge).not.toHaveBeenCalled();
   });
@@ -316,7 +363,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, auth, merge } = makeController();
     merge.merge.mockRejectedValue(new Error('db down'));
     await expect(
-      controller.confirmMerge('tok-1', makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.linkProviderToUser).not.toHaveBeenCalled();
   });
@@ -328,7 +375,7 @@ describe('AuthAccountController.confirmMerge', () => {
       conflictUserId: '2',
     });
     await expect(
-      controller.confirmMerge('tok-1', makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -336,7 +383,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, auth, merge, securityLog } = makeController();
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.confirmMerge('tok-1', req, res);
+    const result = await controller.confirmMerge({ token: 'tok-1' }, req, res);
     expect(merge.merge).toHaveBeenCalledWith(2n, 1n);
     expect(auth.linkProviderToUser).toHaveBeenCalledWith(1n, 'google', 'g-1');
     expect(auth.issueTokens).toHaveBeenCalledWith(

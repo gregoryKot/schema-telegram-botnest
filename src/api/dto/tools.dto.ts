@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsIn,
   IsNotEmpty,
@@ -22,11 +23,13 @@ export class BeliefCheckDto {
   belief!: string;
 
   @IsArray()
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   @MaxLength(TEXT_MAX, { each: true })
   evidenceFor!: string[];
 
   @IsArray()
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   @MaxLength(TEXT_MAX, { each: true })
   evidenceAgainst!: string[];

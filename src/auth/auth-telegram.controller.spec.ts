@@ -13,7 +13,11 @@
 // telegram.provider.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthTelegramController } from './auth-telegram.controller';
@@ -29,6 +33,8 @@ const BOT_TOKEN = '12345:TEST_SECRET';
 interface FlowMocks {
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
+  buildLinkState: jest.Mock;
+  readLinkState: jest.Mock;
 }
 
 interface SecurityLogMocks {
@@ -58,6 +64,8 @@ function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
   const mocks: FlowMocks = {
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
+    buildLinkState: jest.fn().mockReturnValue('signed-link-state'),
+    readLinkState: jest.fn().mockReturnValue(null),
   };
   return { flow: mocks as unknown as AuthFlowService, mocks };
 }
@@ -234,6 +242,9 @@ describe('AuthTelegramController.telegramWidget — resolveLinkUserId и outcome
   it('нет webUser, но есть cookie tg_link_user → linkUserId из cookie', async () => {
     const { flow, flowMocks, providers } = setup();
     flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    // Кука несёт подписанный state (C1) — сырое значение куки для контроллера
+    // больше ничего не значит, значение даёт flow.readLinkState.
+    flowMocks.readLinkState.mockReturnValue(222n);
     const controller = makeController({ providers, flow });
     const req = makeReq({
       headers: { 'x-requested-with': 'XMLHttpRequest' },
@@ -351,17 +362,18 @@ describe('AuthTelegramController.telegramRedirect', () => {
     );
   });
 
-  it('с webUser: ставит tg_link_user cookie со строковым userId', () => {
-    const { flow } = makeFlow();
+  it('с webUser: ставит tg_link_user cookie с подписанным state', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
     const controller = makeController({ providers: makeProviders({}), flow });
     const req = makeReq({ webUser: { userId: 777n } } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
     controller.telegramRedirect(req, res);
 
+    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(777n);
     expect(resMocks.cookie).toHaveBeenCalledWith(
       'tg_link_user',
-      '777',
+      'signed-link-state',
       expect.objectContaining({ httpOnly: true }),
     );
   });
@@ -471,5 +483,43 @@ describe('AuthTelegramController.telegramWidgetRedirect', () => {
     expect(resMocks.redirect).toHaveBeenCalledWith(
       expect.stringContaining(`${WEBAPP_URL}/auth/error?reason=`),
     );
+  });
+
+  it('M4: первый аргумент logger.error постоянен — имена query-параметров и текст ошибки уходят ВТОРЫМ аргументом (в лог, не в DM админу)', async () => {
+    // GET без auth/throttle: имена query-параметров подконтрольны анониму.
+    // AlertLogger троттлит по СОДЕРЖИМОМУ первого аргумента — держим его
+    // постоянным, иначе варьируемые буквами ключи заливают чат админа (M4).
+    const errSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      const telegram = makeTelegramProvider();
+      telegram.verifyClientData.mockImplementation(() => {
+        throw new Error('signature mismatch');
+      });
+      const { flow } = makeFlow();
+      const providers = makeProviders({ telegram });
+      const controller = makeController({ providers, flow });
+      const req = makeReq();
+      const { res } = makeRes();
+
+      await controller.telegramWidgetRedirect(
+        { id: '555', hash: 'x', evil_param_name_zzz: '1' },
+        req,
+        res,
+      );
+
+      const lastCall = errSpy.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [firstArg, secondArg] = lastCall as unknown[];
+      // Первый аргумент — единственное, что уходит админу в DM — постоянен.
+      expect(firstArg).toBe('telegram widget-redirect error (детали в логах)');
+      expect(String(firstArg)).not.toContain('evil_param_name_zzz');
+      // Переменное (имена ключей + текст ошибки) — вторым аргументом, только в лог.
+      expect(String(secondArg)).toContain('evil_param_name_zzz');
+      expect(String(secondArg)).toContain('signature mismatch');
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });

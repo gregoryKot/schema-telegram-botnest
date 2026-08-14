@@ -9,6 +9,16 @@ import {
   RetentionPoint,
 } from './retention.format';
 
+const DAY_NAMES = [
+  'воскресенье',
+  'понедельник',
+  'вторник',
+  'среда',
+  'четверг',
+  'пятница',
+  'суббота',
+];
+
 @Injectable()
 export class BotAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -35,10 +45,11 @@ export class BotAnalyticsService {
   async getHistoryRatings(
     userId: bigint,
     days: number,
+    tzArg?: string,
   ): Promise<
     Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>
   > {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -61,8 +72,9 @@ export class BotAnalyticsService {
     userId: bigint,
     threshold: number,
     days: number,
+    tzArg?: string,
   ): Promise<NeedId[]> {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -79,8 +91,8 @@ export class BotAnalyticsService {
     });
   }
 
-  async getConsecutiveDays(userId: bigint): Promise<number> {
-    const tz = await this.userTimezone(userId);
+  async getConsecutiveDays(userId: bigint, tzArg?: string): Promise<number> {
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const rows = await this.prisma.rating.findMany({
       where: { userId },
       select: { date: true },
@@ -108,14 +120,14 @@ export class BotAnalyticsService {
     return rows.length;
   }
 
-  async getDaysSinceLastFill(userId: bigint): Promise<number> {
+  async getDaysSinceLastFill(userId: bigint, tzArg?: string): Promise<number> {
     const last = await this.prisma.rating.findFirst({
       where: { userId },
       orderBy: { date: 'desc' },
       select: { date: true },
     });
     if (!last) return -1;
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const today = this.localDateString(tz);
     const diffMs =
       new Date(today + 'T00:00:00Z').getTime() -
@@ -124,8 +136,12 @@ export class BotAnalyticsService {
   }
 
   /** Сколько разных дней с записями за последние N локальных дней (включая сегодня) */
-  async getFillDaysInLast(userId: bigint, days: number): Promise<number> {
-    const tz = await this.userTimezone(userId);
+  async getFillDaysInLast(
+    userId: bigint,
+    days: number,
+    tzArg?: string,
+  ): Promise<number> {
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const dates = Array.from({ length: days }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
@@ -159,10 +175,11 @@ export class BotAnalyticsService {
 
   async getWeeklyStats(
     userId: bigint,
+    tzArg?: string,
   ): Promise<
     Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>
   > {
-    const tz = await this.userTimezone(userId);
+    const tz = tzArg ?? (await this.userTimezone(userId));
     const last14 = Array.from({ length: 14 }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
@@ -424,32 +441,40 @@ export class BotAnalyticsService {
     };
   }
 
-  async getBestDayOfWeek(userId: bigint): Promise<string | null> {
-    const rows = await this.prisma.rating.findMany({ where: { userId } });
-    if (rows.length === 0) return null;
-    const sumByDow = new Map<number, { sum: number; count: number }>();
-    const DAY_NAMES = [
-      'воскресенье',
-      'понедельник',
-      'вторник',
-      'среда',
-      'четверг',
-      'пятница',
-      'суббота',
-    ];
+  // Лучший И худший день недели за всю историю — ОДИН скан (аудит 2026-08, H4:
+  // /insights звал getBestDayOfWeek и getWorstDayOfWeek раздельно и грузил
+  // историю рейтингов дважды; методы были копией друг друга). Поведение
+  // идентично прежнему: порог ≥3 разных дней недели, avg по дню недели,
+  // best = max avg, worst = min avg (при равенстве — первый по порядку).
+  async getDayOfWeekExtremes(
+    userId: bigint,
+  ): Promise<{ best: string | null; worst: string | null }> {
+    const rows = await this.prisma.rating.findMany({
+      where: { userId },
+      select: { date: true, value: true },
+    });
+    if (rows.length === 0) return { best: null, worst: null };
     const sumByDate = new Map<string, number>();
     for (const r of rows)
       sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
+    const sumByDow = new Map<number, { sum: number; count: number }>();
     for (const [date, sum] of sumByDate) {
       const dow = new Date(date + 'T12:00:00Z').getUTCDay();
       const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };
       sumByDow.set(dow, { sum: cur.sum + sum, count: cur.count + 1 });
     }
-    if (sumByDow.size < 3) return null;
-    const bestDow = [...sumByDow.entries()]
-      .map(([dow, { sum, count }]) => ({ dow, avg: sum / count }))
-      .reduce((a, b) => (b.avg > a.avg ? b : a)).dow;
-    return DAY_NAMES[bestDow];
+    if (sumByDow.size < 3) return { best: null, worst: null };
+    const avgs = [...sumByDow.entries()].map(([dow, { sum, count }]) => ({
+      dow,
+      avg: sum / count,
+    }));
+    const best = avgs.reduce((a, b) => (b.avg > a.avg ? b : a)).dow;
+    const worst = avgs.reduce((a, b) => (b.avg < a.avg ? b : a)).dow;
+    return { best: DAY_NAMES[best], worst: DAY_NAMES[worst] };
+  }
+
+  async getBestDayOfWeek(userId: bigint): Promise<string | null> {
+    return (await this.getDayOfWeekExtremes(userId)).best;
   }
 
   /**
@@ -674,31 +699,6 @@ export class BotAnalyticsService {
   }
 
   async getWorstDayOfWeek(userId: bigint): Promise<string | null> {
-    const rows = await this.prisma.rating.findMany({ where: { userId } });
-    if (rows.length === 0) return null;
-    const sumByDow = new Map<number, { sum: number; count: number }>();
-    const DAY_NAMES = [
-      'воскресенье',
-      'понедельник',
-      'вторник',
-      'среда',
-      'четверг',
-      'пятница',
-      'суббота',
-    ];
-    // Group by day of week using all historical data
-    const sumByDate = new Map<string, number>();
-    for (const r of rows)
-      sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
-    for (const [date, sum] of sumByDate) {
-      const dow = new Date(date + 'T12:00:00Z').getUTCDay();
-      const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };
-      sumByDow.set(dow, { sum: cur.sum + sum, count: cur.count + 1 });
-    }
-    if (sumByDow.size < 3) return null; // need at least 3 different days of week
-    const worstDow = [...sumByDow.entries()]
-      .map(([dow, { sum, count }]) => ({ dow, avg: sum / count }))
-      .reduce((a, b) => (b.avg < a.avg ? b : a)).dow;
-    return DAY_NAMES[worstDow];
+    return (await this.getDayOfWeekExtremes(userId)).worst;
   }
 }

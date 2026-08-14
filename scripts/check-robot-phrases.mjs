@@ -9,7 +9,8 @@
 // Снизил — зафиксируй, чтобы файл нельзя было снова засорить:
 //   node scripts/check-robot-phrases.mjs --update
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join, relative } from 'path';
+import { join, relative, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'robot-phrases-baseline.json');
@@ -26,7 +27,8 @@ const EXCLUDED = new Set([
   'webapp/src/pages/PrivacyPage.tsx',
 ]);
 
-const PATTERNS = [
+// Экспорт ради robot-phrases.spec.ts — пинит каждый паттерн живым образцом.
+export const PATTERNS = [
   // Определение через отрицание: «это не X, это Y» / «это не про А, это про B»
   ['eto-ne-eto', /[Ээ]то\s+не\s+[^,.!?;»]{2,60}[,.]\s*(?:[Ээ]то|а)\s/g],
   ['eto-ne-pro', /[Ээ]то\s+не\s+про\s/g],
@@ -82,6 +84,8 @@ function walk(dir, acc = []) {
   return acc;
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте PATTERNS).
+function main() {
 const counts = {};
 const details = {};
 for (const dir of SCAN_DIRS) {
@@ -174,3 +178,6 @@ console.log(
     ? `✓ Храповик роботных конструкций: ${total} < ${baseTotal} — стало лучше, зафиксируй: node scripts/check-robot-phrases.mjs --update`
     : `✓ Храповик роботных конструкций: ${total} (без роста)`,
 );
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

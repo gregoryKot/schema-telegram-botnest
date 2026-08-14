@@ -78,6 +78,23 @@ describe('BookingController.getSlots', () => {
       },
     ]);
   });
+
+  it('кривой from → BadRequestException (400), а не Invalid Date → Prisma 500 (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('not-a-date', '2026-08-05'),
+    ).rejects.toThrow(BadRequestException);
+    // Падаем ДО обращения к БД — 400 вместо 500.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('кривой to (синтаксически похож, но невалиден) → BadRequestException, БД не трогаем (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2026-08-01', '2026-13-45'),
+    ).rejects.toThrow(BadRequestException);
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
 });
 
 describe('BookingController.bookSlot', () => {

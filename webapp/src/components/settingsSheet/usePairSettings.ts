@@ -13,7 +13,6 @@ export function usePairSettings(userRole: 'CLIENT' | 'THERAPIST' | undefined) {
   const [pairLoading, setPairLoading] = useState(true);
   const [pairLoadError, setPairLoadError] = useState(false);
   const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const [pairInviteCopied, setPairInviteCopied] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joinView, setJoinView] = useState<'main' | 'join'>('main');
   const [joinError, setJoinError] = useState(false);
@@ -63,7 +62,7 @@ export function usePairSettings(userRole: 'CLIENT' | 'THERAPIST' | undefined) {
 
   return {
     pairData, pairLoading, pairLoadError,
-    pairInviteUrl, pairInviteCopied, setPairInviteCopied,
+    pairInviteUrl,
     joinCode, setJoinCode, joinView, setJoinView, joinError,
     leaveError, handleCreateInvite, handleJoin, leavePair, retryLoad,
   };

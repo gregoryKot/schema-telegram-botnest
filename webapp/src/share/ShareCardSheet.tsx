@@ -156,13 +156,13 @@ export function ShareCardSheet({
             border: 'none',
             borderRadius: 12,
             background: 'var(--surface-2)',
-            color: s.copied ? 'var(--c-moss)' : 'var(--text-sub)',
+            color: s.copied ? 'var(--c-moss)' : s.failed ? 'var(--accent-red)' : 'var(--text-sub)',
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
           }}
         >
-          {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
+          {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
       </div>
     </div>

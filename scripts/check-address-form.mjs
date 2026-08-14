@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 // Храповик ты/вы (аудит 2026-07, этап 3б; правило CLAUDE.md «Обращение ты/вы»).
-//
-// Проблема: жёсткие «ты»-строки без tr() снова и снова просачивались в один из
-// фронтендов (найдено 3+ рассинхрона). Точная детекция невозможна статически,
-// поэтому — храповик: считаем подозрительные вхождения по файлам и сравниваем
-// с закоммиченным бейслайном. Рост счётчика в любом файле роняет CI; снижение
-// приветствуется (обнови бейслайн: node scripts/check-address-form.mjs --update).
-//
-// Что считаем «подозрительным»: ты/тебя/тебе/тобой/твой… в строковых литералах
-// .ts/.tsx обоих фронтендов, КРОМЕ строк, где на той же строке есть tr( / t( /
-// pickForm( (легитимная вилка) и кроме маркетинговых страниц (лендинги, статьи,
-// игра — по CLAUDE.md не привязаны к addressForm).
+// Жёсткие «ты»-строки без tr() просачивались в один из фронтендов (3+
+// рассинхрона) — точная детекция невозможна статически, поэтому храповик:
+// считаем подозрительные вхождения (ты/тебя/тебе/тобой/твой… вне tr(/t(/
+// pickForm( и вне маркетинговых страниц) и сравниваем с бейслайном. Снижение —
+// node scripts/check-address-form.mjs --update.
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join, relative } from 'path';
+import { join, relative, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'address-form-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
-const EXCLUDE = [
+// Экспорт ради структурной проверки в address-form.spec.ts (приём ALLOW из
+// check-gendered-forms.mjs): у каждого исключения — образец, который оно ловит.
+export const EXCLUDE = [
   /webapp\/src\/pages\/(LandingPage|ProductLandingPage|ArticlesPage|GamePage|ReviewsPage|articleDiagrams)/,
   /\.test\.(ts|tsx)$/,
   /\.d\.ts$/,
@@ -73,6 +70,8 @@ function* walk(dir) {
   }
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте EXCLUDE).
+function main() {
 const counts = {};
 for (const dir of SCAN_DIRS) {
   for (const file of walk(join(ROOT, dir))) {
@@ -90,10 +89,8 @@ for (const dir of SCAN_DIRS) {
 
 if (UPDATE) {
   writeFileSync(BASELINE_PATH, JSON.stringify(counts, null, 2) + '\n');
-  console.log(
-    `Бейслайн обновлён: ${Object.keys(counts).length} файлов, ` +
-      `${Object.values(counts).reduce((a, b) => a + b, 0)} вхождений.`,
-  );
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  console.log(`Бейслайн обновлён: ${Object.keys(counts).length} файлов, ${total} вхождений.`);
   process.exit(0);
 }
 
@@ -101,9 +98,7 @@ let baseline = {};
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
 } catch {
-  console.error(
-    'Нет бейслайна — сгенерируй: node scripts/check-address-form.mjs --update',
-  );
+  console.error('Нет бейслайна — сгенерируй: node scripts/check-address-form.mjs --update');
   process.exit(1);
 }
 
@@ -124,3 +119,6 @@ if (regressions.length > 0) {
   process.exit(1);
 }
 console.log('✓ ты/вы-храповик: без регрессий');
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

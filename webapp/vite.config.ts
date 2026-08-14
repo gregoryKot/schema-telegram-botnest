@@ -22,9 +22,9 @@ export default defineConfig({
   // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
   // (см. CLAUDE.md / существующие тесты). Настраиваем только coverage.
   test: {
-    // Выше внутренних ожиданий: десять `findByText(…, { timeout: 8000 })` в
-    // тестах карты режимов при дефолте vitest 5000 недостижимы — флак.
-    testTimeout: 15000,
+    // Запас на медленный раннер (самый долгий тест локально — 1.6с). Прежние
+    // 15000 стояли ради `findByText(…, {timeout: 8000})` — их больше нет.
+    testTimeout: 10000,
     coverage: {
       provider: 'v8',
       // json-summary — обязателен: его читает scripts/check-frontend-coverage-ratchet.mjs.
