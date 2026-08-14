@@ -13,6 +13,7 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
+import { useTaskActions } from './today/useTaskActions';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -137,8 +138,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [activeTaskId,   setActiveTaskId]   = useState<number | null>(null);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [showAllGoals,   setShowAllGoals]   = useState(false);
-  const [tasks,          setTasks]          = useState<UserTask[]>([]);
-  const [taskHistory,    setTaskHistory]    = useState<UserTask[]>([]);
+  const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey, 'practice.tasks');
   const [relation,       setRelation]       = useState<TherapyRelationInfo | null | undefined>(undefined);
 
   // Detect openSchemaEx state from navigation
@@ -155,9 +155,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => {
-      if (!ignore) { setTasks(t); setTaskHistory(h); }
-    }).catch(() => {});
     api.getTherapyRelation().then(r => { if (!ignore) setRelation(r); }).catch(() => { if (!ignore) setRelation(null); });
     return () => { ignore = true; };
   }, [refreshKey]);
@@ -180,11 +177,9 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   function handleTaskComplete() {
     if (activeTaskId === null) return;
-    const id = activeTaskId; setActiveTaskId(null);
-    api.completeTask(id, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
-      .catch(() => {});
+    const id = activeTaskId;
+    setActiveTaskId(null);
+    completeTask(id, onTasksChanged);
   }
 
   function openTask(task: UserTask) {
@@ -258,12 +253,17 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       )}
 
       {/* Tasks from therapist */}
-      {therapistTasks.length > 0 && (
+      {(therapistTasks.length > 0 || taskError) && (
         <div className="section">
           <div className="section-head">
             <h3>От терапевта</h3>
-            <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>
+            {therapistTasks.length > 0 && <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
+          {taskError && (
+            <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 10 }}>
+              {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
+            </div>
+          )}
           {therapistTasks.map(task => (
             <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -377,7 +377,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); }).catch(() => {}); }}
+          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}

@@ -78,7 +78,6 @@
   "webapp/src/pages/SubscribePage.tsx": 1,
   "webapp/src/pages/tests/QuizPage.tsx": 1,
   "webapp/src/sections/DiarySection.tsx": 2,
-  "webapp/src/sections/PracticeSection.tsx": 3,
   "webapp/src/sections/SchemasSection.tsx": 1,
   "webapp/src/sections/TherapistTodaySection.tsx": 1
 }
