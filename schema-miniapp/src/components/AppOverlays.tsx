@@ -14,6 +14,7 @@ import { todayInsightPhrase } from '../utils/todayInsight';
 import { NoteSheet } from './NoteSheet';
 import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { PairSheet } from './PairSheet';
+import { JoinConfirmSheet } from './JoinConfirmSheet';
 import { ChildhoodWheelSheet } from './ChildhoodWheelSheet';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { AboutSheet } from './AboutSheet';
@@ -193,6 +194,17 @@ export function AppOverlays({
             sheets.close('pairSheet');
             void api.getPair().then(setPairData);
           }}
+        />
+      )}
+
+      {sheets.joinConfirm && sheets.joinKind && sheets.joinCode && (
+        <JoinConfirmSheet
+          joinKind={sheets.joinKind}
+          joinCode={sheets.joinCode}
+          onClose={() =>
+            sheets.close('joinConfirm', { joinKind: null, joinCode: null })
+          }
+          onPairJoined={setPairData}
         />
       )}
 
