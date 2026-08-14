@@ -184,14 +184,14 @@ describe('AuthAccountController.emailLoginLink', () => {
   it('без CSRF-заголовка → UnauthorizedException, письмо не отправляется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.emailLoginLink('a@b.ru', makeReq({ csrf: false })),
+      controller.emailLoginLink({ email: 'a@b.ru' }, makeReq({ csrf: false })),
     ).rejects.toThrow(UnauthorizedException);
     expect(auth.requestEmailLogin).not.toHaveBeenCalled();
   });
 
   it('валидный запрос → делегирует в auth.requestEmailLogin', async () => {
     const { controller, auth } = makeController();
-    const res = await controller.emailLoginLink('a@b.ru', makeReq());
+    const res = await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru');
     expect(res).toEqual({ ok: true });
   });
@@ -270,7 +270,7 @@ describe('AuthAccountController.emailLinkToAccount', () => {
     const { controller, auth } = makeController();
     await expect(
       controller.emailLinkToAccount(
-        'a@b.ru',
+        { email: 'a@b.ru' },
         makeReq({ csrf: false, webUser: { userId: 1n } }),
       ),
     ).rejects.toThrow(UnauthorizedException);
@@ -280,7 +280,7 @@ describe('AuthAccountController.emailLinkToAccount', () => {
   it('валидный запрос → делегирует в auth.linkEmailToAccount', async () => {
     const { controller, auth } = makeController();
     const res = await controller.emailLinkToAccount(
-      'a@b.ru',
+      { email: 'a@b.ru' },
       makeReq({ webUser: { userId: 9n } }),
     );
     expect(auth.linkEmailToAccount).toHaveBeenCalledWith(9n, 'a@b.ru');
@@ -292,7 +292,7 @@ describe('AuthAccountController.telegramWebApp', () => {
   it('без initData → BadRequestException, подпись не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.telegramWebApp('', makeReq(), makeRes()),
+      controller.telegramWebApp({ initData: '' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.verifyTelegramWebAppData).not.toHaveBeenCalled();
   });
@@ -301,7 +301,11 @@ describe('AuthAccountController.telegramWebApp', () => {
     const { controller, auth } = makeController();
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.telegramWebApp('init-data', req, res);
+    const result = await controller.telegramWebApp(
+      { initData: 'init-data' },
+      req,
+      res,
+    );
     expect(auth.verifyTelegramWebAppData).toHaveBeenCalledWith('init-data');
     expect(auth.findOrCreateUserByProvider).toHaveBeenCalledWith(
       'telegram',
@@ -329,7 +333,11 @@ describe('AuthAccountController.confirmMerge', () => {
   it('без CSRF-заголовка → UnauthorizedException, токен не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.confirmMerge('tok-1', makeReq({ csrf: false }), makeRes()),
+      controller.confirmMerge(
+        { token: 'tok-1' },
+        makeReq({ csrf: false }),
+        makeRes(),
+      ),
     ).rejects.toThrow(UnauthorizedException);
     expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
@@ -337,7 +345,7 @@ describe('AuthAccountController.confirmMerge', () => {
   it('пустой токен → BadRequestException, verifyMergeToken не вызывается', async () => {
     const { controller, auth } = makeController();
     await expect(
-      controller.confirmMerge('', makeReq(), makeRes()),
+      controller.confirmMerge({ token: '' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
@@ -346,7 +354,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, merge } = makeController();
     const req = makeReq({ webUser: { userId: 999n } }); // target из токена = 1n
     await expect(
-      controller.confirmMerge('tok-1', req, makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, req, makeRes()),
     ).rejects.toThrow(UnauthorizedException);
     expect(merge.merge).not.toHaveBeenCalled();
   });
@@ -355,7 +363,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, auth, merge } = makeController();
     merge.merge.mockRejectedValue(new Error('db down'));
     await expect(
-      controller.confirmMerge('tok-1', makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.linkProviderToUser).not.toHaveBeenCalled();
   });
@@ -367,7 +375,7 @@ describe('AuthAccountController.confirmMerge', () => {
       conflictUserId: '2',
     });
     await expect(
-      controller.confirmMerge('tok-1', makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -375,7 +383,7 @@ describe('AuthAccountController.confirmMerge', () => {
     const { controller, auth, merge, securityLog } = makeController();
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.confirmMerge('tok-1', req, res);
+    const result = await controller.confirmMerge({ token: 'tok-1' }, req, res);
     expect(merge.merge).toHaveBeenCalledWith(2n, 1n);
     expect(auth.linkProviderToUser).toHaveBeenCalledWith(1n, 'google', 'g-1');
     expect(auth.issueTokens).toHaveBeenCalledWith(

@@ -262,7 +262,7 @@ describe('Auth2faController.recoveryEmailStart', () => {
     await expect(
       controller.recoveryEmailStart(
         makeReq({ csrf: false, webUser: { userId: 1n } }),
-        'a@b.ru',
+        { email: 'a@b.ru' },
       ),
     ).rejects.toThrow(UnauthorizedException);
     expect(emailSvc.sendVerificationLink).not.toHaveBeenCalled();
@@ -272,7 +272,7 @@ describe('Auth2faController.recoveryEmailStart', () => {
     const { controller, emailSvc } = makeController();
     const res = await controller.recoveryEmailStart(
       makeReq({ webUser: { userId: 6n } }),
-      'a@b.ru',
+      { email: 'a@b.ru' },
     );
     expect(emailSvc.sendVerificationLink).toHaveBeenCalledWith(6n, 'a@b.ru');
     expect(res).toEqual({ ok: true });
@@ -306,7 +306,7 @@ describe('Auth2faController.recoveryEmailVerify', () => {
 describe('Auth2faController.recoveryRequest', () => {
   it('публичный эндпоинт (без CSRF) → делегирует в emailSvc.sendRecoveryLink', async () => {
     const { controller, emailSvc } = makeController();
-    const res = await controller.recoveryRequest('x@y.ru');
+    const res = await controller.recoveryRequest({ email: 'x@y.ru' });
     expect(emailSvc.sendRecoveryLink).toHaveBeenCalledWith('x@y.ru');
     expect(res).toEqual({ ok: true });
   });
@@ -316,7 +316,9 @@ describe('Auth2faController.recoveryConfirm', () => {
   it('без CSRF-заголовка → UnauthorizedException, токен не потребляется', async () => {
     const { controller, emailSvc } = makeController();
     await expect(
-      controller.recoveryConfirm(makeReq({ csrf: false }), makeRes(), 'tok-1'),
+      controller.recoveryConfirm(makeReq({ csrf: false }), makeRes(), {
+        token: 'tok-1',
+      }),
     ).rejects.toThrow(UnauthorizedException);
     expect(emailSvc.consumeToken).not.toHaveBeenCalled();
   });
@@ -326,7 +328,9 @@ describe('Auth2faController.recoveryConfirm', () => {
     emailSvc.consumeToken.mockResolvedValue({ userId: 8n, email: 'x@y.ru' });
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.recoveryConfirm(req, res, 'tok-1');
+    const result = await controller.recoveryConfirm(req, res, {
+      token: 'tok-1',
+    });
     expect(emailSvc.consumeToken).toHaveBeenCalledWith('tok-1', 'recovery');
     expect(auth.issueTokens).toHaveBeenCalledWith(
       8n,

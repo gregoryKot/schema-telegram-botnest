@@ -21,6 +21,11 @@ import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
+import {
+  EmailBodyDto,
+  TokenBodyDto,
+  InitDataBodyDto,
+} from './dto/auth-scalar.dto';
 import type { Request, Response } from 'express';
 import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
 
@@ -46,11 +51,11 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async emailLoginLink(
-    @Body('email') email: string,
+    @Body() dto: EmailBodyDto,
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(email);
+    return this.auth.requestEmailLogin(dto.email);
   }
 
   @Get('email/callback')
@@ -99,12 +104,12 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async emailLinkToAccount(
-    @Body('email') email: string,
+    @Body() dto: EmailBodyDto,
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link-to-account', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    return this.auth.linkEmailToAccount(webUser.userId, email);
+    return this.auth.linkEmailToAccount(webUser.userId, dto.email);
   }
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
@@ -116,10 +121,11 @@ export class AuthAccountController {
   @Post('telegram/webapp')
   @HttpCode(200)
   async telegramWebApp(
-    @Body('initData') initData: string,
+    @Body() dto: InitDataBodyDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
       this.auth.verifyTelegramWebAppData(initData);
@@ -151,10 +157,11 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async confirmMerge(
-    @Body('token') token: string,
+    @Body() dto: TokenBodyDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    const { token } = dto;
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.
     requireCsrf(req, 'merge', this.securityLog);

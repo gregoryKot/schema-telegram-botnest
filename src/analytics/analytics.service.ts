@@ -1,10 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ANALYTICS_EVENTS,
   type AnalyticsEventName,
 } from './analytics.constants';
+
+// Ретеншен AnalyticsEvent (L10, аудит 2026-08): таблица росла без ограничения.
+// Метрики /stats считаются в окнах ≤30 дней, поэтому держим 90 (щедрый буфер) и
+// раз в сутки удаляем старше — диск не течёт, окна метрик не задеты.
+const RETENTION_DAYS = 90;
 
 // Продуктовая аналитика (правило №8 CLAUDE.md): пишет факты «юзер сделал X»
 // для проверки гипотез метриками (D1/D7/D30, доля поделившихся и т.п.).
@@ -41,6 +47,23 @@ export class AnalyticsService {
       });
     } catch (err) {
       this.logger.error(`track(${name}) failed`, err as Error);
+    }
+  }
+
+  /** Ретеншен: раз в сутки чистим события старше RETENTION_DAYS (L10). */
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async pruneOld(): Promise<void> {
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000);
+    try {
+      const { count } = await this.prisma.analyticsEvent.deleteMany({
+        where: { createdAt: { lt: cutoff } },
+      });
+      if (count > 0)
+        this.logger.log(
+          `analytics prune: удалено ${count} событий старше ${RETENTION_DAYS} дней`,
+        );
+    } catch (err) {
+      this.logger.error('analytics prune failed', err as Error);
     }
   }
 }
