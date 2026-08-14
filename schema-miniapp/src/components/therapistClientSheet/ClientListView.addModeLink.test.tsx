@@ -5,11 +5,26 @@
 // ClientListView.addModeOffline.test.tsx. Дочерние карточки/статы/баннеры
 // покрыты своими тестами — мокаем.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from '@testing-library/react';
 import { createRef } from 'react';
 import { ClientListView } from './ClientListView';
+import { useAddClient } from '../therapist/useAddClient';
 import type { ClientDetail, AddClient } from './types';
 import type { TherapyClientSummary } from '../../api';
+
+vi.mock('../../api', () => ({
+  api: { createTherapyInvite: vi.fn() },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as {
+  createTherapyInvite: ReturnType<typeof vi.fn>;
+};
 
 vi.mock('./ClientCard', () => ({
   ClientCard: ({ client }: { client: TherapyClientSummary }) => (
@@ -41,7 +56,7 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     inviteUrl: '',
     setInviteUrl: vi.fn(),
     inviteCopied: false,
-    setInviteCopied: vi.fn(),
+    inviteCopyFailed: false,
     inviteLoading: false,
     inviteInputRef: createRef(),
     openAddMode: vi.fn(),
@@ -137,9 +152,8 @@ describe('ClientListView — режим «Ссылка»', () => {
     expect(copyInvite).toHaveBeenCalled();
   });
 
-  it('клик «Создать новую» сбрасывает inviteUrl и inviteCopied', () => {
+  it('клик «Создать новую» сбрасывает inviteUrl', () => {
     const setInviteUrl = vi.fn();
-    const setInviteCopied = vi.fn();
     render(
       <ClientListView
         {...baseProps({
@@ -147,14 +161,59 @@ describe('ClientListView — режим «Ссылка»', () => {
             addMode: 'invite',
             inviteUrl: 'https://t.me/bot?x=1',
             setInviteUrl,
-            setInviteCopied,
           }),
         })}
       />,
     );
     fireEvent.click(screen.getByText('Создать новую'));
     expect(setInviteUrl).toHaveBeenCalledWith('');
-    expect(setInviteCopied).toHaveBeenCalledWith(false);
+  });
+
+  it('inviteCopyFailed=true — виден отказ (был: молча проглочен)', () => {
+    render(
+      <ClientListView
+        {...baseProps({
+          addClient: makeAddClient({
+            addMode: 'invite',
+            inviteUrl: 'https://t.me/bot?x=1',
+            inviteCopyFailed: true,
+          }),
+        })}
+      />,
+    );
+    expect(screen.getByText(/Не удалось скопировать/)).toBeTruthy();
+  });
+
+  // РЕГРЕССИЯ (парный баг webapp/AddClientForm.test.tsx): ссылка-приглашение
+  // копировалась молча — при отказе clipboard.writeText терапевт не видел
+  // отказа. Бьёт через РЕАЛЬНЫЙ useAddClient, а не мок addClient, чтобы
+  // проверить связку хук→компонент, а не только рендер по флагу.
+  function RealHost() {
+    const addClient = useAddClient({ setClients: vi.fn() });
+    return <ClientListView {...baseProps({ addClient })} />;
+  }
+
+  it('реальный useAddClient: клипборд падает — надпись видна на экране', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({
+      url: 'https://t.me/bot?x=real',
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+      configurable: true,
+    });
+    render(<RealHost />);
+    fireEvent.click(screen.getByLabelText('Добавить клиента'));
+    fireEvent.click(screen.getByText('Ссылка'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Создать ссылку'));
+    });
+    await screen.findByDisplayValue('https://t.me/bot?x=real');
+    await act(async () => {
+      fireEvent.click(screen.getByText('Скопировать'));
+    });
+
+    await screen.findByText(/Не удалось скопировать/);
+    expect(screen.queryByText('✓ Скопировано')).toBeNull();
   });
 });
 

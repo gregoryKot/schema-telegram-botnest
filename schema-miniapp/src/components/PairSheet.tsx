@@ -7,21 +7,11 @@ import { BottomSheet } from './BottomSheet';
 import { miniappDeepLink } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
+import { CopyFailedHint } from '../../../shared/src/components/CopyFailedHint';
 
 interface Props {
   onClose: () => void;
-}
-
-// Было продублировано под pending- и invite-ссылку (правило «одна механика —
-// один компонент»). Провал буфера — best-effort: текст всё равно selectable.
-async function copyToClipboard(text: string, setCopied: (v: boolean) => void) {
-  try {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  } catch {
-    /* best-effort: ошибку намеренно игнорируем */
-  }
 }
 
 export function PairSheet({ onClose }: Props) {
@@ -34,8 +24,9 @@ export function PairSheet({ onClose }: Props) {
   const [inviteUrl, setInviteUrl] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [showInviteShare, setShowInviteShare] = useState(false);
-  const [copiedPending, setCopiedPending] = useState(false);
-  const [copiedInvite, setCopiedInvite] = useState(false);
+  // Было продублировано под pending-/invite-ссылку — теперь useCopyToClipboard на каждую.
+  const pendingCopy = useCopyToClipboard();
+  const inviteCopy = useCopyToClipboard();
   const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(null);
   const [createError, setCreateError] = useState(false);
 
@@ -172,23 +163,24 @@ export function PairSheet({ onClose }: Props) {
                   {pendingUrl}
                 </div>
                 <button
-                  onClick={() => copyToClipboard(pendingUrl, setCopiedPending)}
+                  onClick={() => void pendingCopy.copy(pendingUrl)}
                   style={{
                     width: '100%',
                     padding: '10px',
                     border: 'none',
                     borderRadius: 10,
-                    background: copiedPending
+                    background: pendingCopy.copied
                       ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
                       : 'color-mix(in srgb, var(--accent) 20%, transparent)',
-                    color: copiedPending ? '#06d6a0' : 'var(--accent)',
+                    color: pendingCopy.copied ? '#06d6a0' : 'var(--accent)',
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: 'pointer',
                   }}
                 >
-                  {copiedPending ? '✓ Скопировано' : 'Скопировать ссылку'}
+                  {pendingCopy.copied ? '✓ Скопировано' : 'Скопировать ссылку'}
                 </button>
+                <CopyFailedHint show={pendingCopy.failed} />
               </div>
             )}
 
@@ -278,25 +270,26 @@ export function PairSheet({ onClose }: Props) {
                       {inviteUrl}
                     </div>
                     <button
-                      onClick={() =>
-                        copyToClipboard(inviteUrl, setCopiedInvite)
-                      }
+                      onClick={() => void inviteCopy.copy(inviteUrl)}
                       style={{
                         width: '100%',
                         padding: '10px',
                         border: 'none',
                         borderRadius: 10,
-                        background: copiedInvite
+                        background: inviteCopy.copied
                           ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
                           : 'color-mix(in srgb, var(--accent) 20%, transparent)',
-                        color: copiedInvite ? '#06d6a0' : 'var(--accent)',
+                        color: inviteCopy.copied ? '#06d6a0' : 'var(--accent)',
                         fontSize: 13,
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
                     >
-                      {copiedInvite ? '✓ Скопировано' : 'Скопировать ссылку'}
+                      {inviteCopy.copied
+                        ? '✓ Скопировано'
+                        : 'Скопировать ссылку'}
                     </button>
+                    <CopyFailedHint show={inviteCopy.failed} />
                   </div>
                 )}
 

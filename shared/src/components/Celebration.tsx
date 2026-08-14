@@ -3,13 +3,14 @@
 // «отказ от эмодзи» (веха — акцентный цвет числа), мини-апп отстал с 🏆/🔥.
 // Канон — безэмодзийная версия. Платформенное приходит пропсами:
 // tr (ты/вы), botShortUrl и trackEvent — у каждого фронтенда свои.
-import { useState } from 'react';
 import { getMilestoneText, pluralDays } from '../utils/celebrationText';
 import { useConfetti } from '../hooks/useConfetti';
 import { drawStreakCard } from '../share/cards/streakCard';
 import { shareCanvasImage } from '../share/shareImage';
 import { streakShareText } from '../share/shareTexts';
 import { SHARE_CARD_EVENT, SHARE_RESULT_EVENT } from '../share/analytics';
+import { useCopyToClipboard } from '../utils/useCopyToClipboard';
+import { CopyFailedHint } from './CopyFailedHint';
 
 export interface CelebrationProps {
   streak: number;
@@ -30,7 +31,7 @@ export function Celebration({
   trackEvent,
 }: CelebrationProps) {
   const canvasRef = useConfetti(onDone);
-  const [copied, setCopied] = useState(false);
+  const { copied, failed, copy } = useCopyToClipboard();
 
   // Веху раньше отмечал 🏆 против 🔥. Картинок больше нет, но отличать вехи
   // надо: 7/30/100 дней — другое событие, чем «ещё один день». Отмечаем
@@ -125,13 +126,7 @@ export function Celebration({
               trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: true });
             } catch {
               trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: false });
-              try {
-                await navigator.clipboard.writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              } catch {
-                /* best-effort: ошибку намеренно игнорируем */
-              }
+              await copy(text);
             }
           }}
           style={{
@@ -148,6 +143,7 @@ export function Celebration({
         >
           {copied ? 'Скопировано!' : 'Поделиться'}
         </button>
+        <CopyFailedHint show={failed} tr={tr} marginTop={10} />
         <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 12 }}>
           {tr(
             'нажми в другом месте, чтобы закрыть',

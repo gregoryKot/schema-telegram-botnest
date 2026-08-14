@@ -6,6 +6,7 @@ import { useSafeTop } from '../utils/safezone';
 import { getTheme, Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { Props, View } from './settingsSheet/types';
 import { usePatchSettings } from './settingsSheet/usePatchSettings';
 import { NotifySubView } from './settingsSheet/NotifyViews';
@@ -50,12 +51,12 @@ export function SettingsSheet({
   const [pairData, setPairData] = useState<PairsData | null>(null);
   const [pairLoading, setPairLoading] = useState(false);
   const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const [pairInviteCopied, setPairInviteCopied] = useState(false);
+  const pairInviteCopy = useCopyToClipboard();
   const [joinCode, setJoinCode] = useState('');
   const [joinView, setJoinView] = useState<'main' | 'join'>('main');
   const [joinError, setJoinError] = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
-  const [exportCopied, setExportCopied] = useState(false);
+  const exportCopy = useCopyToClipboard();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [showNotifyInfo, setShowNotifyInfo] = useState(false);
@@ -152,13 +153,7 @@ export function SettingsSheet({
   }
 
   async function handleCopyPairInvite() {
-    try {
-      await navigator.clipboard.writeText(pairInviteUrl);
-      setPairInviteCopied(true);
-      setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
+    await pairInviteCopy.copy(pairInviteUrl);
   }
 
   async function handleJoin() {
@@ -388,7 +383,14 @@ export function SettingsSheet({
                 handleLeave={handleLeave}
                 handleCreateInvite={handleCreateInvite}
                 pairInviteUrl={pairInviteUrl}
-                pairInviteCopied={pairInviteCopied}
+                pairInviteCopied={pairInviteCopy.copied}
+                pairInviteLabel={
+                  pairInviteCopy.copied
+                    ? '✓ Скопировано'
+                    : pairInviteCopy.failed
+                      ? 'Не скопировалось'
+                      : 'Скопировать ссылку'
+                }
                 handleCopyPairInvite={handleCopyPairInvite}
                 joinView={joinView}
                 setJoinView={setJoinView}
@@ -419,12 +421,10 @@ export function SettingsSheet({
       {exportText && (
         <ExportOverlay
           exportText={exportText}
-          exportCopied={exportCopied}
-          setExportCopied={setExportCopied}
-          onClose={() => {
-            setExportText(null);
-            setExportCopied(false);
-          }}
+          exportCopied={exportCopy.copied}
+          exportFailed={exportCopy.failed}
+          onCopy={() => void exportCopy.copy(exportText)}
+          onClose={() => setExportText(null)}
         />
       )}
 

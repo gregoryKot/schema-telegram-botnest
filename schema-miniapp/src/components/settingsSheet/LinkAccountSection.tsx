@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { getHost } from '../../../../shared/src/host';
 import { SettingsLabel } from './ui';
 import { useTr } from '../../utils/addressForm';
 import { useAccountLink } from '../../hooks/useAccountLink';
 import { linkUrl } from '../../utils/deviceLink';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 
 // Перенос данных из аккаунта, который человек уже завёл на сайте или в другом
 // мессенджере. Показывается только там, где своего входа для сайтов нет и без
@@ -11,17 +11,14 @@ import { linkUrl } from '../../utils/deviceLink';
 export function LinkAccountSection() {
   const tr = useTr();
   const link = useAccountLink();
-  const [copied, setCopied] = useState(false);
+  // Буфер недоступен — код и так на экране (below), failed намеренно не
+  // рендерим отдельной строкой.
+  const { copied, copy } = useCopyToClipboard();
   if (getHost().id !== 'max') return null;
 
   const copyCode = async () => {
     if (!link.start) return;
-    try {
-      await navigator.clipboard.writeText(link.start.userCode);
-      setCopied(true);
-    } catch {
-      /* буфер недоступен — код и так на экране */
-    }
+    await copy(link.start.userCode);
   };
 
   return (

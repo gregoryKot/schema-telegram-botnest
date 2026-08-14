@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { botShortUrl } from '../../utils/botConfig';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { Row, SettingsLabel } from './ui';
 
 interface NameProps {
@@ -109,6 +110,7 @@ interface ShareProps {
 
 export function ShareSection({ setExportText }: ShareProps) {
   const [invite, setInvite] = useState(false);
+  const exportAutoCopy = useCopyToClipboard();
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
@@ -134,11 +136,7 @@ export function ShareSection({ setExportText }: ShareProps) {
               /* best-effort: ошибку намеренно игнорируем */
             }
             if (!shared) {
-              try {
-                await navigator.clipboard.writeText(text);
-              } catch {
-                /* best-effort: ошибку намеренно игнорируем */
-              }
+              await exportAutoCopy.copy(text);
               setExportText(text);
             }
           }}

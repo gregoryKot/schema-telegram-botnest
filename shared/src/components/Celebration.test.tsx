@@ -69,6 +69,17 @@ describe('Celebration', () => {
     });
   });
 
+  it('share-фолбэк: буфер тоже упал — виден отказ (был: молча проглочен)', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(<Celebration {...base} streak={5} />);
+    fireEvent.click(screen.getByText('Поделиться'));
+    await screen.findByText(
+      (c) => c.includes('Не удалось скопировать') && c.includes('вручную'),
+    );
+    expect(screen.queryByText('Скопировано!')).toBeNull();
+  });
+
   it('подпись «закрыть» — в обеих формах через tr()', () => {
     render(<Celebration {...base} streak={2} />);
     expect(
