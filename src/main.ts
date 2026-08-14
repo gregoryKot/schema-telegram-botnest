@@ -1,5 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
@@ -22,9 +23,17 @@ import {
 };
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: new AlertLogger(),
   });
+
+  // M5 (аудит 2026-08): за Express стоит один reverse-proxy Amvera. Без этого
+  // Express игнорирует X-Forwarded-For, и req.ip отражает ПРОКСИ, а не клиента —
+  // все IP-бакеты троттлинга (правило №5), WebSession.ipAddress и IP в
+  // аудит-логах схлопываются в один. Доверяем ровно одному хопу (не `true` —
+  // иначе клиент подделает XFF); x-forwarded-proto ниже уже трактуется как
+  // доказательство прокси, так что доверие к XFF от того же хопа консистентно.
+  app.set('trust proxy', 1);
 
   // Domain + protocol redirects (production only). Amvera's reverse proxy sets
   // x-forwarded-proto, so we can detect the original protocol.
