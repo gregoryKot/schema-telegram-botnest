@@ -126,11 +126,31 @@ describe('App — start_param из хоста запускает присоед�
     );
   });
 
-  it('?startapp=pair_ABC123 вызывает api.joinPair с кодом из ссылки', async () => {
+  it('?startapp=pair_ABC123 открывает экран-согласие, но НЕ джойнит молча (M1)', async () => {
     setUrl('/?startapp=pair_ABC123');
     renderApp();
     await waitFor(() =>
-      expect(mockApi.joinPair).toHaveBeenCalledWith('ABC123'),
+      expect(screen.getByTestId('app-overlays').dataset.joinConfirm).toBe(
+        'true',
+      ),
     );
+    // Код и вид доехали до экрана согласия — джойн ждёт явного подтверждения.
+    expect(screen.getByTestId('app-overlays').dataset.joinKind).toBe('pair');
+    expect(screen.getByTestId('app-overlays').dataset.joinCode).toBe('ABC123');
+    // Главное: без подтверждения приватного присоединения не произошло.
+    expect(mockApi.joinPair).not.toHaveBeenCalled();
+  });
+
+  it('?startapp=therapy_XYZ открывает экран-согласие, но НЕ джойнит молча (M1)', async () => {
+    setUrl('/?startapp=therapy_XYZ');
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByTestId('app-overlays').dataset.joinConfirm).toBe(
+        'true',
+      ),
+    );
+    expect(screen.getByTestId('app-overlays').dataset.joinKind).toBe('therapy');
+    expect(screen.getByTestId('app-overlays').dataset.joinCode).toBe('XYZ');
+    expect(mockApi.joinTherapy).not.toHaveBeenCalled();
   });
 });
