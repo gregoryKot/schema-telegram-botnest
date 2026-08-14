@@ -58,10 +58,16 @@ export class EmailTokenService {
       throw new UnauthorizedException('Token purpose mismatch');
     if (!row.userId) throw new UnauthorizedException('No user bound to token');
 
-    await this.prisma.emailToken.update({
-      where: { id: row.id },
+    // L3 аудита 2026-08: погашение атомарно. Проверка row.usedAt выше и update
+    // были раздельны — два параллельных запроса с одним токеном проходили
+    // проверку оба и выдавали ДВЕ сессии. updateMany с фильтром usedAt:null —
+    // CAS: побеждает ровно один, второй получает count=0 и «уже использован».
+    const consumed = await this.prisma.emailToken.updateMany({
+      where: { id: row.id, usedAt: null },
       data: { usedAt: new Date() },
     });
+    if (consumed.count === 0)
+      throw new UnauthorizedException('Token already used');
 
     const rowEmail = decField(row.email) ?? row.email;
     if (row.purpose === 'link_email_auth') {

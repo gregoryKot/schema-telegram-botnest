@@ -167,6 +167,33 @@ describe('EmailTokenService — consumeEmailToken', () => {
     expect(emailTokens[1].usedAt).not.toBeNull(); // второй — потреблён
   });
 
+  it('гонка: два запроса с одним токеном (оба прочли usedAt=null) → одна сессия, второй «уже использован» (L3)', async () => {
+    const { svc, auth, prisma, emailTokens } = makeService();
+    await auth.requestEmailLogin('race@example.com');
+    const raw = extractTokenFromLink(auth);
+
+    // Симулируем гонку: findUnique обоим отдаёт токен как ещё НЕ погашенный
+    // (реальная гонка — два запроса прочитали строку до того, как любой её
+    // записал). Быстрый if(row.usedAt) обходят оба; ловит только атомарный CAS.
+    jest
+      .spyOn(prisma.emailToken, 'findUnique')
+      .mockImplementation((args: any) => {
+        const row = emailTokens.find(
+          (t) => t.tokenHash === args.where.tokenHash,
+        );
+        return Promise.resolve(row ? { ...row, usedAt: null } : null);
+      });
+
+    const first = await svc.consumeEmailToken(raw);
+    assertTokens(first);
+    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
+      'Token already used',
+    );
+
+    // usedAt проставлен ровно один раз — вторая сессия не выдана.
+    expect(emailTokens[0].usedAt).not.toBeNull();
+  });
+
   it('уже использованный токен → UnauthorizedException', async () => {
     const { svc, auth } = makeService();
     await auth.requestEmailLogin('used@example.com');

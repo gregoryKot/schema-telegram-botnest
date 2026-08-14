@@ -49,6 +49,36 @@ function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
           return Promise.resolve({ ...next });
         },
       ),
+      // Анти-реплей TOTP (L2): CAS по totpLastStep. Фейк применяет ту же
+      // семантику фильтра, что и сервис (id + OR[null | lt step]), и возвращает
+      // count — тест судит по РЕЗУЛЬТАТУ (принят/отвергнут), а не по форме вызова.
+      updateMany: jest.fn(
+        ({
+          where,
+          data,
+        }: {
+          where: {
+            id: bigint;
+            OR?: { totpLastStep: null | { lt: number } }[];
+          };
+          data: Record<string, unknown>;
+        }) => {
+          const key = where.id.toString();
+          const row = users.get(key);
+          if (!row) return Promise.resolve({ count: 0 });
+          const cur = row.totpLastStep as number | null | undefined;
+          const matches =
+            !where.OR ||
+            where.OR.some((c) =>
+              c.totpLastStep === null
+                ? cur == null
+                : typeof cur === 'number' && cur < c.totpLastStep.lt,
+            );
+          if (!matches) return Promise.resolve({ count: 0 });
+          users.set(key, { ...row, ...data });
+          return Promise.resolve({ count: 1 });
+        },
+      ),
     },
   };
 }
@@ -205,6 +235,30 @@ describe('TotpService — verifyCode', () => {
     expect(
       await service.verifyCode(USER_ID, authenticator.generate(secret)),
     ).toBe(false);
+  });
+
+  it('тот же TOTP-код не принимается дважды в пределах окна (replay, L2)', async () => {
+    const prisma = makeFakePrisma();
+    const { service, secret } = await enroll(prisma);
+    const code = authenticator.generate(secret);
+
+    expect(await service.verifyCode(USER_ID, code)).toBe(true); // первый раз
+    expect(await service.verifyCode(USER_ID, code)).toBe(false); // реплей того же шага
+  });
+
+  it('код следующего шага принимается после предыдущего (анти-реплей не ложит валидный вход)', async () => {
+    const prisma = makeFakePrisma();
+    const { service, secret } = await enroll(prisma);
+
+    expect(
+      await service.verifyCode(USER_ID, authenticator.generate(secret)),
+    ).toBe(true);
+
+    // Время ушло на шаг вперёд — код нового шага обязан пройти.
+    dateNowSpy.mockReturnValue(FIXED_TIME + 30_000);
+    expect(
+      await service.verifyCode(USER_ID, authenticator.generate(secret)),
+    ).toBe(true);
   });
 
   it('recovery-код принимается один раз — повторное использование отвергается (защита от replay)', async () => {
