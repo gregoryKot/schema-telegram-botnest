@@ -10,14 +10,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { SubscriptionService } from './subscription.service';
-
-interface SubscribeDto {
-  period?: 'month' | 'year';
-  email?: string;
-  acceptedOffer?: boolean;
-  /** Honeypot — must stay empty. */
-  website?: string;
-}
+import { SubscribeDto } from './subscription.dto';
 
 /** Public subscription endpoints: options, subscribe, view, cancel. */
 @Controller('api/subscription')

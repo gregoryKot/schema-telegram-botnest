@@ -1,4 +1,10 @@
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
@@ -16,7 +22,9 @@ export class SaveNoteDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(50)
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   tags?: string[];
 }
 
