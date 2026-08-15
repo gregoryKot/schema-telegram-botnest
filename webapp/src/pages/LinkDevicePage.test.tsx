@@ -97,6 +97,21 @@ describe('что показано до подтверждения', () => {
     expect(screen.getByText('письма себе')).toBeTruthy();
   });
 
+  it('ведёт с направления доступа и предупреждает о чужом коде (O1)', async () => {
+    renderAt('/link?code=ABCD2345');
+
+    // Главное — не «импорт данных ко мне», а «приложение получит доступ к
+    // МОЕМУ аккаунту». Текст обязан это сказать прямо, до кнопки.
+    await waitFor(() =>
+      expect(screen.getByText(/войти в этот аккаунт/)).toBeTruthy(),
+    );
+    expect(
+      screen.getByText(/менять и удалять все ваши данные/),
+    ).toBeTruthy();
+    // Анти-фишинг: код, пришедший со стороны, подтверждать нельзя.
+    expect(screen.getByText(/закройте эту страницу/)).toBeTruthy();
+  });
+
   it('тот же аккаунт — про перенос не врёт', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, { ...PREVIEW, sameAccount: true, summary: {} }),
@@ -123,10 +138,10 @@ describe('что показано до подтверждения', () => {
 describe('подтверждение', () => {
   it('шлёт approve с CSRF-заголовком и говорит вернуться в приложение', async () => {
     renderAt('/link?code=ABCD2345');
-    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
-    fireEvent.click(screen.getByText('Да, это я'));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
     const approveCall = fetchMock.mock.calls.find((c) =>
@@ -141,10 +156,10 @@ describe('подтверждение', () => {
   // ── Аналитика (правило №8) ────────────────────────────────────────────────
   it('успех считает ИМЕННО этот экран — мини-апп в этот момент ещё ждёт', async () => {
     renderAt('/link?code=ABCD2345');
-    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
-    fireEvent.click(screen.getByText('Да, это я'));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
     expect(api.trackEvent).toHaveBeenCalledWith('account_link_confirmed', {
@@ -155,10 +170,10 @@ describe('подтверждение', () => {
 
   it('подтвердили под тем же аккаунтом — merged=false, успех не приписывается переносу', async () => {
     renderAt('/link?code=ABCD2345');
-    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: false }));
-    fireEvent.click(screen.getByText('Да, это я'));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
     expect(api.trackEvent).toHaveBeenCalledWith('account_link_confirmed', {
@@ -169,10 +184,10 @@ describe('подтверждение', () => {
 
   it('подтверждение упало — событие успеха не уходит', async () => {
     renderAt('/link?code=ABCD2345');
-    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(400, { message: 'Код истёк' }));
-    fireEvent.click(screen.getByText('Да, это я'));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Код истёк')).toBeTruthy());
     expect(api.trackEvent).not.toHaveBeenCalled();
@@ -180,12 +195,12 @@ describe('подтверждение', () => {
 
   it('подтверждение не прошло — сообщение видно, экран «готово» не показывается', async () => {
     renderAt('/link?code=ABCD2345');
-    await waitFor(() => expect(screen.getByText('Да, это я')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(
       jsonResponse(400, { message: 'Не удалось объединить аккаунты' }),
     );
-    fireEvent.click(screen.getByText('Да, это я'));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() =>
       expect(screen.getByText('Не удалось объединить аккаунты')).toBeTruthy(),
