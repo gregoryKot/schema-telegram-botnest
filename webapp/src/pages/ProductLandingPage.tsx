@@ -124,7 +124,7 @@ export function ProductLandingPage() {
                 Почему со мной <span style={{ background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>снова</span> это&nbsp;происходит?
               </h1>
               <p style={{ fontSize: 17, lineHeight: 1.65, color: SUB, maxWidth: 490, margin: '0 0 34px' }}>
-                Одни и те же ссоры, тревога, самокритика — это не «характер», а&nbsp;схемы:
+                Одни и те же ссоры, тревога, самокритика — не «характер», а&nbsp;схемы:
                 выученные паттерны, которые можно заметить и постепенно менять.
                 «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
               </p>
