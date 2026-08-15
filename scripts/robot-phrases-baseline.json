@@ -1,16 +1,4 @@
 {
-  "schema-miniapp/src/aboutData.ts": 1,
-  "schema-miniapp/src/components/disclaimer/DisclaimerNeedsWhyStep.tsx": 2,
-  "schema-miniapp/src/components/IndexInfoSheet.tsx": 1,
-  "schema-miniapp/src/components/NeedHistorySheet.tsx": 2,
-  "schema-miniapp/src/components/schemaInfoSheet/modeCheckinData.ts": 6,
-  "schema-miniapp/src/components/SelfHelpDisclaimer.tsx": 4,
-  "schema-miniapp/src/needData.ts": 2,
-  "src/bot/healthy-adult.data.ts": 1,
-  "src/quiz/quiz-drives.data.ts": 1,
-  "webapp/src/components/diary/GratitudeEntrySheet.tsx": 1,
-  "webapp/src/components/IndexInfoSheet.tsx": 1,
-  "webapp/src/needData.ts": 2,
-  "webapp/src/pages/landing/productContent.tsx": 1,
-  "webapp/src/pages/ProductLandingPage.tsx": 1
+  "schema-miniapp/src/components/schemaInfoSheet/modeCheckinData.ts": 2,
+  "src/bot/healthy-adult.data.ts": 1
 }
