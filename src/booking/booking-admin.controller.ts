@@ -15,7 +15,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { BookingService } from './booking.service';
 import { AvailabilityService } from './availability.service';
-import type { CreateRuleDto } from './availability.service';
 import { RobokassaService } from './robokassa.service';
 import { MeetingService } from './meeting.service';
 import { CalDavService } from './caldav.service';
@@ -23,6 +22,7 @@ import { PricingService } from './pricing.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { assertAdminKey } from './admin-key.util';
 import {
+  CreateRuleDto,
   SetPriceDto,
   SetSubPriceDto,
   ToggleRuleDto,
