@@ -83,6 +83,10 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
       service.log(event, { endpoint: 'x' });
       await flush();
       expect(mockedNotify).not.toHaveBeenCalled();
+      // Не-алертное событие всё равно попадает в обычный лог — молчит только DM.
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`[${event}]`),
+      );
     },
   );
 
