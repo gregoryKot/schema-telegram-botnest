@@ -11,24 +11,44 @@ function makePrisma(overrides: Partial<Record<string, unknown>> = {}) {
   const empty = jest.fn(async () => []);
   const none = jest.fn(async () => null);
   const zero = jest.fn(async () => 0);
+  // Тяжёлые источники в journey.service.ts теперь читаются ДВУМЯ запросами
+  // (count() + bounded findMany()) вместо одного unbounded findMany. Дефолт
+  // count()/groupBy() в фейке считает по строкам того же (возможно,
+  // подменённого оверрайдом) findMany() — старые тесты, мокающие только
+  // findMany, продолжают работать без изменений; см. регресс-тест ниже про
+  // случай, когда count() и лента обязаны разойтись (>FEED_LIMIT записей).
+  const countFromFindMany = jest.fn(function (this: {
+    findMany: () => Promise<unknown[]>;
+  }) {
+    return this.findMany().then((rows) => rows.length);
+  });
+  const groupByFromFindMany = jest.fn(function (this: {
+    findMany: () => Promise<{ tool: string }[]>;
+  }) {
+    return this.findMany().then((rows) => {
+      const byTool = new Map<string, number>();
+      for (const r of rows) byTool.set(r.tool, (byTool.get(r.tool) ?? 0) + 1);
+      return [...byTool].map(([tool, n]) => ({ tool, _count: { _all: n } }));
+    });
+  });
   const base: any = {
     rating: { groupBy: empty },
-    note: { findMany: empty },
-    schemaDiaryEntry: { findMany: empty },
-    modeDiaryEntry: { findMany: empty },
-    gratitudeDiaryEntry: { findMany: empty },
-    userPractice: { findMany: empty },
+    note: { findMany: empty, count: countFromFindMany },
+    schemaDiaryEntry: { findMany: empty, count: countFromFindMany },
+    modeDiaryEntry: { findMany: empty, count: countFromFindMany },
+    gratitudeDiaryEntry: { findMany: empty, count: countFromFindMany },
+    userPractice: { findMany: empty, count: countFromFindMany },
     practicePlan: { findMany: empty },
     ysqResultHistory: { findMany: empty },
     ysqResult: { findUnique: none },
     childhoodRating: { count: zero },
-    userBeliefCheck: { findMany: empty },
-    userLetter: { findMany: empty },
-    userFlashcard: { findMany: empty },
+    userBeliefCheck: { findMany: empty, count: countFromFindMany },
+    userLetter: { findMany: empty, count: countFromFindMany },
+    userFlashcard: { findMany: empty, count: countFromFindMany },
     userSafePlace: { findUnique: none },
     userSchemaNote: { findMany: empty },
     userModeNote: { findMany: empty },
-    practiceSession: { findMany: empty },
+    practiceSession: { findMany: empty, groupBy: groupByFromFindMany },
   };
   for (const [model, methods] of Object.entries(overrides)) {
     base[model] = { ...base[model], ...(methods as object) };
@@ -55,6 +75,39 @@ describe('JourneyService', () => {
       groundingSessions: 0,
       stopSessions: 0,
     });
+  });
+
+  it('D3: тяжёлый источник — count() даёт полный тотал, лента идёт bounded findMany(take)', async () => {
+    // 501 запись дневника схем. Старый код грузил все 501 одним findMany и брал
+    // .length; новый — count() для тотала (строки не грузятся) + bounded
+    // findMany(take: FEED_LIMIT) для ленты. Проверяем и вывод (тотал ≠ лента),
+    // и что запросы пошли именно раздельной парой (count + take).
+    const TOTAL = 501;
+    const rows = Array.from({ length: TOTAL }, (_, i) => ({
+      id: i + 1,
+      createdAt: D(new Date(1_700_000_000_000 - i * 1000).toISOString()),
+      schemaIds: ['abandonment'],
+    }));
+    const prisma = makePrisma({
+      schemaDiaryEntry: {
+        count: jest.fn(async () => TOTAL),
+        findMany: jest.fn(async ({ take }: { take?: number }) =>
+          rows.slice(0, take ?? rows.length),
+        ),
+      },
+    });
+    const { counts, items } = await new JourneyService(prisma).getJourney(uid);
+
+    expect(counts.schemaDiary).toBe(TOTAL); // точный тотал через count()
+    expect(items.filter((i) => i.type === 'schema_diary')).toHaveLength(500);
+    expect(items).toHaveLength(500); // лента ограничена FEED_LIMIT, не 501
+    // Раздельная пара запросов: старый код не звал count и не слал take.
+    expect(prisma.schemaDiaryEntry.count).toHaveBeenCalledWith({
+      where: { userId: uid },
+    });
+    expect(prisma.schemaDiaryEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 500, orderBy: { createdAt: 'desc' } }),
+    );
   });
 
   it('склеивает ленту из всех источников и сортирует по времени (новые сверху)', async () => {
