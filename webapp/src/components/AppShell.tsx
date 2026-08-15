@@ -1,16 +1,15 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
-import { useTr } from '../utils/addressForm'; import { api } from '../api';
-import type { Need, DayHistory } from '../types';
+import { api } from '../api';
+import type { DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
-import { todayStr } from '../utils/format';
-import { cacheTherapistContact } from '../utils/therapistContact';
-import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
+import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
@@ -41,7 +40,7 @@ const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaim
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
-import type { PracticePlan, StreakData, TherapyClientSummary } from '../api';
+import type { StreakData } from '../api';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
@@ -71,14 +70,6 @@ function sectionFromPath(path: string): Section {
   if (seg === 'help' || seg === 'exercises') return 'practice';
   return 'today';
 }
-
-const TODAY_DATE = todayStr();
-const TODAY_KEY = 'celebrated_' + TODAY_DATE;
-const YESTERDAY_DATE = (() => {
-  const [y, m, d] = TODAY_DATE.split('-').map(Number);
-  const prev = new Date(y, m - 1, d - 1);
-  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
-})();
 
 function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   if (h.length === 0) return h;
@@ -164,22 +155,23 @@ export function AppShell() {
     }
   }, [navigate]);
 
-  const historyDays = 30; const tr = useTr();
+  const historyDays = 30;
 
-  // Data state
-  const [needs, setNeeds] = useState<Need[]>([]);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [yesterdayRatings, setYesterdayRatings] = useState<Record<string, number>>({});
+  // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
+  // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
+  const {
+    needs, ratings, setRatings, saved, setSaved, yesterdayRatings,
+    loading, error,
+    userRole, setUserRole,
+    displayName, setDisplayName,
+    pendingPlans, setPendingPlans,
+    childhoodRatings, setChildhoodRatings,
+    therapistClients, setTherapistClients,
+  } = useBootstrapLoad({ navigate, initialPathname: location.pathname });
+
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
-  const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -213,8 +205,7 @@ export function AppShell() {
     }
   }, [therapistMode, userRole]);
 
-  // Therapist clients (for sidebar)
-  const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
+  // Therapist clients search (client list itself comes from useBootstrapLoad)
   const [clientSearch, setClientSearch] = useState('');
 
   // Therapist cabinet navigation helpers (URL-based)
@@ -250,80 +241,6 @@ export function AppShell() {
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
     return () => { window.removeEventListener('offline', handleOffline); window.removeEventListener('online', handleOnline); };
-  }, []);
-
-  // Initial data load
-  useEffect(() => {
-    if (!sessionStorage.getItem('init_done')) {
-      const tzOffset = Math.round(-new Date().getTimezoneOffset() / 60);
-      api.init(tzOffset).then(() => sessionStorage.setItem('init_done', '1')).catch(() => {});
-    }
-    api.recordActivity().catch(() => {});
-    // Mirror disclaimer acceptance to server so the Telegram mini-app can skip
-    // its consent screen for users who are already active on the website.
-    api.getDisclaimer().then(d => {
-      if (!d.accepted) api.acceptDisclaimer().catch(() => {});
-    }).catch(() => {});
-    Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
-      .then(([n, r, yR]) => {
-        setNeeds(n);
-        setRatings(r);
-        setYesterdayRatings(yR);
-        const initialSaved: Record<string, boolean> = {};
-        for (const key of Object.keys(r)) initialSaved[key] = true;
-        setSaved(initialSaved);
-        if (n.length > 0 && n.every((need: Need) => r[need.id] !== undefined)) {
-          localStorage.setItem(TODAY_KEY, '1');
-        }
-      })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
-    api.getPendingPlans().then(setPendingPlans).catch(() => {});
-    api.getChildhoodRatings().then(r => {
-      if (Object.keys(r).length > 0) {
-        setChildhoodRatings(r);
-        localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
-      }
-    }).catch(() => {});
-    Promise.all([api.getYsqProgress(), api.getYsqResult()]).then(([prog, result]) => {
-      if (prog?.answers && !result?.answers) {
-        localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers: prog.answers, page: prog.page }));
-      }
-    }).catch(() => {});
-    api.getProfile().then(p => {
-      setUserRole(p.role);
-      // Психолог по умолчанию попадает в кабинет (запрос: «если я психолог —
-      // всегда начинать со странички психолога»). Уважаем явный выбор
-      // клиентского режима (localStorage '0'); при заходе на дефолтный лендинг
-      // (/, /today) без такого выбора — ведём в кабинет.
-      if (p.role === 'THERAPIST') {
-        const pref = localStorage.getItem('therapist_mode');
-        const onDefaultLanding =
-          location.pathname === '/' || location.pathname === '/today';
-        if (pref !== '0' && !location.pathname.startsWith('/cabinet') && onDefaultLanding) {
-          localStorage.setItem('therapist_mode', '1');
-          navigate('/cabinet');
-        } else if (pref === null) {
-          localStorage.setItem('therapist_mode', '1');
-        }
-      }
-      if (p.role !== 'THERAPIST' && location.pathname.startsWith('/cabinet')) {
-        navigate('/today');
-      }
-      if (p.name) setDisplayName(p.name);
-      if (p.mySchemaIds?.length > 0) {
-        localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
-      }
-      if (p.role === 'THERAPIST') {
-        cacheTherapistContact({ role: 'THERAPIST', partnerId: null, partnerName: null, myId: null, myName: p.name });
-        api.getTherapyClients().then(setTherapistClients).catch(() => {});
-      } else {
-        api.getTherapyRelation().then(rel => {
-          cacheTherapistContact({ role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null });
-        }).catch(() => {});
-      }
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   // Show the history loading state the moment the history tab is opened.
@@ -366,7 +283,7 @@ export function AppShell() {
   const handleChange = useCallback((needId: string, value: number) => {
     setRatings(prev => ({ ...prev, [needId]: value }));
     setSaved(prev => ({ ...prev, [needId]: false }));
-  }, []);
+  }, [setRatings, setSaved]);
 
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
@@ -376,7 +293,7 @@ export function AppShell() {
       else setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
-  }, []);
+  }, [setSaved]);
 
   if (loading) {
     return <Loader minHeight="100vh" />;
@@ -386,7 +303,7 @@ export function AppShell() {
     return (
       <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center' }}>
         <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Не удалось загрузить</div>
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{tr('Проверь подключение и попробуй ещё раз', 'Проверьте подключение и попробуйте ещё раз')}</div>
+        <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>Стоит проверить подключение и попробовать ещё раз</div>
         <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
           Повторить
         </button>

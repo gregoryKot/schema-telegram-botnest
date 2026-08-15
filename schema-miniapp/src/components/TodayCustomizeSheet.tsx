@@ -9,7 +9,9 @@ import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
 import { getTheme, toggleTheme, Theme } from '../utils/theme';
-import { ToggleRow } from './todayCustomize/ToggleRow';
+import { CustomizeRow } from './plusMenu/CustomizeRow';
+import { useDragReorder } from '../hooks/useDragReorder';
+import type { ScreenBlockId } from '../utils/screenBlocks';
 import { Row, SettingsLabel, ThemeIcon, Toggle } from './settingsSheet/ui';
 
 // Какую строку подсветить при открытии: долгое нажатие на блок открывает лист
@@ -25,6 +27,8 @@ interface Props {
   secondaryHidden: boolean;
   therapistBannerHidden: boolean;
   showTherapistToggle: boolean;
+  orderedIds: ScreenBlockId[];
+  reorder: (id: string, toIndex: number, displayedIds?: string[]) => boolean;
   onPractice: (p: FocusPractice) => void;
   onToggleStreak: () => void;
   onTogglePhrase: () => void;
@@ -42,6 +46,8 @@ export function TodayCustomizeSheet({
   secondaryHidden,
   therapistBannerHidden,
   showTherapistToggle,
+  orderedIds,
+  reorder,
   onPractice,
   onToggleStreak,
   onTogglePhrase,
@@ -51,6 +57,50 @@ export function TodayCustomizeSheet({
   onClose,
 }: Props) {
   const [theme, setTheme] = useState<Theme>(getTheme);
+
+  // Строки блоков — по одному на блок band «Сегодня», в порядке orderedIds.
+  // «Фокус дня» без тумблера: главная карточка не скрывается, только
+  // переставляется (сама практика выбирается в группе выше).
+  const rowMeta: Record<
+    string,
+    { title: string; sub: string; on?: boolean; onToggle?: () => void }
+  > = {
+    streak: {
+      title: 'Карточка серии',
+      sub: 'можно убрать, если счёт дней давит',
+      on: !streakHidden,
+      onToggle: onToggleStreak,
+    },
+    focus: { title: 'Фокус дня', sub: 'главное дело — выбирается выше' },
+    phrase: {
+      title: 'Фраза для себя',
+      sub: 'цитата Здорового взрослого на главном',
+      on: !phraseHidden,
+      onToggle: onTogglePhrase,
+    },
+    secondary: {
+      title: '«Что ещё можно сегодня»',
+      sub: 'потребности и дневник под сворачиванием',
+      on: secondaryHidden,
+      onToggle: onToggleSecondary,
+    },
+    therapist_banner: {
+      title: 'Кабинет терапевта',
+      sub: 'баннер входа в кабинет на главном',
+      on: !therapistBannerHidden,
+      onToggle: onToggleTherapistBanner,
+    },
+  };
+  // Драг идёт по видимому подмножеству: у не-терапевта строки баннера нет.
+  const visibleIds = orderedIds.filter(
+    (id) => id !== 'therapist_banner' || showTherapistToggle,
+  );
+  const d = useDragReorder({
+    ids: visibleIds,
+    onReorder: (id, toIndex) => reorder(id, toIndex, visibleIds),
+  });
+  const range = { min: 0, max: visibleIds.length - 1 };
+  const highlightedId = highlight === 'practice' ? 'focus' : highlight;
 
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
@@ -147,43 +197,30 @@ export function TodayCustomizeSheet({
             }}
           >
             Подсказка: долгое нажатие на любой блок главного экрана открывает
-            эту настройку.
+            эту настройку. Порядок блоков меняется за ручку «≡».
           </div>
           <div
             className="card"
             style={{ borderRadius: 16, overflow: 'hidden' }}
           >
-            <ToggleRow
-              title="Карточка серии"
-              sub="можно убрать, если счёт дней давит"
-              on={!streakHidden}
-              onToggle={onToggleStreak}
-              highlighted={highlight === 'streak'}
-            />
-            <ToggleRow
-              title="Фраза для себя"
-              sub="цитата Здорового взрослого на главном"
-              on={!phraseHidden}
-              onToggle={onTogglePhrase}
-              highlighted={highlight === 'phrase'}
-              divider
-            />
-            <ToggleRow
-              title="«Что ещё можно сегодня»"
-              sub="потребности и дневник под сворачиванием"
-              on={secondaryHidden}
-              onToggle={onToggleSecondary}
-              divider
-            />
-            {showTherapistToggle && (
-              <ToggleRow
-                title="Кабинет терапевта"
-                sub="баннер входа в кабинет на главном"
-                on={!therapistBannerHidden}
-                onToggle={onToggleTherapistBanner}
-                divider
-              />
-            )}
+            {visibleIds.map((id, i) => {
+              const meta = rowMeta[id];
+              if (!meta) return null;
+              return (
+                <CustomizeRow
+                  key={id}
+                  label={meta.title}
+                  sub={meta.sub}
+                  hidden={meta.onToggle ? !meta.on : undefined}
+                  onToggle={meta.onToggle}
+                  divider={i > 0}
+                  dragHandleProps={d.handleProps(id, meta.title, range)}
+                  rowRef={d.registerRow(id)}
+                  drag={{ offsetY: d.offsetFor(id), lifted: d.drag?.id === id }}
+                  highlighted={highlightedId === id}
+                />
+              );
+            })}
           </div>
         </div>
 

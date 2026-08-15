@@ -65,7 +65,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
 
   function handleDelete(id: number) {
     setPractices(prev => prev?.filter(x => x.id !== id) ?? null);
-    api.deletePractice(id).catch(() => {});
+    // Оптимистичное удаление: сбой возвращает список с сервера (иначе
+    // практика «исчезала», оставаясь в БД, и воскресала при следующем заходе).
+    api.deletePractice(id).catch(() => {
+      setErrorToast(true);
+      setTimeout(() => setErrorToast(false), 2500);
+      reloadPractices();
+    });
   }
 
   const needId = NEED_IDS[needIdx];

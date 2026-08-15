@@ -242,6 +242,24 @@ describe('ModeMapCanvas — схемы клиента', () => {
       screen.getByText('У клиента пока нет отмеченных схем'),
     ).toBeTruthy();
   });
+
+  // Сбой загрузки раньше подставлял пустой список, и панель уверяла терапевта,
+  // что у клиента не отмечено ни одной схемы. Это не «пусто», это «неизвестно»:
+  // терапевт видит клиническую неправду о своём клиенте и не может отличить её
+  // от настоящего пустого списка (CLAUDE.md: никаких заглушек вместо данных).
+  it('сбой загрузки схем клиента — говорит «не удалось», а не «схем нет»', async () => {
+    getConceptualization.mockRejectedValue(new Error('offline'));
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Не удалось загрузить схемы клиента')).toBeTruthy();
+    expect(screen.queryByText('У клиента пока нет отмеченных схем')).toBeNull();
+  });
 });
 
 describe('ModeMapCanvas — скачивание карты', () => {

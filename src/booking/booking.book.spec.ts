@@ -40,9 +40,15 @@ function makeService(
     booking: {
       findMany: jest.fn(async ({ where }: any) => {
         const endsAt: Date = where.startsAt.lt;
+        // D4: скан ограничен снизу (startsAt.gte) — фейк уважает границу, иначе
+        // тест не отличил бы ограниченный скан от неограниченного.
+        const from: Date | undefined = where.startsAt.gte;
         const statuses: string[] = where.status.in;
         return bookingRows.filter(
-          (b) => statuses.includes(b.status) && b.startsAt < endsAt,
+          (b) =>
+            statuses.includes(b.status) &&
+            b.startsAt < endsAt &&
+            (!from || b.startsAt >= from),
         );
       }),
       create: jest.fn(async ({ data }: any) => {
