@@ -4,7 +4,7 @@
 // добавление/удаление практики (включая видимую ошибку API при сбое сохранения
 // — правило CLAUDE.md «провал не выглядит как успех»), обе формы ты/вы.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PracticesScreen } from './PracticesScreen';
 import { AddressFormContext } from '../utils/addressForm';
@@ -122,6 +122,24 @@ describe('PracticesScreen — удаление практики', () => {
     fireEvent.click(screen.getByText('удалить'));
     expect(screen.queryByText('Медитация')).toBeNull();
     expect(deletePractice).toHaveBeenCalledWith(5);
+  });
+
+  // Регрессия: сбой удаления глушился `.catch(() => {})` — практика исчезала
+  // с экрана, оставаясь в БД, и воскресала при следующем заходе. Теперь сбой
+  // показывает ошибку и возвращает список с сервера.
+  it('сбой удаления показывает ошибку и возвращает практику в список', async () => {
+    getPractices.mockResolvedValue([{ id: 5, needId: 'attachment', text: 'Медитация' }]);
+    deletePractice.mockRejectedValue(new Error('offline'));
+    renderScreen();
+    await screen.findByText('Медитация');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('удалить'));
+    });
+    expect(screen.getByText('Ошибка сохранения')).toBeTruthy();
+    // Список перечитан с сервера — практика на месте, а не исчезла навсегда.
+    await screen.findByText('Медитация');
+    expect(getPractices.mock.calls.length).toBeGreaterThan(1);
   });
 });
 
