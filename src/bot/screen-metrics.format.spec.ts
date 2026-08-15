@@ -22,14 +22,14 @@ const FULL: ScreenMetrics = {
     { screen: 'profile', block: 'streak', count: 3 },
     { screen: 'profile', block: 'heatmap', count: 1 },
   ],
-  moves30: 0,
+  movesByScreen: [],
   syncedUsers: 0,
 };
 
 const EMPTY: ScreenMetrics = {
   opensByScreen: [],
   hiddenByScreenBlock: [],
-  moves30: 0,
+  movesByScreen: [],
   syncedUsers: 0,
 };
 
@@ -52,8 +52,8 @@ describe('formatScreenMetrics', () => {
 
   it('экран открывали, но ничего не прятали — без «скрывают»', () => {
     const text = formatScreenMetrics({
+      ...EMPTY,
       opensByScreen: [{ screen: 'patterns', count: 5 }],
-      hiddenByScreenBlock: [],
     });
     expect(text).toContain('Паттерны: открывали 5 раз');
     expect(text).not.toContain('скрывают');
@@ -61,7 +61,7 @@ describe('formatScreenMetrics', () => {
 
   it('прятали блок, но открытие экрана не зафиксировано — без «открывали»', () => {
     const text = formatScreenMetrics({
-      opensByScreen: [],
+      ...EMPTY,
       hiddenByScreenBlock: [{ screen: 'profile', block: 'insights', count: 2 }],
     });
     expect(text).toContain('Профиль: скрывают: Наблюдения — 2');
@@ -70,14 +70,15 @@ describe('formatScreenMetrics', () => {
 
   it('экран без данных вообще не попадает в отчёт', () => {
     const text = formatScreenMetrics({
+      ...EMPTY,
       opensByScreen: [{ screen: 'profile', count: 4 }],
-      hiddenByScreenBlock: [],
     });
     expect(text).not.toContain('Паттерны');
   });
 
   it('неизвестный screen/block не роняет отчёт — печатается как есть', () => {
     const text = formatScreenMetrics({
+      ...EMPTY,
       opensByScreen: [{ screen: 'новый_экран', count: 1 }],
       hiddenByScreenBlock: [
         { screen: 'profile', block: 'новый_блок', count: 1 },
@@ -100,29 +101,52 @@ describe('formatScreenMetrics', () => {
   });
 });
 
-describe('formatScreenMetrics — moves30 (переставляли блоки)', () => {
-  it('moves30 = 0 — строка не показывается вовсе (пустое состояние блока не меняем)', () => {
-    const text = formatScreenMetrics({ ...EMPTY, moves30: 0 });
+describe('formatScreenMetrics — movesByScreen (переставляли блоки)', () => {
+  it('перестановок нет — строка не показывается вовсе (пустое состояние блока не меняем)', () => {
+    const text = formatScreenMetrics({ ...EMPTY, movesByScreen: [] });
     expect(text).toBe('🧩 Настройку экранов пока не трогали.');
     expect(text).not.toMatch(/переставля/i);
   });
 
-  it('moves30 > 0 при полных данных — строка идёт до syncedUsers, не после', () => {
-    const text = formatScreenMetrics({ ...FULL, moves30: 6, syncedUsers: 7 });
+  it('перестановки на нескольких экранах — подписи в порядке настройки, до syncedUsers', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      // Вход нарочно не в порядке SCREENS_ORDER — форматтер пересортирует.
+      movesByScreen: [
+        { screen: 'today', count: 2 },
+        { screen: 'profile', count: 6 },
+      ],
+      syncedUsers: 7,
+    });
     const lines = text.split('\n');
-    expect(lines).toContain('Переставляют блоки: 6 раз');
-    expect(lines.indexOf('Переставляют блоки: 6 раз')).toBeLessThan(
+    const moveLine = 'Переставляют блоки: Профиль — 6 · Сегодня — 2';
+    expect(lines).toContain(moveLine);
+    expect(lines.indexOf(moveLine)).toBeLessThan(
       lines.indexOf('Настройки синхронизированы: 7 человек'),
     );
     expect(lines.at(-1)).toBe('Настройки синхронизированы: 7 человек');
   });
 
-  it('moves30 > 0, но открытий/скрытий за месяц не было — фиксированное «не трогали» плюс строка перестановок', () => {
-    const text = formatScreenMetrics({ ...EMPTY, moves30: 4 });
+  it('экран с нулём перестановок в строку не попадает', () => {
+    const text = formatScreenMetrics({
+      ...EMPTY,
+      movesByScreen: [
+        { screen: 'patterns', count: 0 },
+        { screen: 'today', count: 3 },
+      ],
+    });
     expect(text).toBe(
-      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: 4 раз',
+      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: Сегодня — 3',
     );
-    expect(text).not.toMatch(/NaN|undefined/);
+    expect(text).not.toMatch(/NaN|undefined|Паттерны/);
+  });
+
+  it('неизвестный экран в перестановках не роняет отчёт — печатается как есть', () => {
+    const text = formatScreenMetrics({
+      ...EMPTY,
+      movesByScreen: [{ screen: 'новый_экран', count: 1 }],
+    });
+    expect(text).toContain('Переставляют блоки: новый_экран — 1');
   });
 });
 

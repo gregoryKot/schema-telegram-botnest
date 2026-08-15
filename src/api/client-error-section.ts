@@ -35,6 +35,9 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   Профиль: 'profile', // schema-miniapp/src/components/AppSections.tsx
   Помощь: 'help', // schema-miniapp/src/components/AppSections.tsx
   Кабинет: 'cabinet', // webapp/src/components/AppShell.tsx
+  // 'today' — в момент флаша человек на главном экране; упавшие источники видны в тексте.
+  'appshell.bootstrap': 'today', // webapp/src/components/appShell/useBootstrapLoad.ts
+  'therapist.clients': 'cabinet', // оба TherapistClientSheet.tsx — сбой загрузки ростера
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

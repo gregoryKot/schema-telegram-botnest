@@ -18,6 +18,8 @@ export function LetterEx({
   const goBack = useHistorySheet(onBack);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
+  const [sealing, setSealing] = useState(false);
+  const [sealError, setSealError] = useState(false);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,14 +35,23 @@ export function LetterEx({
         .catch(() => {});
   }, [done]);
 
+  // Раньше сбой createLetter глушился, а экран всё равно говорил «написано» —
+  // 15–25 минут работы терялись без следа. В мини-аппе (LetterToSelf) это уже
+  // починено; здесь тот же принцип: подтверждение — только после успеха,
+  // при отказе текст остаётся в поле и можно запечатать ещё раз.
   async function seal() {
+    if (sealing) return;
+    setSealing(true);
+    setSealError(false);
     try {
       await api.createLetter(text);
+      onComplete?.();
+      setDone(true);
     } catch {
-      /* best-effort: ошибку намеренно игнорируем */
+      setSealError(true);
+    } finally {
+      setSealing(false);
     }
-    onComplete?.();
-    setDone(true);
   }
 
   if (done) {
@@ -192,11 +203,19 @@ export function LetterEx({
         <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
       </div>
       {detectCrisisAny(text) && <CrisisCard surface="letter" />}
+      {sealError && (
+        <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+          {tr(
+            'Не удалось сохранить письмо — текст на месте. Проверь соединение и попробуй ещё раз.',
+            'Не удалось сохранить письмо — текст на месте. Проверьте соединение и попробуйте ещё раз.',
+          )}
+        </div>
+      )}
       <div className="ex-foot">
         <span className="spacer" />
         <button
           className="ex-btn ex-btn-primary"
-          disabled={!text.trim()}
+          disabled={!text.trim() || sealing}
           onClick={seal}
         >
           Запечатать письмо <GlyphCheck />

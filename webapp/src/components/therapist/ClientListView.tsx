@@ -16,6 +16,7 @@ interface Props {
   animKey: number;
   clients: TherapyClientSummary[];
   loading: boolean;
+  loadFailed: boolean;
   listTab: 'clients' | 'kanban';
   setListTab: React.Dispatch<React.SetStateAction<'clients' | 'kanban'>>;
   searchQuery: string;
@@ -31,7 +32,7 @@ interface Props {
 }
 
 export function ClientListView({
-  animKey, clients, loading, listTab, setListTab, searchQuery, setSearchQuery,
+  animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
   filterStatus, setFilterStatus, allTasks, allTasksLoading, setAllTasks, setAllTasksLoading,
   openClient, addClient,
 }: Props) {
@@ -168,6 +169,12 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
+          ) : loadFailed ? (
+            // Сбой ≠ пусто (CLAUDE.md: никаких заглушек вместо данных) —
+            // терапевт с полным ростером не должен увидеть «клиентов нет».
+            <div style={{ padding: '24px 0', color: 'var(--accent-red)', fontSize: 14 }}>
+              {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
+            </div>
           ) : clients.length === 0 ? (
             <div style={{ padding: '24px 0', color: 'var(--text-faint)', fontSize: 14 }}>
               {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}

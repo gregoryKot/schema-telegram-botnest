@@ -62,11 +62,19 @@
 //                         meta.surface + meta.dir: 'up'|'down').
 //   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.via — переиспользует
-//                         CUSTOMIZE_ENTRY_POINTS).
+//                         CUSTOMIZE_ENTRY_POINTS). screen='today' сюда не
+//                         шлётся: вход в настройку «Сегодня» исторически
+//                         отчитывается своим today_customize_open.
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
-//                         (meta.screen + meta.block + meta.hidden).
-//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.hidden). Видимость
+//                         блоков «Сегодня» — отдельным путём (частные
+//                         today_*_hidden-ключи в ui-prefs.sanitize.ts), это
+//                         событие с screen='today' не приходит.
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах» и, с
+//                         добавлением screen_order_today, на «Сегодня»
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
+//                         Единственное из трёх screen_*-событий, которое
+//                         реально шлётся с meta.screen='today'.
 //   auth_rejected       — СЕРВЕРНОЕ событие: мини-апп пришёл с пустой
 //                         подписью (meta.reason + meta.host). Пишется только
 //                         guard'ом и всегда с userId = null — по этому

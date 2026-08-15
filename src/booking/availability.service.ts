@@ -1,16 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface CreateRuleDto {
-  dayOfWeek: number;
-  startHour: number;
-  startMinute?: number;
-  endHour: number;
-  endMinute?: number;
-  sessionDuration?: number;
-  bufferMin?: number;
-  timezone?: string;
-}
+import type { CreateRuleDto } from './booking-admin.dto';
 
 /** CRUD for therapist availability rules. Admin-only endpoints. */
 @Injectable()
