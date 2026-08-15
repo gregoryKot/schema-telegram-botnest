@@ -27,7 +27,6 @@
   "src/channel/targets/threads-token.service.ts": 1,
   "src/site-content/site-content.service.ts": 1,
   "src/telegram/telegram.service.ts": 1,
-  "src/therapy/therapist-request.service.ts": 2,
   "src/utils/admin-alert.ts": 1,
   "src/utils/crypto.ts": 1,
   "webapp/src/api.ts": 3,
