@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
+import { UserFlagsDto } from './dto/user-flags.dto';
 import { encryptJson, decryptJson } from '../utils/crypto';
 
 interface AuthRequest extends Request {
@@ -31,6 +32,49 @@ interface AuthRequest extends Request {
 // uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
 // Остальные домены API вынесены в соседние контроллеры (см. api.module.ts):
 // ysq/pairs/plans/exercises/notes/tracker.controller.ts.
+
+// Флаги, которые клиент может писать. `therapistMode` НАМЕРЕННО отсутствует —
+// это де-факто флаг «терапевтический UI», выставляется сервером из `role`
+// (см. account.service.setRole). Позволить клиенту его переключать — это
+// эскалация привилегий в терапевтский UI. Модульная константа (не поле
+// класса) — нужна
+// для type-level сверки с UserFlagsDto ниже (правило №4: денормализация
+// только с тестом-сверкой; тут сверка компайл-тайм, а не рантайм-тест).
+const FLAG_FIELDS = [
+  'themePref',
+  'onboardingV1Done',
+  'onboardingV2Done',
+  'onboardingSkipped',
+  'childhoodWheelDone',
+  'ysqBannerDismissed',
+  'hintSheetCloseShown',
+  'hintHistoryDismissed',
+  'trackerOnboardingDone',
+  'lastCelebrationDate',
+  'lastYesterdayBannerDate',
+  'lastWeeklyQuestionWeek',
+  'schemaIntrosShown',
+  'modeIntrosShown',
+  'defaultSection',
+] as const;
+
+// Компайл-тайм сверка: набор ключей FLAG_FIELDS обязан совпадать с полями
+// UserFlagsDto один-в-один — иначе список того, что читает/пишет контроллер,
+// и список того, что пропускает ValidationPipe, разъедутся молча. Обе
+// стрелки: каждый FLAG_FIELDS обязан быть полем DTO, и каждое поле DTO
+// обязано быть в FLAG_FIELDS. Чисто type-level, без рантайм-кода.
+type _FlagFieldsAreDtoFields =
+  (typeof FLAG_FIELDS)[number] extends keyof UserFlagsDto
+    ? true
+    : ['FLAG_FIELDS содержит поле, которого нет в UserFlagsDto'];
+type _DtoFieldsAreFlagFields =
+  keyof UserFlagsDto extends (typeof FLAG_FIELDS)[number]
+    ? true
+    : ['UserFlagsDto содержит поле, которого нет в FLAG_FIELDS'];
+type _VerifyFlagFieldsMatchDto = [
+  _FlagFieldsAreDtoFields,
+  _DtoFieldsAreFlagFields,
+];
 
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
@@ -69,31 +113,9 @@ export class ApiController {
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
-  // Client-writable UI flags. `therapistMode` deliberately NOT in this list:
-  // it's the de-facto "is therapist UI" flag and is derived server-side from
-  // `role` (see account.service.setRole). Letting clients flip it would be a
-  // privilege escalation into therapist UI.
-  private readonly FLAG_FIELDS = [
-    'themePref',
-    'onboardingV1Done',
-    'onboardingV2Done',
-    'onboardingSkipped',
-    'childhoodWheelDone',
-    'ysqBannerDismissed',
-    'hintSheetCloseShown',
-    'hintHistoryDismissed',
-    'trackerOnboardingDone',
-    'lastCelebrationDate',
-    'lastYesterdayBannerDate',
-    'lastWeeklyQuestionWeek',
-    'schemaIntrosShown',
-    'modeIntrosShown',
-    'defaultSection',
-  ] as const;
-
   // Read-only flags — returned by GET but not writable via POST.
   private readonly FLAG_FIELDS_READ = [
-    ...this.FLAG_FIELDS,
+    ...FLAG_FIELDS,
     'therapistMode',
   ] as const;
 
@@ -111,13 +133,12 @@ export class ApiController {
   @Post('user-flags')
   async setUserFlags(
     @Req() req: AuthRequest,
-    // Не DTO: map произвольных флагов, фильтруется по FLAG_FIELDS ниже.
-    @Body() body: Record<string, unknown>,
+    @Body() body: UserFlagsDto,
   ): Promise<{ ok: true }> {
     if (!body || typeof body !== 'object')
       throw new BadRequestException('Invalid body');
     const data: Record<string, unknown> = {};
-    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = body[k];
+    for (const k of FLAG_FIELDS) if (k in body) data[k] = body[k];
     if (Object.keys(data).length === 0) return { ok: true };
     await this.prisma.user.update({
       where: { id: uid(req) },
