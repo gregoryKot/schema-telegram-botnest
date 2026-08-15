@@ -7,6 +7,9 @@ export async function reloadKeepingShown<T>(
   fetchFresh: () => Promise<T>,
   show: (fresh: T) => void,
 ): Promise<void> {
-  const fresh = await fetchFresh().catch(() => null);
-  if (fresh !== null) show(fresh);
+  try {
+    show(await fetchFresh());
+  } catch (e) {
+    console.error('reload failed — keeping already shown data', e);
+  }
 }
