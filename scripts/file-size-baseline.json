@@ -664,7 +664,7 @@
   "src/auth/providers/types.ts": 24,
   "src/auth/providers/vk.provider.ts": 175,
   "src/auth/security-log.service.ts": 131,
-  "src/auth/totp.service.ts": 224,
+  "src/auth/totp.service.ts": 240,
   "src/auth/user-owned-tables.ts": 38,
   "src/booking/admin-key.util.ts": 16,
   "src/booking/availability.service.ts": 60,
