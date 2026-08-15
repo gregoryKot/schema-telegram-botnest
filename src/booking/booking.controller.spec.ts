@@ -105,11 +105,13 @@ describe('BookingController.getSlots', () => {
     expect(slots.getSlots).not.toHaveBeenCalled();
   });
 
-  it('диапазон в пределах 92 дней проходит к сервису', async () => {
+  it('диапазон в пределах 92 дней проходит к сервису с теми же датами', async () => {
     const { controller, slots } = makeController();
     slots.getSlots.mockResolvedValue([]);
     await controller.getSlots('2026-08-01', '2026-10-01'); // ~61 день
-    expect(slots.getSlots).toHaveBeenCalled();
+    const [fromArg, toArg] = slots.getSlots.mock.calls[0];
+    expect(fromArg.toISOString().slice(0, 10)).toBe('2026-08-01');
+    expect(toArg.toISOString().slice(0, 10)).toBe('2026-10-01');
   });
 });
 
