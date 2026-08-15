@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api, reportClientError } from '../../api';
-import type { Need, PracticePlan, TherapyClientSummary } from '../../api';
+import type { PracticePlan, TherapyClientSummary } from '../../api';
+import type { Need } from '../../types';
 import { cacheTherapistContact } from '../../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY } from '../../utils/storageKeys';
 import { todayStr } from '../../utils/format';
