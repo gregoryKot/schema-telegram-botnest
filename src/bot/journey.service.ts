@@ -61,6 +61,9 @@ export interface JourneyData {
 }
 
 // Потолок ленты: старое сверх лимита не отдаём (счётчики всё равно полные).
+// Тяжёлые источники (растут с каждым действием юзера) ниже разбиты на два
+// запроса вместо одного unbounded findMany: count() — точный тотал БЕЗ
+// загрузки строк, и bounded findMany (take+orderBy) — сама лента.
 const FEED_LIMIT = 500;
 
 const iso = (d: Date): string => d.toISOString();
@@ -76,17 +79,25 @@ export class JourneyService {
     const by = { userId };
     const [
       ratingDates,
+      notesCount,
       notes,
+      schemaDiaryCount,
       schemaDiary,
+      modeDiaryCount,
       modeDiary,
+      gratitudeCount,
       gratitude,
+      practicesCount,
       practices,
       plansDone,
       ysqHistory,
       ysqResult,
       childhoodCount,
+      beliefChecksCount,
       beliefChecks,
+      lettersCount,
       letters,
+      flashcardsCount,
       flashcards,
       safePlace,
       schemaNotes,
@@ -94,21 +105,39 @@ export class JourneyService {
       { items: practiceItems, counts: practiceCounts },
     ] = await Promise.all([
       p.rating.groupBy({ by: ['date'], where: by }),
-      p.note.findMany({ where: by, select: { date: true } }),
+      p.note.count({ where: by }),
+      p.note.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      }),
+      p.schemaDiaryEntry.count({ where: by }),
       p.schemaDiaryEntry.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true, schemaIds: true },
       }),
+      p.modeDiaryEntry.count({ where: by }),
       p.modeDiaryEntry.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true, modeId: true },
       }),
+      p.gratitudeDiaryEntry.count({ where: by }),
       p.gratitudeDiaryEntry.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { date: 'desc' },
         select: { id: true, date: true },
       }),
+      p.userPractice.count({ where: by }),
       p.userPractice.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true, needId: true },
       }),
       p.practicePlan.findMany({
@@ -129,16 +158,25 @@ export class JourneyService {
         select: { completedAt: true },
       }),
       p.childhoodRating.count({ where: by }),
+      p.userBeliefCheck.count({ where: by }),
       p.userBeliefCheck.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true },
       }),
+      p.userLetter.count({ where: by }),
       p.userLetter.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true },
       }),
+      p.userFlashcard.count({ where: by }),
       p.userFlashcard.findMany({
         where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true, modeId: true },
       }),
       p.userSafePlace.findUnique({
@@ -153,7 +191,7 @@ export class JourneyService {
         where: by,
         select: { updatedAt: true, modeId: true },
       }),
-      loadPracticeJourney(p, userId),
+      loadPracticeJourney(p, userId, FEED_LIMIT),
     ]);
 
     // Старые пользователи прошли тест до появления таблицы истории —
@@ -238,17 +276,17 @@ export class JourneyService {
     return {
       counts: {
         trackerDays: ratingDates.length,
-        notes: notes.length,
-        schemaDiary: schemaDiary.length,
-        modeDiary: modeDiary.length,
-        gratitudeDays: gratitude.length,
-        practices: practices.length,
+        notes: notesCount,
+        schemaDiary: schemaDiaryCount,
+        modeDiary: modeDiaryCount,
+        gratitudeDays: gratitudeCount,
+        practices: practicesCount,
         plansDone: plansDone.length,
         ysqTests: ysqFeed.length,
         childhoodDone: childhoodCount > 0,
-        beliefChecks: beliefChecks.length,
-        letters: letters.length,
-        flashcards: flashcards.length,
+        beliefChecks: beliefChecksCount,
+        letters: lettersCount,
+        flashcards: flashcardsCount,
         safePlace: safePlace !== null,
         schemaNotes: schemaNotes.length,
         modeNotes: modeNotes.length,
