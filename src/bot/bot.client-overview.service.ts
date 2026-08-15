@@ -54,6 +54,14 @@ export class BotClientOverviewService {
       where: { userId: { in: userIds } },
       select: { userId: true, date: true },
       distinct: ['userId', 'date'],
+      // D-4: явная страховка от роста таблицы (не пагинация) — без неё грузятся
+      // ВСЕ уникальные даты по всем клиентам терапевта разом. orderBy нужен,
+      // чтобы при упоре в потолок остались самые свежие даты — от них считаются
+      // streak (последовательные дни от сегодня) и daysSince (max date); в
+      // реальном домене 5000 уникальных дат ≈ 13.7 лет ежедневного трекинга,
+      // потолок чисто защитный.
+      orderBy: { date: 'desc' },
+      take: 5000,
     });
     const datesByUser = new Map<string, Set<string>>();
     for (const r of allDates) {

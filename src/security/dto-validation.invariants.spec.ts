@@ -138,25 +138,25 @@ function countBodyParams(): number {
 // InitDataBodyDto, а inline DonateDto/SubscribeDto — на class-DTO. Записи убраны
 // (список может только СОКРАЩАТЬСЯ). auth-account Record сдвинут :231→:238 тем же
 // L4-импортом. Остаются осознанные: два Telegram-payload'а (whitelist сломал бы
-// hash-верификацию), admin-gated CreateRuleDto, вебхук Robokassa (подпись руками),
-// и ручные Record api/tracker с проверкой по allowlist.
+// hash-верификацию), вебхук Robokassa (подпись руками), и ручной Record
+// api/tracker с проверкой по allowlist.
+//
+// Список сокращён ещё раз аудитом долга 2026-08-14: три записи переведены на
+// class-DTO — api/api.controller.ts:115 (Record<string, unknown> → UserFlagsDto),
+// api/booking.controller.ts:33 (interface BookingDto → class BookingDto в
+// src/api/dto/booking.dto.ts), booking/booking-admin.controller.ts:172
+// (interface CreateRuleDto в availability.service.ts → class CreateRuleDto в
+// booking-admin.dto.ts). Планка ниже ужата с 9 до 6.
 const VIOLATIONS_LEGACY: Record<string, string> = {
-  'api/api.controller.ts:115':
-    'inline-тип Record<string, unknown> (user-flags) — уже с ручной ' +
-    'проверкой по FLAG_FIELDS в коде, но не DTO',
   'api/tracker.controller.ts:194':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
-  'api/booking.controller.ts:33':
-    'BookingDto — локальный interface в контроллере, не DTO-класс',
   'auth/auth-account.controller.ts:238':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',
   'auth/auth-telegram.controller.ts:51':
     'inline-тип Record<string, string> — подписанный Telegram-payload, ' +
     'whitelist срежет поля и сломает hash-верификацию (комментарий в коде)',
-  'booking/booking-admin.controller.ts:172':
-    'CreateRuleDto — interface в booking/availability.service.ts, не class',
   'booking/payment.controller.ts:62':
     "одиночное поле @Body('OutSum') — вебхук Robokassa",
   'booking/payment.controller.ts:63':
@@ -180,6 +180,6 @@ describe('трипваер: @Body() типизирован DTO с class-validato
   });
 
   it('VIOLATIONS_LEGACY не разросся сверх известного (может только сокращаться)', () => {
-    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(9);
+    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(6);
   });
 });
