@@ -1,5 +1,5 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
-import { YsqSyncErrorNote } from './YsqSyncErrorNote';
+import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import { YsqAnswerScalePreview } from './YsqAnswerScalePreview';
 
 interface Props {

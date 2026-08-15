@@ -1,4 +1,4 @@
-import { SaveErrorNote } from '../SaveErrorNote';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   ty: string;
@@ -9,15 +9,19 @@ interface Props {
   onRetry: () => void;
 }
 
-// Баннер сетевого сбоя с кнопкой повтора — общий для двух мест в тесте на
-// схемы, где молчаливый .catch(() => {}) раньше прятал провал: проверка
+// Баннер сетевого сбоя с кнопкой повтора для теста на схемы — единственная
+// копия (правило №3), раньше жила только в schema-miniapp: проверка
 // сохранённого на сервере прогресса (YsqIntro) и отправка результата
-// (YsqResultView). Правило «одна механика — один компонент»: вместо двух
-// копий одного и того же баннера — один переиспользуемый.
+// (YsqResultView) молчали на сайте (нарушение правила 14 — экран-тупик без
+// сигнала). Оба фронтенда рендерят этот компонент напрямую (образец
+// CopyFailedHint — useTr берётся из общего контекста, без обёртки на фронт).
 export function YsqSyncErrorNote({ ty, vy, retryLabel, onRetry }: Props) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 14 }}>
-      <SaveErrorNote ty={ty} vy={vy} />
+      <div style={{ fontSize: 12, color: 'rgba(255,100,100,0.8)', marginBottom: 10 }}>
+        {tr(ty, vy)}
+      </div>
       <button
         onClick={onRetry}
         style={{

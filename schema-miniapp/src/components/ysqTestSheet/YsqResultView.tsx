@@ -8,7 +8,7 @@ import { YsqInactiveSchemas } from './YsqInactiveSchemas';
 import { YsqTherapyCta } from './YsqTherapyCta';
 import { YsqHistoryTimeline } from './YsqHistoryTimeline';
 import { YsqResultActions } from './YsqResultActions';
-import { YsqSyncErrorNote } from './YsqSyncErrorNote';
+import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import type { ResultView, Scores, YsqHistoryEntry } from './types';
 
 interface Props {

@@ -31,7 +31,7 @@ afterEach(() => {
 describe('SchemaEntrySheet — кризисная детекция', () => {
   it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
     renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByText('8-800-2000-122')).toBeTruthy();
@@ -39,7 +39,7 @@ describe('SchemaEntrySheet — кризисная детекция', () => {
 
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(textarea, { target: { value: 'Обычный рабочий созвон' } });
     expect(screen.queryByRole('status')).toBeNull();
   });
@@ -57,7 +57,7 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     // Первый шаг обязателен — кнопка сразу подписана «Дальше», но задизейблена.
     const nextBtn = screen.getByText('Дальше').closest('button') as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(true);
-    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     expect(nextBtn.disabled).toBe(false);
   });
@@ -85,7 +85,7 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
         <SchemaEntrySheet onClose={vi.fn()} onSave={onSave} />
       </MemoryRouter>,
     );
-    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     fireEvent.click(ticks()[8]); // индекс 8 в SCHEMA_DIARY_STEP_ORDER — excessiveReactions
     expect(screen.getByText('Где я преувеличиваю')).toBeTruthy();
