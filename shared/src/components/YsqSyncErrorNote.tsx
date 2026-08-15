@@ -19,7 +19,13 @@ export function YsqSyncErrorNote({ ty, vy, retryLabel, onRetry }: Props) {
   const tr = useTr();
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 12, color: 'rgba(255,100,100,0.8)', marginBottom: 10 }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: 'rgba(255,100,100,0.8)',
+          marginBottom: 10,
+        }}
+      >
         {tr(ty, vy)}
       </div>
       <button

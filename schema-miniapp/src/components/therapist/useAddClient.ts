@@ -54,7 +54,9 @@ export function useAddClient({ setClients }: Params) {
   async function addByTelegramId() {
     const id = parseInt(addInput.trim(), 10);
     if (!id || isNaN(id)) {
-      setAddError(tr('Введи числовой Telegram ID', 'Введите числовой Telegram ID'));
+      setAddError(
+        tr('Введи числовой Telegram ID', 'Введите числовой Telegram ID'),
+      );
       return;
     }
     setAddLoading(true);
@@ -66,12 +68,17 @@ export function useAddClient({ setClients }: Params) {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.toLowerCase().includes('not found'))
-        setAddError('Пользователь не найден. Должен открыть приложение хотя бы раз.');
+        setAddError(
+          'Пользователь не найден. Должен открыть приложение хотя бы раз.',
+        );
       else if (msg.toLowerCase().includes('already'))
         setAddError('Клиент уже подключён');
       else
         setAddError(
-          tr('Не нашёлся клиент с таким ID. Проверь код и попробуй ещё раз.', 'Не нашёлся клиент с таким ID. Проверьте код и попробуйте ещё раз.'),
+          tr(
+            'Не нашёлся клиент с таким ID. Проверь код и попробуй ещё раз.',
+            'Не нашёлся клиент с таким ID. Проверьте код и попробуйте ещё раз.',
+          ),
         );
     } finally {
       setAddLoading(false);

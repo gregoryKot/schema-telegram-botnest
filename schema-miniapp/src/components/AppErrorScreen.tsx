@@ -2,7 +2,10 @@ import { getHost } from '../../../shared/src/host';
 import { AuthFailureHelp } from '../../../shared/src/components/AuthFailureHelp';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
-import { describeInitDataShape, formatInitDataShape } from '../utils/initDataShape';
+import {
+  describeInitDataShape,
+  formatInitDataShape,
+} from '../utils/initDataShape';
 import { useTr } from '../utils/addressForm';
 
 const BTN_STYLE = {
@@ -63,7 +66,12 @@ export function AppErrorScreen({ error }: { error: string }) {
       {isAuthError ? (
         <AuthFailureHelp hostId={getHost().id} />
       ) : (
-        <div style={SUB_TEXT}>{tr('Проверь подключение и попробуй ещё раз', 'Проверьте подключение и попробуйте ещё раз')}</div>
+        <div style={SUB_TEXT}>
+          {tr(
+            'Проверь подключение и попробуй ещё раз',
+            'Проверьте подключение и попробуйте ещё раз',
+          )}
+        </div>
       )}
       {shape ? (
         <div
