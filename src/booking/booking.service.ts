@@ -419,10 +419,14 @@ export class BookingService {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
+    // D4 (аудит 2026-08): нижняя граница скана — 24ч (запас над любой сессией).
+    // Без неё брались ВСЕ CONFIRMED от начала времён (COMPLETED не пишется —
+    // копятся навсегда), стоимость проверки слота росла с возрастом продукта.
+    const scanFrom = new Date(startsAt.getTime() - 24 * 60 * 60_000);
     const candidates = await tx.booking.findMany({
       where: {
         status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
-        startsAt: { lt: endsAt },
+        startsAt: { gte: scanFrom, lt: endsAt },
       },
     });
     for (const c of candidates) {

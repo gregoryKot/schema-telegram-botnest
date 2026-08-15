@@ -16,6 +16,10 @@ import { PricingService } from './pricing.service';
 import { SessionType } from '@prisma/client';
 import { BookDto } from './book.dto';
 
+// D1 (аудит 2026-08): жёсткий потолок окна /slots — квартал с запасом. Больше
+// календарю бронирования не нужно, а без потолка перебор по суткам вешал API.
+const MAX_SLOTS_RANGE_MS = 92 * 24 * 60 * 60 * 1000;
+
 /** Public booking endpoints: browse slots, book one, self-cancel. */
 @Controller('api/booking')
 export class BookingController {
@@ -33,9 +37,16 @@ export class BookingController {
 
   /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */
   @Get('slots')
+  @Throttle({ long: { limit: 300, ttl: 3_600_000 } })
   async getSlots(@Query('from') from: string, @Query('to') to: string) {
     const fromDate = parseSlotDate(from) ?? new Date();
     const toDate = parseSlotDate(to) ?? addDays(fromDate, 14);
+    // D1 (аудит 2026-08): без ограничения диапазона getSlots бежал по СУТКАМ от
+    // from до to (millions на `?from=1000-01-01&to=9999-12-31`), блокируя
+    // event-loop → DoS всего API на неавторизованном GET. Ограничиваем окно:
+    // календарь бронирования показывает недели, не тысячелетия.
+    if (toDate.getTime() - fromDate.getTime() > MAX_SLOTS_RANGE_MS)
+      throw new BadRequestException('Диапазон слотов не больше 92 дней');
     const list = await this.slots.getSlots(fromDate, toDate);
     return list.map((s) => ({
       startsAt: s.startsAt.toISOString(),

@@ -133,7 +133,13 @@ export function createTelegramHost(): HostBridge {
         contentTop: w?.contentSafeAreaInset?.top,
         deviceTop: w?.safeAreaInset?.top,
         isFullscreen: !!w?.isFullscreen,
-        contentReported,
+        // «Клиент умеет присылать полосу контента» — это не только событие
+        // contentSafeAreaChanged (на старте оно может не прийти вовсе), но и
+        // само наличие объекта contentSafeAreaInset (Bot API 8.0+). Без этого
+        // честный ноль от способного клиента ждал события и получал страховку
+        // 96px — дыра над шапкой в sheet-режиме (скриншот 2026-08-12).
+        contentReported:
+          contentReported || w?.contentSafeAreaInset?.top !== undefined,
         overlaysContent: true,
       };
     },

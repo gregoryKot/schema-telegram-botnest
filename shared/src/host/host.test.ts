@@ -278,18 +278,27 @@ describe('адаптер Telegram', () => {
     expect(webApp.BackButton.offClick).toHaveBeenCalledWith(cb);
   });
 
-  it('contentReported взводится событием, а не значением инсета', () => {
-    const { emit } = fakeTelegram();
+  it('contentReported взводится наличием contentSafeAreaInset — способный клиент виден сразу, без события', () => {
+    fakeTelegram();
     const host = createTelegramHost();
     expect(host.insets()).toEqual({
       contentTop: 12,
       deviceTop: 47,
       isFullscreen: true,
-      contentReported: false,
-      // Telegram рисует «Закрыть»/меню поверх контента — нулевому инсету от
-      // него верить нельзя (см. computeSafeTop в мини-аппе).
+      // Свойство contentSafeAreaInset есть (Bot API 8.0+) — клиент умеет
+      // присылать полосу контента, значению (включая ноль) можно верить.
+      // Ждать события contentSafeAreaChanged нельзя: на старте оно может не
+      // прийти, и честный ноль получал страховку 96px — дыра над шапкой в
+      // sheet-режиме (скриншот 2026-08-12).
+      contentReported: true,
       overlaysContent: true,
     });
+  });
+
+  it('старый клиент без contentSafeAreaInset: contentReported false до события', () => {
+    const { emit } = fakeTelegram({ contentSafeAreaInset: undefined });
+    const host = createTelegramHost();
+    expect(host.insets().contentReported).toBe(false);
 
     const cb = vi.fn();
     host.onInsetsChange(cb);
