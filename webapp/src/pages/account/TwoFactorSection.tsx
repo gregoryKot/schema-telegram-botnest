@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { API_BASE } from '../../utils/apiBase';
-import { useTr } from '../../utils/addressForm';
+import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 
 // Секция двухфакторной аутентификации (TOTP). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -18,8 +17,7 @@ export function TwoFactorSection({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
-  const [disableMode, setDisableMode] = useState(false);
-  const tr = useTr();
+  const [disableMode, setDisableMode] = useState(false); const tr = useTr();
 
   const csrfHeaders = (): Record<string, string> => ({
     'Content-Type': 'application/json',
@@ -77,10 +75,7 @@ export function TwoFactorSection({
       <div style={{ marginTop: 32 }}>
         <div className="eyebrow" style={{ marginBottom: 12 }}>Recovery-коды</div>
         <div className="text-sm muted" style={{ marginBottom: 12, lineHeight: 1.5 }}>
-          {tr(
-            'Сохрани эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряешь телефон.',
-            'Сохраните эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряете телефон.',
-          )}
+          {tr('Сохрани эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряешь телефон.', 'Сохраните эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряете телефон.')}
         </div>
         <div style={{
           fontFamily: 'monospace', fontSize: 14, lineHeight: 2,
@@ -147,10 +142,7 @@ export function TwoFactorSection({
       {!totp.enabled && setupOpen && qrDataUrl && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
           <div className="text-sm muted" style={{ lineHeight: 1.6 }}>
-            {tr(
-              '1. Установи приложение-аутентификатор (Google Authenticator, 1Password, Bitwarden, Authy).',
-              '1. Установите приложение-аутентификатор (Google Authenticator, 1Password, Bitwarden, Authy).',
-            )}<br/>
+            {tr('1. Установи приложение-аутентификатор (Google Authenticator, 1Password, Bitwarden, Authy).', '1. Установите приложение-аутентификатор (Google Authenticator, 1Password, Bitwarden, Authy).')}<br/>
             {tr('2. Отсканируй QR. Или введи секрет вручную из ссылки ниже.', '2. Отсканируйте QR. Или введите секрет вручную из ссылки ниже.')}<br/>
             {tr('3. Введи 6-значный код из приложения, чтобы завершить.', '3. Введите 6-значный код из приложения, чтобы завершить.')}
           </div>

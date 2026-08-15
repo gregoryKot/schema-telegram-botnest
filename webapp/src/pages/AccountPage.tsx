@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
 import { API_BASE } from '../utils/apiBase';
-import { useTr } from '../utils/addressForm';
-import { TherapistRequestSection } from './account/TherapistRequestSection';
+import { useTr } from '../utils/addressForm'; import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { EmailIcon, GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider } from './account/ProviderRows';
 
@@ -12,8 +11,7 @@ type Provider = AccountProvider;
 
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
-  const tr = useTr();
-  const navigate = useNavigate();
+  const tr = useTr(); const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [totp, setTotp] = useState<{ enabled: boolean; recoveryCodesLeft: number }>({ enabled: false, recoveryCodesLeft: 0 });

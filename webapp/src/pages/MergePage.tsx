@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
-import { useTr } from '../utils/addressForm';
+import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels'; import { useTr } from '../utils/addressForm';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -11,8 +10,7 @@ export function MergePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { setAccessToken } = useAuth();
-  const tr = useTr();
-  const [busy, setBusy] = useState(false);
+  const tr = useTr(); const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -59,8 +57,7 @@ export function MergePage() {
         Объединить аккаунты?
       </h1>
       <div className="text-md muted" style={{ maxWidth: 600, lineHeight: 1.6, marginBottom: 36 }}>
-        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}
-        {tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
+        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
       </div>
 
       <div className="section">

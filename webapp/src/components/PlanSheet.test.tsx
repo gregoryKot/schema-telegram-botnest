@@ -17,6 +17,7 @@ vi.mock('../api', () => ({
     addPractice: vi.fn().mockResolvedValue(undefined),
     createPlan: vi.fn().mockResolvedValue(undefined),
     deletePractice: vi.fn().mockResolvedValue(undefined),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -192,6 +193,23 @@ describe('PlanSheet — удаление своей практики', () => {
     await waitFor(() => expect(mockApi.deletePractice).toHaveBeenCalled());
     await act(async () => {});
     expect(screen.getAllByText('Стойкая практика').length).toBeGreaterThan(0);
+  });
+});
+
+describe('PlanSheet — кризисная детекция (правило №7)', () => {
+  it('кризисный маркер в свободном тексте плана показывает CrisisCard с телефоном доверия', async () => {
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+  });
+
+  it('нейтральный текст плана не показывает CrisisCard', async () => {
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'Погулять в парке 20 минут' } });
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });
 

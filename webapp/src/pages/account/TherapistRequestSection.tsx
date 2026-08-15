@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE } from '../../utils/apiBase';
-import { useTr } from '../../utils/addressForm';
+import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -13,8 +12,7 @@ interface TherapistRequest {
 }
 
 export function TherapistRequestSection({ accessToken }: { accessToken: string | null }) {
-  const tr = useTr();
-  const [req, setReq] = useState<TherapistRequest | null>(null);
+  const tr = useTr(); const [req, setReq] = useState<TherapistRequest | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState('');
