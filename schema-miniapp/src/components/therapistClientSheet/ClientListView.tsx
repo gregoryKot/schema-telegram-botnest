@@ -1,4 +1,3 @@
-import { useTr } from '../../utils/addressForm';
 import { SkeletonList } from '../Skeleton';
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
@@ -10,10 +9,12 @@ import { WebBanner } from '../WebBanner';
 import { WEB_CABINET_URL } from '../../utils/webBanner';
 import { ClientCard } from './ClientCard';
 import { StatCards } from './StatCards';
+import { ListEmptyState } from './ListEmptyState';
 
 interface ClientListViewProps {
   clients: TherapyClientSummary[];
   loading: boolean;
+  loadFailed?: boolean;
   today: string;
   safeTop: number;
   animKey: number;
@@ -27,6 +28,7 @@ interface ClientListViewProps {
 export function ClientListView({
   clients,
   loading,
+  loadFailed = false,
   today,
   safeTop,
   animKey,
@@ -36,7 +38,6 @@ export function ClientListView({
   detail,
   addClient,
 }: ClientListViewProps) {
-  const tr = useTr();
   const slideStyle: React.CSSProperties = {
     animation: 'fade-in 0.22s ease',
   };
@@ -456,22 +457,8 @@ export function ClientListView({
         {/* Client list */}
         {loading ? (
           <SkeletonList rows={4} h={72} />
-        ) : clients.length === 0 ? (
-          <div
-            style={{
-              color: 'var(--text-sub)',
-              fontSize: 14,
-              textAlign: 'center',
-              paddingTop: 20,
-              lineHeight: 1.8,
-            }}
-          >
-            Нет подключённых клиентов.
-            <br />
-            {tr('Нажми', 'Нажмите')}{' '}
-            <strong style={{ color: 'var(--accent)' }}>+</strong> чтобы
-            добавить.
-          </div>
+        ) : loadFailed || clients.length === 0 ? (
+          <ListEmptyState failed={loadFailed} />
         ) : (
           clients.map((c) => (
             <ClientCard

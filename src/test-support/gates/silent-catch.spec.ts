@@ -141,6 +141,42 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
+  // Доставка ответа в Telegram — та же строка CLAUDE.md, что про reply/
+  // editMessageText. Гейт благословлял два метода и считал долгом три других
+  // в той же позиции («залогировали, теперь сообщаем человеку»).
+  it.each(['answerCbQuery', 'editMessageReplyMarkup'])(
+    'аллоу-листед ctx.%s() внутри error-хендлера — не считается',
+    (method) => {
+      const res = runGate('check-silent-catch.mjs', {
+        'scripts/silent-catch-baseline.json': JSON.stringify({}),
+        'src/telegram/telegram.service.ts': [
+          'try {',
+          '  await saveSettings();',
+          '} catch (err) {',
+          '  this.logger.error(err);',
+          `  await ctx.${method}('Не удалось сохранить').catch(() => null);`,
+          '}',
+          '',
+        ].join('\n'),
+      });
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+    },
+  );
+
+  // Граница аллоу-листа: доставка уведомления — не ответ на действие. Молча
+  // не дошедшее напоминание и есть тот сбой, ради которого гейт заведён,
+  // поэтому sendMessage остаётся на счётчике, хоть и живёт в том же файле.
+  it('sendMessage НЕ аллоу-листед — уведомление не имеет права падать молча', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/telegram/telegram.service.ts':
+        "this.bot.telegram.sendMessage(userId, 'Напоминание').catch(() => null);\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[catch-null]');
+  });
+
   // Не аллоу-листед вызов рядом с аллоу-листед — только законный молчит.
   it('не аллоу-листед .catch(() => null) на произвольном вызове — считается', () => {
     const res = runGate('check-silent-catch.mjs', {
