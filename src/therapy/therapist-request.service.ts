@@ -11,7 +11,11 @@ import { AccountService } from '../bot/account.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
-import { normalizeAddressForm, t } from '../notification/address-form';
+import { normalizeAddressForm } from '../notification/address-form';
+import {
+  adminRequestText,
+  applicantDecisionText,
+} from './therapist-request.texts';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
@@ -288,7 +292,7 @@ export class TherapistRequestService {
         'notifyAdmin: ADMIN_ID not set — falling back to email',
       );
       await notifyAdminWithFallback(
-        this.plainText(req),
+        adminRequestText(req),
         `🩺 Заявка на роль терапевта #${req.id}`,
       );
       return;
@@ -317,29 +321,10 @@ export class TherapistRequestService {
         `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
       );
       await notifyAdminWithFallback(
-        this.plainText(req),
+        adminRequestText(req),
         `🩺 Заявка на роль терапевта #${req.id}`,
       );
     }
-  }
-
-  private plainText(req: {
-    id: number;
-    userId: bigint;
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message: string | null;
-  }): string {
-    return (
-      `Новая заявка на роль терапевта #${req.id}\n\n` +
-      `Имя: ${req.fullName}\n` +
-      `Квалификация: ${req.qualification}\n` +
-      `Контакты: ${req.contacts}\n` +
-      (req.message ? `Сообщение: ${req.message}\n` : '') +
-      `Telegram ID: ${req.userId}\n\n` +
-      `Одобрить/отклонить: открой бот и напиши /zayavki`
-    );
   }
 
   private async notifyApplicant(
@@ -352,19 +337,7 @@ export class TherapistRequestService {
       select: { addressForm: true },
     });
     const form = normalizeAddressForm(user?.addressForm);
-    const text =
-      decision === 'approved'
-        ? t(
-            form,
-            '✅ Твоя заявка на роль терапевта одобрена. Перезапусти приложение, чтобы увидеть кабинет терапевта.',
-            '✅ Ваша заявка на роль терапевта одобрена. Перезапустите приложение, чтобы увидеть кабинет терапевта.',
-          )
-        : t(
-            form,
-            `❌ Твоя заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
-            `❌ Ваша заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
-          );
-    await this.sendTg(userId, text);
+    await this.sendTg(userId, applicantDecisionText(form, decision, reason));
   }
 }
 

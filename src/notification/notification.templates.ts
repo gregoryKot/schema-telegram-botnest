@@ -441,15 +441,12 @@ export function renderTemplate(
     }
 
     case 'ysq_requested': {
-      const therapistName = payload?.therapistName as string | undefined;
-      const name = therapistName
-        ? `Терапевт ${therapistName}`
-        : t(form, 'Твой терапевт', 'Ваш терапевт');
+      const tn = payload?.therapistName as string | undefined;
       return {
         text: t(
           form,
-          `📋 ${name} просит тебя пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять твои схемы.`,
-          `📋 ${name} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
+          `📋 ${tn ? `Терапевт ${tn}` : 'Твой терапевт'} просит тебя пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять твои схемы.`,
+          `📋 ${tn ? `Терапевт ${tn}` : 'Ваш терапевт'} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
         ),
         keyboard: Markup.inlineKeyboard([
           [Markup.button.webApp('📋 Пройти тест', MINIAPP_URL)],

@@ -129,37 +129,8 @@ export class AuthService {
       lower.split('@')[0],
     );
 
-    const raw = crypto.randomBytes(32).toString('base64url');
-    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await this.prisma.emailToken.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId,
-        tokenHash,
-        email: encField(lower) ?? lower,
-        purpose: 'login',
-        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
-      },
-    });
-
-    const base = this.config
-      .getOrThrow<string>('WEBAPP_URL')
-      .replace(/\/$/, '');
-    const link = `${base}/api/auth/email/callback?token=${raw}`;
-    // userId только что найден/создан выше — форма обращения уже выбрана
-    // (или это новый юзер с дефолтом «ты» из normalizeAddressForm).
-    const owner = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { addressForm: true },
-    });
-    const form = normalizeAddressForm(owner?.addressForm);
-    // Fire-and-forget — response is instant even if email delivery is slow
-    void this.emailSvc
-      .sendLoginLink(lower, link, form)
-      .catch((err) =>
-        this.logger.error(`sendLoginLink failed: ${(err as Error).message}`),
-      );
-
+    // userId только что найден/создан выше — форма обращения уже выбрана.
+    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink');
     return { ok: true };
   }
 
@@ -180,35 +151,12 @@ export class AuthService {
       throw new ConflictException('Этот email уже привязан к другому аккаунту');
     }
 
-    const raw = crypto.randomBytes(32).toString('base64url');
-    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await this.prisma.emailToken.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId: targetUserId,
-        tokenHash,
-        email: encField(lower) ?? lower,
-        purpose: 'link_email_auth',
-        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
-      },
-    });
-
-    const base = this.config
-      .getOrThrow<string>('WEBAPP_URL')
-      .replace(/\/$/, '');
-    const link = `${base}/api/auth/email/callback?token=${raw}`;
-    const owner = await this.prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: { addressForm: true },
-    });
-    const form = normalizeAddressForm(owner?.addressForm);
-    void this.emailSvc
-      .sendLoginLink(lower, link, form)
-      .catch((err) =>
-        this.logger.error(
-          `linkEmailToAccount sendLoginLink failed: ${(err as Error).message}`,
-        ),
-      );
+    await this.sendMagicLink(
+      targetUserId,
+      lower,
+      'link_email_auth',
+      'linkEmailToAccount sendLoginLink',
+    );
     return { ok: true };
   }
 
@@ -641,5 +589,43 @@ export class AuthService {
     const range = WEB_USER_ID_MAX - WEB_USER_ID_MIN;
     const rand = BigInt('0x' + crypto.randomBytes(8).toString('hex')) % range;
     return WEB_USER_ID_MIN + rand;
+  }
+  private async userAddressForm(id: bigint) {
+    const owner = await this.prisma.user.findUnique({
+      where: { id },
+      select: { addressForm: true },
+    });
+    return normalizeAddressForm(owner?.addressForm);
+  }
+  // Общий хвост email-логина и привязки email: токен + ссылка + письмо
+  // (fire-and-forget — ответ мгновенный даже при медленной доставке).
+  private async sendMagicLink(
+    userId: bigint,
+    lower: string,
+    purpose: 'login' | 'link_email_auth',
+    logLabel: string,
+  ): Promise<void> {
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    await this.prisma.emailToken.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        tokenHash,
+        email: encField(lower) ?? lower,
+        purpose,
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
+      },
+    });
+    const base = this.config
+      .getOrThrow<string>('WEBAPP_URL')
+      .replace(/\/$/, '');
+    const link = `${base}/api/auth/email/callback?token=${raw}`;
+    const form = await this.userAddressForm(userId);
+    void this.emailSvc
+      .sendLoginLink(lower, link, form)
+      .catch((err) =>
+        this.logger.error(`${logLabel} failed: ${(err as Error).message}`),
+      );
   }
 }

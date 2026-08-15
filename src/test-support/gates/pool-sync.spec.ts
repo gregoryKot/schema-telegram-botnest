@@ -22,7 +22,9 @@ const seedMigration = (rows: [string, number][]) =>
     'CREATE TABLE IF NOT EXISTS "HealthyAdultPhrase" ("id" SERIAL, "text" TEXT, "sortOrder" INTEGER, "updatedAt" TIMESTAMP(3));',
     'INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder", "updatedAt")',
     'SELECT "text", "sortOrder", CURRENT_TIMESTAMP FROM (VALUES',
-    rows.map(([text, order]) => `  ('${text.replace(/'/g, "''")}', ${order})`).join(',\n'),
+    rows
+      .map(([text, order]) => `  ('${text.replace(/'/g, "''")}', ${order})`)
+      .join(',\n'),
     ') AS seed("text", "sortOrder")',
     'WHERE NOT EXISTS (SELECT 1 FROM "HealthyAdultPhrase");',
     '',
@@ -103,18 +105,22 @@ describe('check-pool-sync.mjs', () => {
     ].join('\n');
     const res = runGate('check-pool-sync.mjs', {
       'src/bot/healthy-adult.data.ts': dataTs(['Финальная']),
-      'prisma/migrations/20260101000000_seed/migration.sql': seedMigration([['Раз', 0]]),
+      'prisma/migrations/20260101000000_seed/migration.sql': seedMigration([
+        ['Раз', 0],
+      ]),
       'prisma/migrations/20260102000000_a/migration.sql': older,
       'prisma/migrations/20260103000000_b/migration.sql': newer,
     });
     expect(res.status).toBe(0);
   });
 
-  it('апостроф внутри фразы (TS \\\' и SQL \'\') переживает реконструкцию', () => {
+  it("апостроф внутри фразы (TS \\' и SQL '') переживает реконструкцию", () => {
     const phrase = "Строка с апострофом ' внутри";
     const res = runGate('check-pool-sync.mjs', {
       'src/bot/healthy-adult.data.ts': dataTs([phrase]),
-      'prisma/migrations/20260101000000_seed/migration.sql': seedMigration([[phrase, 0]]),
+      'prisma/migrations/20260101000000_seed/migration.sql': seedMigration([
+        [phrase, 0],
+      ]),
     });
     expect(res.status).toBe(0);
   });

@@ -14,27 +14,17 @@ import { encrypt as encField, decrypt as decField } from '../utils/crypto';
 import {
   AddressForm,
   normalizeAddressForm,
-  t,
 } from '../notification/address-form';
+import {
+  loginLetter,
+  recoveryLetter,
+  verificationLetter,
+} from './email.letters';
+import { EMAIL_TOKEN_TTL_MS, hashToken, isValidEmail } from './email.util';
 
-const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
-
-function isValidEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
-}
-
-function hashToken(raw: string): string {
-  return crypto.createHash('sha256').update(raw).digest('hex');
-}
-
-// Magic-link email service for recovery + verification.
-//
-// Sender abstraction: in production uses Resend (https://resend.com — 3000
-// free emails/month). For dev/CI without RESEND_API_KEY set, falls back to
-// logging the would-be email so you can see the link.
-//
-// Required env: RESEND_API_KEY, EMAIL_FROM (e.g. "Schema Happens <no-reply@schemehappens.ru>"),
-//               WEBAPP_URL.
+// Magic-link email service (recovery + verification). Prod sender — Resend;
+// без RESEND_API_KEY (dev/CI) письмо логируется, чтобы ссылку было видно.
+// Env: RESEND_API_KEY, EMAIL_FROM, WEBAPP_URL.
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -77,22 +67,13 @@ export class EmailService {
         tokenHash: hashToken(raw),
         email: encField(lower) ?? lower,
         purpose: 'recovery',
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/auth/recovery/confirm?token=${raw}`;
-    await this.send(
-      lower,
-      'Восстановление доступа к «Всё по схеме»',
-      t(
-        form,
-        `Перейди по ссылке, чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
-          `Ссылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
-        `Перейдите по ссылке, чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
-          `Ссылка действует 30 минут. Если запрос не от вас — просто проигнорируйте это письмо.`,
-      ),
-    );
+    const letter = recoveryLetter(form, link);
+    await this.send(lower, letter.subject, letter.body);
     return { ok: true };
   }
 
@@ -127,26 +108,13 @@ export class EmailService {
         tokenHash: hashToken(raw),
         email: encField(lower) ?? lower,
         purpose: 'verify_email',
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/account/verify-email?token=${raw}`;
-    await this.send(
-      lower,
-      t(
-        form,
-        'Подтверди email для «Всё по схеме»',
-        'Подтвердите email для «Всё по схеме»',
-      ),
-      t(
-        form,
-        `Подтверди, что это твой адрес — он будет использован для восстановления доступа, если ты потеряешь все способы входа.\n\n${link}\n\n` +
-          `Ссылка действует 30 минут.`,
-        `Подтвердите, что это ваш адрес — он будет использован для восстановления доступа, если вы потеряете все способы входа.\n\n${link}\n\n` +
-          `Ссылка действует 30 минут.`,
-      ),
-    );
+    const letter = verificationLetter(form, link);
+    await this.send(lower, letter.subject, letter.body);
     return { ok: true };
   }
 
@@ -189,8 +157,6 @@ export class EmailService {
     return { userId: row.userId, email };
   }
 
-  // ─── Magic-link login ────────────────────────────────────────────────────
-
   // form: у вызывающего (AuthService) userId уже разрешён (найден или создан)
   // до отправки письма, поэтому форма обращения ему известна — дефолт 'ty'
   // остаётся только на случай вызова без формы (совместимость).
@@ -199,18 +165,9 @@ export class EmailService {
     link: string,
     form: AddressForm = 'ty',
   ): Promise<void> {
-    await this.send(
-      to,
-      'Войти в «Всё по схеме»',
-      t(
-        form,
-        `Привет!\n\nПерейди по ссылке, чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
-        `Здравствуйте!\n\nПерейдите по ссылке, чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от вас — просто проигнорируйте это письмо.`,
-      ),
-    );
+    const letter = loginLetter(form, link);
+    await this.send(to, letter.subject, letter.body);
   }
-
-  // ─── Admin notification (e.g. new booking) ───────────────────────────────
 
   async sendAdminNotification(subject: string, text: string): Promise<void> {
     const to = process.env.ADMIN_EMAIL;
