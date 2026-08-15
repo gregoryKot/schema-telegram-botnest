@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScreenMetrics, formatScreenMetrics } from './screen-metrics.format';
 
-// Счётчики настройки экранов «Профиль»/«Паттерны» для /stats: события
-// screen_customize_open/screen_block_toggle из AnalyticsEvent. Свой домен —
-// свой файл (правило №10), образец GROUP BY meta — plus-metrics.service.ts.
+// Счётчики настройки экранов «Профиль»/«Паттерны»/«Сегодня» для /stats:
+// события screen_customize_open/screen_block_toggle/screen_block_move из
+// AnalyticsEvent. Свой домен — свой файл (правило №10), образец GROUP BY
+// meta — plus-metrics.service.ts.
 @Injectable()
 export class ScreenMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -34,18 +35,18 @@ export class ScreenMetricsService {
           AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'screen', "meta"->>'block'
         ORDER BY c DESC`,
-      // Переставляли блоки местами — без разбивки по экрану/блоку, только
-      // общий счётчик (тот же приём, что и moves30 в plus-metrics.service.ts).
-      this.prisma.$queryRaw<Array<{ moves: bigint }>>`
-        SELECT count(*)::bigint AS moves
+      // Переставляли блоки местами — по экрану (правило №8: перестановки
+      // «Сегодня» не должны утонуть в общем счётчике с «Профилем»/«Паттернами»).
+      this.prisma.$queryRaw<Array<{ screen: string | null; c: bigint }>>`
+        SELECT "meta"->>'screen' AS screen, count(*)::bigint AS c
         FROM "AnalyticsEvent"
-        WHERE "name" = 'screen_block_move' AND "createdAt" >= ${since30}`,
+        WHERE "name" = 'screen_block_move' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'screen'`,
       // Сколько юзеров хоть раз сохранили серверное зеркало настроек
       // (User.uiPrefs) — не за 30 дней, а всего (это состояние, не событие).
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(*)::bigint AS c FROM "User" WHERE "uiPrefs" IS NOT NULL`,
     ]);
-    const [moveRow] = movesRows;
     return {
       opensByScreen: opensRows
         .filter((r): r is { screen: string; c: bigint } => r.screen != null)
@@ -60,7 +61,9 @@ export class ScreenMetricsService {
           block: r.block,
           count: Number(r.c),
         })),
-      moves30: Number(moveRow?.moves ?? 0n),
+      movesByScreen: movesRows
+        .filter((r): r is { screen: string; c: bigint } => r.screen != null)
+        .map((r) => ({ screen: r.screen, count: Number(r.c) })),
       syncedUsers: Number(syncedRows[0]?.c ?? 0n),
     };
   }
