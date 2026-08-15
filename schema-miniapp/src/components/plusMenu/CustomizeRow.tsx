@@ -3,7 +3,9 @@ import { DragHandle } from './DragHandle';
 import type { DragHandleProps } from '../../hooks/useDragReorder';
 
 // Строка листа настройки: ToggleRow (скрыть/показать) + ручка «≡» (порядок,
-// DragHandle — место MoveArrows, удалённого правилом №11).
+// DragHandle — место MoveArrows, удалённого правилом №11). Без onToggle —
+// строка без свитча (блок только переставляется, не скрывается); divider —
+// для строк внутри iOS-группы-карточки («Сегодня»).
 export function CustomizeRow({
   label,
   sub,
@@ -13,15 +15,17 @@ export function CustomizeRow({
   rowRef,
   drag: { offsetY, lifted },
   highlighted,
+  divider,
 }: {
   label: string;
   sub: string;
-  hidden: boolean;
-  onToggle: () => void;
+  hidden?: boolean;
+  onToggle?: () => void;
   dragHandleProps: DragHandleProps;
   rowRef: (el: HTMLElement | null) => void;
   drag: { offsetY: number; lifted: boolean };
   highlighted?: boolean;
+  divider?: boolean;
 }) {
   return (
     <div
@@ -39,9 +43,10 @@ export function CustomizeRow({
         <ToggleRow
           title={label}
           sub={sub}
-          on={!hidden}
+          on={onToggle ? !hidden : undefined}
           onToggle={onToggle}
           highlighted={highlighted}
+          divider={divider}
         />
       </div>
       <DragHandle {...dragHandleProps} />

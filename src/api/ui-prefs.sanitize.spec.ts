@@ -5,7 +5,7 @@
 import { sanitizeUiPrefs, SYNCED_PREF_KEYS } from './ui-prefs.sanitize';
 
 describe('sanitizeUiPrefs', () => {
-  it('реестр ключей — 13 штук, ровно как в зафиксированном контракте', () => {
+  it('реестр ключей — 14 штук, ровно как в зафиксированном контракте', () => {
     expect(SYNCED_PREF_KEYS).toEqual([
       'today_focus_practice',
       'today_streak_hidden',
@@ -20,6 +20,7 @@ describe('sanitizeUiPrefs', () => {
       'screen_hidden_patterns',
       'screen_order_profile',
       'screen_order_patterns',
+      'screen_order_today',
     ]);
   });
 
@@ -100,6 +101,7 @@ describe('sanitizeUiPrefs', () => {
       'screen_hidden_patterns',
       'screen_order_profile',
       'screen_order_patterns',
+      'screen_order_today',
     ] as const) {
       expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak']) })).toEqual({
         [key]: JSON.stringify(['streak']),
@@ -111,6 +113,26 @@ describe('sanitizeUiPrefs', () => {
         }),
       ).toEqual({});
     }
+  });
+
+  it('screen_order_today: валидный массив из блоков «Сегодня» проходит, не-массив/чужой id отбрасывается', () => {
+    const order = JSON.stringify([
+      'focus',
+      'streak',
+      'phrase',
+      'secondary',
+      'therapist_banner',
+    ]);
+    expect(sanitizeUiPrefs({ screen_order_today: order })).toEqual({
+      screen_order_today: order,
+    });
+    expect(
+      sanitizeUiPrefs({ screen_order_today: JSON.stringify(['мусор']) }),
+    ).toEqual({});
+    expect(
+      sanitizeUiPrefs({ screen_order_today: JSON.stringify({ a: 1 }) }),
+    ).toEqual({});
+    expect(sanitizeUiPrefs({ screen_order_today: 'not-json' })).toEqual({});
   });
 
   it('значение длиннее 2000 символов отбрасывается', () => {

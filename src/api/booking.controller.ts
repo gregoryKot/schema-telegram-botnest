@@ -9,15 +9,7 @@ import {
 import { TelegramService } from '../telegram/telegram.service';
 import { EmailService } from '../auth/email.service';
 import { escapeHtml } from '../utils/escape-html';
-
-interface BookingDto {
-  name: string;
-  contact: string;
-  message?: string;
-  // Откуда пришла заявка: страница + referrer, собирает фронт. Только для
-  // уведомления админу (атрибуция лидов), в БД не пишется.
-  source?: string;
-}
+import { BookingDto } from './dto/booking.dto';
 
 @Controller('api')
 export class BookingController {
