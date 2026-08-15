@@ -7,7 +7,8 @@
 // тест ловит регресс, если кто-то уберёт этот сброс).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
 
@@ -32,11 +33,13 @@ vi.mock('../api', () => ({
     updateSessionInfo: vi.fn(),
     renameClient: vi.fn(),
     removeClient: vi.fn(),
+    createTask: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReportClientError = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 function client(overrides: Partial<TherapyClientSummary>): TherapyClientSummary {
   return {
@@ -111,6 +114,24 @@ describe('TherapistClientSheet — список клиентов: загрузк
     // Счётчик клиентов — реальный 0 из ответа api, а не «зависшее» число из
     // другого места (правило CLAUDE.md про хардкод-заглушки).
     expect(screen.getByText(/^0/)).toBeTruthy();
+    // Ложная тревога хуже молчания: настоящая пустота — не ошибка загрузки.
+    expect(screen.queryByText(/Не удалось загрузить клиентов/)).toBeNull();
+  });
+
+  // РЕГРЕССИЯ: сбой getTherapyClients раньше оставлял clients = [] с loading
+  // снятым — ListView рисовала онбординг «клиентов нет», хотя это «неизвестно»,
+  // а не «пусто» (терапевт с полным ростером в офлайне видел бы пустой кабинет).
+  it('сбой getTherapyClients — «не удалось загрузить», а не онбординг «клиентов нет»', async () => {
+    mockApi.getTherapyClients.mockRejectedValue(new Error('offline'));
+    renderSheet();
+
+    await act(async () => {});
+
+    expect(screen.getByText(/Не удалось загрузить клиентов/)).toBeTruthy();
+    expect(screen.queryByText(/Введи имя клиента выше/)).toBeNull();
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'therapist.clients' }),
+    );
   });
 });
 
@@ -319,36 +340,68 @@ describe('TherapistClientSheet — вкладка «Концептуализац
 });
 
 describe('TherapistClientSheet — вкладка «Задания»', () => {
-  it('без заданий — пустое состояние с призывом назначить, не выдуманный список', async () => {
+  const taskFor7 = (over: Record<string, unknown>) => ({
+    id: 1, userId: 7, assignedBy: 1, type: 'note', text: '', targetDays: null,
+    needId: null, dueDate: null, done: false, completedAt: null,
+    createdAt: '2026-07-20T00:00:00.000Z', ...over,
+  });
+
+  // Открывает клиента «Анна» (telegramId 7) и её вкладку «Задания».
+  async function openAnnaTasks(withRouter = false) {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна' })]);
-    renderSheet();
+    if (withRouter) {
+      // TaskCreateSheet внутри зовёт useHistorySheet → нужен Router.
+      render(
+        <MemoryRouter>
+          <Wrapper />
+        </MemoryRouter>,
+      );
+    } else {
+      renderSheet();
+    }
     await screen.findByText('Анна');
     fireEvent.click(screen.getByText('Анна'));
     await screen.findByText('Обзор');
-
     fireEvent.click(screen.getByText('Задания'));
+  }
 
+  it('без заданий — пустое состояние с призывом назначить, не выдуманный список', async () => {
+    await openAnnaTasks();
     await screen.findByText(/Нет назначенных заданий/);
     expect(screen.getByText('Нет активных')).toBeTruthy();
   });
 
   it('с заданиями — активные и выполненные разнесены по секциям с реальными данными', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна' })]);
     mockApi.getTherapyTasksForClient.mockResolvedValue([
-      { id: 1, userId: 7, assignedBy: 1, type: 'note', text: 'Заполнить схема-карточку', targetDays: null, needId: null, dueDate: null, done: false, completedAt: null, createdAt: '2026-07-20T00:00:00.000Z' },
-      { id: 2, userId: 7, assignedBy: 1, type: 'note', text: 'Дневник благодарности', targetDays: null, needId: null, dueDate: null, done: true, completedAt: '2026-07-19T00:00:00.000Z', createdAt: '2026-07-15T00:00:00.000Z' },
+      taskFor7({ text: 'Заполнить схема-карточку' }),
+      taskFor7({ id: 2, text: 'Дневник благодарности', done: true, completedAt: '2026-07-19T00:00:00.000Z' }),
     ]);
-    renderSheet();
-    await screen.findByText('Анна');
-    fireEvent.click(screen.getByText('Анна'));
-    await screen.findByText('Обзор');
-
-    fireEvent.click(screen.getByText('Задания'));
-
+    await openAnnaTasks();
     await screen.findByText('Заполнить схема-карточку');
     expect(screen.getByText('Дневник благодарности')).toBeTruthy();
     expect(screen.getByText('В работе')).toBeTruthy();
     expect(screen.getByText('Выполнено')).toBeTruthy();
+  });
+
+  // РЕГРЕССИЯ (правило №3): в мини-аппе этот баг починили, а webapp-двойник
+  // остался со старым `.catch(() => [])` — сбой перечитывания после
+  // назначения задачи обнулял уже показанный список, будто задачи пропали.
+  it('сбой перечитывания после назначения не стирает показанный список задач', async () => {
+    mockApi.getTherapyTasksForClient
+      .mockResolvedValueOnce([taskFor7({ text: 'Заполнить схема-карточку' })])
+      .mockRejectedValue(new Error('offline'));
+    mockApi.createTask.mockResolvedValue({});
+    await openAnnaTasks(true);
+    await screen.findByText('Заполнить схема-карточку');
+
+    fireEvent.click(screen.getByText('+ Назначить'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Назначить задание'));
+    });
+
+    expect(mockApi.createTask).toHaveBeenCalledTimes(1);
+    // Список не обнулился: задача на месте, несмотря на упавший рефетч.
+    expect(screen.getByText('Заполнить схема-карточку')).toBeTruthy();
   });
 });
 

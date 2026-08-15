@@ -730,7 +730,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (adminId) {
       this.bot.telegram
         .sendMessage(adminId, '🚀 Деплой завершён')
-        .catch(() => null);
+        .catch((err) => this.logger.error('deploy DM failed', err));
     }
 
     // One-time cleanup: cancel legacy pre_reminder notifications left in queue

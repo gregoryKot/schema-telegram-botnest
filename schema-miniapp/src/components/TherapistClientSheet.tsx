@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, TherapyClientSummary } from '../api';
+import { api, reportClientError, TherapyClientSummary } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { todayStr } from '../utils/format';
 import { useSafeTop } from '../utils/safezone';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
+import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
 import { ClientListView } from './therapistClientSheet/ClientListView';
 import { ClientDetailView } from './therapistClientSheet/ClientDetailView';
 import { TasksSheet } from './therapistClientSheet/TasksSheet';
@@ -30,6 +31,8 @@ export function TherapistClientSheet({
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  // Сбой ≠ пусто: терапевт в офлайне не должен увидеть «клиентов нет».
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // Animation key — changes when view transitions to trigger CSS animation
   const [animKey, setAnimKey] = useState(0);
@@ -46,8 +49,18 @@ export function TherapistClientSheet({
   useEffect(() => {
     api
       .getTherapyClients()
-      .then(setClients)
-      .catch((e) => console.error('getTherapyClients failed', e))
+      .then((cl) => {
+        setClients(cl);
+        setLoadFailed(false);
+      })
+      .catch((e) => {
+        console.error('getTherapyClients failed', e);
+        setLoadFailed(true);
+        reportClientError({
+          message: 'therapy clients load failed',
+          section: 'therapist.clients',
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -138,6 +151,7 @@ export function TherapistClientSheet({
         <ClientListView
           clients={clients}
           loading={loading}
+          loadFailed={loadFailed}
           today={today}
           safeTop={safeTop}
           animKey={animKey}
@@ -184,15 +198,12 @@ export function TherapistClientSheet({
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={async () => {
+          onCreated={() => {
             setShowAssign(false);
-            // Задача уже создана на сервере — сбой этого перечитывания не
-            // должен стирать уже показанный список (был баг: .catch(() => [])
-            // обнулял clientTasks при сетевой ошибке, будто задачи пропали).
-            const tasks = await api
-              .getTherapyTasksForClient(selectedClient.telegramId)
-              .catch(() => null);
-            if (tasks) setClientTasks(tasks);
+            void reloadKeepingShown(
+              () => api.getTherapyTasksForClient(selectedClient.telegramId),
+              setClientTasks,
+            );
           }}
           onClose={() => setShowAssign(false)}
         />
