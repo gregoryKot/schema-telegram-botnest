@@ -379,9 +379,15 @@ describe('TherapyClientDataService — clientId<0 короткие пути', ()
   });
 
   it('requestYsq для виртуального клиента → связь проверяется, но уведомление не шлётся', async () => {
-    const { svc, notificationService } = makeService([relA]);
+    const { svc, db, notificationService } = makeService([relA]);
+    const findFirstSpy = jest.spyOn(db.therapyRelation, 'findFirst');
     await svc.requestYsq(T1, -1);
     expect(notificationService.schedule).not.toHaveBeenCalled();
+    // «связь проверяется» — это реальный поход в БД за relation по -clientId=id,
+    // а не голый early-return без проверки принадлежности.
+    expect(findFirstSpy).toHaveBeenCalledWith({
+      where: { id: 1, therapistId: T1, status: 'active' },
+    });
   });
 });
 
@@ -455,9 +461,12 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
   });
 
   it('пустое тело (все поля undefined) — не трогает БД', async () => {
-    const { svc, db } = makeService([relA]);
+    const { svc, db, rels } = makeService([relA]);
+    const before = { ...rels[0] };
     await svc.updateSessionInfo(T1, CID_A, {});
     expect(db.therapyRelation.updateMany).not.toHaveBeenCalled();
+    // Не только мок не звали — сама связь осталась побитово той же.
+    expect(rels[0]).toEqual(before);
   });
 
   it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {

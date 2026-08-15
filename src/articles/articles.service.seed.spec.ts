@@ -117,6 +117,8 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
 
     expect(db.article.create).not.toHaveBeenCalled();
     expect(db.article.update).not.toHaveBeenCalled();
+    // Ни одна статья не продублировалась и не пропала — таблица как была.
+    expect(db._articles).toHaveLength(2);
   });
 
   it('версия устарела → рефреш текста встроенных статей, heroImage админа сохраняется, чужие статьи не трогаются', async () => {
