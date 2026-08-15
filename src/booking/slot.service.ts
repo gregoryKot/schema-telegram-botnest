@@ -6,6 +6,11 @@ import { BookingStatus } from '@prisma/client';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 import { localDate, localMidnightUTC } from '../utils/tz';
 
+// D1 (аудит 2026-08): жёсткий потолок перебора по суткам в getSlots — год с
+// запасом. Контроллер режет пользовательский запрос строже (92 дня); это —
+// абсолютный предохранитель от зависания event-loop при вызове в обход него.
+const MAX_SLOT_SCAN_DAYS = 366;
+
 export interface Slot {
   startsAt: Date;
   endsAt: Date;
@@ -63,8 +68,14 @@ export class SlotService {
     // /api/booking/slots?from=YYYY-MM-DD&to=YYYY-MM-DD без времени).
     const rangeStart = new Date(fromDate);
     rangeStart.setUTCHours(0, 0, 0, 0);
-    const rangeEnd = new Date(toDate);
-    rangeEnd.setUTCHours(23, 59, 59, 999);
+    const rawRangeEnd = new Date(toDate);
+    rawRangeEnd.setUTCHours(23, 59, 59, 999);
+    // D1 (аудит 2026-08): защитный потолок перебора по суткам. Контроллер уже
+    // режет запрос на 92 дня (400) — это второй рубеж на случай вызова в обход
+    // него: без него огромный диапазон вешал event-loop (DoS всего API).
+    const maxEndMs = rangeStart.getTime() + MAX_SLOT_SCAN_DAYS * 86_400_000;
+    const rangeEnd =
+      rawRangeEnd.getTime() > maxEndMs ? new Date(maxEndMs) : rawRangeEnd;
 
     // ПОДВОХ UTC-vs-местное время (был баг, см. slot.service.spec.ts): курсор
     // ниже бежит по суткам В UTC, но день недели и календарная дата правила
