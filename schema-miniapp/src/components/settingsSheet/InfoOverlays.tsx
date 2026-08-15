@@ -1,4 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
+import { useTr } from '../../utils/addressForm';
 
 export function NotifyInfoOverlay({ onClose }: { onClose: () => void }) {
   return (
@@ -41,8 +42,8 @@ export function NotifyInfoOverlay({ onClose }: { onClose: () => void }) {
     </BottomSheet>
   );
 }
-
 export function PairInfoOverlay({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 8 }}>
@@ -76,7 +77,7 @@ export function PairInfoOverlay({ onClose }: { onClose: () => void }) {
             marginBottom: 12,
           }}
         >
-          Ты и друг (партнёр, коллега) видите{' '}
+          {tr('Ты', 'Вы')} и друг (партнёр, коллега) видите{' '}
           <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга —
           просто число от 0 до 10. Никаких деталей, дневников или оценок.
         </p>
@@ -87,15 +88,15 @@ export function PairInfoOverlay({ onClose }: { onClose: () => void }) {
             lineHeight: 1.7,
           }}
         >
-          Иногда знать, что кому-то важно как у тебя дела — уже достаточно. Это
-          мягкая взаимная видимость, без осуждения.
+          Иногда знать, что кому-то важно, как у {tr('тебя', 'вас')} дела —
+          уже достаточно. Это мягкая взаимная видимость, без осуждения.
         </p>
       </div>
     </BottomSheet>
   );
 }
-
 export function TherapistInfoOverlay({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 8 }}>
@@ -119,8 +120,8 @@ export function TherapistInfoOverlay({ onClose }: { onClose: () => void }) {
             marginBottom: 12,
           }}
         >
-          Если ты работаешь со схема-терапевтом — приложение может стать частью
-          этой работы.
+          {tr('Если ты работаешь', 'Если вы работаете')} со схема-терапевтом
+          — приложение может стать частью этой работы.
         </p>
         <p
           style={{
@@ -130,10 +131,9 @@ export function TherapistInfoOverlay({ onClose }: { onClose: () => void }) {
             marginBottom: 12,
           }}
         >
-          Терапевт, которому ты дашь код, видит{' '}
-          <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>.
-          Карточки схем, профиль и дневники ты контролируешь сам — можно закрыть
-          в настройках.
+          {tr('Терапевт, которому ты дашь код, видит', 'Терапевт, которому вы дадите код, видит')}{' '}
+          <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>.{' '}
+          {tr('Карточки схем, профиль и дневники контролируешь ты — можно закрыть в настройках.', 'Карточки схем, профиль и дневники контролируете вы — можно закрыть в настройках.')}
         </p>
         <p
           style={{

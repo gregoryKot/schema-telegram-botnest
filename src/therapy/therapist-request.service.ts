@@ -11,6 +11,7 @@ import { AccountService } from '../bot/account.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { normalizeAddressForm, t } from '../notification/address-form';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
@@ -346,10 +347,23 @@ export class TherapistRequestService {
     decision: 'approved' | 'rejected',
     reason?: string,
   ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: BigInt(userId) },
+      select: { addressForm: true },
+    });
+    const form = normalizeAddressForm(user?.addressForm);
     const text =
       decision === 'approved'
-        ? '✅ Твоя заявка на роль терапевта одобрена. Перезапусти приложение чтобы увидеть кабинет терапевта.'
-        : `❌ Твоя заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`;
+        ? t(
+            form,
+            '✅ Твоя заявка на роль терапевта одобрена. Перезапусти приложение, чтобы увидеть кабинет терапевта.',
+            '✅ Ваша заявка на роль терапевта одобрена. Перезапустите приложение, чтобы увидеть кабинет терапевта.',
+          )
+        : t(
+            form,
+            `❌ Твоя заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
+            `❌ Ваша заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
+          );
     await this.sendTg(userId, text);
   }
 }

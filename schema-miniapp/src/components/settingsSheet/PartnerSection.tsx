@@ -1,6 +1,8 @@
 import { PairsData } from '../../api';
 import { SkeletonLines } from '../Skeleton';
 import { SectionHeader } from './ui';
+import { useTr } from '../../utils/addressForm';
+import { pairInviteText, pairCopyLabel } from '../pairSheet/inviteTexts';
 
 interface Props {
   pairLoading: boolean;
@@ -37,6 +39,7 @@ export function PartnerSection({
   handleJoin,
   onInfo,
 }: Props) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
       <SectionHeader onInfo={onInfo}>ПАРТНЁР</SectionHeader>
@@ -124,7 +127,7 @@ export function PartnerSection({
                 marginBottom: 4,
               }}
             >
-              Приглашай друга — видите индексы дня друг друга
+              {pairInviteText(tr)}
             </div>
             <button
               onClick={handleCreateInvite}
@@ -161,7 +164,7 @@ export function PartnerSection({
                     marginBottom: 8,
                   }}
                 >
-                  Скопируй и отправь другу:
+                  {pairCopyLabel(tr)}
                 </div>
                 <div
                   style={{

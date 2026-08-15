@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pressable } from '../utils/a11y';
-
+import { useTr } from '../utils/addressForm';
 interface Props {
   onClose: () => void;
   children: React.ReactNode;
@@ -10,13 +10,13 @@ interface Props {
 }
 
 const HINT_KEY = 'sheet_close_hint_shown';
-
 export function BottomSheet({
   onClose,
   children,
   zIndex = 200,
   scrollRef,
 }: Props) {
+  const tr = useTr();
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const [showHint, setShowHint] = useState(
@@ -125,7 +125,7 @@ export function BottomSheet({
               flexShrink: 0,
             }}
           >
-            Нажми на заголовок чтобы закрыть
+            {tr('Нажми на заголовок, чтобы закрыть', 'Нажмите на заголовок, чтобы закрыть')}
           </div>
         )}
 

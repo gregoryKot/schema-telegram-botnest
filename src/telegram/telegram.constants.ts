@@ -22,11 +22,11 @@ export const DIARIES_URL = `${MINIAPP_URL}?section=diaries`;
 
 /** Меню команд бота (setMyCommands). Единый список — правится здесь. */
 export const BOT_COMMANDS = [
-  { command: 'start', description: 'Открыть «Всё по схеме»' },
+  { command: 'start', description: 'Открыть «Всё по схеме» 🧠' },
   { command: 'tests', description: 'Мини-тесты на 2 минуты 🎲' },
-  { command: 'settings', description: 'Настройки уведомлений' },
+  { command: 'settings', description: 'Настройки уведомлений ⚙️' },
   { command: 'donate', description: 'Поддержать проект 💛' },
-  { command: 'about', description: 'О приложении и авторе' },
+  { command: 'about', description: 'О приложении и авторе ℹ️' },
 ];
 
 export const VALID_TIMEZONES = [
@@ -42,3 +42,12 @@ export const VALID_TIMEZONES = [
   'Asia/Almaty',
   'Asia/Shanghai',
 ];
+
+/**
+ * Безличный текст для catch-хендлеров. Форма обращения (ты/вы) там
+ * недоступна — на этом этапе стека либо ещё не выбраны userId/settings,
+ * либо запрос к БД уже провалился (породив сам catch), поэтому безличный
+ * вариант — единственный корректный по умолчанию (CLAUDE.md, правило
+ * ты/вы + участок 1 аудита).
+ */
+export const ERROR_RETRY = 'Не получилось. Стоит попробовать ещё раз.';

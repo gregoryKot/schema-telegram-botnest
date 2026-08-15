@@ -11,6 +11,11 @@ import { PrismaService } from '../prisma/prisma.service';
 // encField/decField: адрес в EmailToken — PII, шифруется (поиск токена идёт
 // по tokenHash, не по email, поэтому шифрование лукапы не ломает).
 import { encrypt as encField, decrypt as decField } from '../utils/crypto';
+import {
+  AddressForm,
+  normalizeAddressForm,
+  t,
+} from '../notification/address-form';
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -47,7 +52,7 @@ export class EmailService {
 
     const user = await this.prisma.user.findUnique({
       where: { recoveryEmail: lower },
-      select: { id: true, recoveryEmailVerifiedAt: true },
+      select: { id: true, recoveryEmailVerifiedAt: true, addressForm: true },
     });
     // Pretend success even if no user / unverified — don't leak existence.
     if (!user || !user.recoveryEmailVerifiedAt) {
@@ -62,6 +67,7 @@ export class EmailService {
       );
       return { ok: true };
     }
+    const form = normalizeAddressForm(user.addressForm);
 
     const raw = crypto.randomBytes(32).toString('base64url');
     await this.prisma.emailToken.create({
@@ -79,8 +85,13 @@ export class EmailService {
     await this.send(
       lower,
       'Восстановление доступа к «Всё по схеме»',
-      `Перейди по ссылке чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
-        `Ссылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
+      t(
+        form,
+        `Перейди по ссылке, чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
+          `Ссылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
+        `Перейдите по ссылке, чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
+          `Ссылка действует 30 минут. Если запрос не от вас — просто проигнорируйте это письмо.`,
+      ),
     );
     return { ok: true };
   }
@@ -100,6 +111,14 @@ export class EmailService {
     if (taken)
       throw new ConflictException('Этот email уже привязан к другому аккаунту');
 
+    // Форма обращения владельца userId — она уже выбрана (бот/сайт), просто
+    // не была доступна этому сервису (аудит 2026-08: письма всегда были «ты»).
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { addressForm: true },
+    });
+    const form = normalizeAddressForm(owner?.addressForm);
+
     const raw = crypto.randomBytes(32).toString('base64url');
     await this.prisma.emailToken.create({
       data: {
@@ -115,9 +134,18 @@ export class EmailService {
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/account/verify-email?token=${raw}`;
     await this.send(
       lower,
-      'Подтверди email для «Всё по схеме»',
-      `Подтверди что это твой адрес — он будет использован для восстановления доступа если ты потеряешь все способы входа.\n\n${link}\n\n` +
-        `Ссылка действует 30 минут.`,
+      t(
+        form,
+        'Подтверди email для «Всё по схеме»',
+        'Подтвердите email для «Всё по схеме»',
+      ),
+      t(
+        form,
+        `Подтверди, что это твой адрес — он будет использован для восстановления доступа, если ты потеряешь все способы входа.\n\n${link}\n\n` +
+          `Ссылка действует 30 минут.`,
+        `Подтвердите, что это ваш адрес — он будет использован для восстановления доступа, если вы потеряете все способы входа.\n\n${link}\n\n` +
+          `Ссылка действует 30 минут.`,
+      ),
     );
     return { ok: true };
   }
@@ -163,11 +191,22 @@ export class EmailService {
 
   // ─── Magic-link login ────────────────────────────────────────────────────
 
-  async sendLoginLink(to: string, link: string): Promise<void> {
+  // form: у вызывающего (AuthService) userId уже разрешён (найден или создан)
+  // до отправки письма, поэтому форма обращения ему известна — дефолт 'ty'
+  // остаётся только на случай вызова без формы (совместимость).
+  async sendLoginLink(
+    to: string,
+    link: string,
+    form: AddressForm = 'ty',
+  ): Promise<void> {
     await this.send(
       to,
       'Войти в «Всё по схеме»',
-      `Привет!\n\nПерейди по ссылке чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
+      t(
+        form,
+        `Привет!\n\nПерейди по ссылке, чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
+        `Здравствуйте!\n\nПерейдите по ссылке, чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от вас — просто проигнорируйте это письмо.`,
+      ),
     );
   }
 

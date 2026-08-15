@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
 import { API_BASE } from '../utils/apiBase';
+import { useTr } from '../utils/addressForm';
 import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { EmailIcon, GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider } from './account/ProviderRows';
@@ -11,6 +12,7 @@ type Provider = AccountProvider;
 
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
+  const tr = useTr();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -152,7 +154,7 @@ export function AccountPage() {
 
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Аккаунт</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
-        Привязывай несколько способов входа – заходи откуда удобно
+        {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
       </p>
 
       {success && (
@@ -200,7 +202,7 @@ export function AccountPage() {
             {showEmailLink && !hasEmail && (
               emailLinkSent ? (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                  Письмо отправлено на <b>{emailInput}</b>. Перейди по ссылке в письме — она привяжет email к аккаунту.
+                  Письмо отправлено на <b>{emailInput}</b>. {tr('Перейди по ссылке в письме — она привяжет email к аккаунту.', 'Перейдите по ссылке в письме — она привяжет email к аккаунту.')}
                   <button onClick={() => { setEmailLinkSent(false); setEmailInput(''); }} style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                     Ввести другой email
                   </button>

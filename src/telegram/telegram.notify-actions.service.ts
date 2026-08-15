@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import {
   NotificationCadenceService,
@@ -116,9 +116,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         );
       } catch (err) {
         this.logger.error('addr action failed', err);
-        await ctx
-          .answerCbQuery('Не получилось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -137,9 +135,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         );
       } catch (err) {
         this.logger.error('notify:pause failed', err);
-        await ctx
-          .answerCbQuery('Не получилось. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -207,14 +203,10 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         if (!rawId) return;
         const userId = BigInt(rawId);
         await this.cadenceService.skipToday(userId);
-        const form = await this.userForm(userId);
+        // Текст безличный (одинаков в обеих формах) — форму запрашивать не нужно.
         await ctx
           .editMessageText(
-            t(
-              form,
-              'Хорошо, сегодня пропускаем. Это не считается — завтра просто новый день.',
-              'Хорошо, сегодня пропускаем. Это не считается — завтра просто новый день.',
-            ),
+            'Хорошо, сегодня пропускаем. Это не считается — завтра просто новый день.',
           )
           .catch(() => null);
       } catch (err) {

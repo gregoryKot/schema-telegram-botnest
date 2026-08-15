@@ -13,6 +13,7 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
+import { normalizeAddressForm } from '../notification/address-form';
 
 const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -145,9 +146,16 @@ export class AuthService {
       .getOrThrow<string>('WEBAPP_URL')
       .replace(/\/$/, '');
     const link = `${base}/api/auth/email/callback?token=${raw}`;
+    // userId только что найден/создан выше — форма обращения уже выбрана
+    // (или это новый юзер с дефолтом «ты» из normalizeAddressForm).
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { addressForm: true },
+    });
+    const form = normalizeAddressForm(owner?.addressForm);
     // Fire-and-forget — response is instant even if email delivery is slow
     void this.emailSvc
-      .sendLoginLink(lower, link)
+      .sendLoginLink(lower, link, form)
       .catch((err) =>
         this.logger.error(`sendLoginLink failed: ${(err as Error).message}`),
       );
@@ -189,8 +197,13 @@ export class AuthService {
       .getOrThrow<string>('WEBAPP_URL')
       .replace(/\/$/, '');
     const link = `${base}/api/auth/email/callback?token=${raw}`;
+    const owner = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { addressForm: true },
+    });
+    const form = normalizeAddressForm(owner?.addressForm);
     void this.emailSvc
-      .sendLoginLink(lower, link)
+      .sendLoginLink(lower, link, form)
       .catch((err) =>
         this.logger.error(
           `linkEmailToAccount sendLoginLink failed: ${(err as Error).message}`,
