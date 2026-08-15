@@ -8,34 +8,34 @@ afterEach(() => {
   cleanup();
 });
 
-function renderNote(form: 'ty' | 'vy' = 'ty') {
+function renderNote(
+  form: 'ty' | 'vy' = 'ty',
+  variant: 'resume-check' | 'result-save' = 'resume-check',
+) {
   const onRetry = vi.fn();
   render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <YsqSyncErrorNote
-        ty="Не удалось проверить прогресс — попробуй снова."
-        vy="Не удалось проверить прогресс — попробуйте снова."
-        retryLabel="Проверить снова"
-        onRetry={onRetry}
-      />
+      <YsqSyncErrorNote variant={variant} onRetry={onRetry} />
     </AddressFormContext.Provider>,
   );
   return { onRetry };
 }
 
 describe('YsqSyncErrorNote', () => {
-  it('форма «ты» — показывает ty-текст', () => {
+  it('форма «ты» — текст с «попробуй»', () => {
     renderNote('ty');
-    expect(
-      screen.getByText('Не удалось проверить прогресс — попробуй снова.'),
-    ).toBeTruthy();
+    expect(screen.getByText(/сначала попробуй проверить снова/)).toBeTruthy();
   });
 
-  it('форма «вы» — показывает vy-текст', () => {
+  it('форма «вы» — текст с «попробуйте»', () => {
     renderNote('vy');
-    expect(
-      screen.getByText('Не удалось проверить прогресс — попробуйте снова.'),
-    ).toBeTruthy();
+    expect(screen.getByText(/сначала попробуйте проверить снова/)).toBeTruthy();
+  });
+
+  it('вариант result-save — свой текст и своя кнопка', () => {
+    renderNote('ty', 'result-save');
+    expect(screen.getByText(/Результат посчитан и виден только/)).toBeTruthy();
+    expect(screen.getByText('Отправить ещё раз')).toBeTruthy();
   });
 
   it('клик по кнопке повтора вызывает onRetry', () => {
