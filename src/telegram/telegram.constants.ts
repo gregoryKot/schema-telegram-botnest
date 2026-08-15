@@ -3,8 +3,7 @@ import { normalizeBaseUrl } from '../utils/url';
 export const TELEGRAF_BOT = 'TELEGRAF_BOT';
 export const CHANNEL = '@SchemeHappens';
 export const BOOKING_URL = 'https://kotlarewski.gr/#booking';
-/** App base URL for support links (donate / subscribe). Normalised so a bare
- * domain in env (no scheme) still produces valid Telegram button URLs. */
+/** App base URL for support links; normalised so a bare domain in env (no scheme) still works. */
 export const APP_URL = normalizeBaseUrl(
   process.env.APP_URL,
   'https://schemehappens.ru',
@@ -42,12 +41,4 @@ export const VALID_TIMEZONES = [
   'Asia/Almaty',
   'Asia/Shanghai',
 ];
-
-/**
- * Безличный текст для catch-хендлеров. Форма обращения (ты/вы) там
- * недоступна — на этом этапе стека либо ещё не выбраны userId/settings,
- * либо запрос к БД уже провалился (породив сам catch), поэтому безличный
- * вариант — единственный корректный по умолчанию (CLAUDE.md, правило
- * ты/вы + участок 1 аудита).
- */
 export const ERROR_RETRY = 'Не получилось. Стоит попробовать ещё раз.';
