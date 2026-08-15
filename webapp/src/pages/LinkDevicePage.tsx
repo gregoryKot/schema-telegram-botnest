@@ -27,7 +27,11 @@ const PROVIDER_NAMES: Record<string, string> = {
 //
 // Экран обязателен, а не косметика: флоу с кодом ломают уговорами — «введите
 // код для проверки безопасности», — и человек молча отдаёт аккаунт. Поэтому
-// здесь прямым текстом сказано, чей аккаунт и что именно переедет.
+// копирайт (O1 аудита 2026-08) ведёт с ГЛАВНОГО эффекта — приложение получит
+// полный доступ к ЭТОМУ (вашему) аккаунту, — а перенос данных и счётчики идут
+// вторыми; плюс явное предупреждение не подтверждать код, пришедший со стороны.
+// Раньше текст кадрировал согласие как «импорт данных ко мне» — доступ к своему
+// аккаунту читался как побочная деталь.
 export function LinkDevicePage() {
   const [params] = useSearchParams();
   const { isAuthenticated, isLoading } = useAuth();
@@ -112,27 +116,36 @@ export function LinkDevicePage() {
 
       {!done && preview && (
         <>
-          <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 18 }}>
+          <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 14 }}>
             Приложение в {messenger}
-            {preview.displayName ? ` (${preview.displayName})` : ''} просит доступ к этому аккаунту.
+            {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — ваш.
+            После подтверждения оно сможет открывать его и видеть, менять и удалять все ваши данные.
             {preview.sameAccount
-              ? ' Это тот же аккаунт — переносить нечего, просто подтвердите.'
-              : ' После подтверждения данные из него переедут сюда, а сам он исчезнет.'}
+              ? ' Это тот же аккаунт, под которым вы вошли, — переносить нечего.'
+              : ' Данные приложения (ниже) при этом переедут к вам, а его прежний аккаунт исчезнет.'}
+          </p>
+
+          <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 18, color: 'var(--c-amber)' }}>
+            Подтверждайте, только если код вы запросили сами в этом приложении. Если код прислали
+            со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.
           </p>
 
           {!preview.sameAccount && total > 0 && (
-            <div className="card" style={{ padding: 16, borderRadius: 14, marginBottom: 18 }}>
-              {Object.entries(preview.summary).map(([table, n]) => (
-                <div key={table} style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
-                  <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
-                  <span className="hint">{n}</span>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="hint" style={{ marginBottom: 8 }}>Что переедет из приложения:</div>
+              <div className="card" style={{ padding: 16, borderRadius: 14, marginBottom: 18 }}>
+                {Object.entries(preview.summary).map(([table, n]) => (
+                  <div key={table} style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
+                    <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
+                    <span className="hint">{n}</span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           <button className="btn" onClick={() => void approve()} disabled={busy} style={{ minHeight: 44 }}>
-            {busy ? 'Привязываю…' : 'Да, это я'}
+            {busy ? 'Привязываю…' : 'Разрешить доступ'}
           </button>
         </>
       )}
