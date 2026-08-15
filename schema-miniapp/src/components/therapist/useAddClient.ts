@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import type { TherapyClientSummary } from '../../api';
 
 export type AddMode = null | 'invite' | 'telegram' | 'virtual';
@@ -16,16 +17,19 @@ export function useAddClient({ setClients }: Params) {
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
-  const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const inviteInputRef = useRef<HTMLInputElement>(null);
+  const {
+    copied: inviteCopied,
+    failed: inviteCopyFailed,
+    copy: doCopyInvite,
+  } = useCopyToClipboard();
 
   function openAddMode(mode: AddMode) {
     setAddMode(mode);
     setAddInput('');
     setAddError('');
     setInviteUrl('');
-    setInviteCopied(false);
   }
 
   async function createInvite() {
@@ -42,13 +46,9 @@ export function useAddClient({ setClients }: Params) {
 
   async function copyInvite() {
     if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setInviteCopied(true);
-      setTimeout(() => setInviteCopied(false), 2000);
-    } catch {
-      inviteInputRef.current?.select();
-    }
+    // Буфер недоступен — код и так на экране в поле, выделяем для ручного копирования.
+    const ok = await doCopyInvite(inviteUrl);
+    if (!ok) inviteInputRef.current?.select();
   }
 
   async function addByTelegramId() {
@@ -111,7 +111,7 @@ export function useAddClient({ setClients }: Params) {
     inviteUrl,
     setInviteUrl,
     inviteCopied,
-    setInviteCopied,
+    inviteCopyFailed,
     inviteLoading,
     inviteInputRef,
     openAddMode,

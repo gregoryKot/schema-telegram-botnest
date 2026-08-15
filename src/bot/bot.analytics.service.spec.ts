@@ -253,6 +253,49 @@ describe('BotAnalyticsService', () => {
     });
   });
 
+  // H3 (аудит 2026-07, перф): полуночный планировщик уже знает notifyTimezone
+  // юзера (getAllUsersWithSettings), но раньше каждый вызов аналитики заново
+  // читал её из БД — 4+ лишних SELECT на юзера, все в 00:00 UTC разом. Теперь
+  // tz можно передать явно последним необязательным аргументом.
+  describe('getWeeklyStats — явный tz не бьёт лишний раз в БД (H3)', () => {
+    it('использует переданный tz вместо userTimezone() и не трогает prisma.user.findUnique', async () => {
+      const prisma = makePrisma();
+      // 20:00 UTC: в Asia/Tokyo (UTC+9) это уже 05:00 следующих суток —
+      // "сегодня" по переданному tz расходится с "сегодня" по замоканному в
+      // БД notifyTimezone: 'UTC'. Если бы код проигнорировал tzArg и снова
+      // сходил в userTimezone(), дата "сегодня" была бы 2025-06-11, под неё
+      // рейтинга нет, и avg получился бы null, а не 8.
+      jest.setSystemTime(new Date('2025-06-11T20:00:00Z'));
+      prisma.rating.findMany.mockResolvedValue([
+        { needId: 'attachment', date: '2025-06-12', value: 8 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+
+      const stats = await svc.getWeeklyStats(1, 'Asia/Tokyo');
+
+      expect(stats.find((s) => s.needId === 'attachment')!.avg).toBeCloseTo(8);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('без явного tz по-прежнему читает notifyTimezone из БД (обратная совместимость)', async () => {
+      const prisma = makePrisma();
+      jest.setSystemTime(new Date('2025-06-11T20:00:00Z'));
+      prisma.rating.findMany.mockResolvedValue([
+        { needId: 'attachment', date: '2025-06-11', value: 8 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+
+      // Без tzArg падаем на userTimezone() → мок возвращает 'UTC' → "сегодня"
+      // остаётся 2025-06-11, под неё есть рейтинг.
+      const stats = await svc.getWeeklyStats(1);
+
+      expect(stats.find((s) => s.needId === 'attachment')!.avg).toBeCloseTo(8);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 1 } }),
+      );
+    });
+  });
+
   describe('getBestDayOfWeek', () => {
     it('returns null when no data', async () => {
       const svc = new BotAnalyticsService(makePrisma());
@@ -270,6 +313,36 @@ describe('BotAnalyticsService', () => {
       ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getBestDayOfWeek(1)).toBe('среда');
+    });
+  });
+
+  describe('getDayOfWeekExtremes (H4: best+worst за один скан)', () => {
+    it('возвращает best и worst из одного прохода по истории', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0), value: 8 }, // среда — самый высокий
+        { date: d(0), value: 9 },
+        { date: d(1), value: 3 }, // вторник — самый низкий
+        { date: d(2), value: 5 }, // понедельник
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getDayOfWeekExtremes(1)).toEqual({
+        best: 'среда',
+        worst: 'вторник',
+      });
+    });
+
+    it('null/null при <3 разных днях недели', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0), value: 8 },
+        { date: d(1), value: 3 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getDayOfWeekExtremes(1)).toEqual({
+        best: null,
+        worst: null,
+      });
     });
   });
 

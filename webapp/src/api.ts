@@ -36,6 +36,20 @@ async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): P
   }
 }
 
+// Текст ошибки — из поля `message` тела, если распарсилось, иначе код статуса.
+// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
+// остаётся код статуса; глушим только попытку его прочитать, не саму ошибку.
+async function apiError(res: Response): Promise<Error> {
+  let msg = `API error: ${res.status}`;
+  try {
+    const j = await res.json();
+    if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
+  } catch {
+    /* тело не распарсилось как JSON — остаётся код статуса */
+  }
+  return new Error(msg);
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -48,11 +62,7 @@ async function post(path: string, body: unknown): Promise<void> {
     headers: authHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
+  if (!res.ok) throw await apiError(res);
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -61,11 +71,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     headers: authHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }
 
@@ -110,11 +116,7 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
     headers: authHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }
 
@@ -131,11 +133,7 @@ async function adminReq<T>(method: string, path: string, key: string, body?: unk
     headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
+  if (!res.ok) throw await apiError(res);
   if (res.status === 204) return undefined as T;
   return res.json().catch(() => undefined as T);
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { SettingsLabel } from './ui';
 
 interface Props {
@@ -14,6 +15,8 @@ export function TherapistCabinetSection({
   setTherapyInviteUrl,
 }: Props) {
   const [inviteError, setInviteError] = useState(false);
+  const { failed: inviteCopyFailed, copy: copyInviteUrl } =
+    useCopyToClipboard();
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
@@ -38,20 +41,12 @@ export function TherapistCabinetSection({
         >
           <div>
             <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: 'var(--accent)',
-              }}
+              style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}
             >
               Открыть кабинет
             </div>
             <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-faint)',
-                marginTop: 2,
-              }}
+              style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
             >
               Клиенты, задания, приглашения
             </div>
@@ -70,7 +65,7 @@ export function TherapistCabinetSection({
                 const { url } = await api.createTherapyInvite();
                 setTherapyInviteUrl(url);
                 setInviteError(false);
-                navigator.clipboard.writeText(url).catch(() => {});
+                await copyInviteUrl(url);
               } catch (e) {
                 console.error('createTherapyInvite', e);
                 setInviteError(true);
@@ -93,12 +88,15 @@ export function TherapistCabinetSection({
             <div
               style={{
                 fontSize: 12,
-                color: 'var(--text-sub)',
+                color: inviteCopyFailed
+                  ? 'var(--accent-red)'
+                  : 'var(--text-sub)',
                 marginTop: 8,
                 wordBreak: 'break-all',
               }}
             >
-              Скопировано: {therapyInviteUrl.slice(0, 50)}...
+              {inviteCopyFailed ? 'Не скопировалось: ' : 'Скопировано: '}
+              {therapyInviteUrl.slice(0, 50)}...
             </div>
           )}
         </div>

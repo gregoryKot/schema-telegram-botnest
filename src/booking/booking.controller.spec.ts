@@ -78,6 +78,41 @@ describe('BookingController.getSlots', () => {
       },
     ]);
   });
+
+  it('кривой from → BadRequestException (400), а не Invalid Date → Prisma 500 (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('not-a-date', '2026-08-05'),
+    ).rejects.toThrow(BadRequestException);
+    // Падаем ДО обращения к БД — 400 вместо 500.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('кривой to (синтаксически похож, но невалиден) → BadRequestException, БД не трогаем (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2026-08-01', '2026-13-45'),
+    ).rejects.toThrow(BadRequestException);
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('гигантский диапазон → BadRequestException, перебор по суткам не запускается (D1 DoS)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2000-01-01', '9999-12-31'),
+    ).rejects.toThrow(BadRequestException);
+    // Ключевое: НЕ доходим до getSlots — event-loop не блокируется.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('диапазон в пределах 92 дней проходит к сервису с теми же датами', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([]);
+    await controller.getSlots('2026-08-01', '2026-10-01'); // ~61 день
+    const [fromArg, toArg] = slots.getSlots.mock.calls[0];
+    expect(fromArg.toISOString().slice(0, 10)).toBe('2026-08-01');
+    expect(toArg.toISOString().slice(0, 10)).toBe('2026-10-01');
+  });
 });
 
 describe('BookingController.bookSlot', () => {

@@ -21,11 +21,13 @@ vi.mock('./admin/HealthyAdultSection', () => ({ HealthyAdultSection: () => <div>
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('AdminPage — вход по ключу', () => {
@@ -42,21 +44,22 @@ describe('AdminPage — вход по ключу', () => {
     expect(await screen.findByText('Неверный ключ')).toBeTruthy();
   });
 
-  it('верный ключ сохраняется в localStorage и открывает вкладки админки', async () => {
+  it('верный ключ сохраняется в sessionStorage (L7), НЕ в localStorage, и открывает вкладки', async () => {
     adminStatus.mockResolvedValue({});
     render(<AdminPage />);
     fireEvent.change(screen.getByPlaceholderText('Ключ'), { target: { value: 'right-key' } });
     fireEvent.click(screen.getByText('Войти'));
 
     expect(await screen.findByText('Секция: Запись')).toBeTruthy();
-    expect(localStorage.getItem('booking_admin_key')).toBe('right-key');
+    expect(sessionStorage.getItem('booking_admin_key')).toBe('right-key');
+    expect(localStorage.getItem('booking_admin_key')).toBeNull();
   });
 
   it('сохранённый, но более не валидный ключ сбрасывается — не залипает без доступа', async () => {
-    localStorage.setItem('booking_admin_key', 'stale-key');
+    sessionStorage.setItem('booking_admin_key', 'stale-key');
     adminStatus.mockRejectedValue(new Error('403'));
     render(<AdminPage />);
-    await waitFor(() => expect(localStorage.getItem('booking_admin_key')).toBeNull());
+    await waitFor(() => expect(sessionStorage.getItem('booking_admin_key')).toBeNull());
     expect(screen.getByText('Введите ключ доступа (ADMIN_BOOKING_KEY).')).toBeTruthy();
   });
 });

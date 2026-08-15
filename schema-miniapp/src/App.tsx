@@ -363,27 +363,24 @@ export default function App() {
       .then(setHelpTasks)
       .catch(() => setHelpTasks([]));
     const startParam = getHost().startParam();
+    // M1 (аудит 2026-08): startParam подконтролен атакующему (?startapp=…), а
+    // pair_/therapy_ — приватные state-changing присоединения (партнёр видит
+    // оценки и историю; терапевт — клинику). Молча джойнить на маунте нельзя —
+    // сначала явное согласие (JoinConfirmSheet), джойн только после него.
     if (startParam?.startsWith('pair_')) {
-      const code = startParam.replace('pair_', '');
-      api
-        .joinPair(code)
-        .then(() =>
-          api.getPair().then((data) => {
-            setPairData(data);
-            localStorage.removeItem('pair_card_dismissed');
-            setPairCardDismissed(false);
-            api.updateSettings({ pairCardDismissed: false }).catch(logErr('u'));
-          }),
-        )
-        .catch((e) => console.error('joinPair failed', e));
+      sheets.open('joinConfirm', {
+        joinKind: 'pair',
+        joinCode: startParam.slice('pair_'.length),
+      });
+    } else if (startParam?.startsWith('therapy_')) {
+      sheets.open('joinConfirm', {
+        joinKind: 'therapy',
+        joinCode: startParam.slice('therapy_'.length),
+      });
     }
     if (startParam === 'diaries') sheets.open('diaries');
     if (startParam === 'tracker') {
       sheets.open('trackerOverlay', { trackerNeedId: null });
-    }
-    if (startParam?.startsWith('therapy_')) {
-      const code = startParam.replace('therapy_', '');
-      api.joinTherapy(code).catch(logErr('joinTherapy'));
     }
   }, []);
 

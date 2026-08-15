@@ -9,6 +9,7 @@ import {
   SHARE_RESULT_EVENT,
   type ShareCardKind,
 } from './analytics';
+import { useCopyToClipboard } from '../utils/useCopyToClipboard';
 
 export interface ShareCardOpts {
   draw: (canvas: HTMLCanvasElement) => void;
@@ -24,12 +25,14 @@ export interface ShareCardState {
   sharing: boolean;
   /** Текст уехал в буфер — на кнопке галочка. */
   copied: boolean;
+  /** Копирование в буфер не удалось — кнопка должна показать отказ. */
+  failed: boolean;
   /** Системный шэр не сработал: показываем текст, который можно скопировать. */
   showText: boolean;
   closeText: () => void;
   text: string;
   share: () => Promise<void>;
-  copy: () => Promise<void>;
+  copy: () => Promise<boolean>;
 }
 
 /**
@@ -42,8 +45,8 @@ export function useShareCard(
   o: ShareCardOpts,
 ): ShareCardState {
   const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showText, setShowText] = useState(false);
+  const { copied, failed, copy } = useCopyToClipboard();
   const text = o.fallbackText ?? o.shareText;
 
   const { draw } = o;
@@ -56,15 +59,7 @@ export function useShareCard(
     }
   }, [draw, canvasRef]);
 
-  const copy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-  }, [text]);
+  const doCopy = useCallback(() => copy(text), [copy, text]);
 
   const share = useCallback(async () => {
     if (!canvasRef.current) return;
@@ -78,20 +73,21 @@ export function useShareCard(
     } catch {
       // Шэр не удался — копируем текст и показываем его шитом
       o.track(SHARE_RESULT_EVENT, { kind: o.eventKind, ok: false });
-      await copy();
+      await doCopy();
       setShowText(true);
     } finally {
       setSharing(false);
     }
-  }, [o, copy, canvasRef]);
+  }, [o, doCopy, canvasRef]);
 
   return {
     sharing,
     copied,
+    failed,
     showText,
     closeText: () => setShowText(false),
     text,
     share,
-    copy,
+    copy: doCopy,
   };
 }

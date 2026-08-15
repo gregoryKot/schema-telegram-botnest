@@ -175,3 +175,75 @@ describe('AlertLogger — eviction старых записей троттлин�
     expect(mockedNotify.mock.calls[2][0]).toContain('Stale error');
   });
 });
+
+// M4 (аудит 2026-08): пер-контентный ключ выше нормализует только цифры/uuid.
+// Сток с варьируемым атакующим НЕ-цифровым текстом (имена query-параметров,
+// текст ошибки парсинга — напр. widget-redirect, GET без auth/throttle) рождает
+// новый ключ на каждый запрос и обходит троттл лавиной DM. Общий бюджет за окно
+// (15/60с СУММАРНО по всем ключам) — backstop: реальная авария из нескольких
+// подсистем проходит, лавина подделанных ключей упирается в потолок.
+describe('AlertLogger — общий потолок за окно (M4: текст, варьируемый буквами)', () => {
+  let nowSpy: jest.SpiedFunction<typeof Date.now>;
+  const setNow = (t: number) => nowSpy.mockReturnValue(t);
+
+  beforeEach(() => {
+    nowSpy = jest.spyOn(Date, 'now');
+  });
+
+  it('поток из 20 разных ПО БУКВАМ сообщений в одном окне глушится на 15', async () => {
+    setNow(2_000_000);
+    const logger = new AlertLogger('Test');
+    // Каждое сообщение — уникальный ключ (разная длина буквенного хвоста, без
+    // цифр), так что пер-контентный троттл пропускает КАЖДОЕ. Режет только
+    // общий бюджет.
+    for (let i = 0; i < 20; i++) {
+      logger.error(`widget-redirect bad param aaa${'x'.repeat(i)}`);
+      await flush();
+    }
+    expect(mockedNotify).toHaveBeenCalledTimes(15);
+    // Доставленные алерты несут реальный текст ошибки, а не мусор.
+    expect(String(mockedNotify.mock.calls[0][0])).toContain(
+      'widget-redirect bad param',
+    );
+  });
+
+  it('первый алерт следующего окна сообщает, сколько подавил потолок', async () => {
+    setNow(2_000_000);
+    const logger = new AlertLogger('Test');
+    for (let i = 0; i < 20; i++) {
+      logger.error(`variant zzz${'q'.repeat(i)} failed`);
+      await flush();
+    }
+    expect(mockedNotify).toHaveBeenCalledTimes(15); // 5 подавлено потолком
+
+    mockedNotify.mockClear();
+    setNow(2_000_000 + 61_000); // окно закрылось
+    logger.error('свежая отдельная ошибка в новом окне');
+    await flush();
+    expect(mockedNotify).toHaveBeenCalledTimes(1);
+    expect(mockedNotify.mock.calls[0][0]).toContain('подавлено ещё 5');
+  });
+
+  it('реальная авария из нескольких подсистем (< потолка) проходит целиком', async () => {
+    setNow(2_000_000);
+    const logger = new AlertLogger('Test');
+    const subsystems = [
+      'DB connection lost',
+      'Redis timeout',
+      'Telegram API 502',
+      'encryption key missing',
+      'disk full on /data',
+    ];
+    for (const s of subsystems) {
+      logger.error(s);
+      await flush();
+    }
+    // 5 разных подсистем < 15 → ни одна не проглочена потолком, и каждая
+    // доехала своим текстом (а не схлопнулась в один общий ключ).
+    expect(mockedNotify).toHaveBeenCalledTimes(5);
+    const delivered = mockedNotify.mock.calls.map((c) => String(c[0]));
+    for (const s of subsystems) {
+      expect(delivered.some((t) => t.includes(s))).toBe(true);
+    }
+  });
+});

@@ -16,6 +16,10 @@ import { PricingService } from './pricing.service';
 import { SessionType } from '@prisma/client';
 import { BookDto } from './book.dto';
 
+// D1 (аудит 2026-08): жёсткий потолок окна /slots — квартал с запасом. Больше
+// календарю бронирования не нужно, а без потолка перебор по суткам вешал API.
+const MAX_SLOTS_RANGE_MS = 92 * 24 * 60 * 60 * 1000;
+
 /** Public booking endpoints: browse slots, book one, self-cancel. */
 @Controller('api/booking')
 export class BookingController {
@@ -33,9 +37,16 @@ export class BookingController {
 
   /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */
   @Get('slots')
+  @Throttle({ long: { limit: 300, ttl: 3_600_000 } })
   async getSlots(@Query('from') from: string, @Query('to') to: string) {
-    const fromDate = from ? new Date(from) : new Date();
-    const toDate = to ? new Date(to) : addDays(fromDate, 14);
+    const fromDate = parseSlotDate(from) ?? new Date();
+    const toDate = parseSlotDate(to) ?? addDays(fromDate, 14);
+    // D1 (аудит 2026-08): без ограничения диапазона getSlots бежал по СУТКАМ от
+    // from до to (millions на `?from=1000-01-01&to=9999-12-31`), блокируя
+    // event-loop → DoS всего API на неавторизованном GET. Ограничиваем окно:
+    // календарь бронирования показывает недели, не тысячелетия.
+    if (toDate.getTime() - fromDate.getTime() > MAX_SLOTS_RANGE_MS)
+      throw new BadRequestException('Диапазон слотов не больше 92 дней');
     const list = await this.slots.getSlots(fromDate, toDate);
     return list.map((s) => ({
       startsAt: s.startsAt.toISOString(),
@@ -90,4 +101,18 @@ function addDays(d: Date, n: number): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
   return r;
+}
+
+// L11 аудита 2026-08: сырой query-параметр уходил в new Date() и на кривой
+// строке давал Invalid Date → Prisma 500 на неавторизованном GET. Пускаем
+// только YYYY-MM-DD (формат из доккоммента эндпоинта); пусто → null (дефолт
+// вызывающего), мусор → 400 (контролируемый ответ вместо 500).
+function parseSlotDate(v: string | undefined): Date | null {
+  if (!v) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v))
+    throw new BadRequestException('Некорректная дата, ожидается YYYY-MM-DD');
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime()))
+    throw new BadRequestException('Некорректная дата');
+  return d;
 }

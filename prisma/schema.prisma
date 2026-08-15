@@ -16,6 +16,10 @@ model Rating {
 
   @@unique([userId, date, needId])
   @@index([userId, date])
+  // Индекс по голому date (аудит M2): /stats фильтрует Rating по date без
+  // userId (COUNT DISTINCT userId за день, ретеншен-GROUP BY), и userId-ведущий
+  // индекс выше для этого не годится — был seq-scan самой растущей таблицы.
+  @@index([date])
 }
 
 model YsqProgress {
@@ -135,6 +139,11 @@ model User {
   totpSecret             String?
   totpEnabledAt          DateTime?
   totpRecoveryCodes      Json     @default("[]")
+  // totpLastStep: последний ПРИНЯТЫЙ time-step TOTP (floor(unix/30)). Защита от
+  // реплея (L2 аудита 2026-08): один и тот же 6-значный код в пределах окна
+  // (±1 шаг, ~90с) не должен приниматься дважды — verifyCode двигает значение
+  // вперёд атомарно и отвергает шаг ≤ сохранённого. null = ещё не входил по TOTP.
+  totpLastStep           Int?
   // Recovery email — last-resort path in case user loses ALL their auth
   // providers (Google/Telegram/VK all gone). Receives a magic link to add
   // a new provider. Verified separately (verifiedAt).

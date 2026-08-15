@@ -73,6 +73,18 @@ describe('SlotService.getSlots — базовая генерация и гран
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
   });
 
+  it('диапазон >366 дней клампится — перебор не виснет, слоты в пределах потолка (D1)', async () => {
+    const { service } = makeService({ rules: [RULE] });
+    const farFuture = new Date(MONDAY.getTime() + 400 * 86_400_000);
+    const slots = await service.getSlots(MONDAY, farFuture);
+    expect(slots.length).toBeGreaterThan(0);
+    // Без клампа слоты дотянулись бы до +400 дней; потолок 366 их обрезает.
+    const ceiling = MONDAY.getTime() + 367 * 86_400_000;
+    expect(Math.max(...slots.map((s) => s.startsAt.getTime()))).toBeLessThan(
+      ceiling,
+    );
+  });
+
   it('генерирует слоты с шагом sessionDuration+bufferMin (буфер соблюдён)', async () => {
     const { service } = makeService({ rules: [RULE] });
     const slots = await service.getSlots(MONDAY, MONDAY);

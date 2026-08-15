@@ -23,9 +23,11 @@ vi.mock('../../api', () => ({
     updateSessionInfo: vi.fn(),
     requestYsq: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const makeClient = (o: Partial<Record<string, unknown>> = {}) => ({
@@ -387,6 +389,34 @@ describe('handleExport', () => {
       await vi.advanceTimersByTimeAsync(2500);
     });
     expect(result.current.exportCopied).toBe(false);
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch, парный файл webapp/useClientDetail.mutations.test.ts):
+  // catch у записи в буфер раньше был `/* ignore */` — при отказе
+  // clipboard.writeText терапевт не получал вообще никакого сигнала. Теперь
+  // отказ уходит в reportClientError.
+  it('при отказе clipboard.writeText шлёт reportClientError и не выставляет exportCopied', async () => {
+    mockApi.getConceptualization.mockResolvedValue({
+      id: 1,
+      schemaIds: [],
+      modeIds: [],
+      earlyExperience: 'опыт',
+      updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+    (
+      navigator.clipboard.writeText as ReturnType<typeof vi.fn>
+    ).mockRejectedValue(new Error('denied'));
+    const { result } = await openedHook();
+    await act(async () => {
+      await result.current.handleExport();
+    });
+    expect(result.current.exportCopied).toBe(false);
+    expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        section: 'therapist.clientDetail',
+        message: expect.stringContaining('clipboard'),
+      }),
+    );
   });
 
   it('использует navigator.share вместо буфера обмена, если он доступен', async () => {

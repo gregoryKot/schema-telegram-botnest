@@ -1,7 +1,6 @@
-// Generic-шит шаринга карточки: превью канваса + «Поделиться» + «Скопировать
-// текст». Все share-карточки приложения (трекер, достижения, схема, дневник)
-// ходят через него. Логика — общая (shared/useShareCard, правило №3),
-// вёрстка своя: BottomSheet мини-аппа.
+// Generic-шит шаринга карточки: превью канваса + «Поделиться» + «Скопировать текст».
+// Все share-карточки приложения ходят через него. Логика общая (shared/useShareCard,
+// правило №3), вёрстка своя: BottomSheet мини-аппа.
 import { useRef } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
@@ -11,17 +10,12 @@ import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
 
 interface Props {
-  /** Заголовок шита («Карточка недели», «Достижение»…) */
-  title: string;
-  /** Рисует карточку на канвасе. Вызывается при открытии. */
-  draw: (canvas: HTMLCanvasElement) => void;
-  /** Короткий текст, уходящий вместе с картинкой */
-  shareText: string;
-  /** Подробный текст для фолбэка (по умолчанию shareText) */
-  fallbackText?: string;
+  title: string; // Заголовок шита («Карточка недели», «Достижение»…)
+  draw: (canvas: HTMLCanvasElement) => void; // Рисует карточку, вызывается при открытии
+  shareText: string; // Короткий текст, уходящий вместе с картинкой
+  fallbackText?: string; // Подробный текст для фолбэка (по умолчанию shareText)
   filename: string;
-  /** Тип карточки для аналитики share_card (правило №8) */
-  eventKind: ShareCardKind;
+  eventKind: ShareCardKind; // Тип карточки для аналитики share_card (правило №8)
   onClose: () => void;
   zIndex?: number;
   therapyNote?: boolean;
@@ -47,6 +41,16 @@ export function ShareCardSheet({
     eventKind,
     track: api.trackEvent,
   });
+  // Три состояния кнопки «Скопировать» повторяются дважды — общий индекс вместо копипасты ternary.
+  const st = s.copied ? 0 : s.failed ? 1 : 2;
+  const mix = (c: string, pct: number) =>
+    `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+  const copyBg = (g: number, idle: string) =>
+    [mix('var(--accent-green)', g), mix('var(--accent-red)', 15), idle][st];
+  const copyColor = (idle: string) =>
+    ['#06d6a0', 'var(--accent-red)', idle][st];
+  const copyLabel = (done: string, idle: string) =>
+    [done, 'Не получилось', idle][st];
 
   return (
     <>
@@ -120,16 +124,14 @@ export function ShareCardSheet({
               padding: '13px 0',
               border: 'none',
               borderRadius: 12,
-              background: s.copied
-                ? 'color-mix(in srgb, var(--accent-green) 18%, transparent)'
-                : 'rgba(var(--fg-rgb),0.06)',
-              color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.65)',
+              background: copyBg(18, 'rgba(var(--fg-rgb),0.06)'),
+              color: copyColor('rgba(var(--fg-rgb),0.65)'),
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
+            {copyLabel('✓ Текст скопирован', 'Скопировать текст')}
           </button>
           {therapyNote && (
             <div style={{ marginTop: 12 }}>
@@ -177,16 +179,14 @@ export function ShareCardSheet({
                 padding: '13px 0',
                 border: 'none',
                 borderRadius: 12,
-                background: s.copied
-                  ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.08)',
-                color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
+                background: copyBg(20, 'rgba(var(--fg-rgb),0.08)'),
+                color: copyColor('rgba(var(--fg-rgb),0.7)'),
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              {s.copied ? '✓ Скопировано' : 'Скопировать'}
+              {copyLabel('✓ Скопировано', 'Скопировать')}
             </button>
           </div>
         </BottomSheet>

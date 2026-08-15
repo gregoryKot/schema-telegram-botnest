@@ -73,7 +73,7 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     inviteUrl: '',
     setInviteUrl: vi.fn(),
     inviteCopied: false,
-    setInviteCopied: vi.fn(),
+    inviteCopyFailed: false,
     inviteLoading: false,
     inviteInputRef: createRef(),
     openAddMode: vi.fn(),

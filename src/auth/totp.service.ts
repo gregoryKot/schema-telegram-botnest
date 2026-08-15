@@ -8,6 +8,7 @@ import {
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
 import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 
@@ -119,7 +120,26 @@ export class TotpService {
 
     const trimmed = code.trim();
     const secret = decrypt(row.totpSecret);
-    if (secret && authenticator.check(trimmed, secret)) return true;
+    if (secret) {
+      // Anti-replay (L2 аудита 2026-08): authenticator.check пускал ОДИН и тот
+      // же код всё окно валидности (~90с). checkDelta даёт смещение шага, из
+      // него — абсолютный time-step принятого кода. Двигаем totpLastStep вперёд
+      // АТОМАРНО (updateMany с фильтром lt/null = CAS): повтор того же шага (или
+      // более раннего) не проходит условие и получает false.
+      const delta = authenticator.checkDelta(trimmed, secret);
+      if (delta !== null) {
+        const stepSeconds = authenticator.options.step ?? 30;
+        const step = Math.floor(Date.now() / 1000 / stepSeconds) + delta;
+        const res = await this.prisma.user.updateMany({
+          where: {
+            id: userId,
+            OR: [{ totpLastStep: null }, { totpLastStep: { lt: step } }],
+          },
+          data: { totpLastStep: step },
+        });
+        return res.count > 0;
+      }
+    }
 
     // Not a valid TOTP — maybe a recovery code.
     const raw = row.totpRecoveryCodes;
@@ -133,14 +153,29 @@ export class TotpService {
     const idx = hashes.indexOf(incomingHash);
     if (idx === -1) return false;
 
-    // Consume the recovery code.
+    // Consume the recovery code — АТОМАРНО (F1 аудита 2026-08, та же болезнь,
+    // что step-ветка выше). Раньше здесь был read→filter→update: два
+    // параллельных запроса с ОДНИМ recovery-кодом оба проходили indexOf и оба
+    // писали remaining — код гасился дважды (lost-update стирал чужое
+    // погашение, одноразовый код срабатывал двумя входами). updateMany с CAS
+    // по текущему блобу (equals: raw = jsonb-равенство в Postgres) пускает
+    // ровно одну запись: победитель меняет значение, у проигравшего фильтр
+    // больше не совпадает (count=0) — код не засчитан.
+    // Компромисс: два РАЗНЫХ кода, поданных строго одновременно, тоже
+    // конфликтуют по блобу — проигравший получит false и просто повторит ввод
+    // (fail-closed, безопасно). Recovery-коды вводит человек по одному, так что
+    // гонка — редкость, а двойное списание одноразового кода — нет.
     const remaining = hashes.filter((_, i) => i !== idx);
     const encryptedRemaining =
       encryptJson(remaining) ?? JSON.stringify(remaining);
-    await this.prisma.user.update({
-      where: { id: userId },
+    const consumed = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        totpRecoveryCodes: { equals: raw as Prisma.InputJsonValue },
+      },
       data: { totpRecoveryCodes: encryptedRemaining },
     });
+    if (consumed.count === 0) return false; // проиграли гонку — код не гасим
     this.logger.warn(
       `Recovery code consumed for user ${userId} (${remaining.length} left)`,
     );

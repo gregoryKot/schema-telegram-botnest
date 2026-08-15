@@ -11,6 +11,7 @@ import {
   cleanup,
   within,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
@@ -91,12 +92,25 @@ describe('ModeMapPalette — поиск и добавление стандарт
 });
 
 describe('ModeMapPalette — режимы клиента (из концептуализации)', () => {
+  // Список режимов клиента приезжает из api.getConceptualization в mount-
+  // эффекте — обновление прилетает из-под await, вне act, и опрос findByText
+  // (timeout 8000) с ним иногда расходится. Оборачиваем рендер в act(async):
+  // он дожидается промиса, дальше ассерт синхронный. Раньше ждали текст
+  // «▼ 2» — то же число показывает статичный счётчик группы «Копинг:
+  // Капитуляция» (2 стандартных режима), совпадение делает ассерт
+  // неоднозначным (getByText падает на нескольких найденных). Само число при
+  // этом проверять надо — оно в заголовке названия раздела и есть «сколько
+  // режимов у клиента», — поэтому ищем его не по всему документу, а внутри
+  // кнопки раздела: там счётчик один.
   it('показывает раздел с количеством режимов клиента и разворачивает список по клику', async () => {
     getConceptualization.mockResolvedValue({
       modeIds: ['vulnerable_child', 'demanding_critic'],
     });
-    renderPalette();
-    expect(await screen.findByText('▼ 2', {}, { timeout: 8000 })).toBeTruthy();
+    await act(async () => {
+      renderPalette();
+    });
+    const header = screen.getByText('Режимы клиента').closest('button')!;
+    expect(within(header).getByText('▼ 2')).toBeTruthy();
     fireEvent.click(screen.getByText('Режимы клиента'));
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
     expect(screen.getByText('Требовательный Критик')).toBeTruthy();
@@ -106,8 +120,10 @@ describe('ModeMapPalette — режимы клиента (из концепту�
     getConceptualization.mockResolvedValue({
       modeIds: ['vulnerable_child', 'demanding_critic'],
     });
-    const { onAddMany } = renderPalette();
-    await screen.findByText('▼ 2', {}, { timeout: 8000 });
+    const onAddMany = vi.fn();
+    await act(async () => {
+      renderPalette(vi.fn(), onAddMany);
+    });
     fireEvent.click(
       screen.getByLabelText('Вынести все режимы клиента на карту'),
     );
@@ -125,14 +141,12 @@ describe('ModeMapPalette — режимы клиента (из концепту�
 
 describe('ModeMapPalette — свои режимы терапевта', () => {
   it('без своих режимов показывает подсказку-заглушку', async () => {
-    renderPalette();
-    expect(
-      await screen.findByText(
-        /Добавь режимы, с которыми/,
-        {},
-        { timeout: 8000 },
-      ),
-    ).toBeTruthy();
+    // listCustomModes резолвится в mount-эффекте, обновление вне act —
+    // ждём его через act(async), а не опросом.
+    await act(async () => {
+      renderPalette();
+    });
+    expect(screen.getByText(/Добавь режимы, с которыми/)).toBeTruthy();
   });
 
   it('создание нового режима: форма → «Сохранить» → появляется в списке', async () => {
@@ -150,10 +164,12 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
     fireEvent.change(screen.getByPlaceholderText('Название…'), {
       target: { value: 'Мой режим' },
     });
-    fireEvent.click(screen.getByText('Сохранить'));
-    expect(
-      await screen.findByText('Мой режим', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    // saveCustomMode ждёт api.createCustomMode — оборачиваем клик в act(async),
+    // чтобы дождаться промиса вместо опроса findByText.
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить'));
+    });
+    expect(screen.getByText('Мой режим')).toBeTruthy();
     expect(createCustomMode).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Мой режим' }),
     );
@@ -177,9 +193,11 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
         createdAt: '2026-01-01',
       },
     ]);
-    const { onAdd } = renderPalette();
-    const item = await screen.findByText('Особый', {}, { timeout: 8000 });
-    fireEvent.click(item);
+    const onAdd = vi.fn();
+    await act(async () => {
+      renderPalette(onAdd);
+    });
+    fireEvent.click(screen.getByText('Особый'));
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'healthy',
@@ -200,8 +218,9 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
       },
     ]);
     deleteCustomMode.mockResolvedValue(undefined);
-    renderPalette();
-    await screen.findByText('Особый', {}, { timeout: 8000 });
+    await act(async () => {
+      renderPalette();
+    });
     const row = screen.getByText('Особый').closest('div')!;
     fireEvent.click(
       within(row.parentElement as HTMLElement).getByLabelText('Удалить'),

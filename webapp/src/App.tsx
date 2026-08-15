@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
+import { telemetryUrl } from './utils/telemetryUrl';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -8,7 +9,9 @@ declare global { interface Window { ym?: (id: number, action: string, ...args: u
 function MetrikaTracker() {
   const loc = useLocation();
   useEffect(() => {
-    window.ym?.(YM_ID, 'hit', window.location.href, { referer: document.referrer });
+    // L6 (аудит 2026-08): голая location.href уносила во фрагменте живой JWT
+    // (/auth/callback#access_token=…) в Метрику. telemetryUrl оставляет путь.
+    window.ym?.(YM_ID, 'hit', telemetryUrl(window.location.href), { referer: telemetryUrl(document.referrer) });
   }, [loc.pathname, loc.search]);
   return null;
 }

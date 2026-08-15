@@ -228,8 +228,15 @@ try {
       this.flow.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
     } catch (err) {
       const msg = (err as Error).message ?? 'unknown';
+      // Первый аргумент .error() уходит админу в DM (AlertLogger троттлит по
+      // его содержимому). Держим его ПОСТОЯННЫМ: имена query-параметров и текст
+      // ошибки парсинга полностью подконтрольны анониму (GET без auth и без
+      // @Throttle), и, варьируя буквы, он обходил бы троттл и заливал чат
+      // (M4). Переменное — вторым аргументом: оно идёт только в лог, не в DM
+      // (тот же инвариант H0/H6, что в client-errors.controller.ts).
       this.logger.error(
-        `telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`,
+        'telegram widget-redirect error (детали в логах)',
+        `${msg} | query keys=${JSON.stringify(Object.keys(query))}`,
       );
       res.redirect(
         `${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`,

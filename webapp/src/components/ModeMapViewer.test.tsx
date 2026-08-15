@@ -10,6 +10,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { ModeMapViewer } from './ModeMapViewer';
 import type { ModeMapMeta, ModeMapFull } from '../api';
@@ -54,13 +55,17 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
+// Данные карты грузятся в mount-эффекте ModeMapViewer (listMyModeMaps /
+// getMyModeMap) — обновление состояния прилетает из-под await, вне act, и
+// опрос findByText (timeout 8000) с ним иногда расходится. Оборачиваем сам
+// render в act(async): он дожидается промисов, дальше ассерт синхронный.
 describe('ModeMapViewer — пустое состояние', () => {
   it('без карт показывает «Карты режимов пока нет»', async () => {
     listMyModeMaps.mockResolvedValue([]);
-    render(<ModeMapViewer />);
-    expect(
-      await screen.findByText('Карты режимов пока нет', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByText('Карты режимов пока нет')).toBeTruthy();
   });
 });
 
@@ -68,18 +73,20 @@ describe('ModeMapViewer — загрузка и отображение карт�
   it('автоматически загружает и показывает первую карту клиента', async () => {
     listMyModeMaps.mockResolvedValue([meta(1, 'Моя карта')]);
     getMyModeMap.mockResolvedValue(full(1, 'Моя карта'));
-    render(<ModeMapViewer />);
-    expect(
-      await screen.findByText('Триггер', {}, { timeout: 8000 }),
-    ).toBeTruthy();
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByText('Триггер')).toBeTruthy();
     expect(getMyModeMap).toHaveBeenCalledWith(1);
   });
 
   it('одна карта — вкладок переключения не показывает', async () => {
     listMyModeMaps.mockResolvedValue([meta(1, 'Единственная')]);
     getMyModeMap.mockResolvedValue(full(1, 'Единственная'));
-    render(<ModeMapViewer />);
-    await screen.findByText('Триггер', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByText('Триггер')).toBeTruthy();
     expect(screen.queryByText('Единственная')).toBeNull();
   });
 
@@ -88,8 +95,10 @@ describe('ModeMapViewer — загрузка и отображение карт�
     getMyModeMap
       .mockResolvedValueOnce(full(1, 'Карта А'))
       .mockResolvedValueOnce(full(2, 'Карта Б'));
-    render(<ModeMapViewer />);
-    await screen.findByText('Триггер', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByText('Триггер')).toBeTruthy();
     expect(screen.getByText('Карта А')).toBeTruthy();
     fireEvent.click(screen.getByText('Карта Б'));
     await waitFor(() => expect(getMyModeMap).toHaveBeenCalledWith(2));
@@ -100,8 +109,9 @@ describe('ModeMapViewer — только просмотр (не редактир
   it('узлы не перетаскиваются (nodesDraggable=false) в отличие от редактора', async () => {
     listMyModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
     getMyModeMap.mockResolvedValue(full(1, 'Карта А'));
-    render(<ModeMapViewer />);
-    await screen.findByText('Триггер', {}, { timeout: 8000 });
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
     const node = screen.getByText('Триггер').closest('.react-flow__node')!;
     expect(node.className).not.toContain('draggable');
   });
@@ -111,8 +121,11 @@ describe('ModeMapViewer — легенда', () => {
   it('кнопка легенды на панели показывает и скрывает «Легенда»', async () => {
     listMyModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
     getMyModeMap.mockResolvedValue(full(1, 'Карта А'));
-    const { container } = render(<ModeMapViewer />);
-    await screen.findByText('Триггер', {}, { timeout: 8000 });
+    let result!: ReturnType<typeof render>;
+    await act(async () => {
+      result = render(<ModeMapViewer />);
+    });
+    const { container } = result;
     expect(screen.queryByText('Легенда')).toBeNull();
     const legendBtn = container.querySelectorAll(
       '.react-flow__panel button',

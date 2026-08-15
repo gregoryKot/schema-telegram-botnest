@@ -322,6 +322,24 @@ describe('post — void-обёртка (trackEvent/createBeliefCheck и т.п.)'
       }),
     ).rejects.toThrow('API error: 500');
   });
+
+  // ── apiError — общая функция разбора тела ошибки (post/postJson/patchJson/
+  // adminReq зовут одну и ту же, вынесенную из четырёх копий одного блока) ──
+  it('ошибка: message-строка из тела становится текстом Error', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(409, { message: 'Занято' }));
+    await expect(
+      api.createBeliefCheck({ belief: 'x', evidenceFor: [], evidenceAgainst: [] }),
+    ).rejects.toThrow('Занято');
+  });
+
+  it('ошибка: message не строка (объект/массив) — в текст уходит JSON.stringify', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(400, { message: { field: 'belief', code: 'required' } }),
+    );
+    await expect(
+      api.createBeliefCheck({ belief: '', evidenceFor: [], evidenceAgainst: [] }),
+    ).rejects.toThrow(JSON.stringify({ field: 'belief', code: 'required' }));
+  });
 });
 
 // ── del — с телом и без ────────────────────────────────────────────────────

@@ -60,6 +60,19 @@ describe('VkProvider.buildAuthUrl', () => {
     expect(p.get('code_challenge')).toBeTruthy();
     expect(p.get('scope')).toBe('email phone');
   });
+
+  it('аварийный потолок стора верификаторов (L9): поток buildAuthUrl не растит его без предела', () => {
+    const provider = new VkProvider(makeConfig());
+    const CAP = 5000;
+    for (let i = 0; i < CAP + 200; i++) provider.buildAuthUrl(`state-${i}`);
+    const verifiers = (
+      provider as unknown as { verifiers: Map<string, unknown> }
+    ).verifiers;
+    expect(verifiers.size).toBeLessThanOrEqual(CAP);
+    // Старейшие вытеснены, свежие на месте — эвикция по возрасту, не clear().
+    expect(verifiers.has('state-0')).toBe(false);
+    expect(verifiers.has(`state-${CAP + 199}`)).toBe(true);
+  });
 });
 
 describe('VkProvider.exchangeCode (без контекста)', () => {

@@ -3,17 +3,24 @@ import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
 
+// 3 состояния кнопки «Скопировать» (copied/failed/idle) — индекс вместо копипасты ternary.
+const FG = ['#06d6a0', 'var(--accent-red)', 'rgba(var(--fg-rgb),0.7)'];
+const LABEL = ['✓ Скопировано', 'Не получилось', 'Скопировать'];
+
 export function ExportOverlay({
   exportText,
   exportCopied,
-  setExportCopied,
+  exportFailed,
+  onCopy,
   onClose,
 }: {
   exportText: string;
   exportCopied: boolean;
-  setExportCopied: (v: boolean) => void;
+  exportFailed: boolean;
+  onCopy: () => void;
   onClose: () => void;
 }) {
+  const st = exportCopied ? 0 : exportFailed ? 1 : 2;
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 4 }}>
@@ -46,15 +53,7 @@ export function ExportOverlay({
           {exportText}
         </pre>
         <button
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(exportText);
-              setExportCopied(true);
-              setTimeout(() => setExportCopied(false), 2000);
-            } catch {
-              /* best-effort: ошибку намеренно игнорируем */
-            }
-          }}
+          onClick={onCopy}
           style={{
             width: '100%',
             padding: '13px 0',
@@ -63,13 +62,13 @@ export function ExportOverlay({
             background: exportCopied
               ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
               : 'rgba(var(--fg-rgb),0.08)',
-            color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
+            color: FG[st],
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
           }}
         >
-          {exportCopied ? '✓ Скопировано' : 'Скопировать'}
+          {LABEL[st]}
         </button>
       </div>
     </BottomSheet>

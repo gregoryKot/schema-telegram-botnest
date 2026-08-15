@@ -8,8 +8,10 @@ import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 import { useSetAddressForm, useTr } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
+import { ExportSummaryModal } from './settingsSheet/ExportSummaryModal';
 import { appInviteShare, pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 import {
   TIMEZONES,
@@ -44,10 +46,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const pair = usePairSettings(userRole);
   const {
-    pairData, pairLoading, pairLoadError, pairInviteUrl, pairInviteCopied, setPairInviteCopied,
+    pairData, pairLoading, pairLoadError, pairInviteUrl,
     joinCode, setJoinCode, joinView, setJoinView, joinError, leaveError: leavePairError,
     handleCreateInvite, handleJoin, leavePair, retryLoad: retryPairLoad,
   } = pair;
+  const pairInviteCopy = useCopyToClipboard();
   const [exportText, setExportText] = useState<string | null>(null);
   // Сводка собирается на сервере: сеть может отвалиться. Без этого состояния
   // отказ выглядел как «ничего не произошло» — обработчик падал
@@ -55,7 +58,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [exportError, setExportError] = useState(false);
   const [appInvite, setAppInvite] = useState(false);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
-  const [exportCopied, setExportCopied] = useState(false);
+  // Авто-копия при открытии сводки — свой инстанс: иначе она подсвечивала бы
+  // кнопку «Скопировать» в модалке, которую человек ещё не нажимал.
+  const exportAutoCopy = useCopyToClipboard();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [ysqDeleting, setYsqDeleting] = useState(false); const [ysqDeleteError, setYsqDeleteError] = useState(false); // раньше локально стиралось раньше запроса к серверу
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
@@ -548,9 +553,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         <div>
                           <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Отправь другу:</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 8, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
-                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
-                            style={{ background: 'none', border: 'none', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-                            {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
+                          <button onClick={() => void pairInviteCopy.copy(pairInviteUrl)}
+                            style={{ background: 'none', border: 'none', color: pairInviteCopy.copied ? 'var(--accent-green)' : pairInviteCopy.failed ? 'var(--accent-red)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                            {pairInviteCopy.copied ? '✓ Скопировано' : pairInviteCopy.failed ? 'Не скопировалось — ссылка выше' : 'Скопировать ссылку'}
                           </button>
                         </div>
                       )}
@@ -586,7 +591,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   }
                   let shared = false;
                   try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
-                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } setExportText(text); }
+                  if (!shared) { await exportAutoCopy.copy(text); setExportText(text); }
                 }} />
                 {exportError && (
                   <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>
@@ -648,16 +653,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
       {/* ── Export modal ── */}
       {exportText && (
-        <InfoModal onClose={() => { setExportText(null); setExportCopied(false); }}>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Сводка для терапевта</div>
-          <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
-            {exportText}
-          </pre>
-          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
-            style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 10, background: exportCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {exportCopied ? '✓ Скопировано' : 'Скопировать'}
-          </button>
-        </InfoModal>
+        <ExportSummaryModal text={exportText} onClose={() => setExportText(null)} />
       )}
 
       {/* ── Privacy modal ── */}

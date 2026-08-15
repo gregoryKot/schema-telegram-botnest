@@ -5,6 +5,55 @@ function makePrisma(create: jest.Mock) {
   return { analyticsEvent: { create } } as never;
 }
 
+describe('AnalyticsService.pruneOld — ретеншен (L10)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('удаляет события старше 90 дней, свежие не трогает', async () => {
+    const now = new Date('2026-08-14T00:00:00.000Z').getTime();
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+    const rows = [
+      { id: 1, createdAt: new Date(now - 100 * 86_400_000) }, // старое
+      { id: 2, createdAt: new Date(now - 10 * 86_400_000) }, // свежее
+    ];
+    const deleteMany = jest.fn(
+      async ({ where }: { where: { createdAt: { lt: Date } } }) => {
+        const cutoff = where.createdAt.lt.getTime();
+        const before = rows.length;
+        for (let i = rows.length - 1; i >= 0; i--)
+          if (rows[i].createdAt.getTime() < cutoff) rows.splice(i, 1);
+        return { count: before - rows.length };
+      },
+    );
+    const service = new AnalyticsService({
+      analyticsEvent: { deleteMany },
+    } as never);
+
+    await service.pruneOld();
+
+    expect(deleteMany).toHaveBeenCalledTimes(1);
+    expect(rows.map((r) => r.id)).toEqual([2]); // только старое удалено
+  });
+
+  it('не бросает, если deleteMany падает (ретеншен не роняет процесс)', async () => {
+    const deleteMany = jest.fn(async () => {
+      throw new Error('db down');
+    });
+    const service = new AnalyticsService({
+      analyticsEvent: { deleteMany },
+    } as never);
+    await expect(service.pruneOld()).resolves.toBeUndefined();
+  });
+
+  it('нечего удалять (count 0) → не падает, лишний лог не пишется', async () => {
+    const deleteMany = jest.fn(async () => ({ count: 0 }));
+    const service = new AnalyticsService({
+      analyticsEvent: { deleteMany },
+    } as never);
+    await expect(service.pruneOld()).resolves.toBeUndefined();
+    expect(deleteMany).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('AnalyticsService.track', () => {
   const uid = 42n;
 

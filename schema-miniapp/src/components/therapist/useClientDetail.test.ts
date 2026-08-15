@@ -29,6 +29,7 @@ vi.mock('../../api', () => ({
     updateSessionInfo: vi.fn(),
     requestYsq: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;

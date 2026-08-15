@@ -1,18 +1,16 @@
 import { useTr } from '../../utils/addressForm';
 import { TherapistInviteShare } from '../../share/TherapistInviteShare';
+import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
 import type { useAddClient } from './useAddClient';
 
-interface Props {
-  addClient: ReturnType<typeof useAddClient>;
-}
+interface Props { addClient: ReturnType<typeof useAddClient> }
 
 export function AddClientForm({ addClient }: Props) {
   const tr = useTr();
-
   const {
     name: addName, setName: setAddName,
     withInvite, setWithInvite,
-    created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, valid: addValid,
+    created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, copyFailed: addCopyFailed, valid: addValid,
     inputRef: addInputRef,
     submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
   } = addClient;
@@ -41,6 +39,7 @@ export function AddClientForm({ addClient }: Props) {
                 </button>
                 <TherapistInviteShare inviteUrl={addCreated.inviteUrl} />
               </div>
+              <CopyFailedHint show={addCopyFailed} />
               <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
                 Клиент перейдёт по ссылке и автоматически подключится через бот
               </div>
