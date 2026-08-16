@@ -4,6 +4,7 @@ import { botShortUrl } from '../../utils/botConfig';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useTr } from '../../utils/addressForm';
 import { Row, SettingsLabel } from './ui';
 
 interface NameProps {
@@ -27,9 +28,10 @@ export function NameSection({
   onNameChanged,
   setSavedToast,
 }: NameProps) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
-      <SettingsLabel>КАК ТЕБЯ ЗОВУТ</SettingsLabel>
+      <SettingsLabel>{tr('КАК ТЕБЯ ЗОВУТ', 'КАК ВАС ЗОВУТ')}</SettingsLabel>
       <div
         className="card"
         style={{
@@ -43,7 +45,7 @@ export function NameSection({
         <input
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
-          placeholder="Твоё имя"
+          placeholder={tr('Твоё имя', 'Ваше имя')}
           maxLength={50}
           style={{
             flex: 1,
