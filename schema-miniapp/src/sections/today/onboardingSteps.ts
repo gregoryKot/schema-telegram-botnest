@@ -27,7 +27,7 @@ export const STEPS: StepDef[] = [
       '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
-    isDone: (p, ctx) => !!p?.ysq.completedAt || !!ctx?.hasSchemas,
+    isDone: (p, ctx) => !!p?.ysq?.completedAt || !!ctx?.hasSchemas,
   },
   {
     id: 'tracker',

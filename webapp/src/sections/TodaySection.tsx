@@ -158,7 +158,7 @@ export function TodaySection({
   const allRated   = needs.length > 0 && ratedCount === needs.length;
   const avgRaw     = allRated ? needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length : 0;
   const avgScore   = allRated ? avgRaw.toFixed(1) : null;
-  const hasSchemas = [...new Set([...(profile?.ysq.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
+  const hasSchemas = [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
 
   // Week delta for index: compare last 7 days avg vs previous 7 days avg
   const weekDelta = (() => {

@@ -63,6 +63,14 @@ describe('OnboardingWidget — видимость', () => {
     expect(screen.getByText('С чего начать')).toBeTruthy();
     expect(screen.getByText('0 из 5 · 5 впереди')).toBeTruthy();
   });
+
+  it('профиль без ysq (урезанный ответ сервера) не роняет виджет — шаг просто не засчитан', () => {
+    // Регрессия из браузерного смока #375: `p?.ysq.completedAt` защищал только
+    // profile, но не ysq — TypeError до первого рендера, белый экран «Сегодня».
+    const partial = { ...profile(), ysq: undefined } as unknown as UserProfile;
+    render(<OnboardingWidget profile={partial} {...noopProps()} />);
+    expect(screen.getByText('С чего начать')).toBeTruthy();
+  });
 });
 
 describe('OnboardingWidget — прогресс считается из реальных данных профиля (не хардкод)', () => {
