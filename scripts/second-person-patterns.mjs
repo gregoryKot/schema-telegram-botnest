@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+// Правила гейта обращения вне механики форм — вынесены из
+// check-second-person.mjs, чтобы движок (обход дерева, храповик, отчёт) не
+// рос вместе со списком паттернов/исключений (правило №10 CLAUDE.md: файл
+// дробится, а не пухнет). Тест second-person.spec.ts пинит каждый паттерн
+// живым образцом, а каждое EXCLUDE-исключение — образцом из корпуса.
+
+// Императивы 2 л. ед.ч. (глушится, если внутри вилки формы — см.
+// CALL_ARG_EXEMPT) — база из правила CLAUDE.md плюс грep реальных вызовов
+// проекта (замер 2026-08-16: частотный список аргументов tr('Слово…')).
+// true = возвратный глагол («-ся/-сь»), у него другое окончание в форме
+// «вы» (см. vyForm).
+export const TY_IMPERATIVES = [
+  ['Нажми', false], ['Открой', false], ['Введи', false], ['Выбери', false],
+  ['Попробуй', false], ['Проверь', false], ['Скопируй', false], ['Сохрани', false],
+  ['Заполни', false], ['Напиши', false], ['Отметь', false], ['Перейди', false],
+  ['Установи', false], ['Приглашай', false], ['Перезайди', false], ['Продолжи', false],
+  ['Начни', false], ['Закрой', false], ['Скажи', false], ['Заметь', false],
+  ['Запиши', false], ['Сделай', false], ['Позволь', false], ['Попроси', false],
+  ['Подумай', false], ['Спроси', false], ['Найди', false], ['Поделись', true],
+  ['Вспомни', false], ['Поиграй', false], ['Проведи', false], ['Придумай', false],
+  ['Поговори', false], ['Возьми', false], ['Послушай', false], ['Дай', false],
+  ['Прими', false], ['Назови', false], ['Выскажи', false], ['Включи', false],
+  ['Нарисуй', false], ['Пересмотри', false], ['Поставь', false], ['Пройди', false],
+  ['Запомни', false], ['Опиши', false], ['Позвони', false], ['Расскажи', false],
+  ['Признайся', true], ['Доверься', true], ['Выйди', false], ['Скорчи', false],
+  ['Переставь', false], ['Посмотри', false], ['Напой', false], ['Пойди', false],
+  ['Съешь', false], ['Встань', false], ['Зайди', false], ['Сыграй', false],
+  ['Пофотографируй', false], ['Откажись', true], ['Уйди', false], ['Почувствуй', false],
+];
+
+// \b в JS — ASCII-only, кириллицу не видит: границы слова через lookaround.
+const L = '(?<![А-Яа-яЁё])';
+const R = '(?![А-Яа-яЁё])';
+
+function bothCase(word) {
+  return `[${word[0]}${word[0].toLowerCase()}]${word.slice(1)}`;
+}
+
+// «Поделись»→«Поделитесь», «Доверься»→«Доверьтесь»: возвратные глаголы меняют
+// «-ся/-сь» на «-тесь», а не просто дописывают «те».
+function vyForm([word, reflexive]) {
+  return reflexive ? word.slice(0, -2) + 'тесь' : word + 'те';
+}
+
+const tyAlt = TY_IMPERATIVES.map(([w]) => bothCase(w)).join('|');
+const vyAlt = TY_IMPERATIVES.map((p) => bothCase(vyForm(p))).join('|');
+
+// Экспорт ради second-person.spec.ts — пинит каждый паттерн живым образцом
+// (как PATTERNS в check-robot-phrases.mjs/check-gendered-forms.mjs).
+export const PATTERNS = [
+  [
+    'pronoun-ty',
+    new RegExp(
+      `${L}(?:[Тт]ы|[Тт]ебя|[Тт]ебе|[Тт]обой|[Тт]во(?:его|ему|ими|ей|им|их|ой|ую|й|я|ё|е|и|ю))${R}`,
+      'g',
+    ),
+  ],
+  [
+    'pronoun-vy',
+    new RegExp(
+      `${L}(?:[Вв]ы|[Вв]ас|[Вв]ам|[Вв]ами|[Вв]аш(?:его|ему|ими|ей|им|их|у|а|е|и)?)${R}`,
+      'g',
+    ),
+  ],
+  ['imperative-ty', new RegExp(`${L}(?:${tyAlt})${R}`, 'g')],
+  ['imperative-vy', new RegExp(`${L}(?:${vyAlt})${R}`, 'g')],
+];
+
+// Зоны, где строка на «ты»/«вы» осознанно живёт вне механики addressForm —
+// не долг, а архитектурное решение. Каждая запись проверена вручную (не
+// файл целиком «показался похожим») — см. второй прогон свипа 2026-08:
+export const EXCLUDE = [
+  // Маркетинг сайта — не привязан к addressForm (CLAUDE.md: «Лендинг/статьи/
+  // игра сайта — маркетинг, не привязаны к addressForm, их не трогаем»).
+  /webapp\/src\/pages\/(LandingPage|ProductLandingPage|ArticlesPage|GamePage|ReviewsPage|articleDiagrams)/,
+  // Публичный лендинг психолога (запись на сессию до входа) — тот же
+  // маркетинг, просто в отдельной папке/компоненте. Проверено: ни один файл
+  // папки, ни BookingPicker не импортируют useTr/useAddressForm — форма там
+  // физически негде взять (нет залогиненного пользователя).
+  /webapp\/src\/pages\/landing\//,
+  /webapp\/src\/components\/BookingPicker\.tsx$/,
+  // Статьи сайта — единая форма «вы» (docs/ARTICLES.md), addressForm не
+  // читают, как и лендинг.
+  /^src\/articles\/articles\.seed\.ts$/,
+  // Канал «Здоровый Взрослый» — вещание разом всем подписчикам, у поста нет
+  // конкретного userId и его формы; HEALTHY_ADULT.md прямо фиксирует «ты»
+  // для всего канала.
+  /^src\/bot\/healthy-adult\.data\.ts$/,
+  // До входа выбирать нечего — гость ещё не сделал выбор формы, а
+  // BookingPaidPage вообще не про пользователя приложения (клиент разовой
+  // платной записи, попадает по ссылке из Robokassa, аккаунта не заводит).
+  // ПРОВЕРЕНО и намеренно НЕ добавлен: LinkDevicePage.tsx — он требует
+  // authenticated (иначе редиректит на /login) и показывает контент только
+  // вошедшему пользователю с известной формой — это реальный долг, не зона.
+  /webapp\/src\/pages\/LoginPage\.tsx$/,
+  /webapp\/src\/pages\/BookingPaidPage\.tsx$/,
+  // Юридические документы — исключение прямо названо в docs/VOICE.md,
+  // формальный регистр там уместен и не варьируется по форме.
+  /webapp\/src\/pages\/(PrivacyPage|OfferPage)\.tsx$/,
+  // Админка сайта — отдельный ключ доступа (ADMIN_BOOKING_KEY), читает
+  // только владелец, addressForm обычного пользователя тут ни при чём.
+  /webapp\/src\/pages\/admin\//,
+  /webapp\/src\/pages\/AdminPage\.tsx$/,
+  // Диагностика площадок канала (MAX/Pinterest/Threads/VK/Telegram) —
+  // explain()-подсказки читает только владелец в логах/админке при сбое
+  // публикации поста; это операционный, а не продуктовый текст.
+  /^src\/channel\/targets\/.*\.target\.ts$/,
+  /^src\/telegram\/telegram-channel\.target\.ts$/,
+  // /stats и DM-алерт об иссякающем пуле фраз — тоже владелец-only отчёты
+  // (ADMIN_ID), не текст для подписчика.
+  /^src\/bot\/healthy-adult\.pool-alert\.ts$/,
+  /^src\/bot\/auth-health-metrics\.format\.ts$/,
+  // Мета-код: детектор остаточных «ты»-форм для тестов «вы»-режима — его
+  // регэксп обязан содержать реальные «ты»-слова буквально, это не
+  // UI-строка (тот же случай, что address-form-baseline.json у
+  // check-address-form.mjs).
+  /^shared\/src\/utils\/tyFormsSweep\.ts$/,
+  // 'вам' здесь — нейтральная дательный-падежная подпись CTA к ТРЕТЬЕМУ
+  // лицу («написать [терапевту] → написать вам»), не выбор формы обращения
+  // к читателю. Проверено: при isTherapist=true кнопка вообще не рендерится
+  // (isSelf), значение 'вам' никогда не попадает на экран.
+  /^shared\/src\/utils\/therapistContact\.ts$/,
+];
+
+// Вызовы, чьи строковые аргументы не обязаны отдельно идти через свою
+// tr()-вилку — по одной из двух причин:
+//   1. Сам вызов И ЕСТЬ вилка форм (tr/t/pickForm) — вложенные литералы уже
+//      разведены её же аргументами.
+//   2. Это владелец-only канал (DM/e-mail админу) — читает его один человек
+//      (ADMIN_ID), addressForm обычного пользователя к нему неприменим (см.
+//      EXCLUDE выше — тот же принцип, просто выражен как имя функции, а не
+//      путь файла: booking/payment/donation/subscription шлют "Проверьте
+//      вручную" именно в этот сорт вызова вперемешку с обычным кодом).
+export const CALL_ARG_EXEMPT = [
+  'tr',
+  'pickForm',
+  't',
+  'alertAdmin',
+  'notifyAdminText',
+  'notifyAdminWithFallback',
+  'sendAdmin',
+];
+
+// Анкер легитимной таблицы пар ty/вы: `const X: Array<[string, string]> = [`
+// — проверено (2026-08) единственное реальное использование в проекте:
+// DONATE_MESSAGES/REMINDER_INTROS/BREAK_INTROS/NUDGE_TEXTS, все — списки
+// [ты-текст, вы-текст]. Другого смысла у этой типизации в кодовой базе нет.
+export const PAIR_ARRAY_ANCHOR = /Array<\[string,\s*string\]>\s*=\s*\[/g;
