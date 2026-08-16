@@ -4,5 +4,6 @@
   "shared/src/utils/tyFormsSweep.ts": "hasTyForms — утилита для тестов ты/вы в обоих фронтендах, в прод-коде не нужна",
   "src/main.ts": "точка входа бэкенда — её никто не импортирует по смыслу",
   "src/security/controller-classification.ts": "реестр «какой контроллер чем защищён» — читается спеком-сверкой, в рантайме не нужен",
-  "webapp/src/main.tsx": "точка входа сайта — подключается из index.html, а не импортом"
+  "webapp/src/main.tsx": "точка входа сайта — подключается из index.html, а не импортом",
+  "schema-miniapp/src/utils/telemetryUrl.ts": "Двухстрочный реэкспорт shared-копии. Собственный потребитель ушёл (reportClientError переехал в shared/api/clientErrorReport.ts и берёт shared/utils/telemetryUrl напрямую), но файл держит пару webapp ↔ miniapp в check-paired-files.mjs: у webapp-близнеца потребитель жив (App.tsx, санитайзинг URL для Метрики). Появится новый miniapp-потребитель телеметрии URL — импортирует отсюда, а не заведёт третью копию."
 }

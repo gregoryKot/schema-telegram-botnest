@@ -86,11 +86,10 @@ export function TrackerOverlay({
           try {
             await api.saveRating(needId, v, date);
             setLastSavedAt(new Date());
-          } catch {
-            // В webapp (в отличие от мини-аппа) нет outbox-очереди — оценка
-            // при сбое сети теряется НАВСЕГДА, а не доотправляется позже.
-            // Без отчёта наверх об этом никто не узнает (правило CLAUDE.md
-            // №14: обработанная авария невидимее необработанной).
+          } catch (e) {
+            // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
+            // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
+            console.error('saveRating failed', e);
             reportClientError({
               message: 'tracker backfill rating save failed',
               section: 'tracker',
@@ -108,9 +107,9 @@ export function TrackerOverlay({
           const res = await api.saveRating(needId, v);
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
-        } catch {
-          // Та же причина, что в бэкафилл-ветке выше: outbox'а в webapp нет,
-          // оценка теряется без следа, а пользователь видит её как проставленную.
+        } catch (e) {
+          // См. бэкафилл-ветку выше: здесь только ошибка запроса.
+          console.error('saveRating failed', e);
           reportClientError({
             message: 'tracker rating save failed',
             section: 'tracker',

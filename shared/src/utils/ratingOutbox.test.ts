@@ -1,14 +1,19 @@
-// Тест оффлайн-очереди оценок (этап 3, финальный пункт — см. api.ts
-// saveRating/flushOutbox). Чистые функции, без jsdom — localStorage
-// замокан обычным объектом.
+// @vitest-environment jsdom
+// Тест оффлайн-очереди оценок (правило №3 — перенесено из
+// schema-miniapp/src/utils/outbox.test.ts, единственная копия теперь здесь;
+// webapp получает тот же контракт через webapp/src/apiRating.ts). Реальный
+// jsdom-localStorage — тот же паттерн, что у drafts.test.ts в этом каталоге.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueueRating, flushRatingOutbox, OutboxItem } from './outbox';
-import { createLocalStorageMock } from './localStorageMock';
+import {
+  enqueueRating,
+  flushRatingOutbox,
+  type OutboxItem,
+} from './ratingOutbox';
 
 const OUTBOX_KEY = 'rating_outbox_v1';
 
 beforeEach(() => {
-  (globalThis as any).localStorage = createLocalStorageMock();
+  localStorage.clear();
 });
 
 const item = (needId: string, value: number, date: string): OutboxItem => ({
