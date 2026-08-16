@@ -638,6 +638,7 @@ describe('AuthService — requestEmailLogin', () => {
     expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
       'user@example.com',
       expect.stringContaining('/api/auth/email/callback?token='),
+      'ty',
     );
     // TTL магической ссылки — ровно 30 минут (EMAIL_TOKEN_TTL_MS), не 0.5мс
     // и не 1.8мс, как дала бы поломанная арифметика.

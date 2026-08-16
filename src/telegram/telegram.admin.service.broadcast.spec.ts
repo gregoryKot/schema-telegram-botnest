@@ -1,86 +1,40 @@
-// Продолжение telegram.service.commands.spec.ts (лимит ~300 строк на файл,
-// CLAUDE.md — вынесено в отдельный файл): /zayavki (фолбэк-доступ к заявкам
-// терапевта) и /broadcast (массовая рассылка админа).
+// /zayavki (фолбэк-доступ к заявкам терапевта) и /broadcast (массовая
+// рассылка админа) на TelegramAdminService. Перенесено из
+// telegram.service.broadcast.spec.ts при выносе админ-хендлеров в отдельный
+// сервис (правило №10 CLAUDE.md — лимит размера файла). /zv, /stats,
+// /testdonate — telegram.admin.service.spec.ts; treq —
+// telegram.admin.service.treq.spec.ts.
 import { Logger } from '@nestjs/common';
-import { TelegramService } from './telegram.service';
+import { TelegramAdminService } from './telegram.admin.service';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
 function makeDeps(overrides: Record<string, any> = {}) {
-  const botService = {
-    getUserSettings: jest.fn().mockResolvedValue(null),
-    hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
-    cancelAllPreReminders: jest.fn().mockResolvedValue(0),
-    ...overrides.botService,
-  };
-  const analyticsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core'),
-    ...overrides.analyticsService,
-  };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
-  };
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
-  };
+  const adminStatsService = { ...overrides.adminStatsService };
+  const statsReport = { ...overrides.statsReport };
+  const healthyAdultService = { ...overrides.healthyAdultService };
   const accountService = {
-    registerUser: jest.fn().mockResolvedValue(undefined),
     getBroadcastUserIds: jest.fn().mockResolvedValue([]),
     markUserBlocked: jest.fn().mockResolvedValue(undefined),
     ...overrides.accountService,
   };
-  const pairsService = {
-    joinPair: jest.fn().mockResolvedValue(true),
-    ...overrides.pairsService,
-  };
-  const practicesService = {
-    checkinPlan: jest.fn().mockResolvedValue(undefined),
-    ...overrides.practicesService,
-  };
-  const notificationService = {
-    cancel: jest.fn().mockResolvedValue(undefined),
-    schedule: jest.fn().mockResolvedValue(undefined),
-    ...overrides.notificationService,
-  };
   const therapistRequestService = {
-    approve: jest.fn().mockResolvedValue(undefined),
-    reject: jest.fn().mockResolvedValue(undefined),
     listPending: jest.fn().mockResolvedValue([]),
     ...overrides.therapistRequestService,
   };
-  const publisher = {
-    publish: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.publisher,
-  };
-  const channelCheck = {
-    log: jest.fn().mockResolvedValue(''),
-    checkOne: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.channelCheck,
-  };
-  const analyticsEvents = {
-    track: jest.fn().mockResolvedValue(undefined),
-    ...overrides.analyticsEvents,
-  };
+  const publisher = { ...overrides.publisher };
+  const channelCheck = { ...overrides.channelCheck };
   const fakeBot = makeFakeBot();
-  const service = new TelegramService(
+  const service = new TelegramAdminService(
     fakeBot.bot,
-    botService,
-    analyticsService,
+    adminStatsService,
     statsReport,
     healthyAdultService,
     accountService,
-    pairsService,
-    practicesService,
-    notificationService,
     therapistRequestService,
     publisher,
     channelCheck,
-    analyticsEvents,
   );
   return { service, fakeBot, accountService, therapistRequestService };
 }
@@ -95,7 +49,7 @@ afterEach(() => {
   else process.env.ADMIN_ID = OLD_ADMIN_ID;
 });
 
-describe('TelegramService — /zayavki (только админ, фолбэк-доступ к заявкам)', () => {
+describe('TelegramAdminService — /zayavki (только админ, фолбэк-доступ к заявкам)', () => {
   it('не-админ получает отказ, listPending не вызывается', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, therapistRequestService } = makeDeps();
@@ -144,7 +98,7 @@ describe('TelegramService — /zayavki (только админ, фолбэк-д
   });
 });
 
-describe('TelegramService — /broadcast (только админ)', () => {
+describe('TelegramAdminService — /broadcast (только админ)', () => {
   it('не-админ получает отказ, рассылка не запускается', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, accountService } = makeDeps();

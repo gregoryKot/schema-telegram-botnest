@@ -6,7 +6,8 @@ import { SectionLabel } from './SectionLabel';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
-
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
 function ianaToUtcOffset(iana: string): number {
   try {
     const now = new Date();
@@ -21,7 +22,6 @@ function ianaToUtcOffset(iana: string): number {
     return 3;
   }
 }
-
 export const CURATED: Record<string, string[]> = {
   attachment: [
     'Написать кому-то близкому без повода',
@@ -54,14 +54,12 @@ export const CURATED: Record<string, string[]> = {
     'Соблюдать одно правило для себя весь день',
   ],
 };
-
 const REMINDER_OPTIONS = [
   { label: 'Утром', localHour: 9 },
   { label: 'Днём', localHour: 13 },
   { label: 'Вечером', localHour: 19 },
   { label: 'Без напоминания', localHour: null },
 ];
-
 interface Props {
   needId: string;
   needLabel: string;
@@ -290,6 +288,8 @@ export function PlanSheet({
                 fontFamily: 'inherit',
               }}
             />
+            {/* правило №7: свободный текст обязан проходить кризисную детекцию */}
+            {detectCrisisAny(customText) && <CrisisCard surface="plan" />}
           </div>
           {customText.trim() && (
             <button onClick={handleCustomSubmit} className="btn-primary">

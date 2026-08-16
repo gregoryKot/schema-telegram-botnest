@@ -80,13 +80,22 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
     expect(fetchMockLocal).not.toHaveBeenCalled();
     expect(fallback).toHaveBeenCalledTimes(1);
+    // Тот же контент заявки, что и в остальных сценариях фолбэка — не пустышка.
+    expect(fallback.mock.calls[0][0]).toContain('#42');
   });
 
   it('DM админу прошёл (Telegram ok) → e-mail-фолбэк НЕ нужен', async () => {
-    mockFetchForNotify(true);
+    const fetchMockLocal = mockFetchForNotify(true);
     await makeService().notifyAdmin(NOTIFY_REQ);
 
     expect(fallback).not.toHaveBeenCalled();
+    // Успешный путь — DM реально ушёл в Telegram, а не просто «раньше не дошли до фолбэка».
+    expect(fetchMockLocal).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMockLocal.mock.calls[0];
+    expect(url).toBe('https://api.telegram.org/bottest-token/sendMessage');
+    const body = JSON.parse(init.body as string);
+    expect(body.chat_id).toBe(999); // ADMIN_ID из process.env в этом describe
+    expect(body.text).toContain('#42');
   });
 
   it('BOT_TOKEN не задан → sendTg не бьёт по сети, сразу e-mail-фолбэк', async () => {

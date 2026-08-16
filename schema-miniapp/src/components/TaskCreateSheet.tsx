@@ -6,7 +6,7 @@ import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-
+import { useTr } from '../utils/addressForm';
 type TaskType =
   | 'diary_streak'
   | 'tracker_streak'
@@ -25,7 +25,6 @@ interface Props {
   onCreated: () => void;
   onClose: () => void;
 }
-
 const STREAK_OPTIONS = [3, 7, 14, 30];
 
 const TASK_OPTIONS: {
@@ -115,6 +114,7 @@ export function TaskCreateSheet({
   onCreated,
   onClose,
 }: Props) {
+  const tr = useTr();
   const [type, setType] = useState<TaskType>(defaultType ?? 'diary_streak');
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
@@ -169,15 +169,15 @@ export function TaskCreateSheet({
   async function handleCreate() {
     const finalText = getPayloadText().trim();
     if (type === 'custom' && !finalText) {
-      setError('Введи описание задания');
+      setError(tr('Введи описание задания', 'Введите описание задания'));
       return;
     }
     if (type === 'schema_intro' && !selectedSchemaId) {
-      setError('Выбери схему');
+      setError(tr('Выбери схему', 'Выберите схему'));
       return;
     }
     if (type === 'mode_intro' && !selectedModeId) {
-      setError('Выбери режим');
+      setError(tr('Выбери режим', 'Выберите режим'));
       return;
     }
     setSaving(true);

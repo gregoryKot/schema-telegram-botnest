@@ -106,8 +106,11 @@ describe('ArticleSeoMiddleware', () => {
     const { req, res } = mockReqRes('/articles/does-not-exist');
     const next = jest.fn();
     await mw.use(req, res, next);
-    expect(next).toHaveBeenCalled();
+    // next() зовётся без аргументов (не next(err)) — это «пропусти дальше», а не ошибка.
+    expect(next).toHaveBeenCalledWith();
     expect(res.send).not.toHaveBeenCalled();
+    // SEO-заголовок не проставлен — раздача уходит ServeStatic как есть.
+    expect(res.setHeader).not.toHaveBeenCalled();
   });
 
   it('falls through for the /articles list route (not a single article)', async () => {
@@ -115,7 +118,9 @@ describe('ArticleSeoMiddleware', () => {
     const { req, res } = mockReqRes('/articles');
     const next = jest.fn();
     await mw.use(req, res, next);
-    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith();
+    // Список статей — не одиночная статья: инжекция не запускается вовсе.
+    expect(res.send).not.toHaveBeenCalled();
   });
 
   it('rewrites canonical host for alias domains', async () => {

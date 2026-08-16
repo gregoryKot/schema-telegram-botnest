@@ -19,6 +19,7 @@ describe('classifyClientErrorSection', () => {
     expect(classifyClientErrorSection('appshell.bootstrap')).toBe('today');
     expect(classifyClientErrorSection('therapist.clients')).toBe('cabinet');
     expect(classifyClientErrorSection('addressForm')).toBe('profile');
+    expect(classifyClientErrorSection('tracker')).toBe('today');
   });
 
   it('незнакомая секция — other, а не отброшена/не падает', () => {

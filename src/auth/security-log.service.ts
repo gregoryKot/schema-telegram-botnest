@@ -86,7 +86,17 @@ export class SecurityLogService {
     this.logger.log(line);
     if (ALERT_EVENTS.has(event)) {
       const { allow, suppressed } = this.budget.take(event, this.now());
-      if (allow) this.alertAdmin(event, data, suppressed).catch(() => null);
+      // Недоставленный DM обязан быть виден хоть где-то: структурный лог
+      // выше не говорит, дошло ли предупреждение до админа — тишина здесь
+      // и есть урок инцидента 2026-08-08 (обработанная авария невидимее
+      // необработанной). Рекурсии в admin-alert.ts не создаём: logger.warn
+      // не уходит в DM/e-mail, в отличие от AlertLogger.
+      if (allow)
+        this.alertAdmin(event, data, suppressed).catch((err) =>
+          this.logger.warn(
+            `не удалось отправить DM админу про ${event}: ${(err as Error)?.message}`,
+          ),
+        );
     }
   }
 

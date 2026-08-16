@@ -39,6 +39,7 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   'appshell.bootstrap': 'today', // webapp/src/components/appShell/useBootstrapLoad.ts
   'therapist.clients': 'cabinet', // оба TherapistClientSheet.tsx — сбой загрузки ростера
   addressForm: 'profile', // shared/src/settings/useAddressFormChoice.ts, оба AddressFormPicker.tsx
+  tracker: 'today', // webapp/src/components/TrackerOverlay.tsx — сбой сохранения оценки (не-сетевой)
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

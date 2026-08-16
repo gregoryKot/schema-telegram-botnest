@@ -80,9 +80,24 @@ describe('SubscriptionService.chargeDue — защита от двойного �
 
   it('без pending-charge списание уходит и nextChargeAt сдвигается', async () => {
     const { service, robokassa, prisma } = makeService({});
+    const before = Date.now();
     await service.chargeDue();
     expect(robokassa.chargeRecurring).toHaveBeenCalledTimes(1);
-    expect(prisma.subscription.update).toHaveBeenCalled();
+    // Списание уходит с правильным InvId нового платежа и previousInvId
+    // подписки (Robokassa требует ссылку на первый платёж для рекуррента).
+    expect(robokassa.chargeRecurring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        invId: SUBSCRIPTION_INVID_BASE + 55, // id созданного charge из мока
+        previousInvId: SUB.firstInvId,
+        amount: SUB.amount,
+      }),
+    );
+    expect(prisma.subscription.update).toHaveBeenCalledTimes(1);
+    const updateArg = (prisma.subscription.update as jest.Mock).mock
+      .calls[0][0];
+    expect(updateArg.where).toEqual({ id: SUB.id });
+    // nextChargeAt сдвинут вперёд, а не оставлен в прошлом (SUB.nextChargeAt — уже просроченная дата).
+    expect(updateArg.data.nextChargeAt.getTime()).toBeGreaterThan(before);
   });
 });
 

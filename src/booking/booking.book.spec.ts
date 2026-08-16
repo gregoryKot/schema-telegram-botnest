@@ -223,7 +223,18 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
       type: SessionType.SESSION_50,
     });
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1); // advisory lock взят
+    // Именно тот advisory-lock ключ, что защищает слот бронирований (не случайный).
+    const lockCall = (tx.$queryRaw as jest.Mock).mock.calls[0];
+    expect(lockCall[0].join('?')).toContain('pg_advisory_xact_lock');
+
     expect(tx.booking.create).toHaveBeenCalledTimes(1);
+    const created = (tx.booking.create as jest.Mock).mock.calls[0][0].data;
+    expect(created.startsAt).toEqual(INSIDE_WINDOW);
+    expect(created.durationMin).toBe(50);
+    expect(created.type).toBe(SessionType.SESSION_50);
+    // Платная сессия заходит в БД со статусом HELD — CONFIRMED выставляется
+    // отдельным update() уже после транзакции (auto-confirm без Robokassa).
+    expect(created.status).toBe(BookingStatus.HELD);
   });
 
   it('слот уже занят другой HELD/CONFIRMED бронью — ConflictException, вторая бронь не создаётся', async () => {

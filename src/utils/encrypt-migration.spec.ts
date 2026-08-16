@@ -196,12 +196,15 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   it('строка, уже зашифрованная текущим ключом, не переписывается повторно', async () => {
     const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
     const enc = crypto.encrypt('anxiety,anger')!;
-    const db = makeDb({ notes: [{ id: 1, tags: enc }] }) as any;
+    const notesRows = [{ id: 1, tags: enc }];
+    const db = makeDb({ notes: notesRows }) as any;
     await migrateClinicalLabels(db);
     // Строка реально осмотрена (findMany дошёл), просто признана
     // уже-шифротекстом — это не bail out по отсутствию ключа.
     expect(db.note.findMany).toHaveBeenCalledTimes(1);
     expect(db.note.update).not.toHaveBeenCalled();
+    // Байты в БД остались тем же шифротекстом — не переписаны «в себя же».
+    expect(notesRows[0].tags).toBe(enc);
   });
 });
 
@@ -212,9 +215,8 @@ describe('поведение при уже проведённой смене ENC
 
     // Ротация ключа уже произошла: текущий — KEY_B, ENCRYPTION_KEY_OLD не задан.
     const { migrateClinicalLabels } = load({ key: KEY_B });
-    const db = makeDb({
-      schemaDiaryEntries: [{ id: 1, schemaIds: oldBlob }],
-    }) as any;
+    const entryRows = [{ id: 1, schemaIds: oldBlob }];
+    const db = makeDb({ schemaDiaryEntries: entryRows }) as any;
     await migrateClinicalLabels(db);
 
     // Поле — строка (не массив), поэтому эвристика считает его «уже
@@ -222,6 +224,8 @@ describe('поведение при уже проведённой смене ENC
     // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого ключа.
     expect(db.schemaDiaryEntry.findMany).toHaveBeenCalledTimes(1);
     expect(db.schemaDiaryEntry.update).not.toHaveBeenCalled();
+    // Значение в «БД» не тронуто вообще — тот же blob, что записали в фикстуру.
+    expect(entryRows[0].schemaIds).toBe(oldBlob);
   });
 
   it('строковое поле под старым ключом при активном ENCRYPTION_KEY_OLD пропускается (не перешифровывается новым ключом)', async () => {

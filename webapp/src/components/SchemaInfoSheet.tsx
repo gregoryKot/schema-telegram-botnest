@@ -343,7 +343,7 @@ export function SchemaInfoContent({ initialTab, highlight }: { initialTab?: Tab;
 }
 
 export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, highlightSchema: initHighlight }: Props) {
-  const goBack = useHistorySheet(onClose);
+  const goBack = useHistorySheet(onClose); const tr = useTr();
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(initialTab ?? 'needs');
@@ -388,7 +388,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
               <span style={{ fontSize: 22 }}>⏸</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--accent-yellow)' }}>Незаконченный тест</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>Нажми, чтобы продолжить с места остановки</div>
+                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>{tr('Нажми, чтобы продолжить с места остановки', 'Нажмите, чтобы продолжить с места остановки')}</div>
               </div>
               <span style={{ fontSize: 18, color: 'var(--accent-yellow)' }}>›</span>
             </div>

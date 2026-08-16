@@ -53,11 +53,11 @@ export function TwoFactorChallengePage() {
     <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 420, margin: '0 auto' }}>
       <div className="eyebrow" style={{ marginBottom: 14 }}>Двухфакторная проверка</div>
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 14 }}>
-        Введи код из приложения
+        Код из приложения-аутентификатора
       </h1>
       <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 32 }}>
-        Открой приложение-аутентификатор (Google Authenticator, 1Password, Bitwarden и т.п.) и введи 6-значный код.
-        Можно ввести один из recovery-кодов, если потерял доступ к телефону.
+        Понадобится код из приложения-аутентификатора (Google Authenticator, 1Password, Bitwarden и т.п.) — 6 цифр.
+        Подойдёт и один из recovery-кодов, если доступ к телефону потерян.
       </div>
 
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

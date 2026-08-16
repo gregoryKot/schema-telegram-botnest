@@ -24,7 +24,7 @@ const buildModes = (tr: (ty: string, vy: string) => string) => [
     id: 'angry_child',
     label: 'Злой Ребёнок',
     desc: 'Злость, раздражение, хочется взорваться',
-    response: 'Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.',
+    response: tr('Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.', 'Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давайте выясним, что за ней стоит.'),
     color: '#f87171',
   },
   {
@@ -206,7 +206,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 32 }}>Сохранено</h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-            {tr('Это шаг навстречу себе. Уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
+            Это шаг навстречу себе. Уже немало.
           </p>
           <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
@@ -245,7 +245,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12, marginTop: 20 }}>
-            {tr('Всё правильно', 'Вы сделали правильно')}
+            Всё правильно
           </h1>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
             {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br/>Это пройдёт.

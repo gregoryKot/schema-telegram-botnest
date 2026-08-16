@@ -103,6 +103,11 @@ describe('AnalyticsService.track', () => {
     await service.track(uid, 'totally_unknown' as AnalyticsEventName, {});
 
     expect(create).not.toHaveBeenCalled();
+
+    // Guard не «залипает» — следующий вызов с известным именем всё равно пишется.
+    await service.track(uid, 'share_card', { kind: 'weekly' });
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0].data.name).toBe('share_card');
   });
 
   it('ошибка БД не пробрасывается — аналитика не ломает действие юзера', async () => {

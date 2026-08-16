@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE } from '../../utils/apiBase';
+import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -12,7 +12,7 @@ interface TherapistRequest {
 }
 
 export function TherapistRequestSection({ accessToken }: { accessToken: string | null }) {
-  const [req, setReq] = useState<TherapistRequest | null>(null);
+  const tr = useTr(); const [req, setReq] = useState<TherapistRequest | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -33,7 +33,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   const submit = async () => {
     setErr(null);
     if (!fullName.trim() || !qualification.trim() || !contacts.trim()) {
-      setErr('Заполни ФИО, квалификацию и контакты');
+      setErr(tr('Заполни ФИО, квалификацию и контакты', 'Заполните ФИО, квалификацию и контакты'));
       return;
     }
     setBusy(true);
@@ -66,21 +66,21 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          Твоя заявка на рассмотрении. Когда админ её обработает – придёт уведомление в Telegram.
+          {tr('Твоя заявка на рассмотрении. Рассмотрим её и напишем в боте.', 'Ваша заявка на рассмотрении. Рассмотрим её и напишем в боте.')}
         </div>
       ) : req?.status === 'approved' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
-          Заявка одобрена. Перезайди в приложение.
+          {tr('Заявка одобрена. Перезайди в приложение.', 'Заявка одобрена. Перезайдите в приложение.')}
         </div>
       ) : !open ? (
         <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          Я психолог – подать заявку
+          Я психолог — подать заявку
         </button>
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>
           {req?.status === 'rejected' && (
             <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
-              Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. Можешь подать новую.
+              Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
             </div>
           )}
           <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО"

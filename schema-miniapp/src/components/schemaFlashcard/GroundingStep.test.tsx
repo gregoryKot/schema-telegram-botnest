@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-// GroundingStep — экран заземления (дыхание) во флэшкарте. Проверяет обе
-// формы обращения через проп tr (правило «ты/вы» CLAUDE.md), кнопки
+// GroundingStep — экран заземления (дыхание) во флэшкарте. Заголовок «Всё
+// правильно» безличный и одинаков в обеих формах (было: «Вы сделали
+// правильно» — читалось как оценка после кризисного шага). Остальные строки
+// всё ещё проверяют проп tr (правило «ты/вы» CLAUDE.md), плюс кнопки
 // «продолжить»/«история»/«закрыть» и что «История» скрыта на пустой БД.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -13,8 +15,8 @@ afterEach(() => {
 const trTy = (ty: string) => ty;
 const trVy = (_ty: string, vy: string) => vy;
 
-describe('GroundingStep — обращение ты/вы', () => {
-  it('форма «ты»: местоимение 2 л. ед.ч.', () => {
+describe('GroundingStep — заголовок безличный в обеих формах', () => {
+  it('форма «ты»: «Всё правильно», без оценки на «ты»', () => {
     render(
       <GroundingStep
         allCardsCount={0}
@@ -27,7 +29,7 @@ describe('GroundingStep — обращение ты/вы', () => {
     expect(screen.getByText('Всё правильно')).toBeTruthy();
   });
 
-  it('форма «вы»: согласованное множественное число', () => {
+  it('форма «вы»: тот же безличный заголовок, не «Вы сделали правильно»', () => {
     render(
       <GroundingStep
         allCardsCount={0}
@@ -37,7 +39,8 @@ describe('GroundingStep — обращение ты/вы', () => {
         onShowHistory={() => {}}
       />,
     );
-    expect(screen.getByText('Вы сделали правильно')).toBeTruthy();
+    expect(screen.getByText('Всё правильно')).toBeTruthy();
+    expect(screen.queryByText('Вы сделали правильно')).toBeNull();
   });
 });
 

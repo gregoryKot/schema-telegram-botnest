@@ -1,6 +1,6 @@
 // Тест когортного retention и воронки онбординга (аудит 2026-07, этап 4.6).
 // SQL мокается — проверяем сборку структуры и форматирование блока /stats.
-import { BotAnalyticsService } from './bot.analytics.service';
+import { BotAdminStatsService } from './bot.admin-stats.service';
 import { formatRetentionBlock, RetentionStats } from './retention.format';
 
 describe('getRetentionStats', () => {
@@ -24,7 +24,7 @@ describe('getRetentionStats', () => {
     // Promise.all исполняет point(1/7/30) и filled в порядке объявления —
     // но $queryRaw вызывается конкурентно; порядок фиксируем очередью выше,
     // поэтому важно: точки и filled различимы по форме результата.
-    const svc = new BotAnalyticsService(prisma);
+    const svc = new BotAdminStatsService(prisma);
     const s = await svc.getRetentionStats();
     expect(s.d1).toEqual({ cohort: 10, retained: 4 });
     expect(s.d7).toEqual({ cohort: 8, retained: 2 });
