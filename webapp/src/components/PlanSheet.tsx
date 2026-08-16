@@ -4,7 +4,7 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot'; import { detectCrisisAny } from '../utils/crisisMarkers'; import { CrisisCard } from './CrisisCard';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -151,7 +151,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
                 maxLength={200}
                 rows={2}
                 className={'paper-input ' + (customText.trim() ? 'is-filled' : '')}
-              />
+              />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
               {customText.trim() && (
                 <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary" style={{ marginTop: 8 }}>
                   Продолжить →

@@ -6,12 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { CADENCE_LABELS } from '../notification/notification.cadence.service';
 import { tzOffsetAt } from '../notification/notification.time';
+import { normalizeAddressForm, t } from '../notification/address-form';
 
 const TIMEZONES: { label: string; tz: string }[] = [
   { label: 'Лос-Анджелес', tz: 'America/Los_Angeles' },
@@ -124,9 +125,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.reply(text, keyboard);
       } catch (err) {
         this.logger.error('settings command failed', err);
-        await ctx
-          .reply('Не удалось загрузить настройки. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.reply(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -153,9 +152,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
         this.logger.error('settings:toggle failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -178,15 +175,17 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
         this.logger.error('settings:toggle_gamified failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
     this.bot.action('settings:pick_hour', async (ctx) => {
       try {
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
+        if (!rawId) return;
+        const s = await this.botService.getUserSettings(BigInt(rawId));
+        const form = normalizeAddressForm(s?.addressForm);
         const hours = [
           8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
         ];
@@ -202,14 +201,16 @@ export class TelegramSettingsService implements OnModuleInit {
         }
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
-          'Выбери время уведомления (в твоём часовом поясе):',
+          t(
+            form,
+            'Выбери время уведомления (в твоём часовом поясе):',
+            'Выберите время уведомления (в вашем часовом поясе):',
+          ),
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {
         this.logger.error('settings:pick_hour failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -231,15 +232,17 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
         this.logger.error('settings:hour failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
     this.bot.action('settings:pick_tz', async (ctx) => {
       try {
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
+        if (!rawId) return;
+        const s = await this.botService.getUserSettings(BigInt(rawId));
+        const form = normalizeAddressForm(s?.addressForm);
         const buttons = TIMEZONES.map((entry) => {
           const offset = tzOffsetAt(entry.tz);
           const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
@@ -252,14 +255,12 @@ export class TelegramSettingsService implements OnModuleInit {
         });
         buttons.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
-          'Выбери свой часовой пояс:',
+          t(form, 'Выбери свой часовой пояс:', 'Выберите свой часовой пояс:'),
           Markup.inlineKeyboard(buttons),
         );
       } catch (err) {
         this.logger.error('settings:pick_tz failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -282,9 +283,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
         this.logger.error('settings:tz failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -301,9 +300,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
         this.logger.error('settings:back failed', err);
-        await ctx
-          .answerCbQuery('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
   }

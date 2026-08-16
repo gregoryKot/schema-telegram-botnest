@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
@@ -63,9 +63,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         );
       } catch (err) {
         this.logger.error('settings:pick_freq failed', err);
-        await ctx
-          .answerCbQuery('Не получилось. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -102,9 +100,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         );
       } catch (err) {
         this.logger.error('settings:pick_quiet failed', err);
-        await ctx
-          .answerCbQuery('Не получилось. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
       }
     });
 

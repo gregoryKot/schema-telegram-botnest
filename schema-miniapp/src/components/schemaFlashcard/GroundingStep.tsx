@@ -27,7 +27,7 @@ export function GroundingStep({
             marginBottom: 10,
           }}
         >
-          {tr('Всё правильно', 'Вы сделали правильно')}
+          Всё правильно
         </div>
         <div
           style={{

@@ -340,7 +340,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    placeholder="Твоё имя"
+                    placeholder={tr('Твоё имя', 'Ваше имя')}
                     maxLength={50}
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit' }}
                   />
@@ -401,7 +401,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Мой терапевт */}
                 {userRole !== 'THERAPIST' && (<>
-                  <SHead id="s-therapist" label="Мой терапевт" hint="Терапевт видит трекер и задания. Остальное — на твоё усмотрение." />
+                  <SHead id="s-therapist" label="Мой терапевт" hint={tr('Терапевт видит трекер и задания. Остальное — на твоё усмотрение.', 'Терапевт видит трекер и задания. Остальное — на ваше усмотрение.')} />
                   {therapyRelation === undefined ? (
                     <SRow title="Загрузка..." />
                   ) : therapyRelation?.status === 'active' ? (
@@ -420,7 +420,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                       <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: '0 0 12px', lineHeight: 1.6 }}>
-                        Если терапевт выслал ссылку-приглашение — введи код ниже.
+                        {tr('Если терапевт выслал ссылку-приглашение — введи код ниже.', 'Если терапевт выслал ссылку-приглашение — введите код ниже.')}
                       </p>
                       <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px', lineHeight: 1.6 }}>
                         Ввод кода — это согласие открыть терапевту доступ к своим записям:
@@ -452,17 +452,17 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                     ) : therapistReq?.status === 'approved' ? (
                       <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
-                        Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
+                        {tr('Заявка одобрена. Перезайди в приложение, чтобы появился кабинет терапевта.', 'Заявка одобрена. Перезайдите в приложение, чтобы появился кабинет терапевта.')}
                       </div>
                     ) : !showReqForm ? (
                       <div>
                         {therapistReq?.status === 'rejected' && (
                           <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 12 }}>
-                            Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. Можешь подать снова.
+                            Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. {tr('Можешь подать снова.', 'Можете подать снова.')}
                           </div>
                         )}
                         <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 12px' }}>
-                          Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.
+                          {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
                         </p>
                         <button onClick={() => setShowReqForm(true)}
                           style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -551,7 +551,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                       {pairInviteUrl && (
                         <div>
-                          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Отправь другу:</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>{tr('Отправь другу:', 'Отправьте другу:')}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 8, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
                           <button onClick={() => void pairInviteCopy.copy(pairInviteUrl)}
                             style={{ background: 'none', border: 'none', color: pairInviteCopy.copied ? 'var(--accent-green)' : pairInviteCopy.failed ? 'var(--accent-red)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
@@ -595,7 +595,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 }} />
                 {exportError && (
                   <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>
-                    Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз
+                    {tr('Не удалось собрать сводку. Проверь связь и попробуй ещё раз', 'Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз')}
                   </div>
                 )}
 

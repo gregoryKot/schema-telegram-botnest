@@ -21,7 +21,7 @@ afterEach(() => {
 
 function renderSheet() {
   render(<SchemaEntrySheet onClose={() => {}} onSave={vi.fn()} />);
-  return screen.getByPlaceholderText(/на созвоне А\. сказал что мой ппт/);
+  return screen.getByPlaceholderText(/на созвоне А\. сказал, что мой ппт/);
 }
 
 describe('SchemaEntrySheet — кризисная детекция (правило №7)', () => {
@@ -46,7 +46,7 @@ describe('SchemaEntrySheet — визард (шаги переключаются
       .closest('button') as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(true);
     const trigger = screen.getByPlaceholderText(
-      /на созвоне А\. сказал что мой ппт/,
+      /на созвоне А\. сказал, что мой ппт/,
     );
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     expect(nextBtn.disabled).toBe(false);
@@ -82,7 +82,7 @@ describe('SchemaEntrySheet — визард (шаги переключаются
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<SchemaEntrySheet onClose={() => {}} onSave={onSave} />);
     const trigger = screen.getByPlaceholderText(
-      /на созвоне А\. сказал что мой ппт/,
+      /на созвоне А\. сказал, что мой ппт/,
     );
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     fireEvent.click(screen.getByText('Сохранить'));

@@ -72,6 +72,10 @@ function makeFakePrisma() {
       }),
     },
     user: {
+      findUnique: jest.fn(({ where: { id } }: any) => {
+        const u = users.find((x: any) => x.id === id);
+        return u ? { ...u } : null;
+      }),
       update: jest.fn(({ where: { id }, data }: any) => {
         const u = users.find((x: any) => x.id === id);
         Object.assign(u, data);
@@ -308,6 +312,27 @@ describe('TherapistRequestService.approve — выдача роли THERAPIST', 
     const body = JSON.parse(opts.body);
     expect(body.chat_id).toBe(8);
     expect(body.text).toContain('одобрена');
+  });
+
+  // Регрессия: notifyApplicant игнорировал User.addressForm и всегда слал
+  // «Твоя заявка…» — юзер с формой «вы» видел «ты» (аудит 2026-08).
+  it('addressForm=vy → уведомление заявителю приходит на «вы»', async () => {
+    const { svc, users } = makeService();
+    users.push({
+      id: 17n,
+      role: 'CLIENT',
+      therapistMode: false,
+      addressForm: 'vy',
+    });
+    const { id: reqId } = await svc.submit(17n, INPUT);
+    await svc.approve(ADMIN_ID, reqId);
+
+    await flush();
+    const [, opts] = fetchMock.mock.calls.at(-1)!;
+    const body = JSON.parse(opts.body);
+    expect(body.text).toContain('Ваша заявка');
+    expect(body.text).toContain('Перезапустите');
+    expect(body.text).not.toContain('Твоя заявка');
   });
 
   it('несуществующая заявка → NotFoundException, роль не трогается', async () => {
