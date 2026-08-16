@@ -1,41 +1,74 @@
 // Сверка ты/вы для реестра схем (правило №4 CLAUDE.md — денормализованные
-// пары обязаны проверяться тестом). `SCHEMAS[i].tip` — ты-текст по умолчанию,
-// `TIP_VY` — параллельный словарь с вы-формой по имени схемы (архитектура
-// отличается от билдера buildX(tr): SCHEMAS — статический модульный
-// константный массив без доступа к addressForm, поэтому вы-вариант вынесен в
-// отдельную таблицу и подставляется потребителем через
-// `tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)` — см. YSQTestSheet.tsx
-// и YsqActiveSchemaCard.tsx). Без этого теста рассинхрон (новая схема или
-// правка tip без пары в TIP_VY) молча откатывает вы-пользователя на ты-текст.
+// пары обязаны проверяться тестом; правило «ты/вы» — билдер от формы, как
+// shared/src/needs/needData.ts). Регресс: `tip` раньше жил как ты-дефолт на
+// SCHEMAS плюс параллельный словарь TIP_VY, подставляемый потребителем через
+// `tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)` — забытая пара молча
+// откатывала вы-пользователя на ты-текст, а гейт check-second-person не видел
+// эти строки внутри вилки-подстановки. Теперь единственный источник —
+// `buildYsqSchemas(tr)`, обе формы разведены в одном месте на схему.
 import { describe, it, expect } from 'vitest';
-import { SCHEMAS, TIP_VY } from './ysqSchemas';
+import { SCHEMAS, getYsqSchemas, buildYsqSchemas } from './ysqSchemas';
 
-describe('ysqSchemas: SCHEMAS.tip ⇄ TIP_VY', () => {
-  it('у каждой схемы есть вы-вариант совета в TIP_VY', () => {
-    for (const s of SCHEMAS) {
-      expect(TIP_VY, `нет TIP_VY['${s.name}']`).toHaveProperty(s.name);
-      expect(TIP_VY[s.name].trim().length).toBeGreaterThan(0);
+// Остаточные «ты»-формы (местоимения/императивы) — грубая проверка гейта
+// check-second-person.mjs на резолвленном тексте формы «вы», и наоборот.
+const TY_RE =
+  /(?<![А-Яа-яЁё])(?:[Тт]ы|[Тт]еб[ея]|[Тт]обой|[Тт]во(?:[её]|[ий]|я|ю|ими|его|ему))(?![А-Яа-яЁё])/;
+const VY_RE =
+  /(?<![А-Яа-яЁё])(?:[Вв]ы|[Вв]ас|[Вв]ам|[Вв]ами|[Вв]аш\w*)(?![А-Яа-яЁё])/;
+
+describe('ysqSchemas: buildYsqSchemas(tr)', () => {
+  it('не теряет схемы при сборке (id/имена совпадают между формами)', () => {
+    const ty = getYsqSchemas('ty');
+    const vy = getYsqSchemas('vy');
+    expect(ty.length).toBe(20);
+    expect(vy.length).toBe(ty.length);
+    expect(vy.map((s) => s.name)).toEqual(ty.map((s) => s.name));
+  });
+
+  it('форма «вы» — ни один tip не содержит остаточных «ты»-форм', () => {
+    for (const s of getYsqSchemas('vy')) {
+      expect(
+        TY_RE.test(s.tip),
+        `SCHEMAS['${s.name}'].tip (вы): «${s.tip}»`,
+      ).toBe(false);
     }
   });
 
-  it('в TIP_VY нет отвязанных ключей — на них не было бы потребителя', () => {
-    const names = new Set(SCHEMAS.map((s) => s.name));
-    for (const key of Object.keys(TIP_VY)) {
+  it('форма «ты» — ни один tip не содержит «вы»-форм', () => {
+    for (const s of getYsqSchemas('ty')) {
       expect(
-        names.has(key),
-        `TIP_VY['${key}'] не ссылается ни на одну схему`,
-      ).toBe(true);
+        VY_RE.test(s.tip),
+        `SCHEMAS['${s.name}'].tip (ты): «${s.tip}»`,
+      ).toBe(false);
     }
   });
 
   it('вы-вариант отличается от ты-варианта (не забыли развести)', () => {
-    for (const s of SCHEMAS) {
-      const vy = TIP_VY[s.name];
-      if (vy === undefined) continue; // уже упало в первом тесте
+    const ty = getYsqSchemas('ty');
+    const vy = getYsqSchemas('vy');
+    ty.forEach((s, i) => {
       expect(
-        vy,
-        `TIP_VY['${s.name}'] совпадает с ты-текстом — вы-форма не разведена`,
+        vy[i].tip,
+        `tip['${s.name}'] совпадает в обеих формах — вы-вариант не разведён`,
       ).not.toBe(s.tip);
-    }
+    });
+  });
+
+  it('SCHEMAS (ты-дефолт для потребителей без формы) совпадает с getYsqSchemas("ty")', () => {
+    expect(SCHEMAS).toEqual(getYsqSchemas('ty'));
+  });
+
+  it('getYsqSchemas кеширует по форме (не пересобирает объект)', () => {
+    expect(getYsqSchemas('ty')).toBe(getYsqSchemas('ty'));
+    expect(getYsqSchemas('vy')).toBe(getYsqSchemas('vy'));
+  });
+
+  it('buildYsqSchemas(tr) вызывает tr ровно по одному разу на схему', () => {
+    let calls = 0;
+    buildYsqSchemas((ty) => {
+      calls++;
+      return ty;
+    });
+    expect(calls).toBe(20);
   });
 });

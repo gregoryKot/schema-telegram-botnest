@@ -171,7 +171,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             return;
           }
           const ok = await this.pairsService.joinPair(userId, code);
-          await ctx.reply(pairJoinResultText(ok), MINIAPP_ONLY_KEYBOARD);
+          const pairForm = await resolveForm(this.botService, ctx.from?.id);
+          await ctx.reply(
+            pairJoinResultText(ok, pairForm),
+            MINIAPP_ONLY_KEYBOARD,
+          );
           return;
         }
         const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
@@ -537,7 +541,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
     const ok = await this.pairsService.joinPair(BigInt(rawId), pending.code);
-    const text = pairJoinResultText(ok);
+    const text = pairJoinResultText(
+      ok,
+      await resolveForm(this.botService, rawId),
+    );
     const kb = MINIAPP_ONLY_KEYBOARD;
     try {
       await ctx.editMessageText(text, kb);

@@ -17,7 +17,15 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsSheet } from './SettingsSheet';
-import { AddressFormContext } from '../utils/addressForm';
+import {
+  withAddressForm,
+  mockLocationReload,
+  restoreLocation,
+  seedWipeTestStorage,
+  openDeleteSheet,
+  confirmAccountDeletion,
+  fillTherapistRequestForm,
+} from './settingsSheet/SettingsSheet.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
@@ -54,7 +62,6 @@ const SETTINGS = {
   therapistShareProfile: true,
 };
 
-const originalLocation = window.location;
 let reloadSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
@@ -66,19 +73,12 @@ beforeEach(() => {
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   mockApi.updateSettings.mockResolvedValue(undefined);
-  reloadSpy = vi.fn();
-  Object.defineProperty(window, 'location', {
-    configurable: true,
-    value: { ...originalLocation, reload: reloadSpy },
-  });
+  reloadSpy = mockLocationReload();
 });
 
 afterEach(() => {
   cleanup();
-  Object.defineProperty(window, 'location', {
-    configurable: true,
-    value: originalLocation,
-  });
+  restoreLocation();
 });
 
 async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
@@ -95,11 +95,7 @@ async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
 
 async function renderSheetWithForm(form: 'ty' | 'vy') {
   const utils = render(
-    <MemoryRouter>
-      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-        <SettingsSheet onClose={vi.fn()} />
-      </AddressFormContext.Provider>
-    </MemoryRouter>,
+    <MemoryRouter>{withAddressForm(<SettingsSheet onClose={vi.fn()} />, form)}</MemoryRouter>,
   );
   await screen.findByText('Настройки');
   return utils;
@@ -109,10 +105,6 @@ async function renderSheetWithForm(form: 'ty' | 'vy') {
 function toggleForRow(title: string): HTMLElement {
   const row = screen.getByText(title).parentElement!.parentElement!;
   return within(row).getByRole('switch');
-}
-
-function openDeleteSheet() {
-  fireEvent.click(screen.getByText('Удалить все данные'));
 }
 
 describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
@@ -147,9 +139,7 @@ describe('SettingsSheet — удаление аккаунта: подтверж�
   it('только финальное «Да, удалить всё навсегда» вызывает api.deleteAllUserData', async () => {
     mockApi.deleteAllUserData.mockResolvedValue(undefined);
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await waitFor(() =>
       expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
@@ -160,14 +150,10 @@ describe('SettingsSheet — удаление аккаунта: подтверж�
 describe('SettingsSheet — удаление аккаунта: успех', () => {
   it('после успешного api.deleteAllUserData чистит localStorage/sessionStorage и перезагружает страницу', async () => {
     mockApi.deleteAllUserData.mockResolvedValue(undefined);
-    localStorage.setItem('app_theme', 'dark');
-    localStorage.setItem('cookie_consent', 'accepted');
-    localStorage.setItem('some_other_key', 'should-be-wiped');
+    seedWipeTestStorage();
 
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
     // Тема и cookie-согласие переживают очистку осознанно, остальное — нет.
@@ -183,9 +169,7 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
     localStorage.setItem('some_other_key', 'still-here');
 
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await waitFor(() =>
       expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
@@ -200,9 +184,7 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
   it('после ошибки предложение возвращается к первому шагу (кнопка «Удалить» снова доступна)', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await waitFor(() =>
       expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull(),
@@ -410,9 +392,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
   it('после ошибки видно "Не удалось удалить данные" на первом шаге, а не тишина', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await screen.findByText(/Не удалось удалить данные/i);
   });
@@ -420,9 +400,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText(/Не удалось удалить данные/i);
 
     fireEvent.click(screen.getByText('Отмена'));
@@ -434,9 +412,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
   it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheetWithForm('ty');
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText(
       'Не удалось удалить данные. Проверь связь и попробуй ещё раз',
     );
@@ -444,9 +420,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
 
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheetWithForm('vy');
-    openDeleteSheet();
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText(
       'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз',
     );
@@ -623,9 +597,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
     mockApi.submitTherapistRequest.mockRejectedValue(new Error('уже подана заявка'));
     await renderSheet();
     fireEvent.click(screen.getByText('Подать заявку'));
-    fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван Иванов' } });
-    fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог' } });
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), { target: { value: '@ivan' } });
+    fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('уже подана заявка');
@@ -637,9 +609,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
     fireEvent.click(screen.getByText('Подать заявку'));
-    fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван Иванов' } });
-    fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог' } });
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), { target: { value: '@ivan' } });
+    fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await waitFor(() =>
@@ -657,11 +627,7 @@ describe('SettingsSheet — переключатель формы обращен
   it('клик «На «вы»»» сохраняет форму локально и на сервере', async () => {
     const setForm = vi.fn();
     render(
-      <MemoryRouter>
-        <AddressFormContext.Provider value={{ form: 'ty', setForm }}>
-          <SettingsSheet onClose={vi.fn()} />
-        </AddressFormContext.Provider>
-      </MemoryRouter>,
+      <MemoryRouter>{withAddressForm(<SettingsSheet onClose={vi.fn()} />, 'ty', setForm)}</MemoryRouter>,
     );
     await screen.findByText('Настройки');
     fireEvent.click(screen.getByText('На «вы»'));
@@ -973,9 +939,7 @@ describe('SettingsSheet — заявка на специалиста: необя
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
     fireEvent.click(screen.getByText('Подать заявку'));
-    fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван' } });
-    fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог' } });
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), { target: { value: '@ivan' } });
+    fillTherapistRequestForm({ fio: 'Иван' });
     fireEvent.change(screen.getByPlaceholderText('Сообщение (необязательно)'), { target: { value: 'Работаю со схема-терапией' } });
     fireEvent.click(screen.getByText('Отправить заявку'));
 
