@@ -7,6 +7,7 @@ import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { loadDraft, clearDraft } from '../utils/drafts';
 import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
+import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
 import {
   TODAY,
   fmtDateKey,
@@ -41,29 +42,26 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   const [filter,           setFilter]           = useState<Filter>('all');
   const [newEntry,         setNewEntry]         = useState<DiaryType | null>(null);
   const [draftKey,         setDraftKey]         = useState(0);
+  // Сбой ≠ пусто (пара к miniapp): предупреждение сверху, а не тихое [].
+  const [loadFailed,       setLoadFailed]       = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const [schema, mode, gratitude, profile] = await Promise.all([
-        api.getSchemaDiary(),
-        api.getModeDiary(),
-        api.getGratitudeDiary(),
-        api.getProfile().catch(() => null),
-      ]);
+  const load = useCallback(() =>
+    Promise.all([
+      api.getSchemaDiary(),
+      api.getModeDiary(),
+      api.getGratitudeDiary(),
+      api.getProfile().catch(() => null), // профиль вспомогательный, его отказ не «сбой дневника»
+    ]).then(([schema, mode, gratitude, profile]) => {
+      setLoadFailed(false);
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
       if (profile) setActiveSchemaIds(profile.ysq.activeSchemaIds);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    }).catch((err) => { console.error(err); setLoadFailed(true); })
+      .finally(() => setLoading(false)),
+  []);
 
-  // .catch(() => {}) на вызове, а не try/catch внутри load(): сеть
-  // недоступна — остаёмся с уже загруженным (или пустым) списком, не роняем
-  // экран необработанным отказом промиса (регрессия: getSchemaDiary/
-  // getModeDiary/getGratitudeDiary не были обёрнуты, в отличие от getProfile).
-  useEffect(() => { load().catch(() => {}); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
   const totalCount = schemaEntries.length + modeEntries.length + gratitudeEntries.length;
@@ -176,6 +174,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   return (
     <div className="page-inner-wide">
 
+        {loadFailed && <DiaryLoadFailedBanner onRetry={() => { void load(); }} />}
         {/* ── Hero ── */}
         <div className="diary-hero">
           <div>

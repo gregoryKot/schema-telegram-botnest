@@ -77,6 +77,16 @@ describe('BookingPicker — загрузка и пустое состояние'
     render(<BookingPicker fallback={<div>Запасной вариант связи</div>} />);
     await screen.findByText('Запасной вариант связи');
   });
+
+  // Сбой ≠ пусто: без options не собирается цена/тип сессии — раньше
+  // .catch(() => setOptions([])) тихо ломал форму (слоты грузились, а форма
+  // записи — нет). Теперь отказ getBookingOptions переиспользует ту же
+  // ветку loadFailed, что уже была у слотов.
+  it('при ошибке загрузки опций сессии тоже рендерит fallback, а не сломанную форму', async () => {
+    mockApi.getBookingOptions.mockRejectedValue(new Error('network'));
+    render(<BookingPicker fallback={<div>Запасной вариант связи</div>} />);
+    await screen.findByText('Запасной вариант связи');
+  });
 });
 
 describe('BookingPicker — выбор слота и обязательные поля', () => {

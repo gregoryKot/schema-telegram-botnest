@@ -235,6 +235,28 @@ describe('BookingSection — записи', () => {
     await screen.findByText('Записей нет.');
   });
 
+  // Сбой ≠ пусто: «Записей нет.» на отказе (неверный ключ/сеть) читается как
+  // «записей правда нет» — терапевт может решить, что записей никогда не было.
+  it('сбой ≠ пусто: отказ adminListBookings показывает ошибку, а не «Записей нет»', async () => {
+    mockApi.adminListBookings.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить записи/);
+    expect(screen.queryByText('Записей нет.')).toBeNull();
+  });
+
+  it('смена фильтра после сбоя сбрасывает ошибку на успешном ответе', async () => {
+    mockApi.adminListBookings.mockRejectedValueOnce(new Error('network'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByRole('alert');
+
+    mockApi.adminListBookings.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Отменённые' }));
+
+    await screen.findByText('Записей нет.');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('показывает реальную запись клиента с именем и контактом', async () => {
     mockApi.adminListBookings.mockResolvedValue([
       { id: 1, startsAt: '2026-08-10T10:00:00Z', status: 'HELD', clientName: 'Анна', clientContact: '@anna', message: null, cancelToken: 'tok1' },

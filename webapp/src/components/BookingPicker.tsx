@@ -83,7 +83,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     api.getSlots()
       .then((s) => { setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
       .catch(() => setLoadFailed(true));
-    api.getBookingOptions().then(setOptions).catch(() => setOptions([]));
+    api.getBookingOptions().then(setOptions).catch(() => setLoadFailed(true)); // сбой ≠ пусто: без опций не собрать цену — та же loadFailed, что у слотов
   }, []);
 
   const chosen = options.find((o) => o.type === sessionType);

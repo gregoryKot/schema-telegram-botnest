@@ -29,6 +29,9 @@ export function SubscribePage() {
   const [cancelled, setCancelled] = useState(false);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [consent, setConsent] = useState(false);
+  // Сбой ≠ пусто (правило №14, экран-тупик): раньше `sub === null` на отказе
+  // рисовал «Загружаем…» — навсегда, отказ не отличить от загрузки.
+  const [subFailed, setSubFailed] = useState(false);
 
   useEffect(() => {
     api.getSubscriptionOptions()
@@ -36,7 +39,7 @@ export function SubscribePage() {
       .catch(() => { setEnabled(false); setOpts([]); });
   }, []);
   useEffect(() => {
-    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSub(null));
+    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSubFailed(true));
   }, [token]);
 
   const price = opts.find((o) => o.period === period)?.price;
@@ -75,6 +78,13 @@ export function SubscribePage() {
         {sub.nextChargeAt && <div style={card}>Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
         <button onClick={doCancel} style={textLink}>Отменить подписку</button>
       </>
+    ) : subFailed ? (
+      // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
+      // (check-second-person.mjs не видит здесь ни местоимений, ни императивов).
+      <div role="alert">
+        <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)' }}>Не удалось загрузить подписку — сеть не отвечает. Попробовать позже.</p>
+        <button onClick={() => window.location.reload()} style={primaryBtn}>Обновить</button>
+      </div>
     ) : (
       <p style={{ ...sub_, marginTop: 40 }}>Загружаем…</p>
     );
