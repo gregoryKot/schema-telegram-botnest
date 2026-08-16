@@ -182,6 +182,13 @@ describe('BookingSection — расписание', () => {
     await screen.findByText('Пока нет правил. Добавьте слоты ниже.');
   });
 
+  it('сбой ≠ пусто: отказ загрузки правил показывает ошибку, а не «Пока нет правил»', async () => {
+    mockApi.adminListRules.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    expect(await screen.findByText(/Не удалось загрузить расписание/)).toBeTruthy();
+    expect(screen.queryByText('Пока нет правил. Добавьте слоты ниже.')).toBeNull();
+  });
+
   it('показывает существующее правило человеческим текстом', async () => {
     mockApi.adminListRules.mockResolvedValue([
       { id: 1, dayOfWeek: 1, startHour: 10, startMinute: 0, endHour: 19, endMinute: 0, sessionDuration: 50, bufferMin: 10, isActive: true },

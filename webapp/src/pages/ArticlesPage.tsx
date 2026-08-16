@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { api } from '../api';
@@ -9,11 +9,13 @@ import { PRACTICE_BOOKING_URL } from './landing/constants';
 
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
-  const [articles, setArticles] = useState<ArticleSummary[] | null>(null);
+  // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
+  // слабой сетью пустую сетку — как будто статей на сайте нет.
+  const listFetcher = useCallback(() => api.listArticles(), []);
+  const { data: articles, reload, failed } = useAsyncData<ArticleSummary[] | null>(listFetcher, null);
 
   useEffect(() => {
     document.title = 'Статьи о схема-терапии | schemehappens.ru';
-    api.listArticles().then(setArticles).catch(() => setArticles([]));
   }, []);
 
   return (
@@ -26,9 +28,21 @@ export function ArticlesListPage() {
           Объясняю, как работают схемы, режимы и паттерны – простым языком, без воды.
         </p>
 
-        {articles === null && <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>}
+        {failed ? (
+          <div role="alert">
+            <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
+            <button onClick={() => { void reload(); }} style={{
+              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
+              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              Попробовать ещё раз
+            </button>
+          </div>
+        ) : articles === null ? (
+          <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+        ) : null}
 
-        {articles && (
+        {!failed && articles && (
           <div className="art-grid">
             {articles.map((a) => (
               <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
@@ -91,17 +105,40 @@ export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
 
   // resetKey=slug → back to the loading state (undefined) on navigation between
-  // articles, then null on 404 or the loaded article.
+  // articles. null = настоящий 404 от сервера. Любой другой отказ (сеть, 5xx)
+  // пробрасывается в хук и поднимает `failed`: раньше `.catch(() => null)`
+  // превращал обрыв сети в экран «404» на существующей статье.
   const articleFetcher = useCallback(
     (): Promise<Article | null | undefined> =>
-      slug ? api.getArticle(slug).catch(() => null) : Promise.resolve(undefined),
+      slug
+        ? api.getArticle(slug).catch((err: unknown) => {
+            if (err instanceof Error && err.message === 'API error: 404') return null;
+            throw err;
+          })
+        : Promise.resolve(undefined),
     [slug],
   );
-  const { data: article } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
+  const { data: article, reload, failed } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
 
   useEffect(() => {
     if (article) document.title = `${article.title} | schemehappens.ru`;
   }, [article]);
+
+  if (failed) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div role="alert" style={{ textAlign: 'center', padding: '0 20px' }}>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
+          <button onClick={() => { void reload(); }} style={{
+            padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none',
+            borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            Попробовать ещё раз
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (article === undefined) {
     return (
