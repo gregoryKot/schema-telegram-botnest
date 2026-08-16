@@ -1,9 +1,4 @@
 {
-  "schema-miniapp/src/components/schemaInfoSheet/modeCheckinData.ts": 1,
-  "shared/src/needs/content/attachment.ts": 1,
-  "shared/src/needs/content/autonomy.ts": 1,
-  "shared/src/needs/content/play.ts": 1,
-  "src/articles/articles.seed.ts": 3,
-  "webapp/src/pages/admin/HealthyAdultImport.tsx": 1,
+  "src/articles/articles.seed.ts": 2,
   "webapp/src/pages/landing/constants.ts": 1
 }
