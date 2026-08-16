@@ -246,3 +246,52 @@ describe('SchemaFlashcard — «Открыть трекер →» на экра�
     vi.useRealTimers();
   });
 });
+
+describe('SchemaFlashcard — серверная копия не доехала', () => {
+  // Регрессия: отказ createFlashcard глушился — экран говорил «Сохранено»
+  // без оговорок, хотя на других устройствах и у терапевта карточки нет
+  // (локальная копия в localStorage при этом честно существует).
+  async function saveWithServerDown() {
+    mockApi.createFlashcard.mockRejectedValue(new Error('offline'));
+    renderToResponseStep();
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+      target: { value: 'Побыть рядом с собой' },
+    });
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: 'Позвонить другу' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    });
+  }
+
+  it('отказ сервера — «Сохранено» с оговоркой про это устройство', async () => {
+    await saveWithServerDown();
+    expect(screen.getByText('Сохранено')).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain(
+      'осталась только на этом устройстве',
+    );
+    // Локальная копия существует — это не потеря, а честная деградация.
+    expect(JSON.parse(localStorage.getItem('schema_flashcards')!).length).toBe(1);
+  });
+
+  it('успешное сохранение — без оговорок', async () => {
+    mockApi.createFlashcard.mockResolvedValue({});
+    renderToResponseStep();
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+      target: { value: 'Текст' },
+    });
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: 'Шаг' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    });
+    expect(screen.getByText('Сохранено')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
