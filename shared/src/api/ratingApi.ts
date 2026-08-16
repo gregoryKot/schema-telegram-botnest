@@ -23,8 +23,10 @@ export type SaveRatingResult = {
 // Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы
 // различать «сервер ответил 4xx» и «ответа не было вообще».
 export class HttpStatusError extends Error {
-  constructor(public status: number) {
+  status: number;
+  constructor(status: number) {
     super(`API error: ${status}`);
+    this.status = status;
   }
 }
 
