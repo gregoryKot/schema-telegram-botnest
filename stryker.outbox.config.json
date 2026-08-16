@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "npm --prefix shared test -- src/utils/ratingOutbox.test.ts src/api/ratingApi.test.ts"
+  },
+  "mutate": ["shared/src/utils/ratingOutbox.ts", "shared/src/api/ratingApi.ts"],
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/outbox.html"
+  },
+  "concurrency": 2,
+  "coverageAnalysis": "off",
+  "ignoreStatic": false,
+  "thresholds": {
+    "high": 90,
+    "low": 70,
+    "break": null
+  },
+  "timeoutMS": 60000,
+  "jsonReporter": {
+    "fileName": "reports/mutation/outbox.json"
+  }
+}

@@ -76,4 +76,57 @@ describe('createRatingApi.saveRating', () => {
     const res = await makeApi().saveRating('care', 5);
     expect(res.ok).toBe(true);
   });
+
+  it('шлёт POST на /api/rating (не любой путь/метод)', async () => {
+    authedFetch.mockResolvedValue(okJson({ ok: true, allDone: false }));
+    await makeApi().saveRating('safety', 5, '2026-08-16');
+    expect(authedFetch.mock.calls[0][0]).toBe('/api/rating');
+    expect((authedFetch.mock.calls[0][1] as RequestInit).method).toBe('POST');
+  });
+
+  it('HttpStatusError.message содержит код ответа (виден в логах)', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 418 });
+    await expect(makeApi().saveRating('safety', 5)).rejects.toThrow(
+      'API error: 418',
+    );
+  });
+});
+
+describe('createRatingApi.saveRating — границы классификации 4xx/5xx', () => {
+  // isClientError смотрит на диапазон [400, 500) — четыре теста ниже бьют
+  // именно по границам этого диапазона и по условию instanceof, а не по
+  // «типичным» кодам вроде 422/503, которые уже были покрыты выше и не
+  // ловят мутации операторов сравнения (>= → >, < → <=) на самой границе.
+  it('статус 399 (ниже границы 4xx) — уходит в outbox, не бросает', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 399 });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+  });
+
+  it('статус 400 (нижняя граница 4xx включительно) — бросает', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 400 });
+    await expect(makeApi().saveRating('safety', 5)).rejects.toThrow(
+      HttpStatusError,
+    );
+  });
+
+  it('статус 500 (нижняя граница 5xx, уже не клиентская) — уходит в outbox с allDone:false', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 500 });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+    expect(res.allDone).toBe(false);
+  });
+
+  it('ошибка не instanceof HttpStatusError со «случайным» полем status — всё равно в outbox', async () => {
+    // Сетевые/таймаут-ошибки — обычные Error без .status, но если у ошибки
+    // случайно окажется числовое поле status (например, чужой класс ошибки
+    // из другого модуля) — классификация обязана идти по instanceof, а не
+    // по наличию поля.
+    class FakeStatusError extends Error {
+      status = 499;
+    }
+    authedFetch.mockRejectedValue(new FakeStatusError('boom'));
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+  });
 });

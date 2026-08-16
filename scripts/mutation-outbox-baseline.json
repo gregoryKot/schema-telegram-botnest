@@ -1,0 +1,7 @@
+{
+  "total": 96.3,
+  "files": {
+    "shared/src/api/ratingApi.ts": 100,
+    "shared/src/utils/ratingOutbox.ts": 94.37
+  }
+}
