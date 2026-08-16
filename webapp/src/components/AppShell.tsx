@@ -10,6 +10,9 @@ import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
+import { useOverlays } from './appShell/useOverlays';
+import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
+import { MobileNavIcon } from './appShell/MobileNavIcon';
 
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
@@ -46,9 +49,6 @@ import type { StreakData } from '../api';
 applyTheme(getTheme());
 syncMotionAttr();
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
-type TrackerTab = 'today' | 'history';
-
 const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'today',    label: 'Сегодня' },
   { id: 'diary',    label: 'Дневник' },
@@ -62,62 +62,6 @@ const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 const SECTION_LABELS: Record<Section, string> = {
   today: 'Сегодня', diary: 'Дневник', schemas: 'Паттерны', profile: 'Профиль', practice: 'Практика',
 };
-
-function sectionFromPath(path: string): Section {
-  const seg = path.split('/').filter(Boolean)[0] ?? 'today';
-  if (['today','diary','schemas','profile','practice'].includes(seg)) return seg as Section;
-  // Legacy redirects
-  if (seg === 'help' || seg === 'exercises') return 'practice';
-  return 'today';
-}
-
-function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
-  if (h.length === 0) return h;
-  const byDate = new Map(h.map(d => [d.date, d]));
-  const todayEntry = h.find(d => d.date === TODAY_DATE);
-  const nonToday = h.filter(d => d.date !== TODAY_DATE);
-  if (nonToday.length === 0) return h;
-  const earliest = nonToday[nonToday.length - 1].date;
-  const filled: DayHistory[] = todayEntry ? [todayEntry] : [];
-  const cursor = new Date();
-  cursor.setDate(cursor.getDate() - 1);
-  for (let i = 0; i < 60; i++) {
-    const date = cursor.toISOString().split('T')[0];
-    if (date < earliest) break;
-    filled.push(byDate.get(date) ?? { date, ratings: {} });
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return filled;
-}
-
-function MobileNavIcon({ id }: { id: Section }) {
-  const a = { fill: 'none' as const, stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  if (id === 'today') return (
-    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
-      <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-  );
-  if (id === 'diary') return (
-    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-    </svg>
-  );
-  if (id === 'schemas') return (
-    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
-      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-    </svg>
-  );
-  if (id === 'practice') return (
-    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-    </svg>
-  );
-  return (
-    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-    </svg>
-  );
-}
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -178,31 +122,16 @@ export function AppShell() {
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
-  // Overlay state
-  const [showSettings, setShowSettings] = useState(false);
-  const [showPractices, setShowPractices] = useState(false);
-  const [showPlans, setShowPlans] = useState(false);
-  const [showSchemaInfo, setShowSchemaInfo] = useState(false);
-  const [schemaAutoStartTest, setSchemaAutoStartTest] = useState(false);
-  const [schemaInitialTab, setSchemaInitialTab] = useState<'needs'|'schemas'|'modes'>('needs');
-  const [schemaHighlight, setSchemaHighlight] = useState<string | undefined>();
-  const [showTracker, setShowTracker] = useState(false);
-  const [showTrackerOverlay, setShowTrackerOverlay] = useState(false);
-  const [trackerNeedId, setTrackerNeedId] = useState<string | null>(null);
-  const [trackerTab, setTrackerTab] = useState<TrackerTab>('today');
-  const [showTrackerGoal, setShowTrackerGoal] = useState(false);
-  const [showDiaries, setShowDiaries] = useState(false);
-  const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
-  const [showTodayNote, setShowTodayNote] = useState(false);
-  const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
+  // Overlay state (флаги видимости и их сеттеры — appShell/useOverlays.ts)
+  const ov = useOverlays();
 
   // First entry into the cabinet as a therapist → one-time privacy disclaimer
   useEffect(() => {
     if (therapistMode && userRole === 'THERAPIST'
         && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-      setShowTherapistDisclaimer(true);
+      ov.setShowTherapistDisclaimer(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTherapistDisclaimer стабильный сеттер useState (как и остальные поля ov); сам объект ov — новый на каждый рендер, добавление его в deps перезапускало бы эффект от любого несвязанного оверлея
   }, [therapistMode, userRole]);
 
   // Therapist clients search (client list itself comes from useBootstrapLoad)
@@ -210,9 +139,6 @@ export function AppShell() {
 
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
-
-  // Command palette
-  const [cmdOpen, setCmdOpen] = useState(false);
 
   // Breadcrumbs
   const breadcrumbs = useMemo(() => {
@@ -224,7 +150,7 @@ export function AppShell() {
   // Global ⌘K + ⌘1–5 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ov.setCmdOpen(true); return; }
       if (!therapistMode && e.metaKey) {
         const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
@@ -232,6 +158,7 @@ export function AppShell() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
 
   // Online/offline
@@ -246,39 +173,39 @@ export function AppShell() {
   // Show the history loading state the moment the history tab is opened.
   // Adjusting state during render (not in an effect) keeps this off
   // set-state-in-effect; the fetch itself runs in the effect below.
-  const [seenTrackerTab, setSeenTrackerTab] = useState(trackerTab);
-  if (trackerTab !== seenTrackerTab) {
-    setSeenTrackerTab(trackerTab);
-    if (trackerTab === 'history') setHistoryLoading(true);
+  const [seenTrackerTab, setSeenTrackerTab] = useState(ov.trackerTab);
+  if (ov.trackerTab !== seenTrackerTab) {
+    setSeenTrackerTab(ov.trackerTab);
+    if (ov.trackerTab === 'history') setHistoryLoading(true);
   }
 
   // History load when tracker history tab opens (historyDays is a constant).
   useEffect(() => {
-    if (trackerTab !== 'history') return;
+    if (ov.trackerTab !== 'history') return;
     let alive = true;
     api.history(historyDays)
       .then(h => { if (alive) setHistory(fillHistoryGaps(h)); })
       .finally(() => { if (alive) setHistoryLoading(false); });
     return () => { alive = false; };
-  }, [trackerTab]);
+  }, [ov.trackerTab]);
 
   // Refresh Today after overlays close
   const prevOverlayRef = useRef(false);
   useEffect(() => {
-    const anyOpen = showTrackerOverlay || showTracker || showDiaries || showSchemaInfo;
+    const anyOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries || ov.showSchemaInfo;
     if (!anyOpen && prevOverlayRef.current) setTodayRefreshKey(k => k + 1);
     prevOverlayRef.current = anyOpen;
-  }, [showTrackerOverlay, showTracker, showDiaries, showSchemaInfo]);
+  }, [ov.showTrackerOverlay, ov.showTracker, ov.showDiaries, ov.showSchemaInfo]);
 
   // Refresh Profile after overlays close
   const prevProfileOverlayRef = useRef(false);
   useEffect(() => {
-    const anyOpen = showSettings || showPractices || showPlans || showTrackerOverlay || showTracker || showChildhoodWheel;
+    const anyOpen = ov.showSettings || ov.showPractices || ov.showPlans || ov.showTrackerOverlay || ov.showTracker || ov.showChildhoodWheel;
     if (!anyOpen && prevProfileOverlayRef.current && section === 'profile') {
       setProfileRefreshKey(k => k + 1);
     }
     prevProfileOverlayRef.current = anyOpen;
-  }, [showSettings, showPractices, showPlans, showTrackerOverlay, showTracker, showChildhoodWheel, section]);
+  }, [ov.showSettings, ov.showPractices, ov.showPlans, ov.showTrackerOverlay, ov.showTracker, ov.showChildhoodWheel, section]);
 
   const handleChange = useCallback((needId: string, value: number) => {
     setRatings(prev => ({ ...prev, [needId]: value }));
@@ -290,9 +217,10 @@ export function AppShell() {
     if (streak && !localStorage.getItem(TODAY_KEY)) {
       localStorage.setItem(TODAY_KEY, '1');
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
-      else setShowTodayNote(true);
+      else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
   }, [setSaved]);
 
   if (loading) {
@@ -404,7 +332,7 @@ export function AppShell() {
                   </>
                 ) : (
                   <button className="sb-today-cta"
-                          onClick={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}>
+                          onClick={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}>
                     Заполнить дневник →
                   </button>
                 )}
@@ -419,7 +347,7 @@ export function AppShell() {
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
           </NavLink>
-          <button className="sb-item" onClick={() => setShowSettings(true)} style={{ marginTop: 2 }}>
+          <button className="sb-item" onClick={() => ov.setShowSettings(true)} style={{ marginTop: 2 }}>
             <span>Настройки</span>
           </button>
           <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
@@ -455,7 +383,7 @@ export function AppShell() {
           {isOffline && (
             <span style={{ fontSize: 12, color: 'var(--c-rose)', fontWeight: 500 }}>офлайн</span>
           )}
-          <button className="search-pill" onClick={() => setCmdOpen(true)}>
+          <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
             <span className="kbd">⌘K</span>
@@ -498,13 +426,13 @@ export function AppShell() {
                 ratings={ratings}
                 yesterdayRatings={yesterdayRatings}
                 onNavigate={setSection}
-                onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
-                onOpenAdvanced={() => setShowSettings(true)}
-                onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                onOpenTrackerAt={(needId) => { setTrackerNeedId(needId); setShowTrackerOverlay(true); }}
-                onOpenTrackerHistory={() => { setTrackerTab('history'); setShowTracker(true); }}
-                onOpenDiaries={() => setShowDiaries(true)}
-                onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+                onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
+                onOpenAdvanced={() => ov.setShowSettings(true)}
+                onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+                onOpenTrackerAt={(needId) => { ov.setTrackerNeedId(needId); ov.setShowTrackerOverlay(true); }}
+                onOpenTrackerHistory={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
+                onOpenDiaries={() => ov.setShowDiaries(true)}
+                onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
                 refreshKey={todayRefreshKey}
                 userRole={userRole}
                 onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
@@ -518,16 +446,16 @@ export function AppShell() {
             {section === 'schemas' && (
               <ErrorBoundary section="Паттерны" key="schemas-boundary">
                 <SchemasSection
-                  onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
+                  onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
                   childhoodRatings={childhoodRatings}
-                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+                  onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
                 />
               </ErrorBoundary>
             )}
             {section === 'profile' && (
               <ProfileSection
-                onOpenSettings={() => setShowSettings(true)}
-                onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+                onOpenSettings={() => ov.setShowSettings(true)}
+                onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
                 refreshKey={profileRefreshKey}
                 displayName={displayName}
               />
@@ -535,12 +463,12 @@ export function AppShell() {
             {section === 'practice' && (
               <ErrorBoundary section="Практика" key="practice-boundary">
                 <PracticeSection
-                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-                  onOpenPractices={() => setShowPractices(true)}
-                  onOpenPlans={() => setShowPlans(true)}
-                  onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                  onOpenDiaries={() => setShowDiaries(true)}
-                  onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setShowSchemaInfo(true); }}
+                  onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
+                  onOpenPractices={() => ov.setShowPractices(true)}
+                  onOpenPlans={() => ov.setShowPlans(true)}
+                  onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+                  onOpenDiaries={() => ov.setShowDiaries(true)}
+                  onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setShowSchemaInfo(true); }}
                   refreshKey={helpTasksKey}
                   onTasksChanged={() => setHelpTasksKey(k => k + 1)}
                 />
@@ -550,7 +478,7 @@ export function AppShell() {
         )}
 
         {/* ── TrackerOverlay ── */}
-        {showTrackerOverlay && (
+        {ov.showTrackerOverlay && (
           <TrackerOverlay
             needs={needs}
             ratings={ratings}
@@ -558,17 +486,17 @@ export function AppShell() {
             isOffline={isOffline}
             onChange={handleChange}
             onSaved={handleSaved}
-            onClose={() => { setShowTrackerOverlay(false); setTrackerNeedId(null); }}
-            initialNeedId={trackerNeedId}
-            onOpenNote={() => setShowTodayNote(true)}
-            onOpenGoal={() => setShowTrackerGoal(true)}
-            onOpenHistory={() => { setShowTrackerOverlay(false); setTrackerNeedId(null); setTrackerTab('history'); setShowTracker(true); }}
+            onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
+            initialNeedId={ov.trackerNeedId}
+            onOpenNote={() => ov.setShowTodayNote(true)}
+            onOpenGoal={() => ov.setShowTrackerGoal(true)}
+            onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
             yesterdayRatings={yesterdayRatings}
           />
         )}
 
         {/* ── History overlay ── */}
-        {showTracker && (
+        {ov.showTracker && (
           <Suspense fallback={null}>
             <HistorySheet
               needs={needs}
@@ -579,10 +507,10 @@ export function AppShell() {
               pendingPlans={pendingPlans}
               todayDate={TODAY_DATE}
               historyDays={historyDays}
-              onClose={() => { setShowTracker(false); setTrackerTab('today'); }}
-              onOpenTracker={() => { setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-              onOpenSchemas={() => setShowSchemaInfo(true)}
-              onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+              onClose={() => { ov.setShowTracker(false); ov.setTrackerTab('today'); }}
+              onOpenTracker={() => { ov.setTrackerTab('today'); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+              onOpenSchemas={() => ov.setShowSchemaInfo(true)}
+              onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
               onDismissPlan={(id) => setPendingPlans(prev => prev.filter(p => p.id !== id))}
               onHistoryRefreshed={(h) => { setHistory(h); setHistoryLoading(false); }}
             />
@@ -590,86 +518,86 @@ export function AppShell() {
         )}
 
         {/* ── Diaries overlay ── */}
-        {showDiaries && (
+        {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => setShowDiaries(false)} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} />
           </Suspense>
         )}
 
         {/* ── Fullscreen overlays ── */}
-        {showSettings && (
+        {ov.showSettings && (
           <SettingsSheet
-            onClose={() => setShowSettings(false)}
+            onClose={() => ov.setShowSettings(false)}
             userRole={userRole}
             displayName={displayName}
             onNameChanged={setDisplayName}
-            onOpenTherapistCabinet={() => { setShowSettings(false); navigate('/cabinet'); }}
+            onOpenTherapistCabinet={() => { ov.setShowSettings(false); navigate('/cabinet'); }}
             therapistMode={therapistMode}
             onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
             onResignTherapist={async () => {
               await api.resignTherapist();
               setUserRole('CLIENT');
               localStorage.setItem('therapist_mode', '0');
-              setShowSettings(false);
+              ov.setShowSettings(false);
               navigate('/today');
             }}
           />
         )}
-        {showPractices && (
+        {ov.showPractices && (
           <PracticesScreen
-            onClose={() => setShowPractices(false)}
-            onOpenTracker={() => { setShowPractices(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+            onClose={() => ov.setShowPractices(false)}
+            onOpenTracker={() => { ov.setShowPractices(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
           />
         )}
-        {showPlans && (
+        {ov.showPlans && (
           <PlansScreen
-            onClose={() => setShowPlans(false)}
-            onOpenTracker={() => { setShowPlans(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+            onClose={() => ov.setShowPlans(false)}
+            onOpenTracker={() => { ov.setShowPlans(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
           />
         )}
-        {showSchemaInfo && (
+        {ov.showSchemaInfo && (
           <SchemaInfoSheet
-            onClose={() => { setShowSchemaInfo(false); setSchemaAutoStartTest(false); setSchemaHighlight(undefined); }}
+            onClose={() => { ov.setShowSchemaInfo(false); ov.setSchemaAutoStartTest(false); ov.setSchemaHighlight(undefined); }}
             ratings={ratings}
-            autoStartTest={schemaAutoStartTest}
-            initialTab={schemaInitialTab}
-            highlightSchema={schemaHighlight}
+            autoStartTest={ov.schemaAutoStartTest}
+            initialTab={ov.schemaInitialTab}
+            highlightSchema={ov.schemaHighlight}
           />
         )}
-        {showChildhoodWheel && (
+        {ov.showChildhoodWheel && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
             <ChildhoodWheelEx
-              onBack={() => setShowChildhoodWheel(false)}
+              onBack={() => ov.setShowChildhoodWheel(false)}
               onSaved={(r) => setChildhoodRatings(r)}
             />
           </div>
         )}
-        {showTodayNote && (
+        {ov.showTodayNote && (
           <NoteSheet date={TODAY_DATE} onClose={() => {
-            setShowTodayNote(false);
-            if (childhoodWheelPending) { setChildhoodWheelPending(false); setShowChildhoodWheel(true); }
+            ov.setShowTodayNote(false);
+            if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
           }} />
         )}
-        {showTrackerGoal && (
+        {ov.showTrackerGoal && (
           <TaskCreateSheet
             defaultType="tracker_streak"
-            onCreated={() => setShowTrackerGoal(false)}
-            onClose={() => setShowTrackerGoal(false)}
+            onCreated={() => ov.setShowTrackerGoal(false)}
+            onClose={() => ov.setShowTrackerGoal(false)}
           />
         )}
-        {showTherapistDisclaimer && (
+        {ov.showTherapistDisclaimer && (
           <TherapistPrivacyDisclaimer onDone={() => {
             // Persist on ANY close path (button OR browser-back), otherwise a
             // back-button dismissal leaves the flag unset and the disclaimer
             // re-shows on every entry into the therapist cabinet.
             localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
-            setShowTherapistDisclaimer(false);
+            ov.setShowTherapistDisclaimer(false);
           }} />
         )}
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
-          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
+          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); ov.setShowTodayNote(true); }} />
         )}
 
         </Suspense>
@@ -691,11 +619,11 @@ export function AppShell() {
       </nav>
 
       {/* ── Command palette ─────────────────────────────────────────────────── */}
-      {cmdOpen && (
+      {ov.cmdOpen && (
         <CommandPalette
           section={section}
           onNavigate={(s) => { setSection(s); }}
-          onClose={() => setCmdOpen(false)}
+          onClose={() => ov.setCmdOpen(false)}
           userRole={userRole}
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
