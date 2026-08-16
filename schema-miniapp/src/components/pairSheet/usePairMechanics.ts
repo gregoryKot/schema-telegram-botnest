@@ -24,9 +24,7 @@ export function usePairMechanics(
   const [joinView, setJoinView] = useState<'main' | 'join'>('main');
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState(false);
-  const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(
-    null,
-  );
+  const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(null);
 
   useEffect(() => {
     api
