@@ -2,12 +2,8 @@ import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import type { UserSettings } from '../api';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
-import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
-import type { Theme } from '../utils/theme';
 import { useSetAddressForm, useTr } from '../utils/addressForm';
-import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -22,11 +18,21 @@ import {
   quietLabel,
   hourInQuiet,
 } from '../../../shared/src/settings/constants';
-import { SHead, SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './settingsSheet/ui';
-import { inputStyle } from './settingsSheet/inputStyle';
+import { SHead, SRow, Toggle, SmallToggle, ChevronVal } from './settingsSheet/ui';
 import { usePairSettings } from './settingsSheet/usePairSettings';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
+import { AppearanceSection } from './settingsSheet/AppearanceSection';
+import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
+import { DataSection } from './settingsSheet/DataSection';
 
+
+// Дефолты на случай, если api.getSettings() отказал — экран не должен
+// зависнуть на Loader, показываем безопасные значения.
+const DEFAULT_SETTINGS: UserSettings = {
+  notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow',
+  notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [],
+  therapistShareCards: true, therapistShareProfile: true,
+};
 
 interface Props {
   onClose: () => void;
@@ -61,13 +67,6 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   // Авто-копия при открытии сводки — свой инстанс: иначе она подсвечивала бы
   // кнопку «Скопировать» в модалке, которую человек ещё не нажимал.
   const exportAutoCopy = useCopyToClipboard();
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [ysqDeleting, setYsqDeleting] = useState(false); const [ysqDeleteError, setYsqDeleteError] = useState(false); // раньше локально стиралось раньше запроса к серверу
-  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
-  const [resignConfirm, setResignConfirm] = useState(false);
-  const [resignBusy, setResignBusy] = useState(false);
   const [savedToast, setSavedToast] = useState(false); const [saveError, setSaveError] = useState(false); // «Сохранено» раньше шло даже при отказе api
   const {
     therapyRelation, therapyJoinCode, setTherapyJoinCode, therapyJoinError,
@@ -76,29 +75,13 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   } = useTherapyRelationSettings(userRole);
   const [editName, setEditName] = useState(displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false); const [nameError, setNameError] = useState(false); // отказ раньше не был виден
-  const [theme, setTheme] = useState<Theme>(getTheme);
-  const motion = useReducedMotionPref(() => {
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
-  });
   const setAddressForm = useSetAddressForm();
-  const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
-  const [showReqForm, setShowReqForm] = useState(false);
-  const [reqFullName, setReqFullName] = useState('');
-  const [reqQual, setReqQual] = useState('');
-  const [reqContacts, setReqContacts] = useState('');
-  const [reqMsg, setReqMsg] = useState('');
-  const [reqBusy, setReqBusy] = useState(false);
-  const [reqError, setReqError] = useState('');
 
   useEffect(() => {
     api.getSettings()
       .then(setSettings)
-      .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
-    if (userRole !== 'THERAPIST') {
-      api.getTherapistRequest().then(r => setTherapistReq(r)).catch(() => setTherapistReq(null));
-    }
-  }, [userRole]);
+      .catch(() => setSettings(DEFAULT_SETTINGS));
+  }, []);
 
   async function patch(update: Partial<UserSettings>) {
     if (!settings) return;
@@ -112,26 +95,6 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   async function createInviteAndShare() {
     const r = await handleCreateInvite();
     if (r) setPairShare(r);
-  }
-
-  async function submitTherapistRequest() {
-    setReqError('');
-    if (!reqFullName.trim() || !reqQual.trim() || !reqContacts.trim()) {
-      setReqError(
-        tr(
-          'Заполни ФИО, квалификацию и контакты',
-          'Заполните ФИО, квалификацию и контакты',
-        ),
-      );
-      return;
-    }
-    setReqBusy(true);
-    try {
-      await api.submitTherapistRequest({ fullName: reqFullName.trim(), qualification: reqQual.trim(), contacts: reqContacts.trim(), message: reqMsg.trim() || undefined });
-      setTherapistReq({ status: 'pending', rejectReason: null });
-      setShowReqForm(false);
-    } catch (e) { setReqError(String(e).replace('Error: ', '')); }
-    finally { setReqBusy(false); }
   }
 
   const scrollTo = (id: string) => {
@@ -281,58 +244,13 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {subView === 'main' && (<>
 
                 {/* Оформление */}
-                <SHead id="s-appearance" label="Оформление" />
-                <SRow
-                  title={theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-                  sub={<span onClick={e => { e.stopPropagation(); setTheme(resetToSystemTheme()); }}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setTheme(resetToSystemTheme()); } }}
-                    style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
-                  right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
+                <AppearanceSection
+                  userRole={userRole}
+                  therapistMode={therapistMode}
+                  onToggleTherapistMode={onToggleTherapistMode}
+                  onResignTherapist={onResignTherapist}
+                  onSaved={() => { setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }}
                 />
-                {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
-                <SRow
-                  title="Меньше движения"
-                  sub={motion.sub}
-                  right={<Toggle on={motion.reduced} onClick={motion.toggle} />}
-                />
-                {userRole === 'THERAPIST' && onToggleTherapistMode && (
-                  <SRow
-                    title="Режим специалиста"
-                    sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-                    right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} />}
-                  />
-                )}
-                {userRole === 'THERAPIST' && onResignTherapist && (
-                  !resignConfirm ? (
-                    <div style={{ padding: '10px 0' }}>
-                      <button onClick={() => setResignConfirm(true)}
-                        style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
-                        Перестать быть специалистом
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '10px 0' }}>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
-                        {tr(
-                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.',
-                          'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
-                          style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
-                          Отмена
-                        </button>
-                        <button disabled={resignBusy}
-                          onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
-                          style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'var(--accent-red, #e5484d)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                          {resignBusy ? '…' : 'Снять роль'}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
 
                 {/* Имя */}
                 <SHead id="s-name" label="Имя" />
@@ -443,57 +361,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </>)}
 
                 {/* Стать специалистом */}
-                {userRole !== 'THERAPIST' && (<>
-                  <SHead id="s-specialist" label="Стать специалистом" />
-                  <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
-                    {therapistReq?.status === 'pending' ? (
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                        Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
-                      </div>
-                    ) : therapistReq?.status === 'approved' ? (
-                      <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
-                        {tr('Заявка одобрена. Перезайди в приложение, чтобы появился кабинет терапевта.', 'Заявка одобрена. Перезайдите в приложение, чтобы появился кабинет терапевта.')}
-                      </div>
-                    ) : !showReqForm ? (
-                      <div>
-                        {therapistReq?.status === 'rejected' && (
-                          <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 12 }}>
-                            Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. {tr('Можешь подать снова.', 'Можете подать снова.')}
-                          </div>
-                        )}
-                        <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 12px' }}>
-                          {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
-                        </p>
-                        <button onClick={() => setShowReqForm(true)}
-                          style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                          Подать заявку
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" style={inputStyle} />
-                        <textarea value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3}
-                          placeholder="Квалификация: образование, направление, опыт, сертификаты"
-                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-                        <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." style={inputStyle} />
-                        <textarea value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2}
-                          placeholder="Сообщение (необязательно)"
-                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-                        {reqError && <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{reqError}</div>}
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => { setShowReqForm(false); setReqError(''); }}
-                            style={{ flex: 1, padding: '10px 0', borderRadius: 7, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            Отмена
-                          </button>
-                          <button disabled={reqBusy} onClick={submitTherapistRequest}
-                            style={{ flex: 2, padding: '10px 0', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: reqBusy ? 'default' : 'pointer', opacity: reqBusy ? 0.7 : 1, fontFamily: 'inherit' }}>
-                            {reqBusy ? 'Отправляю...' : 'Отправить заявку'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>)}
+                {userRole !== 'THERAPIST' && <BecomeTherapistSection />}
 
                 {/* Кабинет терапевта */}
                 {userRole === 'THERAPIST' && (<>
@@ -623,9 +491,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
 
                 {/* Данные */}
-                <SHead id="s-data" label="Данные" />
-                <SRow title="Конфиденциальность" sub="Что и как хранится" onClick={() => setShowPrivacy(true)} />
-                <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setDeleteError(false); setShowDeleteSheet(true); }} />
+                <DataSection />
 
               </>)}
             </div>
@@ -656,69 +522,6 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         <ExportSummaryModal text={exportText} onClose={() => setExportText(null)} />
       )}
 
-      {/* ── Privacy modal ── */}
-      {showPrivacy && (
-        <InfoModal onClose={() => setShowPrivacy(false)}>
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Данные и конфиденциальность</div>
-          {[
-            { title: 'Что хранится', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к аккаунту и доступно с любого устройства.' },
-            { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются. Никогда.' },
-          ].map(b => (
-            <div key={b.title} style={{ marginBottom: 10, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{b.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b.text}</div>
-            </div>
-          ))}
-          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (<>
-            {/* Раньше localStorage чистился ДО ответа сервера — при отказе api
-                пользователь видел «удалено», хотя результаты теста оставались
-                на сервере (приватность). Теперь локально чистим только после
-                подтверждённого удаления. */}
-            <button disabled={ysqDeleting} onClick={async () => {
-              setYsqDeleting(true); setYsqDeleteError(false);
-              try {
-                await api.deleteYsqResult();
-                localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY);
-                setShowPrivacy(false);
-              } catch { setYsqDeleteError(true); } finally { setYsqDeleting(false); }
-            }}
-              style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: ysqDeleting ? 'default' : 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
-              {ysqDeleting ? 'Удаляю...' : 'Удалить результаты теста'}
-            </button>
-            {ysqDeleteError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: -4, marginBottom: 10 }}>{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
-          </>)}
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Это образовательный инструмент.</div>
-        </InfoModal>
-      )}
-
-
-      {/* ── Delete modal ── */}
-      {showDeleteSheet && (
-        <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
-            Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
-          </div>
-          {deleteError && !deleteConfirm && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 12 }}>{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
-          {!deleteConfirm ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
-              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.12)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
-              <button disabled={deleting} onClick={async () => {
-                setDeleting(true); setDeleteError(false);
-                try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
-                catch { setDeleting(false); setDeleteConfirm(false); setDeleteError(true); }
-              }} style={{ width: '100%', padding: '13px 0', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-                {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-              </button>
-            </div>
-          )}
-        </InfoModal>
-      )}
     </>
   );
 }

@@ -53,7 +53,11 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'создание задачи — операционный текст',
   'schema-miniapp/src/components/TaskCreateSheet.tsx':
     'создание задачи — операционный текст',
-  'webapp/src/components/SettingsSheet.tsx': 'настройки аккаунта, не дневник',
+  // SettingsSheet распилен (правило №10): <textarea> анкеты «стать
+  // терапевтом» уехал в BecomeTherapistSection, сам SettingsSheet остался
+  // без свободного текста — запись переехала за полем, а не добавилась.
+  'webapp/src/components/settingsSheet/BecomeTherapistSection.tsx':
+    'заявка «стать терапевтом» — анкета, не дневник',
   // AccountPage распилен: <textarea> (анкета заявки терапевта) уехал в
   // TherapistRequestSection; сам AccountPage больше без свободного текста.
   'webapp/src/pages/account/TherapistRequestSection.tsx':
