@@ -49,6 +49,7 @@ import {
   CHAIN_ALLOW,
   ENCLOSING_WINDOW,
   ENCLOSING_ALLOW,
+  FILE_ALLOW,
 } from './silent-catch-rules.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -151,6 +152,7 @@ const counts = {};
 const details = {};
 for (const dir of SCAN_DIRS) {
   for (const file of walk(dir)) {
+    if (FILE_ALLOW.has(file)) continue;
     let src;
     try {
       src = readFileSync(join(ROOT, file), 'utf8');

@@ -19,17 +19,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     getConsecutiveDays: jest.fn().mockResolvedValue(0),
     ...overrides.analyticsService,
   };
-  const adminStatsService = { ...overrides.adminStatsService };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
-  };
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
-  };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
     ...overrides.accountService,
@@ -40,9 +29,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const practicesService = { ...overrides.practicesService };
   const notificationService = { ...overrides.notificationService };
-  const therapistRequestService = { ...overrides.therapistRequestService };
-  const publisher = { ...overrides.publisher };
-  const channelCheck = { ...overrides.channelCheck };
   const analyticsEvents = {
     track: jest.fn().mockResolvedValue(undefined),
     ...overrides.analyticsEvents,
@@ -52,16 +38,10 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
-    adminStatsService,
-    statsReport,
-    healthyAdultService,
     accountService,
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
-    publisher,
-    channelCheck,
     analyticsEvents,
   );
   return { service, fakeBot, analyticsEvents, pairsService };

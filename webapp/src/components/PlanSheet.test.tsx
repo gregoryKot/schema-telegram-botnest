@@ -232,3 +232,26 @@ describe('PlanSheet — useHistorySheet (браузерная «Назад»)', 
     expect(screen.getByPlaceholderText('Что-то конкретное, маленькое...')).toBeTruthy();
   });
 });
+
+describe('PlanSheet — сбой загрузки своих практик (сбой ≠ пусто)', () => {
+  // Регрессия: отказ getPractices глушился — свои практики молча пропадали
+  // из выбора, человек видел только готовый список, как будто своих нет.
+  it('отказ getPractices — видна строка отказа, готовые варианты остаются', async () => {
+    mockApi.getPractices.mockRejectedValue(new Error('offline'));
+    renderSheet();
+    await act(async () => {});
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Не удалось загрузить твои практики',
+    );
+    // Кураторский список работает — деградация, не пустота.
+    expect(screen.getByText('Готовые варианты')).toBeTruthy();
+  });
+
+  it('успешная загрузка — строки отказа нет', async () => {
+    mockApi.getPractices.mockResolvedValue([]);
+    renderSheet();
+    await act(async () => {});
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});

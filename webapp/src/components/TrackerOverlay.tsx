@@ -5,7 +5,7 @@ import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
@@ -86,8 +86,14 @@ export function TrackerOverlay({
           try {
             await api.saveRating(needId, v, date);
             setLastSavedAt(new Date());
-          } catch {
-            /* best-effort: ошибку намеренно игнорируем */
+          } catch (e) {
+            // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
+            // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
+            console.error('saveRating failed', e);
+            reportClientError({
+              message: 'tracker backfill rating save failed',
+              section: 'tracker',
+            });
           }
         }, 500);
         return;
@@ -101,8 +107,13 @@ export function TrackerOverlay({
           const res = await api.saveRating(needId, v);
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
-        } catch {
-          /* best-effort: ошибку намеренно игнорируем */
+        } catch (e) {
+          // См. бэкафилл-ветку выше: здесь только ошибка запроса.
+          console.error('saveRating failed', e);
+          reportClientError({
+            message: 'tracker rating save failed',
+            section: 'tracker',
+          });
         }
       }, 500);
     },

@@ -1,22 +1,27 @@
 // @vitest-environment jsdom
-// AddressFormPicker — выбор обращения при первом входе (0% покрытия).
-// Проверяем: выбор «ты»/«вы» шлёт setForm + api.updateSettings + onDone(form),
-// «Позже» пропускает без записи в настройки, и что сбой api.updateSettings
-// НЕ блокирует вход (onDone всё равно вызывается — комментарий в коде это
-// обещает явно, регрессия была бы «застрял на экране выбора при офлайне»).
+// AddressFormPicker — выбор обращения при первом входе.
+//
+// Инцидент: провал api.updateSettings уходил только в console.error, а лист
+// всё равно закрывался как успешный (onDone(form)) — человек видел выбранную
+// форму применённой, а сервер её не узнавал; на следующей сессии addressForm
+// снова null. Тесты «сохранение отказало» ниже — регрессия именно этого
+// сценария (правило CLAUDE.md «Обращение ты/вы»).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
   cleanup,
-  waitFor,
 } from '@testing-library/react';
 import { AddressFormContext } from '../utils/addressForm';
 import { AddressFormPicker } from './AddressFormPicker';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 
-vi.mock('../api', () => ({ api: { updateSettings: vi.fn() } }));
+vi.mock('../api', () => ({
+  api: { updateSettings: vi.fn() },
+  reportClientError: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();
@@ -41,8 +46,9 @@ describe('AddressFormPicker — выбор формы', () => {
     const onDone = vi.fn();
     renderPicker(onDone, setForm);
     fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
     expect(setForm).toHaveBeenCalledWith('ty');
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith('ty'));
+    expect(onDone).toHaveBeenCalledWith('ty');
     expect(api.updateSettings).toHaveBeenCalledWith({ addressForm: 'ty' });
   });
 
@@ -52,9 +58,21 @@ describe('AddressFormPicker — выбор формы', () => {
     const onDone = vi.fn();
     renderPicker(onDone, setForm);
     fireEvent.click(screen.getByText('На «вы»'));
+    await act(async () => {});
     expect(setForm).toHaveBeenCalledWith('vy');
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith('vy'));
+    expect(onDone).toHaveBeenCalledWith('vy');
     expect(api.updateSettings).toHaveBeenCalledWith({ addressForm: 'vy' });
+  });
+
+  it('успех с первого раза — onDone вызван, строки ошибки не было (ложная тревога хуже молчания)', async () => {
+    vi.mocked(api.updateSettings).mockResolvedValue(undefined);
+    const onDone = vi.fn();
+    renderPicker(onDone);
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(onDone).toHaveBeenCalledWith('ty');
+    expect(screen.queryByText(/Не удалось сохранить выбор/)).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 
   it('«Позже» — не трогает setForm/api, зовёт onDone(null)', () => {
@@ -67,11 +85,49 @@ describe('AddressFormPicker — выбор формы', () => {
     expect(onDone).toHaveBeenCalledWith(null);
   });
 
-  it('api.updateSettings падает (офлайн) — вход всё равно не блокируется', async () => {
+  it('api.updateSettings падает — лист НЕ закрывается (onDone не вызван), видна строка ошибки, отчёт ушёл в reportClientError', async () => {
+    vi.mocked(api.updateSettings).mockRejectedValue(new Error('network'));
+    const setForm = vi.fn();
+    const onDone = vi.fn();
+    renderPicker(onDone, setForm);
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+
+    expect(setForm).toHaveBeenCalledWith('ty'); // интерфейс уже переключился — это честно
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+    expect(reportClientError).toHaveBeenCalledWith({
+      message: 'address form save failed',
+      section: 'addressForm',
+    });
+  });
+
+  it('повторный клик после отказа, updateSettings теперь успешен — onDone вызывается', async () => {
+    vi.mocked(api.updateSettings)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined);
+    const onDone = vi.fn();
+    renderPicker(onDone);
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+    expect(onDone).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(api.updateSettings).toHaveBeenCalledTimes(2);
+    expect(onDone).toHaveBeenCalledWith('ty');
+  });
+
+  it('«Позже» после отказа — мягкий выход всё равно зовёт onDone(null)', async () => {
     vi.mocked(api.updateSettings).mockRejectedValue(new Error('network'));
     const onDone = vi.fn();
     renderPicker(onDone);
     fireEvent.click(screen.getByText('На «ты»'));
-    await waitFor(() => expect(onDone).toHaveBeenCalledWith('ty'));
+    await act(async () => {});
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Позже'));
+    expect(onDone).toHaveBeenCalledWith(null);
   });
 });

@@ -18,11 +18,17 @@ import {
   clickToolbarButton,
 } from '../test-support/renderWithFlow';
 
+// DownloadMenu → useModeMapExport рендерит карту через html-to-image — в jsdom
+// нет canvas/рендерера, мокаем саму библиотеку (как в useModeMapExport.test.ts).
+const toPng = vi.fn();
+vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }));
+
 beforeEach(() => {
   installFlowTestPolyfills();
   localStorage.clear();
   getConceptualization.mockReset();
   getConceptualization.mockResolvedValue(null);
+  toPng.mockReset();
 });
 afterEach(() => cleanup());
 
@@ -277,6 +283,34 @@ describe('ModeMapCanvas — скачивание карты', () => {
     clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
     expect(screen.getByText('Картинка PNG')).toBeTruthy();
     expect(screen.getByText('Документ PDF')).toBeTruthy();
+  });
+
+  // Регресс: onExportPng/onExportPdf раньше глушили сбой (`catch { /* ignore */ }`) —
+  // рендер карты падал молча, ни файла, ни объяснения (карта режимов, три молчания).
+  it('сбой рендера PNG — в меню видна строка «Не удалось подготовить файл», exporting снят', async () => {
+    toPng.mockRejectedValue(new Error('canvas boom'));
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
+    const pngBtn = screen.getByText('Картинка PNG');
+    await act(async () => { fireEvent.click(pngBtn); });
+    expect(
+      screen.getByText('Не удалось подготовить файл. Стоит попробовать ещё раз'),
+    ).toBeTruthy();
+    expect((pngBtn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('успешный экспорт PNG — строки отказа нет', async () => {
+    toPng.mockResolvedValue('data:image/png;base64,AAA');
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
+    await act(async () => { fireEvent.click(screen.getByText('Картинка PNG')); });
+    expect(
+      screen.queryByText('Не удалось подготовить файл. Стоит попробовать ещё раз'),
+    ).toBeNull();
   });
 });
 

@@ -1,19 +1,26 @@
 // @vitest-environment jsdom
-// AddressFormPicker — выбор «ты/вы» при первом входе (0% покрытия).
-// Показывается только если settings.addressForm ещё null и ещё не
-// спрашивали в этой сессии (sessionStorage) — денормализованный гейт видимости.
+// AddressFormPicker — выбор «ты/вы» при первом входе. Показывается только
+// если settings.addressForm ещё null и ещё не спрашивали в этой сессии
+// (sessionStorage) — денормализованный гейт видимости.
+//
+// Инцидент: провал api.updateSettings глушился (пустой catch) и диалог
+// закрывался как успешный — человек видел выбранную форму применённой, а
+// сервер её не узнавал; на следующей сессии addressForm снова null.
+// Тесты «сохранение отказало» ниже — регрессия именно этого сценария.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AddressFormPicker } from './AddressFormPicker';
 import { AddressFormContext } from '../utils/addressForm';
 
 const getSettings = vi.fn();
 const updateSettings = vi.fn();
+const reportClientError = vi.fn();
 vi.mock('../api', () => ({
   api: {
     getSettings: (...a: unknown[]) => getSettings(...a),
     updateSettings: (...a: unknown[]) => updateSettings(...a),
   },
+  reportClientError: (...a: unknown[]) => reportClientError(...a),
 }));
 
 beforeEach(() => {
@@ -39,14 +46,15 @@ describe('AddressFormPicker — видимость', () => {
   it('addressForm уже выбран (не null) — пикер не показывается', async () => {
     getSettings.mockResolvedValue({ addressForm: 'ty' });
     renderPicker();
-    await waitFor(() => expect(getSettings).toHaveBeenCalled());
+    await act(async () => {});
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
   });
 
   it('addressForm ещё null — показывает выбор', async () => {
     getSettings.mockResolvedValue({ addressForm: null });
     renderPicker();
-    expect(await screen.findByText('Как удобнее общаться?')).toBeTruthy();
+    await act(async () => {});
+    expect(screen.queryByText('Как удобнее общаться?')).toBeTruthy();
   });
 
   it('уже спрашивали в этой сессии — не запрашивает настройки повторно', () => {
@@ -65,31 +73,91 @@ describe('AddressFormPicker — выбор', () => {
   it('«На «ты»» сохраняет выбор, применяет его сразу и закрывает пикер', async () => {
     const setForm = vi.fn();
     renderPicker(setForm);
-    fireEvent.click(await screen.findByText('На «ты»'));
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
     expect(setForm).toHaveBeenCalledWith('ty');
     expect(updateSettings).toHaveBeenCalledWith({ addressForm: 'ty' });
-    await waitFor(() => expect(screen.queryByText('Как удобнее общаться?')).toBeNull());
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
     expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
   });
 
   it('«На «вы»» сохраняет выбор «вы»', async () => {
     const setForm = vi.fn();
     renderPicker(setForm);
-    fireEvent.click(await screen.findByText('На «вы»'));
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «вы»'));
+    await act(async () => {});
     expect(setForm).toHaveBeenCalledWith('vy');
+    expect(updateSettings).toHaveBeenCalledWith({ addressForm: 'vy' });
   });
 
-  it('провал сохранения на бэкенде не блокирует закрытие пикера', async () => {
+  it('успех с первого раза — диалога нет и строки ошибки не было (ложная тревога хуже молчания)', async () => {
+    const setForm = vi.fn();
+    renderPicker(setForm);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(screen.queryByText(/Не удалось сохранить выбор/)).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  it('провал сохранения — диалог НЕ закрывается, видна строка ошибки, отчёт ушёл в reportClientError', async () => {
+    updateSettings.mockRejectedValue(new Error('network'));
+    const setForm = vi.fn();
+    renderPicker(setForm);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+
+    expect(setForm).toHaveBeenCalledWith('ty'); // интерфейс уже переключился — это честно
+    expect(screen.queryByText('Как удобнее общаться?')).toBeTruthy();
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+    expect(sessionStorage.getItem('addr_form_asked')).toBeNull();
+    expect(reportClientError).toHaveBeenCalledWith({
+      message: 'address form save failed',
+      section: 'addressForm',
+    });
+  });
+
+  it('повторный клик после отказа, на этот раз updateSettings успешен — диалог закрывается', async () => {
+    updateSettings
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({});
+    renderPicker();
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(updateSettings).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+  });
+
+  it('«Позже» после отказа — мягкий выход всё равно закрывает пикер', async () => {
     updateSettings.mockRejectedValue(new Error('network'));
     renderPicker();
-    fireEvent.click(await screen.findByText('На «ты»'));
-    await waitFor(() => expect(screen.queryByText('Как удобнее общаться?')).toBeNull());
+    await act(async () => {});
+    fireEvent.click(screen.getByText('На «ты»'));
+    await act(async () => {});
+    expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Позже'));
+    await act(async () => {});
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
   });
 
   it('«Позже» закрывает без сохранения формы и без сброса setForm', async () => {
     const setForm = vi.fn();
     renderPicker(setForm);
-    fireEvent.click(await screen.findByText('Позже'));
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Позже'));
+    await act(async () => {});
     expect(setForm).not.toHaveBeenCalled();
     expect(updateSettings).not.toHaveBeenCalled();
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();

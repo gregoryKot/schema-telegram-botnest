@@ -82,3 +82,12 @@ export const ENCLOSING_ALLOW = [
   /\btrackEvent\s*[:(]/,
   /\btrackPublicEvent\s*[:(]/,
 ];
+
+// 3. FILE — файл целиком является best-effort примитивом (ср. ALLOWED_CHANNELS
+//    в check-alert-throttle.mjs). Единственный случай: телеметрия крашей —
+//    её контракт «никогда не бросает», отчёт о поломке не имеет права ломать
+//    UI сам (см. шапку файла). Catch стоят дальше 160 символов от имени
+//    функции, поэтому оконный ENCLOSING их не достаёт. Границу держит
+//    silent-catch.spec.ts: другой новый файл с теми же catch — по-прежнему
+//    ошибка.
+export const FILE_ALLOW = new Set(['shared/src/api/clientErrorReport.ts']);

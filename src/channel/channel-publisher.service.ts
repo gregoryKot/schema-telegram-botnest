@@ -152,7 +152,10 @@ export class ChannelPublisherService {
     const alert = await this.phrases
       .poolStatus()
       .then(poolAlertText)
-      .catch(() => null);
+      .catch((err: Error) => {
+        this.logger.error(`healthy-adult poolStatus failed: ${err?.message}`);
+        return null;
+      });
     if (alert) await notifyAdminWithFallback(alert, 'Пул канала ЗВ');
   }
 }

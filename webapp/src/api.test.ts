@@ -378,8 +378,21 @@ describe('adminReq — успешный статус без валидного J
   });
 });
 
-// ── saveRating — ручной fetch (не через get/post) ────────────────────────────
+// ── saveRating — оффлайн-надёжность (правило №3 CLAUDE.md) ───────────────────
+// До 2026-08 сетевой сбой saveRating терялся молча: голый fetch без outbox,
+// а TrackerOverlay глушил отказ `catch {}` — центральное ежедневное действие
+// продукта было надёжным только в мини-аппе. Теперь тот же контракт, что там
+// (schema-miniapp/src/api.ts): 4xx — реальная ошибка запроса, пробрасывается;
+// сеть/таймаут/5xx — оценка уходит в общую (shared) outbox-очередь и ответ
+// приходит успешным (сервер upsert-ит по (userId, date, needId), повтор
+// безопасен).
+const OUTBOX_KEY = 'rating_outbox_v1';
+
 describe('saveRating — прямой fetch-вызов', () => {
+  beforeEach(() => {
+    localStorage.removeItem(OUTBOX_KEY);
+  });
+
   it('успех: тело запроса содержит needId/value/date, возвращает распарсенный JSON', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, {
@@ -403,9 +416,90 @@ describe('saveRating — прямой fetch-вызов', () => {
     });
   });
 
-  it('!ok статус: бросает Error("API error: <status>"), ошибка видна вызывающему', async () => {
+  it('4xx: бросает Error("API error: <status>"), НЕ кладёт оценку в outbox', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(404, {}));
+    await expect(
+      api.saveRating('safety', 7, '2026-01-15'),
+    ).rejects.toThrow('API error: 404');
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+  });
+
+  it('5xx: НЕ бросает — оценка уходит в outbox, ответ успешен (allDone: false)', async () => {
     fetchMock.mockResolvedValue(jsonResponse(500, {}));
-    await expect(api.saveRating('safety', 7)).rejects.toThrow('API error: 500');
+    const result = await api.saveRating('safety', 7, '2026-01-15');
+
+    expect(result).toEqual({ ok: true, allDone: false });
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      { needId: 'safety', value: 7, date: '2026-01-15' },
+    ]);
+  });
+
+  it('сетевой сбой (fetch реджектится): НЕ бросает — оценка уходит в outbox, ответ успешен', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const result = await api.saveRating('safety', 7, '2026-01-15');
+
+    expect(result).toEqual({ ok: true, allDone: false });
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      { needId: 'safety', value: 7, date: '2026-01-15' },
+    ]);
+  });
+
+  it('без явной даты — в outbox уходит today() (upsert должен видеть "сегодня по мнению юзера")', async () => {
+    fetchMock.mockRejectedValue(new TypeError('offline'));
+    await api.saveRating('safety', 7);
+
+    const queued = JSON.parse(localStorage.getItem(OUTBOX_KEY)!);
+    expect(queued).toHaveLength(1);
+    expect(queued[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// ── flushOutbox — read-after-write: сохранил при упавшей сети → флаш при
+// следующем старте дошивает очередь и чистит её (см. useBootstrapLoad.ts).
+describe('flushOutbox — связка сохранение→отправка', () => {
+  beforeEach(() => {
+    localStorage.removeItem(OUTBOX_KEY);
+  });
+
+  it('доотправляет накопленную оценку и очищает очередь', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await api.saveRating('safety', 6, '2026-01-15');
+    expect(localStorage.getItem(OUTBOX_KEY)).not.toBeNull();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true, allDone: false }));
+    await api.flushOutbox();
+
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({
+      needId: 'safety',
+      value: 6,
+      date: '2026-01-15',
+    });
+  });
+
+  it('шлёт outbox_flush в аналитику, только если реально что-то доехало', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('offline'));
+    await api.saveRating('safety', 6, '2026-01-15');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true, allDone: false }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true })); // /api/event
+    await api.flushOutbox();
+
+    const eventCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/api/event'),
+    );
+    expect(eventCall).toBeDefined();
+    const [, init] = eventCall!;
+    expect(JSON.parse(init.body)).toEqual({
+      name: 'outbox_flush',
+      meta: { count: 1 },
+    });
+  });
+
+  it('пустая очередь — ничего не отправляет', async () => {
+    await api.flushOutbox();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
