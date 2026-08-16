@@ -875,7 +875,7 @@
   "test/app-auth.e2e-spec.ts": 127,
   "test/app-ownership-sweep-2.e2e-spec.ts": 225,
   "test/app-ownership-sweep-3.e2e-spec.ts": 180,
-  "test/app-ownership-sweep.e2e-spec.ts": 237,
+  "test/app-ownership-sweep.e2e-spec.ts": 258,
   "test/app-ownership.e2e-spec.ts": 116,
   "test/auth-flows.e2e-spec.ts": 299,
   "test/device-link.e2e-spec.ts": 283,
