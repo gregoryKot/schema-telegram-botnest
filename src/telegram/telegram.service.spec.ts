@@ -26,8 +26,11 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.botService,
   };
   const analyticsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core stats'),
     ...overrides.analyticsService,
+  };
+  const adminStatsService = {
+    getAdminStats: jest.fn().mockResolvedValue('core stats'),
+    ...overrides.adminStatsService,
   };
   const statsReport = {
     render: jest.fn().mockResolvedValue(''),
@@ -77,6 +80,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
+    adminStatsService,
     statsReport,
     healthyAdultService,
     accountService,
@@ -98,6 +102,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     notificationService,
     therapistRequestService,
     analyticsService,
+    adminStatsService,
     statsReport,
     healthyAdultService,
     channelCheck,

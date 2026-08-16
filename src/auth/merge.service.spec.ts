@@ -120,9 +120,11 @@ describe('MergeService — SQL safety', () => {
   // ── Self-merge guard ────────────────────────────────────────────────────────
 
   it('is a no-op when sourceId === targetId', async () => {
-    const { prisma } = makePrisma();
+    const { prisma, rawCalls } = makePrisma();
     const svc = new MergeService(prisma);
     await svc.merge(SRC, SRC);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    // Никакого SQL не ушло вообще — не только транзакция не открылась.
+    expect(rawCalls).toEqual([]);
   });
 });

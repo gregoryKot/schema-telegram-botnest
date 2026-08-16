@@ -12,6 +12,7 @@ import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
@@ -99,6 +100,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly adminStatsService: BotAdminStatsService,
     private readonly statsReport: StatsReportService,
     private readonly healthyAdult: HealthyAdultService,
     private readonly accountService: AccountService,
@@ -307,7 +309,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
         // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
         const [core, product, pool] = await Promise.all([
-          this.analyticsService.getAdminStats(),
+          this.adminStatsService.getAdminStats(),
           this.statsReport.render(),
           this.healthyAdult.poolStatus(),
         ]);
