@@ -13,10 +13,13 @@ export const MINIAPP_ONLY_KEYBOARD = Markup.inlineKeyboard([
 ]);
 
 /** Текст результата пары — общий для /start?pair_ и resumePendingPair. */
-export function pairJoinResultText(ok: boolean): string {
-  return ok
-    ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
-    : 'Ссылка недействительна или уже использована.';
+export function pairJoinResultText(ok: boolean, form?: AddressForm): string {
+  if (!ok) return 'Ссылка недействительна или уже использована.';
+  return t(
+    form,
+    'Вы в паре! 🤝 Теперь будешь видеть индекс дня друг друга.',
+    'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
+  );
 }
 
 /** Текст ретрая для accept:(ty|vy)/accept_consent — форма известна не всегда. */

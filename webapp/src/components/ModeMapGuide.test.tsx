@@ -7,6 +7,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ModeMapGuide } from './ModeMapGuide';
 import type { FlowNode } from './modeMapFlow';
+import { AddressFormContext } from '../utils/addressForm';
 
 afterEach(() => {
   cleanup();
@@ -118,5 +119,29 @@ describe('ModeMapGuide — советы и закрытие', () => {
     renderGuide({ onClose });
     fireEvent.click(screen.getByLabelText('Закрыть'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ModeMapGuide — обращение ты/вы (правило CLAUDE.md, терапевт — тоже пользователь формы)', () => {
+  it('форма «вы»: подсказка цикл-клэша, алерт и шаг «Потребность» звучат на «вы», без «ты»', () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <ModeMapGuide
+          nodes={[node('child'), node('coping')]}
+          kind="problem"
+          onAdd={vi.fn()}
+          onOpenNeed={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByText('Назовите потребность ребёнка — именно она становится целью терапии.')).toBeTruthy();
+    expect(screen.queryByText(/Назови потребность/)).toBeNull();
+  });
+
+  it('форма «ты» (по умолчанию): те же строки звучат на «ты»', () => {
+    renderGuide({ nodes: [node('child'), node('coping')], kind: 'problem' });
+    expect(screen.getByText('Назови потребность ребёнка — именно она становится целью терапии.')).toBeTruthy();
+    expect(screen.queryByText(/Назовите потребность/)).toBeNull();
   });
 });
