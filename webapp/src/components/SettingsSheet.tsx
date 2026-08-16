@@ -26,6 +26,14 @@ import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
 import { DataSection } from './settingsSheet/DataSection';
 
 
+// Дефолты на случай, если api.getSettings() отказал — экран не должен
+// зависнуть на Loader, показываем безопасные значения.
+const DEFAULT_SETTINGS: UserSettings = {
+  notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow',
+  notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [],
+  therapistShareCards: true, therapistShareProfile: true,
+};
+
 interface Props {
   onClose: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
@@ -72,7 +80,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   useEffect(() => {
     api.getSettings()
       .then(setSettings)
-      .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
+      .catch(() => setSettings(DEFAULT_SETTINGS));
   }, []);
 
   async function patch(update: Partial<UserSettings>) {

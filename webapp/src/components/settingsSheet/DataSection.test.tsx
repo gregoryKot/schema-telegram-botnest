@@ -6,8 +6,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { DataSection } from './DataSection';
-import { AddressFormContext } from '../../utils/addressForm';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
+import {
+  withAddressForm,
+  mockLocationReload,
+  restoreLocation,
+  seedWipeTestStorage,
+  openDeleteSheet,
+  confirmAccountDeletion,
+} from './SettingsSheet.test-helpers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -18,30 +25,21 @@ vi.mock('../../api', () => ({
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-const originalLocation = window.location;
 let reloadSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  reloadSpy = vi.fn();
-  Object.defineProperty(window, 'location', {
-    configurable: true,
-    value: { ...originalLocation, reload: reloadSpy },
-  });
+  reloadSpy = mockLocationReload();
 });
 
 afterEach(() => {
   cleanup();
-  Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+  restoreLocation();
 });
 
 function renderWithForm(form: 'ty' | 'vy' = 'ty') {
-  return render(
-    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <DataSection />
-    </AddressFormContext.Provider>,
-  );
+  return render(withAddressForm(<DataSection />, form));
 }
 
 describe('DataSection — конфиденциальность: модалка', () => {
@@ -94,7 +92,7 @@ describe('DataSection — удаление результатов YSQ', () => {
 describe('DataSection — удаление аккаунта: подтверждение обязательно', () => {
   it('первый клик открывает предупреждение, api ещё не вызван', () => {
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    openDeleteSheet();
 
     expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
@@ -102,7 +100,7 @@ describe('DataSection — удаление аккаунта: подтвержд�
 
   it('«Отмена» закрывает предупреждение, ничего не удаляя', () => {
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    openDeleteSheet();
     fireEvent.click(screen.getByText('Отмена'));
 
     expect(screen.queryByText('Отмена')).toBeNull();
@@ -111,7 +109,7 @@ describe('DataSection — удаление аккаунта: подтвержд�
 
   it('первый «Удалить» только переводит во второй шаг — api ещё не вызван', () => {
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    openDeleteSheet();
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
 
     expect(screen.getByText('Точно? Восстановить невозможно.')).toBeTruthy();
@@ -122,14 +120,10 @@ describe('DataSection — удаление аккаунта: подтвержд�
 describe('DataSection — удаление аккаунта: успех', () => {
   it('чистит localStorage/sessionStorage (кроме темы/cookie-согласия) и перезагружает страницу', async () => {
     mockApi.deleteAllUserData.mockResolvedValue(undefined);
-    localStorage.setItem('app_theme', 'dark');
-    localStorage.setItem('cookie_consent', 'accepted');
-    localStorage.setItem('some_other_key', 'should-be-wiped');
+    seedWipeTestStorage();
 
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
     expect(localStorage.getItem('app_theme')).toBe('dark');
@@ -144,9 +138,7 @@ describe('DataSection — удаление аккаунта: отказ серв
     localStorage.setItem('some_other_key', 'still-here');
 
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
 
     await screen.findByText(/Не удалось удалить данные/i);
     await act(async () => {});
@@ -160,30 +152,24 @@ describe('DataSection — удаление аккаунта: отказ серв
   it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('ty');
-    fireEvent.click(screen.getByText('Удалить все данные'));
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText('Не удалось удалить данные. Проверь связь и попробуй ещё раз');
     cleanup();
 
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('vy');
-    fireEvent.click(screen.getByText('Удалить все данные'));
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText('Не удалось удалить данные. Проверьте связь и попробуйте ещё раз');
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
-    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    confirmAccountDeletion();
     await screen.findByText(/Не удалось удалить данные/i);
 
     fireEvent.click(screen.getByText('Отмена'));
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    openDeleteSheet();
 
     expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
   });
@@ -192,7 +178,7 @@ describe('DataSection — удаление аккаунта: отказ серв
 describe('DataSection — закрытие модалки фоном сбрасывает подтверждение', () => {
   it('клик по фону во время второго шага закрывает модалку целиком', async () => {
     renderWithForm();
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    openDeleteSheet();
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 

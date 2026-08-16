@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { BecomeTherapistSection } from './BecomeTherapistSection';
-import { AddressFormContext } from '../../utils/addressForm';
+import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -26,11 +26,7 @@ afterEach(() => {
 });
 
 function renderWithForm(form: 'ty' | 'vy' = 'ty') {
-  return render(
-    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <BecomeTherapistSection />
-    </AddressFormContext.Provider>,
-  );
+  return render(withAddressForm(<BecomeTherapistSection />, form));
 }
 
 describe('BecomeTherapistSection — статусы заявки', () => {
@@ -92,14 +88,7 @@ describe('BecomeTherapistSection — клиентская валидация (т
 describe('BecomeTherapistSection — отправка заявки', () => {
   async function openAndFill() {
     fireEvent.click(await screen.findByText('Подать заявку'));
-    fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван Иванов' } });
-    fireEvent.change(
-      screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'),
-      { target: { value: 'Психолог' } },
-    );
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), {
-      target: { value: '@ivan' },
-    });
+    fillTherapistRequestForm();
   }
 
   it('успех: заявка уходит на сервер, форма закрывается, статус — «на рассмотрении»', async () => {
