@@ -851,7 +851,7 @@
   "src/telegram/telegram.service.ts": 600,
   "src/telegram/telegram.settings.service.ts": 307,
   "src/test-support/fake-prisma.spec-helper.ts": 261,
-  "src/test-support/gates/gate-sandbox.ts": 176,
+  "src/test-support/gates/gate-sandbox.ts": 155,
   "src/test-support/gates/pattern-loader.ts": 92,
   "src/therapy/dto/client-data.dto.ts": 47,
   "src/therapy/dto/conceptualization.dto.ts": 75,
