@@ -1013,7 +1013,7 @@
   "webapp/src/components/TherapistClientSheet.tsx": 220,
   "webapp/src/components/TherapistPrivacyDisclaimer.tsx": 106,
   "webapp/src/components/TherapyNote.tsx": 2,
-  "webapp/src/components/TrackerOverlay.tsx": 481,
+  "webapp/src/components/TrackerOverlay.tsx": 493,
   "webapp/src/components/trackerOverlay/CompletionScreen.tsx": 140,
   "webapp/src/components/trackerOverlay/DesktopLayout.tsx": 275,
   "webapp/src/components/trackerOverlay/MobileLayout.tsx": 209,

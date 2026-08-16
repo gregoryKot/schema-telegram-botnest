@@ -5,7 +5,7 @@ import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
@@ -87,7 +87,14 @@ export function TrackerOverlay({
             await api.saveRating(needId, v, date);
             setLastSavedAt(new Date());
           } catch {
-            /* best-effort: ошибку намеренно игнорируем */
+            // В webapp (в отличие от мини-аппа) нет outbox-очереди — оценка
+            // при сбое сети теряется НАВСЕГДА, а не доотправляется позже.
+            // Без отчёта наверх об этом никто не узнает (правило CLAUDE.md
+            // №14: обработанная авария невидимее необработанной).
+            reportClientError({
+              message: 'tracker backfill rating save failed',
+              section: 'tracker',
+            });
           }
         }, 500);
         return;
@@ -102,7 +109,12 @@ export function TrackerOverlay({
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
         } catch {
-          /* best-effort: ошибку намеренно игнорируем */
+          // Та же причина, что в бэкафилл-ветке выше: outbox'а в webapp нет,
+          // оценка теряется без следа, а пользователь видит её как проставленную.
+          reportClientError({
+            message: 'tracker rating save failed',
+            section: 'tracker',
+          });
         }
       }, 500);
     },
