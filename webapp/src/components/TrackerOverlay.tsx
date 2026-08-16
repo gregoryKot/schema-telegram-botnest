@@ -86,8 +86,8 @@ export function TrackerOverlay({
           try {
             await api.saveRating(needId, v, date);
             setLastSavedAt(new Date());
-          } catch {
-            /* best-effort: ошибку намеренно игнорируем */
+          } catch (e) {
+            console.error('saveRating failed', e); // сеть/5xx — уже в outbox
           }
         }, 500);
         return;
@@ -101,8 +101,8 @@ export function TrackerOverlay({
           const res = await api.saveRating(needId, v);
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
-        } catch {
-          /* best-effort: ошибку намеренно игнорируем */
+        } catch (e) {
+          console.error('saveRating failed', e); // сеть/5xx — уже в outbox
         }
       }, 500);
     },

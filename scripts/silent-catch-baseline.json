@@ -1,5 +1,4 @@
 {
-  "schema-miniapp/src/api.ts": 2,
   "schema-miniapp/src/apiClient.ts": 1,
   "schema-miniapp/src/components/SettingsSheet.tsx": 1,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
@@ -28,7 +27,7 @@
   "src/telegram/telegram.service.ts": 1,
   "src/utils/admin-alert.ts": 1,
   "src/utils/crypto.ts": 1,
-  "webapp/src/api.ts": 3,
+  "webapp/src/api.ts": 1,
   "webapp/src/auth/AuthProvider.tsx": 1,
   "webapp/src/auth/clearLocalData.ts": 1,
   "webapp/src/components/AddressFormPicker.tsx": 1,
@@ -48,7 +47,6 @@
   "webapp/src/components/SchemaFlashcard.tsx": 2,
   "webapp/src/components/SettingsSheet.tsx": 1,
   "webapp/src/components/therapist/useClientDetail.ts": 1,
-  "webapp/src/components/TrackerOverlay.tsx": 2,
   "webapp/src/hooks/useAsyncData.ts": 2,
   "webapp/src/hooks/useQuizzes.ts": 1,
   "webapp/src/pages/account/TherapistRequestSection.tsx": 1,

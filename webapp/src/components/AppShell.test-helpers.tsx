@@ -208,6 +208,7 @@ vi.mock('../api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     recordActivity: vi.fn().mockResolvedValue(undefined),
+    flushOutbox: vi.fn().mockResolvedValue(undefined),
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
     needs: vi.fn().mockResolvedValue([]),

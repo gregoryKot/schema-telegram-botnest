@@ -5,15 +5,10 @@ import type { PracticePlan, TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
 import { cacheTherapistContact } from '../../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY } from '../../utils/storageKeys';
-import { todayStr } from '../../utils/format';
 
-export const TODAY_DATE = todayStr();
-export const TODAY_KEY = 'celebrated_' + TODAY_DATE;
-const YESTERDAY_DATE = (() => {
-  const [y, m, d] = TODAY_DATE.split('-').map(Number);
-  const prev = new Date(y, m - 1, d - 1);
-  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
-})();
+// Константы дат — из shared (правило №3); ре-экспорт для потребителей AppShell.
+export { TODAY_DATE, TODAY_KEY } from '../../../../shared/src/utils/todayConstants';
+import { TODAY_KEY, YESTERDAY_DATE } from '../../../../shared/src/utils/todayConstants';
 
 interface Params {
   navigate: NavigateFunction;
@@ -51,6 +46,10 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       : Promise.resolve();
 
     const activityPromise = api.recordActivity().catch(() => fail('активность'));
+
+    // Очередь отложенных оценок (сеть легла в прошлый визит, правило №3 —
+    // тот же outbox, что в мини-аппе) — один флаш на старте, как там.
+    const outboxPromise = api.flushOutbox().catch(() => fail('отложенные оценки'));
 
     // Mirror disclaimer acceptance to server so the Telegram mini-app can skip
     // its consent screen for users who are already active on the website.
@@ -127,7 +126,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       }
     }).catch(() => fail('профиль'));
 
-    Promise.allSettled([initPromise, activityPromise, disclaimerPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
+    Promise.allSettled([initPromise, activityPromise, outboxPromise, disclaimerPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
       .then(() => {
         if (failed.length) {
           reportClientError({ message: `appshell bootstrap fail: ${failed.join(', ')}`, section: 'appshell.bootstrap' });
