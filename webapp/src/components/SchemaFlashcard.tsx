@@ -6,6 +6,7 @@ import { useTr } from '../utils/addressForm';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { Topbar } from './SchemaFlashcardTopbar';
+import { FlashcardDoneScreen } from './flashcard/FlashcardDoneScreen';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const STORAGE_KEY = 'schema_flashcards';
@@ -73,6 +74,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   const [done,         setDone]         = useState(false);
   const [allCards,     setAllCards]     = useState<FlashcardEntry[]>(() => loadLocal());
   const [viewing,      setViewing]      = useState<FlashcardEntry | null>(null);
+  const [syncFailed,   setSyncFailed]   = useState(false);
   const [showHistory,  setShowHistory]  = useState(false);
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         needId: r.needId,
         action: r.action ?? '',
       })));
-    }).catch(() => {});
+    }).catch(e => console.error('getFlashcards failed', e)); // деградация до локальных карточек
   }, []);
 
   const stepIndex = STEPS.indexOf(step);
@@ -100,7 +102,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     const cards = [entry, ...loadLocal()].slice(0, 20);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
     setAllCards(cards);
-    api.createFlashcard({ modeId: selectedMode!, needId: selectedNeed!, reflection: reflection || undefined, action: action || undefined }).catch(() => {});
+    // Карточка уже в localStorage; серверная копия — для других устройств и
+    // терапевта. Её потерю раньше глушили молча — теперь экран честен.
+    setSyncFailed(false);
+    api.createFlashcard({ modeId: selectedMode!, needId: selectedNeed!, reflection: reflection || undefined, action: action || undefined }).catch(() => setSyncFailed(true));
     setDone(true);
     onComplete?.();
   }
@@ -196,45 +201,18 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // Done state
+  // Done state — экран вынесен (правило №10, файл сверх потолка).
   if (done) {
-    const modeInfo = MODES.find(m => m.id === selectedMode);
-    const needInfo = NEEDS.find(n => n.id === selectedNeed);
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
-        <Topbar onBack={goBack} label="Закрыть" />
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 32 }}>Сохранено</h1>
-          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-            Это шаг навстречу себе. Уже немало.
-          </p>
-          <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
-            {[
-              { label: 'Режим',       value: modeInfo?.label },
-              needInfo ? { label: 'Потребность', value: needInfo.label } : null,
-              action   ? { label: 'Шаг',         value: action } : null,
-            ].filter(Boolean).map((row, i, arr) => row && (
-              <div key={row.label} style={{
-                paddingBottom: i < arr.length - 1 ? 16 : 0,
-                marginBottom: i < arr.length - 1 ? 16 : 0,
-                borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
-              }}>
-                <div className="eyebrow" style={{ marginBottom: 6 }}>{row.label}</div>
-                <div style={{ fontFamily: i === 0 ? 'var(--serif)' : 'inherit', fontSize: i === 0 ? 20 : 15, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
-              </div>
-            ))}
-          </div>
-          {onOpenTracker && (
-            <button onClick={() => { goBack(); setTimeout(onOpenTracker!, 100); }} className="ex-btn ex-btn-outline" style={{ width: '100%', marginBottom: 12 }}>
-              Открыть трекер →
-            </button>
-          )}
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleNew} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>Ещё одну</button>
-            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
-          </div>
-        </div>
-      </div>
+      <FlashcardDoneScreen
+        modeLabel={MODES.find(m => m.id === selectedMode)?.label}
+        needLabel={NEEDS.find(n => n.id === selectedNeed)?.label}
+        action={action}
+        syncFailed={syncFailed}
+        onOpenTracker={onOpenTracker}
+        goBack={goBack}
+        handleNew={handleNew}
+      />
     );
   }
 
