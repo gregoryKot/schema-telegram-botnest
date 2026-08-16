@@ -30,7 +30,15 @@ export class ThreadsTokenService {
 
   /** Токен для отправки: сохранённый, иначе стартовый из env. */
   async current(): Promise<string | null> {
-    const stored = await this.stored().catch(() => null);
+    // Падение чтения из БД молча деградирует до стартового env-токена — но
+    // тишина превращает понятную причину (БД недоступна) в непонятный
+    // симптом (площадка отправляет устаревшим токеном после ротации).
+    const stored = await this.stored().catch((err) => {
+      this.logger.warn(
+        `threads token: чтение из БД упало, деградируем до env: ${(err as Error)?.message}`,
+      );
+      return null;
+    });
     return stored?.token ?? process.env[TOKEN_ENV]?.trim() ?? null;
   }
 
