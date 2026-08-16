@@ -30,7 +30,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
         <button style={btn} onClick={() => setEditing('new')}>+ Новая статья</button>
       </div>
       {/* Сбой ≠ пусто: неверный ключ или обрыв сети раньше выглядел как «статей нет». */}
-      {failed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить статьи — проверьте админ-ключ и соединение.</p>}
+      {failed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить статьи — возможно, неверный админ-ключ или нет соединения.</p>}
       {!failed && articles.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет статей.</p>}
       {articles.map(a => (
         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>

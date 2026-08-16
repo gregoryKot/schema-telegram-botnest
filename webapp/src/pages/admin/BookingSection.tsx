@@ -195,7 +195,7 @@ function ScheduleManager({ rules, rulesFailed, onChange, adminKey }: { rules: Av
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>Расписание</h2>
       {/* Сбой ≠ пусто: «правил нет» на отказе загрузки провоцирует пересоздать расписание. */}
-      {rulesFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить расписание — проверьте админ-ключ и соединение.</p>}
+      {rulesFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить расписание — возможно, неверный админ-ключ или нет соединения.</p>}
       {!rulesFailed && rules.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет правил. Добавьте слоты ниже.</p>}
       {rules.map(r => (
         <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)', opacity: r.isActive ? 1 : 0.45 }}>
