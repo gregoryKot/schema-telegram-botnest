@@ -36,6 +36,16 @@ describe('ArticlesSection — на чистом контенте пусто, н�
   });
 });
 
+describe('ArticlesSection — сбой ≠ пусто', () => {
+  it('отказ загрузки (неверный ключ/сеть) показывает ошибку, а не «Пока нет статей.»', async () => {
+    mockApi.adminListArticles.mockRejectedValue(new Error('API error: 403'));
+    render(<ArticlesSection adminKey="wrong" />);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText(/Не удалось загрузить статьи/)).toBeTruthy();
+    expect(screen.queryByText('Пока нет статей.')).toBeNull();
+  });
+});
+
 describe('ArticlesSection — список статей', () => {
   it('показывает реальные статьи из API', async () => {
     mockApi.adminListArticles.mockResolvedValue([

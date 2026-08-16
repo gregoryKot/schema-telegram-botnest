@@ -34,8 +34,13 @@ export function useAsyncData<T>(
   /** Direct setter for optimistic updates (e.g. remove an item before the
    *  server confirms). Safe to call from event handlers. */
   setData: Dispatch<SetStateAction<T>>;
+  /** Последний fetch/reload упал; сбрасывается успешным. Сбой ≠ пусто: без
+   *  этого флага каждый потребитель на отказе рисовал initial — «статей нет»,
+   *  «правил нет», «добавь первую практику» — вместо «не загрузилось». */
+  failed: boolean;
 } {
   const [data, setData] = useState<T>(initial);
+  const [failed, setFailed] = useState(false);
 
   // Reset to the loading state when the caller's key changes. Adjusting state
   // during render (not in an effect) is the documented pattern for "derive
@@ -44,23 +49,30 @@ export function useAsyncData<T>(
   if (resetKey !== seenKey) {
     setSeenKey(resetKey);
     setData(initial);
+    setFailed(false);
   }
 
   // Manual refresh after mutations. setState lives in a plain callback (not an
-  // effect), so it is not subject to set-state-in-effect. Errors are swallowed
-  // to match the previous fire-and-forget reload() behaviour (data unchanged).
+  // effect), so it is not subject to set-state-in-effect. Data stays as-is on
+  // failure (no clobbering an already shown list), but the failure is no
+  // longer silent — `failed` flips for the consumer to render.
   const reload = useCallback(
-    () => fetcher().then(setData).catch(() => undefined),
+    () =>
+      fetcher().then(
+        (d) => { setData(d); setFailed(false); },
+        () => setFailed(true),
+      ),
     [fetcher],
   );
 
   useEffect(() => {
     let alive = true;
-    fetcher()
-      .then((d) => { if (alive) setData(d); })
-      .catch(() => undefined);
+    fetcher().then(
+      (d) => { if (alive) { setData(d); setFailed(false); } },
+      () => { if (alive) setFailed(true); },
+    );
     return () => { alive = false; };
   }, [fetcher]);
 
-  return { data, reload, setData };
+  return { data, reload, setData, failed };
 }

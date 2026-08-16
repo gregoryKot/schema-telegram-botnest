@@ -65,6 +65,14 @@ describe('PracticesScreen — список практик', () => {
     await waitFor(() => expect(getPractices).toHaveBeenCalledWith('autonomy'));
   });
 
+  it('сбой ≠ пусто: отказ загрузки показывает «не удалось», а не «Пока пусто — добавь первую»', async () => {
+    getPractices.mockRejectedValue(new Error('network'));
+    renderScreen();
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText(/Не удалось загрузить практики/)).toBeTruthy();
+    expect(screen.queryByText(/Пока пусто/)).toBeNull();
+  });
+
   it('низкая сегодняшняя оценка потребности показывает контекстную подсказку', async () => {
     ratingsMock.mockResolvedValue({ attachment: 3 });
     renderScreen();

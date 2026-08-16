@@ -16,14 +16,14 @@ const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', we
 /** Booking admin tab: integrations status, prices, schedule, bookings list. */
 export function BookingSection({ adminKey }: { adminKey: string }) {
   const fetcher = useCallback(() => api.adminListRules(adminKey), [adminKey]);
-  const { data: rules, reload } = useAsyncData<AvailabilityRule[]>(fetcher, []);
+  const { data: rules, reload, failed } = useAsyncData<AvailabilityRule[]>(fetcher, []);
 
   return (
     <>
       <IntegrationStatus adminKey={adminKey} />
       <PricesManager adminKey={adminKey} />
       <SubPricesManager adminKey={adminKey} />
-      <ScheduleManager rules={rules} onChange={reload} adminKey={adminKey} />
+      <ScheduleManager rules={rules} rulesFailed={failed} onChange={reload} adminKey={adminKey} />
       <BookingsManager adminKey={adminKey} />
     </>
   );
@@ -174,7 +174,7 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
 
 // ── Schedule ───────────────────────────────────────────────────────────────
 
-function ScheduleManager({ rules, onChange, adminKey }: { rules: AvailabilityRule[]; onChange: () => void; adminKey: string }) {
+function ScheduleManager({ rules, rulesFailed, onChange, adminKey }: { rules: AvailabilityRule[]; rulesFailed: boolean; onChange: () => void; adminKey: string }) {
   const [day, setDay] = useState(1);
   const [start, setStart] = useState('10:00');
   const [end, setEnd] = useState('19:00');
@@ -194,7 +194,9 @@ function ScheduleManager({ rules, onChange, adminKey }: { rules: AvailabilityRul
   return (
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>Расписание</h2>
-      {rules.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет правил. Добавьте слоты ниже.</p>}
+      {/* Сбой ≠ пусто: «правил нет» на отказе загрузки провоцирует пересоздать расписание. */}
+      {rulesFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить расписание — возможно, неверный админ-ключ или нет соединения.</p>}
+      {!rulesFailed && rules.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет правил. Добавьте слоты ниже.</p>}
       {rules.map(r => (
         <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)', opacity: r.isActive ? 1 : 0.45 }}>
           <strong style={{ width: 36, color: 'var(--text)' }}>{DAYS[r.dayOfWeek]}</strong>
