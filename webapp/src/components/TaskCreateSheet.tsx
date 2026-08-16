@@ -8,7 +8,7 @@ import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
-
+import { useTr } from '../utils/addressForm';
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
 interface Props { clientId?: number; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
@@ -33,6 +33,7 @@ const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s
 
 export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const [type, setType] = useState<TaskType>(defaultType ?? 'tracker_streak');
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
@@ -43,7 +44,6 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   const [error, setError] = useState('');
   const configRef = useRef<HTMLDivElement>(null);
   const customTextRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => {
     if ((type === 'schema_intro' || type === 'mode_intro') && configRef.current) {
       setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
@@ -72,9 +72,9 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
   async function handleCreate() {
     const finalText = getPayloadText().trim();
-    if (type === 'custom' && !finalText) { setError('Введи описание задания'); return; }
-    if (type === 'schema_intro' && !selectedSchemaId) { setError('Выбери схему'); return; }
-    if (type === 'mode_intro' && !selectedModeId) { setError('Выбери режим'); return; }
+    if (type === 'custom' && !finalText) { setError(tr('Введи описание задания', 'Введите описание задания')); return; }
+    if (type === 'schema_intro' && !selectedSchemaId) { setError(tr('Выбери схему', 'Выберите схему')); return; }
+    if (type === 'mode_intro' && !selectedModeId) { setError(tr('Выбери режим', 'Выберите режим')); return; }
     haptic.success();
     setSaving(true); setError('');
     try {
@@ -107,7 +107,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             {clientName ? `Задание для ${clientName}` : 'Новое задание'}
           </div>
           <h1 className="hub-title" style={{ marginBottom: 8 }}>
-            Выбери<br /><span className="it">задание</span>
+            {tr('Выбери', 'Выберите')}<br /><span className="it">задание</span>
           </h1>
           <p className="hub-sub" style={{ marginBottom: 32 }}>
             Появится у клиента в мини-аппе – он выполняет самостоятельно.

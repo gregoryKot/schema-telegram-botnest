@@ -1,9 +1,17 @@
-// modeMapTips.ts — база подсказок панели ModeMapGuide + pickTips(). 0%
-// покрытия. Инвариант данных (нет дублей/пустых строк) плюс реальная
-// проверка алгоритма выборки (Fisher–Yates) с зафиксированным Math.random —
-// не просто «вернулся массив», а конкретный порядок и состав.
+// modeMapTips.ts — база подсказок панели ModeMapGuide + pickTips(). Инвариант
+// данных (нет дублей/пустых строк) плюс реальная проверка алгоритма выборки
+// (Fisher–Yates) с зафиксированным Math.random — не просто «вернулся массив»,
+// а конкретный порядок и состав. Плюс правило CLAUDE.md «ты/вы»: советы
+// адресованы терапевту, поэтому buildModeMapTips разводится через tr() и
+// «вы»-вариант не должен содержать «ты»-форм.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { MODE_MAP_TIPS, pickTips } from './modeMapTips';
+import { buildModeMapTips, getModeMapTips, pickTips } from './modeMapTips';
+
+const MODE_MAP_TIPS = buildModeMapTips((ty) => ty);
+
+// Формы 2 л. ед.ч., которые не должны просочиться в «вы»-вариант (совпадает
+// с базой check-second-person.mjs, но проверяем не гейтом, а прямо тестом).
+const TY_LEAK = /\b(?:[Тт]ы|[Тт]ебя|[Тт]ебе|[Тт]обой|[Тт]во(?:его|ему|ими|ей|им|их|ой|ую|й|я|ё|е|и|ю)|Спроси|Рисуй|Дай|Отметь|Назови|Проверяй|Поблагодари|Открывай|Используй|Маркируй|Доставай|Группируй|Покажи\b)/;
 
 describe('MODE_MAP_TIPS — инвариант базы знаний', () => {
   it('непустая база', () => {
@@ -37,11 +45,43 @@ describe('MODE_MAP_TIPS — инвариант базы знаний', () => {
   });
 });
 
+describe('buildModeMapTips / getModeMapTips — форма обращения (правило CLAUDE.md «ты/вы»)', () => {
+  it('одинаковое число подсказок в обеих формах, тексты различаются там, где есть обращение', () => {
+    const ty = buildModeMapTips((a) => a);
+    const vy = buildModeMapTips((_a, b) => b);
+    expect(vy.length).toBe(ty.length);
+    const differing = ty.filter((t, i) => t.text !== vy[i].text);
+    expect(differing.length).toBeGreaterThan(0);
+  });
+
+  it('«вы»-вариант не содержит «ты»-форм вне цитат', () => {
+    const vy = buildModeMapTips((_ty, vyText) => vyText);
+    vy.forEach((t, i) => {
+      // Цитаты «…» — дословные реплики терапевта клиенту (правило CLAUDE.md),
+      // их регистр не меняется и не проверяется этим тестом.
+      const withoutQuotes = t.text.replace(/«[^»]*»/g, '');
+      expect(withoutQuotes, `tip[${i}]: ${t.text}`).not.toMatch(TY_LEAK);
+    });
+  });
+
+  it('getModeMapTips кеширует результат по форме — повторный вызов возвращает тот же объект', () => {
+    expect(getModeMapTips('ty')).toBe(getModeMapTips('ty'));
+  });
+
+  it('getModeMapTips отдаёт разные тексты для «ты» и «вы» там, где есть обращение', () => {
+    const ty = getModeMapTips('ty');
+    const vy = getModeMapTips('vy');
+    const askTy = ty.find(t => t.text.startsWith('Спроси, как клиент'))!;
+    const askVy = vy.find(t => t.kind === undefined && t.text.startsWith('Спросите, как клиент'))!;
+    expect(askTy.text).not.toBe(askVy.text);
+  });
+});
+
 describe('pickTips', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('возвращает подсказки только своего kind + универсальные', () => {
-    const picked = pickTips('couple', 100);
+    const picked = pickTips(MODE_MAP_TIPS, 'couple', 100);
     picked.forEach(text => {
       const tip = MODE_MAP_TIPS.find(t => t.text === text)!;
       expect(tip.kind === undefined || tip.kind === 'couple', text).toBe(true);
@@ -49,7 +89,7 @@ describe('pickTips', () => {
   });
 
   it('никогда не возвращает подсказку другого специфичного kind', () => {
-    const picked = pickTips('problem', 100);
+    const picked = pickTips(MODE_MAP_TIPS, 'problem', 100);
     const leaked = picked.filter(text => {
       const tip = MODE_MAP_TIPS.find(t => t.text === text)!;
       return tip.kind === 'couple' || tip.kind === 'personality';
@@ -58,12 +98,12 @@ describe('pickTips', () => {
   });
 
   it('n=0 возвращает пустой массив', () => {
-    expect(pickTips('problem', 0)).toEqual([]);
+    expect(pickTips(MODE_MAP_TIPS, 'problem', 0)).toEqual([]);
   });
 
   it('n больше размера пула — возвращает весь пул без дублей', () => {
     const pool = MODE_MAP_TIPS.filter(t => !t.kind || t.kind === 'personality').map(t => t.text);
-    const picked = pickTips('personality', pool.length + 50);
+    const picked = pickTips(MODE_MAP_TIPS, 'personality', pool.length + 50);
     expect(picked).toHaveLength(pool.length);
     expect(new Set(picked).size).toBe(pool.length);
   });
@@ -71,7 +111,7 @@ describe('pickTips', () => {
   it('exclude вычёркивает переданные подсказки из выдачи', () => {
     const pool = MODE_MAP_TIPS.filter(t => !t.kind || t.kind === 'problem').map(t => t.text);
     const excluded = pool.slice(0, 3);
-    const picked = pickTips('problem', pool.length, excluded);
+    const picked = pickTips(MODE_MAP_TIPS, 'problem', pool.length, excluded);
     excluded.forEach(text => expect(picked).not.toContain(text));
     expect(picked).toHaveLength(pool.length - excluded.length);
   });
@@ -83,15 +123,16 @@ describe('pickTips', () => {
     const problemOnly = MODE_MAP_TIPS.filter(t => t.kind === 'problem').map(t => t.text);
     expect(universal.length).toBeGreaterThanOrEqual(3);
     const keep = universal.slice(0, 3);
-    // Исключаем ВСЁ остальное, что pickTips('problem', …) иначе включит в пул —
-    // и хвост универсальных, и все problem-специфичные — иначе пул будет
-    // больше трёх элементов и Fisher–Yates перемешает не то, что ожидает тест.
+    // Исключаем ВСЁ остальное, что pickTips(…, 'problem', …) иначе включит в
+    // пул — и хвост универсальных, и все problem-специфичные — иначе пул
+    // будет больше трёх элементов и Fisher–Yates перемешает не то, что
+    // ожидает тест.
     const excludeRest = [...universal.slice(3), ...problemOnly];
 
     // Math.random зафиксирован на 0 → на каждом шаге Fisher–Yates j = floor(0 * (i+1)) = 0,
     // то есть цикл всегда меняет местами текущий последний элемент с элементом [0].
     vi.spyOn(Math, 'random').mockReturnValue(0);
-    const picked = pickTips('problem', 3, excludeRest);
+    const picked = pickTips(MODE_MAP_TIPS, 'problem', 3, excludeRest);
 
     // Ручная симуляция того же алгоритма на копии keep даёт ожидаемый результат —
     // так тест не переписывает pickTips, а сверяет его с независимым эталоном.
@@ -104,6 +145,6 @@ describe('pickTips', () => {
 
   it('пустой пул (все исключены) возвращает пустой массив, не падает', () => {
     const problemPool = MODE_MAP_TIPS.filter(t => !t.kind || t.kind === 'problem').map(t => t.text);
-    expect(pickTips('problem', 5, problemPool)).toEqual([]);
+    expect(pickTips(MODE_MAP_TIPS, 'problem', 5, problemPool)).toEqual([]);
   });
 });
