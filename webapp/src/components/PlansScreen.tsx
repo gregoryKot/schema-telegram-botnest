@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useAsyncData } from '../hooks/useAsyncData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onClose: () => void;
@@ -35,11 +37,12 @@ function formatDate(dateStr: string): string {
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const goBack = useHistorySheet(onClose);
-  const [plans, setPlans] = useState<PracticePlan[] | null>(null);
-
-  useEffect(() => {
-    api.getPlanHistory(30).then(setPlans).catch(() => setPlans([]));
-  }, []);
+  const tr = useTr();
+  // Сбой ≠ пусто (пара к miniapp-фиксу #371): отказ раньше рисовал «Планов
+  // пока нет». Здесь — через канонический для webapp useAsyncData.failed.
+  const plansFetcher = useCallback(() => api.getPlanHistory(30), []);
+  const { data: plans, reload: load, setData: setPlans, failed: loadFailed } =
+    useAsyncData<PracticePlan[] | null>(plansFetcher, null);
 
   const pending   = (plans ?? []).filter(p => p.done === null);
   const completed = (plans ?? []).filter(p => p.done !== null);
@@ -64,7 +67,21 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         </div>
 
         <div>
-        {!plans ? (
+        {loadFailed ? (
+          // Сбой ≠ пусто: не путать с «Планов пока нет» ниже — там реальный
+          // пустой ответ, здесь запрос не прошёл вовсе.
+          <div role="alert" style={{ padding: '24px 0' }}>
+            <p style={{ color: 'var(--c-rose)', fontSize: 14, margin: '0 0 16px' }}>
+              {tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
+            </p>
+            <button onClick={load} style={{
+              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
+              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              Попробовать ещё раз
+            </button>
+          </div>
+        ) : !plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
           /* Empty state */

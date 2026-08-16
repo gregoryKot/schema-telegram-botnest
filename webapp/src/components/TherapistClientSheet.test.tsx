@@ -690,4 +690,38 @@ describe('TherapistClientSheet — вкладка «Задания» списк�
     expect(screen.getByText('Назначено')).toBeTruthy();
     expect(screen.getByText('Выполнено')).toBeTruthy();
   });
+
+  // Сбой ≠ пусто (CLAUDE.md): отказ getAllTherapyTasks раньше рисовал
+  // терапевту пустую канбан-доску («Назначенных заданий пока нет»), как
+  // будто у клиентов реально нет заданий.
+  it('провал getAllTherapyTasks показывает явную ошибку, а не пустую доску', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
+    mockApi.getAllTherapyTasks.mockRejectedValue(new Error('network'));
+    renderSheet();
+    await screen.findByText('Анна');
+
+    fireEvent.click(screen.getByText('Задания'));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить задания/);
+    expect(screen.queryByText('Назначенных заданий пока нет')).toBeNull();
+  });
+
+  it('«Попробовать ещё раз» в канбане перезапрашивает задания и убирает ошибку при успехе', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
+    mockApi.getAllTherapyTasks.mockRejectedValueOnce(new Error('network'));
+    renderSheet();
+    await screen.findByText('Анна');
+    fireEvent.click(screen.getByText('Задания'));
+    await screen.findByRole('alert');
+
+    mockApi.getAllTherapyTasks.mockResolvedValueOnce([{
+      clientId: 1, clientName: 'Анна',
+      tasks: [{ id: 1, userId: 1, assignedBy: 9, type: 'note', text: 'Задание после повтора', targetDays: null, needId: null, dueDate: null, done: null, completedAt: null, createdAt: '2026-07-01' }],
+    }]);
+    fireEvent.click(screen.getByText('Попробовать ещё раз'));
+
+    await screen.findByText('Задание после повтора');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });

@@ -237,10 +237,15 @@ const FILTERS: { id: Filter; label: string }[] = [
 function BookingsManager({ adminKey }: { adminKey: string }) {
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  // Сбой ≠ пусто: «Записей нет.» на отказе запроса читается как «записей
+  // правда нет», хотя запрос мог отвалиться из-за неверного ключа или сети.
+  const [bookingsFailed, setBookingsFailed] = useState(false);
 
   const load = useCallback(() => {
-    api.adminListBookings(adminKey, filter).then(setBookings).catch(() => setBookings([]));
+    setBookingsFailed(false);
+    api.adminListBookings(adminKey, filter).then(setBookings).catch(() => setBookingsFailed(true));
   }, [adminKey, filter]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
   useEffect(() => { load(); }, [load]);
 
   return (
@@ -255,7 +260,9 @@ function BookingsManager({ adminKey }: { adminKey: string }) {
           }}>{f.label}</button>
         ))}
       </div>
-      {bookings.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Записей нет.</p>}
+      {/* Сбой ≠ пусто: «Записей нет.» — только на реально пустом ответе. */}
+      {bookingsFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить записи — возможно, неверный админ-ключ или нет соединения.</p>}
+      {!bookingsFailed && bookings.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Записей нет.</p>}
       {bookings.map(b => (
         <div key={b.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

@@ -107,6 +107,33 @@ describe('DiarySection — пустой аккаунт (без хардкод-з
   });
 });
 
+describe('DiarySection — сбой загрузки (сбой ≠ пусто)', () => {
+  // Регрессия: раньше отказ Promise.all([getSchemaDiary, getModeDiary,
+  // getGratitudeDiary]) оставлял entries [] без объяснения — дневник
+  // выглядел стёртым, хотя записи (терапевтические данные) целы на сервере
+  // (CLAUDE.md «сбой ≠ пусто»; пара к miniapp DiarySection).
+  it('провал загрузки показывает НЕблокирующий баннер поверх пустого состояния, а не тихую пустоту', async () => {
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
+    renderSection();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
+    // Баннер не блокирует остальной UI — кнопка новой записи доступна.
+    expect(screen.getByText('+ Новая запись')).toBeTruthy();
+  });
+
+  it('«Обновить» перезапрашивает записи и убирает баннер при успехе', async () => {
+    mockApi.getSchemaDiary.mockRejectedValueOnce(new Error('network down'));
+    renderSection();
+    await screen.findByRole('alert');
+
+    mockApi.getSchemaDiary.mockResolvedValueOnce([schemaEntry({ trigger: 'Загрузилось после повтора' })]);
+    fireEvent.click(screen.getByText('Обновить'));
+
+    await screen.findByText('Загрузилось после повтора');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
 describe('DiarySection — реальные записи из api', () => {
   it('показывает реальный триггер записи схемы, а не выдуманный текст', async () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Реальный триггер из API' })]);

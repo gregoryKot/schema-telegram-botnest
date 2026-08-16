@@ -37,6 +37,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
   const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
+  // Сбой ≠ пусто: канбан «Задания» не должен показать терапевту пустую доску
+  // на отказе запроса (см. ClientListView.loadAllTasks).
+  const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
 
   function switchView(v: 'list' | 'client') {
@@ -118,8 +121,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           setFilterStatus={setFilterStatus}
           allTasks={allTasks}
           allTasksLoading={allTasksLoading}
+          allTasksFailed={allTasksFailed}
           setAllTasks={setAllTasks}
           setAllTasksLoading={setAllTasksLoading}
+          setAllTasksFailed={setAllTasksFailed}
           openClient={detail.openClient}
           addClient={addClient}
         />

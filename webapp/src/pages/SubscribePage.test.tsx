@@ -128,3 +128,44 @@ describe('SubscribePage — ошибка API', () => {
     await screen.findByText('Не получилось. Попробуйте ещё раз.');
   });
 });
+
+describe('SubscribePage — управление подпиской по токену (сбой ≠ пусто)', () => {
+  // Регрессия (правило №14, экран-тупик): раньше `sub === null` на отказе
+  // отрисовывал «Загружаем…» навсегда — отказ было не отличить от загрузки.
+  it('провал api.getSubscriptionByToken показывает ошибку вместо вечной «Загружаем…»', async () => {
+    mockApi.getSubscriptionByToken.mockRejectedValue(new Error('network'));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+
+    await screen.findByText(/Не удалось загрузить подписку/);
+    expect(screen.queryByText('Загружаем…')).toBeNull();
+  });
+
+  it('кнопка «Обновить» на экране ошибки перезагружает страницу', async () => {
+    // window.location.reload не переопределяется через vi.spyOn в jsdom
+    // (навигация — не конфигурируемое свойство) — подменяем сам объект
+    // location, как в AuthCallback.test.tsx, и восстанавливаем после теста.
+    mockApi.getSubscriptionByToken.mockRejectedValue(new Error('network'));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    const originalLocation = window.location;
+    const reload = vi.fn();
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...originalLocation, reload } });
+    try {
+      render(<SubscribePage />);
+      await screen.findByText(/Не удалось загрузить подписку/);
+      fireEvent.click(screen.getByRole('button', { name: 'Обновить' }));
+      expect(reload).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+    }
+  });
+
+  it('успешная загрузка подписки по токену показывает управление, а не ошибку', async () => {
+    mockApi.getSubscriptionByToken.mockResolvedValue({ status: 'active', period: 'month', amount: 299, nextChargeAt: null });
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+
+    await screen.findByText('Ваша подписка');
+    expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
+  });
+});

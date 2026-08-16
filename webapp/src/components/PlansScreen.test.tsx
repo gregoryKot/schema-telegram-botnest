@@ -50,11 +50,32 @@ describe('PlansScreen — пустое состояние', () => {
     fireEvent.click(await screen.findByText('Открыть трекер →'));
     expect(onOpenTracker).toHaveBeenCalled();
   });
+});
 
-  it('провал загрузки истории не роняет экран — считается пустым списком', async () => {
+describe('PlansScreen — сбой загрузки (сбой ≠ пусто)', () => {
+  // Регрессия: раньше .catch(() => setPlans([])) рисовал «Планов пока нет»
+  // человеку, у которого планы есть, просто запрос отвалился
+  // (CLAUDE.md «сбой ≠ пусто»; пара к miniapp PlansScreen).
+  it('провал api.getPlanHistory показывает явную ошибку, а не «Планов пока нет»', async () => {
     getPlanHistory.mockRejectedValue(new Error('network'));
     renderScreen();
-    expect(await screen.findByText('Планов пока нет')).toBeTruthy();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить планы/);
+    expect(screen.queryByText('Планов пока нет')).toBeNull();
+  });
+
+  it('«Попробовать ещё раз» перезапрашивает планы и убирает ошибку при успехе', async () => {
+    getPlanHistory.mockRejectedValueOnce(new Error('network'));
+    renderScreen();
+    await screen.findByRole('alert');
+
+    getPlanHistory.mockResolvedValueOnce([
+      { id: 1, needId: 'attachment', practiceText: 'Позвонить другу', scheduledDate: today, reminderUtcHour: null, done: null },
+    ]);
+    fireEvent.click(screen.getByText('Попробовать ещё раз'));
+
+    await waitFor(() => expect(screen.getByText('Позвонить другу')).toBeTruthy());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

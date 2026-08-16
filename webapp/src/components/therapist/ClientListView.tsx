@@ -25,18 +25,29 @@ interface Props {
   setFilterStatus: React.Dispatch<React.SetStateAction<'all' | 'active' | 'wait' | 'virtual'>>;
   allTasks: AllTasks;
   allTasksLoading: boolean;
+  allTasksFailed: boolean;
   setAllTasks: React.Dispatch<React.SetStateAction<AllTasks>>;
   setAllTasksLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setAllTasksFailed: React.Dispatch<React.SetStateAction<boolean>>;
   openClient: (client: TherapyClientSummary) => void;
   addClient: ReturnType<typeof useAddClient>;
 }
 
 export function ClientListView({
   animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
-  filterStatus, setFilterStatus, allTasks, allTasksLoading, setAllTasks, setAllTasksLoading,
+  filterStatus, setFilterStatus, allTasks, allTasksLoading, allTasksFailed, setAllTasks, setAllTasksLoading, setAllTasksFailed,
   openClient, addClient,
 }: Props) {
   const tr = useTr();
+
+  // Сбой ≠ пусто: канбан не должен показать терапевту пустую доску без
+  // заданий на отказе запроса. Вынесено в функцию — переиспользуется и
+  // первым кликом по вкладке, и кнопкой повтора внутри KanbanView.
+  const loadAllTasks = () => {
+    setAllTasksFailed(false);
+    setAllTasksLoading(true);
+    api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasksFailed(true)).finally(() => setAllTasksLoading(false));
+  };
 
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
@@ -65,10 +76,7 @@ export function ClientListView({
             </button>
             <button className={`tab ${listTab === 'kanban' ? 'is-active' : ''}`} onClick={() => {
               setListTab('kanban');
-              if (!allTasks && !allTasksLoading) {
-                setAllTasksLoading(true);
-                api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasks([])).finally(() => setAllTasksLoading(false));
-              }
+              if (!allTasks && !allTasksLoading) loadAllTasks();
             }}>Задания</button>
           </div>
           {listTab === 'clients' && (<>
@@ -158,6 +166,8 @@ export function ClientListView({
           <KanbanView
             allTasks={allTasks}
             loading={allTasksLoading}
+            loadFailed={allTasksFailed}
+            onRetry={loadAllTasks}
             onOpenClient={(clientId) => {
               const client = clients.find(c => c.telegramId === clientId);
               if (client) openClient(client);
