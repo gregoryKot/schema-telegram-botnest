@@ -10,6 +10,11 @@ export function usePracticesData(needId: string) {
   const [addedToast, setAddedToast] = useState(false);
   const [errorToast, setErrorToast] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Сбой ≠ пусто (зеркало webapp-фикса #369): раньше .catch(() => setPractices([]))
+  // рисовал «Пока пусто — добавь первую практику» человеку, у которого практики
+  // есть, просто запрос не прошёл. practices остаётся null — экран рисует явную
+  // ошибку, а не выдуманную пустоту.
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     api
@@ -20,10 +25,11 @@ export function usePracticesData(needId: string) {
 
   useEffect(() => {
     setPractices(null);
+    setLoadFailed(false);
     api
       .getPractices(needId)
       .then(setPractices)
-      .catch(() => setPractices([]));
+      .catch(() => setLoadFailed(true));
   }, [needId]);
 
   function flashToast(setFlag: (v: boolean) => void, ms: number) {
@@ -68,6 +74,7 @@ export function usePracticesData(needId: string) {
     addedToast,
     errorToast,
     saving,
+    loadFailed,
     addPractice,
     deletePractice,
   };

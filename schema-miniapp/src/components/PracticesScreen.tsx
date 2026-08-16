@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SkeletonList } from './Skeleton';
+import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { useTr } from '../utils/addressForm';
@@ -33,6 +33,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     addedToast,
     errorToast,
     saving,
+    loadFailed,
     addPractice,
     deletePractice: handleDelete,
   } = usePracticesData(NEED_IDS[needIdx]);
@@ -258,73 +259,15 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         )}
 
         {/* Practices list */}
-        {!practices ? (
-          <SkeletonList rows={4} h={84} />
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              marginBottom: 16,
-            }}
-          >
-            {practices.length === 0 && (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  padding: '20px 0',
-                  textAlign: 'center',
-                }}
-              >
-                Пока пусто — добавь первую практику ниже
-              </div>
-            )}
-            {practices.map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 14,
-                  padding: '13px 14px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'rgba(var(--fg-rgb),0.85)',
-                    flex: 1,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {p.text}
-                </div>
-                <div
-                  {...pressable(() => handleDelete(p.id))}
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 9,
-                    flexShrink: 0,
-                    background: 'rgba(255,100,100,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    color: 'rgba(255,100,100,0.5)',
-                  }}
-                >
-                  ×
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PracticesList
+          loadFailed={loadFailed}
+          failedMessage={tr(
+            'Не удалось загрузить практики. Проверь соединение и попробуй ещё раз',
+            'Не удалось загрузить практики. Проверьте соединение и попробуйте ещё раз',
+          )}
+          practices={practices}
+          onDelete={handleDelete}
+        />
 
         {/* Add input */}
         <div
