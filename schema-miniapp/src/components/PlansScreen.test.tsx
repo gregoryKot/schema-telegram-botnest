@@ -79,13 +79,32 @@ describe('PlansScreen — пустое состояние (чистый акка
     );
     expect(screen.queryByText('Открыть трекер →')).toBeNull();
   });
+});
 
-  it('сбой api.getPlanHistory тоже приводит к пустому состоянию, не к краху', async () => {
+describe('PlansScreen — сбой загрузки (сбой ≠ пусто)', () => {
+  it('провал api.getPlanHistory показывает явную ошибку, а не «Планов пока нет»', async () => {
+    // Регрессия: раньше .catch(() => setPlans([])) рисовал «Планов пока
+    // нет» человеку, у которого планы есть, просто запрос отвалился
+    // (CLAUDE.md «сбой ≠ пусто»).
     mockApi.getPlanHistory.mockRejectedValue(new Error('network'));
     render(<PlansScreen onClose={() => {}} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить планы/);
+    expect(screen.queryByText('Планов пока нет')).toBeNull();
+  });
+
+  it('«Попробовать ещё раз» перезапрашивает планы и убирает ошибку при успехе', async () => {
+    mockApi.getPlanHistory.mockRejectedValueOnce(new Error('network'));
+    render(<PlansScreen onClose={() => {}} />);
+    await screen.findByRole('alert');
+
+    mockApi.getPlanHistory.mockResolvedValueOnce([makePlan({ id: 1 })]);
+    fireEvent.click(screen.getByText('Попробовать ещё раз'));
+
     await waitFor(() =>
-      expect(screen.getByText('Планов пока нет')).toBeTruthy(),
+      expect(screen.getByText('Позвонить другу')).toBeTruthy(),
     );
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 
