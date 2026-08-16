@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getHost } from '../../../shared/src/host';
-import { api, UserSettings, PairsData, TherapyRelationInfo } from '../api';
+import { api, UserSettings, TherapyRelationInfo } from '../api';
 import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { getTheme, Theme } from '../utils/theme';
@@ -48,13 +48,6 @@ export function SettingsSheet({
   const safeTop = useSafeTop();
   const [view, setView] = useState<View>('main');
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [pairData, setPairData] = useState<PairsData | null>(null);
-  const [pairLoading, setPairLoading] = useState(false);
-  const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const pairInviteCopy = useCopyToClipboard();
-  const [joinCode, setJoinCode] = useState('');
-  const [joinView, setJoinView] = useState<'main' | 'join'>('main');
-  const [joinError, setJoinError] = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
   const exportCopy = useCopyToClipboard();
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -112,12 +105,6 @@ export function SettingsSheet({
           therapistShareProfile: true,
         }),
       );
-    setPairLoading(true);
-    api
-      .getPair()
-      .then(setPairData)
-      .catch((e) => console.error('getPair failed', e))
-      .finally(() => setPairLoading(false));
     api
       .getTherapyRelation()
       .then(setTherapyRelation)
@@ -132,52 +119,6 @@ export function SettingsSheet({
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 1800);
   });
-
-  async function handleCreateInvite() {
-    setPairLoading(true);
-    try {
-      const { url } = await api.createPairInvite();
-      await api.getPair().then(setPairData);
-      setPairInviteUrl(url);
-      try {
-        if (navigator.share)
-          await navigator.share({
-            text: `Давай отслеживать потребности вместе! ${url}`,
-          });
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
-    } finally {
-      setPairLoading(false);
-    }
-  }
-
-  async function handleCopyPairInvite() {
-    await pairInviteCopy.copy(pairInviteUrl);
-  }
-
-  async function handleJoin() {
-    if (!joinCode.trim()) return;
-    setPairLoading(true);
-    setJoinError(false);
-    try {
-      await api.joinPair(joinCode.trim().toUpperCase());
-      await api.getPair().then(setPairData);
-      setJoinView('main');
-    } catch {
-      setJoinError(true);
-    } finally {
-      setPairLoading(false);
-    }
-  }
-
-  async function handleLeave(code: string) {
-    await api.leavePair(code).catch((e) => console.error('leavePair', e));
-    await api
-      .getPair()
-      .then(setPairData)
-      .catch((e) => console.error('getPair failed', e));
-  }
 
   if (!settings) {
     return (
@@ -377,29 +318,7 @@ export function SettingsSheet({
                 />
               )}
 
-              <PartnerSection
-                pairLoading={pairLoading}
-                pairData={pairData}
-                handleLeave={handleLeave}
-                handleCreateInvite={handleCreateInvite}
-                pairInviteUrl={pairInviteUrl}
-                pairInviteCopied={pairInviteCopy.copied}
-                pairInviteLabel={
-                  pairInviteCopy.copied
-                    ? '✓ Скопировано'
-                    : pairInviteCopy.failed
-                      ? 'Не скопировалось'
-                      : 'Скопировать ссылку'
-                }
-                handleCopyPairInvite={handleCopyPairInvite}
-                joinView={joinView}
-                setJoinView={setJoinView}
-                joinCode={joinCode}
-                setJoinCode={setJoinCode}
-                joinError={joinError}
-                handleJoin={handleJoin}
-                onInfo={() => setShowPairInfo(true)}
-              />
+              <PartnerSection onInfo={() => setShowPairInfo(true)} />
 
               <ShareSection setExportText={setExportText} />
 

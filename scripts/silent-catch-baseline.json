@@ -1,6 +1,5 @@
 {
   "schema-miniapp/src/apiClient.ts": 1,
-  "schema-miniapp/src/components/SettingsSheet.tsx": 1,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
   "schema-miniapp/src/components/therapist/useClientDetail.ts": 1,
   "schema-miniapp/src/registerServiceWorker.ts": 1,

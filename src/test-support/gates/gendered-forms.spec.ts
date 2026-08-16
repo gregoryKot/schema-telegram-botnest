@@ -130,6 +130,114 @@ describe('check-gendered-forms.mjs', () => {
     expect(res.stderr).toContain('src/known.ts: 1 → 2');
   });
 
+  // Слепые зоны свипа 2026-08 (см. шапку check-gendered-forms.mjs) — по одному
+  // тесту на регресс И минимум одному контрольному тесту на законный случай,
+  // чтобы новый паттерн не стал ложно-красным.
+
+  it('(а) dropped-subject-past ловит расширенный список глаголов', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Ждали разговора. Справился один, без чужой помощи.';",
+        "export const b = 'Экзамен сдан. Устал, но не жалею.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[dropped-subject-past] . Справился');
+    expect(res.stderr).toContain('[dropped-subject-past] . Устал');
+  });
+
+  it('(б) solo-verb-m ловит «сам»/«один» как цель рядом с глаголом 1/2 лица', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Справлюсь сам, помощь не нужна.';",
+        "export const b = 'Если не позвонишь — останусь один.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[solo-verb-m] Справлюсь сам');
+    expect(res.stderr).toContain('[solo-verb-m] останусь один');
+  });
+
+  it('(б) «сам по себе» и «один раз»/«один из» — идиомы, не про род', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/clean.ts': [
+        "export const a = 'Справлюсь сам по себе, это не проблема.';",
+        "export const b = 'Загляну один раз в неделю, этого хватит.';",
+        "export const c = 'Выбери один из вариантов ниже.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
+  });
+
+  it('(б) reflexive-samogo-m ловит «себя самого»/«собой самим»', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts':
+        "export const a = 'Прежде чем заботиться о других, начни с себя самого.';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[reflexive-samogo-m] себя самого');
+  });
+
+  it('(б) «с самого начала» — «самого» относится к другому слову, не к «себя»', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/clean.ts':
+        "export const a = 'Тепло было с самого начала разговора.';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
+  });
+
+  it('(в) ya-short-adj ловит расширенный список кратких прилагательных', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Я уверен, что справлюсь.';",
+        "export const b = 'Сегодня я снова уязвим.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[ya-short-adj] Я уверен');
+    expect(res.stderr).toContain('[ya-short-adj] я снова уязвим');
+  });
+
+  it('(г) inf-adj-m ловит спрягаемые формы и наречие-разделитель', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "export const a = 'Есть отношения, в которых я чувствую себя одиноким.';",
+        "export const b = 'Страшно оказаться недостаточным для других.';",
+        "export const c = 'Хочется быть максимально продуктивным каждый день.';",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[inf-adj-m] чувствую себя одиноким');
+    expect(res.stderr).toContain('[inf-adj-m] оказаться недостаточным');
+    expect(res.stderr).toContain('[inf-adj-m] быть максимально продуктивным');
+  });
+
+  it('(г) inf-adj-m не путает короткое местоимение «ним» с прилагательным', () => {
+    // Порог в 2 буквы основы перед «ым/им» — без него «быть рядом с ним»
+    // ловился бы как «X-им», хотя «ним» — не прилагательное, а местоимение.
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/clean.ts':
+        "export const a = 'Поддержка — это когда можно просто быть рядом с ним.';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
+  });
+
   it('снижение счётчика — exit 0, предлагает зафиксировать --update', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({
@@ -185,8 +293,8 @@ describe('check-gendered-forms.mjs', () => {
 // живой образец, который ловит/гасит именно он. Новый паттерн без образца в
 // POSITIVE роняет первый тест ниже сразу.
 describe('каждый паттерн и ALLOW-исключение пойманы своим образцом', () => {
-  const PATTERNS = loadNamedPatterns('check-gendered-forms.mjs', 'PATTERNS');
-  const ALLOW = loadRegexList('check-gendered-forms.mjs', 'ALLOW');
+  const PATTERNS = loadNamedPatterns('gendered-forms-patterns.mjs', 'PATTERNS');
+  const ALLOW = loadRegexList('gendered-forms-patterns.mjs', 'ALLOW');
 
   const POSITIVE: Record<string, string> = {
     'ty-past': 'Ты сделал первый шаг',
@@ -195,6 +303,8 @@ describe('каждый паттерн и ALLOW-исключение пойман
     'ty-short-adj': 'Ты не обязан быть в форме сегодня',
     'ya-past': 'Скажи себе: «Я забыл, каково это»',
     'ya-short-adj': 'Ругаю себя: я плохой',
+    'solo-verb-m': 'Справлюсь сам, помощь не нужна',
+    'reflexive-samogo-m': 'Начни с себя самого',
     'inf-adj-m': 'Позволь себе не быть сильным',
     'child-self-m': 'Дорогой маленький я,',
     'dropped-subject-past': 'Чувства было опасно показывать. Научился прятать.',
@@ -238,6 +348,31 @@ describe('каждый паттерн и ALLOW-исключение пойман
       'dropped-subject-past',
       'Внутренний Критик перестал атаковать',
       'явное подлежащее — род принадлежит ему',
+    ],
+    [
+      'solo-verb-m',
+      'Справлюсь сам по себе, это не проблема',
+      '«сам по себе» — идиома, не про род',
+    ],
+    [
+      'solo-verb-m',
+      'Загляну один раз в неделю',
+      '«один раз» — про количество, не про одиночество',
+    ],
+    [
+      'solo-verb-m',
+      'Выбери один из вариантов',
+      '«один из» — не про одиночество',
+    ],
+    [
+      'reflexive-samogo-m',
+      'Тепло было с самого начала разговора',
+      '«самого» относится к «начала», а не к «себя»',
+    ],
+    [
+      'inf-adj-m',
+      'Поддержка — это когда можно просто быть рядом с ним',
+      '«ним» короче порога основы — не прилагательное',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;

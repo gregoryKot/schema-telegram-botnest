@@ -35,7 +35,7 @@ export function DownloadMenu({ nodes, open, onToggle, onClose }: Props) {
           <button disabled={exporting} onClick={() => onExportPdf()} style={menuItemStyle}>Документ PDF</button>
           {exportError && (
             <div style={{ padding: '6px 10px 2px', fontSize: 11, color: 'var(--accent-red)' }}>
-              Не удалось подготовить файл. Попробуйте ещё раз
+              Не удалось подготовить файл. Стоит попробовать ещё раз
             </div>
           )}
         </Dropdown>
