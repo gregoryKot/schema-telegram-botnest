@@ -60,7 +60,7 @@ export function AddressFormPicker() {
         </div>
         {failed && (
           <div style={{ fontSize: 12.5, color: 'var(--danger, #e5484d)', lineHeight: 1.5, marginBottom: 10 }}>
-            Не удалось сохранить выбор. Проверьте соединение и нажмите ещё раз — или «Позже».
+            Не удалось сохранить выбор. Стоит проверить соединение и попробовать ещё раз — или «Позже».
           </div>
         )}
         <button onClick={close}

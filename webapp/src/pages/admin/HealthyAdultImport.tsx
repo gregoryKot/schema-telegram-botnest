@@ -66,7 +66,7 @@ export function HealthyAdultImport({
 
       <textarea
         style={{ ...input, width: '100%', minHeight: 160, resize: 'vertical', lineHeight: 1.6, marginTop: 12 }}
-        placeholder={'Устал – значит устал.\nОшибка не делает человека плохим.\n…'}
+        placeholder={'Нет сил – значит нет сил.\nОшибка не делает человека плохим.\n…'}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />

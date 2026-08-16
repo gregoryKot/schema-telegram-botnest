@@ -176,7 +176,7 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
   it('пустая строка не считается — кнопка показывает 0 и задизейблена', async () => {
     render(<HealthyAdultSection adminKey="k" />);
     await screen.findByDisplayValue('Устал – значит устал.');
-    const textarea = screen.getByPlaceholderText(/Устал – значит устал/);
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
     fireEvent.change(textarea, { target: { value: '\n\n  \n' } });
     expect(screen.getByRole('button', { name: 'Добавить (0)' })).toBeTruthy();
   });
@@ -191,7 +191,7 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
     });
     render(<HealthyAdultSection adminKey="k" />);
     await screen.findByDisplayValue('Устал – значит устал.');
-    const textarea = screen.getByPlaceholderText(/Устал – значит устал/);
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
     fireEvent.change(textarea, { target: { value: 'Первая новая фраза.\nВторая новая фраза.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Добавить (2)' }));
 
@@ -204,7 +204,7 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
     mockApi.adminImportPhrases.mockRejectedValue(new Error('Сервер недоступен'));
     render(<HealthyAdultSection adminKey="k" />);
     await screen.findByDisplayValue('Устал – значит устал.');
-    const textarea = screen.getByPlaceholderText(/Устал – значит устал/) as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Фраза, которая не сохранится.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Добавить (1)' }));
 

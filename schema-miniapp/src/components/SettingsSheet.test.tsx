@@ -2,9 +2,10 @@
 // SettingsSheet — контейнер настроек (0% покрытия), собирает ~15 секций.
 // Каждая секция — отдельный файл со своим тестом (правило №10); здесь
 // проверяем ТОЛЬКО собственную логику контейнера: скелетон до загрузки,
-// переключение view («Назад»/«Закрыть»), четыре параллельные загрузки,
+// переключение view («Назад»/«Закрыть»), параллельные загрузки,
 // patch() с «Сохранено ✓», ролевые ветки (CLIENT/THERAPIST скрывают разные
-// секции) и три оверлея (export/privacy/delete).
+// секции) и три оверлея (export/privacy/delete). Механика пары —
+// pairSheet/usePairMechanics.test.ts + settingsSheet/PartnerSection.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -19,13 +20,9 @@ import { SettingsSheet } from './SettingsSheet';
 vi.mock('../api', () => ({
   api: {
     getSettings: vi.fn(),
-    getPair: vi.fn(),
     getTherapyRelation: vi.fn(),
     getTherapistRequest: vi.fn(),
     updateSettings: vi.fn(),
-    createPairInvite: vi.fn(),
-    joinPair: vi.fn(),
-    leavePair: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -100,46 +97,14 @@ vi.mock('./settingsSheet/TherapistCabinetSection', () => ({
     <div data-testid="therapist-cabinet-section" />
   ),
 }));
+// PartnerSection теперь сама владеет логикой/состоянием пары
+// (usePairMechanics + PairPanel, правило №11 CLAUDE.md) — SettingsSheet
+// только передаёт onInfo. Сама механика покрыта в
+// pairSheet/usePairMechanics.test.ts и settingsSheet/PartnerSection.test.tsx;
+// здесь достаточно фейка, подтверждающего проброс onInfo.
 vi.mock('./settingsSheet/PartnerSection', () => ({
-  PartnerSection: ({
-    pairLoading,
-    handleLeave,
-    handleCreateInvite,
-    pairInviteUrl,
-    pairInviteCopied,
-    handleCopyPairInvite,
-    joinCode,
-    setJoinCode,
-    joinError,
-    handleJoin,
-    onInfo,
-  }: {
-    pairLoading: boolean;
-    handleLeave: (code: string) => void;
-    handleCreateInvite: () => void;
-    pairInviteUrl: string;
-    pairInviteCopied: boolean;
-    handleCopyPairInvite: () => void;
-    joinCode: string;
-    setJoinCode: (v: string) => void;
-    joinError: boolean;
-    handleJoin: () => void;
-    onInfo: () => void;
-  }) => (
+  PartnerSection: ({ onInfo }: { onInfo: () => void }) => (
     <div data-testid="partner-section">
-      <span>{pairLoading ? 'пара: загрузка' : 'пара: готово'}</span>
-      <span>{pairInviteUrl || 'ссылки нет'}</span>
-      <span>{pairInviteCopied ? 'ссылка скопирована' : 'не скопировано'}</span>
-      <span>{joinError ? 'код не подошёл' : 'без ошибки'}</span>
-      <button onClick={handleCreateInvite}>partner-create-invite</button>
-      <button onClick={handleCopyPairInvite}>partner-copy-invite</button>
-      <input
-        aria-label="join-code-input"
-        value={joinCode}
-        onChange={(e) => setJoinCode(e.target.value)}
-      />
-      <button onClick={handleJoin}>partner-join</button>
-      <button onClick={() => handleLeave('CODE1')}>partner-leave</button>
       <button onClick={onInfo}>partner-info</button>
     </div>
   ),
@@ -236,7 +201,6 @@ const SETTINGS = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getSettings.mockResolvedValue(SETTINGS);
-  mockApi.getPair.mockResolvedValue(null);
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
@@ -261,10 +225,9 @@ describe('SettingsSheet — загрузка настроек', () => {
     expect(screen.queryByTestId('appearance-section')).toBeNull();
   });
 
-  it('после загрузки запрашивает настройки, пару, статус терапии и заявку терапевта', async () => {
+  it('после загрузки запрашивает настройки, статус терапии и заявку терапевта', async () => {
     await renderReady();
     expect(mockApi.getSettings).toHaveBeenCalled();
-    expect(mockApi.getPair).toHaveBeenCalled();
     expect(mockApi.getTherapyRelation).toHaveBeenCalled();
     expect(mockApi.getTherapistRequest).toHaveBeenCalled();
   });
@@ -347,20 +310,16 @@ describe('SettingsSheet — сохранение: отказ виден, а не
   });
 });
 
-// Четыре параллельные загрузки на монтировании (getPair/getTherapyRelation/
+// Параллельные загрузки на монтировании (getTherapyRelation/
 // getTherapistRequest) не должны ронять экран, если какая-то из них
 // отказала — каждая падает в собственный видимый фолбэк, а не тишину.
+// Загрузка пары — теперь внутренняя забота PartnerSection
+// (usePairMechanics.test.ts), не контейнера.
 describe('SettingsSheet — отказ параллельных загрузок виден в дочерних секциях', () => {
   it('getSettings отказал — контейнер всё равно поднимается с дефолтными настройками', async () => {
     mockApi.getSettings.mockRejectedValue(new Error('network down'));
     await renderReady();
     expect(screen.getByTestId('appearance-section')).toBeTruthy();
-  });
-
-  it('getPair отказал — «пара» перестаёт висеть в загрузке', async () => {
-    mockApi.getPair.mockRejectedValue(new Error('network down'));
-    await renderReady();
-    await waitFor(() => expect(screen.getByText('пара: готово')).toBeTruthy());
   });
 
   it('getTherapyRelation отказал — секция клиента терапевта показывает «нет», а не вечную загрузку', async () => {
@@ -397,93 +356,10 @@ describe('SettingsSheet — клавиатурная активация шапк
   });
 });
 
-describe('SettingsSheet — приглашение партнёра (handleCreateInvite)', () => {
-  it('успех создаёт ссылку-приглашение и показывает её в секции партнёра', async () => {
-    mockApi.createPairInvite.mockResolvedValue({
-      url: 'https://t.me/schema_happens_bot?start=INV1',
-    });
-    mockApi.getPair.mockResolvedValue(null);
-    Object.assign(navigator, { share: vi.fn().mockResolvedValue(undefined) });
-    await renderReady();
-
-    fireEvent.click(screen.getByText('partner-create-invite'));
-    await waitFor(() =>
-      expect(
-        screen.getByText('https://t.me/schema_happens_bot?start=INV1'),
-      ).toBeTruthy(),
-    );
-    await waitFor(() => expect(screen.getByText('пара: готово')).toBeTruthy());
-  });
-});
-
-describe('SettingsSheet — копирование ссылки-приглашения (handleCopyPairInvite)', () => {
-  it('успешное копирование показывает «ссылка скопирована»', async () => {
-    mockApi.createPairInvite.mockResolvedValue({
-      url: 'https://t.me/schema_happens_bot?start=INV1',
-    });
-    mockApi.getPair.mockResolvedValue(null);
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
-    await renderReady();
-
-    fireEvent.click(screen.getByText('partner-create-invite'));
-    await screen.findByText('https://t.me/schema_happens_bot?start=INV1');
-    fireEvent.click(screen.getByText('partner-copy-invite'));
-    await waitFor(() =>
-      expect(screen.getByText('ссылка скопирована')).toBeTruthy(),
-    );
-  });
-});
-
-describe('SettingsSheet — вступление по коду (handleJoin)', () => {
-  it('успех: код уходит в верхнем регистре, пара обновляется', async () => {
-    mockApi.joinPair.mockResolvedValue(undefined);
-    await renderReady();
-
-    fireEvent.change(screen.getByLabelText('join-code-input'), {
-      target: { value: 'ab12' },
-    });
-    fireEvent.click(screen.getByText('partner-join'));
-    await waitFor(() => expect(mockApi.joinPair).toHaveBeenCalledWith('AB12'));
-    await waitFor(() => expect(screen.getByText('без ошибки')).toBeTruthy());
-  });
-
-  it('отказ показывает «код не подошёл», а не тишину', async () => {
-    mockApi.joinPair.mockRejectedValue(new Error('not found'));
-    await renderReady();
-
-    fireEvent.change(screen.getByLabelText('join-code-input'), {
-      target: { value: 'zz99' },
-    });
-    fireEvent.click(screen.getByText('partner-join'));
-    await waitFor(() =>
-      expect(screen.getByText('код не подошёл')).toBeTruthy(),
-    );
-  });
-
-  it('пустой код не уходит в api.joinPair', async () => {
-    await renderReady();
-    fireEvent.click(screen.getByText('partner-join'));
-    expect(mockApi.joinPair).not.toHaveBeenCalled();
-  });
-});
-
-describe('SettingsSheet — выход из пары (handleLeave)', () => {
-  it('отказ leavePair и последующего обновления пары не роняет экран', async () => {
-    mockApi.leavePair.mockRejectedValue(new Error('network down'));
-    mockApi.getPair
-      .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(new Error('network down'));
-    await renderReady();
-
-    fireEvent.click(screen.getByText('partner-leave'));
-    await waitFor(() =>
-      expect(mockApi.leavePair).toHaveBeenCalledWith('CODE1'),
-    );
-    // Экран остаётся живым — секция партнёра всё ещё на месте.
-    expect(screen.getByTestId('partner-section')).toBeTruthy();
-  });
-});
+// Приглашение/копирование/вступление/отвязка партнёра — общая механика
+// usePairMechanics, больше не логика контейнера. Покрыто в
+// pairSheet/usePairMechanics.test.ts (логика) и
+// settingsSheet/PartnerSection.test.tsx (эта поверхность).
 
 describe('SettingsSheet — инфо-оверлеи открываются из секций и закрываются', () => {
   it('«Уведомления»: onInfo открывает NotifyInfoOverlay, кнопка закрывает', async () => {
