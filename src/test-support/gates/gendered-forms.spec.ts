@@ -179,7 +179,8 @@ describe('check-gendered-forms.mjs', () => {
   it('(б) reflexive-samogo-m ловит «себя самого»/«собой самим»', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({}),
-      'src/foo.ts': "export const a = 'Прежде чем заботиться о других, начни с себя самого.';\n",
+      'src/foo.ts':
+        "export const a = 'Прежде чем заботиться о других, начни с себя самого.';\n",
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('[reflexive-samogo-m] себя самого');
@@ -188,7 +189,8 @@ describe('check-gendered-forms.mjs', () => {
   it('(б) «с самого начала» — «самого» относится к другому слову, не к «себя»', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({}),
-      'src/clean.ts': "export const a = 'Тепло было с самого начала разговора.';\n",
+      'src/clean.ts':
+        "export const a = 'Тепло было с самого начала разговора.';\n",
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
@@ -229,7 +231,8 @@ describe('check-gendered-forms.mjs', () => {
     // ловился бы как «X-им», хотя «ним» — не прилагательное, а местоимение.
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({}),
-      'src/clean.ts': "export const a = 'Поддержка — это когда можно просто быть рядом с ним.';\n",
+      'src/clean.ts':
+        "export const a = 'Поддержка — это когда можно просто быть рядом с ним.';\n",
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
@@ -290,8 +293,8 @@ describe('check-gendered-forms.mjs', () => {
 // живой образец, который ловит/гасит именно он. Новый паттерн без образца в
 // POSITIVE роняет первый тест ниже сразу.
 describe('каждый паттерн и ALLOW-исключение пойманы своим образцом', () => {
-  const PATTERNS = loadNamedPatterns('check-gendered-forms.mjs', 'PATTERNS');
-  const ALLOW = loadRegexList('check-gendered-forms.mjs', 'ALLOW');
+  const PATTERNS = loadNamedPatterns('gendered-forms-patterns.mjs', 'PATTERNS');
+  const ALLOW = loadRegexList('gendered-forms-patterns.mjs', 'ALLOW');
 
   const POSITIVE: Record<string, string> = {
     'ty-past': 'Ты сделал первый шаг',
@@ -356,7 +359,11 @@ describe('каждый паттерн и ALLOW-исключение пойман
       'Загляну один раз в неделю',
       '«один раз» — про количество, не про одиночество',
     ],
-    ['solo-verb-m', 'Выбери один из вариантов', '«один из» — не про одиночество'],
+    [
+      'solo-verb-m',
+      'Выбери один из вариантов',
+      '«один из» — не про одиночество',
+    ],
     [
       'reflexive-samogo-m',
       'Тепло было с самого начала разговора',
