@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { BotAnalyticsService } from './bot.analytics.service';
+import { BotAdminStatsService } from './bot.admin-stats.service';
 import { BotClientOverviewService } from './bot.client-overview.service';
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { StatsReportService } from './stats-report.service';
@@ -37,6 +38,7 @@ import { PracticeSessionsService } from './practice-sessions.service';
 const EXPORTED_PROVIDERS = [
   BotService,
   BotAnalyticsService,
+  BotAdminStatsService,
   BotClientOverviewService,
   ProductMetricsService,
   StatsReportService,
