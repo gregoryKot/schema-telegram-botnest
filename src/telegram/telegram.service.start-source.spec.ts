@@ -19,6 +19,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     getConsecutiveDays: jest.fn().mockResolvedValue(0),
     ...overrides.analyticsService,
   };
+  const adminStatsService = { ...overrides.adminStatsService };
   const statsReport = {
     render: jest.fn().mockResolvedValue(''),
     ...overrides.statsReport,
@@ -51,6 +52,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
+    adminStatsService,
     statsReport,
     healthyAdultService,
     accountService,
