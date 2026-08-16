@@ -17,7 +17,7 @@ import {
   useYsqTest,
   QUESTIONS,
   NEED_LABELS,
-  TIP_VY,
+  useYsqSchemas,
   getSchemaForQuestion,
   avgBarPct,
   buildShareText,
@@ -40,6 +40,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const cta = contactCta();
+  const ysqSchemas = useYsqSchemas(); // tip зависит от addressForm — не TIP_VY-вилкой
   const {
     phase, setPhase,
     answers,
@@ -265,7 +266,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}</span>
                       </div>
 
                       <div

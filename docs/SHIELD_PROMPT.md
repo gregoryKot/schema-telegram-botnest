@@ -117,6 +117,8 @@
 | Висячий таймер планировщика переживает закрытие пула | `telegram.catchup-timer.ts` + `OnModuleDestroy`, `test/scheduler-teardown.e2e-spec.ts` |
 | Ветка, зависящая от конфигурации, деградирует МОЛЧА (не хватает одной env-переменной — фича просто не работает, никто не узнаёт) | `src/infra/capability-report.ts` (реестр) + `capability-boot-log.ts` (ERROR при старте, если сигнализация мертва) + блок «Настройки» в `/stats` + `scripts/check-capability-registry.mjs` |
 | Клиентский свидетель есть, пишет, и на него никто не смотрит (`POST /api/client-errors` только логировался — разные поломки схлопывались в один DM за счёт постоянного первого аргумента у `AlertLogger`, а в `/stats` поломки клиента не было вовсе) | событие `client_error` (`userId = null`, троттлинг по source+section+ip — `src/api/client-errors.controller.ts`, `src/api/client-error-section.ts`) + блок «Поломки на клиенте» (`client-error-metrics.service.ts`/`.format.ts`), отдельной строкой выделяет поломки входа |
+| Пользователь с формой «вы» видит «ты» (и наоборот) в тексте, живущем вне `tr()`/`t()`/`pickForm()` — императивы без местоимения рядом, зеркальные «вы»-формы, письма бэкенда | `scripts/check-second-person.mjs` |
+| Фолбэк-контент (`src/bot/healthy-adult.data.ts`) правится, а сопровождающая миграция для живого пула в БД — нет: читатели канала получают старую версию | `scripts/check-pool-sync.mjs` |
 
 ## Известные дыры (обновлять честно)
 

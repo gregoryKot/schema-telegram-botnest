@@ -79,7 +79,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <>
           <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
             <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
-            <h3>Говори от лица режима</h3>
+            <h3>{tr('Говори от лица режима', 'Говорите от лица режима')}</h3>
             <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </div>
           <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>

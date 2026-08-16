@@ -1,6 +1,5 @@
-import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
-import { NEED_LABELS, TIP_VY, avgBarPct } from '../../hooks/useYsqTest';
+import { NEED_LABELS, useYsqSchemas, avgBarPct } from '../../hooks/useYsqTest';
 import { ScoreBarRow } from '../../../../shared/src/components/ScoreBarRow';
 import type { SchemaInfo, SchemaScore } from './types';
 
@@ -22,9 +21,10 @@ export function YsqActiveSchemaCard({
   onViewSchemas,
   onClose,
 }: Props) {
-  const tr = useTr();
   const color = schema.color;
   const showDiaryHint = diaryRating !== undefined && diaryRating <= 4;
+  // tip зависит от addressForm — резолвится хуком, а не TIP_VY-вилкой.
+  const ysqSchemas = useYsqSchemas();
 
   return (
     <div
@@ -159,7 +159,7 @@ export function YsqActiveSchemaCard({
             lineHeight: 1.5,
           }}
         >
-          {tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}
+          {ysqSchemas.find((sc) => sc.name === schema.name)?.tip ?? schema.tip}
         </span>
       </div>
 

@@ -11,6 +11,24 @@
 // InfoOverlay и письма — «вы»-пользователь читал «ты», потому что строка
 // жила вне tr()/t()/pickForm().
 //
+// Калибровка 2026-08 (второй свип): исходный бейслайн (359 вхождений/68
+// файлов) на большинство состоял из ложных срабатываний двух классов —
+// правила и разбор каждого случая вынесены в second-person-patterns.mjs:
+//   EXCLUDE            — зоны физически вне механики addressForm (маркетинг,
+//                         анонимные страницы, юр. документы, админка,
+//                         владелец-only DM/отчёты, мета-код детектора).
+//   CALL_ARG_EXEMPT    — вызовы, чьи строковые аргументы легитимно вне
+//                         отдельной вилки: сама вилка форм (tr/t/pickForm)
+//                         ИЛИ владелец-only канал алертов.
+//   PAIR_ARRAY_ANCHOR  — таблицы [ты-текст, вы-текст] (`Array<[string,
+//                         string]>`) — гейт их не распознавал совсем.
+// Оставшийся бейслайн — see second-person-baseline.json — реальный долг:
+// обычные компоненты приложения с хардкодом мимо tr(), включая один
+// найденный при калибровке настоящий баг (telegram.reply-helpers.ts —
+// «Вы в паре!» без t()) и одну зону, ошибочно предложенную к исключению
+// координатором, но НЕ исключённую (LinkDevicePage.tsx — форма там доступна,
+// страница требует authenticated).
+//
 // Пофайловый храповик, как check-robot-phrases.mjs/check-gendered-forms.mjs:
 // счётчик может только падать, новый файл рождается с нулём.
 //   node scripts/check-second-person.mjs --update    — зафиксировать снижение
@@ -18,6 +36,12 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import {
+  PATTERNS,
+  EXCLUDE,
+  CALL_ARG_EXEMPT,
+  PAIR_ARRAY_ANCHOR,
+} from './second-person-patterns.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'second-person-baseline.json');
@@ -26,109 +50,82 @@ const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
 
-// Маркетинг сайта осознанно вне addressForm (CLAUDE.md: «Лендинг/статьи/игра
-// сайта — маркетинг, не привязаны к addressForm, их не трогаем») — как в
-// check-address-form.mjs, иначе весь копирайт лендинга read-only попадает в
-// «долг» и шумит в топе файлов, ничего не давая проверке.
-export const EXCLUDE = [
-  /webapp\/src\/pages\/(LandingPage|ProductLandingPage|ArticlesPage|GamePage|ReviewsPage|articleDiagrams)/,
-];
-
-// \b в JS — ASCII-only, кириллицу не видит: границы слова через lookaround.
-const L = '(?<![А-Яа-яЁё])';
-const R = '(?![А-Яа-яЁё])';
-
-function bothCase(word) {
-  return `[${word[0]}${word[0].toLowerCase()}]${word.slice(1)}`;
-}
-
-// Императивы 2 л. ед.ч. (глушится, если внутри tr()/t()/pickForm()) — база из
-// правила CLAUDE.md плюс грep реальных tr()-вызовов проекта (замер
-// 2026-08-16: частотный список аргументов tr('Слово…')). true = возвратный
-// глагол («-ся/-сь»), у него другое окончание в форме «вы» (см. vyForm).
-const TY_IMPERATIVES = [
-  ['Нажми', false], ['Открой', false], ['Введи', false], ['Выбери', false],
-  ['Попробуй', false], ['Проверь', false], ['Скопируй', false], ['Сохрани', false],
-  ['Заполни', false], ['Напиши', false], ['Отметь', false], ['Перейди', false],
-  ['Установи', false], ['Приглашай', false], ['Перезайди', false], ['Продолжи', false],
-  ['Начни', false], ['Закрой', false], ['Скажи', false], ['Заметь', false],
-  ['Запиши', false], ['Сделай', false], ['Позволь', false], ['Попроси', false],
-  ['Подумай', false], ['Спроси', false], ['Найди', false], ['Поделись', true],
-  ['Вспомни', false], ['Поиграй', false], ['Проведи', false], ['Придумай', false],
-  ['Поговори', false], ['Возьми', false], ['Послушай', false], ['Дай', false],
-  ['Прими', false], ['Назови', false], ['Выскажи', false], ['Включи', false],
-  ['Нарисуй', false], ['Пересмотри', false], ['Поставь', false], ['Пройди', false],
-  ['Запомни', false], ['Опиши', false], ['Позвони', false], ['Расскажи', false],
-  ['Признайся', true], ['Доверься', true], ['Выйди', false], ['Скорчи', false],
-  ['Переставь', false], ['Посмотри', false], ['Напой', false], ['Пойди', false],
-  ['Съешь', false], ['Встань', false], ['Зайди', false], ['Сыграй', false],
-  ['Пофотографируй', false], ['Откажись', true], ['Уйди', false], ['Почувствуй', false],
-];
-
-// «Поделись»→«Поделитесь», «Доверься»→«Доверьтесь»: возвратные глаголы меняют
-// «-ся/-сь» на «-тесь», а не просто дописывают «те».
-function vyForm([word, reflexive]) {
-  return reflexive ? word.slice(0, -2) + 'тесь' : word + 'те';
-}
-
-const tyAlt = TY_IMPERATIVES.map(([w]) => bothCase(w)).join('|');
-const vyAlt = TY_IMPERATIVES.map((p) => bothCase(vyForm(p))).join('|');
-
-// Экспорт ради second-person.spec.ts — пинит каждый паттерн живым образцом
-// (как PATTERNS в check-robot-phrases.mjs/check-gendered-forms.mjs).
-export const PATTERNS = [
-  [
-    'pronoun-ty',
-    new RegExp(
-      `${L}(?:[Тт]ы|[Тт]ебя|[Тт]ебе|[Тт]обой|[Тт]во(?:его|ему|ими|ей|им|их|ой|ую|й|я|ё|е|и|ю))${R}`,
-      'g',
-    ),
-  ],
-  [
-    'pronoun-vy',
-    new RegExp(
-      `${L}(?:[Вв]ы|[Вв]ас|[Вв]ам|[Вв]ами|[Вв]аш(?:его|ему|ими|ей|им|их|у|а|е|и)?)${R}`,
-      'g',
-    ),
-  ],
-  ['imperative-ty', new RegExp(`${L}(?:${tyAlt})${R}`, 'g')],
-  ['imperative-vy', new RegExp(`${L}(?:${vyAlt})${R}`, 'g')],
-];
-
-// Вилки форм: значение легитимно, если живёт внутри аргументов tr(...)/
-// pickForm(...)/t(...). Вилки многострочные (prettier переносит аргументы),
-// поэтому построчная проверка не годится — вырезаем аргументы целиком,
-// балансируя скобки и не считая скобки внутри строковых литералов (та же
-// схема, что в check-address-form.mjs; дублируется намеренно — гейты обязаны
-// быть однофайловыми, см. gate-sandbox.ts).
-const FORK_OPEN_RE = /(?<![\p{L}\p{N}_$.])(tr|pickForm|t)\(/gu;
-
-function blankForkArgs(src) {
+// Балансировка скобок с учётом строковых литералов — общий примитив для
+// «вырезать содержимое вызова/массива, сохранив переводы строк» (номера
+// строк в диагностике не съезжают). openChar/closeChar параметризуют вид
+// скобок: '(' / ')' для вызовов вилки/алерта, '[' / ']' для массива пар.
+function blankBalanced(src, anchorRe, afterMatch, openChar, closeChar) {
   let out = '';
   let last = 0;
-  FORK_OPEN_RE.lastIndex = 0;
+  anchorRe.lastIndex = 0;
   let m;
-  while ((m = FORK_OPEN_RE.exec(src)) !== null) {
-    const argStart = m.index + m[0].length;
-    if (argStart <= last) continue; // вложенная вилка внутри уже вырезанной
+  while ((m = anchorRe.exec(src)) !== null) {
+    const start = afterMatch(m);
+    if (start <= last) continue; // вложенный анкер внутри уже вырезанного
     let depth = 1;
     let quote = null;
-    let i = argStart;
+    let i = start;
     for (; i < src.length && depth > 0; i++) {
       const c = src[i];
       if (quote) {
         if (c === '\\') i++;
         else if (c === quote) quote = null;
       } else if (c === "'" || c === '"' || c === '`') quote = c;
-      else if (c === '(') depth++;
-      else if (c === ')') depth--;
+      else if (c === openChar) depth++;
+      else if (c === closeChar) depth--;
     }
-    out += src.slice(last, argStart);
-    out += src.slice(argStart, i).replace(/[^\n]/g, ' '); // переводы строк сохраняем
+    out += src.slice(last, start);
+    out += src.slice(start, i).replace(/[^\n]/g, ' ');
     last = i;
-    FORK_OPEN_RE.lastIndex = i;
+    anchorRe.lastIndex = i;
   }
   return out + src.slice(last);
+}
+
+// Вилки форм (tr/pickForm/t) и владелец-only алерты (alertAdmin/…) — вилки
+// многострочные (prettier переносит аргументы), построчная проверка не
+// годится. CALL_ARG_EXEMPT — см. second-person-patterns.mjs. Лукбехинд НЕ
+// исключает точку перед именем: алерты почти всегда методы (`this.notify.
+// alertAdmin(`), а голых `.tr(`/`.pickForm(`/`.t(` в базе нет (греп) — сужать не для чего.
+const CALL_OPEN_RE = new RegExp(
+  `(?<![\\p{L}\\p{N}_$])(${CALL_ARG_EXEMPT.join('|')})\\(`,
+  'gu',
+);
+function blankExemptCalls(src) {
+  return blankBalanced(src, CALL_OPEN_RE, (m) => m.index + m[0].length, '(', ')');
+}
+
+// Таблицы пар [ты-текст, вы-текст] — см. PAIR_ARRAY_ANCHOR.
+function blankPairArrays(src) {
+  return blankBalanced(
+    src,
+    PAIR_ARRAY_ANCHOR,
+    (m) => m.index + m[0].length - 1, // позиция открывающей '['
+    '[',
+    ']',
+  );
+}
+
+// Объектные пары { ty: '…', vy: '…' } — построчно, т.к. каждое значение уже
+// однострочный литерал (в отличие от вилок/массивов, где прettier переносит
+// аргументы на несколько строк). Единственный реальный образец на 2026-08 —
+// shared/src/components/YsqSyncErrorNote.tsx.
+function keyLineRe(key) {
+  return new RegExp(`^(\\s*${key}:\\s*)(['"\`])((?:\\\\.|(?!\\2)[^\\\\])*)\\2(.*)$`);
+}
+const TY_KEY_RE = keyLineRe('ty');
+const VY_KEY_RE = keyLineRe('vy');
+function blankTyVyObjectPairs(src) {
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length - 1; i++) {
+    const tyM = lines[i].match(TY_KEY_RE);
+    if (!tyM) continue;
+    const vyM = lines[i + 1].match(VY_KEY_RE);
+    if (!vyM) continue;
+    lines[i] = tyM[1] + tyM[2] + tyM[3].replace(/[^\n]/g, ' ') + tyM[2] + tyM[4];
+    lines[i + 1] = vyM[1] + vyM[2] + vyM[3].replace(/[^\n]/g, ' ') + vyM[2] + vyM[4];
+  }
+  return lines.join('\n');
 }
 
 // Дословные внутренние цитаты («…», «…») — межличностная речь и
@@ -177,7 +174,10 @@ for (const dir of SCAN_DIRS) {
     } catch {
       continue;
     }
-    const scanned = blankForkArgs(blankQuotedSpans(raw));
+    let scanned = blankQuotedSpans(raw);
+    scanned = blankExemptCalls(scanned);
+    scanned = blankPairArrays(scanned);
+    scanned = blankTyVyObjectPairs(scanned);
     let n = 0;
     scanned.split('\n').forEach((line, i) => {
       if (!/[А-Яа-я]{3}/.test(line)) return; // только строки с русским текстом
