@@ -6,6 +6,7 @@
 // Проверяются оба исхода: гейт краснеет на регрессе И зеленеет на чистом
 // дереве. Второй не менее важен — ложно-красный гейт отключают через неделю
 // (CLAUDE.md, правило №11: гейт без теста на оба исхода не доказывает ничего).
+import { loadNamedPatterns, loadStringList } from './pattern-loader';
 import { runGate } from './gate-sandbox';
 
 describe('check-silent-catch.mjs', () => {
@@ -314,5 +315,47 @@ describe('check-silent-catch.mjs', () => {
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+});
+
+// Механизм вместо добросовестности (как в gendered-forms.spec.ts): тесты выше
+// бьют по CLI известными строками и не пинят каждый паттерн по отдельности —
+// отключённый регэксп мог бы не уронить ни один из них. Здесь у КАЖДОГО
+// паттерна PATTERNS живой образец, который ловит именно он, а у каждого
+// разрешения CHAIN_ALLOW — причина его существования в списке. Файл правил
+// (scripts/silent-catch-rules.mjs) исполняется отсюда — иначе он был бы кодом,
+// который никто не проверяет (правило 14 CLAUDE.md, гейт check-unwatched-code).
+describe('правила гейта: каждый паттерн со своим образцом', () => {
+  const PATTERNS = loadNamedPatterns('silent-catch-rules.mjs', 'PATTERNS');
+  const CHAIN_ALLOW = loadStringList('silent-catch-rules.mjs', 'CHAIN_ALLOW');
+
+  const POSITIVE: Record<string, string> = {
+    'catch-empty-object': 'api.save(x).catch(() => {});',
+    'catch-empty-array': 'api.list().catch(() => []);',
+    'catch-null': 'api.one(id).catch(() => null);',
+    'catch-undefined': 'api.one(id).catch(() => undefined);',
+    'catch-zero': 'api.count().catch(() => 0);',
+    'catch-false': 'api.check().catch(() => false);',
+    'try-catch-empty': 'try { risky(); } catch {}',
+  };
+
+  it('в PATTERNS нет имени без образца в POSITIVE', () => {
+    const missing = PATTERNS.map((p) => p.name).filter((n) => !(n in POSITIVE));
+    expect(missing).toEqual([]);
+  });
+
+  it.each(PATTERNS.map((p) => [p.name] as const))(
+    'паттерн «%s» ловит свой образец',
+    (name) => {
+      const p = PATTERNS.find((x) => x.name === name)!;
+      expect(new RegExp(p.source, p.flags).test(POSITIVE[name])).toBe(true);
+    },
+  );
+
+  it('разрешения перечислены явно и включают точечное navigator.share', () => {
+    expect(CHAIN_ALLOW).toContain('navigator.share');
+    // Голого «share» в списке быть не должно: оно накрыло бы s.share()
+    // карточки-приглашения, где проглоченная ошибка значима.
+    expect(CHAIN_ALLOW).not.toContain('share');
   });
 });
