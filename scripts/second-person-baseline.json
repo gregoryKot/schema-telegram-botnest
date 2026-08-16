@@ -12,7 +12,6 @@
   "shared/src/mode/modeTest.ts": 1,
   "src/auth/auth-account.controller.ts": 1,
   "src/auth/device-link.service.ts": 1,
-  "src/telegram/telegram.reply-helpers.ts": 1,
   "src/telegram/telegram.service.ts": 5,
   "src/therapy/therapist-request.notify.ts": 2,
   "webapp/src/App.tsx": 1,
