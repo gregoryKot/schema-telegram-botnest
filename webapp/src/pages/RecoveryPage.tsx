@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { useTr } from '../utils/addressForm';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -15,6 +16,7 @@ export function RecoveryPage() {
 
 function RecoveryRequest() {
   const navigate = useNavigate();
+  const tr = useTr();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -59,7 +61,10 @@ function RecoveryRequest() {
       <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление доступа</div>
       <h1 style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, marginBottom: 14 }}>Потерял доступ?</h1>
       <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 24 }}>
-        Если у тебя был привязан и подтверждён recovery-email — введи его, мы пришлём ссылку для входа.
+        {tr(
+          'Если у тебя был привязан и подтверждён recovery-email — введи его, мы пришлём ссылку для входа.',
+          'Если у вас был привязан и подтверждён recovery-email — введите его, мы пришлём ссылку для входа.',
+        )}{' '}
         Иначе доступ к аккаунту восстановить нельзя.
       </div>
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
