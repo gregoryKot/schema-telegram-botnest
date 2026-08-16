@@ -11,6 +11,7 @@ vi.mock('../../api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     recordActivity: vi.fn().mockResolvedValue(undefined),
+    flushOutbox: vi.fn().mockResolvedValue(undefined),
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
     needs: vi.fn().mockResolvedValue([]),
@@ -48,6 +49,7 @@ beforeEach(() => {
   sessionStorage.clear();
   mockApi.init.mockResolvedValue(undefined);
   mockApi.recordActivity.mockResolvedValue(undefined);
+  mockApi.flushOutbox.mockResolvedValue(undefined);
   mockApi.getDisclaimer.mockResolvedValue({ accepted: true });
   mockApi.acceptDisclaimer.mockResolvedValue(undefined);
   mockApi.needs.mockResolvedValue([]);
@@ -91,5 +93,22 @@ describe('useBootstrapLoad — сбои фоновых источников не
     await flush();
     expect(result.current.loading).toBe(false);
     expect(mockReport).not.toHaveBeenCalled();
+  });
+
+  // Регрессия правила №3: отложенные оценки (outbox, тот же контракт, что в
+  // мини-аппе) флашатся один раз на старте — сбой флаша не должен теряться
+  // молча, а попадает в единый отчёт под понятным именем.
+  it('упавший flushOutbox() шлёт отчёт с именем «отложенные оценки»', async () => {
+    mockApi.flushOutbox.mockRejectedValue(new Error('boom'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0].message).toContain('отложенные оценки');
+  });
+
+  it('flushOutbox() зовётся ровно один раз на монтировании', async () => {
+    setup();
+    await flush();
+    expect(mockApi.flushOutbox).toHaveBeenCalledTimes(1);
   });
 });

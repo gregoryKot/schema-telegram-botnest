@@ -177,6 +177,43 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stderr).toContain('[catch-null]');
   });
 
+  // FILE_ALLOW: телеметрия крашей — файл целиком best-effort примитив
+  // («никогда не бросает»), его catch — контракт, а не долг.
+  it('shared/src/api/clientErrorReport.ts — не считается целиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/api/clientErrorReport.ts': [
+        'export function createClientErrorReporter(base, source) {',
+        '  return function reportClientError(payload) {',
+        '    try {',
+        '      void fetch(base).catch(() => {});',
+        '    } catch {}',
+        '  };',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  // Граница FILE_ALLOW: те же catch в ЛЮБОМ другом новом файле — ошибка.
+  it('такой же код в другом файле — считается', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/api/otherReporter.ts': [
+        'export function report(base) {',
+        '  try {',
+        '    void fetch(base).catch(() => {});',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('новый файл с 2 тихими catch');
+  });
+
   // Не аллоу-листед вызов рядом с аллоу-листед — только законный молчит.
   it('не аллоу-листед .catch(() => null) на произвольном вызове — считается', () => {
     const res = runGate('check-silent-catch.mjs', {

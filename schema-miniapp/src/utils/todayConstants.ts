@@ -1,19 +1,19 @@
-import { todayStr } from './format';
 import { DayHistory } from '../types';
 
 // Вынесено из App.tsx (этап 3 REMEDIATION_PLAN) — используется и в App.tsx,
 // и в TrackerHistoryOverlay.tsx, без циклического импорта между ними.
-export const TODAY_DATE = todayStr();
-export const TODAY_KEY = 'celebrated_' + TODAY_DATE;
+export {
+  TODAY_DATE,
+  TODAY_KEY,
+  YESTERDAY_DATE,
+} from '../../../shared/src/utils/todayConstants';
+import {
+  TODAY_DATE,
+  TODAY_KEY,
+} from '../../../shared/src/utils/todayConstants';
 export const HAS_HISTORY = Object.keys(localStorage).some(
   (k) => k.startsWith('celebrated_') && k !== TODAY_KEY,
 );
-export const YESTERDAY_DATE = (() => {
-  const [y, m, d] = TODAY_DATE.split('-').map(Number);
-  const prev = new Date(y, m - 1, d - 1);
-  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
-})();
-
 export function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   if (h.length === 0) return h;
   const byDate = new Map(h.map((d) => [d.date, d]));

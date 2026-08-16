@@ -137,6 +137,19 @@ describe('ModeMapPalette — режимы клиента (из концепту�
     await Promise.resolve();
     expect(screen.queryByText('Режимы клиента')).toBeNull();
   });
+
+  // Регресс: сбой getConceptualization раньше подставлял [] в catch — секция
+  // «Режимы клиента» рендерится только при length > 0, поэтому терапевт видел
+  // ровно то же самое, что при настоящем «режимов нет» (карта режимов, три
+  // молчания). Теперь сбой ≠ пусто: секция видна с текстом отказа.
+  it('сбой загрузки режимов клиента — секция видна с текстом отказа, не «раздела нет»', async () => {
+    getConceptualization.mockRejectedValue(new Error('offline'));
+    await act(async () => {
+      renderPalette();
+    });
+    expect(screen.getByText('Режимы клиента')).toBeTruthy();
+    expect(screen.getByText('Не удалось загрузить режимы клиента')).toBeTruthy();
+  });
 });
 
 describe('ModeMapPalette — свои режимы терапевта', () => {
@@ -227,5 +240,19 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
     );
     expect(deleteCustomMode).toHaveBeenCalledWith(5);
     await waitFor(() => expect(screen.queryByText('Особый')).toBeNull());
+  });
+
+  // Регресс: listCustomModes раньше глушился `.catch(() => {})` — свои режимы
+  // терапевта молча не загружались, и панель показывала ту же заглушку-подсказку
+  // «Добавь режимы…», что и на честно пустом списке (карта режимов, три молчания).
+  it('сбой загрузки своих режимов — видна строка отказа, заглушки «Добавь режимы…» нет', async () => {
+    listCustomModes.mockRejectedValue(new Error('offline'));
+    await act(async () => {
+      renderPalette();
+    });
+    expect(
+      screen.getByText('Не удалось загрузить твои режимы'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Добавь режимы, с которыми/)).toBeNull();
   });
 });

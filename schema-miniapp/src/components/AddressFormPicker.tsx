@@ -1,5 +1,6 @@
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
 
 interface Props {
   onDone: (form: 'ty' | 'vy' | null) => void;
@@ -7,19 +8,23 @@ interface Props {
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
- * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии.
+ * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии
+ * (не блокируем вход).
+ *
+ * Сохранение выбора — через общий shared/src/settings/useAddressFormChoice.ts
+ * (правило №3): при отказе api.updateSettings лист НЕ закрывается — иначе
+ * человек видит выбранную форму применённой, а на деле она не долетела до
+ * сервера и на следующей сессии перезатрётся обратно на дефолтную (инцидент,
+ * см. комментарий в useAddressFormChoice.ts).
  */
 export function AddressFormPicker({ onDone }: Props) {
   const setForm = useSetAddressForm();
-  async function choose(form: 'ty' | 'vy') {
-    setForm(form);
-    try {
-      await api.updateSettings({ addressForm: form });
-    } catch (e) {
-      console.error('updateSettings(addressForm) failed', e); // не блокируем вход
-    }
-    onDone(form);
-  }
+  const { failed, choose } = useAddressFormChoice(
+    setForm,
+    api.updateSettings,
+    reportClientError,
+    onDone,
+  );
 
   return (
     <div
@@ -96,6 +101,19 @@ export function AddressFormPicker({ onDone }: Props) {
             На «вы»
           </button>
         </div>
+        {failed && (
+          <div
+            style={{
+              fontSize: 12.5,
+              color: 'var(--danger, #e5484d)',
+              lineHeight: 1.5,
+              marginBottom: 10,
+            }}
+          >
+            Не удалось сохранить выбор. Проверьте соединение и нажмите ещё раз —
+            или «Позже».
+          </div>
+        )}
         <button
           onClick={() => onDone(null)}
           style={{

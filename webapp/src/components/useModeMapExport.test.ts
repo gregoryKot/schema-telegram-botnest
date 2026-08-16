@@ -126,6 +126,34 @@ describe('useModeMapExport', () => {
     expect(clickSpy).not.toHaveBeenCalled();
   });
 
+  // Регресс: catch раньше был пустым (`catch { /* ignore */ }`) — сбой рендера
+  // не давал ни файла, ни объяснения. exportError — единственный сигнал наружу.
+  it('ошибка рендера выставляет exportError=true', async () => {
+    toPng.mockRejectedValue(new Error('canvas boom'));
+    const { result } = renderHook(() => useModeMapExport([node('a')]));
+    expect(result.current.exportError).toBe(false);
+    await act(async () => { await result.current.onExportPng(); });
+    expect(result.current.exportError).toBe(true);
+  });
+
+  it('успешный экспорт не выставляет exportError, а новая попытка сбрасывает прошлую ошибку', async () => {
+    toPng.mockRejectedValueOnce(new Error('canvas boom'));
+    toPng.mockResolvedValueOnce('data:x');
+    const { result } = renderHook(() => useModeMapExport([node('a')]));
+    await act(async () => { await result.current.onExportPng(); });
+    expect(result.current.exportError).toBe(true);
+    await act(async () => { await result.current.onExportPng(); });
+    expect(result.current.exportError).toBe(false);
+  });
+
+  it('ошибка сборки PDF (import jspdf/рендер падает) тоже выставляет exportError', async () => {
+    toPng.mockRejectedValue(new Error('canvas boom'));
+    const { result } = renderHook(() => useModeMapExport([node('a')]));
+    await act(async () => { await result.current.onExportPdf(); });
+    expect(result.current.exportError).toBe(true);
+    expect(jsPDFCtor).not.toHaveBeenCalled();
+  });
+
   it('onExportPdf строит jsPDF в альбомной ориентации и сохраняет файл .pdf', async () => {
     toPng.mockResolvedValue('data:image/png;base64,BBB');
     const { result } = renderHook(() => useModeMapExport([node('a')]));
