@@ -46,7 +46,6 @@
   "webapp/src/components/SchemaFlashcard.tsx": 2,
   "webapp/src/components/SettingsSheet.tsx": 1,
   "webapp/src/components/therapist/useClientDetail.ts": 1,
-  "webapp/src/components/TrackerOverlay.tsx": 2,
   "webapp/src/components/useModeMapExport.ts": 2,
   "webapp/src/hooks/useAsyncData.ts": 2,
   "webapp/src/hooks/useQuizzes.ts": 1,
