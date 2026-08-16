@@ -23,6 +23,42 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stderr).toContain('[catch-empty-object]');
   });
 
+  // Разрешение navigator.share задано С ОБЪЕКТОМ, потому что голое имя метода
+  // накрыло бы `s.share()` карточки-приглашения, где проглоченная ошибка
+  // значима. Пара тестов держит границу с обеих сторон.
+  it('разрешает navigator.share — отказ шторки не сбой, ссылка остаётся на экране', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "navigator.share({ text: 'x' }).catch(() => {});",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('разрешает navigator.share и когда prettier перенёс цепочку на строки', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        'navigator',
+        "  .share({ text: 'x' })",
+        '  .catch(() => {});',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('НЕ разрешает чужой .share() — одноимённый метод не наследует разрешение', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': ['s.share().catch(() => {});', ''].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[catch-empty-object]');
+  });
+
   it('ловит .catch(() => []) — фолбэк на пустой список вместо реальных данных', () => {
     const res = runGate('check-silent-catch.mjs', {
       'scripts/silent-catch-baseline.json': JSON.stringify({}),

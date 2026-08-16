@@ -43,6 +43,13 @@
 // Посмотреть, что именно насчитано: --verbose
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import {
+  ARG,
+  PATTERNS,
+  CHAIN_ALLOW,
+  ENCLOSING_WINDOW,
+  ENCLOSING_ALLOW,
+} from './silent-catch-rules.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'silent-catch-baseline.json');
@@ -50,79 +57,6 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
-
-// Параметр стрелочной функции: без аргумента `()` или один идентификатор,
-// голый или в скобках — `e =>`, `(e) =>`, `(err) =>`.
-const ARG = '(?:\\(\\s*\\)|\\(?[A-Za-z_$][\\w$]*\\)?)';
-
-const PATTERNS = [
-  [
-    'catch-empty-object',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\{\\s*\\}\\s*,?\\s*\\)`, 'g'),
-  ],
-  [
-    'catch-empty-array',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*\\[\\]\\s*,?\\s*\\)`, 'g'),
-  ],
-  ['catch-null', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*null\\s*,?\\s*\\)`, 'g')],
-  [
-    'catch-undefined',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*undefined\\s*,?\\s*\\)`, 'g'),
-  ],
-  ['catch-zero', new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*0\\s*,?\\s*\\)`, 'g')],
-  [
-    'catch-false',
-    new RegExp(`\\.catch\\(\\s*${ARG}\\s*=>\\s*false\\s*,?\\s*\\)`, 'g'),
-  ],
-  // (?<!\.) отделяет statement-catch (try/catch) от promise .catch(...) —
-  // без него "catch(() => {})" сам матчился бы как "пустой catch со своими
-  // пустыми скобками параметра" на откате бэктрекинга.
-  ['try-catch-empty', /(?<!\.)\bcatch\s*(?:\([^)]*\))?\s*\{\s*\}/g],
-];
-
-// Вызовы, где .catch(() => …) — продуктовое решение, а не забытая обработка
-// ошибки. Аллоу-лист намеренно узкий и работает ДВУМЯ разными способами,
-// потому что у двух его половин разная форма.
-//
-// 1. CHAIN — имя метода, чей промис и ловится. Проверяется точно: от `.catch`
-//    отматываем назад аргументы вызова по балансу скобок и читаем идентификатор
-//    прямо перед ними. Никакого «поищем имя где-то рядом»: первая версия гейта
-//    смотрела в окно 300 символов ПЕРЕД матчем и из-за этого прощала лишнее —
-//    `ctx.answerCbQuery(...).catch(() => null)` проходил только потому, что
-//    строкой выше в файле встретился `.editMessageText(`, а
-//    `getUserSettings(id).catch(() => null)` — из-за случайного `.reply(`
-//    поблизости. Второй случай ровно тот, ради которого гейт и заводился.
-const CHAIN_ALLOW = [
-  // CLAUDE.md, «Обработка ошибок»: "Если editMessageText / reply могут упасть
-  // внутри catch, добавляй .catch(() => null)" — иначе ошибка при попытке
-  // сообщить об ошибке роняет исходный error-хендлер целиком.
-  'editMessageText',
-  'reply',
-  // То же правило, но про остальные способы ответить на действие. Разбор всех
-  // 27 вхождений в src/telegram/ (2026-08): ни одного проглоченного запроса к
-  // БД, только доставка ответа из-под уже залогированной ошибки. Отказ у обоих
-  // рутинный и чинить его нечем — «query is too old» (человек нажал и ушёл,
-  // интерфейс он уже увидел), «message is not modified» (клавиатура и так
-  // снята). sendMessage сюда НЕ входит: это доставка уведомления, а не ответ
-  // на действие, и молча не дошедшее напоминание — ровно тот сбой, ради
-  // которого гейт заведён. Границу держит silent-catch.spec.ts.
-  'answerCbQuery',
-  'editMessageReplyMarkup',
-];
-
-// 2. ENCLOSING — имя метода, ВНУТРИ которого стоит catch. Нужно ровно для
-//    аналитики: источник правды (shared/src/api/sharedApi.ts) выглядит как
-//    `trackEvent: (name, meta) => { void t.post(...).catch(() => undefined); }`,
-//    то есть ловится `post`, а решение проглотить ошибку принято на уровне
-//    trackEvent. Окно узкое (160 символов — сами конструкции занимают 115 и
-//    128) и список из двух имён; обе однострочные, разъехаться им негде.
-const ENCLOSING_WINDOW = 160;
-const ENCLOSING_ALLOW = [
-  // Правило №8: аналитика не имеет права сломать пользовательский поток —
-  // ошибка сети/API глотается намеренно, это не забытый error-стейт.
-  /\btrackEvent\s*[:(]/,
-  /\btrackPublicEvent\s*[:(]/,
-];
 
 /** Имя метода, чей промис ловится этим `.catch(` (null, если это не цепочка). */
 function caughtCallName(src, matchStart) {
@@ -142,11 +76,33 @@ function caughtCallName(src, matchStart) {
   while (i >= 0 && /\s/.test(src[i])) i -= 1;
   let end = i + 1;
   while (i >= 0 && /[A-Za-z0-9_$]/.test(src[i])) i -= 1;
-  return end > i + 1 ? src.slice(i + 1, end) : null;
+  if (end <= i + 1) return null;
+  const name = src.slice(i + 1, end);
+  // Возвращаем имя вместе с объектом-получателем, когда он есть
+  // (`navigator.share`, а не просто `share`): разрешение по голому имени
+  // метода накрыло бы и одноимённый чужой вызов — у нас это `s.share()`
+  // карточки-приглашения, где проглоченная ошибка как раз значима.
+  if (src[i] === '.') {
+    let j = i - 1;
+    // prettier переносит длинную цепочку (`navigator\n  .share({…})`), поэтому
+    // между точкой и объектом бывает перевод строки с отступом.
+    while (j >= 0 && /\s/.test(src[j])) j -= 1;
+    const objEnd = j + 1;
+    while (j >= 0 && /[A-Za-z0-9_$]/.test(src[j])) j -= 1;
+    if (objEnd > j + 1) return `${src.slice(j + 1, objEnd)}.${name}`;
+  }
+  return name;
 }
 
 function isAllowed(src, matchStart) {
-  if (CHAIN_ALLOW.includes(caughtCallName(src, matchStart))) return true;
+  const called = caughtCallName(src, matchStart);
+  // Сверяем и полное `объект.метод`, и голый метод: старые записи списка
+  // (editMessageText у ctx) заданы именем метода, новые (navigator.share) —
+  // с объектом, потому что голое `share` накрыло бы чужой одноимённый вызов.
+  if (called !== null) {
+    const bare = called.includes('.') ? called.split('.').pop() : called;
+    if (CHAIN_ALLOW.includes(called) || CHAIN_ALLOW.includes(bare)) return true;
+  }
   const near = src.slice(Math.max(0, matchStart - ENCLOSING_WINDOW), matchStart);
   return ENCLOSING_ALLOW.some((re) => re.test(near));
 }

@@ -435,7 +435,7 @@
   "scripts/check-robot-phrases.mjs": 183,
   "scripts/check-route-collisions.mjs": 52,
   "scripts/check-second-person.mjs": 266,
-  "scripts/check-silent-catch.mjs": 288,
+  "scripts/check-silent-catch.mjs": 244,
   "scripts/check-unwatched-code.mjs": 177,
   "scripts/check-weak-assert-ratchet.mjs": 267,
   "scripts/encrypt-existing.ts": 273,
