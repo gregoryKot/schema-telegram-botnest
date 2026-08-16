@@ -145,7 +145,7 @@ export function TodaySection({
     ? (needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length).toFixed(1)
     : null;
   const hasSchemas =
-    [...new Set([...(profile?.ysq.activeSchemaIds ?? []), ...manualSchemaIds])]
+    [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])]
       .length > 0;
 
   return (

@@ -76,6 +76,17 @@ describe('OnboardingWidget', () => {
     expect(screen.getByText('0 из 5 шагов выполнено')).toBeTruthy();
   });
 
+  it('профиль без ysq (урезанный ответ сервера) не роняет виджет — шаг просто не засчитан', () => {
+    // Регрессия из браузерного смока #375: `p?.ysq.completedAt` защищал только
+    // profile, но не ysq — TypeError до первого рендера, белый экран «Сегодня».
+    const partial = {
+      ...profile(),
+      ysq: undefined,
+    } as unknown as ReturnType<typeof profile>;
+    render(<OnboardingWidget {...baseProps({ profile: partial })} />);
+    expect(screen.getByText('Тест на схемы')).toBeTruthy();
+  });
+
   it('клик «Начать тест» открывает тест на схемы через onOpenSchema', () => {
     const onOpenSchema = vi.fn();
     render(<OnboardingWidget {...baseProps({ onOpenSchema })} />);
