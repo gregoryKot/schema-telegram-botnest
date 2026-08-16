@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
+import { TelegramAdminService } from './telegram.admin.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { CHANNEL_PROVIDERS } from '../channel/channel.providers';
 import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
@@ -18,6 +19,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
   controllers: [HealthyAdultAdminController],
   providers: [
     TelegramService,
+    TelegramAdminService,
     TelegramScheduleService,
     TelegramSettingsService,
     TelegramNotifyActionsService,

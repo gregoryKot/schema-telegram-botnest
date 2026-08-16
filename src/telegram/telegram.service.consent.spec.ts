@@ -1,8 +1,10 @@
 // Продолжение telegram.service.onboarding.spec.ts (лимит ~300 строк на файл,
 // CLAUDE.md — вынесено в отдельный файл): accept_consent (легаси-кнопка
 // consent-сообщений, отправленных до слияния экранов согласия),
-// accept:(ty|vy)/cancel/back:welcome/treq — их непокрытые ветки catch/фолбэк
-// (базовый happy-path уже покрыт telegram.service.spec.ts).
+// accept:(ty|vy)/cancel/back:welcome — их непокрытые ветки catch/фолбэк
+// (базовый happy-path уже покрыт telegram.service.spec.ts). treq — вынесен
+// на TelegramAdminService (правило №10 CLAUDE.md), см.
+// telegram.admin.service.treq.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramService, WELCOME_TEXT } from './telegram.service';
 import {
@@ -23,20 +25,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
   const analyticsService = {
     ...overrides.analyticsService,
   };
-  const adminStatsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core'),
-    ...overrides.adminStatsService,
-  };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
-  };
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
-  };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
     ...overrides.accountService,
@@ -54,20 +42,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     schedule: jest.fn().mockResolvedValue(undefined),
     ...overrides.notificationService,
   };
-  const therapistRequestService = {
-    approve: jest.fn().mockResolvedValue(undefined),
-    reject: jest.fn().mockResolvedValue(undefined),
-    ...overrides.therapistRequestService,
-  };
-  const publisher = {
-    publish: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.publisher,
-  };
-  const channelCheck = {
-    log: jest.fn().mockResolvedValue(''),
-    checkOne: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.channelCheck,
-  };
   const analyticsEvents = {
     track: jest.fn().mockResolvedValue(undefined),
     ...overrides.analyticsEvents,
@@ -77,16 +51,10 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
-    adminStatsService,
-    statsReport,
-    healthyAdultService,
     accountService,
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
-    publisher,
-    channelCheck,
     analyticsEvents,
   );
   return { service, fakeBot, botService, pairsService, analyticsEvents };
@@ -229,25 +197,5 @@ describe('TelegramService — cancel/back:welcome ошибки', () => {
       expect.anything(),
     );
     expect(reply).toHaveBeenCalledWith(WELCOME_TEXT, expect.anything());
-  });
-});
-
-describe('TelegramService — treq action, ошибка approve/reject', () => {
-  it('approve падает — answerCbQuery("Ошибка"), ошибка залогирована, не бросает', async () => {
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const OLD = process.env.ADMIN_ID;
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot } = makeDeps({
-      therapistRequestService: {
-        approve: jest.fn().mockRejectedValue(new Error('db down')),
-      },
-    });
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:approve:5', {
-      from: { id: 999 },
-    });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith('Ошибка');
-    if (OLD === undefined) delete process.env.ADMIN_ID;
-    else process.env.ADMIN_ID = OLD;
   });
 });
