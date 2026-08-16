@@ -6,6 +6,7 @@
 // покрытия src/telegram (аудит 2026-08).
 import { Logger } from '@nestjs/common';
 import { TelegramSettingsService } from './telegram.settings.service';
+import { ERROR_RETRY } from './telegram.constants';
 import {
   makeFakeBot,
   runCommand,
@@ -77,9 +78,7 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'settings');
-    expect(ctx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('Не удалось загрузить настройки'),
-    );
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
   it('settings:toggle_gamified: падение — answerCbQuery с подсказкой повторить', async () => {
@@ -87,9 +86,7 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle_gamified');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 
   it('settings:pick_hour: editMessageText падает — answerCbQuery-фолбэк, ошибка залогирована', async () => {
@@ -103,9 +100,7 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const ctx = await runAction(fakeBot, 'settings:pick_hour', {
       editMessageText: jest.fn().mockRejectedValue(new Error('too old')),
     });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 
   it('settings:hour:9: падение записи в БД — answerCbQuery-фолбэк', async () => {
@@ -113,9 +108,7 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:hour:9');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 
   it('settings:tz:Europe/Berlin: падение записи в БД — answerCbQuery-фолбэк', async () => {
@@ -123,9 +116,7 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:tz:Europe/Berlin');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 
   it('settings:back: падение чтения настроек — answerCbQuery-фолбэк', async () => {
@@ -133,8 +124,6 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:back');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 });

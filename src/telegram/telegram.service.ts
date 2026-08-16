@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
-import { BOT_COMMANDS } from './telegram.constants';
+import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
@@ -24,6 +24,12 @@ import {
 } from '../notification/notification.time';
 import { retryWithBackoff } from '../utils/retry';
 import { t, AddressForm } from '../notification/address-form';
+import {
+  MINIAPP_ONLY_KEYBOARD,
+  pairJoinResultText,
+  acceptRetryText,
+  resolveForm,
+} from './telegram.reply-helpers';
 
 export const WELCOME_TEXT = `Привет!
 
@@ -165,21 +171,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             return;
           }
           const ok = await this.pairsService.joinPair(userId, code);
-          if (ok) {
-            await ctx.reply(
-              'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
-              Markup.inlineKeyboard([
-                [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-              ]),
-            );
-          } else {
-            await ctx.reply(
-              'Ссылка недействительна или уже использована.',
-              Markup.inlineKeyboard([
-                [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-              ]),
-            );
-          }
+          await ctx.reply(pairJoinResultText(ok), MINIAPP_ONLY_KEYBOARD);
           return;
         }
         const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
@@ -210,10 +202,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         this.logger.error('start command failed', err);
         await ctx
           .reply(
-            'Что-то пошло не так. Попробуй открыть «Всё по схеме» через кнопку ниже.',
-            Markup.inlineKeyboard([
-              [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-            ]),
+            'Что-то пошло не так. Кнопка ниже откроет «Всё по схеме» ещё раз.',
+            MINIAPP_ONLY_KEYBOARD,
           )
           .catch(() => null);
       }
@@ -248,10 +238,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('donate', async (ctx) => {
-      const text =
-        '💛 <b>Поддержать SchemeHappens</b>\n\n' +
-        'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏';
       try {
+        const form = await resolveForm(this.botService, ctx.from?.id);
+        const text =
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          t(
+            form,
+            'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏',
+            'Приложение бесплатное и без рекламы. Если оно вам помогает — поддержите проект любой суммой. Спасибо 🙏',
+          );
         await ctx.reply(text, {
           parse_mode: 'HTML',
           reply_markup: {
@@ -261,11 +256,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           },
         });
       } catch (err) {
-        // If the inline button is rejected (e.g. an invalid URL), still give the
-        // user a working plain-text link instead of failing silently.
+        // If the inline button is rejected (e.g. an invalid URL), still give
+        // a working plain-text link instead of failing silently.
         this.logger.error('donate command failed', err);
         await ctx
-          .reply(`${text}\n\n${DONATE_URL}`, { parse_mode: 'HTML' })
+          .reply(`💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`, {
+            parse_mode: 'HTML',
+          })
           .catch(() => null);
       }
     });
@@ -326,9 +323,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept action failed', err);
-        await ctx
-          .editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.')
-          .catch(() => null);
+        // ctx.match не привязан к try — форма из callback_data доступна и тут.
+        const form = (ctx.match as RegExpMatchArray | undefined)?.[1] as
+          AddressForm | undefined;
+        await ctx.editMessageText(acceptRetryText(form)).catch(() => null);
       }
     });
 
@@ -350,9 +348,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
-        await ctx
-          .editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.')
-          .catch(() => null);
+        // Форма ещё не выбрана на этом шаге — «ты» по умолчанию, как весь флоу до выбора.
+        await ctx.editMessageText(acceptRetryText()).catch(() => null);
       }
     });
 
@@ -392,11 +389,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
-        await ctx
-          .editMessageText(
-            'Не удалось перенести напоминание. Попробуй ещё раз.',
-          )
-          .catch(() => null);
+        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -419,9 +412,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           .catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
       } catch (err) {
         this.logger.error('plan checkin action failed', err);
-        await ctx
-          .editMessageText('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -429,10 +420,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
       // admin-approval flow. Redirect users to the mini-app form.
       try {
+        const form = await resolveForm(this.botService, ctx.from?.id);
         await ctx.reply(
-          '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
-            'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
-            'Админ проверит и одобрит.',
+          t(
+            form,
+            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
+              'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
+              'Админ проверит и одобрит.',
+            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
+              'Откройте мини-апп → Настройки → "Я психолог" → заполните форму.\n' +
+              'Админ проверит и одобрит.',
+          ),
         );
       } catch (err) {
         this.logger.error('therapist command failed', err);
@@ -539,12 +537,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
     const ok = await this.pairsService.joinPair(BigInt(rawId), pending.code);
-    const text = ok
-      ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
-      : 'Ссылка недействительна или уже использована.';
-    const kb = Markup.inlineKeyboard([
-      [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-    ]);
+    const text = pairJoinResultText(ok);
+    const kb = MINIAPP_ONLY_KEYBOARD;
     try {
       await ctx.editMessageText(text, kb);
     } catch {

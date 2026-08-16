@@ -8,7 +8,7 @@ import { YsqInactiveSchemas } from './YsqInactiveSchemas';
 import { YsqTherapyCta } from './YsqTherapyCta';
 import { YsqHistoryTimeline } from './YsqHistoryTimeline';
 import { YsqResultActions } from './YsqResultActions';
-import { YsqSyncErrorNote } from './YsqSyncErrorNote';
+import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import type { ResultView, Scores, YsqHistoryEntry } from './types';
 
 interface Props {
@@ -68,12 +68,7 @@ export function YsqResultView({
       {/* Результат виден локально независимо от сервера — без баннера
           выглядит как «сохранено», а при смене устройства пропадёт. */}
       {resultSaveError && onRetrySaveResult && (
-        <YsqSyncErrorNote
-          ty="Результат посчитан и виден только на этом устройстве — отправить его на сервер не получилось. Попробуй ещё раз, чтобы не потерять при смене устройства."
-          vy="Результат посчитан и виден только на этом устройстве — отправить его на сервер не получилось. Попробуйте ещё раз, чтобы не потерять при смене устройства."
-          retryLabel="Отправить ещё раз"
-          onRetry={onRetrySaveResult}
-        />
+        <YsqSyncErrorNote variant="result-save" onRetry={onRetrySaveResult} />
       )}
 
       {/* Header */}

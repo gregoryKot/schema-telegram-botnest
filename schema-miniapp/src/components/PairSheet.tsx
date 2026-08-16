@@ -9,12 +9,14 @@ import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { CopyFailedHint } from '../../../shared/src/components/CopyFailedHint';
+import { usePairTexts } from './pairSheet/inviteTexts';
 
 interface Props {
   onClose: () => void;
 }
 
 export function PairSheet({ onClose }: Props) {
+  const { tr, inviteText, copyLabel } = usePairTexts();
   const [data, setData] = useState<PairsData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [view, setView] = useState<'main' | 'join'>('main');
@@ -112,7 +114,10 @@ export function PairSheet({ onClose }: Props) {
             }}
           >
             {loadError ? (
-              'Ошибка загрузки — попробуй закрыть и открыть снова'
+              tr(
+                'Ошибка загрузки — попробуй закрыть и открыть снова',
+                'Ошибка загрузки — попробуйте закрыть и открыть снова',
+              )
             ) : (
               <SkeletonLines widths={['70%', '90%', '55%']} />
             )}
@@ -206,9 +211,7 @@ export function PairSheet({ onClose }: Props) {
                       marginBottom: 16,
                     }}
                   >
-                    Приглашай друга или партнёра — увидите индексы дня друг
-                    друга, без подробностей. Только число от 0 до 10 — просто
-                    чтобы знать, как дела у другого.
+                    {inviteText}
                   </p>
                 )}
 
@@ -255,7 +258,7 @@ export function PairSheet({ onClose }: Props) {
                         marginBottom: 8,
                       }}
                     >
-                      Скопируй и отправь другу:
+                      {copyLabel}
                     </div>
                     <div
                       style={{

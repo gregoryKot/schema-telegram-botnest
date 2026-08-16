@@ -11,25 +11,20 @@ import { PrismaService } from '../prisma/prisma.service';
 // encField/decField: адрес в EmailToken — PII, шифруется (поиск токена идёт
 // по tokenHash, не по email, поэтому шифрование лукапы не ломает).
 import { encrypt as encField, decrypt as decField } from '../utils/crypto';
+import {
+  AddressForm,
+  normalizeAddressForm,
+} from '../notification/address-form';
+import {
+  loginLetter,
+  recoveryLetter,
+  verificationLetter,
+} from './email.letters';
+import { EMAIL_TOKEN_TTL_MS, hashToken, isValidEmail } from './email.util';
 
-const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
-
-function isValidEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
-}
-
-function hashToken(raw: string): string {
-  return crypto.createHash('sha256').update(raw).digest('hex');
-}
-
-// Magic-link email service for recovery + verification.
-//
-// Sender abstraction: in production uses Resend (https://resend.com — 3000
-// free emails/month). For dev/CI without RESEND_API_KEY set, falls back to
-// logging the would-be email so you can see the link.
-//
-// Required env: RESEND_API_KEY, EMAIL_FROM (e.g. "Schema Happens <no-reply@schemehappens.ru>"),
-//               WEBAPP_URL.
+// Magic-link email service (recovery + verification). Prod sender — Resend;
+// без RESEND_API_KEY (dev/CI) письмо логируется, чтобы ссылку было видно.
+// Env: RESEND_API_KEY, EMAIL_FROM, WEBAPP_URL.
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -47,7 +42,7 @@ export class EmailService {
 
     const user = await this.prisma.user.findUnique({
       where: { recoveryEmail: lower },
-      select: { id: true, recoveryEmailVerifiedAt: true },
+      select: { id: true, recoveryEmailVerifiedAt: true, addressForm: true },
     });
     // Pretend success even if no user / unverified — don't leak existence.
     if (!user || !user.recoveryEmailVerifiedAt) {
@@ -62,6 +57,7 @@ export class EmailService {
       );
       return { ok: true };
     }
+    const form = normalizeAddressForm(user.addressForm);
 
     const raw = crypto.randomBytes(32).toString('base64url');
     await this.prisma.emailToken.create({
@@ -71,17 +67,13 @@ export class EmailService {
         tokenHash: hashToken(raw),
         email: encField(lower) ?? lower,
         purpose: 'recovery',
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/auth/recovery/confirm?token=${raw}`;
-    await this.send(
-      lower,
-      'Восстановление доступа к «Всё по схеме»',
-      `Перейди по ссылке чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
-        `Ссылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
-    );
+    const letter = recoveryLetter(form, link);
+    await this.send(lower, letter.subject, letter.body);
     return { ok: true };
   }
 
@@ -100,6 +92,14 @@ export class EmailService {
     if (taken)
       throw new ConflictException('Этот email уже привязан к другому аккаунту');
 
+    // Форма обращения владельца userId — она уже выбрана (бот/сайт), просто
+    // не была доступна этому сервису (аудит 2026-08: письма всегда были «ты»).
+    const owner = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { addressForm: true },
+    });
+    const form = normalizeAddressForm(owner?.addressForm);
+
     const raw = crypto.randomBytes(32).toString('base64url');
     await this.prisma.emailToken.create({
       data: {
@@ -108,17 +108,13 @@ export class EmailService {
         tokenHash: hashToken(raw),
         email: encField(lower) ?? lower,
         purpose: 'verify_email',
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/account/verify-email?token=${raw}`;
-    await this.send(
-      lower,
-      'Подтверди email для «Всё по схеме»',
-      `Подтверди что это твой адрес — он будет использован для восстановления доступа если ты потеряешь все способы входа.\n\n${link}\n\n` +
-        `Ссылка действует 30 минут.`,
-    );
+    const letter = verificationLetter(form, link);
+    await this.send(lower, letter.subject, letter.body);
     return { ok: true };
   }
 
@@ -161,17 +157,17 @@ export class EmailService {
     return { userId: row.userId, email };
   }
 
-  // ─── Magic-link login ────────────────────────────────────────────────────
-
-  async sendLoginLink(to: string, link: string): Promise<void> {
-    await this.send(
-      to,
-      'Войти в «Всё по схеме»',
-      `Привет!\n\nПерейди по ссылке чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если запрос не от тебя — просто проигнорируй это письмо.`,
-    );
+  // form: у вызывающего (AuthService) userId уже разрешён (найден или создан)
+  // до отправки письма, поэтому форма обращения ему известна — дефолт 'ty'
+  // остаётся только на случай вызова без формы (совместимость).
+  async sendLoginLink(
+    to: string,
+    link: string,
+    form: AddressForm = 'ty',
+  ): Promise<void> {
+    const letter = loginLetter(form, link);
+    await this.send(to, letter.subject, letter.body);
   }
-
-  // ─── Admin notification (e.g. new booking) ───────────────────────────────
 
   async sendAdminNotification(subject: string, text: string): Promise<void> {
     const to = process.env.ADMIN_EMAIL;

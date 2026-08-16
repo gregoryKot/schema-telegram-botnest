@@ -8,7 +8,7 @@ import type { Need } from '../../types';
 
 const needs = [
   { id: 'attachment', emoji: '🤝', chartLabel: 'Привязанность' },
-  { id: 'autonomy', emoji: '🚀', chartLabel: 'Автономия' },
+  { id: 'autonomy', emoji: '🧭', chartLabel: 'Автономия' },
 ] as Need[];
 
 describe('dayIndex', () => {

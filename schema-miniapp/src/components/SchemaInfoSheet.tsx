@@ -8,8 +8,8 @@ import type { Tab } from './schemaInfoSheet/types';
 import { NeedsTab } from './schemaInfoSheet/NeedsTab';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
+import { useTr } from '../utils/addressForm';
 export { SCHEMA_DOMAINS };
-
 /* ─── Main Component ─── */
 export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
 interface Props {
@@ -19,7 +19,6 @@ interface Props {
   initialTab?: SchemaInfoTab;
   highlightSchema?: string;
 }
-
 const SCHEMA_TABS: { key: Tab; label: string }[] = [
   { key: 'needs', label: 'Потребности' },
   { key: 'schemas', label: 'Схемы' },
@@ -94,6 +93,7 @@ export function SchemaInfoSheet({
   initialTab,
   highlightSchema: initHighlight,
 }: Props) {
+  const tr = useTr();
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(
@@ -170,7 +170,10 @@ export function SchemaInfoSheet({
                       marginTop: 2,
                     }}
                   >
-                    Нажми, чтобы продолжить с места остановки
+                    {tr(
+                      'Нажми, чтобы продолжить с места остановки',
+                      'Нажмите, чтобы продолжить с места остановки',
+                    )}
                   </div>
                 </div>
                 <span style={{ fontSize: 16, color: 'var(--accent-yellow)' }}>
