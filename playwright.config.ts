@@ -16,6 +16,13 @@ const executablePath = existsSync(PREINSTALLED_CHROMIUM)
   ? PREINSTALLED_CHROMIUM
   : undefined;
 
+// Общее для обоих проектов — только браузер/трейс отличается baseURL.
+const commonUse = {
+  trace: 'retain-on-failure' as const,
+  ...devices['Desktop Chrome'],
+  launchOptions: { executablePath },
+};
+
 export default defineConfig({
   testDir: './e2e-browser',
   // Смок обязан быть быстрым и не флакать: без ретраев, чтобы «иногда
@@ -23,20 +30,49 @@ export default defineConfig({
   retries: 0,
   fullyParallel: false,
   reporter: [['list']],
-  use: {
-    baseURL: 'http://127.0.0.1:4173',
-    trace: 'retain-on-failure',
-    ...devices['Desktop Chrome'],
-    launchOptions: { executablePath },
-  },
-  // Отдаём готовую сборку webapp — именно тот артефакт, который уезжает в
-  // прод, а не dev-сервер с другим поведением (dev прощает то, на чём
-  // спотыкается прод: другой резолв путей, отсутствие минификации).
-  webServer: {
-    command: 'npx vite preview --port 4173 --strictPort',
-    cwd: 'webapp',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  use: commonUse,
+  // Два проекта — два разных продукта за одним CI-прогоном `npx playwright
+  // test` (nightly.yml, джоба browser-smoke, без фильтра по проекту):
+  //  - webapp — сайт schemehappens.ru (существующие смоки, ничего не меняли);
+  //  - miniapp — Telegram Mini App schemehappens.ru/app/ (miniapp-smoke.spec.ts,
+  //    docs/SHIELD_PROMPT.md — до этого файла ни один тест не открывал
+  //    собранный schema-miniapp/dist в браузере).
+  projects: [
+    {
+      name: 'webapp',
+      testMatch: [
+        'crisis-smoke.spec.ts',
+        'tracker-smoke.spec.ts',
+        'public-pages.spec.ts',
+      ],
+      use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
+    },
+    {
+      name: 'miniapp',
+      testMatch: ['miniapp-smoke.spec.ts'],
+      use: { ...commonUse, baseURL: 'http://127.0.0.1:4174' },
+    },
+  ],
+  webServer: [
+    // Отдаём готовую сборку webapp — именно тот артефакт, который уезжает в
+    // прод, а не dev-сервер с другим поведением (dev прощает то, на чём
+    // спотыкается прод: другой резолв путей, отсутствие минификации).
+    {
+      command: 'npx vite preview --port 4173 --strictPort',
+      cwd: 'webapp',
+      url: 'http://127.0.0.1:4173',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    // Мини-апп: свой статик-сервер, не `vite preview` — прод раздаёт мини-апп
+    // и корневые /telegram-web-app.js, /max-bridge.js ОДНИМ ServeStaticModule
+    // (src/app.module.ts), а `vite preview` из schema-miniapp отдал бы только
+    // /app/ и 404-ил бы оба корневых скрипта (см. support/miniappStaticServer.mjs).
+    {
+      command: 'node e2e-browser/support/miniappStaticServer.mjs',
+      url: 'http://127.0.0.1:4174/app/',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+  ],
 });
