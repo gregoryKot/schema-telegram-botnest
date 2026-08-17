@@ -16,6 +16,7 @@ import {
   mkdirSync,
   writeFileSync,
   copyFileSync,
+  readFileSync,
   chmodSync,
 } from 'fs';
 import { tmpdir } from 'os';
@@ -60,6 +61,24 @@ export function cleanupTmp(tmp: string): void {
   rmSync(tmp, { recursive: true, force: true });
 }
 
+/** Скрипт + все модули, которые он импортирует относительным путём (одного
+ * уровня вложенности достаточно: правила гейта — простой список без своих
+ * зависимостей). */
+function withLocalDeps(scriptName: string, seen = new Set<string>()): string[] {
+  if (seen.has(scriptName)) return [];
+  seen.add(scriptName);
+  let source: string;
+  try {
+    source = readFileSync(join(REAL_SCRIPTS_DIR, scriptName), 'utf8');
+  } catch {
+    return [scriptName];
+  }
+  for (const m of source.matchAll(/from\s+'\.\/([\w.-]+\.mjs)'/g)) {
+    withLocalDeps(m[1], seen);
+  }
+  return [...seen];
+}
+
 /**
  * Копирует реальный scripts/<scriptName> в свежую песочницу, записывает туда
  * fixture-файлы (`files`: relPath → content), опционально инициализирует git,
@@ -74,10 +93,12 @@ export function runGate(
   try {
     const scriptsDir = join(tmp, 'scripts');
     mkdirSync(scriptsDir, { recursive: true });
-    copyFileSync(
-      join(REAL_SCRIPTS_DIR, scriptName),
-      join(scriptsDir, scriptName),
-    );
+    // Копируем скрипт вместе с его локальными зависимостями: гейт, доросший
+    // до лимита размера, дробится на движок + модуль правил (правило №10), и
+    // без соседей в песочнице он падал бы с ERR_MODULE_NOT_FOUND.
+    for (const name of withLocalDeps(scriptName)) {
+      copyFileSync(join(REAL_SCRIPTS_DIR, name), join(scriptsDir, name));
+    }
 
     for (const [relPath, content] of Object.entries(files)) {
       const dest = join(tmp, relPath);

@@ -7,6 +7,7 @@ import {
   TelegramSettingsService,
   buildSettingsView,
 } from './telegram.settings.service';
+import { ERROR_RETRY } from './telegram.constants';
 import {
   makeFakeBot,
   runCommand,
@@ -214,8 +215,6 @@ describe('TelegramSettingsService — ошибки', () => {
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('Не удалось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith(ERROR_RETRY);
   });
 });

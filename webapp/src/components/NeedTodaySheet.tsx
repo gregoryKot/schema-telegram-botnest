@@ -6,6 +6,7 @@ import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { needColor } from '../../../shared/src/needs/needColors';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   need: Need;
@@ -19,6 +20,7 @@ interface Props {
 
 export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
@@ -96,7 +98,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           </div>
           {rangeIdx === 2 && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
-              Хороший день – заметь это
+              {tr('Хороший день – заметь это', 'Хороший день – заметьте это')}
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>

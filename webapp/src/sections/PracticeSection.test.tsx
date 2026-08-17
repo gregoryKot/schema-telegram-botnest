@@ -100,6 +100,18 @@ describe('PracticeSection — ты/вы вилка', () => {
     expect(screen.getByText(/Семь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
+
+  it('подсказки блока «В трудный момент» звучат на «ты»', () => {
+    renderSection({}, 'ty');
+    expect(screen.getByText(/116 вопросов, 20 шкал схем – узнай свои паттерны/)).toBeTruthy();
+    expect(screen.getByText(/Найди Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
+  });
+
+  it('подсказки блока «В трудный момент» звучат на «вы»', () => {
+    renderSection({}, 'vy');
+    expect(screen.getByText(/116 вопросов, 20 шкал схем – узнайте свои паттерны/)).toBeTruthy();
+    expect(screen.getByText(/Найдите Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
+  });
 });
 
 describe('PracticeSection — пустой аккаунт (без хардкод-заглушек)', () => {

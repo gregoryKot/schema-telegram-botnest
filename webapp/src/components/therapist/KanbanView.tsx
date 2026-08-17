@@ -5,10 +5,27 @@ import { pressable } from '../../utils/a11y';
 interface Props {
   allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
   loading: boolean;
+  loadFailed: boolean;
+  onRetry: () => void;
   onOpenClient: (clientId: number) => void;
 }
 
-export function KanbanView({ allTasks, loading, onOpenClient }: Props) {
+export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClient }: Props) {
+  if (loadFailed) {
+    // Сбой ≠ пусто: без этой ветки отказ запроса рисовал бы терапевту
+    // пустую доску («Назначенных заданий пока нет») вместо явной ошибки.
+    return (
+      <div role="alert" style={{ padding: '24px 0' }}>
+        <p style={{ color: 'var(--c-rose)', fontSize: 14, margin: '0 0 12px' }}>Не удалось загрузить задания</p>
+        <button onClick={onRetry} style={{
+          padding: '8px 18px', background: 'transparent', border: '1.5px solid var(--c-rose)', color: 'var(--c-rose)',
+          borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Попробовать ещё раз
+        </button>
+      </div>
+    );
+  }
   if (loading || !allTasks) {
     return <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>;
   }

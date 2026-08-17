@@ -1,10 +1,12 @@
-// @vitest-environment jsdom
 // Тест fillHistoryGaps — заполнение пропущенных дней в истории трекера
-// пустыми рейтингами, чтобы TrackerHistoryOverlay рисовал сплошную шкалу
-// дат, а не «дыры». Вынесено из App.tsx (этап 3 REMEDIATION_PLAN).
+// пустыми рейтингами, чтобы экраны истории рисовали сплошную шкалу дат,
+// а не «дыры». Единственная реализация (правило №3 CLAUDE.md, jscpd-свип
+// 2026-08: копия жила в webapp/appShell/navigation.ts и в
+// schema-miniapp/utils/todayConstants.ts) — оба фронтенда ре-экспортируют
+// отсюда, тест держим здесь же.
 import { describe, it, expect } from 'vitest';
 import { fillHistoryGaps, TODAY_DATE } from './todayConstants';
-import { DayHistory } from '../types';
+import type { DayHistory } from '../types';
 
 // Тот же способ форматирования даты, что и в реализации (UTC toISOString),
 // чтобы фикстуры совпадали с тем, что генерирует cursor внутри функции.

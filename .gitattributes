@@ -27,6 +27,8 @@ scripts/silent-catch-baseline.json        merge=ratchet-min
 scripts/coverage-baseline.json            merge=ratchet-max
 scripts/frontend-coverage-baseline.json   merge=ratchet-max
 scripts/mutation-baseline.json            merge=ratchet-max
+scripts/mutation-crisis-baseline.json     merge=ratchet-max
+scripts/mutation-outbox-baseline.json     merge=ratchet-max
 
 # ── Сборка мини-аппа ─────────────────────────────────────────────────────────
 # dist коммитится в git (Dockerfile его только копирует), поэтому конфликтует

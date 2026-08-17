@@ -67,7 +67,12 @@ export function LinkAccountSection() {
               {link.start.userCode}
             </button>
             <div style={hintStyle}>
-              {copied ? 'Код скопирован' : 'Нажми на код, чтобы скопировать'}
+              {copied
+                ? 'Код скопирован'
+                : tr(
+                    'Нажми на код, чтобы скопировать',
+                    'Нажмите на код, чтобы скопировать',
+                  )}
             </div>
             <div style={hintStyle}>
               {tr('Открой вручную: ', 'Откройте вручную: ')}

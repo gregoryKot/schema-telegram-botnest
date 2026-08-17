@@ -1,6 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { SheetIconHeader } from '../SheetIconHeader';
+import { useTr } from '../../utils/addressForm';
 
 interface SafePlaceData {
   text: string;
@@ -24,12 +25,13 @@ export function SafePlaceSavedView({
   onClose,
   onEdit,
 }: Props) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
           title="Моё безопасное место"
-          subtitle="Прочти — и почувствуй"
+          subtitle={tr('Прочти — и почувствуй', 'Прочтите — и почувствуйте')}
         />
 
         <div

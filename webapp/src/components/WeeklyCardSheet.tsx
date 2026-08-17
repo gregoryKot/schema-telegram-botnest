@@ -17,6 +17,7 @@ import {
 } from '../../../shared/src/share/analytics';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../utils/botConfig';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   needs: Need[];
@@ -26,6 +27,7 @@ interface Props {
 
 export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streak, setStreak] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -86,7 +88,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
           <span className="it">для поделиться</span>
         </>
       }
-      lede="Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту."
+      lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
         <div

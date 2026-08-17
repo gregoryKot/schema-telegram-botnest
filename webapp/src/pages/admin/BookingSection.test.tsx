@@ -182,6 +182,13 @@ describe('BookingSection — расписание', () => {
     await screen.findByText('Пока нет правил. Добавьте слоты ниже.');
   });
 
+  it('сбой ≠ пусто: отказ загрузки правил показывает ошибку, а не «Пока нет правил»', async () => {
+    mockApi.adminListRules.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    expect(await screen.findByText(/Не удалось загрузить расписание/)).toBeTruthy();
+    expect(screen.queryByText('Пока нет правил. Добавьте слоты ниже.')).toBeNull();
+  });
+
   it('показывает существующее правило человеческим текстом', async () => {
     mockApi.adminListRules.mockResolvedValue([
       { id: 1, dayOfWeek: 1, startHour: 10, startMinute: 0, endHour: 19, endMinute: 0, sessionDuration: 50, bufferMin: 10, isActive: true },
@@ -226,6 +233,28 @@ describe('BookingSection — записи', () => {
   it('без записей в выбранном фильтре — явный текст «Записей нет», не пусто', async () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByText('Записей нет.');
+  });
+
+  // Сбой ≠ пусто: «Записей нет.» на отказе (неверный ключ/сеть) читается как
+  // «записей правда нет» — терапевт может решить, что записей никогда не было.
+  it('сбой ≠ пусто: отказ adminListBookings показывает ошибку, а не «Записей нет»', async () => {
+    mockApi.adminListBookings.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить записи/);
+    expect(screen.queryByText('Записей нет.')).toBeNull();
+  });
+
+  it('смена фильтра после сбоя сбрасывает ошибку на успешном ответе', async () => {
+    mockApi.adminListBookings.mockRejectedValueOnce(new Error('network'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByRole('alert');
+
+    mockApi.adminListBookings.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Отменённые' }));
+
+    await screen.findByText('Записей нет.');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('показывает реальную запись клиента с именем и контактом', async () => {

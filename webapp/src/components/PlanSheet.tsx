@@ -4,7 +4,7 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot'; import { detectCrisisAny } from '../utils/crisisMarkers'; import { CrisisCard } from './CrisisCard';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -52,10 +52,16 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
   const [savedOk, setSavedOk] = useState(false);
   const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [practicesFailed, setPracticesFailed] = useState(false);
 
   useEffect(() => {
-    api.getPractices(needId).then(setUserPractices).catch(() => {});
-    api.getSettings().then(s => setTzOffset(ianaToUtcOffset(s.notifyTimezone))).catch(() => {});
+    // Сбой ≠ пусто: без флага свои практики молча пропадали из выбора,
+    // и человек видел только готовый список — как будто своих нет.
+    api.getPractices(needId).then(p => { setUserPractices(p); setPracticesFailed(false); })
+      .catch(() => setPracticesFailed(true));
+    // Часовой пояс — деградация подсказки времени до дефолта, лог достаточен.
+    api.getSettings().then(s => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
+      .catch(e => console.error('getSettings failed', e));
   }, [needId]);
 
   const curated = CURATED[needId] ?? [];
@@ -102,6 +108,11 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
     >
       {phase === 'pick' && (
         <>
+          {practicesFailed && (
+            <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+              {tr('Не удалось загрузить твои практики — ниже только готовые варианты', 'Не удалось загрузить ваши практики — ниже только готовые варианты')}
+            </div>
+          )}
           {allOptions.length > 0 && (
             <div className="prompt">
               <div className="prompt-num">·</div>
@@ -151,7 +162,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
                 maxLength={200}
                 rows={2}
                 className={'paper-input ' + (customText.trim() ? 'is-filled' : '')}
-              />
+              />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
               {customText.trim() && (
                 <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary" style={{ marginTop: 8 }}>
                   Продолжить →

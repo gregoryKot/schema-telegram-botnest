@@ -11,13 +11,13 @@ import { YsqDisclaimer } from '../../../shared/src/components/YsqDisclaimer';
 import { YsqTherapyCta } from '../../../shared/src/components/YsqTherapyCta';
 import { YsqResultTopBar } from '../../../shared/src/components/YsqResultTopBar';
 import { YsqTestHeader } from '../../../shared/src/components/YsqTestHeader';
-import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList';
+import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList'; import { YsqSyncErrorNote } from '../../../shared/src/components/YsqSyncErrorNote';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import {
   useYsqTest,
   QUESTIONS,
   NEED_LABELS,
-  TIP_VY,
+  useYsqSchemas,
   getSchemaForQuestion,
   avgBarPct,
   buildShareText,
@@ -40,6 +40,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const cta = contactCta();
+  const ysqSchemas = useYsqSchemas(); // tip зависит от addressForm — не TIP_VY-вилкой
   const {
     phase, setPhase,
     answers,
@@ -50,13 +51,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
     inactiveExpanded, setInactiveExpanded,
     retakeConfirm, setRetakeConfirm,
     progressAnswered,
-    handleContinue,
-    handleStartFresh,
+    handleContinue, handleStartFresh,
     selectAnswer,
-    handleBack,
-    handleRetake,
-    scores,
-    resultView,
+    handleBack, handleRetake,
+    scores, resultView,
+    resumeCheckFailed, retryResumeCheck, resultSaveError, retrySaveResult,
   } = useYsqTest({ api, autoResume });
 
   const [showShare, setShowShare] = useState(false);
@@ -133,7 +132,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {[
               ['116 утверждений', 'Оцени каждое от 1 до 6'],
-              ['~10 минут', 'Можно прервать – прогресс сохраняется'],
+              ['~10 минут', 'Можно прервать — прогресс сохраняется'],
               ['20 схем', 'Результат с описанием и советом для каждой'],
             ].map(([title, desc]) => (
               <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 16px' }}>
@@ -170,6 +169,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
           </div>
 
+          {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
           {hasProgress ? (
             <>
               <button onClick={handleContinue} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
@@ -199,6 +199,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
         return (
           <div>
+            {resultSaveError && retrySaveResult && <YsqSyncErrorNote variant="result-save" onRetry={retrySaveResult} />}
             {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
             <YsqResultTopBar tr={tr} onShare={() => setShowShare(true)} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
 
@@ -214,7 +215,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
             {activeCount === 0 && (
               <div style={{ textAlign: 'center', padding: '28px 0', fontSize: 14, color: 'var(--text-sub)' }}>
-                Выраженных схем нет – отличный результат.
+                Выраженных схем нет — отличный результат.
               </div>
             )}
 
@@ -265,7 +266,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}</span>
                       </div>
 
                       <div

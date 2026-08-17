@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// PlanSheet — «что сделаешь завтра» + напоминание (2% покрытия, 483 строки,
-// НЕТ существующего теста). PracticeOptionRow покрыт своим тестом — мокаем.
-// Кризисный путь (правило №7) не нужен: свободный текст здесь — название
-// бытовой практики («написать другу», «прогулка»), а не дневниковая запись
-// о состоянии. Ключевые правила: ошибка сохранения ВИДНА (не закрывает лист
-// молча — правило CLAUDE.md), защита от дубль-клика по «Сохранить»,
-// напоминание пересчитывается из tzOffset, а не хардкодится.
+// PlanSheet — «что сделаешь завтра» + напоминание. PracticeOptionRow покрыт
+// своим тестом — мокаем. Кризисная детекция (правило №7) — свободный текст
+// «своя практика» раньше уходил без прогона через crisisMarkers, как и
+// TaskCreateSheet.tsx до своего фикса (см. TaskCreateSheet.test.tsx). Ключевые
+// правила: ошибка сохранения ВИДНА (не закрывает лист молча — правило
+// CLAUDE.md), защита от дубль-клика по «Сохранить», напоминание пересчитывается
+// из tzOffset, а не хардкодится.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   render,
@@ -43,6 +43,7 @@ vi.mock('../api', () => ({
     deletePractice: vi.fn(),
     addPractice: vi.fn(),
     createPlan: vi.fn(),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -276,5 +277,28 @@ describe('PlanSheet — ты/вы', () => {
   it('заголовок фазы выбора звучит на «ты» по умолчанию (без AddressFormContext = ty)', async () => {
     render(<PlanSheet {...baseProps()} />);
     expect(screen.getByText('Что сделаешь завтра?')).toBeTruthy();
+  });
+});
+
+describe('PlanSheet — кризисная детекция в свободном тексте практики (правило №7)', () => {
+  it('кризисная фраза в поле «своя практика» показывает CrisisCard с телефоном доверия', async () => {
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    fireEvent.change(
+      screen.getByPlaceholderText('Что-то конкретное, маленькое...'),
+      { target: { value: 'не хочу жить' } },
+    );
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+  });
+
+  it('нейтральный текст практики не показывает CrisisCard', async () => {
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    fireEvent.change(
+      screen.getByPlaceholderText('Что-то конкретное, маленькое...'),
+      { target: { value: 'Прогулка вечером' } },
+    );
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

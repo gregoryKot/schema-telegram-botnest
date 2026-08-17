@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TaskCreateSheet } from './TaskCreateSheet';
+import { AddressFormContext } from '../utils/addressForm';
 
 vi.mock('../api', () => ({
   api: {
@@ -78,6 +79,21 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
     renderSheet();
     const saveBtn = screen.getByText('Назначить задание') as HTMLButtonElement;
     expect(saveBtn.disabled).toBe(true);
+  });
+
+  it('ты/вы: заголовок и ошибка валидации звучат в форме пользователя (правило CLAUDE.md)', () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <TaskCreateSheet defaultType="schema_intro" onCreated={vi.fn()} onClose={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Выберите')).toBeTruthy();
+    expect(screen.queryByText('Выбери')).toBeNull();
+    fireEvent.click(screen.getByText('Назначить задание'));
+    expect(screen.queryByText('Выбери схему')).toBeNull(); // не должно быть тыкающей ошибки
+    expect(screen.getByText('Выберите схему')).toBeTruthy();
   });
 
   it('ошибка api.createTask показывает сообщение, а не тишину — onCreated не вызывается', async () => {

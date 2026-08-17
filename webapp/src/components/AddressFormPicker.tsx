@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
- * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии.
- * Сам грузит настройки; не чаще раза за сессию.
+ * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии
+ * (не блокируем вход). Сам грузит настройки; не чаще раза за сессию.
+ *
+ * Сохранение выбора — через общий shared/src/settings/useAddressFormChoice.ts
+ * (правило №3): при отказе api.updateSettings диалог НЕ закрывается — иначе
+ * человек видит выбранную форму применённой, а на деле она не долетела до
+ * сервера и на следующей сессии перезатрётся обратно на дефолтную (инцидент,
+ * см. комментарий в useAddressFormChoice.ts).
  */
 export function AddressFormPicker() {
   const [show, setShow] = useState(false);
@@ -18,18 +25,19 @@ export function AddressFormPicker() {
       .catch(() => {});
   }, []);
 
-  if (!show) return null;
-
   function close() {
     sessionStorage.setItem('addr_form_asked', '1');
     setShow(false);
   }
 
-  async function choose(form: 'ty' | 'vy') {
-    setForm(form);
-    try { await api.updateSettings({ addressForm: form }); } catch { /* не блокируем вход */ }
-    close();
-  }
+  const { failed, choose } = useAddressFormChoice(
+    setForm,
+    api.updateSettings,
+    reportClientError,
+    close,
+  );
+
+  if (!show) return null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -50,6 +58,11 @@ export function AddressFormPicker() {
             На «вы»
           </button>
         </div>
+        {failed && (
+          <div style={{ fontSize: 12.5, color: 'var(--danger, #e5484d)', lineHeight: 1.5, marginBottom: 10 }}>
+            Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
+          </div>
+        )}
         <button onClick={close}
           style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
           Позже

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphArrowRight } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 
 const NEEDS = [
   {
@@ -191,6 +192,7 @@ export function ChildhoodWheelEx({
   onSaved?: (r: Record<string, number>) => void;
 }) {
   const goBack = useHistorySheet(onBack);
+  const tr = useTr();
   const [ratings, setRatings] = useState<Record<string, number>>({
     attachment: 5,
     autonomy: 5,
@@ -238,8 +240,10 @@ export function ChildhoodWheelEx({
             <div className="aside-card-eyebrow">Что дальше</div>
             <h3>Связать с сегодня</h3>
             <p className="body">
-              Открой дневник за последнюю неделю и сравни – какие потребности
-              сегодня просели больше всего. Часто это те же зоны.
+              {tr(
+                'Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+                'Откройте дневник за последнюю неделю и сравните – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+              )}
             </p>
           </div>
         }
@@ -273,7 +277,7 @@ export function ChildhoodWheelEx({
             ))}
           </div>
           <div className="cw-wheel-card">
-            <h4>Твоё колесо</h4>
+            <h4>{tr('Твоё колесо', 'Ваше колесо')}</h4>
             <div className="sub">
               Сохранено ·{' '}
               {new Date().toLocaleDateString('ru-RU', {

@@ -5,6 +5,8 @@ import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
+import { ShapePicker } from './modeMap/ShapePicker';
 
 // Maps a mode id → which palette group/type it belongs to (for client modes)
 function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; color: string; name: string } | null {
@@ -23,10 +25,12 @@ const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoid
 interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: number }
 
 export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
+  const tr = useTr();
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
-  const [customModes, setCustomModes] = useState<TherapistCustomMode[]>([]);
-  const [clientModeIds, setClientModeIds] = useState<string[]>([]);
+  // 'failed' ≠ пустой список — сбой загрузки не равен «режимов нет» (см. CLAUDE.md).
+  const [customModes, setCustomModes] = useState<TherapistCustomMode[] | 'failed'>([]);
+  const [clientModeIds, setClientModeIds] = useState<string[] | 'failed'>([]);
   const [clientOpen, setClientOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -37,17 +41,19 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   const addFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.listCustomModes().then(setCustomModes).catch(() => {});
+    api.listCustomModes().then(setCustomModes).catch(() => setCustomModes('failed'));
   }, []);
 
   // Modes already identified for this client (from conceptualization)
   useEffect(() => {
     api.getConceptualization(clientId)
       .then(c => setClientModeIds(Array.isArray(c?.modeIds) ? c.modeIds : []))
-      .catch(() => {});
+      .catch(() => setClientModeIds('failed'));
   }, [clientId]);
 
   const q = search.trim().toLowerCase();
+  const customModesList = Array.isArray(customModes) ? customModes : [];
+  const clientModeList = Array.isArray(clientModeIds) ? clientModeIds : [];
 
   const makeNode = (modeId: string, type: NodeType, label: string, extra?: Partial<ModeMapNode['data']>): Omit<ModeMapNode, 'position'> => ({
     id: `${modeId}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, type, data: { modeId, label, ...extra },
@@ -81,7 +87,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   async function saveCustomMode() {
     if (!newName.trim()) return;
     const m = await api.createCustomMode({ name: newName.trim(), emoji: newEmoji, nodeType: newType });
-    setCustomModes(prev => [...prev, m]);
+    setCustomModes(prev => [...(Array.isArray(prev) ? prev : []), m]);
     setNewName(''); setNewEmoji('⬡'); setAdding(false);
   }
 
@@ -96,7 +102,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 
   async function removeCustomMode(id: number) {
     await api.deleteCustomMode(id);
-    setCustomModes(prev => prev.filter(m => m.id !== id));
+    setCustomModes(prev => Array.isArray(prev) ? prev.filter(m => m.id !== id) : prev);
   }
 
   return (
@@ -114,17 +120,20 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Client's identified modes (from conceptualization) — collapsible */}
-        {!q && clientModeIds.length > 0 && (
+        {/* Client's identified modes (from conceptualization) — collapsible.
+            Сбой загрузки показывается, а не молчит: раньше секция просто не
+            рендерилась (условие было ...length > 0), и терапевт думал, что у
+            клиента режимы не отмечены (карта режимов, три молчания). */}
+        {!q && (clientModeIds === 'failed' || clientModeList.length > 0) && (
           <div style={{ background: clientOpen ? 'var(--accent-soft)' : 'none', paddingBottom: clientOpen ? 4 : 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px' }}>
               <button onClick={() => setClientOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>Режимы клиента</span>
-                <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientOpen ? '▲' : `▼ ${clientModeIds.length}`}</span>
+                <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientModeIds === 'failed' ? '' : clientOpen ? '▲' : `▼ ${clientModeList.length}`}</span>
               </button>
-              {onAddMany && (
-                <button onClick={() => { const all = clientModeIds.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
+              {onAddMany && clientModeIds !== 'failed' && (
+                <button onClick={() => { const all = clientModeList.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
                   title="Вынести все режимы клиента на карту" aria-label="Вынести все режимы клиента на карту"
                   style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
                     cursor: 'pointer', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
@@ -132,7 +141,11 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                 </button>
               )}
             </div>
-            {clientOpen && clientModeIds.map(modeId => {
+            {clientModeIds === 'failed' ? (
+              <div style={{ padding: '4px 14px 10px', fontSize: 11.5, color: 'var(--accent-red)' }}>
+                Не удалось загрузить режимы клиента
+              </div>
+            ) : clientOpen && clientModeList.map(modeId => {
               const node = clientModeNode(modeId);
               if (!node) return null;
               return (
@@ -221,48 +234,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                     placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} />
                 </div>
 
-                {/* Shape picker — visual buttons */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {([
-                    { type: 'child' as NodeType,   label: 'Дет.',  shape: 'circle'  },
-                    { type: 'critic' as NodeType,  label: 'Крит.', shape: 'oct'     },
-                    { type: 'healthy' as NodeType, label: 'Здор.', shape: 'rect'    },
-                    { type: 'custom' as NodeType,  label: 'Свой',  shape: 'rect2'   },
-                  ]).map(opt => (
-                    <button key={opt.type} onClick={() => setNewType(opt.type)}
-                      title={opt.label}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                        padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
-                        border: `1.5px solid ${newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'var(--line-strong)'}`,
-                        background: newType === opt.type && !(newType === 'coping') ? 'var(--accent-soft)' : 'none',
-                        color: newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'var(--text-faint)',
-                      }}>
-                      <MiniShapePreview shape={opt.shape} />
-                      {opt.label}
-                    </button>
-                  ))}
-                  {/* Coping subtypes */}
-                  {([
-                    { sub: 'over' as const,  label: 'Гипер.', shape: 'penta'  },
-                    { sub: 'avoid' as const, label: 'Избег.', shape: 'shield' },
-                    { sub: 'surr' as const,  label: 'Капит.', shape: 'pill'   },
-                  ]).map(opt => {
-                    const active = newType === 'coping' && newCopingSub === opt.sub;
-                    return (
-                      <button key={opt.sub} onClick={() => { setNewType('coping'); setNewCopingSub(opt.sub); }}
-                        title={opt.label}
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                          padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
-                          border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
-                          background: active ? 'var(--accent-soft)' : 'none',
-                          color: active ? 'var(--accent)' : 'var(--text-faint)',
-                        }}>
-                        <MiniShapePreview shape={opt.shape} />
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ShapePicker newType={newType} newCopingSub={newCopingSub} setNewType={setNewType} setNewCopingSub={setNewCopingSub} />
 
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={saveCustomMode} style={{ ...miniInputStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
@@ -273,7 +245,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               </div>
             )}
 
-            {customModes.map(m => (
+            {customModesList.map(m => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <button
                   onClick={() => onAdd({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: getCustomNodeData(m) })}
@@ -288,9 +260,14 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               </div>
             ))}
 
-            {customModes.length === 0 && !adding && (
+            {customModes === 'failed' && (
+              <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--accent-red)' }}>
+                {tr('Не удалось загрузить твои режимы', 'Не удалось загрузить ваши режимы')}
+              </div>
+            )}
+            {customModes !== 'failed' && customModesList.length === 0 && !adding && (
               <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--text-faint)', lineHeight: 1.4 }}>
-                Добавь режимы, с которыми<br />работаешь чаще всего
+                {tr('Добавь режимы, с которыми', 'Добавьте режимы, с которыми')}<br />{tr('работаешь чаще всего', 'работаете чаще всего')}
               </div>
             )}
           </div>
@@ -300,7 +277,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
         {q && MODE_GROUPS.every(g => {
           const m = GROUP_TO_TYPE[g.id];
           return !m || !g.items.some(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q));
-        }) && !customModes.some(m => m.name.toLowerCase().includes(q)) && (
+        }) && !customModesList.some(m => m.name.toLowerCase().includes(q)) && (
           <div style={{ padding: '20px 14px', fontSize: 12.5, color: 'var(--text-faint)', textAlign: 'center' }}>
             Режим не найден
           </div>
@@ -329,27 +306,4 @@ const miniInputStyle: React.CSSProperties = {
   color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
 };
 
-function MiniShapePreview({ shape }: { shape: string }) {
-  const c = 'rgba(var(--fg-rgb),0.5)';
-  const s: React.CSSProperties = { width: 16, height: 16, border: `1.5px solid ${c}`, flexShrink: 0 };
-  if (shape === 'circle')  return <div style={{ ...s, borderRadius: '50%' }} />;
-  if (shape === 'pill')    return <div style={{ ...s, borderRadius: 9999 }} />;
-  if (shape === 'rect')    return <div style={{ ...s, borderRadius: 3 }} />;
-  if (shape === 'rect2')   return <div style={{ ...s, borderRadius: 5 }} />;
-  if (shape === 'penta')   return (
-    <svg width={16} height={16} viewBox="0 0 10 10">
-      <path d="M5,0 L10,3.8 L8.2,10 L1.8,10 L0,3.8 Z" fill="none" stroke={c} strokeWidth="1.2" />
-    </svg>
-  );
-  if (shape === 'shield')  return (
-    <svg width={16} height={16} viewBox="0 0 10 10">
-      <path d="M0,0 L10,0 L10,7 L5,10 L0,7 Z" fill="none" stroke={c} strokeWidth="1.2" />
-    </svg>
-  );
-  if (shape === 'oct')     return (
-    <svg width={16} height={16} viewBox="0 0 10 10">
-      <path d="M1.4,0 L8.6,0 L10,1.4 L10,8.6 L8.6,10 L1.4,10 L0,8.6 L0,1.4 Z" fill="none" stroke={c} strokeWidth="1.2" />
-    </svg>
-  );
-  return <div style={{ ...s, borderRadius: 3 }} />;
-}
+

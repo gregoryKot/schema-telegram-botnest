@@ -288,12 +288,16 @@ describe('ChannelPublisherService', () => {
     expect(res.message).toContain('connect failed');
   });
 
-  it('сбой записи поста и проверки остатка не отменяет отправленное', async () => {
+  it('сбой записи поста и проверки остатка не отменяет отправленное, но оба сбоя видны в логе', async () => {
+    // Регресс: poolStatus().catch(() => null) глушил ошибку молча — сосед
+    // recordPost логировал, а этот нет (асимметрия внутри одного метода).
     const a = makeTarget('telegram', '@ch');
     const { svc } = makePhrases();
     (svc.recordPost as jest.Mock).mockRejectedValue(new Error('db down'));
     (svc.poolStatus as jest.Mock).mockRejectedValue(new Error('db down'));
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
 
     const res = await new ChannelPublisherService(
       [a.target],
@@ -302,5 +306,11 @@ describe('ChannelPublisherService', () => {
     ).publish();
     expect(a.send).toHaveBeenCalled();
     expect(res.ok).toBe(true);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('healthy-adult recordPost failed: db down'),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('healthy-adult poolStatus failed: db down'),
+    );
   });
 });

@@ -29,6 +29,9 @@ export function SubscribePage() {
   const [cancelled, setCancelled] = useState(false);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [consent, setConsent] = useState(false);
+  // Сбой ≠ пусто (правило №14, экран-тупик): раньше `sub === null` на отказе
+  // рисовал «Загружаем…» — навсегда, отказ не отличить от загрузки.
+  const [subFailed, setSubFailed] = useState(false);
 
   useEffect(() => {
     api.getSubscriptionOptions()
@@ -36,7 +39,7 @@ export function SubscribePage() {
       .catch(() => { setEnabled(false); setOpts([]); });
   }, []);
   useEffect(() => {
-    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSub(null));
+    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSubFailed(true));
   }, [token]);
 
   const price = opts.find((o) => o.period === period)?.price;
@@ -70,11 +73,18 @@ export function SubscribePage() {
     ) : sub ? (
       <>
         <div style={icon}>◆</div>
-        <h1 style={h1}>Ваша подписка</h1>
+        <h1 style={h1}>Подписка</h1>
         <p style={sub_}>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</p>
         {sub.nextChargeAt && <div style={card}>Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
         <button onClick={doCancel} style={textLink}>Отменить подписку</button>
       </>
+    ) : subFailed ? (
+      // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
+      // (check-second-person.mjs не видит здесь ни местоимений, ни императивов).
+      <div role="alert">
+        <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)' }}>Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения.</p>
+        <button onClick={() => window.location.reload()} style={primaryBtn}>Обновить</button>
+      </div>
     ) : (
       <p style={{ ...sub_, marginTop: 40 }}>Загружаем…</p>
     );
@@ -133,7 +143,7 @@ export function SubscribePage() {
           </span>
         </label>
 
-        {status === 'error' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 13, margin: '12px 0 0' }}>Не получилось. Попробуйте ещё раз.</p>}
+        {status === 'error' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 13, margin: '12px 0 0' }}>Не получилось. Попробовать ещё раз.</p>}
         <button onClick={submit} disabled={status === 'loading' || !price || !consent} style={{ ...primaryBtn, marginTop: 14, opacity: status === 'loading' || !price || !consent ? 0.5 : 1 }}>
           {status === 'loading' ? 'Перехожу к оплате…' : price ? `Оформить за ${price.toLocaleString('ru-RU')} ₽/${periodLabel(period)}` : 'Оформить'}
         </button>

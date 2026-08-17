@@ -21,7 +21,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "rotate-encryption": "ts-node scripts/rotate-encryption-key.ts",
     "mutation": "stryker run",
-    "smoke": "playwright test"
+    "smoke": "playwright test",
+    "mutation:crisis": "stryker run stryker.crisis.config.json",
+    "mutation:outbox": "stryker run stryker.outbox.config.json"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.3",

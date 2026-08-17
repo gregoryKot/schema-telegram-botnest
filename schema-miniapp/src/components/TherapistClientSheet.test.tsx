@@ -27,14 +27,24 @@ vi.mock('../api', () => ({
     getClientSchemaNotes: vi.fn(),
     getClientModeNotes: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReportClientError = reportClientError as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 vi.mock('./therapistClientSheet/ClientListView', () => ({
-  ClientListView: ({ clients, loading, onClose, detail }: any) => (
+  ClientListView: ({ clients, loading, loadFailed, onClose, detail }: any) => (
     <div data-testid="list-view">
-      <span>{loading ? 'Загрузка' : `Клиентов: ${clients.length}`}</span>
+      <span>
+        {loading
+          ? 'Загрузка'
+          : loadFailed
+            ? 'сбой-загрузки'
+            : `Клиентов: ${clients.length}`}
+      </span>
       <button onClick={onClose}>close-sheet</button>
       {clients[0] && (
         <button onClick={() => detail.openClient(clients[0])}>
@@ -139,10 +149,17 @@ describe('TherapistClientSheet — загрузка списка клиенто�
     expect(mockApi.getTherapyClients).toHaveBeenCalledTimes(1);
   });
 
-  it('ошибка api.getTherapyClients — список остаётся пустым, не крашится', async () => {
+  // Регрессия: раньше отказ оставлял clients = [] — «Клиентов: 0», то есть
+  // терапевт с полным ростером в офлайне видел «клиентов нет». Сбой ≠ пусто.
+  it('ошибка api.getTherapyClients — состояние «сбой», не «клиентов 0», отчёт ушёл', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     mockApi.getTherapyClients.mockRejectedValue(new Error('network'));
     render(<Harness />);
-    await waitFor(() => expect(screen.getByText('Клиентов: 0')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('сбой-загрузки')).toBeTruthy());
+    expect(screen.queryByText('Клиентов: 0')).toBeNull();
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'therapist.clients' }),
+    );
   });
 
   it('onClose из ClientListView зовёт переданный проп onClose', async () => {

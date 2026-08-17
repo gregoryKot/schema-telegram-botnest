@@ -278,3 +278,38 @@ describe('TodaySection — создание цели «вести дневник
     expect(screen.queryByTestId('task-create-sheet')).toBeNull();
   });
 });
+
+// Band переставляемых блоков (screen_order_today): порядок из localStorage
+// применяется к DOM, закреплённые блоки не переставляются (онбординг всегда
+// сверху, предложение значка — всегда под band).
+describe('TodaySection — порядок блоков band', () => {
+  const follows = (a: Element, b: Element) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('по умолчанию фраза выше «что ещё», онбординг первый, значок последний', async () => {
+    await renderReady();
+    const onboarding = screen.getByTestId('onboarding');
+    const phrase = screen.getByTestId('phrase-card');
+    // Блок «что ещё» по умолчанию свёрнут — его место держит кнопка-разворот.
+    const secondary = screen.getByText('Что ещё можно сегодня');
+    const offer = screen.getByTestId('home-screen-offer');
+    expect(follows(onboarding, phrase)).toBe(true);
+    expect(follows(phrase, secondary)).toBe(true);
+    expect(follows(secondary, offer)).toBe(true);
+  });
+
+  it('сохранённый порядок меняет DOM: «что ещё» поднимается над фразой', async () => {
+    localStorage.setItem(
+      'screen_order_today',
+      JSON.stringify(['secondary', 'phrase']),
+    );
+    await renderReady();
+    const phrase = screen.getByTestId('phrase-card');
+    const secondary = screen.getByText('Что ещё можно сегодня');
+    const offer = screen.getByTestId('home-screen-offer');
+    expect(follows(secondary, phrase)).toBe(true);
+    // Закреплённые блоки на местах: значок — под band даже после перестановки.
+    expect(follows(phrase, offer)).toBe(true);
+    expect(follows(screen.getByTestId('onboarding'), secondary)).toBe(true);
+  });
+});

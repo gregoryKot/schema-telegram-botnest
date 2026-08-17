@@ -15,63 +15,12 @@
 // смок остаётся быстрым и детерминированным, а проверяет именно фронт —
 // сборку, роутинг, рендер, обращения к API. Контракт «фронт зовёт то, что
 // бэкенд отдаёт» держат HTTP-e2e и контрактный тест api-мока.
-import { test, expect, type Page } from '@playwright/test';
-
-const NEEDS = [
-  {
-    id: 'attachment',
-    emoji: '🤝',
-    title: 'Привязанность',
-    chartLabel: 'Привяз.',
-  },
-  { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автон.' },
-  { id: 'freedom', emoji: '🕊', title: 'Свобода', chartLabel: 'Свобода' },
-  { id: 'play', emoji: '🎨', title: 'Игра', chartLabel: 'Игра' },
-  { id: 'limits', emoji: '🧱', title: 'Границы', chartLabel: 'Границы' },
-];
-
-/**
- * Оценки живут в памяти теста, а не в фикстуре-константе: сохранение должно
- * реально доехать до «сервера» и вернуться при следующем чтении — иначе
- * проверка «пережило перезагрузку» была бы самообманом (страница показала бы
- * захардкоженный ответ независимо от того, сохранилось ли что-нибудь).
- */
-async function stubApi(page: Page) {
-  const ratings: Record<string, number> = {};
-
-  await page.route('**/api/**', async (route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname;
-    const method = route.request().method();
-    const json = (body: unknown) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(body),
-      });
-
-    if (path.endsWith('/api/needs')) return json(NEEDS);
-    if (path.endsWith('/api/ratings')) return json(ratings);
-    if (path.endsWith('/api/rating') && method === 'POST') {
-      const body = route.request().postDataJSON() as {
-        needId: string;
-        value: number;
-      };
-      ratings[body.needId] = body.value;
-      return json({
-        ok: true,
-        allDone: Object.keys(ratings).length === NEEDS.length,
-      });
-    }
-    if (path.endsWith('/api/settings'))
-      return json({ addressForm: null, notifyEnabled: true });
-    if (path.endsWith('/api/streak'))
-      return json({ todayDone: false, totalDays: 0 });
-    // Всё остальное — пустой успех: смок не про полноту API, а про то, что
-    // приложение не падает на неожиданном ответе.
-    return json({});
-  });
-}
+//
+// Стаб — общий с crisis-smoke.spec.ts (правило «одна механика — один
+// компонент», см. support/stubApi.ts): оба идут через один и тот же вход
+// (AuthProvider → /api/auth/refresh) и один и тот же бутстрап AppShell.
+import { test, expect } from '@playwright/test';
+import { stubApi, throwOnPageError } from './support/stubApi';
 
 test.describe('браузерный smoke: приложение открывается и сохраняет оценку', () => {
   test.beforeEach(async ({ page }) => {
@@ -79,9 +28,7 @@ test.describe('браузерный smoke: приложение открывае
     // Ошибки рантайма в консоли — повод упасть: «белый экран» обычно
     // начинается именно с них, а ассерты по видимым элементам могут его
     // не заметить, если проверяемый узел успел отрендериться до падения.
-    page.on('pageerror', (err) => {
-      throw new Error(`Ошибка в рантайме страницы: ${err.message}`);
-    });
+    throwOnPageError(page);
   });
 
   test('главная отдаётся и рендерит содержимое, а не пустой корень', async ({
@@ -100,5 +47,42 @@ test.describe('браузерный smoke: приложение открывае
     const res = await page.goto('/articles');
     expect(res?.status()).toBeLessThan(400);
     await expect(page.locator('#root')).not.toBeEmpty();
+  });
+
+  test('трекер: оценка ставится тапом и переживает перезагрузку страницы', async ({
+    page,
+  }) => {
+    // Единственный тест этого файла, идущий в АВТОРИЗОВАННУЮ часть — до него
+    // смок проверял только публичные маршруты, а описание describe обещало
+    // «сохраняет оценку» без единого теста на это (проверено при разведке).
+    await page.goto('/today');
+
+    // Бутстрап AppShell фетчит needs/ratings и держит спиннер, пока не
+    // ответят все три — ждём кнопку из «Потребности сегодня», а не
+    // фиксированную паузу.
+    const openTracker = page.getByRole('button', { name: 'Изменить →' });
+    await openTracker.waitFor();
+    await openTracker.click();
+
+    // Ни одна потребность ещё не оценена (fixture ratings пуст) — оверлей
+    // открывается на первой из STUB_NEEDS («Привязанность»). PickerRail —
+    // общий контрол шкалы 0–10 (правило «одна механика — один компонент»),
+    // рендерится и в desktop-, и в mobile-раскладке.
+    const rateSeven = page.getByRole('button', { name: '7', exact: true });
+    await rateSeven.waitFor();
+
+    const saved = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/rating') && res.request().method() === 'POST',
+    );
+    await rateSeven.click();
+    await saved;
+
+    await page.reload();
+
+    // Возвращаемся на «Сегодня»: первая потребность в списке — та же самая
+    // («attachment»), значение должно прийти из фикстуры-стаба, куда его
+    // записал POST выше, а не отрисоваться заново с нуля.
+    await expect(page.locator('.need-row').first()).toContainText('7');
   });
 });

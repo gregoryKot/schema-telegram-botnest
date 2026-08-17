@@ -71,13 +71,21 @@ describe('ThreadsTokenService', () => {
     );
   });
 
-  it('падение БД не оставляет канал без токена — берём env', async () => {
+  it('падение БД не оставляет канал без токена — берём env, но предупреждает в лог', async () => {
+    // Регресс: .catch(() => null) деградировал тихо — падение БД и
+    // "в БД токена ещё нет" были неотличимы, а причину симптома (отправка
+    // устаревшим env-токеном после ротации) искали бы вслепую.
     process.env.HEALTHY_ADULT_THREADS_TOKEN = 'seed-token';
     const { prisma, findUnique } = makePrisma(null);
     findUnique.mockRejectedValue(new Error('db down'));
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
     await expect(new ThreadsTokenService(prisma).current()).resolves.toBe(
       'seed-token',
     );
+    expect(String(warn.mock.calls[0][0])).toContain('db down');
+    expect(String(warn.mock.calls[0][0])).toContain('env');
   });
 
   it('в БД токен ложится зашифрованным, а не открытым текстом', async () => {

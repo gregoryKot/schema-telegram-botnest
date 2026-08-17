@@ -1,7 +1,9 @@
-// Скрываемые блоки экранов «Профиль»/«Паттерны» — generic-контракт с бэком,
-// один и тот же механизм на оба экрана. SCREEN_BLOCK_IDS парсит sync-спека
+// Блоки экранов «Профиль»/«Паттерны»/«Сегодня» — generic-контракт с бэком,
+// один и тот же механизм на все экраны. SCREEN_BLOCK_IDS парсит sync-спека
 // бэка регулярным выражением — держи ровно этот формат массива, по одному id
-// на строке.
+// на строке. focus/phrase/secondary/therapist_banner — блоки «Сегодня»
+// (streak переиспользуется): у них только порядок (screen_order_today),
+// видимость там регулируют исторические today_*-ключи.
 export const SCREEN_BLOCK_IDS = [
   'journey',
   'streak',
@@ -10,13 +12,19 @@ export const SCREEN_BLOCK_IDS = [
   'insights',
   'heroes',
   'ysq_status',
+  'focus',
+  'phrase',
+  'secondary',
+  'therapist_banner',
 ] as const;
 
 export type ScreenBlockId = (typeof SCREEN_BLOCK_IDS)[number];
-export type CustomizableScreen = 'profile' | 'patterns';
+export type CustomizableScreen = 'profile' | 'patterns' | 'today';
+/** Экраны, где скрытие тоже generic (у «Сегодня» оно легаси-ключами). */
+export type HiddenCustomizableScreen = 'profile' | 'patterns';
 
 /** Ключ localStorage (per-device, как today_hidden_*) — один на экран. */
-export const SCREEN_HIDDEN_KEYS: Record<CustomizableScreen, string> = {
+export const SCREEN_HIDDEN_KEYS: Record<HiddenCustomizableScreen, string> = {
   profile: 'screen_hidden_profile',
   patterns: 'screen_hidden_patterns',
 };
@@ -26,10 +34,13 @@ export interface ScreenBlockMeta {
   sub: string;
 }
 
-/** Порядок строк в листе «Настроить экран», по экранам. */
+/** Порядок строк в листе «Настроить экран», по экранам. Для «Сегодня» это
+ * и есть band переставляемых блоков (закреплённые вне band: виджет обучения
+ * сверху, предложение значка снизу — см. TodaySection). */
 export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
   profile: ['journey', 'streak', 'heatmap', 'achievements', 'insights'],
   patterns: ['heroes', 'ysq_status'],
+  today: ['therapist_banner', 'streak', 'focus', 'phrase', 'secondary'],
 };
 
 /** Описания блоков для строк листа. Названия — нейтральные, вилка обращения не нужна. */

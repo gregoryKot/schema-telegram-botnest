@@ -1,14 +1,19 @@
-// Тест оффлайн-очереди оценок (этап 3, финальный пункт — см. api.ts
-// saveRating/flushOutbox). Чистые функции, без jsdom — localStorage
-// замокан обычным объектом.
+// @vitest-environment jsdom
+// Тест оффлайн-очереди оценок (правило №3 — перенесено из
+// schema-miniapp/src/utils/outbox.test.ts, единственная копия теперь здесь;
+// webapp получает тот же контракт через webapp/src/apiRating.ts). Реальный
+// jsdom-localStorage — тот же паттерн, что у drafts.test.ts в этом каталоге.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { enqueueRating, flushRatingOutbox, OutboxItem } from './outbox';
-import { createLocalStorageMock } from './localStorageMock';
+import {
+  enqueueRating,
+  flushRatingOutbox,
+  type OutboxItem,
+} from './ratingOutbox';
 
 const OUTBOX_KEY = 'rating_outbox_v1';
 
 beforeEach(() => {
-  (globalThis as any).localStorage = createLocalStorageMock();
+  localStorage.clear();
 });
 
 const item = (needId: string, value: number, date: string): OutboxItem => ({
@@ -125,6 +130,17 @@ describe('flushRatingOutbox', () => {
 
     expect(onRecovered).not.toHaveBeenCalled();
   });
+
+  it('не трогает localStorage лишний раз, если очередь и так пуста (нет мусорного removeItem)', async () => {
+    // Ранний выход по пустой очереди обязан быть именно ранним — а не
+    // «дойти до writeOutbox([]) и получить тот же результат окольным путём».
+    // Различимо только через шпион на сам вызов removeItem.
+    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem');
+    const post = vi.fn().mockResolvedValue(undefined);
+    await flushRatingOutbox(post);
+    expect(removeSpy).not.toHaveBeenCalled();
+    removeSpy.mockRestore();
+  });
 });
 
 describe('битый JSON в localStorage', () => {
@@ -159,5 +175,39 @@ describe('битый JSON в localStorage', () => {
       item('play', 3, '2026-07-16'),
       item('connection', 7, '2026-07-18'),
     ]);
+  });
+
+  // Три теста ниже бьют по каждому полю isOutboxItem отдельно (мутационная
+  // закалка 2026-08-16): запись с ВСЕМИ корректными полями, кроме одного,
+  // обязана отбрасываться целиком — иначе, например, {needId: 123, ...}
+  // проскочит в очередь и упадёт на сервере с непонятной 400-кой.
+  it('отбрасывает запись, где needId не строка (остальные поля валидны)', () => {
+    localStorage.setItem(
+      OUTBOX_KEY,
+      JSON.stringify([{ needId: 123, value: 5, date: '2026-01-01' }]),
+    );
+    enqueueRating(item('safety', 1, '2026-01-02'));
+    const raw = JSON.parse(localStorage.getItem(OUTBOX_KEY)!);
+    expect(raw).toEqual([item('safety', 1, '2026-01-02')]);
+  });
+
+  it('отбрасывает запись, где value не число (остальные поля валидны)', () => {
+    localStorage.setItem(
+      OUTBOX_KEY,
+      JSON.stringify([{ needId: 'safety', value: '5', date: '2026-01-01' }]),
+    );
+    enqueueRating(item('autonomy', 2, '2026-01-02'));
+    const raw = JSON.parse(localStorage.getItem(OUTBOX_KEY)!);
+    expect(raw).toEqual([item('autonomy', 2, '2026-01-02')]);
+  });
+
+  it('отбрасывает запись, где date не строка (остальные поля валидны)', () => {
+    localStorage.setItem(
+      OUTBOX_KEY,
+      JSON.stringify([{ needId: 'safety', value: 5, date: 20260101 }]),
+    );
+    enqueueRating(item('play', 3, '2026-01-02'));
+    const raw = JSON.parse(localStorage.getItem(OUTBOX_KEY)!);
+    expect(raw).toEqual([item('play', 3, '2026-01-02')]);
   });
 });

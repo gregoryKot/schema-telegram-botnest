@@ -3,6 +3,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -21,6 +22,7 @@ interface Props {
 
 export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
   const color = needColor(needId);
@@ -52,7 +54,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       aside={
         childhoodRating !== undefined ? (
           <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
-            <div className="aside-card-eyebrow" style={{ color }}>Твой балл в детстве</div>
+            <div className="aside-card-eyebrow" style={{ color }}>{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 56, lineHeight: 1, color }}>{childhoodRating}</span>
               <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>из 10</span>

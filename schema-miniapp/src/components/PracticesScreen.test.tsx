@@ -67,6 +67,17 @@ describe('PracticesScreen — список практик', () => {
     expect(await screen.findByText('Позвонить другу')).toBeTruthy();
   });
 
+  it('провал загрузки практик показывает явную ошибку, а не «Пока пусто» (сбой ≠ пусто)', async () => {
+    // Регрессия: раньше .catch(() => setPractices([])) рисовал «Пока пусто —
+    // добавь первую практику» человеку, у которого практики есть, просто
+    // запрос отвалился (CLAUDE.md «сбой ≠ пусто»).
+    getPractices.mockRejectedValue(new Error('network'));
+    renderScreen();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить практики/);
+    expect(screen.queryByText(/Пока пусто/)).toBeNull();
+  });
+
   it('переключение вкладки потребности перезапрашивает практики для новой потребности', async () => {
     renderScreen();
     await waitFor(() =>

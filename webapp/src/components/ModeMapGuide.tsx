@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
-import { pickTips } from './modeMapTips';
+import { pickTips, useModeMapTips } from './modeMapTips';
 import { useTr } from '../utils/addressForm';
 import { MMIcon } from './modeMapIcons';
 
@@ -45,7 +45,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   // ── Steps with clinical descriptions ────────────────────────────────────────
   const steps: Step[] = kind === 'couple'
     ? [
-        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между вами — момент, с которого закрутился цикл',
+        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между партнёрами — момент, с которого закрутился цикл',
           add: mk('trigger', 'Триггер', { side: 'A' }) },
         { ok: hasSide('child', 'A'),   label: 'Боль Партнёра А',     desc: 'Что задело А под поверхностью: страх, стыд, покинутость',
           add: mk('child', 'Уязвимый Ребёнок', { side: 'A' }) },
@@ -71,8 +71,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         { ok: hasBehavior, label: 'Поведение',         desc: 'Что человек реально делает — и к каким последствиям это ведёт',
           add: mk('behavior', 'Поведение') },
         { ok: hasNeed,     label: 'Потребность',       desc: hasChild
-            ? 'Что на самом деле было нужно ребёнку — нажми, чтобы вписать на режиме Ребёнка'
-            : 'Что было нужно ребёнку — сначала добавь Уязвимого Ребёнка',
+            ? tr('Что на самом деле было нужно ребёнку — нажми, чтобы вписать на режиме Ребёнка', 'Что на самом деле было нужно ребёнку — нажмите, чтобы вписать на режиме Ребёнка')
+            : tr('Что было нужно ребёнку — сначала добавь Уязвимого Ребёнка', 'Что было нужно ребёнку — сначала добавьте Уязвимого Ребёнка'),
           add: null, action: onOpenNeed, actionReady: hasChild },
       ]
     : [
@@ -95,13 +95,11 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   if (hasCoping && !hasChild)
     alerts.push({ text: 'За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?', level: 'info' });
   if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
-    alerts.push({ text: 'Назови потребность ребёнка — именно она становится целью терапии.', level: 'info' });
+    alerts.push({ text: tr('Назови потребность ребёнка — именно она становится целью терапии.', 'Назовите потребность ребёнка — именно она становится целью терапии.'), level: 'info' });
   // Fresh random picks — new set each time the panel opens or you reroll
-  const random = useMemo(
-    () => pickTips(kind, 3, []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [kind, reroll],
-  );
+  const tips = useModeMapTips();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const random = useMemo(() => pickTips(tips, kind, 3, []), [tips, kind, reroll]);
 
   return (
     <div style={{

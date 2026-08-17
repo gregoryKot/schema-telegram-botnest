@@ -38,11 +38,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   }, []);
 
   // resetKey=needIdx → list flashes back to loading on tab switch, then fills.
+  // Внутреннего catch → [] больше нет: отказ загрузки рисовал «Пока пусто —
+  // добавь первую практику» человеку, у которого практики есть. Сбой ≠ пусто.
   const practicesFetcher = useCallback(
-    () => api.getPractices(NEED_IDS[needIdx]).catch(() => [] as UserPractice[]),
+    () => api.getPractices(NEED_IDS[needIdx]),
     [needIdx],
   );
-  const { data: practices, reload: reloadPractices, setData: setPractices } =
+  const { data: practices, reload: reloadPractices, setData: setPractices, failed: practicesFailed } =
     useAsyncData<UserPractice[] | null>(practicesFetcher, null, needIdx);
 
   async function handleAdd() {
@@ -65,7 +67,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
 
   function handleDelete(id: number) {
     setPractices(prev => prev?.filter(x => x.id !== id) ?? null);
-    api.deletePractice(id).catch(() => {});
+    // Оптимистичное удаление: сбой возвращает список с сервера (иначе
+    // практика «исчезала», оставаясь в БД, и воскресала при следующем заходе).
+    api.deletePractice(id).catch(() => {
+      setErrorToast(true);
+      setTimeout(() => setErrorToast(false), 2500);
+      reloadPractices();
+    });
   }
 
   const needId = NEED_IDS[needIdx];
@@ -131,10 +139,14 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h3>{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h3>
             {practices && <span className="hint">{practices.length} {practices.length === 1 ? 'практика' : practices.length < 5 ? 'практики' : 'практик'}</span>}
           </div>
-          {!practices ? (
+          {practicesFailed ? (
+            <div role="alert" className="text-sm" style={{ color: 'var(--c-rose)' }}>
+              {tr('Не удалось загрузить практики. Проверь соединение и обнови страницу', 'Не удалось загрузить практики. Проверьте соединение и обновите страницу')}
+            </div>
+          ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="text-sm muted">Пока пусто – добавь первую практику ниже.</div>
+            <div className="text-sm muted">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
           ) : (
             practices.map(p => (
               <div key={p.id} className="list-line">

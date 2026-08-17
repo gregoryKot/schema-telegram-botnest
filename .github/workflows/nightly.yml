@@ -120,6 +120,24 @@ jobs:
       # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
       - name: mutation-храповик
         run: node scripts/check-mutation-ratchet.mjs
+      # Кризисная детекция (правило №7) — отдельный прогон command-раннером
+      # (файл в shared, тесты у него vitest'овые; jest-раннер Stryker её
+      # мутантов убить не может). Первый же замер 16.08.2026 нашёл живую
+      # дыру: «покончу с собой» не ловился.
+      # commandRunner гоняет vitest шареда — нужны его зависимости.
+      - run: npm ci --prefix shared
+      - name: Stryker по кризисной детекции
+        run: npm run mutation:crisis
+      - name: mutation-храповик кризисной детекции
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/crisis.json --baseline=scripts/mutation-crisis-baseline.json
+      # Durability оценок (rating outbox) — второй command-runner таргет
+      # (правило №3: единственная копия offline-очереди для обоих фронтендов,
+      # тесты у неё vitest'овые, jest-раннер Stryker её мутантов не убьёт).
+      # npm ci --prefix shared уже стоит выше, второй раз не нужен.
+      - name: Stryker по durability оценок (rating outbox)
+        run: npm run mutation:outbox
+      - name: mutation-храповик durability оценок
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/outbox.json --baseline=scripts/mutation-outbox-baseline.json
       # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
       - name: отчёт артефактом
         if: always()

@@ -7,6 +7,8 @@ import { Toggle } from '../settingsSheet/ui';
 // Toggle внутри — inert + aria-hidden, второго tab-стопа и клика нет.
 // Без эмодзи (фидбек владельца): в листах настройки выбирают по смыслу,
 // названия + подписи достаточно — то же правило, что у строк меню «плюс».
+// Без onToggle — строка-подпись без свитча (блок нельзя скрыть, только
+// переставить: «Фокус дня» на «Сегодня»).
 export function ToggleRow({
   title,
   sub,
@@ -17,22 +19,22 @@ export function ToggleRow({
 }: {
   title: string;
   sub: string;
-  on: boolean;
-  onToggle: () => void;
+  on?: boolean;
+  onToggle?: () => void;
   highlighted?: boolean;
   divider?: boolean;
 }) {
   return (
     <div
-      {...pressable(onToggle)}
-      role="switch"
-      aria-checked={on}
+      {...(onToggle ? pressable(onToggle) : {})}
+      role={onToggle ? 'switch' : undefined}
+      aria-checked={onToggle ? on : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
         padding: '13px 16px',
-        cursor: 'pointer',
+        cursor: onToggle ? 'pointer' : undefined,
         borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
         background: highlighted
           ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
@@ -46,9 +48,11 @@ export function ToggleRow({
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{sub}</div>
       </div>
-      <div aria-hidden inert style={{ pointerEvents: 'none' }}>
-        <Toggle on={on} onClick={() => {}} />
-      </div>
+      {onToggle && (
+        <div aria-hidden inert style={{ pointerEvents: 'none' }}>
+          <Toggle on={!!on} onClick={() => {}} />
+        </div>
+      )}
     </div>
   );
 }

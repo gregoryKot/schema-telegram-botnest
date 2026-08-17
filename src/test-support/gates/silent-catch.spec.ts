@@ -6,6 +6,7 @@
 // Проверяются оба исхода: гейт краснеет на регрессе И зеленеет на чистом
 // дереве. Второй не менее важен — ложно-красный гейт отключают через неделю
 // (CLAUDE.md, правило №11: гейт без теста на оба исхода не доказывает ничего).
+import { loadNamedPatterns, loadStringList } from './pattern-loader';
 import { runGate } from './gate-sandbox';
 
 describe('check-silent-catch.mjs', () => {
@@ -20,6 +21,42 @@ describe('check-silent-catch.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('src/foo.ts: новый файл с 1 тихими catch');
+    expect(res.stderr).toContain('[catch-empty-object]');
+  });
+
+  // Разрешение navigator.share задано С ОБЪЕКТОМ, потому что голое имя метода
+  // накрыло бы `s.share()` карточки-приглашения, где проглоченная ошибка
+  // значима. Пара тестов держит границу с обеих сторон.
+  it('разрешает navigator.share — отказ шторки не сбой, ссылка остаётся на экране', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        "navigator.share({ text: 'x' }).catch(() => {});",
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('разрешает navigator.share и когда prettier перенёс цепочку на строки', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': [
+        'navigator',
+        "  .share({ text: 'x' })",
+        '  .catch(() => {});',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('НЕ разрешает чужой .share() — одноимённый метод не наследует разрешение', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/foo.ts': ['s.share().catch(() => {});', ''].join('\n'),
+    });
+    expect(res.status).toBe(1);
     expect(res.stderr).toContain('[catch-empty-object]');
   });
 
@@ -141,6 +178,79 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
+  // Доставка ответа в Telegram — та же строка CLAUDE.md, что про reply/
+  // editMessageText. Гейт благословлял два метода и считал долгом три других
+  // в той же позиции («залогировали, теперь сообщаем человеку»).
+  it.each(['answerCbQuery', 'editMessageReplyMarkup'])(
+    'аллоу-листед ctx.%s() внутри error-хендлера — не считается',
+    (method) => {
+      const res = runGate('check-silent-catch.mjs', {
+        'scripts/silent-catch-baseline.json': JSON.stringify({}),
+        'src/telegram/telegram.service.ts': [
+          'try {',
+          '  await saveSettings();',
+          '} catch (err) {',
+          '  this.logger.error(err);',
+          `  await ctx.${method}('Не удалось сохранить').catch(() => null);`,
+          '}',
+          '',
+        ].join('\n'),
+      });
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+    },
+  );
+
+  // Граница аллоу-листа: доставка уведомления — не ответ на действие. Молча
+  // не дошедшее напоминание и есть тот сбой, ради которого гейт заведён,
+  // поэтому sendMessage остаётся на счётчике, хоть и живёт в том же файле.
+  it('sendMessage НЕ аллоу-листед — уведомление не имеет права падать молча', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'src/telegram/telegram.service.ts':
+        "this.bot.telegram.sendMessage(userId, 'Напоминание').catch(() => null);\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[catch-null]');
+  });
+
+  // FILE_ALLOW: телеметрия крашей — файл целиком best-effort примитив
+  // («никогда не бросает»), его catch — контракт, а не долг.
+  it('shared/src/api/clientErrorReport.ts — не считается целиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/api/clientErrorReport.ts': [
+        'export function createClientErrorReporter(base, source) {',
+        '  return function reportClientError(payload) {',
+        '    try {',
+        '      void fetch(base).catch(() => {});',
+        '    } catch {}',
+        '  };',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  // Граница FILE_ALLOW: те же catch в ЛЮБОМ другом новом файле — ошибка.
+  it('такой же код в другом файле — считается', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/api/otherReporter.ts': [
+        'export function report(base) {',
+        '  try {',
+        '    void fetch(base).catch(() => {});',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('новый файл с 2 тихими catch');
+  });
+
   // Не аллоу-листед вызов рядом с аллоу-листед — только законный молчит.
   it('не аллоу-листед .catch(() => null) на произвольном вызове — считается', () => {
     const res = runGate('check-silent-catch.mjs', {
@@ -242,5 +352,47 @@ describe('check-silent-catch.mjs', () => {
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+});
+
+// Механизм вместо добросовестности (как в gendered-forms.spec.ts): тесты выше
+// бьют по CLI известными строками и не пинят каждый паттерн по отдельности —
+// отключённый регэксп мог бы не уронить ни один из них. Здесь у КАЖДОГО
+// паттерна PATTERNS живой образец, который ловит именно он, а у каждого
+// разрешения CHAIN_ALLOW — причина его существования в списке. Файл правил
+// (scripts/silent-catch-rules.mjs) исполняется отсюда — иначе он был бы кодом,
+// который никто не проверяет (правило 14 CLAUDE.md, гейт check-unwatched-code).
+describe('правила гейта: каждый паттерн со своим образцом', () => {
+  const PATTERNS = loadNamedPatterns('silent-catch-rules.mjs', 'PATTERNS');
+  const CHAIN_ALLOW = loadStringList('silent-catch-rules.mjs', 'CHAIN_ALLOW');
+
+  const POSITIVE: Record<string, string> = {
+    'catch-empty-object': 'api.save(x).catch(() => {});',
+    'catch-empty-array': 'api.list().catch(() => []);',
+    'catch-null': 'api.one(id).catch(() => null);',
+    'catch-undefined': 'api.one(id).catch(() => undefined);',
+    'catch-zero': 'api.count().catch(() => 0);',
+    'catch-false': 'api.check().catch(() => false);',
+    'try-catch-empty': 'try { risky(); } catch {}',
+  };
+
+  it('в PATTERNS нет имени без образца в POSITIVE', () => {
+    const missing = PATTERNS.map((p) => p.name).filter((n) => !(n in POSITIVE));
+    expect(missing).toEqual([]);
+  });
+
+  it.each(PATTERNS.map((p) => [p.name] as const))(
+    'паттерн «%s» ловит свой образец',
+    (name) => {
+      const p = PATTERNS.find((x) => x.name === name)!;
+      expect(new RegExp(p.source, p.flags).test(POSITIVE[name])).toBe(true);
+    },
+  );
+
+  it('разрешения перечислены явно и включают точечное navigator.share', () => {
+    expect(CHAIN_ALLOW).toContain('navigator.share');
+    // Голого «share» в списке быть не должно: оно накрыло бы s.share()
+    // карточки-приглашения, где проглоченная ошибка значима.
+    expect(CHAIN_ALLOW).not.toContain('share');
   });
 });

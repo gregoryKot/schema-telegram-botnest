@@ -3,6 +3,7 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { TaskRow } from '../../components/tasks/TaskRow';
 import { TaskHistoryList } from '../../components/tasks/TaskHistoryList';
 import { plural } from '../today/helpers';
+import { useTr } from '../../utils/addressForm';
 
 // Лист «Мои цели» (активные задачи + история + добавление). Вынесено из
 // HelpSection.tsx (правило №10). Поведение не менялось.
@@ -21,6 +22,7 @@ export function AllTasksSheet({
   onReload: () => void;
   onAdd: () => void;
 }) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
       {/* Header */}
@@ -53,7 +55,10 @@ export function AllTasksSheet({
             }}
           >
             {tasks.length === 0
-              ? 'Поставь себе цель и иди к ней маленькими шагами'
+              ? tr(
+                  'Поставь себе цель и иди к ней маленькими шагами',
+                  'Поставьте себе цель и идите к ней маленькими шагами',
+                )
               : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
           </div>
         </div>
@@ -96,8 +101,10 @@ export function AllTasksSheet({
               margin: '0 auto',
             }}
           >
-            Пока нет активных целей. Поставь первую — большие изменения
-            начинаются с малого.
+            {tr(
+              'Пока нет активных целей. Поставь первую — большие изменения начинаются с малого.',
+              'Пока нет активных целей. Поставьте первую — большие изменения начинаются с малого.',
+            )}
           </div>
         </div>
       ) : (

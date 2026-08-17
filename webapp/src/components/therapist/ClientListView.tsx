@@ -16,6 +16,7 @@ interface Props {
   animKey: number;
   clients: TherapyClientSummary[];
   loading: boolean;
+  loadFailed: boolean;
   listTab: 'clients' | 'kanban';
   setListTab: React.Dispatch<React.SetStateAction<'clients' | 'kanban'>>;
   searchQuery: string;
@@ -24,18 +25,29 @@ interface Props {
   setFilterStatus: React.Dispatch<React.SetStateAction<'all' | 'active' | 'wait' | 'virtual'>>;
   allTasks: AllTasks;
   allTasksLoading: boolean;
+  allTasksFailed: boolean;
   setAllTasks: React.Dispatch<React.SetStateAction<AllTasks>>;
   setAllTasksLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setAllTasksFailed: React.Dispatch<React.SetStateAction<boolean>>;
   openClient: (client: TherapyClientSummary) => void;
   addClient: ReturnType<typeof useAddClient>;
 }
 
 export function ClientListView({
-  animKey, clients, loading, listTab, setListTab, searchQuery, setSearchQuery,
-  filterStatus, setFilterStatus, allTasks, allTasksLoading, setAllTasks, setAllTasksLoading,
+  animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
+  filterStatus, setFilterStatus, allTasks, allTasksLoading, allTasksFailed, setAllTasks, setAllTasksLoading, setAllTasksFailed,
   openClient, addClient,
 }: Props) {
   const tr = useTr();
+
+  // Сбой ≠ пусто: канбан не должен показать терапевту пустую доску без
+  // заданий на отказе запроса. Вынесено в функцию — переиспользуется и
+  // первым кликом по вкладке, и кнопкой повтора внутри KanbanView.
+  const loadAllTasks = () => {
+    setAllTasksFailed(false);
+    setAllTasksLoading(true);
+    api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasksFailed(true)).finally(() => setAllTasksLoading(false));
+  };
 
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
@@ -64,10 +76,7 @@ export function ClientListView({
             </button>
             <button className={`tab ${listTab === 'kanban' ? 'is-active' : ''}`} onClick={() => {
               setListTab('kanban');
-              if (!allTasks && !allTasksLoading) {
-                setAllTasksLoading(true);
-                api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasks([])).finally(() => setAllTasksLoading(false));
-              }
+              if (!allTasks && !allTasksLoading) loadAllTasks();
             }}>Задания</button>
           </div>
           {listTab === 'clients' && (<>
@@ -157,6 +166,8 @@ export function ClientListView({
           <KanbanView
             allTasks={allTasks}
             loading={allTasksLoading}
+            loadFailed={allTasksFailed}
+            onRetry={loadAllTasks}
             onOpenClient={(clientId) => {
               const client = clients.find(c => c.telegramId === clientId);
               if (client) openClient(client);
@@ -168,6 +179,12 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
+          ) : loadFailed ? (
+            // Сбой ≠ пусто (CLAUDE.md: никаких заглушек вместо данных) —
+            // терапевт с полным ростером не должен увидеть «клиентов нет».
+            <div style={{ padding: '24px 0', color: 'var(--accent-red)', fontSize: 14 }}>
+              {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
+            </div>
           ) : clients.length === 0 ? (
             <div style={{ padding: '24px 0', color: 'var(--text-faint)', fontSize: 14 }}>
               {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}

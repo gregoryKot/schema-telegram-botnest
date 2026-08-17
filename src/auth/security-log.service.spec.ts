@@ -83,14 +83,29 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
       service.log(event, { endpoint: 'x' });
       await flush();
       expect(mockedNotify).not.toHaveBeenCalled();
+      // Не-алертное событие всё равно попадает в обычный лог — молчит только DM.
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`[${event}]`),
+      );
     },
   );
 
-  it('a rejected admin DM never throws out of log() (fire-and-forget .catch)', async () => {
+  it('a rejected admin DM never throws out of log() (fire-and-forget .catch), and the failure to deliver is logged', async () => {
+    // Регресс: раньше .catch(() => null) — недоставка DM была невидима
+    // (см. правило №14 CLAUDE.md, инцидент 2026-08-08). Структурный лог
+    // выше в log() пишется всегда, но именно ФАКТ недоставки DM обязан
+    // тоже попасть в лог, иначе авария молчит на обоих концах.
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     mockedNotify.mockRejectedValueOnce(new Error('telegram + email both down'));
     const service = new SecurityLogService();
     expect(() => service.log('csrf_blocked', { endpoint: 'x' })).not.toThrow();
     await flush(); // let the rejected promise settle before the test ends
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('csrf_blocked'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('telegram + email both down'),
+    );
   });
 });
 

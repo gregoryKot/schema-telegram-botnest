@@ -193,7 +193,7 @@ describe('renderTemplate', () => {
     'renders legacy %s with soft text',
     (type) => {
       const result = renderTemplate(type);
-      expect(result!.text).toContain('Перерывы — часть процесса');
+      expect(result!.text).toContain('ничего не портит');
     },
   );
 

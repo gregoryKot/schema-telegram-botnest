@@ -38,7 +38,6 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-import { GamePage } from './pages/GamePage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
 // bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
@@ -104,7 +103,6 @@ const personalRoutes = [
   { path: '/articles',       element: <ArticlesListPage /> },
   { path: '/articles/:slug', element: <ArticlePage /> },
   { path: '/reviews',        element: <ReviewsPage /> },
-  { path: '/game',           element: <GamePage /> },
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
@@ -179,7 +177,7 @@ function AuthError() {
           Что-то<br /><span style={{ fontStyle: 'italic' }}>пошло не так</span>
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 36px' }}>
-          Авторизация не удалась. Попробуй снова или обратись к нам в Telegram.
+          Авторизация не удалась. Попробовать снова или написать нам в Telegram.
         </p>
         {reason && (
           <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 24px', fontFamily: 'monospace', wordBreak: 'break-all' }}>

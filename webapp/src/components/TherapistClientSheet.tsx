@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import type { TherapyClientSummary, UserTask } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
@@ -13,6 +13,7 @@ import { ClientOverviewTab } from './therapist/ClientOverviewTab';
 import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
+import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
 
 interface Props {
   view: 'list' | 'client';
@@ -28,11 +29,17 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  // Сбой ≠ пусто: терапевт с полным ростером в офлайне не должен видеть
+  // онбординг «клиентов нет» (тот же класс, что схемы клиента в ModeMapCanvas).
+  const [loadFailed, setLoadFailed] = useState(false);
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
   const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
+  // Сбой ≠ пусто: канбан «Задания» не должен показать терапевту пустую доску
+  // на отказе запроса (см. ClientListView.loadAllTasks).
+  const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
 
   function switchView(v: 'list' | 'client') {
@@ -48,11 +55,15 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   useEffect(() => {
     api.getTherapyClients().then(cl => {
       setClients(cl);
+      setLoadFailed(false);
       if (openClientIdProp) {
         const c = cl.find(x => x.telegramId === openClientIdProp);
         if (c) detail.openClient(c);
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {
+      setLoadFailed(true);
+      reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
+    }).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -101,6 +112,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           animKey={animKey}
           clients={clients}
           loading={loading}
+          loadFailed={loadFailed}
           listTab={listTab}
           setListTab={setListTab}
           searchQuery={searchQuery}
@@ -109,8 +121,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           setFilterStatus={setFilterStatus}
           allTasks={allTasks}
           allTasksLoading={allTasksLoading}
+          allTasksFailed={allTasksFailed}
           setAllTasks={setAllTasks}
           setAllTasksLoading={setAllTasksLoading}
+          setAllTasksFailed={setAllTasksFailed}
           openClient={detail.openClient}
           addClient={addClient}
         />
@@ -199,10 +213,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={async () => {
+          onCreated={() => {
             setShowAssign(false);
-            const tasks = await api.getTherapyTasksForClient(selectedClient.telegramId).catch(() => []);
-            setClientTasks(tasks);
+            void reloadKeepingShown(() => api.getTherapyTasksForClient(selectedClient.telegramId), setClientTasks);
           }}
           onClose={() => setShowAssign(false)}
         />

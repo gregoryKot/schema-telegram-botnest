@@ -122,7 +122,7 @@ export const FEEL_GATES: FeelGate[] = [
   {
     id: 'shame',
     emoji: '😳',
-    title: 'Стыдно или виноват',
+    title: 'Стыд или вина',
     hint: 'стыд и вина часто звучат чужим голосом',
     question: 'Кто это говорит внутри?',
     leaves: [

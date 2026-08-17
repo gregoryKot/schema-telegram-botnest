@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Кризисная детекция в письме уязвимому ребёнку (CLAUDE.md, правило №7).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LetterEx } from './LetterEx';
 
@@ -100,5 +100,57 @@ describe('LetterEx — кризисная детекция', () => {
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Дорогой я, всё будет хорошо.' } });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+describe('LetterEx — сбой сохранения не теряет письмо', () => {
+  // Регрессия: сбой createLetter глушился, а экран говорил «написано» —
+  // 15–25 минут работы терялись без следа. В мини-аппе (LetterToSelf) этот
+  // класс уже закрыт; здесь та же гарантия: подтверждение только после
+  // успеха, при отказе текст остаётся в поле.
+  it('отказ createLetter: видна ошибка, письмо в поле, onComplete не вызван', async () => {
+    mockApi.createLetter.mockRejectedValue(new Error('offline'));
+    const onComplete = vi.fn();
+    render(
+      <MemoryRouter>
+        <LetterEx onBack={vi.fn()} onComplete={onComplete} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Тебе нужна была поддержка.' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Запечатать письмо/ }));
+    });
+
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить письмо');
+    // Экран «написано.» не показан, текст остался в редактируемом поле.
+    expect(screen.queryByText(/написано/)).toBeNull();
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+      'Тебе нужна была поддержка.',
+    );
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('повторная попытка после отказа успешна — письмо запечатано', async () => {
+    mockApi.createLetter
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({});
+    renderSheet();
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Второй заход.' },
+    });
+    const sealBtn = () => screen.getByRole('button', { name: /Запечатать письмо/ });
+    await act(async () => {
+      fireEvent.click(sealBtn());
+    });
+    expect(screen.getByRole('alert')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(sealBtn());
+    });
+    expect(screen.getByText('Второй заход.')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(mockApi.createLetter).toHaveBeenCalledTimes(2);
   });
 });

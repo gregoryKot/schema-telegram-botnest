@@ -23,13 +23,14 @@ import {
   type FlowNode, type FlowEdge,
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
 } from './modeMapFlow';
-import { useModeMapExport } from './useModeMapExport';
 import { MMIcon } from './modeMapIcons';
+import { useTr } from '../utils/addressForm';
 import {
   TbBtn,
   TbSep,
   Dropdown,
 } from './modeMap/ToolbarControls';
+import { DownloadMenu } from './modeMap/DownloadMenu';
 
 export interface CanvasProps {
   clientId: number; mapId: number; kind: ModeMapKind;
@@ -54,6 +55,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
+  const tr = useTr();
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
@@ -63,20 +65,19 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [schemasOpen, setSchemasOpen] = useState(false);
-  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | null>(null);
+  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | 'failed' | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const tplWrapRef = useRef<HTMLDivElement>(null);
-  const dlWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
   const schemasWrapRef = useRef<HTMLDivElement>(null);
 
-  // Lazy-load the client's identified schemas the first time the panel opens
+  // Схемы клиента грузятся при первом открытии панели; 'failed' ≠ пустой список
   const openSchemas = useCallback(() => {
     setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
     if (clientSchemaIds === null) {
       api.getConceptualization(clientId)
         .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
-        .catch(() => setClientSchemaIds([]));
+        .catch(() => setClientSchemaIds('failed')); // не [] — иначе «схем нет» вместо «не загрузилось»
     }
   }, [clientId, clientSchemaIds]);
   // Desktop (fine pointer) — keyboard hints only make sense there
@@ -160,9 +161,6 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     setSelectedNodeId(child.id); setSelectedEdgeId(null);
     setTimeout(() => window.dispatchEvent(new CustomEvent('modemap-focus-need')), 40);
   }, [nodesRef, setSelectedNodeId, setSelectedEdgeId]);
-
-  // Export (PNG / PDF) via shared hook
-  const { exporting, onExportPng, onExportPdf } = useModeMapExport(nodes);
 
   // Apply changes; snapshot history at drag/resize start, save at end.
   const draggingRef = useRef(false);
@@ -401,11 +399,11 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
                   <div style={dropHeadStyle}>Схемы клиента</div>
                   <div style={{ padding: '0 10px 6px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>
-                    {selectedNodeId ? 'Нажми, чтобы привязать к выбранному режиму' : 'Сначала выбери режим на холсте'}
+                    {selectedNodeId ? tr('Нажми, чтобы привязать к выбранному режиму', 'Нажмите, чтобы привязать к выбранному режиму') : tr('Сначала выбери режим на холсте', 'Сначала выберите режим на холсте')}
                   </div>
                   {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
-                  {clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
-                  {clientSchemaIds?.map(sid => {
+                  {clientSchemaIds === 'failed' ? <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent-red)' }}>Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
+                  {Array.isArray(clientSchemaIds) && clientSchemaIds.map(sid => {
                     const s = getSchemaById(sid);
                     if (!s) return null;
                     return (
@@ -423,16 +421,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             <TbBtn label="Подсказки: клиническая цепочка и советы" onClick={toggleGuide} active={showGuide}><MMIcon name="bulb" size={17} /></TbBtn>
             <TbBtn label="Легенда: формы и цвета" onClick={toggleLegend} active={showLegend}><MMIcon name="info" size={17} /></TbBtn>
             <TbSep />
-            <div ref={dlWrapRef} style={{ position: 'relative' }}>
-              <TbBtn label="Скачать карту (PNG / PDF)" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
-                active={dlOpen} caret disabled={nodes.length === 0}><MMIcon name="download" size={17} /></TbBtn>
-              {dlOpen && (
-                <Dropdown anchorRef={dlWrapRef} onClose={() => setDlOpen(false)}>
-                  <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>Картинка PNG</button>
-                  <button disabled={exporting} onClick={() => { onExportPdf(); setDlOpen(false); }} style={menuItemStyle}>Документ PDF</button>
-                </Dropdown>
-              )}
-            </div>
+            <DownloadMenu nodes={nodes} open={dlOpen}
+              onToggle={() => { setDlOpen(o => !o); setTplOpen(false); }}
+              onClose={() => setDlOpen(false)} />
             {isDesktop && (
               <div ref={keysWrapRef} style={{ position: 'relative' }}>
                 <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}><MMIcon name="keyboard" size={17} /></TbBtn>

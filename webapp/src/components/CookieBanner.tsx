@@ -84,7 +84,7 @@ export function CookieBanner() {
               Немного о куки
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики включаем только с вашего согласия.{' '}
+              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики включаем только после согласия.{' '}
               <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
                 Подробнее
               </a>
