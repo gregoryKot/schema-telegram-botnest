@@ -12,6 +12,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { AllTasksSheet } from './AllTasksSheet';
+import { AddressFormContext } from '../../utils/addressForm';
 import type { UserTask } from '../../apiTypes';
 
 vi.mock('../../api', () => ({
@@ -59,8 +60,36 @@ describe('AllTasksSheet — пустое состояние (без выдума
     expect(
       screen.getByText(/Поставь себе цель и иди к ней маленькими шагами/),
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Поставь первую — большие изменения начинаются с малого/,
+      ),
+    ).toBeTruthy();
     // Нет ни одной цифры-счётчика активных целей на пустом аккаунте.
     expect(screen.queryByText(/\d+\s+активн/)).toBeNull();
+  });
+
+  it('звучит на «вы» — обе строки приглашения', () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <AllTasksSheet
+          tasks={[]}
+          taskHistory={[]}
+          onClose={() => {}}
+          onOpenTask={() => {}}
+          onReload={() => {}}
+          onAdd={() => {}}
+        />
+      </AddressFormContext.Provider>,
+    );
+    expect(
+      screen.getByText(/Поставьте себе цель и идите к ней маленькими шагами/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Поставьте первую — большие изменения начинаются с малого/,
+      ),
+    ).toBeTruthy();
   });
 });
 

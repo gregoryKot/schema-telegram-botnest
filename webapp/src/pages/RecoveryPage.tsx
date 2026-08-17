@@ -44,10 +44,10 @@ function RecoveryRequest() {
     return (
       <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
         <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление</div>
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>Проверь почту</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>{tr('Проверь почту', 'Проверьте почту')}</h1>
         <div className="text-md muted" style={{ lineHeight: 1.6 }}>
           Если этот email привязан к аккаунту — на него отправлено письмо со ссылкой.
-          Ссылка действует 30 минут. Не пришло? Проверь спам.
+          Ссылка действует 30 минут. {tr('Не пришло? Проверь спам.', 'Не пришло? Проверьте спам.')}
         </div>
         <button onClick={() => navigate('/login')} className="btn btn-secondary" style={{ marginTop: 24 }}>
           На страницу входа

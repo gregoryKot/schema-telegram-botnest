@@ -81,7 +81,7 @@ export class TherapistRequestNotifyService {
         'notifyAdmin: ADMIN_ID not set — falling back to email',
       );
       await notifyAdminWithFallback(
-        this.plainText(req),
+        this.adminPlainText(req),
         `🩺 Заявка на роль терапевта #${req.id}`,
       );
       return;
@@ -110,13 +110,15 @@ export class TherapistRequestNotifyService {
         `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
       );
       await notifyAdminWithFallback(
-        this.plainText(req),
+        this.adminPlainText(req),
         `🩺 Заявка на роль терапевта #${req.id}`,
       );
     }
   }
 
-  private plainText(req: {
+  // Только для ADMIN_ID (см. notifyAdmin выше) — фолбэк-DM/e-mail владельцу,
+  // addressForm обычного пользователя тут ни при чём.
+  private adminPlainText(req: {
     id: number;
     userId: bigint;
     fullName: string;

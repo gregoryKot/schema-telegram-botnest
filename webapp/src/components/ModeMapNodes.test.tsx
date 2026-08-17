@@ -156,6 +156,33 @@ describe('ModeMapNodes — тулбар узла: толщина контура 
     fireEvent.click(screen.getByLabelText('Удалить'));
     expect(readModel(container).nodes).toHaveLength(0);
   });
+
+  it('тултипы «нажми, чтобы сменить» звучат на «ты»/«вы»', () => {
+    renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'ty',
+    );
+    fireEvent.click(nodeEl('Триггер'));
+    expect(screen.getByLabelText('Толщина контура').title).toContain(
+      '(нажми, чтобы сменить)',
+    );
+    expect(screen.getByLabelText('Размер текста').title).toContain(
+      '(нажми, чтобы сменить)',
+    );
+    cleanup();
+
+    renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'vy',
+    );
+    fireEvent.click(nodeEl('Триггер'));
+    expect(screen.getByLabelText('Толщина контура').title).toContain(
+      '(нажмите, чтобы сменить)',
+    );
+    expect(screen.getByLabelText('Размер текста').title).toContain(
+      '(нажмите, чтобы сменить)',
+    );
+  });
 });
 
 describe('ModeMapNodes — бейдж партнёра (карта пары)', () => {

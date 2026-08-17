@@ -189,6 +189,20 @@ describe('HistoryView — день с реальными данными', () => 
     expect(screen.getByText('Стоит уделить внимание')).toBeTruthy();
     expect(screen.getByText(/Остаётся низкой несколько дней подряд/)).toBeTruthy();
   });
+
+  it('подсказка «нажми на потребность» звучит в форме «ты»', async () => {
+    await act(async () => {
+      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'ty');
+    });
+    expect(screen.getByText('нажми на потребность')).toBeTruthy();
+  });
+
+  it('подсказка «нажми на потребность» звучит в форме «вы»', async () => {
+    await act(async () => {
+      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'vy');
+    });
+    expect(screen.getByText('нажмите на потребность')).toBeTruthy();
+  });
 });
 
 describe('HistoryView — вкладка «Неделя»', () => {

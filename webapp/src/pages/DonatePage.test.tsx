@@ -109,6 +109,6 @@ describe('DonatePage — ошибка API', () => {
     render(<DonatePage />);
     fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
 
-    await screen.findByText('Не получилось. Попробуйте ещё раз.');
+    await screen.findByText('Не получилось. Попробовать ещё раз.');
   });
 });

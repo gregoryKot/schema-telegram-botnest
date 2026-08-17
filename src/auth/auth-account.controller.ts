@@ -191,7 +191,7 @@ export class AuthAccountController {
       );
       // Friendly message to client — no Prisma internals leaked.
       throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.',
+        'Не удалось объединить аккаунты. Админ уведомлён — стоит попробовать позже.',
       );
     }
 

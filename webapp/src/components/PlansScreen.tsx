@@ -93,7 +93,10 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65,
               marginBottom: 24, maxWidth: 280, margin: '0 auto 24px',
             }}>
-              Планы создаются в трекере – выбери потребность с низкой оценкой и нажми «Запланировать практику»
+              {tr(
+                'Планы создаются в трекере – выбери потребность с низкой оценкой и нажми «Запланировать практику»',
+                'Планы создаются в трекере – выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
+              )}
             </div>
             {onOpenTracker && (
               <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{

@@ -4,6 +4,7 @@ import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualiza
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useTr } from '../../utils/addressForm';
 
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
@@ -14,6 +15,7 @@ interface Params {
 }
 
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
+  const tr = useTr();
   const openClientIdRef = useRef<number | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
@@ -216,7 +218,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       setConceptError('');
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch { setSaveStatus('idle'); setConceptError('Не удалось сохранить изменения. Попробуйте ещё раз.'); } // БАГ (найден тестом): раньше не сообщал об ошибке
+    } catch { setSaveStatus('idle'); setConceptError(tr('Не удалось сохранить изменения. Попробуй ещё раз.', 'Не удалось сохранить изменения. Попробуйте ещё раз.')); } // БАГ (найден тестом): раньше не сообщал об ошибке
   }
 
   function toggleSchemaId(id: string) {

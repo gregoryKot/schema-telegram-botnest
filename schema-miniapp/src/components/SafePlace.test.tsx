@@ -146,4 +146,34 @@ describe('SafePlace — сохранение: read-after-write и видимая
       expect(screen.getByText(/попробуйте ещё раз/)).toBeTruthy(),
     );
   });
+
+  it('подпись экрана просмотра («Прочти — и почувствуй») звучит в обеих формах', async () => {
+    const tyTextarea = renderWithForm(
+      <SafePlace onClose={() => {}} />,
+      'ty',
+    ).getByPlaceholderText(
+      'Это небольшой уютный лес недалеко от дома. Я слышу птиц...',
+    );
+    await act(async () => {});
+    fireEvent.change(tyTextarea, { target: { value: 'Тихий лес' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Прочти — и почувствуй')).toBeTruthy(),
+    );
+    cleanup();
+    localStorage.clear();
+
+    const vyTextarea = renderWithForm(
+      <SafePlace onClose={() => {}} />,
+      'vy',
+    ).getByPlaceholderText(
+      'Это небольшой уютный лес недалеко от дома. Я слышу птиц...',
+    );
+    await act(async () => {});
+    fireEvent.change(vyTextarea, { target: { value: 'Тихий лес' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Прочтите — и почувствуйте')).toBeTruthy(),
+    );
+  });
 });

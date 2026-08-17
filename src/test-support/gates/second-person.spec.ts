@@ -16,7 +16,7 @@
 // формулировку в обычном компоненте — без контроля тест не доказывает, что
 // послабление узкое, а не дыра.
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns, loadRegexList } from './pattern-loader';
+import { loadNamedPatterns, loadRegexList, callExport } from './pattern-loader';
 
 describe('check-second-person.mjs', () => {
   it('новый файл с захардкоженным «ты»-местоимением вне tr() — exit 1', () => {
@@ -377,6 +377,8 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',
+      // Заявка терапевта в личку владельцу (adminPlainText).
+      'src/therapy/therapist-request.notify.ts',
       // До входа — гость/разовый клиент, форма ещё не выбрана.
       'webapp/src/pages/LoginPage.tsx',
       'webapp/src/pages/BookingPaidPage.tsx',
@@ -401,6 +403,44 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
     expect(unmatched).toEqual([]);
   });
 
+  // Пара форм, переданная JSX-атрибутами: вилка стоит в компоненте-получателе
+  // (`SaveErrorNote` делает `{tr(ty, vy)}`), то есть строки уже в механике.
+  // Гейт понимал только объектную запись `{ty: '…', vy: '…'}` и считал долгом
+  // все семь вызовов SaveErrorNote (свип 2026-08).
+  it('пара ty=/vy= JSX-атрибутами на соседних строках — зелено', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx': [
+        'export const A = () => (',
+        '  <SaveErrorNote',
+        '    ty="Не удалось сохранить — попробуй ещё раз."',
+        '    vy="Не удалось сохранить — попробуйте ещё раз."',
+        '  />',
+        ');',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('пара ty=/vy= в одну строку — тоже зелено', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx':
+        'export const A = () => <Note ty="Попробуй ещё" vy="Попробуйте ещё" />;\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('одиночный ty= без парного vy= — по-прежнему долг', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx':
+        'export const A = () => <Note ty="Попробуй ещё" />;\n',
+    });
+    expect(res.status).toBe(1);
+  });
+
   it('EXCLUDE не шире, чем нужно: LinkDevicePage.tsx НЕ распознаётся ни одним', () => {
     // Ровно та зона, которую координатор предложил исключить, а разбор
     // показал реальный долг (страница требует authenticated). Держит EXCLUDE
@@ -409,5 +449,38 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       new RegExp(p.source, p.flags).test('webapp/src/pages/LinkDevicePage.tsx'),
     );
     expect(matched).toEqual([]);
+  });
+});
+
+// Слой распознавания разведённых форм (scripts/second-person-blanking.mjs)
+// исполняется отсюда напрямую: иначе он был бы кодом, который никто не
+// проверяет (правило 14, гейт check-unwatched-code). Проверяем его главное
+// свойство — стирать содержимое, СОХРАНЯЯ длину строк и их количество: на
+// этом держится верная нумерация строк в отчёте гейта.
+describe('second-person-blanking.mjs: гашение сохраняет разметку строк', () => {
+  it('кавычки-цитаты гасятся, число строк не меняется', () => {
+    const src = ['const a = 1;', 'const q = "«Где ты это чувствуешь?»";'].join(
+      '\n',
+    );
+    const out = callExport(
+      'second-person-blanking.mjs',
+      'blankQuotedSpans',
+      src,
+    );
+    expect(out.split('\n')).toHaveLength(2);
+    expect(out).not.toContain('чувствуешь');
+  });
+
+  it('пара ty/vy гасится, длина строк сохраняется', () => {
+    const src = ["  ty: 'Попробуй ещё',", "  vy: 'Попробуйте ещё',"].join('\n');
+    const out = callExport(
+      'second-person-blanking.mjs',
+      'blankTyVyObjectPairs',
+      src,
+    );
+    const lines = out.split('\n');
+    expect(lines[0]).toHaveLength(src.split('\n')[0].length);
+    expect(lines[1]).toHaveLength(src.split('\n')[1].length);
+    expect(out).not.toContain('Попробуй');
   });
 });

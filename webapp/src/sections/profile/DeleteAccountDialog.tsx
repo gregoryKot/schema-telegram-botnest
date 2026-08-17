@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { useTr } from '../../utils/addressForm';
 
 // Подтверждение удаления аккаунта. Вынесено из ProfileSection (файл-должник
 // сверх 300 строк — правило №10 CLAUDE.md: он обязан таять, а не пухнуть) и
@@ -11,6 +12,7 @@ import { api } from '../../api';
 // это худший из возможных исходов, поэтому текст ошибки прямо говорит, что
 // данные на месте.
 export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,7 +27,10 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
       .catch(() => {
         setDeleting(false);
         setError(
-          'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
+          tr(
+            'Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.',
+            'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
+          ),
         );
       });
   }

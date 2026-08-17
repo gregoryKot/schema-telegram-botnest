@@ -61,7 +61,7 @@ export function DonatePage() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...field, marginBottom: 20 }} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
-            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробуйте ещё раз.</p>}
+            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробовать ещё раз.</p>}
             <button onClick={submit} disabled={status === 'loading' || amount < 10} style={{
               width: '100%', padding: '15px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12,

@@ -27,9 +27,12 @@ HTMLElement.prototype.scrollIntoView = vi.fn();
 
 const NEED: Need = { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привязанность' };
 
-function renderSheet(props: Partial<Parameters<typeof NeedTodaySheet>[0]> = {}) {
+function renderSheet(
+  props: Partial<Parameters<typeof NeedTodaySheet>[0]> = {},
+  form: 'ty' | 'vy' = 'ty',
+) {
   return render(
-    <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
       <MemoryRouter>
         <NeedTodaySheet need={NEED} value={5} onChange={vi.fn()} onClose={vi.fn()} {...props} />
       </MemoryRouter>
@@ -87,6 +90,16 @@ describe('NeedTodaySheet', () => {
   it('высокая оценка (=10) показывает поддерживающую подпись «Хороший день»', () => {
     renderSheet({ value: 10 });
     expect(screen.getByText(/Хороший день/)).toBeTruthy();
+  });
+
+  it('поддерживающая подпись звучит в форме «ты»', () => {
+    renderSheet({ value: 10 }, 'ty');
+    expect(screen.getByText('Хороший день – заметь это')).toBeTruthy();
+  });
+
+  it('поддерживающая подпись звучит в форме «вы»', () => {
+    renderSheet({ value: 10 }, 'vy');
+    expect(screen.getByText('Хороший день – заметьте это')).toBeTruthy();
   });
 
   it('оценка выше 3 НЕ показывает блок «Что с этим сделать?»', () => {

@@ -390,7 +390,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           <label style={labelStyle} htmlFor="mm-node-need">Неудовлетворённая потребность</label>
           <input id="mm-node-need" ref={needRef} style={inputStyle} list="modemap-needs" value={node.data.unmetNeed ?? ''}
             onChange={e => patchData({ unmetNeed: e.target.value || undefined })}
-            placeholder="Выбери или впиши свою…" />
+            placeholder={tr('Выбери или впиши свою…', 'Выберите или впишите свою…')} />
           <datalist id="modemap-needs">
             {CORE_NEEDS.map(n => <option key={n} value={n} />)}
           </datalist>

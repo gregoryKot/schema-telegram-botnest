@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../utils/addressForm';
 import { PlansScreen } from './PlansScreen';
 
 const getPlanHistory = vi.fn();
@@ -26,11 +27,13 @@ afterEach(() => {
   cleanup();
 });
 
-function renderScreen(onOpenTracker = vi.fn()) {
+function renderScreen(onOpenTracker = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   return render(
-    <MemoryRouter>
-      <PlansScreen onClose={vi.fn()} onOpenTracker={onOpenTracker} />
-    </MemoryRouter>,
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter>
+        <PlansScreen onClose={vi.fn()} onOpenTracker={onOpenTracker} />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
   );
 }
 
@@ -49,6 +52,22 @@ describe('PlansScreen — пустое состояние', () => {
     renderScreen(onOpenTracker);
     fireEvent.click(await screen.findByText('Открыть трекер →'));
     expect(onOpenTracker).toHaveBeenCalled();
+  });
+
+  it('объяснение пустого состояния звучит на «ты»', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen(vi.fn(), 'ty');
+    expect(
+      await screen.findByText(/выбери потребность с низкой оценкой и нажми/),
+    ).toBeTruthy();
+  });
+
+  it('объяснение пустого состояния звучит на «вы»', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen(vi.fn(), 'vy');
+    expect(
+      await screen.findByText(/выберите потребность с низкой оценкой и нажмите/),
+    ).toBeTruthy();
   });
 });
 

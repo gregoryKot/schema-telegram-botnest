@@ -5,6 +5,7 @@ import { MMIcon } from './modeMapIcons';
 import { getSchemaById } from '../schemaTherapyData';
 import { TYPE_COLORS } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 export interface ModeNodeData {
   label: string;
@@ -71,6 +72,7 @@ const next = <T,>(arr: T[], cur: T): T => arr[(arr.indexOf(cur) + 1) % arr.lengt
 // Contextual toolbar shown above a selected node
 function NodeTools({ id, selected, data }: { id: string; selected?: boolean; data?: ModeNodeData }) {
   const actions = useNodeActions();
+  const tr = useTr();
   if (!actions) return null;
   const sw = data?.strokeWidth ?? 'normal';
   const fz = data?.fontSize ?? 'md';
@@ -87,14 +89,14 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
         boxShadow: 'var(--shadow-2)' }}>
         <button style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {sep}
-        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (нажми, чтобы сменить)`}
+        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Толщина контура"
           onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
           <span style={{ display: 'inline-block', width: 16, height: sw === 'thin' ? 1.5 : sw === 'bold' ? 4 : 2.5,
             borderRadius: 3, background: 'var(--text-sub)' }} />
         </button>
         <button style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
-          title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (нажми, чтобы сменить)`}
+          title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Размер текста"
           onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
         {sep}

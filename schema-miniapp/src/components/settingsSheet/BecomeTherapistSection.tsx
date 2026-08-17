@@ -217,7 +217,10 @@ export function BecomeTherapistSection({
             <textarea
               value={reqMsg}
               onChange={(e) => setReqMsg(e.target.value)}
-              placeholder="Расскажи о себе или своём подходе"
+              placeholder={tr(
+                'Расскажи о себе или своём подходе',
+                'Расскажите о себе или своём подходе',
+              )}
               rows={3}
               style={{
                 width: '100%',

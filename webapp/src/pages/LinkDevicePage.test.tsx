@@ -18,7 +18,15 @@ import { useAuth } from '../auth/authContext';
 import { api } from '../api';
 
 vi.mock('../auth/authContext', () => ({ useAuth: vi.fn() }));
-vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
+// getSettings — LinkDeviceContent ставит свой AddressFormProvider (страница
+// вне RequireAuth) и тут же грузит форму через него; 'vy' сохраняет
+// существующие ассерты на «вы»-текст ниже без переписывания.
+vi.mock('../api', () => ({
+  api: {
+    trackEvent: vi.fn(),
+    getSettings: vi.fn().mockResolvedValue({ addressForm: 'vy' }),
+  },
+}));
 
 const mockedAuth = useAuth as unknown as ReturnType<typeof vi.fn>;
 

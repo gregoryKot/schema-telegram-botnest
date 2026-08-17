@@ -125,7 +125,7 @@ describe('SubscribePage — ошибка API', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Оформить за/ }));
 
-    await screen.findByText('Не получилось. Попробуйте ещё раз.');
+    await screen.findByText('Не получилось. Попробовать ещё раз.');
   });
 });
 
@@ -165,7 +165,7 @@ describe('SubscribePage — управление подпиской по ток�
     window.history.pushState({}, '', '/subscribe?token=tok1');
     render(<SubscribePage />);
 
-    await screen.findByText('Ваша подписка');
+    await screen.findByText('Подписка');
     expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
   });
 });
