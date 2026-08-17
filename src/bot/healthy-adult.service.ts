@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HEALTHY_ADULT_PHRASES } from './healthy-adult.data';
 import { prepareImport, type ImportPreparation } from './healthy-adult.import';
+import { blockingIssues, issuesToReason } from './healthy-adult.quality';
 
 /** Остаток пула: сколько включённых фраз ещё не звучало и на сколько хватит. */
 export interface HealthyAdultPoolStatus {
@@ -132,6 +137,12 @@ export class HealthyAdultService {
   }
 
   async create(text: string): Promise<HealthyAdultPhraseRow> {
+    const issues = blockingIssues(text);
+    if (issues.length) {
+      throw new BadRequestException(
+        `Фраза не принята: ${issuesToReason(issues)}. Пул читают и женщины — перепиши без мужского рода.`,
+      );
+    }
     const max = await this.prisma.healthyAdultPhrase.aggregate({
       _max: { sortOrder: true },
     });
@@ -157,6 +168,18 @@ export class HealthyAdultService {
       raw,
       existing.map((r) => r.text),
     );
+    // Проверка качества — после дублей: одинаковые правила с гейтами
+    // репозитория, но пул живёт в БД и мимо них проходит (реальный пропуск
+    // 2026-08 — фраза с мужским родом во всём тексте доехала до прода).
+    const kept: string[] = [];
+    for (const text of report.accepted) {
+      const issues = blockingIssues(text);
+      if (issues.length)
+        report.rejected.push({ text, reason: issuesToReason(issues) });
+      else kept.push(text);
+    }
+    report.accepted = kept;
+
     if (report.accepted.length === 0) return { created: [], report };
 
     const max = await this.prisma.healthyAdultPhrase.aggregate({
@@ -175,6 +198,14 @@ export class HealthyAdultService {
     patch: { text?: string; enabled?: boolean },
   ): Promise<HealthyAdultPhraseRow> {
     await this.ensureExists(id);
+    if (patch.text !== undefined) {
+      const issues = blockingIssues(patch.text);
+      if (issues.length) {
+        throw new BadRequestException(
+          `Фраза не принята: ${issuesToReason(issues)}. Пул читают и женщины — перепиши без мужского рода.`,
+        );
+      }
+    }
     return this.prisma.healthyAdultPhrase.update({
       where: { id },
       data: {
