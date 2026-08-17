@@ -58,3 +58,11 @@ jobs:
           # маркер стабилен между деплоями, не ловит false negative на
           # каждой пересборке.
           echo "$body" | grep -q '/app/assets/index.js'
+      - name: /game/ — 200 и реально раздаёт игру, не SPA-fallback сайта
+        run: |
+          # game/ заморожен и вне тестов/гейтов (SHIELD_PROMPT, «Известные
+          # дыры») — этот маркер единственный наблюдатель поверхности.
+          # SPA-fallback отдаёт 200 с HTML сайта на ЛЮБОЙ путь, поэтому
+          # различает только маркер тела: заголовок игры, не сайта.
+          body=$($CURL https://schemehappens.ru/game/)
+          echo "$body" | grep -q 'Schema Runner'

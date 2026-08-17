@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import { api } from '../api';
+import { api, ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
@@ -107,12 +107,14 @@ export function ArticlePage() {
   // resetKey=slug → back to the loading state (undefined) on navigation between
   // articles. null = настоящий 404 от сервера. Любой другой отказ (сеть, 5xx)
   // пробрасывается в хук и поднимает `failed`: раньше `.catch(() => null)`
-  // превращал обрыв сети в экран «404» на существующей статье.
+  // превращал обрыв сети в экран «404» на существующей статье. Ветвление по
+  // ApiError.status, не по тексту message — текст теперь может приходить с
+  // сервера и меняться.
   const articleFetcher = useCallback(
     (): Promise<Article | null | undefined> =>
       slug
         ? api.getArticle(slug).catch((err: unknown) => {
-            if (err instanceof Error && err.message === 'API error: 404') return null;
+            if (err instanceof ApiError && err.status === 404) return null;
             throw err;
           })
         : Promise.resolve(undefined),

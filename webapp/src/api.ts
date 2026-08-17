@@ -37,10 +37,23 @@ async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): P
   }
 }
 
+// Ошибка HTTP-ответа со статусом ПОЛЕМ, а не подстрокой в message: потребители
+// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`, поэтому текст
+// message можно улучшать серверным `message` без слома этих проверок. Зеркало
+// HttpStatusError мини-аппа (apiClient.ts, правило №3); явное поле вместо
+// параметр-свойства — erasableSyntaxOnly в tsc -b.
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 // Текст ошибки — из поля `message` тела, если распарсилось, иначе код статуса.
 // Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
 // остаётся код статуса; глушим только попытку его прочитать, не саму ошибку.
-async function apiError(res: Response): Promise<Error> {
+async function apiError(res: Response): Promise<ApiError> {
   let msg = `API error: ${res.status}`;
   try {
     const j = await res.json();
@@ -48,12 +61,12 @@ async function apiError(res: Response): Promise<Error> {
   } catch {
     /* тело не распарсилось как JSON — остаётся код статуса */
   }
-  return new Error(msg);
+  return new ApiError(res.status, msg);
 }
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }
 
@@ -91,7 +104,7 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
 
 async function del(path: string, body?: unknown): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders(), ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) throw await apiError(res);
 }
 
 // Admin booking requests: the admin key goes in the x-admin-key header so it
