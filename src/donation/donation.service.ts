@@ -53,18 +53,46 @@ export class DonationService {
     }
     const source = dto.source === 'game' ? 'game' : 'app';
 
-    const row = await this.prisma.donation.create({
-      data: encryptRecord(
-        {
-          amount,
-          source,
-          email: dto.email?.trim() || null,
-          comment: dto.comment?.trim() || null,
-          status: 'pending',
-        },
-        SCHEMA,
-      ),
-    });
+    let row: { id: number };
+    try {
+      row = await this.prisma.donation.create({
+        data: encryptRecord(
+          {
+            amount,
+            source,
+            email: dto.email?.trim() || null,
+            comment: dto.comment?.trim() || null,
+            status: 'pending',
+          },
+          SCHEMA,
+        ),
+      });
+    } catch (e) {
+      // Известная дыра (docs/SHIELD_PROMPT.md): DonationController.donate()
+      // не оборачивает create() в try/catch — если сам INSERT падает (БД
+      // недоступна), исключение раньше молча улетало клиенту 500-кой, и
+      // никто не узнавал. Хуже, чем «оплата прошла, а донат не
+      // подтвердился» (payment.controller.ts): здесь нет даже строки в БД,
+      // за которую можно зацепиться при ручной сверке.
+      //
+      // Канал — ТОТ ЖЕ, что уже используют соседние денежные пути в
+      // payment.controller.ts для «PAID, но запись не подтвердилась»:
+      // this.logger.error() со стабильным текстом (троттлинг по тексту —
+      // AlertLogger, main.ts, 60с) + this.notify.alertAdmin() (DM в Telegram
+      // с e-mail фолбэком). Новый канал не заводим.
+      //
+      // Пробрасываем ДАЛЬШЕ: DonationController ничего не ловит, поэтому
+      // исключение и так превратится в HTTP-ошибку клиенту — тихий успех
+      // здесь был бы нечестен (донат не создан, а UI сказал бы «спасибо»).
+      this.logger.error(
+        `Donation create() DB write failed: ${(e as Error).message}`,
+      );
+      await this.notify.alertAdmin(
+        `🚨 <b>Донат не создался — ошибка БД</b>\n${amount} ₽ (${source}). ` +
+          `Запись не сохранилась, проверьте вручную, оплата могла не пройти.`,
+      );
+      throw e;
+    }
     this.logger.log(`Donation ${row.id} created (${amount}₽, ${source})`);
 
     if (!this.robokassa.enabled) {
