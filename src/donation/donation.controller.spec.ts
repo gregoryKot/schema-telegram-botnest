@@ -34,9 +34,18 @@ describe('DonationController.donate — honeypot', () => {
 
   it('website пустая строка — не срабатывает (людям поле не показывается, но пусто ≠ заполнено)', async () => {
     const { controller, donation } = makeController();
-    donation.create.mockResolvedValue({ id: 1, paymentUrl: null });
-    await controller.donate({ ...BASE_DTO, website: '' });
-    expect(donation.create).toHaveBeenCalledTimes(1);
+    const created = { id: 1, paymentUrl: null };
+    donation.create.mockResolvedValue(created);
+    const res = await controller.donate({ ...BASE_DTO, website: '' });
+    // Не голый toHaveBeenCalledTimes (weak-assert-храповик): донат обязан
+    // дойти до сервиса с реальными полями и вернуться наружу без подмены.
+    expect(donation.create).toHaveBeenCalledWith({
+      amount: 300,
+      source: 'app',
+      email: 'a@b.co',
+      comment: 'спасибо',
+    });
+    expect(res).toBe(created);
   });
 });
 
