@@ -3,8 +3,10 @@
 // modeCards/, контракт параллельной задачи) обязан покрывать каждый modeId
 // из MODE_GROUPS мини-аппа — иначе у части режимов не будет портрета и
 // экран «Знакомство с режимом» тихо откатится к пустой форме без объяснения.
-// Отдельный тест — в webapp (тот же реестр MODE_CARDS, но своя копия
-// schemaTherapyData.ts, они могут разъехаться).
+// MODE_GROUPS сам теперь ре-экспорт единственного источника
+// (shared/src/schemaTherapy/, правило №3). Отдельный тест — в webapp (тот же
+// реестр MODE_CARDS, но MODE_CARDS остаётся отдельным реестром, не выведенным
+// из MODE_GROUPS, — копия не лишняя).
 import { describe, it, expect } from 'vitest';
 import { MODE_CARDS } from '../../../../shared/src/mode/modeCards';
 import { MODE_GROUPS } from '../../schemaTherapyData';
