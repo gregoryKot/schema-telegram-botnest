@@ -7,11 +7,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ArticlesListPage, ArticlePage } from './ArticlesPage';
+import { ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
 
 const listArticles = vi.fn();
 const getArticle = vi.fn();
-vi.mock('../api', () => ({
+// importOriginal: класс ApiError должен остаться НАСТОЯЩИМ — ArticlePage
+// ветвится по instanceof, подделка класса в моке сделала бы тест тавтологией.
+vi.mock('../api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api')>()),
   api: {
     listArticles: (...a: unknown[]) => listArticles(...a),
     getArticle: (...a: unknown[]) => getArticle(...a),
@@ -77,10 +81,17 @@ function renderArticle(slug: string) {
 
 describe('ArticlePage', () => {
   it('незнакомый slug (серверный 404) после загрузки показывает 404 со ссылкой назад', async () => {
-    getArticle.mockRejectedValue(new Error('API error: 404'));
+    getArticle.mockRejectedValue(new ApiError(404, 'Cannot GET /api/articles/unknown'));
     renderArticle('unknown');
     expect(await screen.findByText('404')).toBeTruthy();
     expect(screen.getByText('← К статьям')).toBeTruthy();
+  });
+
+  it('ApiError с НЕ-404 статусом (5xx) — это сбой, не «статьи нет»', async () => {
+    getArticle.mockRejectedValue(new ApiError(500, 'Internal server error'));
+    renderArticle('schemas-101');
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText('404')).toBeNull();
   });
 
   it('сбой ≠ 404: обрыв сети на существующей статье показывает «не удалось», а не 404', async () => {

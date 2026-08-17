@@ -8,7 +8,7 @@
 // /api/auth/refresh и без повторного запроса. Тесты ниже фиксируют это
 // РЕАЛЬНОЕ поведение, а не предполагаемый interceptor-паттерн.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api, setTokenProvider, reportClientError } from './api';
+import { api, ApiError, setTokenProvider, reportClientError } from './api';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -115,10 +115,16 @@ describe('запросы всегда идут с credentials: "include"', () =>
 
 // ── 401 ──────────────────────────────────────────────────────────────────────
 describe('401 Unauthorized', () => {
-  it('get<T>: бросает Error("API error: 401"), НЕ обращается к /api/auth/refresh, НЕ ретраит', async () => {
+  it('get<T>: бросает ApiError со status=401 и серверным message, НЕ обращается к /api/auth/refresh, НЕ ретраит', async () => {
     fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
 
-    await expect(api.getSettings()).rejects.toThrow('API error: 401');
+    // Ветвление потребителей — по полю status (ArticlePage: 404 ≠ сеть),
+    // текст message приходит с сервера и может меняться свободно.
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401, message: 'Unauthorized' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
+    await expect(api.getSettings()).rejects.toBeInstanceOf(ApiError);
 
     // Один вызов на исходный запрос — ни ретрая, ни рефреша.
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -162,16 +168,19 @@ describe('401 Unauthorized', () => {
 
 // ── Проброс не-401 ошибок ────────────────────────────────────────────────────
 describe('проброс ошибок для не-401 статусов', () => {
-  it('get<T>: любой !ok статус даёт "API error: <status>" (тело ответа не парсится)', async () => {
-    const res = brokenJsonResponse(500); // res.json() всегда падает — get не должен его дёргать
+  it('get<T>: непарсибельное тело — фолбэк "API error: <status>", status полем сохранён', async () => {
+    const res = brokenJsonResponse(500); // res.json() падает — остаётся код статуса
     fetchMock.mockResolvedValue(res);
 
-    await expect(api.getSettings()).rejects.toThrow('API error: 500');
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 500, message: 'API error: 500' });
   });
 
-  it('del: любой !ok статус даёт "API error: <status>" без парсинга тела', async () => {
+  it('del: непарсибельное тело — фолбэк "API error: <status>"; message из тела пробрасывается, когда есть', async () => {
     fetchMock.mockResolvedValue(brokenJsonResponse(403));
-    await expect(api.deletePractice(1)).rejects.toThrow('API error: 403');
+    await expect(api.deletePractice(1)).rejects.toMatchObject({ status: 403, message: 'API error: 403' });
+
+    fetchMock.mockResolvedValue(jsonResponse(409, { message: 'Уже удалено' }));
+    await expect(api.deletePractice(1)).rejects.toMatchObject({ status: 409, message: 'Уже удалено' });
   });
 
   it('postJson: при строковом message из тела бросает именно это сообщение', async () => {
