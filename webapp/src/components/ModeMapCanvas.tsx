@@ -24,6 +24,7 @@ import {
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
 } from './modeMapFlow';
 import { MMIcon } from './modeMapIcons';
+import { useTr } from '../utils/addressForm';
 import {
   TbBtn,
   TbSep,
@@ -54,6 +55,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
+  const tr = useTr();
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
@@ -397,7 +399,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
                   <div style={dropHeadStyle}>Схемы клиента</div>
                   <div style={{ padding: '0 10px 6px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>
-                    {selectedNodeId ? 'Нажми, чтобы привязать к выбранному режиму' : 'Сначала выбери режим на холсте'}
+                    {selectedNodeId ? tr('Нажми, чтобы привязать к выбранному режиму', 'Нажмите, чтобы привязать к выбранному режиму') : tr('Сначала выбери режим на холсте', 'Сначала выберите режим на холсте')}
                   </div>
                   {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
                   {clientSchemaIds === 'failed' ? <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent-red)' }}>Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}

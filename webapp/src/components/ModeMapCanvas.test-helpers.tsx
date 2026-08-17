@@ -11,6 +11,7 @@ import { render } from '@testing-library/react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import { ModeMapCanvas } from './ModeMapCanvas';
 import { useModeMapHistory } from './useModeMapHistory';
+import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
 import type { ModeMapKind } from '../api';
 
@@ -104,11 +105,13 @@ function Harness({
   );
 }
 
-export function renderCanvas(props: HarnessProps = {}) {
+export function renderCanvas(props: HarnessProps = {}, form: AddressForm = 'ty') {
   return render(
-    <ReactFlowProvider>
-      <Harness {...props} />
-    </ReactFlowProvider>,
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <ReactFlowProvider>
+        <Harness {...props} />
+      </ReactFlowProvider>
+    </AddressFormContext.Provider>,
   );
 }
 

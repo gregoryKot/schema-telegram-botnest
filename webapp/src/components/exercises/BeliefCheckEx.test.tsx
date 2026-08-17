@@ -95,6 +95,40 @@ function walkToLastStep() {
   );
 }
 
+describe('BeliefCheckEx — ты/вы: вступление и подпись первого шага', () => {
+  it('lede и подпись поля звучат в форме «ты»', () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <BeliefCheckEx onBack={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText(/^Поставь одну мысль перед судом фактов/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Запиши мысль, которую хочешь проверить'),
+    ).toBeTruthy();
+  });
+
+  it('lede и подпись поля звучат в форме «вы»', () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <BeliefCheckEx onBack={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText(/^Поставьте одну мысль перед судом фактов/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Запишите мысль, которую хотите проверить'),
+    ).toBeTruthy();
+  });
+});
+
 describe('BeliefCheckEx — сохранение: успех', () => {
   it('успешный createBeliefCheck показывает экран «Готово», вызывает onComplete', async () => {
     mockApi.createBeliefCheck.mockResolvedValue(undefined);

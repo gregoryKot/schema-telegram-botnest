@@ -14,6 +14,7 @@ import {
   act,
 } from '@testing-library/react';
 import { ModeMapSelector } from './ModeMapSelector';
+import { AddressFormContext } from '../utils/addressForm';
 import type { ModeMapMeta, ModeMapFull } from '../api';
 
 const listModeMaps = vi.fn();
@@ -73,6 +74,29 @@ describe('ModeMapSelector — пустое состояние', () => {
     expect(screen.getByText('Карта личности')).toBeTruthy();
     expect(screen.getByText('Карта ситуации')).toBeTruthy();
     expect(screen.getByText('Карта пары')).toBeTruthy();
+  });
+
+  it('подсказка «Выбери тип первой карты» звучит на «ты»/«вы»', async () => {
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выбери тип первой карты')).toBeTruthy();
+    cleanup();
+
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выберите тип первой карты')).toBeTruthy();
   });
 
   it('клик по типу карты в пустом состоянии создаёт и открывает её', async () => {

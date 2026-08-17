@@ -239,7 +239,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
         <div style={{ flex: 1 }} />
         {showHint && (
           <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>
-            нажми на потребность
+            {tr('нажми на потребность', 'нажмите на потребность')}
           </span>
         )}
       </div>

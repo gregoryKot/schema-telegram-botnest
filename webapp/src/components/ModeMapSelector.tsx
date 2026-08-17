@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
 import { MMIcon } from './modeMapIcons';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   clientId: number;
@@ -15,6 +16,7 @@ const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
 const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
 export function ModeMapSelector({ clientId }: Props) {
+  const tr = useTr();
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [activeMap, setActiveMap] = useState<ModeMapFull | null>(null);
@@ -220,7 +222,7 @@ export function ModeMapSelector({ clientId }: Props) {
             <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}><MMIcon name="map" size={26} /></div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Нет карт режимов</div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
-              Выбери тип первой карты
+              {tr('Выбери тип первой карты', 'Выберите тип первой карты')}
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
               {KINDS.map(k => (

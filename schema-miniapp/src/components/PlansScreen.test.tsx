@@ -13,6 +13,7 @@ import {
 } from '@testing-library/react';
 import { PlansScreen } from './PlansScreen';
 import { api } from '../api';
+import { AddressFormContext } from '../utils/addressForm';
 import type { PracticePlan } from '../api';
 
 vi.mock('../api', () => ({
@@ -78,6 +79,34 @@ describe('PlansScreen — пустое состояние (чистый акка
       expect(screen.getByText('Планов пока нет')).toBeTruthy(),
     );
     expect(screen.queryByText('Открыть трекер →')).toBeNull();
+  });
+
+  it('объяснение пустого состояния звучит на «ты»', async () => {
+    mockApi.getPlanHistory.mockResolvedValue([]);
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <PlansScreen onClose={() => {}} />
+      </AddressFormContext.Provider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/выбери потребность с низкой оценкой и нажми/),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('объяснение пустого состояния звучит на «вы»', async () => {
+    mockApi.getPlanHistory.mockResolvedValue([]);
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <PlansScreen onClose={() => {}} />
+      </AddressFormContext.Provider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/выберите потребность с низкой оценкой и нажмите/),
+      ).toBeTruthy(),
+    );
   });
 });
 

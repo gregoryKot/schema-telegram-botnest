@@ -6,6 +6,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ModeStep } from './ModeStep';
 import type { ModeData } from './types';
+import { AddressFormContext } from '../../utils/addressForm';
 
 afterEach(() => {
   cleanup();
@@ -75,5 +76,36 @@ describe('ModeStep', () => {
     );
     fireEvent.click(screen.getByText('История'));
     expect(onShowHistory).toHaveBeenCalled();
+  });
+
+  it('ты/вы: подпись шага звучит в обеих формах', () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <ModeStep
+          modes={MODES}
+          allCardsCount={0}
+          stepIndex={0}
+          onClose={() => {}}
+          onShowHistory={() => {}}
+          onSelectMode={() => {}}
+        />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByText('Шаг 1 из 4 — выбери режим')).toBeTruthy();
+    cleanup();
+
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <ModeStep
+          modes={MODES}
+          allCardsCount={0}
+          stepIndex={0}
+          onClose={() => {}}
+          onShowHistory={() => {}}
+          onSelectMode={() => {}}
+        />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByText('Шаг 1 из 4 — выберите режим')).toBeTruthy();
   });
 });

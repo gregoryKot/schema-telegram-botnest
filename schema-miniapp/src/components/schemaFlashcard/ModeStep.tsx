@@ -1,6 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { ProgressBar } from './ProgressBar';
+import { useTr } from '../../utils/addressForm';
 import type { ModeData } from './types';
 
 interface ModeStepProps {
@@ -20,6 +21,7 @@ export function ModeStep({
   onShowHistory,
   onSelectMode,
 }: ModeStepProps) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
@@ -44,7 +46,7 @@ export function ModeStep({
                 marginTop: 2,
               }}
             >
-              Шаг 1 из 4 — выбери режим
+              {tr('Шаг 1 из 4 — выбери режим', 'Шаг 1 из 4 — выберите режим')}
             </div>
           </div>
           {allCardsCount > 0 && (

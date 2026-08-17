@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ChildhoodWheelEx } from './ChildhoodWheelEx';
+import { AddressFormContext } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
   api: {
@@ -75,6 +76,34 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     renderEx();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
+  });
+});
+
+describe('ChildhoodWheelEx — ты/вы: подсказка «Связать с сегодня»', () => {
+  it('форма «ты»', async () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    await screen.findByText(/Среднее 5\/10/);
+    expect(screen.getByText(/^Открой дневник за последнюю неделю и сравни/)).toBeTruthy();
+  });
+
+  it('форма «вы»', async () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    await screen.findByText(/Среднее 5\/10/);
+    expect(screen.getByText(/^Откройте дневник за последнюю неделю и сравните/)).toBeTruthy();
   });
 });
 

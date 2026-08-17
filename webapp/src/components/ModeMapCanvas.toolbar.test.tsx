@@ -266,6 +266,66 @@ describe('ModeMapCanvas — схемы клиента', () => {
     expect(screen.getByText('Не удалось загрузить схемы клиента')).toBeTruthy();
     expect(screen.queryByText('У клиента пока нет отмеченных схем')).toBeNull();
   });
+
+  it('подсказка без выбранного узла звучит на «ты»/«вы»', async () => {
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger')] },
+      'ty',
+    );
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Сначала выбери режим на холсте')).toBeTruthy();
+    cleanup();
+
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container: container2 } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger')] },
+      'vy',
+    );
+    clickToolbarButton(
+      container2,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Сначала выберите режим на холсте')).toBeTruthy();
+  });
+
+  it('подсказка с выбранным узлом звучит на «ты»/«вы»', async () => {
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'ty',
+    );
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(
+      screen.getByText('Нажми, чтобы привязать к выбранному режиму'),
+    ).toBeTruthy();
+    cleanup();
+
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container: container2 } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'vy',
+    );
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    clickToolbarButton(
+      container2,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(
+      screen.getByText('Нажмите, чтобы привязать к выбранному режиму'),
+    ).toBeTruthy();
+  });
 });
 
 describe('ModeMapCanvas — скачивание карты', () => {
