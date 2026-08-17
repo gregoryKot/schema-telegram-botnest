@@ -15,6 +15,7 @@ import {
 } from '@testing-library/react';
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
+import { AddressFormContext } from '../utils/addressForm';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -36,8 +37,12 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn()) {
-  render(<ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} clientId={7} />);
+function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn(), form: 'ty' | 'vy' = 'ty') {
+  render(
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} clientId={7} />
+    </AddressFormContext.Provider>,
+  );
   return { onAdd, onAddMany };
 }
 
@@ -160,6 +165,14 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
       renderPalette();
     });
     expect(screen.getByText(/Добавь режимы, с которыми/)).toBeTruthy();
+  });
+
+  it('в форме «вы» подсказка-заглушка не показывает «ты»', async () => {
+    await act(async () => {
+      renderPalette(vi.fn(), vi.fn(), 'vy');
+    });
+    expect(screen.getByText(/Добавьте режимы, с которыми/)).toBeTruthy();
+    expect(screen.getByText(/работаете чаще всего/)).toBeTruthy();
   });
 
   it('создание нового режима: форма → «Сохранить» → появляется в списке', async () => {

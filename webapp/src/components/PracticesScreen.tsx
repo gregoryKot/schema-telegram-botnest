@@ -146,7 +146,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="text-sm muted">Пока пусто – добавь первую практику ниже.</div>
+            <div className="text-sm muted">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
           ) : (
             practices.map(p => (
               <div key={p.id} className="list-line">

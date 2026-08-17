@@ -49,7 +49,7 @@ describe('PracticesScreen — список практик', () => {
   it('на чистом аккаунте (нет практик) показывает пустое состояние, не выдуманные карточки', async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    expect(await screen.findByText('Пока пусто – добавь первую практику ниже.')).toBeTruthy();
+    expect(await screen.findByText('Пока пусто — добавь первую практику ниже.')).toBeTruthy();
   });
 
   it('рендерит реальные практики из API, а не заглушку', async () => {

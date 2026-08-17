@@ -159,7 +159,7 @@ export class DeviceLinkService {
         (err as Error).stack,
       );
       throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — стоит попробовать позже.',
+        'Не удалось объединить аккаунты. Админ уведомлён — попробовать позже.',
       );
     }
 
