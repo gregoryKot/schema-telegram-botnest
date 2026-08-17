@@ -3,6 +3,8 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
+import { AddressFormProvider } from '../utils/AddressFormProvider';
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
@@ -37,6 +39,25 @@ export function LinkDevicePage() {
   const { isAuthenticated, isLoading } = useAuth();
   const code = (params.get('code') ?? '').trim();
 
+  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
+  if (!isAuthenticated) {
+    // Возврат сюда же после входа — иначе код потеряется и всё начинай заново.
+    try { sessionStorage.setItem('auth_return_to', `/link?code=${encodeURIComponent(code)}`); } catch { /* приватный режим */ }
+    return <Navigate to="/login" replace />;
+  }
+  if (!code) return <Navigate to="/account" replace />;
+
+  // Маршрут вне RequireAuth (свой возврат-после-логина выше) — форма не
+  // приезжает сверху из App.tsx, ставим её здесь.
+  return (
+    <AddressFormProvider>
+      <LinkDeviceContent code={code} />
+    </AddressFormProvider>
+  );
+}
+
+function LinkDeviceContent({ code }: { code: string }) {
+  const tr = useTr();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,21 +76,12 @@ export function LinkDevicePage() {
   }, [code]);
 
   useEffect(() => {
-    if (!isAuthenticated || !code) return;
     let alive = true;
     call('preview')
       .then((p) => { if (alive) setPreview(p as Preview); })
       .catch((e: Error) => { if (alive) setError(e.message); });
     return () => { alive = false; };
-  }, [isAuthenticated, code, call]);
-
-  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) {
-    // Возврат сюда же после входа — иначе код потеряется и всё начинай заново.
-    try { sessionStorage.setItem('auth_return_to', `/link?code=${encodeURIComponent(code)}`); } catch { /* приватный режим */ }
-    return <Navigate to="/login" replace />;
-  }
-  if (!code) return <Navigate to="/account" replace />;
+  }, [call]);
 
   const approve = async () => {
     setBusy(true);
@@ -102,7 +114,7 @@ export function LinkDevicePage() {
 
       {done && (
         <p className="text-sm" style={{ lineHeight: 1.7 }}>
-          Вернитесь в приложение — оно уже работает с этим аккаунтом.
+          {tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.
         </p>
       )}
 
@@ -118,16 +130,16 @@ export function LinkDevicePage() {
         <>
           <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 14 }}>
             Приложение в {messenger}
-            {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — ваш.
-            После подтверждения оно сможет открывать его и видеть, менять и удалять все ваши данные.
+            {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — {tr('твой', 'ваш')}.
+            После подтверждения оно сможет открывать его и видеть, менять и удалять все {tr('твои', 'ваши')} данные.
             {preview.sameAccount
-              ? ' Это тот же аккаунт, под которым вы вошли, — переносить нечего.'
-              : ' Данные приложения (ниже) при этом переедут к вам, а его прежний аккаунт исчезнет.'}
+              ? ` ${tr('Это тот же аккаунт, ты уже в нём', 'Это тот же аккаунт, вы уже в нём')} — переносить нечего.`
+              : ` Данные приложения (ниже) при этом переедут к ${tr('тебе', 'вам')}, а его прежний аккаунт исчезнет.`}
           </p>
 
           <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 18, color: 'var(--c-amber)' }}>
-            Подтверждайте, только если код вы запросили сами в этом приложении. Если код прислали
-            со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.
+            {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
+            {tr('Если код прислали со стороны — закрой эту страницу: так отдают доступ к аккаунту чужому.', 'Если код прислали со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.')}
           </p>
 
           {!preview.sameAccount && total > 0 && (

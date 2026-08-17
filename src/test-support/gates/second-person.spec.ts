@@ -16,7 +16,7 @@
 // формулировку в обычном компоненте — без контроля тест не доказывает, что
 // послабление узкое, а не дыра.
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns, loadRegexList } from './pattern-loader';
+import { loadNamedPatterns, loadRegexList, callExport } from './pattern-loader';
 
 describe('check-second-person.mjs', () => {
   it('новый файл с захардкоженным «ты»-местоимением вне tr() — exit 1', () => {
@@ -377,6 +377,8 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',
+      // Заявка терапевта в личку владельцу (adminPlainText).
+      'src/therapy/therapist-request.notify.ts',
       // До входа — гость/разовый клиент, форма ещё не выбрана.
       'webapp/src/pages/LoginPage.tsx',
       'webapp/src/pages/BookingPaidPage.tsx',
@@ -447,5 +449,38 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       new RegExp(p.source, p.flags).test('webapp/src/pages/LinkDevicePage.tsx'),
     );
     expect(matched).toEqual([]);
+  });
+});
+
+// Слой распознавания разведённых форм (scripts/second-person-blanking.mjs)
+// исполняется отсюда напрямую: иначе он был бы кодом, который никто не
+// проверяет (правило 14, гейт check-unwatched-code). Проверяем его главное
+// свойство — стирать содержимое, СОХРАНЯЯ длину строк и их количество: на
+// этом держится верная нумерация строк в отчёте гейта.
+describe('second-person-blanking.mjs: гашение сохраняет разметку строк', () => {
+  it('кавычки-цитаты гасятся, число строк не меняется', () => {
+    const src = ['const a = 1;', 'const q = "«Где ты это чувствуешь?»";'].join(
+      '\n',
+    );
+    const out = callExport(
+      'second-person-blanking.mjs',
+      'blankQuotedSpans',
+      src,
+    );
+    expect(out.split('\n')).toHaveLength(2);
+    expect(out).not.toContain('чувствуешь');
+  });
+
+  it('пара ty/vy гасится, длина строк сохраняется', () => {
+    const src = ["  ty: 'Попробуй ещё',", "  vy: 'Попробуйте ещё',"].join('\n');
+    const out = callExport(
+      'second-person-blanking.mjs',
+      'blankTyVyObjectPairs',
+      src,
+    );
+    const lines = out.split('\n');
+    expect(lines[0]).toHaveLength(src.split('\n')[0].length);
+    expect(lines[1]).toHaveLength(src.split('\n')[1].length);
+    expect(out).not.toContain('Попробуй');
   });
 });
