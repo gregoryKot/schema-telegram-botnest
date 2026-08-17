@@ -12,16 +12,17 @@ interface Props {
   onOpenTracker?: () => void;
   goBack: () => void;
   handleNew: () => void;
+  tr: (ty: string, vy: string) => string;
 }
 
-export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, onOpenTracker, goBack, handleNew }: Props) {
+export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, onOpenTracker, goBack, handleNew, tr }: Props) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
       <Topbar onBack={goBack} label="Закрыть" />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 32 }}>Сохранено</h1>
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-          Это шаг навстречу себе. Уже немало.
+          {tr('Это твой шаг навстречу себе. Уже немало.', 'Это ваш шаг навстречу себе. Уже немало.')}
         </p>
         {syncFailed && (
           <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', lineHeight: 1.5, marginBottom: 24 }}>

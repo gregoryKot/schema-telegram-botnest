@@ -212,6 +212,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         onOpenTracker={onOpenTracker}
         goBack={goBack}
         handleNew={handleNew}
+        tr={tr}
       />
     );
   }
