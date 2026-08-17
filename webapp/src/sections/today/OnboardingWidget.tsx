@@ -28,7 +28,7 @@ const STEPS: StepDef[] = [
   { id: 'tracker', color: 'var(--c-slate)',
     title: 'Оценка потребностей сегодня',
     description: 'Пять оценок – и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
-    detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
+    detail: 'Привязанность · Автономия · Выражение · Спонтанность · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
   { id: 'diary', color: 'var(--accent-indigo)',
