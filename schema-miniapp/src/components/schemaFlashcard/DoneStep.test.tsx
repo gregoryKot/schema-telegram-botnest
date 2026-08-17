@@ -46,7 +46,7 @@ describe('DoneStep — обращение ты/вы', () => {
       />,
     );
     expect(
-      screen.getByText('Это шаг навстречу себе. Уже немало.'),
+      screen.getByText('Это твой шаг навстречу себе. Уже немало.'),
     ).toBeTruthy();
   });
 
@@ -63,7 +63,7 @@ describe('DoneStep — обращение ты/вы', () => {
       />,
     );
     expect(
-      screen.getByText('Вы сделали шаг навстречу себе. Это уже немало.'),
+      screen.getByText('Это ваш шаг навстречу себе. Уже немало.'),
     ).toBeTruthy();
   });
 });

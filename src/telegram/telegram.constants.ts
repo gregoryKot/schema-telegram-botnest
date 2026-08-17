@@ -41,4 +41,4 @@ export const VALID_TIMEZONES = [
   'Asia/Almaty',
   'Asia/Shanghai',
 ];
-export const ERROR_RETRY = 'Не получилось. Стоит попробовать ещё раз.';
+export const ERROR_RETRY = 'Не получилось. Попробовать ещё раз.';
