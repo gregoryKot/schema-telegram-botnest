@@ -379,6 +379,8 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'src/bot/healthy-adult.data.ts',
       // Заявка терапевта в личку владельцу (adminPlainText).
       'src/therapy/therapist-request.notify.ts',
+      // Отчёт о публикации в канал — DM владельцу при сбое.
+      'src/channel/publish-report.ts',
       // До входа — гость/разовый клиент, форма ещё не выбрана.
       'webapp/src/pages/LoginPage.tsx',
       'webapp/src/pages/BookingPaidPage.tsx',

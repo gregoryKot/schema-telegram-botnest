@@ -82,7 +82,7 @@ export function SubscribePage() {
       // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
       // (check-second-person.mjs не видит здесь ни местоимений, ни императивов).
       <div role="alert">
-        <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)' }}>Не удалось загрузить подписку — сеть не отвечает. Попробовать позже.</p>
+        <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)' }}>Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения.</p>
         <button onClick={() => window.location.reload()} style={primaryBtn}>Обновить</button>
       </div>
     ) : (

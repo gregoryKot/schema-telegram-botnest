@@ -1,12 +1,14 @@
 import { BottomSheet } from '../BottomSheet';
 import { fmtDate } from '../../utils/format';
 import { ClientDetail } from './types';
+import { useTr } from '../../utils/addressForm';
 
 interface NotesSheetProps {
   detail: ClientDetail;
 }
 
 export function NotesSheet({ detail }: NotesSheetProps) {
+  const tr = useTr();
   const {
     notes,
     removeNote,
@@ -41,7 +43,10 @@ export function NotesSheet({ detail }: NotesSheetProps) {
               padding: '20px 0 16px',
             }}
           >
-            Нет заметок. Добавь первую ниже.
+            {tr(
+              'Нет заметок. Добавь первую ниже.',
+              'Нет заметок. Добавьте первую ниже.',
+            )}
           </div>
         ) : (
           notes.map((note) => (

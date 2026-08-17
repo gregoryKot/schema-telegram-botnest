@@ -2,6 +2,7 @@ import { SkeletonList } from './Skeleton';
 import { LoadErrorBanner } from './LoadErrorBanner';
 import { pressable } from '../utils/a11y';
 import { UserPractice } from '../api';
+import { useTr } from '../utils/addressForm';
 
 // Список практик — вынесено из PracticesScreen.tsx (правило №10, файл был
 // над потолком в 300 строк). Три состояния: сбой загрузки (LoadErrorBanner —
@@ -17,6 +18,7 @@ export function PracticesList({
   practices: UserPractice[] | null;
   onDelete: (id: number) => void;
 }) {
+  const tr = useTr();
   if (loadFailed) {
     // Практики есть, просто не загрузились — не путать с «Пока пусто» ниже,
     // иначе человек решит, что список стёрт.
@@ -42,7 +44,10 @@ export function PracticesList({
             textAlign: 'center',
           }}
         >
-          Пока пусто — добавь первую практику ниже
+          {tr(
+            'Пока пусто — добавь первую практику ниже',
+            'Пока пусто — добавьте первую практику ниже',
+          )}
         </div>
       )}
       {practices.map((p) => (

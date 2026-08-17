@@ -356,7 +356,7 @@ describe('ModeMapCanvas — скачивание карты', () => {
     const pngBtn = screen.getByText('Картинка PNG');
     await act(async () => { fireEvent.click(pngBtn); });
     expect(
-      screen.getByText('Не удалось подготовить файл. Стоит попробовать ещё раз'),
+      screen.getByText('Не удалось подготовить файл. Попробовать ещё раз'),
     ).toBeTruthy();
     expect((pngBtn as HTMLButtonElement).disabled).toBe(false);
   });
@@ -369,7 +369,7 @@ describe('ModeMapCanvas — скачивание карты', () => {
     clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
     await act(async () => { fireEvent.click(screen.getByText('Картинка PNG')); });
     expect(
-      screen.queryByText('Не удалось подготовить файл. Стоит попробовать ещё раз'),
+      screen.queryByText('Не удалось подготовить файл. Попробовать ещё раз'),
     ).toBeNull();
   });
 });

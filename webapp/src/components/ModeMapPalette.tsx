@@ -267,7 +267,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
             )}
             {customModes !== 'failed' && customModesList.length === 0 && !adding && (
               <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--text-faint)', lineHeight: 1.4 }}>
-                Добавь режимы, с которыми<br />работаешь чаще всего
+                {tr('Добавь режимы, с которыми', 'Добавьте режимы, с которыми')}<br />{tr('работаешь чаще всего', 'работаете чаще всего')}
               </div>
             )}
           </div>
