@@ -42,6 +42,12 @@ import {
   CALL_ARG_EXEMPT,
   PAIR_ARRAY_ANCHOR,
 } from './second-person-patterns.mjs';
+import {
+  blankExemptCalls,
+  blankPairArrays,
+  blankQuotedSpans,
+  blankTyVyObjectPairs,
+} from './second-person-blanking.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'second-person-baseline.json');
@@ -49,94 +55,6 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
-
-// Балансировка скобок с учётом строковых литералов — общий примитив для
-// «вырезать содержимое вызова/массива, сохранив переводы строк» (номера
-// строк в диагностике не съезжают). openChar/closeChar параметризуют вид
-// скобок: '(' / ')' для вызовов вилки/алерта, '[' / ']' для массива пар.
-function blankBalanced(src, anchorRe, afterMatch, openChar, closeChar) {
-  let out = '';
-  let last = 0;
-  anchorRe.lastIndex = 0;
-  let m;
-  while ((m = anchorRe.exec(src)) !== null) {
-    const start = afterMatch(m);
-    if (start <= last) continue; // вложенный анкер внутри уже вырезанного
-    let depth = 1;
-    let quote = null;
-    let i = start;
-    for (; i < src.length && depth > 0; i++) {
-      const c = src[i];
-      if (quote) {
-        if (c === '\\') i++;
-        else if (c === quote) quote = null;
-      } else if (c === "'" || c === '"' || c === '`') quote = c;
-      else if (c === openChar) depth++;
-      else if (c === closeChar) depth--;
-    }
-    out += src.slice(last, start);
-    out += src.slice(start, i).replace(/[^\n]/g, ' ');
-    last = i;
-    anchorRe.lastIndex = i;
-  }
-  return out + src.slice(last);
-}
-
-// Вилки форм (tr/pickForm/t) и владелец-only алерты (alertAdmin/…) — вилки
-// многострочные (prettier переносит аргументы), построчная проверка не
-// годится. CALL_ARG_EXEMPT — см. second-person-patterns.mjs. Лукбехинд НЕ
-// исключает точку перед именем: алерты почти всегда методы (`this.notify.
-// alertAdmin(`), а голых `.tr(`/`.pickForm(`/`.t(` в базе нет (греп) — сужать не для чего.
-const CALL_OPEN_RE = new RegExp(
-  `(?<![\\p{L}\\p{N}_$])(${CALL_ARG_EXEMPT.join('|')})\\(`,
-  'gu',
-);
-function blankExemptCalls(src) {
-  return blankBalanced(src, CALL_OPEN_RE, (m) => m.index + m[0].length, '(', ')');
-}
-
-// Таблицы пар [ты-текст, вы-текст] — см. PAIR_ARRAY_ANCHOR.
-function blankPairArrays(src) {
-  return blankBalanced(
-    src,
-    PAIR_ARRAY_ANCHOR,
-    (m) => m.index + m[0].length - 1, // позиция открывающей '['
-    '[',
-    ']',
-  );
-}
-
-// Объектные пары { ty: '…', vy: '…' } — построчно, т.к. каждое значение уже
-// однострочный литерал (в отличие от вилок/массивов, где прettier переносит
-// аргументы на несколько строк). Единственный реальный образец на 2026-08 —
-// shared/src/components/YsqSyncErrorNote.tsx.
-function keyLineRe(key) {
-  return new RegExp(`^(\\s*${key}:\\s*)(['"\`])((?:\\\\.|(?!\\2)[^\\\\])*)\\2(.*)$`);
-}
-const TY_KEY_RE = keyLineRe('ty');
-const VY_KEY_RE = keyLineRe('vy');
-function blankTyVyObjectPairs(src) {
-  const lines = src.split('\n');
-  for (let i = 0; i < lines.length - 1; i++) {
-    const tyM = lines[i].match(TY_KEY_RE);
-    if (!tyM) continue;
-    const vyM = lines[i + 1].match(VY_KEY_RE);
-    if (!vyM) continue;
-    lines[i] = tyM[1] + tyM[2] + tyM[3].replace(/[^\n]/g, ' ') + tyM[2] + tyM[4];
-    lines[i + 1] = vyM[1] + vyM[2] + vyM[3].replace(/[^\n]/g, ' ') + vyM[2] + vyM[4];
-  }
-  return lines.join('\n');
-}
-
-// Дословные внутренние цитаты («…», «…») — межличностная речь и
-// самоподдержка, правило CLAUDE.md сохраняет их регистр как есть, они не
-// обязаны идти через tr(). Вырезаем содержимое кавычек так же, как вырезаем
-// аргументы вилки — построчную нумерацию не ломаем.
-function blankQuotedSpans(src) {
-  return src
-    .replace(/«[^»]*»/g, (s) => s.replace(/[^\n]/g, ' '))
-    .replace(/“[^”]*”/g, (s) => s.replace(/[^\n]/g, ' '));
-}
 
 function walk(dir, acc = []) {
   let entries;
@@ -149,7 +67,8 @@ function walk(dir, acc = []) {
     const rel = `${dir}/${name}`;
     const st = statSync(join(ROOT, rel));
     if (st.isDirectory()) {
-      if (name === 'node_modules' || name === 'dist' || name === 'game') continue;
+      if (name === 'node_modules' || name === 'dist' || name === 'game')
+        continue;
       walk(rel, acc);
     } else if (
       /\.(ts|tsx)$/.test(name) &&
@@ -163,104 +82,104 @@ function walk(dir, acc = []) {
 
 // CLI-логика — только при запуске как скрипт (не при импорте PATTERNS/EXCLUDE).
 function main() {
-const counts = {};
-const details = {};
-for (const dir of SCAN_DIRS) {
-  for (const file of walk(dir)) {
-    if (EXCLUDE.some((re) => re.test(file))) continue;
-    let raw;
-    try {
-      raw = readFileSync(join(ROOT, file), 'utf8');
-    } catch {
-      continue;
-    }
-    let scanned = blankQuotedSpans(raw);
-    scanned = blankExemptCalls(scanned);
-    scanned = blankPairArrays(scanned);
-    scanned = blankTyVyObjectPairs(scanned);
-    let n = 0;
-    scanned.split('\n').forEach((line, i) => {
-      if (!/[А-Яа-я]{3}/.test(line)) return; // только строки с русским текстом
-      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
-      const code = line.replace(/\/\/.*$/, ''); // строчный комментарий в хвосте — не user-facing
-      for (const [name, re] of PATTERNS) {
-        re.lastIndex = 0;
-        let m;
-        while ((m = re.exec(code))) {
-          n++;
-          (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
-        }
+  const counts = {};
+  const details = {};
+  for (const dir of SCAN_DIRS) {
+    for (const file of walk(dir)) {
+      if (EXCLUDE.some((re) => re.test(file))) continue;
+      let raw;
+      try {
+        raw = readFileSync(join(ROOT, file), 'utf8');
+      } catch {
+        continue;
       }
-    });
-    if (n > 0) counts[file] = n;
+      let scanned = blankQuotedSpans(raw);
+      scanned = blankExemptCalls(scanned);
+      scanned = blankPairArrays(scanned);
+      scanned = blankTyVyObjectPairs(scanned);
+      let n = 0;
+      scanned.split('\n').forEach((line, i) => {
+        if (!/[А-Яа-я]{3}/.test(line)) return; // только строки с русским текстом
+        if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
+        const code = line.replace(/\/\/.*$/, ''); // строчный комментарий в хвосте — не user-facing
+        for (const [name, re] of PATTERNS) {
+          re.lastIndex = 0;
+          let m;
+          while ((m = re.exec(code))) {
+            n++;
+            (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
+          }
+        }
+      });
+      if (n > 0) counts[file] = n;
+    }
   }
-}
 
-const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
-if (UPDATE) {
-  const sorted = Object.fromEntries(
-    Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
-  );
-  writeFileSync(BASELINE_PATH, JSON.stringify(sorted, null, 2) + '\n');
+  if (UPDATE) {
+    const sorted = Object.fromEntries(
+      Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
+    );
+    writeFileSync(BASELINE_PATH, JSON.stringify(sorted, null, 2) + '\n');
+    console.log(
+      `Бейслайн обновлён: ${total} вхождений в ${Object.keys(counts).length} файлах.`,
+    );
+    process.exit(0);
+  }
+
+  let baseline;
+  try {
+    baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
+  } catch {
+    console.error(
+      'Нет бейслайна — сгенерируй: node scripts/check-second-person.mjs --update',
+    );
+    process.exit(1);
+  }
+
+  const grown = [];
+  const born = [];
+  for (const [file, n] of Object.entries(counts)) {
+    const was = baseline[file];
+    if (was === undefined) born.push([file, n]);
+    else if (n > was) grown.push([file, was, n]);
+  }
+
+  if (grown.length || born.length) {
+    console.error('❌ Обращение вне механики форм: стало хуже.\n');
+    for (const [file, was, now] of grown) {
+      console.error(`  ${file}: ${was} → ${now}`);
+      for (const d of details[file] || []) console.error(d);
+    }
+    for (const [file, n] of born) {
+      console.error(`  ${file}: новый файл с ${n} вхождениями (допустимо 0)`);
+      for (const d of details[file] || []) console.error(d);
+    }
+    console.error(
+      '\nСтрока с обращением («ты»/«вы», местоимение или императив) обязана\n' +
+        'идти через tr("ты-вариант", "вы-вариант") / t(form, …) / pickForm(form, …) —\n' +
+        'иначе пользователь с другой формой увидит чужое обращение (аудит 2026-08:\n' +
+        '/account, BottomSheet, InfoOverlay, письма). Бейслайн обновляется только\n' +
+        'вниз: node scripts/check-second-person.mjs --update',
+    );
+    process.exit(1);
+  }
+
+  const baseTotal = Object.values(baseline).reduce((a, b) => a + b, 0);
+  if (VERBOSE) {
+    for (const [file, ds] of Object.entries(details).sort(
+      (a, b) => b[1].length - a[1].length,
+    )) {
+      console.log(`${file} (${ds.length})`);
+      for (const d of ds) console.log(d);
+    }
+  }
   console.log(
-    `Бейслайн обновлён: ${total} вхождений в ${Object.keys(counts).length} файлах.`,
+    total < baseTotal
+      ? `✓ Обращение вне механики форм: ${total} < ${baseTotal} — стало лучше, зафиксируй: node scripts/check-second-person.mjs --update`
+      : `✓ Обращение вне механики форм: ${total} (без роста)`,
   );
-  process.exit(0);
-}
-
-let baseline;
-try {
-  baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
-} catch {
-  console.error(
-    'Нет бейслайна — сгенерируй: node scripts/check-second-person.mjs --update',
-  );
-  process.exit(1);
-}
-
-const grown = [];
-const born = [];
-for (const [file, n] of Object.entries(counts)) {
-  const was = baseline[file];
-  if (was === undefined) born.push([file, n]);
-  else if (n > was) grown.push([file, was, n]);
-}
-
-if (grown.length || born.length) {
-  console.error('❌ Обращение вне механики форм: стало хуже.\n');
-  for (const [file, was, now] of grown) {
-    console.error(`  ${file}: ${was} → ${now}`);
-    for (const d of details[file] || []) console.error(d);
-  }
-  for (const [file, n] of born) {
-    console.error(`  ${file}: новый файл с ${n} вхождениями (допустимо 0)`);
-    for (const d of details[file] || []) console.error(d);
-  }
-  console.error(
-    '\nСтрока с обращением («ты»/«вы», местоимение или императив) обязана\n' +
-      'идти через tr("ты-вариант", "вы-вариант") / t(form, …) / pickForm(form, …) —\n' +
-      'иначе пользователь с другой формой увидит чужое обращение (аудит 2026-08:\n' +
-      '/account, BottomSheet, InfoOverlay, письма). Бейслайн обновляется только\n' +
-      'вниз: node scripts/check-second-person.mjs --update',
-  );
-  process.exit(1);
-}
-
-const baseTotal = Object.values(baseline).reduce((a, b) => a + b, 0);
-if (VERBOSE) {
-  for (const [file, ds] of Object.entries(details).sort(
-    (a, b) => b[1].length - a[1].length,
-  )) {
-    console.log(`${file} (${ds.length})`);
-    for (const d of ds) console.log(d);
-  }
-}
-console.log(
-  total < baseTotal
-    ? `✓ Обращение вне механики форм: ${total} < ${baseTotal} — стало лучше, зафиксируй: node scripts/check-second-person.mjs --update`
-    : `✓ Обращение вне механики форм: ${total} (без роста)`,
-);
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

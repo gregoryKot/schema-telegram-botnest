@@ -401,6 +401,44 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
     expect(unmatched).toEqual([]);
   });
 
+  // Пара форм, переданная JSX-атрибутами: вилка стоит в компоненте-получателе
+  // (`SaveErrorNote` делает `{tr(ty, vy)}`), то есть строки уже в механике.
+  // Гейт понимал только объектную запись `{ty: '…', vy: '…'}` и считал долгом
+  // все семь вызовов SaveErrorNote (свип 2026-08).
+  it('пара ty=/vy= JSX-атрибутами на соседних строках — зелено', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx': [
+        'export const A = () => (',
+        '  <SaveErrorNote',
+        '    ty="Не удалось сохранить — попробуй ещё раз."',
+        '    vy="Не удалось сохранить — попробуйте ещё раз."',
+        '  />',
+        ');',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('пара ty=/vy= в одну строку — тоже зелено', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx':
+        'export const A = () => <Note ty="Попробуй ещё" vy="Попробуйте ещё" />;\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('одиночный ty= без парного vy= — по-прежнему долг', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/A.tsx':
+        'export const A = () => <Note ty="Попробуй ещё" />;\n',
+    });
+    expect(res.status).toBe(1);
+  });
+
   it('EXCLUDE не шире, чем нужно: LinkDevicePage.tsx НЕ распознаётся ни одним', () => {
     // Ровно та зона, которую координатор предложил исключить, а разбор
     // показал реальный долг (страница требует authenticated). Держит EXCLUDE
