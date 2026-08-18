@@ -6,7 +6,11 @@
 // Проверяются оба исхода: гейт краснеет на регрессе И зеленеет на чистом
 // дереве. Второй не менее важен — ложно-красный гейт отключают через неделю
 // (CLAUDE.md, правило №11: гейт без теста на оба исхода не доказывает ничего).
-import { loadNamedPatterns, loadStringList } from './pattern-loader';
+import {
+  loadNamedPatterns,
+  loadRegexList,
+  loadStringList,
+} from './pattern-loader';
 import { runGate } from './gate-sandbox';
 
 describe('check-silent-catch.mjs', () => {
@@ -365,6 +369,11 @@ describe('check-silent-catch.mjs', () => {
 describe('правила гейта: каждый паттерн со своим образцом', () => {
   const PATTERNS = loadNamedPatterns('silent-catch-rules.mjs', 'PATTERNS');
   const CHAIN_ALLOW = loadStringList('silent-catch-rules.mjs', 'CHAIN_ALLOW');
+  const ENCLOSING_ALLOW = loadRegexList(
+    'silent-catch-rules.mjs',
+    'ENCLOSING_ALLOW',
+  );
+  const FILE_ALLOW = loadStringList('silent-catch-rules.mjs', 'FILE_ALLOW');
 
   const POSITIVE: Record<string, string> = {
     'catch-empty-object': 'api.save(x).catch(() => {});',
@@ -395,4 +404,52 @@ describe('правила гейта: каждый паттерн со своим
     // карточки-приглашения, где проглоченная ошибка значима.
     expect(CHAIN_ALLOW).not.toContain('share');
   });
+
+  // ENCLOSING_ALLOW — второй способ разрешения (окно перед catch, не имя
+  // цепочки): нужен ровно для аналитики (trackEvent/trackPublicEvent), где
+  // ловится `post`, а решение проглотить ошибку принято уровнем выше.
+  it('у каждого ENCLOSING_ALLOW есть образец, который он распознаёт', () => {
+    const CORPUS = [
+      'trackEvent: (name, meta) => {',
+      'trackPublicEvent(name) {',
+    ];
+    const unmatched = ENCLOSING_ALLOW.filter(
+      (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
+    );
+    expect(unmatched).toEqual([]);
+  });
+
+  it('runGate: trackPublicEvent — тоже легитимно, не только trackEvent', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/api/sharedApi.ts': [
+        'export const buildSharedApi = (t) => ({',
+        '  trackPublicEvent: (name) => {',
+        "    void t.post('/api/event', { name }).catch(() => undefined);",
+        '  },',
+        '});',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  // FILE_ALLOW — третий способ (файл целиком best-effort примитив). Список
+  // короткий: единственный образец на 2026-08 — телеметрия крашей.
+  it('у каждой записи FILE_ALLOW реальный файл гасится целиком', () => {
+    expect(FILE_ALLOW).toEqual(['shared/src/api/clientErrorReport.ts']);
+  });
+
+  it.each(FILE_ALLOW)(
+    'runGate: файл «%s» с тихими catch — не считается',
+    (file) => {
+      const res = runGate('check-silent-catch.mjs', {
+        'scripts/silent-catch-baseline.json': JSON.stringify({}),
+        [file]: 'try {\n  void fetch(1).catch(() => {});\n} catch {}\n',
+      });
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+    },
+  );
 });

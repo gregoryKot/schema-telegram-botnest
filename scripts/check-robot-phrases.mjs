@@ -21,8 +21,8 @@ const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
 
 // Юридические документы — отдельный жанр: «является публичной офертой» и
 // «обработка осуществляется в соответствии с 152-ФЗ» юридически точны, живым
-// языком их переписывать нельзя (docs/VOICE.md).
-const EXCLUDED = new Set([
+// языком их переписывать нельзя (docs/VOICE.md). Экспорт — ради теста гейта.
+export const EXCLUDED = new Set([
   'webapp/src/pages/OfferPage.tsx',
   'webapp/src/pages/PrivacyPage.tsx',
 ]);

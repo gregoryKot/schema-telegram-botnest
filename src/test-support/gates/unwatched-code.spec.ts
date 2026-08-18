@@ -10,6 +10,7 @@
 // и зеленеет, когда на файл есть тест или он в бейслайне. Скрипт читает
 // список файлов через `git ls-files` — песочница поднимается с git:true.
 import { runGate } from './gate-sandbox';
+import { loadStringList } from './pattern-loader';
 
 const UNWATCHED =
   "const secret = 'not-a-real-secret';\nexports.check = secret;\n";
@@ -241,5 +242,44 @@ describe('check-unwatched-code.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('Бейслайн обновлён');
     expect(res.stdout).toContain('deploy/threads-relay/worker.js');
+  });
+});
+
+// Механизм вместо добросовестности (как EXCLUDE/ALLOW в остальных гейтах):
+// у КАЖДОГО исключённого префикса — сценарий, доказывающий, что он реально
+// гасит файлы под собой, ПЛЮС контроль, что зона не шире, чем нужно.
+describe('EXCLUDED_PREFIXES check-unwatched-code.mjs', () => {
+  const EXCLUDED_PREFIXES = loadStringList(
+    'check-unwatched-code.mjs',
+    'EXCLUDED_PREFIXES',
+  );
+
+  it.each(EXCLUDED_PREFIXES)(
+    'файл под префиксом «%s» без единого теста — не считается',
+    (prefix) => {
+      const res = runGate(
+        'check-unwatched-code.mjs',
+        {
+          'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+          [`${prefix}unwatched.js`]: UNWATCHED,
+        },
+        { git: true },
+      );
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('все под тестом');
+    },
+  );
+
+  it('КОНТРОЛЬ: тот же файл вне EXCLUDED_PREFIXES — по-прежнему exit 1', () => {
+    const res = runGate(
+      'check-unwatched-code.mjs',
+      {
+        'scripts/unwatched-code-baseline.json': JSON.stringify(SELF_BASELINE),
+        'deploy/unwatched.js': UNWATCHED,
+      },
+      { git: true },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('deploy/unwatched.js');
   });
 });

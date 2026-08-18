@@ -16,7 +16,12 @@
 // формулировку в обычном компоненте — без контроля тест не доказывает, что
 // послабление узкое, а не дыра.
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns, loadRegexList, callExport } from './pattern-loader';
+import {
+  loadNamedPatterns,
+  loadRegexList,
+  loadStringList,
+  callExport,
+} from './pattern-loader';
 
 describe('check-second-person.mjs', () => {
   it('новый файл с захардкоженным «ты»-местоимением вне tr() — exit 1', () => {
@@ -485,4 +490,57 @@ describe('second-person-blanking.mjs: гашение сохраняет разм
     expect(lines[1]).toHaveLength(src.split('\n')[1].length);
     expect(out).not.toContain('Попробуй');
   });
+});
+
+// CALL_ARG_EXEMPT — вызовы, чьи строковые аргументы легитимно вне отдельной
+// tr()-вилки (сама вилка форм ИЛИ владелец-only канал алертов). Механизм
+// вместо добросовестности: у КАЖДОГО имени — образец, который gaснет именно
+// blankExemptCalls, плюс контроль, что имя работает только как вызов, а не
+// как случайная подстрока другого идентификатора.
+describe('CALL_ARG_EXEMPT check-second-person.mjs', () => {
+  const CALL_ARG_EXEMPT = loadStringList(
+    'second-person-patterns.mjs',
+    'CALL_ARG_EXEMPT',
+  );
+
+  it.each(CALL_ARG_EXEMPT)(
+    'вызов «%s(...)» гасит «ты» внутри своих аргументов',
+    (name) => {
+      const src = `${name}('Как ты сегодня, по-честному?');`;
+      const out = callExport(
+        'second-person-blanking.mjs',
+        'blankExemptCalls',
+        src,
+      );
+      expect(out).not.toContain('ты');
+      // Длина строки сохранена — номера строк отчёта не съезжают.
+      expect(out).toHaveLength(src.length);
+    },
+  );
+
+  it('КОНТРОЛЬ: имя как суффикс другого идентификатора не считается вызовом', () => {
+    // notifyAdminText входит в CALL_ARG_EXEMPT — «superNotifyAdminText(» не
+    // обязан гаситься: лукбехинд на границу слова должен это ловить.
+    const src = "superNotifyAdminText('Ты справишься');";
+    const out = callExport(
+      'second-person-blanking.mjs',
+      'blankExemptCalls',
+      src,
+    );
+    expect(out).toContain('Ты справишься');
+  });
+
+  it.each(CALL_ARG_EXEMPT)(
+    'runGate: реальный файл с «%s(...)» — легитимно, exit 0',
+    (name) => {
+      const res = runGate('check-second-person.mjs', {
+        'scripts/second-person-baseline.json': JSON.stringify({}),
+        'src/foo.ts': `${name}('Как ты сегодня, по-честному?');\n`,
+      });
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain(
+        '✓ Обращение вне механики форм: 0 (без роста)',
+      );
+    },
+  );
 });

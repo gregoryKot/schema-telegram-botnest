@@ -209,6 +209,14 @@ jobs:
       # src/infra/capability-report.ts (видно в /stats и в логе старта), либо
       # в бейслайне с причиной.
       - run: node scripts/check-capability-registry.mjs
+      # Правило №15: «гейт про гейты». Список исключений (ALLOW/EXCLUDE/
+      # EXEMPT/EXCLUDED) внесли в храповик — а тест на то, что он гасит
+      # именно законный случай и не шире, никто не написал: замер на каждый
+      # существующий такой список в репозитории показал, что часть можно
+      # было опустошить бесследно. Гейт требует у каждого непустого списка
+      # тест, упоминающий его по имени (loadRegexList/loadStringList/
+      # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
+      - run: node scripts/check-gate-exemptions.mjs
 
   # Щит, волна 6: `docker build` реально собирает прод-образ. До этой джобы
   # ни одна не гоняла настоящую сборку — check-deploy-paths.mjs (джоба
