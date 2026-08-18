@@ -113,7 +113,12 @@ describe('App — переключение режима терапевта: pers
     await waitFor(() =>
       expect(mockApi.setTherapistView).toHaveBeenCalledWith(true),
     );
-    expect(localStorage.getItem('therapist_mode')).toBe('1');
+    // localStorage пишется отдельным эффектом, а не в обработчике клика:
+    // синхронная проверка успевает раньше записи и роняет тест под нагрузкой
+    // CI (реальное падение 2026-08 — «expected '0' to be '1'»).
+    await waitFor(() =>
+      expect(localStorage.getItem('therapist_mode')).toBe('1'),
+    );
   });
 });
 
@@ -147,7 +152,9 @@ describe('App — выход из роли терапевта (resignTherapist) 
       ),
     );
     expect(screen.queryByTestId('therapist-client-sheet')).toBeNull();
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    await waitFor(() =>
+      expect(localStorage.getItem('therapist_mode')).toBe('0'),
+    );
   });
 });
 
