@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDate } from '../utils/tz';
 import { formatAdminStats } from './admin-stats.format';
+import { countActiveCore } from './active-core-metrics';
 import {
   formatRetentionBlock,
   RetentionStats,
@@ -225,6 +226,7 @@ export class BotAdminStatsService {
       todayCount,
       fillRate,
       week7Count: week7Ratings.length,
+      activeCoreCount: countActiveCore(fillsByDow, d7),
       month30Count,
       churnRisk,
       ret1,
