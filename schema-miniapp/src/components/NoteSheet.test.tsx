@@ -13,6 +13,7 @@ import {
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { NoteSheet } from './NoteSheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -52,19 +53,19 @@ describe('NoteSheet — кризисная детекция (правило №7
   it('показывает карточку поддержки при кризисной фразе', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'не хочу больше жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('карточка появляется от одного набора текста — ДО клика «Сохранить» и ДО любого сетевого запроса', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'не хочу больше жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     expect(mockApi.saveNote).not.toHaveBeenCalled();
   });
 });

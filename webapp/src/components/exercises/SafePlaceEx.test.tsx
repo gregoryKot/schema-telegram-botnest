@@ -10,6 +10,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SafePlaceEx } from './SafePlaceEx';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -45,7 +46,7 @@ describe('SafePlaceEx — кризисная детекция', () => {
     const overview = screen.getByPlaceholderText(/полянка в лесу/);
     fireEvent.change(overview, { target: { value: 'не хочу жить, хочу исчезнуть' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('кризисная фраза в одном из органов чувств тоже показывает CrisisCard', () => {

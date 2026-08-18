@@ -15,6 +15,7 @@ import {
 } from '@testing-library/react';
 import { PracticesScreen } from './PracticesScreen';
 import { AddressFormContext } from '../utils/addressForm';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 const getPractices = vi.fn();
 const addPractice = vi.fn();
@@ -180,7 +181,9 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'не хочу жить' },
     });
-    expect(await screen.findByText(/8-800-2000-122/)).toBeTruthy();
+    expect(
+      await screen.findByText(new RegExp(CRISIS_HOTLINE_DISPLAY)),
+    ).toBeTruthy();
   });
 
   it('нейтральный текст карточку не показывает', async () => {
@@ -189,7 +192,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'прогулка 20 минут' },
     });
-    expect(screen.queryByText(/8-800-2000-122/)).toBeNull();
+    expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();
   });
 });
 

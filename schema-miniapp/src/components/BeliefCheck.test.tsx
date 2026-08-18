@@ -14,6 +14,7 @@ import {
 } from '@testing-library/react';
 import { BeliefCheck } from './BeliefCheck';
 import { AddressFormContext } from '../utils/addressForm';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('../api', () => ({
   api: {
@@ -48,13 +49,13 @@ describe('BeliefCheck — кризисная детекция (правило �
   it('показывает карточку поддержки при кризисной фразе в убеждении', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном убеждении', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'я всегда опаздываю' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('показывает карточку на шаге переформулировки при кризисной фразе', async () => {
@@ -67,7 +68,7 @@ describe('BeliefCheck — кризисная детекция (правило �
       'Например: иногда я ошибаюсь, но это не значит что я всегда всё порчу...',
     );
     fireEvent.change(reframe, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 });
 

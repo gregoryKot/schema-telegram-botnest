@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ResponseStep } from './ResponseStep';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -39,12 +40,12 @@ describe('ResponseStep — кризисная детекция (правило �
   it('показывает карточку поддержки при кризисной фразе', () => {
     const textarea = renderStep();
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', () => {
     const textarea = renderStep();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 });

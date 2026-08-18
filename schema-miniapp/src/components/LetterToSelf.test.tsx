@@ -14,6 +14,7 @@ import {
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { LetterToSelf } from './LetterToSelf';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -54,19 +55,19 @@ describe('LetterToSelf — кризисная детекция (правило �
   it('показывает карточку поддержки при кризисной фразе в тексте письма', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('карточка появляется от одного набора текста — ДО клика «Сохранить» и ДО любого сетевого запроса', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     // Детекция сработала без нажатия «Сохранить письмо» — раньше, чем текст
     // вообще мог уйти на сервер (createLetter ещё не вызывался).
     expect(mockApi.createLetter).not.toHaveBeenCalled();

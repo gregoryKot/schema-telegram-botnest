@@ -10,6 +10,7 @@ import {
   CRISIS_PATTERNS,
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
+  CRISIS_HOTLINES,
 } from './crisisMarkers';
 
 describe('detectCrisis — срабатывает', () => {
@@ -233,8 +234,16 @@ describe('гомоглифная карта — каждая буква (мут�
 describe('телефон доверия — точные значения (мутационный прогон)', () => {
   // Константы — единая точка правды карточки и ссылок tel:. Обнуление
   // выживало: карточка показалась бы ПУСТОЙ человеку в кризисе.
-  it('номер и tel-ссылка совпадают с 8-800-2000-122', () => {
-    expect(CRISIS_HOTLINE_DISPLAY).toBe('8-800-2000-122');
-    expect(CRISIS_HOTLINE_TEL).toBe('tel:88002000122');
+  it('первая (взрослая) линия — 8-800-100-49-94, алиасы совпадают с ней', () => {
+    expect(CRISIS_HOTLINES[0].display).toBe('8-800-100-49-94');
+    expect(CRISIS_HOTLINES[0].tel).toBe('tel:88001004994');
+    expect(CRISIS_HOTLINE_DISPLAY).toBe('8-800-100-49-94');
+    expect(CRISIS_HOTLINE_TEL).toBe('tel:88001004994');
+  });
+
+  it('вторая (детская) линия — 8-800-2000-122, с подписью аудитории', () => {
+    expect(CRISIS_HOTLINES[1].display).toBe('8-800-2000-122');
+    expect(CRISIS_HOTLINES[1].tel).toBe('tel:88002000122');
+    expect(CRISIS_HOTLINES[1].audienceNote).toBeTruthy();
   });
 });

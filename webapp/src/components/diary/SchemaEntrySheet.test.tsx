@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -34,7 +35,7 @@ describe('SchemaEntrySheet — кризисная детекция', () => {
     const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {
