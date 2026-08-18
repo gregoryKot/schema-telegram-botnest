@@ -42,6 +42,17 @@ describe('sanitizeMeta', () => {
     ).toBeUndefined();
   });
 
+  // Регресс: PhraseCheck/RewriteStep/HistoryCard шлют surface="phrase_check",
+  // но его не было в CRISIS_SURFACES — события уходили без meta.surface.
+  it('crisis_card_shown/crisis_hotline_tapped: surface "phrase_check" (PhraseCheck) принят', () => {
+    expect(
+      sanitizeMeta('crisis_card_shown', { surface: 'phrase_check' }),
+    ).toEqual({ surface: 'phrase_check' });
+    expect(
+      sanitizeMeta('crisis_hotline_tapped', { surface: 'phrase_check' }),
+    ).toEqual({ surface: 'phrase_check' });
+  });
+
   it('outbox_flush: положительный count с потолком 1000', () => {
     expect(sanitizeMeta('outbox_flush', { count: 5000 })).toEqual({
       count: 1000,

@@ -2,6 +2,7 @@ import React from 'react';
 import { useReveal, DARK_BG, INK_ON_DARK } from '../../components/landing-kit-hooks';
 import { EDUCATION, WORK_THEMES, TRUST, BOUNDARIES } from './constants';
 import { BentoCard } from './cards';
+import { CRISIS_HOTLINES } from '../../../../shared/src/utils/crisisMarkers';
 
 // Статические секции лендинга (маркетинг, без состояния страницы). Вынесено
 // из LandingPage.tsx (правило №10). Каждая секция сама держит reveal-ref.
@@ -160,7 +161,7 @@ export function BoundariesSection() {
                 </div>
               ))}
               <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, margin: '8px 0 0', paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-                Если на знакомстве станет ясно, что вам нужен врач, – помогу сориентироваться. Бесплатный телефон доверия в кризисной ситуации: <a href="tel:88002000122" style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>8 800 2000 122</a>.
+                Если на знакомстве станет ясно, что вам нужен врач, – помогу сориентироваться. Бесплатные телефоны доверия в кризисной ситуации: <a href={CRISIS_HOTLINES[0].tel} style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>{CRISIS_HOTLINES[0].display}</a>, для подростков и родителей – <a href={CRISIS_HOTLINES[1].tel} style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>{CRISIS_HOTLINES[1].display}</a>.
               </p>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { EvidenceList } from './EvidenceList';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 afterEach(() => {
   cleanup();
@@ -39,14 +40,14 @@ describe('EvidenceList — кризисная детекция (правило �
     render(<Wrapper />);
     const input = screen.getByPlaceholderText('Добавить...');
     fireEvent.change(input, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном вводе', () => {
     render(<Wrapper />);
     const input = screen.getByPlaceholderText('Добавить...');
     fireEvent.change(input, { target: { value: 'меня не любили в детстве' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('показывает карточку, если кризисная фраза уже в добавленных пунктах', () => {
@@ -56,7 +57,7 @@ describe('EvidenceList — кризисная детекция (правило �
     fireEvent.click(screen.getByText('+'));
     // Пункт добавлен, инпут очищен — карточка должна остаться видимой,
     // т.к. CrisisGate проверяет весь список items, не только текущий ввод.
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 });
 

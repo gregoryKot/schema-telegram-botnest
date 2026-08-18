@@ -11,6 +11,7 @@ import {
   act,
 } from '@testing-library/react';
 import { WeeklyQuestion, shouldShowWeeklyQuestion } from './WeeklyQuestion';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('../api', () => ({
   api: {
@@ -40,13 +41,13 @@ describe('WeeklyQuestion — кризисная детекция (правило
   it('показывает карточку поддержки при кризисной фразе', () => {
     const textarea = renderCard();
     fireEvent.change(textarea, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', () => {
     const textarea = renderCard();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 });
 

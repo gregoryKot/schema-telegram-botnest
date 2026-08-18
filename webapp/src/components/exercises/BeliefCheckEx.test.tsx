@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BeliefCheckEx } from './BeliefCheckEx';
 import { AddressFormContext } from '../../utils/addressForm';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -43,7 +44,7 @@ describe('BeliefCheckEx — кризисная детекция (belief)', () =>
     );
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {

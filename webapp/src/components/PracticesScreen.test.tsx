@@ -4,10 +4,18 @@
 // добавление/удаление практики (включая видимую ошибку API при сбое сохранения
 // — правило CLAUDE.md «провал не выглядит как успех»), обе формы ты/вы.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PracticesScreen } from './PracticesScreen';
 import { AddressFormContext } from '../utils/addressForm';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 const getPractices = vi.fn();
 const addPractice = vi.fn();
@@ -49,18 +57,24 @@ describe('PracticesScreen — список практик', () => {
   it('на чистом аккаунте (нет практик) показывает пустое состояние, не выдуманные карточки', async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    expect(await screen.findByText('Пока пусто — добавь первую практику ниже.')).toBeTruthy();
+    expect(
+      await screen.findByText('Пока пусто — добавь первую практику ниже.'),
+    ).toBeTruthy();
   });
 
   it('рендерит реальные практики из API, а не заглушку', async () => {
-    getPractices.mockResolvedValue([{ id: 1, needId: 'attachment', text: 'Позвонить другу' }]);
+    getPractices.mockResolvedValue([
+      { id: 1, needId: 'attachment', text: 'Позвонить другу' },
+    ]);
     renderScreen();
     expect(await screen.findByText('Позвонить другу')).toBeTruthy();
   });
 
   it('переключение вкладки потребности перезапрашивает практики для новой потребности', async () => {
     renderScreen();
-    await waitFor(() => expect(getPractices).toHaveBeenCalledWith('attachment'));
+    await waitFor(() =>
+      expect(getPractices).toHaveBeenCalledWith('attachment'),
+    );
     fireEvent.click(screen.getByText('Автономия'));
     await waitFor(() => expect(getPractices).toHaveBeenCalledWith('autonomy'));
   });
@@ -76,7 +90,9 @@ describe('PracticesScreen — список практик', () => {
   it('низкая сегодняшняя оценка потребности показывает контекстную подсказку', async () => {
     ratingsMock.mockResolvedValue({ attachment: 3 });
     renderScreen();
-    expect(await screen.findByText(/хороший момент чтобы что-то сделать/)).toBeTruthy();
+    expect(
+      await screen.findByText(/хороший момент чтобы что-то сделать/),
+    ).toBeTruthy();
   });
 });
 
@@ -86,11 +102,18 @@ describe('PracticesScreen — добавление практики', () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
 
-    const input = screen.getByPlaceholderText('Добавить практику...') as HTMLInputElement;
+    const input = screen.getByPlaceholderText(
+      'Добавить практику...',
+    ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Прогулка 20 минут' } });
     fireEvent.click(screen.getByText('+ Добавить'));
 
-    await waitFor(() => expect(addPractice).toHaveBeenCalledWith('attachment', 'Прогулка 20 минут'));
+    await waitFor(() =>
+      expect(addPractice).toHaveBeenCalledWith(
+        'attachment',
+        'Прогулка 20 минут',
+      ),
+    );
     expect(await screen.findByText('Добавлено')).toBeTruthy();
     expect(input.value).toBe('');
   });
@@ -122,7 +145,9 @@ describe('PracticesScreen — добавление практики', () => {
 
 describe('PracticesScreen — удаление практики', () => {
   it('клик «удалить» убирает практику из списка сразу (оптимистично) и шлёт запрос', async () => {
-    getPractices.mockResolvedValue([{ id: 5, needId: 'attachment', text: 'Медитация' }]);
+    getPractices.mockResolvedValue([
+      { id: 5, needId: 'attachment', text: 'Медитация' },
+    ]);
     deletePractice.mockResolvedValue({});
     renderScreen();
     await screen.findByText('Медитация');
@@ -136,7 +161,9 @@ describe('PracticesScreen — удаление практики', () => {
   // с экрана, оставаясь в БД, и воскресала при следующем заходе. Теперь сбой
   // показывает ошибку и возвращает список с сервера.
   it('сбой удаления показывает ошибку и возвращает практику в список', async () => {
-    getPractices.mockResolvedValue([{ id: 5, needId: 'attachment', text: 'Медитация' }]);
+    getPractices.mockResolvedValue([
+      { id: 5, needId: 'attachment', text: 'Медитация' },
+    ]);
     deletePractice.mockRejectedValue(new Error('offline'));
     renderScreen();
     await screen.findByText('Медитация');
@@ -160,7 +187,9 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'не хочу жить' },
     });
-    expect(await screen.findByText(/8-800-2000-122/)).toBeTruthy();
+    expect(
+      await screen.findByText(new RegExp(CRISIS_HOTLINE_DISPLAY)),
+    ).toBeTruthy();
   });
 
   it('нейтральный текст карточку не показывает', async () => {
@@ -169,7 +198,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'прогулка 20 минут' },
     });
-    expect(screen.queryByText(/8-800-2000-122/)).toBeNull();
+    expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();
   });
 });
 

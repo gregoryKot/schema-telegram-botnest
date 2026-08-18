@@ -16,6 +16,7 @@ import {
 } from '@testing-library/react';
 import { setHost, type HostBridge } from '../../../shared/src/host';
 import { PlanSheet } from './PlanSheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('./planSheet/PracticeOptionRow', () => ({
   PracticeOptionRow: ({
@@ -289,7 +290,7 @@ describe('PlanSheet — кризисная детекция в свободно�
       { target: { value: 'не хочу жить' } },
     );
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст практики не показывает CrisisCard', async () => {
