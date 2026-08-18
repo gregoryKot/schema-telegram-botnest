@@ -18,8 +18,8 @@
 // game/ исключён — заморожен решением владельца (как в eslint-храповике).
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'file-size-baseline.json');
 const UPDATE = process.argv.includes('--update');
@@ -31,8 +31,8 @@ const NEW_FILE_LIMIT = 300;
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 // Что не считаем кодом проекта: vendor, сборки, декларации, тесты (растут
-// законно вместе с покрытием), заморозенная игра.
-const EXCLUDE = [
+// законно вместе с покрытием), заморозенная игра. Экспорт — ради теста гейта.
+export const EXCLUDE = [
   /(^|\/)node_modules\//,
   /(^|\/)dist\//,
   /(^|\/)coverage\//,
@@ -42,7 +42,6 @@ const EXCLUDE = [
   /(^|\/)game\//,
   /(^|\/)webapp\/public\//,
 ];
-
 function listFiles() {
   const res = spawnSync('git', ['ls-files'], {
     cwd: ROOT,
@@ -59,7 +58,6 @@ function listFiles() {
     .filter((p) => CODE_EXT.test(p))
     .filter((p) => !EXCLUDE.some((re) => re.test(p)));
 }
-
 function countLines(relPath) {
   try {
     const txt = readFileSync(join(ROOT, relPath), 'utf8');
@@ -73,6 +71,8 @@ function countLines(relPath) {
   }
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте EXCLUDE).
+function main() {
 const files = listFiles();
 const sizes = {};
 for (const f of files) {
@@ -95,7 +95,6 @@ if (UPDATE) {
   );
   process.exit(0);
 }
-
 let baseline;
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
@@ -105,7 +104,6 @@ try {
   );
   process.exit(1);
 }
-
 const grown = []; // файл из бейслайна вырос
 const newBig = []; // новый файл сразу больше потолка
 for (const [f, n] of Object.entries(sizes)) {
@@ -152,3 +150,5 @@ console.log(
         `node scripts/check-file-size-ratchet.mjs --update (${overCap} ещё сверх ${NEW_FILE_LIMIT})`
     : `✓ файл-храповик: без роста (${overCap} файлов сверх потолка ${NEW_FILE_LIMIT} — долг тает по мере рефакторинга)`,
 );
+}
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

@@ -2,7 +2,11 @@
 // пофайловый храповик роботных конструкций в user-facing тексте
 // («это не X, это Y», канцелярит, метатекст, филлеры, мостики).
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns, loadRegexList } from './pattern-loader';
+import {
+  loadNamedPatterns,
+  loadRegexList,
+  loadStringList,
+} from './pattern-loader';
 
 describe('check-robot-phrases.mjs', () => {
   it('новый файл с запрещённой конструкцией — exit 1', () => {
@@ -113,6 +117,36 @@ describe('ALLOW-исключения check-robot-phrases.mjs', () => {
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
     expect(unmatched).toEqual([]);
+  });
+});
+
+// EXCLUDED — юридические документы (docs/VOICE.md: формальный регистр там
+// уместен и не варьируется). Список маленький и заведён точечно по пути
+// файла — держим его от «а заодно исключим похожую страницу».
+describe('EXCLUDED-исключения check-robot-phrases.mjs', () => {
+  const EXCLUDED = loadStringList('check-robot-phrases.mjs', 'EXCLUDED');
+  const ROBOT_LINE = "export const msg = 'Это не просто документ для тебя';\n";
+
+  it.each(EXCLUDED)('«%s» целиком не сканируется', (file) => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      [file]: ROBOT_LINE,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: та же конструкция в обычном файле — по-прежнему exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/SomeOtherPage.tsx': ROBOT_LINE,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/pages/SomeOtherPage.tsx: новый файл с 1 конструкциями',
+    );
   });
 });
 
