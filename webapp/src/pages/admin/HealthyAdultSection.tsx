@@ -3,6 +3,7 @@ import { api } from '../../api';
 import type { HealthyAdultPhrase } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
 import { HealthyAdultImport } from './HealthyAdultImport';
+import { HealthyAdultCheck } from './HealthyAdultCheck';
 
 /** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
 export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
@@ -99,6 +100,8 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
         </div>
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
       </section>
+
+      <HealthyAdultCheck adminKey={adminKey} />
 
       <HealthyAdultImport
         adminKey={adminKey}

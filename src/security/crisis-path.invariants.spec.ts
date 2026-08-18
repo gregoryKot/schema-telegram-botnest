@@ -39,6 +39,8 @@ const TEXTAREA_FILES = FRONTEND_DIRS.flatMap((rel) => {
 const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // Админка — текст пишет владелец проекта, не клиент терапии.
   'webapp/src/pages/admin/HealthyAdultImport.tsx': 'админский импорт контента',
+  'webapp/src/pages/admin/HealthyAdultCheck.tsx':
+    'админская проверка текста фразы перед сохранением',
   'webapp/src/pages/admin/ArticleEditor.tsx': 'админский редактор статей сайта',
   'webapp/src/pages/admin/HealthyAdultSection.tsx': 'админская секция контента',
   // Лендинг и запись на приём — контактная форма/бронирование, не дневник.
@@ -131,8 +133,13 @@ describe('трипваер: кризисная детекция для своб�
   });
 
   it('allowlist не разросся сверх известного (может только сокращаться)', () => {
+    // 18 → 19 (2026-08): админская проверка текста фразы перед сохранением
+    // (HealthyAdultCheck). Поле админское — туда владелец вставляет фразу
+    // пула, чтобы увидеть претензии до сохранения; это не свободный текст
+    // клиента терапии. Потолок поднимается только так — правкой в диффе,
+    // видимой на ревью, а не молча.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      18,
+      19,
     );
   });
 

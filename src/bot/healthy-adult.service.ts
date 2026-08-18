@@ -6,7 +6,12 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { HEALTHY_ADULT_PHRASES } from './healthy-adult.data';
 import { prepareImport, type ImportPreparation } from './healthy-adult.import';
-import { blockingIssues, issuesToReason } from './healthy-adult.quality';
+import {
+  blockingIssues,
+  findIssues,
+  issuesToReason,
+  type PhraseIssue,
+} from './healthy-adult.quality';
 
 /** Остаток пула: сколько включённых фраз ещё не звучало и на сколько хватит. */
 export interface HealthyAdultPoolStatus {
@@ -43,6 +48,20 @@ export class HealthyAdultService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Полный список для админки (в порядке отображения). */
+  /**
+   * Весь пул с претензиями к каждой фразе — для проверки в админке. Показываем
+   * и пометки ('warn'), а не только блокирующее: решает человек, а фразы,
+   * заведённые ДО появления планки, никто не перепроверял.
+   */
+  async audit(): Promise<
+    (HealthyAdultPhraseRow & { issues: PhraseIssue[] })[]
+  > {
+    const rows = await this.list();
+    return rows
+      .map((row) => ({ ...row, issues: findIssues(row.text) }))
+      .filter((row) => row.issues.length > 0);
+  }
+
   async list(): Promise<HealthyAdultPhraseRow[]> {
     return this.prisma.healthyAdultPhrase.findMany({
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
