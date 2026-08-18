@@ -12,6 +12,8 @@ export interface AdminStatsData {
   todayCount: number;
   fillRate: number;
   week7Count: number;
+  /** «Активное ядро» (docs/LAUNCH_STRATEGY.md §5): ≥3 разных дня дневника за последние 7. Подмножество week7Count. */
+  activeCoreCount: number;
   month30Count: number;
   churnRisk: number;
   ret1: number;
@@ -44,6 +46,7 @@ export function formatAdminStats(d: AdminStatsData): string {
     `📔 <b>Дневник настроения</b>`,
     `Заполнили сегодня: ${d.todayCount} (это ${d.fillRate}% от тех, кто заходил за месяц)`,
     `Заходили за неделю: ${d.week7Count} · за месяц: ${d.month30Count}`,
+    `Ведут дневник регулярно (хотя бы 3 дня из последних 7): ${d.activeCoreCount} из ${d.week7Count} заходивших за неделю`,
     `⚠️ Могут уйти (заходили раньше, а всю неделю — ни разу): ${d.churnRisk}`,
     '',
     `📈 <b>Сколько дней люди ведут дневник</b> (за всё время)`,
