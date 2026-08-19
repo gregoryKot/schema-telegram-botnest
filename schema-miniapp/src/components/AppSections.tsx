@@ -29,7 +29,9 @@ interface Props {
   profileRefreshKey: number;
   displayName: string | null;
   onNewDiaryEntry: (t: 'schema' | 'mode' | 'gratitude') => void;
-  patternsTab: 'schemas' | 'modes';
+  /** null = нет ожидающего явного перехода — SchemasSection сам решает
+   *  вкладку (последняя открытая, см. patternsTabStorage.ts). */
+  patternsTab: 'schemas' | 'modes' | null;
   onOpenPatterns: (tab: 'schemas' | 'modes') => void;
 }
 
@@ -110,7 +112,7 @@ export function AppSections({
             childhoodRatings={childhoodRatings}
             onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
             onOpenDiaries={() => sheets.open('diaries')}
-            initialTab={patternsTab}
+            initialTab={patternsTab ?? undefined}
           />
         </ErrorBoundary>
       )}

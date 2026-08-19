@@ -4,9 +4,17 @@
 // shared/src/portrait/portraitData.ts (правило №4, активность схем здесь не
 // пересчитываем). Пустое состояние объясняет «откуда и зачем» (правило
 // «Онбординг») вместо тишины/заглушки.
-import type { CSSProperties } from 'react';
+//
+// Вся карточка кликабельна (правило «Онбординг»: одно очевидное действие) —
+// тап открывает PortraitSheet с полными списками «Мои схемы»/«Мои режимы»
+// (раньше жили отдельными карточками профиля). Внутренние CTA
+// («Пройти тест», «Пройти тест на схемы →») — настоящие вложенные <button>
+// с stopPropagation, чтобы не всплывать в открытие листа (no button-in-
+// button: корень — div c role="button" через pressable, не сам <button>).
+import type { CSSProperties, MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { fmtDate } from '../../utils/format';
+import { pressable } from '../../utils/a11y';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import {
   hasPortraitData,
@@ -18,6 +26,14 @@ interface Props {
   portrait: Portrait;
   ysqCompletedAt: string | null;
   onOpenPatterns: () => void;
+  onOpenSheet: () => void;
+}
+
+function stopAnd(handler: () => void) {
+  return (e: MouseEvent) => {
+    e.stopPropagation();
+    handler();
+  };
 }
 
 const footBtn: CSSProperties = {
@@ -85,6 +101,7 @@ export function PortraitCard({
   portrait,
   ysqCompletedAt,
   onOpenPatterns,
+  onOpenSheet,
 }: Props) {
   const tr = useTr();
   const hasData = hasPortraitData(portrait);
@@ -93,8 +110,9 @@ export function PortraitCard({
 
   return (
     <div
+      {...pressable(onOpenSheet)}
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px 18px' }}
+      style={{ borderRadius: 20, padding: '16px 16px 18px', cursor: 'pointer' }}
     >
       <div
         style={{
@@ -102,17 +120,26 @@ export function PortraitCard({
           justifyContent: 'space-between',
           alignItems: 'baseline',
           marginBottom: 14,
+          gap: 8,
         }}
       >
         <div className="d-caps">Мой портрет</div>
-        {hasData && (
-          <div className="d-display" style={{ fontSize: 14 }}>
-            {portrait.totalSchemas}{' '}
-            {pluralRu(portrait.totalSchemas, 'схема', 'схемы', 'схем')} ·{' '}
-            {portrait.totalModes}{' '}
-            {pluralRu(portrait.totalModes, 'режим', 'режима', 'режимов')}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          {hasData && (
+            <div className="d-display" style={{ fontSize: 14 }}>
+              {portrait.totalSchemas}{' '}
+              {pluralRu(portrait.totalSchemas, 'схема', 'схемы', 'схем')} ·{' '}
+              {portrait.totalModes}{' '}
+              {pluralRu(portrait.totalModes, 'режим', 'режима', 'режимов')}
+            </div>
+          )}
+          <span
+            aria-hidden
+            style={{ color: 'var(--text-faint)', fontSize: 16 }}
+          >
+            ›
+          </span>
+        </div>
       </div>
 
       {!hasData && (
@@ -126,7 +153,7 @@ export function PortraitCard({
             )}
           </div>
           <button
-            onClick={onOpenPatterns}
+            onClick={stopAnd(onOpenPatterns)}
             style={{
               marginTop: 12,
               padding: '10px 16px',
@@ -190,7 +217,10 @@ export function PortraitCard({
       )}
 
       {hasData && !ysqCompletedAt && (
-        <button onClick={onOpenPatterns} style={{ ...footBtn, marginTop: 14 }}>
+        <button
+          onClick={stopAnd(onOpenPatterns)}
+          style={{ ...footBtn, marginTop: 14 }}
+        >
           Пройти тест на схемы →
         </button>
       )}

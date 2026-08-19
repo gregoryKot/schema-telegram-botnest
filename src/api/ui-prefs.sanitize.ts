@@ -36,47 +36,73 @@ const BOOLEAN_FLAG_KEYS: ReadonlySet<SyncedPrefKey> = new Set([
   'today_therapist_banner_hidden',
 ]);
 
-const ID_ARRAY_KEYS: Partial<
-  Record<SyncedPrefKey, { allow: ReadonlySet<string>; maxLen: number }>
-> = {
-  quick_actions_hidden_plus: { allow: QUICK_ACTION_ID_SET, maxLen: 32 },
-  quick_actions_order_plus: { allow: QUICK_ACTION_ID_SET, maxLen: 32 },
-  quick_actions_hidden_tools: { allow: QUICK_ACTION_ID_SET, maxLen: 32 },
-  quick_actions_order_tools: { allow: QUICK_ACTION_ID_SET, maxLen: 32 },
-  screen_hidden_profile: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
-  screen_hidden_patterns: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
-  screen_order_profile: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
-  screen_order_patterns: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
-  screen_order_today: { allow: SCREEN_BLOCK_ID_SET, maxLen: 16 },
-};
+// mode: 'strict' — весь ключ отбрасывается, если хоть один элемент вне allow
+// (текущее поведение quick actions — их id ничего в этом PR не убирал).
+// mode: 'filter' — элементы вне allow тихо выкидываются, известные остаются
+// (screen_*: правило CLAUDE.md «удаление блока не должно ронять устройство,
+// уже сохранившее старый порядок с этим id» — см.
+// src/api/ui-prefs.sanitize.spec.ts, кейс «частично устаревший массив»).
+type ArrayMode = 'strict' | 'filter';
+interface ArraySpec {
+  allow: ReadonlySet<string>;
+  maxLen: number;
+  mode: ArrayMode;
+}
+function arraySpecsFor(
+  keys: readonly SyncedPrefKey[],
+  allow: ReadonlySet<string>,
+  maxLen: number,
+  mode: ArrayMode,
+): [SyncedPrefKey, ArraySpec][] {
+  return keys.map((key) => [key, { allow, maxLen, mode }]);
+}
+const ID_ARRAY_KEYS: Partial<Record<SyncedPrefKey, ArraySpec>> =
+  Object.fromEntries([
+    ...arraySpecsFor(
+      [
+        'quick_actions_hidden_plus',
+        'quick_actions_order_plus',
+        'quick_actions_hidden_tools',
+        'quick_actions_order_tools',
+      ],
+      QUICK_ACTION_ID_SET,
+      32,
+      'strict',
+    ),
+    ...arraySpecsFor(
+      [
+        'screen_hidden_profile',
+        'screen_hidden_patterns',
+        'screen_order_profile',
+        'screen_order_patterns',
+        'screen_order_today',
+      ],
+      SCREEN_BLOCK_ID_SET,
+      16,
+      'filter',
+    ),
+  ]);
 
-// Значение — сериализованный JSON-массив id, элементы ⊆ allow, длина ≤ maxLen.
-function isValidIdArray(
+// Разбор JSON-массива id: не JSON/не массив/сверх maxLen/не-строковый
+// элемент — null (структурно невалидно, отбрасываем ключ целиком).
+// Иначе — элементы, оставшиеся ПОСЛЕ фильтра по allow, плюс флаг «что-то
+// выбросили» (нужен строгому режиму quick actions — там любой чужой id всё
+// ещё валит ключ целиком, см. mode выше).
+function filterIdArray(
   value: string,
   allow: ReadonlySet<string>,
   maxLen: number,
-): boolean {
+): { ids: string[]; droppedAny: boolean } | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(value);
   } catch {
-    return false;
+    return null;
   }
-  return (
-    Array.isArray(parsed) &&
-    parsed.length <= maxLen &&
-    parsed.every((el) => typeof el === 'string' && allow.has(el))
-  );
-}
-
-function isValidValue(key: SyncedPrefKey, value: string): boolean {
-  if (key === 'today_focus_practice')
-    return TODAY_FOCUS_PRACTICE_SET.has(value);
-  if (BOOLEAN_FLAG_KEYS.has(key)) return value === '1' || value === '0';
-  const arraySpec = ID_ARRAY_KEYS[key];
-  return arraySpec
-    ? isValidIdArray(value, arraySpec.allow, arraySpec.maxLen)
-    : false;
+  if (!Array.isArray(parsed) || parsed.length > maxLen) return null;
+  if (!parsed.every((el): el is string => typeof el === 'string')) return null;
+  const ids = parsed.filter((id) => allow.has(id));
+  return { ids, droppedAny: ids.length !== parsed.length };
 }
 
 /**
@@ -97,8 +123,20 @@ export function sanitizeUiPrefs(
   for (const key of SYNCED_PREF_KEYS) {
     const value = input[key];
     if (typeof value !== 'string' || value.length > MAX_VALUE_LEN) continue;
-    if (!isValidValue(key, value)) continue;
-    out[key] = value;
+    if (key === 'today_focus_practice') {
+      if (TODAY_FOCUS_PRACTICE_SET.has(value)) out[key] = value;
+      continue;
+    }
+    if (BOOLEAN_FLAG_KEYS.has(key)) {
+      if (value === '1' || value === '0') out[key] = value;
+      continue;
+    }
+    const arraySpec = ID_ARRAY_KEYS[key];
+    if (!arraySpec) continue;
+    const result = filterIdArray(value, arraySpec.allow, arraySpec.maxLen);
+    if (!result) continue;
+    if (arraySpec.mode === 'strict' && result.droppedAny) continue;
+    out[key] = JSON.stringify(result.ids);
   }
   return out;
 }

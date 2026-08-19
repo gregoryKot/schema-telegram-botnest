@@ -15,9 +15,10 @@
 // частные today_*_hidden-ключи, см. ui-prefs.sanitize.ts) — только
 // screen_block_move (перестановка, ключ screen_order_today).
 //
-// portrait/my_schemas/my_modes/warm_words — блоки редизайна вкладки «Я»
-// (identity-слой поверх статистики профиля, 2026-08): «Мой портрет» (домены
-// схем/режимов), списки «Мои схемы»/«Мои режимы», превью «Тёплых слов».
+// portrait/warm_words — блоки редизайна вкладки «Я» (identity-слой поверх
+// статистики профиля, 2026-08): «Мой портрет» (домены схем/режимов — тап
+// открывает лист с полными списками «Мои схемы»/«Мои режимы», у списков
+// больше нет собственных id блока экрана), превью «Тёплых слов».
 export const SCREEN_BLOCK_IDS = [
   'journey',
   'streak',
@@ -31,8 +32,6 @@ export const SCREEN_BLOCK_IDS = [
   'secondary',
   'therapist_banner',
   'portrait',
-  'my_schemas',
-  'my_modes',
   'warm_words',
 ] as const;
 export type ScreenBlockId = (typeof SCREEN_BLOCK_IDS)[number];

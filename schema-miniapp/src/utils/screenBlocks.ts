@@ -17,8 +17,6 @@ export const SCREEN_BLOCK_IDS = [
   'secondary',
   'therapist_banner',
   'portrait',
-  'my_schemas',
-  'my_modes',
   'warm_words',
 ] as const;
 
@@ -44,8 +42,6 @@ export interface ScreenBlockMeta {
 export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
   profile: [
     'portrait',
-    'my_schemas',
-    'my_modes',
     'warm_words',
     'journey',
     'streak',
@@ -89,15 +85,7 @@ export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   },
   portrait: {
     label: 'Мой портрет',
-    sub: 'схемы и режимы по доменам, итог теста',
-  },
-  my_schemas: {
-    label: 'Мои схемы',
-    sub: 'отмеченные схемы и их карточки',
-  },
-  my_modes: {
-    label: 'Мои режимы',
-    sub: 'отмеченные режимы и их карточки',
+    sub: 'схемы и режимы по доменам, итог теста; списки схем/режимов — внутри',
   },
   warm_words: {
     label: 'Тёплые слова',

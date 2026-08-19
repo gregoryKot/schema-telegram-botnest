@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 // PortraitCard — карточка «Мой портрет» вкладки «Я»: бары по доменам (в т.ч.
 // нулевые), пустое состояние объясняет откуда/зачем (правило «Онбординг»),
-// дельта с прошлого теста без шейминга роста, ссылка на тест без завершения YSQ.
+// дельта с прошлого теста без шейминга роста, ссылка на тест без завершения
+// YSQ. Вся карточка кликабельна и открывает PortraitSheet — внутренние CTA
+// («Пройти тест», «Пройти тест на схемы →») стопают всплытие и зовут
+// СВОЙ onOpenPatterns, а не открытие листа (regression: no button-in-button).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PortraitCard } from './PortraitCard';
@@ -58,6 +61,7 @@ describe('PortraitCard — пустое состояние (hasPortraitData=fals
         portrait={makePortrait()}
         ysqCompletedAt={null}
         onOpenPatterns={onOpenPatterns}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.getByText(/Здесь соберётся/)).toBeTruthy();
@@ -111,6 +115,7 @@ describe('PortraitCard — бары доменов', () => {
         portrait={portrait}
         ysqCompletedAt={null}
         onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.getByText('Отвержение')).toBeTruthy();
@@ -164,6 +169,7 @@ describe('PortraitCard — бары доменов', () => {
         portrait={portrait}
         ysqCompletedAt={null}
         onOpenPatterns={onOpenPatterns}
+        onOpenSheet={() => {}}
       />,
     );
     const link = screen.getByText('Пройти тест на схемы →');
@@ -215,6 +221,7 @@ describe('PortraitCard — дельта с прошлого теста', () => {
         portrait={{ ...portrait, delta: -3 }}
         ysqCompletedAt="2026-08-01T00:00:00.000Z"
         onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.getByText(/-3 с прошлого теста/)).toBeTruthy();
@@ -226,6 +233,7 @@ describe('PortraitCard — дельта с прошлого теста', () => {
         portrait={{ ...portrait, delta: 2 }}
         ysqCompletedAt="2026-08-01T00:00:00.000Z"
         onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.getByText(/\+2 с прошлого теста/)).toBeTruthy();
@@ -237,6 +245,7 @@ describe('PortraitCard — дельта с прошлого теста', () => {
         portrait={{ ...portrait, delta: null }}
         ysqCompletedAt="2026-08-01T00:00:00.000Z"
         onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.queryByText(/с прошлого теста/)).toBeNull();
@@ -247,8 +256,105 @@ describe('PortraitCard — дельта с прошлого теста', () => {
         portrait={{ ...portrait, delta: 0 }}
         ysqCompletedAt="2026-08-01T00:00:00.000Z"
         onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
       />,
     );
     expect(screen.queryByText(/с прошлого теста/)).toBeNull();
+  });
+});
+
+describe('PortraitCard — вся карточка кликабельна, открывает лист (правило «Онбординг»)', () => {
+  it('тап по карточке (не по внутренней кнопке) зовёт onOpenSheet', () => {
+    const onOpenSheet = vi.fn();
+    const portrait = makePortrait({ totalSchemas: 1 });
+    render(
+      <PortraitCard
+        portrait={portrait}
+        ysqCompletedAt="2026-08-01T00:00:00.000Z"
+        onOpenPatterns={() => {}}
+        onOpenSheet={onOpenSheet}
+      />,
+    );
+    fireEvent.click(screen.getByText('Мой портрет'));
+    expect(onOpenSheet).toHaveBeenCalledTimes(1);
+  });
+
+  it('заголовок несёт шеврон-аффорданс (визуальный сигнал кликабельности)', () => {
+    render(
+      <PortraitCard
+        portrait={makePortrait()}
+        ysqCompletedAt={null}
+        onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
+      />,
+    );
+    expect(screen.getByText('›')).toBeTruthy();
+  });
+
+  it('клик по «Пройти тест» (пустое состояние) зовёт СВОЙ onOpenPatterns, не onOpenSheet (stopPropagation)', () => {
+    const onOpenPatterns = vi.fn();
+    const onOpenSheet = vi.fn();
+    render(
+      <PortraitCard
+        portrait={makePortrait()}
+        ysqCompletedAt={null}
+        onOpenPatterns={onOpenPatterns}
+        onOpenSheet={onOpenSheet}
+      />,
+    );
+    fireEvent.click(screen.getByText('Пройти тест'));
+    expect(onOpenPatterns).toHaveBeenCalledTimes(1);
+    expect(onOpenSheet).not.toHaveBeenCalled();
+  });
+
+  it('клик по «Пройти тест на схемы →» зовёт СВОЙ onOpenPatterns, не onOpenSheet (stopPropagation)', () => {
+    const onOpenPatterns = vi.fn();
+    const onOpenSheet = vi.fn();
+    const portrait = makePortrait({
+      totalSchemas: 1,
+      domains: [
+        {
+          id: 'rejection',
+          label: 'Отвержение',
+          color: 'var(--accent-red)',
+          count: 1,
+        },
+        {
+          id: 'autonomy',
+          label: 'Автономия',
+          color: 'var(--accent-orange)',
+          count: 0,
+        },
+        {
+          id: 'limits',
+          label: 'Границы',
+          color: 'var(--accent-yellow)',
+          count: 0,
+        },
+        {
+          id: 'other_directed',
+          label: 'Ориентация на других',
+          color: 'var(--accent-green)',
+          count: 0,
+        },
+        {
+          id: 'vigilance',
+          label: 'Бдительность',
+          color: 'var(--accent-indigo)',
+          count: 0,
+        },
+      ],
+    });
+    render(
+      <PortraitCard
+        portrait={portrait}
+        ysqCompletedAt={null}
+        onOpenPatterns={onOpenPatterns}
+        onOpenSheet={onOpenSheet}
+      />,
+    );
+    fireEvent.click(screen.getByText('Пройти тест на схемы →'));
+    expect(onOpenPatterns).toHaveBeenCalledTimes(1);
+    expect(onOpenSheet).not.toHaveBeenCalled();
   });
 });

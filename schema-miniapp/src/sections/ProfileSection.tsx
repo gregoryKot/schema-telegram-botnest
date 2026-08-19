@@ -12,6 +12,7 @@ import { useAboutMe } from './profile/useAboutMe';
 import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
 import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
+import { PortraitSheet } from './profile/PortraitSheet';
 import { useScreenBlocks } from '../hooks/useScreenBlocks';
 import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
 import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
@@ -50,6 +51,7 @@ export function ProfileSection({
     null,
   );
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
+  const [showPortrait, setShowPortrait] = useState(false);
 
   const blocks = useScreenBlocks('profile', SCREEN_HIDDEN_KEYS.profile);
 
@@ -147,6 +149,7 @@ export function ProfileSection({
           onShowAchievements={() => setShowAchievements(true)}
           onShowBestDayInfo={() => setShowBestDayInfo(true)}
           onOpenPatterns={onOpenPatterns}
+          onOpenPortrait={() => setShowPortrait(true)}
         />
 
         <div style={{ padding: '4px 0' }}>
@@ -182,6 +185,15 @@ export function ProfileSection({
       )}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
+
+      {/* ── BottomSheet: Мой портрет (полные списки схем/режимов) ── */}
+      {showPortrait && (
+        <PortraitSheet
+          aboutMe={aboutMe}
+          onOpenPatterns={onOpenPatterns}
+          onClose={() => setShowPortrait(false)}
+        />
+      )}
 
       {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие на карточку) ── */}
       {blocks.sheet !== null && <ScreenCustomizeSheet blocks={blocks} />}

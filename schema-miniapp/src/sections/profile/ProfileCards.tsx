@@ -15,7 +15,6 @@ import { AchievementsCard } from './AchievementsCard';
 import { InsightsCard } from './InsightsCard';
 import { JourneyEntryCard } from './JourneyEntryCard';
 import { PortraitCard } from './PortraitCard';
-import { MyPatternsCard } from './MyPatternsCard';
 import { WarmWordsCard } from './WarmWordsCard';
 
 interface Props {
@@ -32,6 +31,7 @@ interface Props {
   onShowAchievements: () => void;
   onShowBestDayInfo: () => void;
   onOpenPatterns: (tab: 'schemas' | 'modes') => void;
+  onOpenPortrait: () => void;
 }
 
 export function ProfileCards({
@@ -48,6 +48,7 @@ export function ProfileCards({
   onShowAchievements,
   onShowBestDayInfo,
   onOpenPatterns,
+  onOpenPortrait,
 }: Props) {
   const { isHidden, holdProps, orderedIds } = blocks;
   const cardsById: Partial<Record<ScreenBlockId, ReactNode>> = {
@@ -57,30 +58,7 @@ export function ProfileCards({
           portrait={aboutMe.portrait}
           ysqCompletedAt={aboutMe.ysqCompletedAt}
           onOpenPatterns={() => onOpenPatterns('schemas')}
-        />
-      </div>
-    ),
-    my_schemas: aboutMe.ready && !isHidden('my_schemas') && (
-      <div {...holdProps('my_schemas')}>
-        <MyPatternsCard
-          kind="schema"
-          ids={aboutMe.mySchemaIds}
-          weekFreq={aboutMe.schemaWeekFreq}
-          schemaEntries={aboutMe.schemaEntries}
-          setSchemaEntries={aboutMe.setSchemaEntries}
-          onOpenPatterns={onOpenPatterns}
-        />
-      </div>
-    ),
-    my_modes: aboutMe.ready && !isHidden('my_modes') && (
-      <div {...holdProps('my_modes')}>
-        <MyPatternsCard
-          kind="mode"
-          ids={aboutMe.myModeIds}
-          weekFreq={aboutMe.modeWeekFreq}
-          modeEntries={aboutMe.modeEntries}
-          setModeEntries={aboutMe.setModeEntries}
-          onOpenPatterns={onOpenPatterns}
+          onOpenSheet={onOpenPortrait}
         />
       </div>
     ),
