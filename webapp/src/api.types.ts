@@ -61,6 +61,17 @@ export interface Article extends ArticleSummary { content: string; }
 export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null; };
 export interface MarqueeTopic { label: string; href: string; }
 export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean; sortOrder: number; }
+/** Претензия проверки качества к тексту фразы. */
+export interface PhraseIssue {
+  kind: 'род' | 'робот' | 'слово';
+  rule: string;
+  fragment: string;
+  severity: 'block' | 'warn';
+}
+/** Фраза пула с претензиями — результат проверки всего пула. */
+export interface AuditedPhrase extends HealthyAdultPhrase {
+  issues: PhraseIssue[];
+}
 /** Остаток пула канала: на сколько дней хватит ещё не звучавших фраз. */
 export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysLeft: number; }
 export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
