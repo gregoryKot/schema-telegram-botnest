@@ -20,6 +20,10 @@ describe('useScreenBlockOrder', () => {
   it('без сохранённого порядка — порядок реестра SCREEN_BLOCK_ORDER', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     expect(result.current.orderedIds).toEqual([
+      'portrait',
+      'my_schemas',
+      'my_modes',
+      'warm_words',
       'journey',
       'streak',
       'heatmap',
@@ -41,10 +45,14 @@ describe('useScreenBlockOrder', () => {
     });
     expect(moved).toBe(true);
     expect(result.current.orderedIds[0]).toBe('streak');
-    expect(result.current.orderedIds[1]).toBe('journey');
+    expect(result.current.orderedIds[1]).toBe('portrait');
     expect(localStorage.getItem('screen_order_profile')).toBe(
       JSON.stringify([
         'streak',
+        'portrait',
+        'my_schemas',
+        'my_modes',
+        'warm_words',
         'journey',
         'heatmap',
         'achievements',
@@ -61,7 +69,9 @@ describe('useScreenBlockOrder', () => {
   it('reorder на больший индекс шлёт dir="down"', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     act(() => {
-      result.current.reorder('journey', 2);
+      // 'journey' сейчас на индексе 4 (portrait/my_schemas/my_modes/warm_words
+      // впереди) — двигаем дальше, на 6.
+      result.current.reorder('journey', 6);
     });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
       screen: 'profile',
@@ -74,7 +84,8 @@ describe('useScreenBlockOrder', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     let moved = true;
     act(() => {
-      moved = result.current.reorder('journey', 0);
+      // 'journey' на индексе 4 в порядке по умолчанию.
+      moved = result.current.reorder('journey', 4);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();
@@ -103,6 +114,10 @@ describe('useScreenBlockOrder', () => {
     const { result: second } = renderHook(() => useScreenBlockOrder('profile'));
     expect(second.current.orderedIds).toEqual([
       'heatmap',
+      'portrait',
+      'my_schemas',
+      'my_modes',
+      'warm_words',
       'journey',
       'streak',
       'achievements',

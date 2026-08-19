@@ -98,6 +98,14 @@ export default function App() {
   );
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  // Вкладка «Схемы»/«Режимы», с которой откроется «Паттерны» при переходе с
+  // редизайна вкладки «Я» (карточки «Мой портрет»/«Мои схемы»/«Мои режимы»).
+  // SchemasSection размонтируется/монтируется заново при каждом уходе с
+  // экрана (AppSections рендерит по условию, не через display:none) —
+  // отдельный key не нужен, initialTab читается свежим при каждом монтировании.
+  const [patternsTab, setPatternsTab] = useState<'schemas' | 'modes'>(
+    'schemas',
+  );
   const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(
     null,
   );
@@ -570,6 +578,11 @@ export default function App() {
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
         onNewDiaryEntry={setNewDiaryEntry}
+        patternsTab={patternsTab}
+        onOpenPatterns={(tab) => {
+          setPatternsTab(tab);
+          setSection('schemas');
+        }}
       />
 
       {/* ── История потребностей ── */}

@@ -16,6 +16,10 @@ export const SCREEN_BLOCK_IDS = [
   'phrase',
   'secondary',
   'therapist_banner',
+  'portrait',
+  'my_schemas',
+  'my_modes',
+  'warm_words',
 ] as const;
 
 export type ScreenBlockId = (typeof SCREEN_BLOCK_IDS)[number];
@@ -38,7 +42,17 @@ export interface ScreenBlockMeta {
  * и есть band переставляемых блоков (закреплённые вне band: виджет обучения
  * сверху, предложение значка снизу — см. TodaySection). */
 export const SCREEN_BLOCK_ORDER: Record<CustomizableScreen, ScreenBlockId[]> = {
-  profile: ['journey', 'streak', 'heatmap', 'achievements', 'insights'],
+  profile: [
+    'portrait',
+    'my_schemas',
+    'my_modes',
+    'warm_words',
+    'journey',
+    'streak',
+    'heatmap',
+    'achievements',
+    'insights',
+  ],
   patterns: ['heroes', 'ysq_status'],
   today: ['therapist_banner', 'streak', 'focus', 'phrase', 'secondary'],
 };
@@ -72,5 +86,21 @@ export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   ysq_status: {
     label: 'Тест на схемы',
     sub: 'карточка статуса теста на вкладке «Схемы»',
+  },
+  portrait: {
+    label: 'Мой портрет',
+    sub: 'схемы и режимы по доменам, итог теста',
+  },
+  my_schemas: {
+    label: 'Мои схемы',
+    sub: 'отмеченные схемы и их карточки',
+  },
+  my_modes: {
+    label: 'Мои режимы',
+    sub: 'отмеченные режимы и их карточки',
+  },
+  warm_words: {
+    label: 'Тёплые слова',
+    sub: 'поддерживающие фразы из карточек и дневников',
   },
 };
