@@ -19,6 +19,7 @@ import { botShortUrl } from '../../utils/botConfig';
 import { patternMeta } from './patternMeta';
 import { PatternSheetHeader } from './PatternSheetHeader';
 import { PatternCardSection } from './PatternCardSection';
+import { PatternHelpSection } from './PatternHelpSection';
 import { PatternEntriesSection } from './PatternEntriesSection';
 import { usePatternEntryDelete } from './usePatternEntryDelete';
 import type { MyCardsKind, MyCardItem } from '../myCards/useMyCards';
@@ -124,6 +125,8 @@ export function PatternSheet({
             onEdit={() => setSubView('edit')}
             onShare={() => setShowShare(true)}
           />
+
+          <PatternHelpSection kind={kind} id={id} />
 
           <PatternEntriesSection
             kind={kind}
