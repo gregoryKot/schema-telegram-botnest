@@ -29,6 +29,9 @@ describe('TrackEventDto', () => {
     await expect(
       errorsFor({ name: 'web_banner_dismiss', meta: { banner: 'mode_map' } }),
     ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ name: 'web_banner_open', meta: { banner: 'mobile_app' } }),
+    ).resolves.toEqual([]);
   });
 
   it('неизвестное имя — отказ', async () => {
@@ -90,6 +93,17 @@ describe('AnalyticsController — санитизация meta', () => {
     });
     expect(track).toHaveBeenCalledWith(uid, 'web_banner_open', {
       banner: 'mode_map',
+    });
+  });
+
+  it('web_banner_open: пропускает banner mobile_app (баннер на сайте)', async () => {
+    const { controller, track } = makeController();
+    await controller.track(req, {
+      name: 'web_banner_open',
+      meta: { banner: 'mobile_app' },
+    });
+    expect(track).toHaveBeenCalledWith(uid, 'web_banner_open', {
+      banner: 'mobile_app',
     });
   });
 

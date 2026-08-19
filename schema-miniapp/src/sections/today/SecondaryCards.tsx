@@ -1,8 +1,23 @@
+import type { CSSProperties } from 'react';
 import { Need } from '../../types';
 import { pressable } from '../../utils/a11y';
 import { SkeletonLines } from '../../components/Skeleton';
 import { NeedMini } from './NeedMini';
 import { DiaryTypeBadge } from './DiaryTypeBadge';
+
+const DIARY_TYPE_COLORS: Record<string, string> = {
+  schema: 'var(--accent)',
+  mode: 'var(--accent-pink)',
+  gratitude: '#4ade80',
+};
+
+const capsLabel: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--text-sub)',
+};
 
 export interface RecentDiary {
   type: string;
@@ -42,13 +57,16 @@ export function SecondaryCards({
 }) {
   return (
     <>
-      {/* ── Needs card — tap card = history, tap need = tracker ── */}
+      {/* ── Needs card — tap: не оценён → tracker, оценён → history (как
+          фокус-карточка); tap need = tracker ── */}
       <div
         className="card"
-        {...pressable(() => onOpenTrackerHistory?.())}
+        {...pressable(() =>
+          allRated ? onOpenTrackerHistory?.() : onOpenTracker(),
+        )}
         style={{
           padding: '18px 18px 14px',
-          cursor: onOpenTrackerHistory ? 'pointer' : undefined,
+          cursor: 'pointer',
           WebkitTapHighlightColor: 'transparent',
         }}
       >
@@ -60,17 +78,7 @@ export function SecondaryCards({
             marginBottom: 16,
           }}
         >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--text-sub)',
-            }}
-          >
-            Потребности
-          </div>
+          <div style={capsLabel}>Потребности</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {allRated ? 'Готово ✓' : `${ratedCount} / ${needs.length}`}
@@ -130,17 +138,7 @@ export function SecondaryCards({
             marginBottom: 14,
           }}
         >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: 'var(--text-sub)',
-            }}
-          >
-            Дневник
-          </div>
+          <div style={capsLabel}>Дневник</div>
           <span
             style={{
               fontSize: 12,
@@ -156,14 +154,7 @@ export function SecondaryCards({
           <SkeletonLines />
         ) : recentDiaries.length > 0 ? (
           recentDiaries.map((entry, i) => {
-            const typeColor =
-              (
-                {
-                  schema: 'var(--accent)',
-                  mode: 'var(--accent-pink)',
-                  gratitude: '#4ade80',
-                } as Record<string, string>
-              )[entry.type] ?? '#aaa';
+            const typeColor = DIARY_TYPE_COLORS[entry.type] ?? '#aaa';
             return (
               <div
                 key={i}

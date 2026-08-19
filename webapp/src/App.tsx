@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { telemetryUrl } from './utils/telemetryUrl';
+import { applyPersonalSiteChrome } from './utils/domainChrome';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -85,17 +86,7 @@ function Root() {
 const isPersonalSite = window.location.hostname.includes('kotlarewski')
   || new URLSearchParams(window.location.search).get('site') === 'personal';
 
-if (isPersonalSite) {
-  document.querySelectorAll("link[rel='icon']").forEach((el) => {
-    const link = el as HTMLLinkElement;
-    if (link.sizes?.value === '96x96') {
-      link.href = '/favicon-personal-32.png';
-    } else {
-      link.type = 'image/png';
-      link.href = '/favicon-personal-32.png';
-    }
-  });
-}
+if (isPersonalSite) applyPersonalSiteChrome();
 
 // ── Router ─────────────────────────────────────────────────────────────────────
 const personalRoutes = [
