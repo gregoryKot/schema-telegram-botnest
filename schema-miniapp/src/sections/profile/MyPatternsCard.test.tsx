@@ -94,6 +94,47 @@ describe('MyPatternsCard — тап открывает PatternSheet и трек�
   });
 });
 
+const FIVE_SCHEMA_IDS = [
+  'abandonment',
+  'mistrust',
+  'defectiveness',
+  'social_isolation',
+  'dependence',
+];
+
+describe('MyPatternsCard — лимит строк (default=3 на карточке профиля, PortraitSheet передаёт Infinity)', () => {
+  it('без limit — показывает не больше 3 строк даже при 5 отмеченных', () => {
+    render(
+      <MyPatternsCard
+        kind="schema"
+        ids={FIVE_SCHEMA_IDS}
+        weekFreq={{}}
+        onOpenPatterns={() => {}}
+      />,
+    );
+    const rows = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent?.includes('карточка'));
+    expect(rows.length).toBe(3);
+  });
+
+  it('limit=Infinity (PortraitSheet) — показывает все строки, не только 3', () => {
+    render(
+      <MyPatternsCard
+        kind="schema"
+        ids={FIVE_SCHEMA_IDS}
+        weekFreq={{}}
+        onOpenPatterns={() => {}}
+        limit={Infinity}
+      />,
+    );
+    const rows = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent?.includes('карточка'));
+    expect(rows.length).toBe(5);
+  });
+});
+
 describe('MyPatternsCard — футер «Все N →»', () => {
   it('клик по футеру зовёт onOpenPatterns с правильной вкладкой', () => {
     const onOpenPatterns = vi.fn();

@@ -21,8 +21,6 @@ describe('useScreenBlockOrder', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     expect(result.current.orderedIds).toEqual([
       'portrait',
-      'my_schemas',
-      'my_modes',
       'warm_words',
       'journey',
       'streak',
@@ -50,8 +48,6 @@ describe('useScreenBlockOrder', () => {
       JSON.stringify([
         'streak',
         'portrait',
-        'my_schemas',
-        'my_modes',
         'warm_words',
         'journey',
         'heatmap',
@@ -69,9 +65,9 @@ describe('useScreenBlockOrder', () => {
   it('reorder на больший индекс шлёт dir="down"', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     act(() => {
-      // 'journey' сейчас на индексе 4 (portrait/my_schemas/my_modes/warm_words
-      // впереди) — двигаем дальше, на 6.
-      result.current.reorder('journey', 6);
+      // 'journey' сейчас на индексе 2 (portrait/warm_words впереди) —
+      // двигаем дальше, на 4.
+      result.current.reorder('journey', 4);
     });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
       screen: 'profile',
@@ -84,8 +80,8 @@ describe('useScreenBlockOrder', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     let moved = true;
     act(() => {
-      // 'journey' на индексе 4 в порядке по умолчанию.
-      moved = result.current.reorder('journey', 4);
+      // 'journey' на индексе 2 в порядке по умолчанию.
+      moved = result.current.reorder('journey', 2);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();
@@ -115,8 +111,6 @@ describe('useScreenBlockOrder', () => {
     expect(second.current.orderedIds).toEqual([
       'heatmap',
       'portrait',
-      'my_schemas',
-      'my_modes',
       'warm_words',
       'journey',
       'streak',

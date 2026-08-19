@@ -144,8 +144,6 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
     );
     expect(result.current.orderedIds).toEqual([
       'portrait',
-      'my_schemas',
-      'my_modes',
       'warm_words',
       'journey',
       'streak',
@@ -179,9 +177,9 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
     );
     let moved = true;
     act(() => {
-      // 'journey' сейчас на индексе 4 (portrait/my_schemas/my_modes/warm_words
-      // впереди по умолчанию) — тот же индекс = no-op.
-      moved = result.current.reorder('journey', 4);
+      // 'journey' сейчас на индексе 2 (portrait/warm_words впереди по
+      // умолчанию) — тот же индекс = no-op.
+      moved = result.current.reorder('journey', 2);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();

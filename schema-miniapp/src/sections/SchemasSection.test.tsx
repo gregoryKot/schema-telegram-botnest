@@ -243,6 +243,37 @@ describe('SchemasSection — скрываемые блоки (useScreenBlocks)',
   });
 });
 
+describe('SchemasSection — память последней вкладки (follow-up C, patternsTabStorage)', () => {
+  it('нет initialTab, в localStorage сохранена «Режимы» — открывается сразу на ней', async () => {
+    localStorage.setItem('patterns_last_tab', 'modes');
+    await renderReady();
+    expect(screen.getByText('Встретить своего Критика')).toBeTruthy();
+  });
+
+  it('initialTab (переход с «Мой портрет») перебивает сохранённое в localStorage', async () => {
+    localStorage.setItem('patterns_last_tab', 'modes');
+    await renderReady({ initialTab: 'schemas' });
+    expect(screen.getByText('Узнать свои схемы')).toBeTruthy();
+  });
+
+  it('initialTab, если пришёл, сам становится новым «последним» в localStorage', async () => {
+    await renderReady({ initialTab: 'modes' });
+    expect(localStorage.getItem('patterns_last_tab')).toBe('modes');
+  });
+
+  it('мусор в localStorage игнорируется — открывается вкладка «Схемы» по умолчанию', async () => {
+    localStorage.setItem('patterns_last_tab', 'жуки');
+    await renderReady();
+    expect(screen.getByText('Узнать свои схемы')).toBeTruthy();
+  });
+
+  it('переключение вкладки кликом сохраняется в localStorage (read-after-write)', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Потребности'));
+    expect(localStorage.getItem('patterns_last_tab')).toBe('needs');
+  });
+});
+
 describe('SchemasSection — порядок стопки hero/тест на схемы (useScreenBlockOrder)', () => {
   it('сохранённый порядок из localStorage переставляет стопку (read-after-write)', async () => {
     localStorage.setItem(

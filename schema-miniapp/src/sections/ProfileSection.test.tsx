@@ -72,6 +72,13 @@ vi.mock('../components/AchievementDetail', () => ({
 vi.mock('./profile/BestDayInfoSheet', () => ({
   BestDayInfoSheet: () => <div data-testid="best-day-info" />,
 }));
+vi.mock('./profile/PortraitSheet', () => ({
+  PortraitSheet: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="portrait-sheet">
+      <button onClick={onClose}>portrait-sheet-close</button>
+    </div>
+  ),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -177,6 +184,16 @@ describe('ProfileSection — открытие «Мой путь» (JourneySheet)
   });
 });
 
+describe('ProfileSection — открытие «Мой портрет» (PortraitSheet, my_schemas/my_modes переехали внутрь листа)', () => {
+  it('клик по карточке «Мой портрет» открывает лист и закрывается назад', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Мой портрет'));
+    expect(screen.getByTestId('portrait-sheet')).toBeTruthy();
+    fireEvent.click(screen.getByText('portrait-sheet-close'));
+    expect(screen.queryByTestId('portrait-sheet')).toBeNull();
+  });
+});
+
 describe('ProfileSection — детали достижения из общего листа (два уровня оверлеев)', () => {
   it('выбор достижения в AchievementsSheet открывает AchievementDetail поверх', async () => {
     mockApi.getAchievements.mockResolvedValue([
@@ -279,8 +296,6 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
       'screen_hidden_profile',
       JSON.stringify([
         'portrait',
-        'my_schemas',
-        'my_modes',
         'warm_words',
         'journey',
         'streak',
@@ -321,13 +336,14 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(idxStreak).toBeLessThan(idxJourney);
   });
 
-  it('ArrowUp на ручке второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
+  it('ArrowUp на ручке строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
     const { container } = await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    // Порядок листа по умолчанию (SCREEN_BLOCK_ORDER.profile): Мой портрет,
-    // Мои схемы, Мои режимы, Тёплые слова, Мой путь, Серия дней, Календарь,
-    // Достижения, Паттерны — «Серия дней» шестая строка, сразу после «Мой путь».
+    // Порядок листа по умолчанию (SCREEN_BLOCK_ORDER.profile после переезда
+    // «Мои схемы»/«Мои режимы» внутрь листа «Мой портрет»): Мой портрет,
+    // Тёплые слова, Мой путь, Серия дней, Календарь, Достижения, Паттерны —
+    // «Серия дней» четвёртая строка, сразу после «Мой путь».
     fireEvent.keyDown(screen.getByLabelText('Переставить: Серия дней'), {
       key: 'ArrowUp',
     });
@@ -339,8 +355,6 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(localStorage.getItem('screen_order_profile')).toBe(
       JSON.stringify([
         'portrait',
-        'my_schemas',
-        'my_modes',
         'warm_words',
         'streak',
         'journey',

@@ -20,6 +20,10 @@ import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
 import { useMySelections } from './schemas/useMySelections';
+import {
+  readStoredPatternsTab,
+  writeStoredPatternsTab,
+} from './schemas/patternsTabStorage';
 import { useScreenBlocks } from '../hooks/useScreenBlocks';
 import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
 import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
@@ -30,9 +34,15 @@ export function SchemasSection({
   childhoodRatings = {},
   onOpenChildhoodWheel,
   onOpenDiaries,
-  initialTab = 'schemas',
+  initialTab,
 }: Props) {
-  const [tab, setTab] = useState<Tab>(initialTab);
+  // Приоритет: явный initialTab (переход с карточки «Мой портрет») → то, на
+  // чём пользователь оставался в прошлый раз → 'schemas'. Персист — эффектом
+  // ниже, он же фиксирует initialTab (если пришёл) как новое «последнее».
+  const [tab, setTab] = useState<Tab>(
+    () => initialTab ?? readStoredPatternsTab() ?? 'schemas',
+  );
+  useEffect(() => writeStoredPatternsTab(tab), [tab]);
   const {
     manualSchemaIds,
     myModeIds,

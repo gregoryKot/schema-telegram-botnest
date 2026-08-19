@@ -98,14 +98,18 @@ export default function App() {
   );
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
-  // Вкладка «Схемы»/«Режимы», с которой откроется «Паттерны» при переходе с
-  // редизайна вкладки «Я» (карточки «Мой портрет»/«Мои схемы»/«Мои режимы»).
-  // SchemasSection размонтируется/монтируется заново при каждом уходе с
-  // экрана (AppSections рендерит по условию, не через display:none) —
-  // отдельный key не нужен, initialTab читается свежим при каждом монтировании.
-  const [patternsTab, setPatternsTab] = useState<'schemas' | 'modes'>(
-    'schemas',
+  // Вкладка «Паттернов» при явном переходе с карточки «Мой портрет». null =
+  // нет ожидающего перехода — SchemasSection сам берёт последнюю открытую
+  // (patternsTabStorage.ts). Эффект гасит запрос сразу после того, как
+  // SchemasSection его подхватил (initialTab читается один раз при
+  // монтировании) — иначе обычный заход через нижнюю навигацию снова
+  // приносил бы старую явную вкладку вместо реально последней.
+  const [patternsTab, setPatternsTab] = useState<'schemas' | 'modes' | null>(
+    null,
   );
+  useEffect(() => {
+    if (patternsTab !== null) setPatternsTab(null);
+  }, [patternsTab]);
   const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(
     null,
   );

@@ -107,6 +107,15 @@ interface Props {
   modeEntries?: ModeDiaryEntry[];
   setModeEntries?: Dispatch<SetStateAction<ModeDiaryEntry[]>>;
   onOpenPatterns: (tab: 'schemas' | 'modes') => void;
+  /** Сколько строк показать сверху списка (сортировка та же). По умолчанию
+   *  3 — превью на карточке профиля; PortraitSheet передаёт Infinity —
+   *  полный список внутри листа «Мой портрет» (правило «одна механика —
+   *  один компонент», второй копии списка нет). */
+  limit?: number;
+  /** PortraitSheet сам — BottomSheet; открытый изнутри него PatternSheet
+   *  обязан стоять выше (см. PatternSheet.zIndex). Не задан — верхний
+   *  уровень, поведение как раньше. */
+  patternSheetZIndex?: number;
 }
 
 export function MyPatternsCard({
@@ -118,6 +127,8 @@ export function MyPatternsCard({
   modeEntries = [],
   setModeEntries,
   onOpenPatterns,
+  limit = 3,
+  patternSheetZIndex,
 }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const entryCounts =
@@ -139,7 +150,7 @@ export function MyPatternsCard({
       if (aFilled !== bFilled) return aFilled ? -1 : 1;
       return a.meta.name.localeCompare(b.meta.name, 'ru');
     })
-    .slice(0, 3);
+    .slice(0, limit);
 
   function openRow(id: string) {
     void api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, { kind });
@@ -190,6 +201,7 @@ export function MyPatternsCard({
           modeEntries={modeEntries}
           setModeEntries={setModeEntries}
           onClose={() => setOpenId(null)}
+          zIndex={patternSheetZIndex}
         />
       )}
     </div>
