@@ -8,6 +8,7 @@ import { ACHIEVEMENT_META } from './profile/constants';
 import { StreakData, InsightsData } from './profile/types';
 import { ProfileHeader } from './profile/ProfileHeader';
 import { ProfileCards } from './profile/ProfileCards';
+import { useAboutMe } from './profile/useAboutMe';
 import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
 import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
@@ -22,6 +23,7 @@ interface Props {
   onOpenTracker?: () => void;
   refreshKey?: number;
   displayName?: string | null;
+  onOpenPatterns: (tab: 'schemas' | 'modes') => void;
 }
 
 export function ProfileSection({
@@ -29,6 +31,7 @@ export function ProfileSection({
   onOpenTracker,
   refreshKey,
   displayName,
+  onOpenPatterns,
 }: Props) {
   const safeTop = useSafeTop();
   const tgName = getHost().user()?.firstName ?? '';
@@ -39,6 +42,7 @@ export function ProfileSection({
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [ready, setReady] = useState(false);
   const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
+  const aboutMe = useAboutMe(refreshKey);
 
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -105,9 +109,14 @@ export function ProfileSection({
         }}
       >
         {/* ── Скелетон ── */}
+        {/* Первый блок (150) — силуэт карточки «Мой портрет», добавленной
+            редизайном вкладки «Я» (правило «скелетоны по форме контента»).
+            Списки «Мои схемы»/«Мои режимы»/«Тёплые слова» пропущены здесь
+            намеренно: они прячутся при нулевых данных, и фиксированный
+            силуэт для них соврал бы форме на пустом аккаунте. */}
         {!ready && (
           <>
-            {[88, 110, 80].map((h, i) => (
+            {[150, 88, 110, 80].map((h, i) => (
               <div
                 key={i}
                 style={{
@@ -132,10 +141,12 @@ export function ProfileSection({
           insights={insights}
           hasInsights={hasInsights}
           activeDates={activeDates}
+          aboutMe={aboutMe}
           onOpenJourney={() => setJourneyOpen(true)}
           onOpenTracker={onOpenTracker}
           onShowAchievements={() => setShowAchievements(true)}
           onShowBestDayInfo={() => setShowBestDayInfo(true)}
+          onOpenPatterns={onOpenPatterns}
         />
 
         <div style={{ padding: '4px 0' }}>

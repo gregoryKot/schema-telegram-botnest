@@ -152,6 +152,8 @@ function baseProps(overrides: Partial<Parameters<typeof AppSections>[0]> = {}) {
     profileRefreshKey: 0,
     displayName: null,
     onNewDiaryEntry: vi.fn(),
+    patternsTab: 'schemas' as const,
+    onOpenPatterns: vi.fn(),
     ...overrides,
   };
 }

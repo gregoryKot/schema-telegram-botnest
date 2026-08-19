@@ -24,6 +24,16 @@ vi.mock('../api', () => ({
     getInsights: vi.fn(),
     history: vi.fn(),
     trackEvent: vi.fn(),
+    // Редизайн вкладки «Я»: useAboutMe + WarmWordsCard грузят это отдельно
+    // от streak/achievements/insights/history — без моков здесь undefined()
+    // упал бы синхронно внутри useEffect.
+    getProfile: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getSchemaDiary: vi.fn(),
+    getModeDiary: vi.fn(),
+    getModeNotes: vi.fn(),
+    getPhraseChecks: vi.fn(),
+    getSchemaNotes: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -82,6 +92,32 @@ beforeEach(() => {
     totalDays: 0,
   });
   mockApi.history.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({
+    name: null,
+    role: 'CLIENT',
+    ysq: { completedAt: null, activeSchemaIds: [] },
+    notifications: {
+      enabled: false,
+      reminderEnabled: false,
+      timezone: 'UTC',
+      localHour: 9,
+    },
+    streak: 0,
+    lastActivity: {
+      needsTracker: null,
+      schemaDiary: null,
+      modeDiary: null,
+      gratitudeDiary: null,
+    },
+    mySchemaIds: [],
+    myModeIds: [],
+  });
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getPhraseChecks.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
 });
 afterEach(() => {
   cleanup();
@@ -90,7 +126,7 @@ afterEach(() => {
 });
 
 function baseProps() {
-  return { onOpenSettings: vi.fn() };
+  return { onOpenSettings: vi.fn(), onOpenPatterns: vi.fn() };
 }
 
 async function renderReady(
@@ -242,6 +278,10 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
     localStorage.setItem(
       'screen_hidden_profile',
       JSON.stringify([
+        'portrait',
+        'my_schemas',
+        'my_modes',
+        'warm_words',
         'journey',
         'streak',
         'heatmap',
@@ -285,8 +325,9 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     const { container } = await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    // Порядок листа по умолчанию: Мой путь, Серия дней, Календарь, Достижения,
-    // Инсайты — «Серия дней» вторая строка.
+    // Порядок листа по умолчанию (SCREEN_BLOCK_ORDER.profile): Мой портрет,
+    // Мои схемы, Мои режимы, Тёплые слова, Мой путь, Серия дней, Календарь,
+    // Достижения, Паттерны — «Серия дней» шестая строка, сразу после «Мой путь».
     fireEvent.keyDown(screen.getByLabelText('Переставить: Серия дней'), {
       key: 'ArrowUp',
     });
@@ -297,6 +338,10 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     });
     expect(localStorage.getItem('screen_order_profile')).toBe(
       JSON.stringify([
+        'portrait',
+        'my_schemas',
+        'my_modes',
+        'warm_words',
         'streak',
         'journey',
         'heatmap',
@@ -317,7 +362,8 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+    // «Мой портрет» — первая строка листа (SCREEN_BLOCK_ORDER.profile).
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой портрет'), {
       key: 'ArrowUp',
     });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(

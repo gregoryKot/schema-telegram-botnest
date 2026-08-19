@@ -24,6 +24,7 @@ import { PhraseCheckService } from './phrase-check.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
+import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
@@ -70,6 +71,7 @@ const INTERNAL_PROVIDERS = [
   PhraseCheckMetricsService,
   PlusMetricsService,
   ScreenMetricsService,
+  ProfilePatternMetricsService,
   AuthHealthMetricsService,
   ClientErrorMetricsService,
   MoneyMetricsService,

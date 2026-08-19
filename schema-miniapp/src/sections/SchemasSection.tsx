@@ -30,8 +30,9 @@ export function SchemasSection({
   childhoodRatings = {},
   onOpenChildhoodWheel,
   onOpenDiaries,
+  initialTab = 'schemas',
 }: Props) {
-  const [tab, setTab] = useState<Tab>('schemas');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const {
     manualSchemaIds,
     myModeIds,
