@@ -16,8 +16,10 @@
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
-//   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
-//   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
+//   web_banner_open     — нажал баннер-переход (meta.banner). Баннеры живут
+//                         в обоих фронтендах: кабинет мини-аппа зовёт на
+//                         сайт, мобильный сайт — в приложение (/app/);
+//   web_banner_dismiss  — скрыл баннер-переход (meta.banner), те же баннеры;
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
@@ -296,10 +298,17 @@ export const TODAY_FOCUS_PRACTICES = [
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 
-// Идентификаторы баннеров «полная версия на сайте» (meta.banner для событий
-// web_banner_open / web_banner_dismiss). Парный список — на фронте мини-аппа
-// (schema-miniapp/src/utils/webBanner.ts), при добавлении баннера синхронь.
-export const WEB_BANNER_IDS = ['cabinet_full', 'mode_map'] as const;
+// Идентификаторы баннеров-переходов (meta.banner для событий web_banner_open
+// / web_banner_dismiss). 'cabinet_full' и 'mode_map' — баннеры «полная
+// версия на сайте» в мини-аппе (schema-miniapp/src/utils/webBanner.ts);
+// 'mobile_app' — баннер «Открыть приложение» на мобильной версии сайта
+// (webapp/src/components/MobileAppBanner.tsx). При добавлении баннера
+// синхронь список с соответствующим фронтом.
+export const WEB_BANNER_IDS = [
+  'cabinet_full',
+  'mode_map',
+  'mobile_app',
+] as const;
 export type WebBannerId = (typeof WEB_BANNER_IDS)[number];
 
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
