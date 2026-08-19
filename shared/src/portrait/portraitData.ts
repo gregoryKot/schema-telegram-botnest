@@ -30,11 +30,14 @@ export interface Portrait {
   delta: number | null;
 }
 
+// Поля опциональны: вызывающая сторона может передать профиль до того, как
+// прогрузились все его части (напр. история YSQ ещё в polling) — `??`-фолбэки
+// ниже это честно отражают, а не защищаются от невозможного.
 export interface PortraitInput {
-  activeSchemaIds: string[];
-  manualSchemaIds: string[];
-  myModeIds: string[];
-  ysqHistory: YsqHistoryEntry[];
+  activeSchemaIds?: string[];
+  manualSchemaIds?: string[];
+  myModeIds?: string[];
+  ysqHistory?: YsqHistoryEntry[];
 }
 
 // Короткие человекочитаемые подписи доменов — для узкой карточки-бара, не
@@ -53,6 +56,15 @@ const SCHEMA_TO_DOMAIN: Record<string, string> = Object.fromEntries(
   ALL_SCHEMAS.map((s) => [s.id, s.domainId]),
 );
 
+// Короткая подпись домена, с фолбэком на официальное название — на случай,
+// если у домена нет короткой подписи в DOMAIN_LABELS (сейчас такого нет:
+// все 5 доменов из SCHEMA_DOMAINS покрыты, но контент может вырасти раньше,
+// чем эту карту обновят). Вынесена отдельно, чтобы фолбэк был проверяемым
+// сам по себе — правило №15 CLAUDE.md, ветка не должна быть недостижимой.
+export function domainLabel(id: string, officialName: string): string {
+  return DOMAIN_LABELS[id] ?? officialName;
+}
+
 export function buildPortrait(input: PortraitInput): Portrait {
   const activeIds = new Set<string>();
   for (const id of input.activeSchemaIds ?? []) {
@@ -64,7 +76,7 @@ export function buildPortrait(input: PortraitInput): Portrait {
 
   const domains: PortraitDomain[] = SCHEMA_DOMAINS.map((d) => ({
     id: d.id,
-    label: DOMAIN_LABELS[d.id] ?? d.domain,
+    label: domainLabel(d.id, d.domain),
     color: d.color,
     count: [...activeIds].filter((id) => SCHEMA_TO_DOMAIN[id] === d.id).length,
   }));

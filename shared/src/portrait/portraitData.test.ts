@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildPortrait,
+  domainLabel,
   hasPortraitData,
   type PortraitInput,
 } from './portraitData';
@@ -37,6 +38,14 @@ describe('buildPortrait — пустые входы', () => {
     expect(p.domains).toHaveLength(5);
     expect(p.domains.every((d) => d.count === 0)).toBe(true);
     expect(hasPortraitData(p)).toBe(false);
+  });
+
+  it('все поля не заданы (профиль ещё грузится частями) → тот же пустой результат, не падает', () => {
+    const p = buildPortrait({});
+    expect(p.totalSchemas).toBe(0);
+    expect(p.totalModes).toBe(0);
+    expect(p.delta).toBeNull();
+    expect(p.domains.every((d) => d.count === 0)).toBe(true);
   });
 });
 
@@ -111,5 +120,19 @@ describe('buildPortrait — дельта по истории YSQ', () => {
       ysqHistory: [historyEntry(2, 1), historyEntry(1, 4)],
     });
     expect(p.delta).toBe(-3);
+  });
+});
+
+describe('domainLabel — короткая подпись домена', () => {
+  it('известный домен → короткая подпись, а не официальное название', () => {
+    expect(domainLabel('rejection', 'Отчуждение и отвержение')).toBe(
+      'Отвержение',
+    );
+  });
+
+  it('домен без короткой подписи → фолбэк на официальное название', () => {
+    expect(domainLabel('новый_домен_без_подписи', 'Официальное имя')).toBe(
+      'Официальное имя',
+    );
   });
 });
