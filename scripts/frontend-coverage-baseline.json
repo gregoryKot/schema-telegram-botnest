@@ -4,11 +4,11 @@
     "branches": 79.49
   },
   "schema-miniapp": {
-    "lines": 90.8,
-    "branches": 85.13
+    "lines": 90.88,
+    "branches": 85.27
   },
   "shared": {
     "lines": 97.63,
-    "branches": 90.87
+    "branches": 91.08
   }
 }

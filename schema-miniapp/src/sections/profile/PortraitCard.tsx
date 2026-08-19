@@ -19,7 +19,7 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import {
   hasPortraitData,
   type Portrait,
-  type PortraitDomain,
+  type PortraitNeed,
 } from '../../../../shared/src/portrait/portraitData';
 
 interface Props {
@@ -50,18 +50,31 @@ const footBtn: CSSProperties = {
   textAlign: 'left',
 };
 
-function DomainBar({ d, maxCount }: { d: PortraitDomain; maxCount: number }) {
+// Экспортируется — PortraitNeedRows.tsx (лист «Мой портрет») рисует те же
+// бары рядов потребностей поверх аккордеона (правило «одна механика — один
+// компонент»: вид бара не копируется вторым файлом).
+export function NeedBar({
+  n,
+  maxCount,
+}: {
+  n: PortraitNeed;
+  maxCount: number;
+}) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div
         style={{
-          width: 140,
+          width: 150,
           flexShrink: 0,
           fontSize: 13,
           color: 'var(--ink-2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
         }}
       >
-        {d.label}
+        <span aria-hidden>{n.emoji}</span>
+        <span>{n.label}</span>
       </div>
       <div
         style={{
@@ -76,8 +89,8 @@ function DomainBar({ d, maxCount }: { d: PortraitDomain; maxCount: number }) {
           style={{
             height: '100%',
             borderRadius: 4,
-            width: `${(d.count / maxCount) * 100}%`,
-            background: d.color,
+            width: `${(n.count / maxCount) * 100}%`,
+            background: n.color,
             transition: 'width 0.4s ease',
           }}
         />
@@ -88,10 +101,10 @@ function DomainBar({ d, maxCount }: { d: PortraitDomain; maxCount: number }) {
           textAlign: 'right',
           fontSize: 12,
           fontWeight: 700,
-          color: d.count > 0 ? 'var(--text)' : 'var(--text-faint)',
+          color: n.count > 0 ? 'var(--text)' : 'var(--text-faint)',
         }}
       >
-        {d.count}
+        {n.count}
       </div>
     </div>
   );
@@ -105,7 +118,7 @@ export function PortraitCard({
 }: Props) {
   const tr = useTr();
   const hasData = hasPortraitData(portrait);
-  const maxCount = Math.max(1, ...portrait.domains.map((d) => d.count));
+  const maxCount = Math.max(1, ...portrait.needs.map((n) => n.count));
   const delta = portrait.delta;
 
   return (
@@ -119,7 +132,7 @@ export function PortraitCard({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'baseline',
-          marginBottom: 14,
+          marginBottom: 4,
           gap: 8,
         }}
       >
@@ -140,6 +153,23 @@ export function PortraitCard({
             ›
           </span>
         </div>
+      </div>
+
+      {/* Онбординг-объяснение «что это» в контексте — не в спрятанном About
+          (правило «Онбординг и очевидность»): за каждым баром стоят активные
+          схемы, сгруппированные по одной из пяти базовых потребностей. */}
+      <div
+        style={{
+          fontSize: 11.5,
+          color: 'var(--text-faint)',
+          marginBottom: 14,
+          lineHeight: 1.4,
+        }}
+      >
+        {tr(
+          'Сколько твоих активных схем стоит за каждой из пяти потребностей',
+          'Сколько ваших активных схем стоит за каждой из пяти потребностей',
+        )}
       </div>
 
       {!hasData && (
@@ -174,8 +204,8 @@ export function PortraitCard({
 
       {hasData && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {portrait.domains.map((d) => (
-            <DomainBar key={d.id} d={d} maxCount={maxCount} />
+          {portrait.needs.map((n) => (
+            <NeedBar key={n.id} n={n} maxCount={maxCount} />
           ))}
         </div>
       )}

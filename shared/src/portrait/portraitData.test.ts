@@ -3,10 +3,11 @@
 // аккаунте только нули/пусто), активные схемы с бэка и ручного выбора не
 // должны задваиваться при пересечении, дельта считается только при ≥2
 // записей истории (history[0] — самая свежая, см. ysq.service.ts orderBy desc).
+// Группировка — по пяти базовым потребностям (не по клиническим доменам
+// схема-терапии, см. комментарий в portraitData.ts).
 import { describe, it, expect } from 'vitest';
 import {
   buildPortrait,
-  domainLabel,
   hasPortraitData,
   type PortraitInput,
 } from './portraitData';
@@ -35,8 +36,8 @@ describe('buildPortrait — пустые входы', () => {
     expect(p.totalSchemas).toBe(0);
     expect(p.totalModes).toBe(0);
     expect(p.delta).toBeNull();
-    expect(p.domains).toHaveLength(5);
-    expect(p.domains.every((d) => d.count === 0)).toBe(true);
+    expect(p.needs).toHaveLength(5);
+    expect(p.needs.every((n) => n.count === 0)).toBe(true);
     expect(hasPortraitData(p)).toBe(false);
   });
 
@@ -45,19 +46,45 @@ describe('buildPortrait — пустые входы', () => {
     expect(p.totalSchemas).toBe(0);
     expect(p.totalModes).toBe(0);
     expect(p.delta).toBeNull();
-    expect(p.domains.every((d) => d.count === 0)).toBe(true);
+    expect(p.needs.every((n) => n.count === 0)).toBe(true);
+  });
+});
+
+describe('buildPortrait — потребности: порядок, подписи, эмодзи, цвет', () => {
+  it('пять потребностей в порядке NEED_ORDER с подписью, эмодзи и цветом', () => {
+    const p = buildPortrait(empty);
+    expect(p.needs.map((n) => n.id)).toEqual([
+      'attachment',
+      'autonomy',
+      'expression',
+      'play',
+      'limits',
+    ]);
+    const attachment = p.needs.find((n) => n.id === 'attachment')!;
+    expect(attachment.label).toBe('Привязанность');
+    expect(attachment.emoji).toBe('🤝');
+    expect(attachment.color).toBe('#ff6b9d');
+  });
+
+  it('у каждой из пяти потребностей есть непустая подпись и эмодзи — реестры не разъехались', () => {
+    const p = buildPortrait(empty);
+    for (const n of p.needs) {
+      expect(n.label).toBeTruthy();
+      expect(n.emoji).toBeTruthy();
+      expect(n.color).toBeTruthy();
+    }
   });
 });
 
 describe('buildPortrait — активные схемы', () => {
-  it('активная схема с бэка попадает в свой домен', () => {
-    // emotional_deprivation — домен rejection (см. schemaDomains.ts).
+  it('активная схема с бэка попадает в свою потребность', () => {
+    // emotional_deprivation — потребность attachment (см. ysqSchemasContent.ts).
     const p = buildPortrait({
       ...empty,
       activeSchemaIds: ['emotional_deprivation'],
     });
-    const rejection = p.domains.find((d) => d.id === 'rejection')!;
-    expect(rejection.count).toBe(1);
+    const attachment = p.needs.find((n) => n.id === 'attachment')!;
+    expect(attachment.count).toBe(1);
     expect(p.totalSchemas).toBe(1);
     expect(hasPortraitData(p)).toBe(true);
   });
@@ -68,15 +95,15 @@ describe('buildPortrait — активные схемы', () => {
       activeSchemaIds: ['emotional_deprivation'],
       manualSchemaIds: ['emotional_deprivation'],
     });
-    const rejection = p.domains.find((d) => d.id === 'rejection')!;
-    expect(rejection.count).toBe(1);
+    const attachment = p.needs.find((n) => n.id === 'attachment')!;
+    expect(attachment.count).toBe(1);
     expect(p.totalSchemas).toBe(1);
   });
 
   it('ручной выбор без активных с бэка считается сам по себе (manual-only)', () => {
-    // dependence — домен autonomy.
-    const p = buildPortrait({ ...empty, manualSchemaIds: ['dependence'] });
-    const autonomy = p.domains.find((d) => d.id === 'autonomy')!;
+    // failure — потребность autonomy.
+    const p = buildPortrait({ ...empty, manualSchemaIds: ['failure'] });
+    const autonomy = p.needs.find((n) => n.id === 'autonomy')!;
     expect(autonomy.count).toBe(1);
     expect(p.totalSchemas).toBe(1);
   });
@@ -120,19 +147,5 @@ describe('buildPortrait — дельта по истории YSQ', () => {
       ysqHistory: [historyEntry(2, 1), historyEntry(1, 4)],
     });
     expect(p.delta).toBe(-3);
-  });
-});
-
-describe('domainLabel — короткая подпись домена', () => {
-  it('известный домен → короткая подпись, а не официальное название', () => {
-    expect(domainLabel('rejection', 'Отчуждение и отвержение')).toBe(
-      'Отвержение',
-    );
-  });
-
-  it('домен без короткой подписи → фолбэк на официальное название', () => {
-    expect(domainLabel('новый_домен_без_подписи', 'Официальное имя')).toBe(
-      'Официальное имя',
-    );
   });
 });
