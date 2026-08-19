@@ -26,6 +26,9 @@ describe('StatsReportService.render', () => {
     const screen = {
       render: jest.fn().mockResolvedValue('настройка экранов: 1'),
     };
+    const profilePattern = {
+      render: jest.fn().mockResolvedValue('паттерны со вкладки «Я»: 4'),
+    };
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
     };
@@ -43,6 +46,7 @@ describe('StatsReportService.render', () => {
         accountLink,
         plus,
         screen,
+        profilePattern,
         authHealth,
         clientErrors,
         money,
@@ -57,6 +61,7 @@ describe('StatsReportService.render', () => {
         accountLink as never,
         plus as never,
         screen as never,
+        profilePattern as never,
         authHealth as never,
         clientErrors as never,
         money as never,
@@ -72,6 +77,9 @@ describe('StatsReportService.render', () => {
     expect(
       out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
     ).toBe(true);
+    expect(out).toContain(
+      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
+    );
     expect(out).toContain(
       'вход в мессенджере: всё хорошо\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5',
     );
@@ -93,6 +101,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
+    expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
     expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
     expect(blocks.money.render).toHaveBeenCalledTimes(1);
@@ -100,6 +109,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('настройка экранов: 1');
+    expect(out).toContain('паттерны со вкладки «Я»: 4');
     expect(out).toContain('вход в мессенджере: всё хорошо');
     expect(out).toContain('поломки на клиенте: не было');
     expect(out).toContain('деньги: поддержали 3 раза');

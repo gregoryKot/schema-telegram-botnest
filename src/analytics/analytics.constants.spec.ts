@@ -21,6 +21,7 @@ import {
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
@@ -41,6 +42,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {

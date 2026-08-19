@@ -106,6 +106,8 @@
 //                         согласия, чтобы видеть и конверсию в «принял
 //                         соглашение»). Возвращающийся по той же ссылке
 //                         повторно не считается.
+//   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
+//                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -148,6 +150,7 @@ export const ANALYTICS_EVENTS = [
   'auth_success',
   'client_error',
   'signup_source',
+  'profile_pattern_open',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -269,6 +272,12 @@ export const SHARE_CARD_KINDS = [
   'phrase_check_full',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
+
+// Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
+// схемы или лист режима. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
+export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
 
 // CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts
 // (правило №10: файл держим ≤201 строки).

@@ -113,3 +113,11 @@ export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
 export type AccountLinkHost = 'max' | 'telegram';
 /** Почему не вышло: meta.reason. */
 export type AccountLinkFailReason = 'expired' | 'error';
+
+// Открытие листа схемы/режима с редизайна вкладки «Я»: meta { kind }.
+// Парный allow-list (ANALYTICS_EVENTS, PROFILE_PATTERN_KINDS) —
+// src/analytics/analytics.constants.ts. Фронт вкладки «Я» ещё не подключён
+// (см. src/security/analytics-sync.invariants.spec.ts, BACKEND_ONLY) — тот
+// же приём, что у MODE_CARD_SAVED_EVENT: контракт заводится раньше UI.
+export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
+export type ProfilePatternKind = 'schema' | 'mode';

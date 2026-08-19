@@ -131,6 +131,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
     'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
     'подделать через POST /api/event',
+  profile_pattern_open:
+    'константа PROFILE_PATTERN_OPEN_EVENT (shared/src/share/analytics.ts) — ' +
+    'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
+    'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
+    'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -167,7 +172,9 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
     // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
-    // /start, тот же приём (серверное событие, фронт не шлёт).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(24);
+    // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
+    // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
+    // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(25);
   });
 });
