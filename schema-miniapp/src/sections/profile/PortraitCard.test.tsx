@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-// PortraitCard — карточка «Мой портрет» вкладки «Я»: бары по доменам (в т.ч.
-// нулевые), пустое состояние объясняет откуда/зачем (правило «Онбординг»),
-// дельта с прошлого теста без шейминга роста, ссылка на тест без завершения
-// YSQ. Вся карточка кликабельна и открывает PortraitSheet — внутренние CTA
-// («Пройти тест», «Пройти тест на схемы →») стопают всплытие и зовут
-// СВОЙ onOpenPatterns, а не открытие листа (regression: no button-in-button).
+// PortraitCard — карточка «Мой портрет» вкладки «Я»: бары по пяти базовым
+// потребностям (в т.ч. нулевые), онбординг-подпись «что это» под заголовком
+// (правило «Онбординг и очевидность»), пустое состояние объясняет
+// откуда/зачем, дельта с прошлого теста без шейминга роста, ссылка на тест
+// без завершения YSQ. Вся карточка кликабельна и открывает PortraitSheet —
+// внутренние CTA («Пройти тест», «Пройти тест на схемы →») стопают всплытие
+// и зовут СВОЙ onOpenPatterns, а не открытие листа (regression: no
+// button-in-button).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PortraitCard } from './PortraitCard';
@@ -14,35 +16,40 @@ afterEach(cleanup);
 
 function makePortrait(overrides: Partial<Portrait> = {}): Portrait {
   return {
-    domains: [
+    needs: [
       {
-        id: 'rejection',
-        label: 'Отвержение',
-        color: 'var(--accent-red)',
+        id: 'attachment',
+        label: 'Привязанность',
+        emoji: '🤝',
+        color: '#ff6b9d',
         count: 0,
       },
       {
         id: 'autonomy',
         label: 'Автономия',
-        color: 'var(--accent-orange)',
+        emoji: '🧭',
+        color: '#4fa3f7',
+        count: 0,
+      },
+      {
+        id: 'expression',
+        label: 'Выражение чувств',
+        emoji: '💬',
+        color: '#facc15',
+        count: 0,
+      },
+      {
+        id: 'play',
+        label: 'Спонтанность',
+        emoji: '🎉',
+        color: '#06d6a0',
         count: 0,
       },
       {
         id: 'limits',
         label: 'Границы',
-        color: 'var(--accent-yellow)',
-        count: 0,
-      },
-      {
-        id: 'other_directed',
-        label: 'Ориентация на других',
-        color: 'var(--accent-green)',
-        count: 0,
-      },
-      {
-        id: 'vigilance',
-        label: 'Бдительность',
-        color: 'var(--accent-indigo)',
+        emoji: '⚖️',
+        color: '#a78bfa',
         count: 0,
       },
     ],
@@ -52,6 +59,24 @@ function makePortrait(overrides: Partial<Portrait> = {}): Portrait {
     ...overrides,
   };
 }
+
+describe('PortraitCard — онбординг-подпись под заголовком', () => {
+  it('всегда объясняет «что это», независимо от наличия данных', () => {
+    render(
+      <PortraitCard
+        portrait={makePortrait()}
+        ysqCompletedAt={null}
+        onOpenPatterns={() => {}}
+        onOpenSheet={() => {}}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /Сколько твоих активных схем стоит за каждой из пяти потребностей/,
+      ),
+    ).toBeTruthy();
+  });
+});
 
 describe('PortraitCard — пустое состояние (hasPortraitData=false)', () => {
   it('нет ни одной активной схемы — объясняет откуда/зачем и зовёт пройти тест', () => {
@@ -67,43 +92,48 @@ describe('PortraitCard — пустое состояние (hasPortraitData=fals
     expect(screen.getByText(/Здесь соберётся/)).toBeTruthy();
     fireEvent.click(screen.getByText('Пройти тест'));
     expect(onOpenPatterns).toHaveBeenCalledTimes(1);
-    // Бары доменов не рисуются на пустом состоянии.
-    expect(screen.queryByText('Отвержение')).toBeNull();
+    // Бары потребностей не рисуются на пустом состоянии.
+    expect(screen.queryByText('Привязанность')).toBeNull();
   });
 });
 
-describe('PortraitCard — бары доменов', () => {
-  it('рендерит все 5 доменов, включая нулевые (не прячет их)', () => {
+describe('PortraitCard — бары потребностей', () => {
+  it('рендерит все 5 потребностей с эмодзи, включая нулевые (не прячет их)', () => {
     const portrait = makePortrait({
-      domains: [
+      needs: [
         {
-          id: 'rejection',
-          label: 'Отвержение',
-          color: 'var(--accent-red)',
+          id: 'attachment',
+          label: 'Привязанность',
+          emoji: '🤝',
+          color: '#ff6b9d',
           count: 3,
         },
         {
           id: 'autonomy',
           label: 'Автономия',
-          color: 'var(--accent-orange)',
+          emoji: '🧭',
+          color: '#4fa3f7',
+          count: 0,
+        },
+        {
+          id: 'expression',
+          label: 'Выражение чувств',
+          emoji: '💬',
+          color: '#facc15',
+          count: 1,
+        },
+        {
+          id: 'play',
+          label: 'Спонтанность',
+          emoji: '🎉',
+          color: '#06d6a0',
           count: 0,
         },
         {
           id: 'limits',
           label: 'Границы',
-          color: 'var(--accent-yellow)',
-          count: 1,
-        },
-        {
-          id: 'other_directed',
-          label: 'Ориентация на других',
-          color: 'var(--accent-green)',
-          count: 0,
-        },
-        {
-          id: 'vigilance',
-          label: 'Бдительность',
-          color: 'var(--accent-indigo)',
+          emoji: '⚖️',
+          color: '#a78bfa',
           count: 0,
         },
       ],
@@ -118,11 +148,12 @@ describe('PortraitCard — бары доменов', () => {
         onOpenSheet={() => {}}
       />,
     );
-    expect(screen.getByText('Отвержение')).toBeTruthy();
+    expect(screen.getByText('Привязанность')).toBeTruthy();
     expect(screen.getByText('Автономия')).toBeTruthy();
+    expect(screen.getByText('Выражение чувств')).toBeTruthy();
+    expect(screen.getByText('Спонтанность')).toBeTruthy();
     expect(screen.getByText('Границы')).toBeTruthy();
-    expect(screen.getByText('Ориентация на других')).toBeTruthy();
-    expect(screen.getByText('Бдительность')).toBeTruthy();
+    expect(screen.getByText('🤝')).toBeTruthy();
     // Заголовок: «N схем · M режимов».
     expect(screen.getByText(/4 схемы · 2 режима/)).toBeTruthy();
   });
@@ -130,35 +161,40 @@ describe('PortraitCard — бары доменов', () => {
   it('нет завершённого теста, но есть данные — вместо даты ссылка «Пройти тест на схемы →»', () => {
     const onOpenPatterns = vi.fn();
     const portrait = makePortrait({
-      domains: [
+      needs: [
         {
-          id: 'rejection',
-          label: 'Отвержение',
-          color: 'var(--accent-red)',
+          id: 'attachment',
+          label: 'Привязанность',
+          emoji: '🤝',
+          color: '#ff6b9d',
           count: 1,
         },
         {
           id: 'autonomy',
           label: 'Автономия',
-          color: 'var(--accent-orange)',
+          emoji: '🧭',
+          color: '#4fa3f7',
+          count: 0,
+        },
+        {
+          id: 'expression',
+          label: 'Выражение чувств',
+          emoji: '💬',
+          color: '#facc15',
+          count: 0,
+        },
+        {
+          id: 'play',
+          label: 'Спонтанность',
+          emoji: '🎉',
+          color: '#06d6a0',
           count: 0,
         },
         {
           id: 'limits',
           label: 'Границы',
-          color: 'var(--accent-yellow)',
-          count: 0,
-        },
-        {
-          id: 'other_directed',
-          label: 'Ориентация на других',
-          color: 'var(--accent-green)',
-          count: 0,
-        },
-        {
-          id: 'vigilance',
-          label: 'Бдительность',
-          color: 'var(--accent-indigo)',
+          emoji: '⚖️',
+          color: '#a78bfa',
           count: 0,
         },
       ],
@@ -180,35 +216,40 @@ describe('PortraitCard — бары доменов', () => {
 
 describe('PortraitCard — дельта с прошлого теста', () => {
   const portrait = makePortrait({
-    domains: [
+    needs: [
       {
-        id: 'rejection',
-        label: 'Отвержение',
-        color: 'var(--accent-red)',
+        id: 'attachment',
+        label: 'Привязанность',
+        emoji: '🤝',
+        color: '#ff6b9d',
         count: 2,
       },
       {
         id: 'autonomy',
         label: 'Автономия',
-        color: 'var(--accent-orange)',
+        emoji: '🧭',
+        color: '#4fa3f7',
+        count: 0,
+      },
+      {
+        id: 'expression',
+        label: 'Выражение чувств',
+        emoji: '💬',
+        color: '#facc15',
+        count: 0,
+      },
+      {
+        id: 'play',
+        label: 'Спонтанность',
+        emoji: '🎉',
+        color: '#06d6a0',
         count: 0,
       },
       {
         id: 'limits',
         label: 'Границы',
-        color: 'var(--accent-yellow)',
-        count: 0,
-      },
-      {
-        id: 'other_directed',
-        label: 'Ориентация на других',
-        color: 'var(--accent-green)',
-        count: 0,
-      },
-      {
-        id: 'vigilance',
-        label: 'Бдительность',
-        color: 'var(--accent-indigo)',
+        emoji: '⚖️',
+        color: '#a78bfa',
         count: 0,
       },
     ],
@@ -312,35 +353,40 @@ describe('PortraitCard — вся карточка кликабельна, от�
     const onOpenSheet = vi.fn();
     const portrait = makePortrait({
       totalSchemas: 1,
-      domains: [
+      needs: [
         {
-          id: 'rejection',
-          label: 'Отвержение',
-          color: 'var(--accent-red)',
+          id: 'attachment',
+          label: 'Привязанность',
+          emoji: '🤝',
+          color: '#ff6b9d',
           count: 1,
         },
         {
           id: 'autonomy',
           label: 'Автономия',
-          color: 'var(--accent-orange)',
+          emoji: '🧭',
+          color: '#4fa3f7',
+          count: 0,
+        },
+        {
+          id: 'expression',
+          label: 'Выражение чувств',
+          emoji: '💬',
+          color: '#facc15',
+          count: 0,
+        },
+        {
+          id: 'play',
+          label: 'Спонтанность',
+          emoji: '🎉',
+          color: '#06d6a0',
           count: 0,
         },
         {
           id: 'limits',
           label: 'Границы',
-          color: 'var(--accent-yellow)',
-          count: 0,
-        },
-        {
-          id: 'other_directed',
-          label: 'Ориентация на других',
-          color: 'var(--accent-green)',
-          count: 0,
-        },
-        {
-          id: 'vigilance',
-          label: 'Бдительность',
-          color: 'var(--accent-indigo)',
+          emoji: '⚖️',
+          color: '#a78bfa',
           count: 0,
         },
       ],

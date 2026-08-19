@@ -8,6 +8,7 @@
 import { BottomSheet } from '../../components/BottomSheet';
 import { useTr } from '../../utils/addressForm';
 import { MyPatternsCard } from './MyPatternsCard';
+import { PortraitNeedRows } from './PortraitNeedRows';
 import type { AboutMeState } from './useAboutMe';
 
 // PatternSheet сам — BottomSheet поверх этого (backdrop 200/панель 201) —
@@ -58,9 +59,14 @@ export function PortraitSheet({ aboutMe, onOpenPatterns, onClose }: Props) {
           </div>
         )}
 
+        {/* Пять базовых потребностей — та же группировка, что теперь у
+            карточки на профиле. Тап по строке раскрывает объяснение (правило
+            «Онбординг»: смысл в контексте, не в спрятанном About). */}
+        <PortraitNeedRows needs={aboutMe.portrait.needs} />
+
         <div
           style={{
-            marginTop: 14,
+            marginTop: 4,
             display: 'flex',
             flexDirection: 'column',
             gap: 10,

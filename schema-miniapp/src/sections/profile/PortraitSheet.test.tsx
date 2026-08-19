@@ -29,11 +29,49 @@ vi.mock('../../components/patternSheet/usePatternStatus', () => ({
 
 afterEach(cleanup);
 
+const emptyNeeds = [
+  {
+    id: 'attachment' as const,
+    label: 'Привязанность',
+    emoji: '🤝',
+    color: '#ff6b9d',
+    count: 0,
+  },
+  {
+    id: 'autonomy' as const,
+    label: 'Автономия',
+    emoji: '🧭',
+    color: '#4fa3f7',
+    count: 0,
+  },
+  {
+    id: 'expression' as const,
+    label: 'Выражение чувств',
+    emoji: '💬',
+    color: '#facc15',
+    count: 0,
+  },
+  {
+    id: 'play' as const,
+    label: 'Спонтанность',
+    emoji: '🎉',
+    color: '#06d6a0',
+    count: 0,
+  },
+  {
+    id: 'limits' as const,
+    label: 'Границы',
+    emoji: '⚖️',
+    color: '#a78bfa',
+    count: 0,
+  },
+];
+
 function makeAboutMe(overrides: Partial<AboutMeState> = {}): AboutMeState {
   return {
     ready: true,
     portrait: {
-      domains: [],
+      needs: emptyNeeds,
       totalSchemas: 0,
       totalModes: 0,
       delta: null,
@@ -62,6 +100,45 @@ describe('PortraitSheet — пусто', () => {
     );
     expect(screen.getByText('Мой портрет')).toBeTruthy();
     expect(screen.getByText(/Отметь схемы и режимы/)).toBeTruthy();
+  });
+});
+
+describe('PortraitSheet — строки пяти потребностей над списками', () => {
+  it('рендерит все пять потребностей, а списки «Мои схемы»/«Мои режимы» — под ними', () => {
+    render(
+      <PortraitSheet
+        aboutMe={makeAboutMe({ mySchemaIds: ['abandonment'] })}
+        onOpenPatterns={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByText('Привязанность')).toBeTruthy();
+    expect(screen.getByText('Автономия')).toBeTruthy();
+    expect(screen.getByText('Выражение чувств')).toBeTruthy();
+    expect(screen.getByText('Спонтанность')).toBeTruthy();
+    expect(screen.getByText('Границы')).toBeTruthy();
+    // Список схем всё ещё рендерится (карточка паттерна с id).
+    expect(
+      screen
+        .getAllByRole('button')
+        .some((b) => b.textContent?.includes('карточка')),
+    ).toBe(true);
+  });
+
+  it('тап по строке раскрывает объяснение потребности, второй тап схлопывает', () => {
+    render(
+      <PortraitSheet
+        aboutMe={makeAboutMe()}
+        onOpenPatterns={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const row = screen.getByText('Привязанность');
+    expect(screen.queryByText(/Потребность в настоящем контакте/)).toBeNull();
+    fireEvent.click(row);
+    expect(screen.getByText(/Потребность в настоящем контакте/)).toBeTruthy();
+    fireEvent.click(row);
+    expect(screen.queryByText(/Потребность в настоящем контакте/)).toBeNull();
   });
 });
 
