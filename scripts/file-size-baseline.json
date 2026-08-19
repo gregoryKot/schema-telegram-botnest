@@ -540,7 +540,7 @@
   "shared/src/notes/types.ts": 40,
   "shared/src/phraseCheck/criteria.ts": 124,
   "shared/src/phraseCheck/verdict.ts": 53,
-  "shared/src/portrait/portraitData.ts": 86,
+  "shared/src/portrait/portraitData.ts": 98,
   "shared/src/practices/quickPractices.ts": 174,
   "shared/src/quiz/quizEngine.ts": 62,
   "shared/src/schema/schemaDiarySteps.ts": 203,
