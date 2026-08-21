@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
@@ -6,10 +6,11 @@ import { botUrl, botHandle } from '../utils/botConfig';
 // Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
 import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AMBER, EMERALD, ROSE, AURORA, glow } from './landing/aurora';
 import { Logo, Cta } from './landing/BrandKit';
-import { STEPS, FEATURES, TRUST, H2, EYEBROW } from './landing/productContent';
+import { STEPS, FEATURES, TRUST, H2, EYEBROW, NAV_LINKS } from './landing/productContent';
 import { GlassCard, ArticleCard, FaqList } from './landing/ProductKit';
 import { AuthorSection } from './landing/AuthorSection';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
+import { ProductMobileMenu } from './landing/ProductMobileMenu';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
@@ -86,6 +87,7 @@ export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const articles = useRecentArticles(3);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => { if (isAuthenticated) navigate('/today', { replace: true }); }, [isAuthenticated, navigate]);
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
@@ -104,13 +106,28 @@ export function ProductLandingPage() {
         <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 24px', boxSizing: 'border-box', background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${GLASS_BORDER}` }}>
           <a href="/" style={{ textDecoration: 'none' }}><Logo /></a>
           <nav className="pl2-nav" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[['Как это работает', '#how'], ['Возможности', '#features'], ['Тесты', '/tests'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
+            {NAV_LINKS.map(({ label, href }) => (
               <a key={href} href={href} style={{ fontSize: 13.5, fontWeight: 600, color: SUB, textDecoration: 'none', padding: '7px 12px', borderRadius: 10, whiteSpace: 'nowrap', transition: 'color .15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = INK; }} onMouseLeave={(e) => { e.currentTarget.style.color = SUB; }}>{label}</a>
             ))}
           </nav>
-          <Cta href="/login">Войти</Cta>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="pl2-nav">
+              <Cta href="/login">Войти</Cta>
+            </div>
+            {/* Бургер — виден только ≤640px, .pl2-nav скрыт там же (В4, аудит 2026-08) */}
+            <button
+              className="pl2-burger" aria-label="Открыть меню" onClick={() => setMenuOpen(true)}
+              style={{ display: 'none', flexDirection: 'column', justifyContent: 'center', gap: 4, alignItems: 'center', width: 44, height: 44, borderRadius: 10, border: `1px solid ${GLASS_BORDER}`, background: 'rgba(255,255,255,.05)', cursor: 'pointer', padding: 0 }}
+            >
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+            </button>
+          </div>
         </header>
+
+        {menuOpen && <ProductMobileMenu onClose={() => setMenuOpen(false)} />}
 
         {/* ── Hero ── */}
         <section style={{ padding: '140px 24px 90px' }}>
@@ -283,7 +300,7 @@ export function ProductLandingPage() {
           .pl2-chip { display: none; }
         }
         @media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 640px) { .pl2-nav { display: none !important; } }
+        @media (max-width: 640px) { .pl2-nav { display: none !important; } .pl2-burger { display: flex !important; } }
       `}</style>
     </div>
   );

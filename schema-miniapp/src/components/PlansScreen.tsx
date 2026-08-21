@@ -5,6 +5,7 @@ import { LoadErrorBanner } from './LoadErrorBanner';
 import { PlanCard } from './PlanCard';
 import { useSafeTop } from '../utils/safezone';
 import { useTr } from '../utils/addressForm';
+import { hitboxStyle } from '../utils/hitbox';
 
 interface Props {
   onClose: () => void;
@@ -63,22 +64,24 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={onClose}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'var(--surface-2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-sub)',
-              fontSize: 20,
-              lineHeight: 1,
-            }}
+            aria-label="Назад"
+            style={hitboxStyle(34, 34).outer}
           >
-            ‹
+            <span
+              style={{
+                ...hitboxStyle(34, 34).inner,
+                borderRadius: 10,
+                background: 'var(--surface-2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-sub)',
+                fontSize: 20,
+                lineHeight: 1,
+              }}
+            >
+              ‹
+            </span>
           </button>
           <div>
             <div

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { pressable } from '../utils/a11y';
+import { hitboxStyle } from '../utils/hitbox';
 import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
 import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
@@ -77,25 +78,30 @@ export function Disclaimer({
           marginBottom: 24,
         }}
       >
-        {steps.map((id, i) => (
-          <div
-            key={id}
-            {...pressable(() => setStep(i))}
-            style={{
-              width: i === step ? 20 : 8,
-              height: 8,
-              borderRadius: 4,
-              background:
-                i === step
-                  ? 'var(--accent)'
-                  : i < step
-                    ? 'rgba(var(--fg-rgb),0.3)'
-                    : 'rgba(var(--fg-rgb),0.12)',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-            }}
-          />
-        ))}
+        {steps.map((id, i) => {
+          const dotW = i === step ? 20 : 8;
+          return (
+            <div
+              key={id}
+              {...pressable(() => setStep(i))}
+              style={hitboxStyle(dotW, 8, 24).outer}
+            >
+              <div
+                style={{
+                  ...hitboxStyle(dotW, 8, 24).inner,
+                  borderRadius: 4,
+                  background:
+                    i === step
+                      ? 'var(--accent)'
+                      : i < step
+                        ? 'rgba(var(--fg-rgb),0.3)'
+                        : 'rgba(var(--fg-rgb),0.12)',
+                  transition: 'all 0.25s ease',
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Content */}

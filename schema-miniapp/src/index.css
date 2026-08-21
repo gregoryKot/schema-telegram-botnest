@@ -97,7 +97,7 @@ body {
   --text: #f0e9e2;
   --nav-bg: rgba(22, 18, 15, 0.86);
   --text-sub: rgba(240, 233, 226, 0.64);
-  --text-faint: rgba(240, 233, 226, 0.42);
+  --text-faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08) */
   --chip-sel-text: #16120f;
   --on-accent: #ffffff;
 
@@ -124,7 +124,7 @@ body {
   /* Те же роли, что в светлой теме: на них держатся списки и подписи */
   --ink-2: rgba(240, 233, 226, 0.78);
   --muted: rgba(240, 233, 226, 0.62);
-  --faint: rgba(240, 233, 226, 0.42);
+  --faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08), совпадает с --text-faint */
   --line: rgba(240, 233, 226, 0.1);
   --accent-hi: #db8e68;
   --accent-bg: rgba(201, 125, 90, 0.16);
@@ -146,7 +146,7 @@ html[data-theme='light'] {
   --text: #221e1b;
   --nav-bg: rgba(250, 247, 243, 0.86);
   --text-sub: #4a423c;
-  --text-faint: #a2988f;
+  --text-faint: #706c69; /* ≥4.5:1 к --bg (аудит 2026-08) */
   --chip-sel-text: #221e1b;
   --on-accent: #ffffff;
 
@@ -171,7 +171,7 @@ html[data-theme='light'] {
   /* Оттенки текста и линий, на которых держится вёрстка «бумаги» */
   --ink-2: #4a423c;
   --muted: #8a8079;
-  --faint: #a2988f;
+  --faint: #706c69; /* ≥4.5:1 к --bg (аудит 2026-08), совпадает с --text-faint */
   --line: rgba(34, 30, 27, 0.07);
   --accent-hi: #86482d;
   --accent-bg: #f6eee8;

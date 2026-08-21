@@ -5,7 +5,7 @@
 // должен видеть лендинг (редирект на /today), а статьи в блоке «Статьи» —
 // реальные из API, не заглушка.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProductLandingPage } from './ProductLandingPage';
 import { AuthContext, type AuthState } from '../auth/authContext';
@@ -80,6 +80,28 @@ describe('ProductLandingPage — неавторизованный визитор
     const privacyLink = screen.getByText('Политика конфиденциальности') as HTMLAnchorElement;
     expect(offerLink.getAttribute('href')).toBe('/offer');
     expect(privacyLink.getAttribute('href')).toBe('/privacy');
+  });
+});
+
+describe('ProductLandingPage — мобильное меню (В4, аудит 2026-08)', () => {
+  // .pl2-nav скрывается CSS-медиазапросом ≤640px — jsdom его не вычисляет,
+  // поэтому кнопка всегда в DOM (видимость — забота CSS, проверенного глазами
+  // в браузере); тест бьёт по реальному поведению: кнопка есть, открывает
+  // меню со всеми ссылками нав-бара, включая «Войти».
+  it('бургер-кнопка открывает ProductMobileMenu со ссылками нав-бара', () => {
+    renderPage();
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    const dialog = screen.getByRole('dialog', { name: 'Меню' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(screen.getAllByText('Как это работает').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Войти').length).toBeGreaterThan(0);
+  });
+
+  it('«×» в мобильном меню закрывает его', () => {
+    renderPage();
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    fireEvent.click(screen.getByLabelText('Закрыть меню'));
+    expect(screen.queryByRole('dialog', { name: 'Меню' })).toBeNull();
   });
 });
 

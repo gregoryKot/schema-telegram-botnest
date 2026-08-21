@@ -4,7 +4,7 @@ import type { Need, UserProfile } from '../types';
 import { useNeedData } from '../needData';
 import { api, reportClientError } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import type { Section } from '../components/BottomNav';
+import type { Section } from '../components/appShell/navigation';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { hasDraft } from '../utils/drafts';
