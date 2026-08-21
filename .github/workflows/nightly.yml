@@ -186,6 +186,113 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # Репетиция restore бэкапа (аудит тестовых практик 2026-08, пункт №1):
+  # «бэкап без проверенного restore — не бэкап». До этой джобы restore
+  # существовал только как комментарий в хвосте scripts/backup-to-b2.sh — и
+  # он был НЕВЕРЕН (encrypt-сторона кладёт IV как 16 сырых байт, комментарий
+  # читал первые 32 БАЙТА как «32 hex-символа»); по задокументированной
+  # процедуре восстановление отдавало бы мусор. Живой фикс — scripts/restore-backup.sh
+  # (round-trip и негативные пробы юнит-тестом в src/infra/backup-restore.spec.ts);
+  # здесь та же механика прогоняется на настоящем Postgres от начала до конца:
+  # миграции → маркер → бэкап → restore во ВТОРУЮ пустую БД → сверка данных
+  # и схемы. Щит обязан уметь краснеть — последние два шага портят
+  # файл/ключ и требуют, чтобы restore упал.
+  backup-restore:
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # libpq подхватывает эти переменные сам — psql/createdb/pg_dump ниже
+      # без -h/-U/-p каждый раз.
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci
+      # Фикстура, не боевой секрет: ключ репетиции, нигде больше не используется.
+      TEST_ENCRYPTION_KEY: '4aa953d30d55de81814bbf6b85b1b65cb3109e81f82151d6f866f360492f8326'
+      SRC_DB: postgresql://postgres:ci@localhost:5432/backup_rehearsal_src
+      DST_DB: postgresql://postgres:ci@localhost:5432/backup_rehearsal_dst
+      OUT_DIR: /tmp/backup-rehearsal
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      # ubuntu-latest — тот же образ, что и в джобе `migrations` — но там
+      # pg_dump/psql не нужны (только `prisma migrate deploy`, у него свой
+      # драйвер). Здесь дампим и заливаем реальным клиентом, версия обязана
+      # совпадать с сервером (postgres:16 выше) — Ubuntu 24.04 (noble) несёт
+      # postgresql-client-16 в основных репах, отдельный apt-репозиторий pgdg
+      # не нужен. xxd ставим явно, а не полагаемся на то, что он уже есть в
+      # образе — backup-to-b2.sh и restore-backup.sh оба на нём завязаны.
+      - name: клиент Postgres 16 + xxd
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
+      - name: создать исходную БД и применить миграции — ловит битые миграции тем же приёмом, что джоба migrations
+        run: |
+          psql -c "CREATE DATABASE backup_rehearsal_src;"
+          DATABASE_URL="$SRC_DB" npx prisma migrate deploy
+      # HealthyAdultPost — таблица без FK (глобальный контент канала, не
+      # пользовательские данные), маркер безопасно чистится DROP DATABASE
+      # вместе со всей исходной БД в конце джобы.
+      - name: засеять контрольную строку
+        run: |
+          MARKER="restore-rehearsal-$(date -u +%Y-%m-%d)"
+          echo "MARKER=$MARKER" >> "$GITHUB_ENV"
+          psql -d backup_rehearsal_src -c "INSERT INTO \"HealthyAdultPost\" (text, source) VALUES ('$MARKER', 'nightly-rehearsal');"
+      - name: зашифрованный бэкап (SKIP_UPLOAD=1 — без B2-кредов, файл локально)
+        run: |
+          SKIP_UPLOAD=1 ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" DATABASE_URL="$SRC_DB" \
+            BACKUP_OUT_DIR="$OUT_DIR" bash scripts/backup-to-b2.sh
+      - name: вторая пустая БД + restore из бэкапа
+        run: |
+          psql -c "CREATE DATABASE backup_rehearsal_dst;"
+          ENC_FILE=$(ls "$OUT_DIR"/*.sql.gz.enc)
+          echo "ENC_FILE=$ENC_FILE" >> "$GITHUB_ENV"
+          ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" bash scripts/restore-backup.sh "$ENC_FILE" "$DST_DB"
+      - name: маркер восстановился во второй БД
+        run: psql -d backup_rehearsal_dst -c "SELECT text FROM \"HealthyAdultPost\";" | grep -F "$MARKER"
+      # Тот же приём, что джоба migrations (schema.prisma == миграции): здесь
+      # сверяем не «миграции == схема», а «восстановленная ИЗ БЭКАПА БД ==
+      # схема» — restore обязан вернуть структуру без дрейфа, не только данные.
+      - name: схема восстановленной БД == prisma/schema.prisma, без дрейфа
+        run: DATABASE_URL="$DST_DB" npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      # Негативные пробы (правило №15 CLAUDE.md — щит обязан уметь краснеть,
+      # не только зеленеть): порченый файл и чужой ключ ОБЯЗАНЫ ронять
+      # restore-backup.sh. Без этих двух шагов джоба могла бы быть зелёной
+      # даже с восстановлением, которое молча не проверяет целостность.
+      - name: проба 1 — порченый байт шифртекста ОБЯЗАН ронять restore
+        run: |
+          cp "$ENC_FILE" /tmp/corrupt.sql.gz.enc
+          printf '\xff' | dd of=/tmp/corrupt.sql.gz.enc bs=1 seek=19 count=1 conv=notrunc status=none
+          if ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" bash scripts/restore-backup.sh /tmp/corrupt.sql.gz.enc; then
+            echo "::error::restore-backup.sh ОБЯЗАН был упасть на порченом файле, но не упал"
+            exit 1
+          fi
+          echo "OK: restore упал на порченом файле, как и должен"
+      - name: проба 2 — неверный ключ ОБЯЗАН ронять restore
+        run: |
+          if ENCRYPTION_KEY="$(openssl rand -hex 32)" bash scripts/restore-backup.sh "$ENC_FILE"; then
+            echo "::error::restore-backup.sh ОБЯЗАН был упасть с неверным ключом, но не упал"
+            exit 1
+          fi
+          echo "OK: restore упал с неверным ключом, как и должен"
+
   # Тяжёлый mutation-замер семейства src/bot — ОТДЕЛЬНОЙ джобой и раз в неделю,
   # а не вместе с золотыми зонами. Причина простая: bot.service с соседями дают
   # ~950 мутантов, и каждый перегоняет свой срез из 3100 тестов. Замер на
