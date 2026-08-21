@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
 import { InsightCard } from './InsightCard';
+import { BOOKING_CTA_LABEL } from '../../../../shared/src/history/therapistCta';
 
 // Недельный вид истории: спарклайны по потребностям + инсайт + карточка
 // недели. Вынесено из HistoryView.tsx (правило №10).
@@ -72,7 +73,7 @@ export function HistoryWeekView({
               ' — разобраться с живым человеком рядом бывает легче'}
             .
           </div>
-          {bookingLink('Записаться →')}
+          {bookingLink(BOOKING_CTA_LABEL)}
         </div>
       )}
 

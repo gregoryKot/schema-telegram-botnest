@@ -43,7 +43,7 @@ export function DayShareButton({ needs, ratings, date }: Props) {
         Поделиться днём
       </button>
 
-      {open && <ShareCardSheet {...share} onClose={() => setOpen(false)} />}
+      {open && <ShareCardSheet {...share} onClose={() => setOpen(false)} therapyNote />}
     </>
   );
 }

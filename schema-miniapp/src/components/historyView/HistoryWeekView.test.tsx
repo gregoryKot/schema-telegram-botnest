@@ -56,7 +56,8 @@ describe('HistoryWeekView — низкая потребность несколь
     );
     expect(screen.getByText(/остаётся низкой/)).toBeTruthy();
     expect(screen.getByText(/живым человеком рядом/)).toBeTruthy();
-    expect(screen.getByText('Записаться →')).toBeTruthy();
+    // Текст CTA общий с webapp и с дневным видом (Ж9 аудита 2026-08).
+    expect(screen.getByText('Записаться и взять сводку →')).toBeTruthy();
   });
 
   it('терапевту не показывает фразу про запись (у него уже есть контакт)', () => {

@@ -407,6 +407,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         fallbackText={buildShareText(scores, resultView.dateLabel)}
         onClose={() => setShowShare(false)}
         zIndex={400}
+        therapyNote
       />
     )}
     </>
