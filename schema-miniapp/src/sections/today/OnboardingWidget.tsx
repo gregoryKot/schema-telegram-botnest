@@ -128,7 +128,6 @@ export function OnboardingWidget({
       }}
     >
       <style>{`@keyframes obSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }`}</style>
-
       {/* Progress counter */}
       <div
         style={{
@@ -271,6 +270,7 @@ export function OnboardingWidget({
           return (
             <div
               key={s.id}
+              aria-label={`Шаг «${s.title}»${d ? ', выполнен' : sk ? ', отложен' : ''}`}
               {...pressable(() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
