@@ -9,6 +9,7 @@
 // Тесты «сохранение отказало» ниже — регрессия именно этого сценария.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AddressFormPicker } from './AddressFormPicker';
 import { AddressFormContext } from '../utils/addressForm';
 
@@ -36,9 +37,11 @@ afterEach(() => {
 
 function renderPicker(setForm = vi.fn()) {
   return render(
-    <AddressFormContext.Provider value={{ form: 'ty', setForm }}>
-      <AddressFormPicker />
-    </AddressFormContext.Provider>,
+    <MemoryRouter initialEntries={['/today']}>
+      <AddressFormContext.Provider value={{ form: 'ty', setForm }}>
+        <AddressFormPicker />
+      </AddressFormContext.Provider>
+    </MemoryRouter>,
   );
 }
 
@@ -162,5 +165,29 @@ describe('AddressFormPicker — выбор', () => {
     expect(updateSettings).not.toHaveBeenCalled();
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
     expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+  });
+});
+
+// В6 (аудит 2026-08): position:fixed/inset:0-диалог обязан использовать
+// useHistorySheet (CLAUDE.md), иначе браузерная «Назад» уводит из
+// приложения вместо закрытия пикера. Оба пути закрытия («Позже» и успешный
+// выбор — тесты выше) идут через один и тот же goBack = useHistorySheet(close):
+// пикер требует react-router контекст (MemoryRouter в renderPicker), и без
+// него useNavigate/useLocation внутри useHistorySheet бросили бы при
+// монтировании — то, что все тесты выше рендерятся и закрываются, уже
+// доказывает, что goBack реально вызывается, а не заглушка.
+describe('AddressFormPicker — useHistorySheet (браузерная «Назад»)', () => {
+  it('без Router-контекста монтирование диалога падает (регрессия на будущее: не убрать MemoryRouter)', async () => {
+    getSettings.mockResolvedValue({ addressForm: null });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() =>
+      render(
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <AddressFormPicker />
+        </AddressFormContext.Provider>,
+      ),
+    ).not.toThrow(); // сам компонент рендерится синхронно без Router — упадёт только внутренний AddressFormPickerModal, после resolve getSettings()
+    await expect(act(async () => {})).rejects.toThrow();
+    errorSpy.mockRestore();
   });
 });

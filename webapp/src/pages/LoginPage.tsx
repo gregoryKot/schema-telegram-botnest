@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { getHost } from '../../../shared/src/host';
 import { AuthFailureHelp } from '../../../shared/src/components/AuthFailureHelp';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
 import { MMIcon } from '../components/modeMapIcons';
+import { useTr } from '../utils/addressForm';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -14,7 +15,23 @@ function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  const tr = useTr();
+  // В5 (аудит 2026-08): AuthCallback.tsx после провала OAuth (окно входа
+  // закрылось раньше времени, провайдер не вернул токен) уводит сюда с
+  // ?error=no_token — раньше /login эту query никогда не читал, и человек
+  // просто видел форму входа заново, без единого слова о том, что что-то
+  // сорвалось. Ленивый инициализатор вместо useEffect+setState — читаем
+  // query один раз при монтировании, без лишнего рендера
+  // (react-hooks/set-state-in-effect).
+  const [error, setError] = useState<string | null>(() =>
+    new URLSearchParams(location.search).get('error') === 'no_token'
+      ? tr(
+          'Вход не получился: окно входа закрылось раньше времени. Попробуй ещё раз',
+          'Вход не получился: окно входа закрылось раньше времени. Попробуйте ещё раз',
+        )
+      : null,
+  );
   const [showEmail, setShowEmail] = useState(false);
   const [emailValue, setEmailValue] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -35,15 +52,17 @@ export function LoginPage() {
   // Сломанный вход внутри мессенджера обязан быть слышен нам, а не только
   // виден пользователю (инцидент 2026-08-08: пять суток вход не работал у
   // всех пользователей Telegram, и телеметрия молчала — она была только у
-  // крашей ErrorBoundary). Парная правка к AppErrorScreen мини-аппа.
+  // крашей ErrorBoundary). Парная правка к AppErrorScreen мини-аппа. В5:
+  // отчёт теперь уходит и для обычного веб-логина (не только внутри
+  // мессенджера) — молчаливый провал OAuth был не виден нам точно так же.
   useAuthFailureReport(
     reportClientError,
-    isTelegramContext && error
+    error
       ? {
           hostId: getHost().id,
-          signaturePresent:
-            ((getHost().sessionExchange()?.body.initData as string) ?? '') !==
-            '',
+          signaturePresent: isTelegramContext
+            ? ((getHost().sessionExchange()?.body.initData as string) ?? '') !== ''
+            : true,
           error,
         }
       : null,

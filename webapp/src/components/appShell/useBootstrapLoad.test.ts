@@ -111,4 +111,16 @@ describe('useBootstrapLoad — сбои фоновых источников не
     await flush();
     expect(mockApi.flushOutbox).toHaveBeenCalledTimes(1);
   });
+
+  // К2 (аудит 2026-08): needs/ratings — самый блокирующий источник (без него
+  // весь AppShell рисует «Не удалось загрузить»), но его catch раньше делал
+  // только setError, минуя общий отчёт — единственный из одиннадцати.
+  it('упавший needs()/ratings() тоже попадает в отчёт с именем «needs/ratings»', async () => {
+    mockApi.needs.mockRejectedValue(new Error('boom'));
+    const { result } = setup();
+    await flush();
+    expect(result.current.error).toBeTruthy();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0].message).toContain('needs/ratings');
+  });
 });

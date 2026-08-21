@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
@@ -16,7 +17,6 @@ import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFor
  */
 export function AddressFormPicker() {
   const [show, setShow] = useState(false);
-  const setForm = useSetAddressForm();
 
   useEffect(() => {
     if (sessionStorage.getItem('addr_form_asked')) return;
@@ -30,14 +30,25 @@ export function AddressFormPicker() {
     setShow(false);
   }
 
+  if (!show) return null;
+  // Оверлей вынесен в отдельный компонент, чтобы useHistorySheet (правило
+  // CLAUDE.md — обязателен для fixed/inset:0 листов) вызывался только пока
+  // диалог реально смонтирован, а не на каждом рендере AddressFormPicker.
+  return <AddressFormPickerModal onClose={close} />;
+}
+
+function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
+  const setForm = useSetAddressForm();
+  const goBack = useHistorySheet(onClose);
+  // onSaved зовётся goBack — успешное сохранение закрывает диалог тем же
+  // путём, что и «Назад» браузера (CLAUDE.md: «если лист закрывается после
+  // сохранения, тоже goBack()»).
   const { failed, choose } = useAddressFormChoice(
     setForm,
     api.updateSettings,
     reportClientError,
-    close,
+    goBack,
   );
-
-  if (!show) return null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -63,7 +74,7 @@ export function AddressFormPicker() {
             Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
           </div>
         )}
-        <button onClick={close}
+        <button onClick={goBack}
           style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
           Позже
         </button>

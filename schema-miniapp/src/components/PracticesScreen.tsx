@@ -7,6 +7,7 @@ import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { usePracticesData } from '../hooks/usePracticesData';
+import { hitboxStyle } from '../utils/hitbox';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -68,17 +69,25 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           padding: '16px 20px 8px',
         }}
       >
-        <span
-          {...pressable(onClose)}
-          style={{
-            fontSize: 26,
-            color: 'var(--text-sub)',
-            cursor: 'pointer',
-            lineHeight: 1,
-          }}
+        <button
+          onClick={onClose}
+          aria-label="Назад"
+          style={hitboxStyle(26, 26).outer}
         >
-          ‹
-        </span>
+          <span
+            style={{
+              ...hitboxStyle(26, 26).inner,
+              fontSize: 26,
+              color: 'var(--text-sub)',
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ‹
+          </span>
+        </button>
         <span
           style={{
             fontSize: 18,

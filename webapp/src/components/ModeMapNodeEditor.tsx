@@ -588,9 +588,12 @@ function dirBtnStyle(active: boolean): React.CSSProperties {
   };
 }
 
+// Хитбокс ≥32px (аудит 2026-08, К3): padding расширяет тач-зону, отрицательный
+// margin возвращает вклад в раскладку к прежним 2px/4px — визуально кнопка
+// (без фона/рамки, только иконка) не меняется.
 const closeBtnStyle: React.CSSProperties = {
   background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)',
-  fontSize: 13, padding: '2px 4px', lineHeight: 1,
+  fontSize: 13, padding: '9px', margin: '-7px -5px', lineHeight: 1,
 };
 
 const panelStyle: React.CSSProperties = {

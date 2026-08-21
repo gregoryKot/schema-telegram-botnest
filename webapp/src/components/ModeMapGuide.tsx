@@ -111,7 +111,9 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
           {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
-        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+        {/* Хитбокс ≥32px (аудит 2026-08, К3): padding + компенсирующий отрицательный
+            margin — иконка визуально остаётся 14px, тач-зона растёт до 32px. */}
+        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 9, margin: -9, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
         {kind === 'couple'

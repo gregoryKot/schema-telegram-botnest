@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserProfile } from '../../types';
 import { pressable } from '../../utils/a11y';
+import { hitboxStyle } from '../../utils/hitbox';
 import { Props } from './types';
 import {
   STEPS,
@@ -266,6 +267,7 @@ export function OnboardingWidget({
           const d = s.isDone(profile, ctx);
           const sk = skipped.includes(s.id) && !d;
           const cur = s.id === current.id;
+          const dotHitbox = hitboxStyle(cur ? 20 : 8, 8, 24);
           return (
             <div
               key={s.id}
@@ -273,12 +275,11 @@ export function OnboardingWidget({
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
               })}
-              style={{ cursor: 'pointer' }}
+              style={dotHitbox.outer}
             >
               <div
                 style={{
-                  width: cur ? 20 : 8,
-                  height: 8,
+                  ...dotHitbox.inner,
                   borderRadius: 4,
                   transition: 'all 0.25s ease',
                   background: d
