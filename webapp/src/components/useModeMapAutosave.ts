@@ -40,10 +40,25 @@ export function useModeMapAutosave(
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
         saveTimer.current = null;
-        void api.updateModeMap(mapId, {
-          nodes: fromFlowNodes(nodesRef.current),
-          edges: fromFlowEdges(edgesRef.current),
-        }).catch(() => reportClientError({ message: 'mode map unmount save failed', section: 'modeMap' }));
+        // react-hooks/exhaustive-deps просит скопировать ref.current заранее —
+        // здесь этот совет неверен по сути задачи: флашу нужны САМЫЕ СВЕЖИЕ
+        // узлы и связи на момент ухода с экрана. Копия, снятая при монтировании
+        // (или на любом рендере до последней правки), отправила бы на сервер
+        // устаревшую карту — ровно ту потерю данных, ради которой флаш и
+        // добавлен. Значение читается один раз, синхронно, в самой очистке.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        const nodes = fromFlowNodes(nodesRef.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        const edges = fromFlowEdges(edgesRef.current);
+        // Promise.resolve вокруг вызова — не перестраховка «на всякий случай»:
+        // флаш срабатывает при КАЖДОМ размонтировании редактора, в том числе в
+        // тестах, где api.updateModeMap подменён моком без промиса. Голый
+        // `.catch` на undefined кидал бы TypeError прямо в очистке эффекта —
+        // React логировал бы это как ошибку уже после завершения теста, и
+        // vitest падал бы при всех зелёных тестах (плавающе, по таймингу).
+        void Promise.resolve(api.updateModeMap(mapId, { nodes, edges })).catch(() =>
+          reportClientError({ message: 'mode map unmount save failed', section: 'modeMap' }),
+        );
       }
     };
   }, [mapId, nodesRef, edgesRef]);
