@@ -1,5 +1,8 @@
 import { StrictMode, Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { getHost } from '../../shared/src/host';
+import { isStandalone } from '../../shared/src/host/web';
+import { shouldOpenCabinet, CABINET_PATH } from './utils/desktopLaunch';
 import './index.css';
 import App from './App';
 import { AddressFormProvider } from './utils/AddressFormProvider';
@@ -63,6 +66,21 @@ class ErrorBoundary extends Component<
       </div>
     );
   }
+}
+
+// Развилка запуска установленного приложения (utils/desktopLaunch): на
+// компьютере полноценнее кабинет сайта, на телефоне — мини-апп. Решаем ДО
+// рендера, иначе мелькнёт мобильный экран перед уходом.
+if (
+  shouldOpenCabinet({
+    standalone: isStandalone(),
+    hostId: getHost().id,
+    width: window.innerWidth,
+    pointerFine: window.matchMedia?.('(pointer: fine)').matches === true,
+    search: window.location.search,
+  })
+) {
+  window.location.replace(CABINET_PATH);
 }
 
 createRoot(document.getElementById('root')!).render(

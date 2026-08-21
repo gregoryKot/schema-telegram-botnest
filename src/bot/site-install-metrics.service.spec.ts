@@ -1,12 +1,20 @@
 // Агрегат «Установка с сайта»: раскладка строк surface+action → структура,
-// bigint → number, NULL/неизвестные комбинации игнорируются. Prisma мокается.
+// bigint → number, NULL/неизвестные комбинации игнорируются. Второй запрос —
+// desktop_app_open (opens/users), считается независимо от первого. Prisma
+// мокается.
 import { SiteInstallMetricsService } from './site-install-metrics.service';
 
 describe('SiteInstallMetricsService.getMetrics', () => {
   const build = (
     rows: Array<{ surface: string | null; action: string | null; c: bigint }>,
+    desktopRows: Array<{ opens: bigint; users: bigint }> = [
+      { opens: 0n, users: 0n },
+    ],
   ) => {
-    const queryRaw = jest.fn().mockResolvedValueOnce(rows);
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce(rows)
+      .mockResolvedValueOnce(desktopRows);
     const prisma = { $queryRaw: queryRaw } as never;
     return { service: new SiteInstallMetricsService(prisma), queryRaw };
   };
@@ -22,6 +30,7 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 40, add30: 18, added30: 12 },
       landing: { add30: 25, added30: 9 },
+      desktopOpens30: { opens: 0, users: 0 },
     });
   });
 
@@ -30,6 +39,7 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 0, added30: 0 },
       landing: { add30: 0, added30: 0 },
+      desktopOpens30: { opens: 0, users: 0 },
     });
   });
 
@@ -40,6 +50,7 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 0, added30: 0 },
       landing: { add30: 3, added30: 0 },
+      desktopOpens30: { opens: 0, users: 0 },
     });
   });
 
@@ -54,6 +65,25 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 2, added30: 0 },
       landing: { add30: 0, added30: 0 },
+      desktopOpens30: { opens: 0, users: 0 },
+    });
+  });
+
+  it('запуски на компьютере: opens/users берутся из второго запроса, bigint → number', async () => {
+    const { service } = build([], [{ opens: 14n, users: 6n }]);
+    await expect(service.getMetrics()).resolves.toEqual({
+      banner: { shown30: 0, add30: 0, added30: 0 },
+      landing: { add30: 0, added30: 0 },
+      desktopOpens30: { opens: 14, users: 6 },
+    });
+  });
+
+  it('запуски на компьютере: пустая строка результата — нули, а не NaN/undefined', async () => {
+    const { service } = build([], []);
+    await expect(service.getMetrics()).resolves.toEqual({
+      banner: { shown30: 0, add30: 0, added30: 0 },
+      landing: { add30: 0, added30: 0 },
+      desktopOpens30: { opens: 0, users: 0 },
     });
   });
 
