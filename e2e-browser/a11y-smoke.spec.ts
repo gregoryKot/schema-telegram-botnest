@@ -93,6 +93,19 @@ function skipOnOtherProject(testInfo: TestInfo, expected: string): void {
   );
 }
 
+// Снимок axe обязан быть ДЕТЕРМИНИРОВАННЫМ. Без этого ожидания тест ловил
+// случайное состояние загрузки: изолированно давал 0 нарушений, а в общем
+// прогоне — то 1, то 2 (спиннеры и полурендеренные блоки: серое на сером
+// читается как низкий контраст). Флак хуже отсутствия теста: правило
+// проекта — ретраев нет, «иногда зелёный» за зелёный не считается.
+// Ждём: непустой #root → исчезновение всех спиннеров (Loader) → затишье
+// сети (данные догрузились и перерисовка завершена).
+async function settled(page: import('@playwright/test').Page) {
+  await expect(page.locator('#root')).not.toBeEmpty();
+  await expect(page.locator('.spinner')).toHaveCount(0, { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
+}
+
 test.describe('a11y-smoke: webapp', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     skipOnOtherProject(testInfo, 'webapp');
@@ -101,13 +114,13 @@ test.describe('a11y-smoke: webapp', () => {
 
   test('главная (/)', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('#root')).not.toBeEmpty();
+    await settled(page);
     await checkScreen(page, 'webapp:home');
   });
 
   test('список статей (/articles)', async ({ page }) => {
     await page.goto('/articles');
-    await expect(page.locator('#root')).not.toBeEmpty();
+    await settled(page);
     await checkScreen(page, 'webapp:articles');
   });
 });
