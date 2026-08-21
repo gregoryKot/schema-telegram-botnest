@@ -62,6 +62,15 @@ describe('DonateNudge — видимость', () => {
     renderNudge();
     expect(screen.getByText('Поддержать проект')).toBeTruthy();
   });
+
+  // К4 дизайн-аудита 2026-08: панель — role="dialog"/aria-modal.
+  it('видимая панель размечена как диалог', () => {
+    localStorage.setItem(SEEN_KEY, String(Date.now() - 60 * DAY));
+    localStorage.setItem(SHOWN_KEY, String(Date.now() - 31 * DAY));
+    renderNudge();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
 });
 
 describe('DonateNudge — закрытие', () => {

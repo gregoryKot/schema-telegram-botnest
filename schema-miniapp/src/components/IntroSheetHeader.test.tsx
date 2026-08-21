@@ -25,6 +25,22 @@ describe('IntroSheetHeader', () => {
     expect(screen.getByText('Детские режимы')).toBeTruthy();
   });
 
+  // В8 дизайн-аудита 2026-08: заголовок шита — h2 (семантика вместо div).
+  it('заголовок — h2', () => {
+    render(
+      <IntroSheetHeader
+        emoji="🥺"
+        title="Уязвимый Ребёнок"
+        subtitle="Детские режимы"
+        accentColor="#60a5fa"
+        showDescription={false}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Уязвимый Ребёнок' }),
+    ).toBeTruthy();
+  });
+
   it('description показывается только при showDescription=true', () => {
     const { rerender } = render(
       <IntroSheetHeader

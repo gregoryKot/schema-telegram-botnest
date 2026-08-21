@@ -8,6 +8,8 @@ import { useTr } from '../utils/addressForm';
 import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
+import { CURATED } from '../../../shared/src/practices/curated';
+import { LoadErrorBanner } from './LoadErrorBanner';
 function ianaToUtcOffset(iana: string): number {
   try {
     const now = new Date();
@@ -22,38 +24,6 @@ function ianaToUtcOffset(iana: string): number {
     return 3;
   }
 }
-export const CURATED: Record<string, string[]> = {
-  attachment: [
-    'Написать кому-то близкому без повода',
-    'Провести вечер вместе — без телефонов',
-    'Спросить кого-то «Как ты на самом деле?»',
-    'Поделиться чем-то личным в разговоре',
-  ],
-  autonomy: [
-    'Принять одно решение самостоятельно, без совета',
-    'Сделать что-то только потому что я хочу',
-    'Выделить час на своё дело без объяснений',
-    'Сказать «нет» одной просьбе, если не хочу',
-  ],
-  expression: [
-    'Написать про момент дня, когда что-то было внутри — и осталось невысказанным',
-    'Назвать вслух одну свою эмоцию',
-    'Рассказать кому-то о чём-то, что меня трогает',
-    'Выразить несогласие мягко, но честно',
-  ],
-  play: [
-    'Сделать что-то без цели — просто потому что весело',
-    'Попробовать новое место или маршрут',
-    'Поиграть во что-нибудь — хоть в игру на телефоне',
-    'Сделать что-то руками — приготовить, нарисовать, смастерить',
-  ],
-  limits: [
-    'Закончить работу вовремя, не задерживаться',
-    'Выполнить одно дело, которое откладывал',
-    'Отказаться от одного лишнего обязательства',
-    'Соблюдать одно правило для себя весь день',
-  ],
-};
 const REMINDER_OPTIONS = [
   { label: 'Утром', localHour: 9 },
   { label: 'Днём', localHour: 13 },
@@ -93,12 +63,20 @@ export function PlanSheet({
   const [savedOk, setSavedOk] = useState(false);
   const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [practicesFailed, setPracticesFailed] = useState(false);
 
   useEffect(() => {
+    // Сбой ≠ пусто (правило CLAUDE.md): без флага свои практики молча
+    // пропадали из выбора — виден был только готовый список, как будто
+    // своих нет. Раньше здесь был только console.error (В10 аудита 2026-08).
     api
       .getPractices(needId)
-      .then(setUserPractices)
-      .catch((e) => console.error('getPractices failed', e));
+      .then((p) => {
+        setUserPractices(p);
+        setPracticesFailed(false);
+      })
+      .catch(() => setPracticesFailed(true));
+    // Часовой пояс — деградация подсказки времени до дефолта, лог достаточен.
     api
       .getSettings()
       .then((s) => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
@@ -239,6 +217,16 @@ export function PlanSheet({
 
       {phase === 'pick' && (
         <>
+          {practicesFailed && (
+            <div style={{ marginBottom: 16 }}>
+              <LoadErrorBanner
+                message={tr(
+                  'Не удалось загрузить твои практики — ниже только готовые варианты',
+                  'Не удалось загрузить ваши практики — ниже только готовые варианты',
+                )}
+              />
+            </div>
+          )}
           {allOptions.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <SectionLabel>Мои практики</SectionLabel>

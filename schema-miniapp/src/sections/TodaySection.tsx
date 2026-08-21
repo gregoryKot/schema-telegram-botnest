@@ -25,6 +25,7 @@ import { useTr } from '../utils/addressForm';
 import { Props } from './today/types';
 import { formatGreetingDate, readLocalIds } from './today/helpers';
 import { OnboardingWidget } from './today/OnboardingWidget';
+import { isOnboardingWidgetVisible } from './today/onboardingSteps';
 import { TodayBlocks } from './today/TodayBlocks';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
@@ -167,15 +168,16 @@ export function TodaySection({
             gap: 12,
           }}
         >
-          <div
+          <h1
             className="d-display"
             style={{
               fontSize: 26,
               lineHeight: 1.15,
+              margin: 0,
             }}
           >
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
-          </div>
+          </h1>
           <div style={{ marginTop: -6, flexShrink: 0 }}>
             <GearButton
               onClick={today.openByGear}
@@ -217,6 +219,7 @@ export function TodaySection({
         {/* ── Band переставляемых блоков (screen_order_today) ── */}
         <TodayBlocks
           today={today}
+          onboardingVisible={isOnboardingWidgetVisible(profile)}
           userRole={userRole}
           onOpenTherapistCabinet={onOpenTherapistCabinet}
           streak={streak}

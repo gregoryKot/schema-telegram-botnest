@@ -67,8 +67,12 @@ export function InfoModal({ children, onClose }: { children: React.ReactNode; on
   return (
     <div className="settings-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      <div className="settings-modal-box" onClick={e => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}>
+      <div
+        role="presentation"
+        className="settings-modal-box"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
+      >
         <div className="settings-modal-handle" />
         {children}
       </div>

@@ -17,6 +17,13 @@ afterEach(() => {
 });
 
 describe('NeedAdviceModal', () => {
+  // К4 дизайн-аудита 2026-08: панель — role="dialog"/aria-modal (useDialogA11y).
+  it('панель размечена как диалог', () => {
+    render(<NeedAdviceModal onClose={vi.fn()} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('рендерит объяснение назначения советов', () => {
     render(<NeedAdviceModal onClose={vi.fn()} />);
     expect(screen.getByText('О советах')).toBeTruthy();

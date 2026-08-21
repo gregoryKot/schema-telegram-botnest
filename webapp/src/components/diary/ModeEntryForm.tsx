@@ -112,7 +112,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         </div>
         {isHealthyStep ? (
           <>
-            <div className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
+            <div id="mode-entry-question" className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
             <div className="flash-hint">{tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')}</div>
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
             <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 12, background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
@@ -126,11 +126,12 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={healthyResponse}
               onChange={e => setHealthyResponse(e.target.value)}
               placeholder={tr('Напиши своими словами…', 'Напишите своими словами…')}
+              aria-labelledby="mode-entry-question"
             />
           </>
         ) : (
           <>
-            <div className="flash-q">{cur!.title}</div>
+            <div id="mode-entry-question" className="flash-q">{cur!.title}</div>
             <div className="flash-hint">{cur!.hint}</div>
             <textarea
               ref={areaRef}
@@ -139,6 +140,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={curValue}
               onChange={e => set(cur!.key, e.target.value)}
               placeholder={cur!.example}
+              aria-labelledby="mode-entry-question"
             />
           </>
         )}

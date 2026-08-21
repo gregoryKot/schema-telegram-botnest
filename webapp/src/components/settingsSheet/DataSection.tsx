@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
 import { SHead, SRow, InfoModal } from './ui';
+import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 
 // Раздел «Данные» (конфиденциальность + полное удаление аккаунта) — вынесен
 // из SettingsSheet.tsx (правило №10). Состояние обеих модалок полностью
@@ -26,8 +27,8 @@ export function DataSection() {
         <InfoModal onClose={() => setShowPrivacy(false)}>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Данные и конфиденциальность</div>
           {[
-            { title: 'Что хранится', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к аккаунту и доступно с любого устройства.' },
-            { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются. Никогда.' },
+            { title: 'Что хранится', text: privacyStorageText('аккаунту') },
+            { title: 'Передача третьим лицам', text: PRIVACY_NO_SHARE_TEXT },
           ].map(b => (
             <div key={b.title} style={{ marginBottom: 10, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px' }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{b.title}</div>

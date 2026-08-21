@@ -29,6 +29,15 @@ function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}
   );
 }
 
+describe('CommandPalette — диалог (К4)', () => {
+  // К4 дизайн-аудита 2026-08: панель — role="dialog"/aria-modal.
+  it('панель размечена как диалог', () => {
+    renderPalette();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+});
+
 describe('CommandPalette — навигация', () => {
   it('без ввода показывает все 5 пунктов навигации клиента', () => {
     renderPalette();

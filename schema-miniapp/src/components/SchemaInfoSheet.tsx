@@ -39,9 +39,16 @@ export function SchemaInfoContent({
         <SectionLabel purple mb={6}>
           Схема-терапия
         </SectionLabel>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: 'var(--text)',
+            margin: 0,
+          }}
+        >
           Как это работает
-        </div>
+        </h2>
       </div>
       <div
         style={{

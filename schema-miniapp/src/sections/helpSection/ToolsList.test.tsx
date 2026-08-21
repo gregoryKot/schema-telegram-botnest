@@ -3,8 +3,11 @@
 // toolRows.ts (общий источник с листом настройки видимости). Проверяем:
 // плюрализацию подписей (0/1/несколько), null-состояние без выдуманных
 // чисел (правило «никаких хардкод-заглушек»), что клик по строке зовёт
-// именно свой обработчик, скрытие строк через «Настроить»
+// именно свой обработчик, скрытие строк через настройку видимости
 // (utils/quickActionPrefs.ts) и пустое состояние, когда всё скрыто.
+// Ж2 (аудит 2026-08): пилюля «Настроить» рядом с заголовком убрана (был
+// второй вход в тот же лист, что и шестерёнка HelpHeader) — лист теперь
+// открывается только через customizeOpenRef, как из настоящей шапки.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -48,17 +51,25 @@ function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
     onOpenChildhoodWheel: vi.fn(),
     onOpenWarmWords: vi.fn(),
   };
+  // Единственный вход в лист настройки — customizeOpenRef (имитирует
+  // шестерёнку HelpHeader, пилюли внутри списка больше нет, Ж2).
+  const customizeOpenRef = { current: () => {} };
   const { container } = render(
     <ToolsList
       tasksCount={0}
       practiceCount={null}
       planCount={null}
       childhoodDone={false}
+      customizeOpenRef={customizeOpenRef}
       {...handlers}
       {...overrides}
     />,
   );
-  return { ...handlers, container };
+  return { ...handlers, container, customizeOpenRef };
+}
+
+function openCustomizeSheet(customizeOpenRef: { current: () => void }) {
+  act(() => customizeOpenRef.current());
 }
 
 describe('ToolsList — плюрализация и пустые состояния', () => {
@@ -125,7 +136,7 @@ describe('ToolsList — клики по строкам зовут свой об�
   });
 });
 
-describe('ToolsList — скрытие строк («Настроить»)', () => {
+describe('ToolsList — скрытие строк (лист настройки через customizeOpenRef)', () => {
   it('скрытая строка не рендерится, остальные видны', () => {
     localStorage.setItem(
       TOOLS_ACTIONS_HIDDEN_KEY,
@@ -136,25 +147,21 @@ describe('ToolsList — скрытие строк («Настроить»)', () 
     expect(screen.getByText('Проверка убеждений')).toBeTruthy();
   });
 
-  it('«Настроить» открывает лист настройки', () => {
+  it('пилюли «Настроить» рядом с заголовком больше нет — единственный вход (Ж2)', () => {
     renderList();
-    fireEvent.click(screen.getByText('Настроить'));
-    expect(screen.getByText('Какие инструменты показывать')).toBeTruthy();
+    expect(screen.queryByText('Настроить')).toBeNull();
   });
 
-  it('шестерёнка шапки HelpSection открывает тот же лист через customizeOpenRef (единый вход)', () => {
-    const customizeOpenRef = { current: () => {} };
-    renderList({ customizeOpenRef });
+  it('customizeOpenRef (шестерёнка шапки HelpSection) открывает лист настройки', () => {
+    const { customizeOpenRef } = renderList();
     expect(screen.queryByText('Какие инструменты показывать')).toBeNull();
-    act(() => customizeOpenRef.current());
+    openCustomizeSheet(customizeOpenRef);
     expect(screen.getByText('Какие инструменты показывать')).toBeTruthy();
   });
 
   it('toggle в листе прячет строку и пишет в localStorage', () => {
-    renderList();
-    fireEvent.click(screen.getByText('Настроить'));
-    // В листе строки помечены их label — берём именно там (после открытия
-    // на экране два «Тёплые слова»: строка списка + строка листа настройки).
+    const { customizeOpenRef } = renderList();
+    openCustomizeSheet(customizeOpenRef);
     const rows = screen.getAllByText('Тёплые слова');
     fireEvent.click(rows[rows.length - 1]);
     expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
@@ -170,7 +177,7 @@ describe('ToolsList — скрытие строк («Настроить»)', () 
     expect(screen.getAllByText('Проверка убеждений').length).toBeGreaterThan(0);
   });
 
-  it('все строки скрыты — подсказка вместо списка, кнопка «Настроить» остаётся', () => {
+  it('все строки скрыты — подсказка вместо списка, ссылается на шестерёнку в шапке', () => {
     localStorage.setItem(
       TOOLS_ACTIONS_HIDDEN_KEY,
       serializeHiddenActions([...QUICK_ACTION_IDS]),
@@ -179,10 +186,9 @@ describe('ToolsList — скрытие строк («Настроить»)', () 
     expect(screen.queryByText('Проверка убеждений')).toBeNull();
     expect(
       screen.getByText(
-        'Все инструменты скрыты. Вернуть их можно через «Настроить» выше.',
+        'Все инструменты скрыты. Вернуть их можно через шестерёнку в шапке.',
       ),
     ).toBeTruthy();
-    expect(screen.getByText('Настроить')).toBeTruthy();
   });
 });
 
@@ -212,8 +218,8 @@ describe('ToolsList — порядок строк', () => {
   it('клавиша ArrowUp на ручке в листе настройки двигает строку, шлёт quick_action_move и меняет список', () => {
     // «Мои цели» (tasks) — вторая строка реестра, сосед первой («Критик или
     // забота?») — соседние строки, чтобы один шаг дал видимый результат.
-    const { container } = renderList();
-    fireEvent.click(screen.getByText('Настроить'));
+    const { container, customizeOpenRef } = renderList();
+    openCustomizeSheet(customizeOpenRef);
 
     // Два «Мои цели» на экране: строка списка и строка листа настройки —
     // последнее вхождение (портал листа монтируется позже) и есть строка листа.
@@ -236,8 +242,8 @@ describe('ToolsList — порядок строк', () => {
   });
 
   it('крайняя строка списка: ArrowUp на ручке первой строки — no-op (событие не отправлено)', () => {
-    renderList();
-    fireEvent.click(screen.getByText('Настроить'));
+    const { customizeOpenRef } = renderList();
+    openCustomizeSheet(customizeOpenRef);
     const matches = screen.getAllByLabelText('Переставить: Критик или забота?');
     const handle = matches[matches.length - 1];
     fireEvent.keyDown(handle, { key: 'ArrowUp' });
@@ -248,8 +254,8 @@ describe('ToolsList — порядок строк', () => {
   });
 
   it('жест ручки (pointerdown→move→up) в листе настройки — read-after-write в localStorage и на экране', () => {
-    const { container } = renderList();
-    fireEvent.click(screen.getByText('Настроить'));
+    const { container, customizeOpenRef } = renderList();
+    openCustomizeSheet(customizeOpenRef);
     const matches = screen.getAllByLabelText('Переставить: Критик или забота?');
     const handle = matches[matches.length - 1] as HTMLElement & {
       setPointerCapture: () => void;

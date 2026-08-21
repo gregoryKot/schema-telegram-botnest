@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
+import { TherapyNote } from './TherapyNote';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
 import {
@@ -136,6 +137,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   ? 'Подготовка...'
                   : 'Поделиться'}
             </button>
+          </div>
+
+          {/* Заход на терапию после «Поделиться» — паритет с miniapp
+              WeeklyCardSheet (В10 аудита 2026-08). Этот экран не ходит через
+              ShareCardSheet (собственный share-флоу с .ics-независимым
+              фолбэком), поэтому TherapyNote вставлен напрямую. */}
+          <div style={{ marginTop: 16 }}>
+            <TherapyNote compact />
           </div>
         </>
       )}

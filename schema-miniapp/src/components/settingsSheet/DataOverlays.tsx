@@ -2,6 +2,10 @@ import { api } from '../../api';
 import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
+import {
+  privacyStorageText,
+  PRIVACY_NO_SHARE_TEXT,
+} from '../../../../shared/src/settings/privacyText';
 
 // 3 состояния кнопки «Скопировать» (copied/failed/idle) — индекс вместо копипасты ternary.
 const FG = ['#06d6a0', 'var(--accent-red)', 'rgba(var(--fg-rgb),0.7)'];
@@ -98,11 +102,11 @@ export function PrivacyOverlay({
         {[
           {
             title: 'Что хранится на сервере',
-            text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.',
+            text: privacyStorageText('Telegram-аккаунту'),
           },
           {
             title: 'Передача третьим лицам',
-            text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.',
+            text: PRIVACY_NO_SHARE_TEXT,
           },
         ].map((block) => (
           <div

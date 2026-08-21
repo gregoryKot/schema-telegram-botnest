@@ -10,10 +10,15 @@ import { api } from '../api';
 import { TODAY_STR, HISTORY_HINT_KEY } from './historyView/constants';
 import { WheelCard } from './historyView/WheelCard';
 import { NeedRow } from './historyView/NeedRow';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { InsightCard } from './historyView/InsightCard';
 import { HistoryDatePicker } from './historyView/HistoryDatePicker';
 import { HistoryControls } from './historyView/HistoryControls';
 import { HistoryWeekView } from './historyView/HistoryWeekView';
+import {
+  BOOKING_CTA_LABEL,
+  trackerTapHint,
+} from '../../../shared/src/history/therapistCta';
 
 interface Props {
   needs: Need[];
@@ -80,8 +85,7 @@ export function HistoryView({
   }, [history.length, selectedIdx]);
 
   useEffect(() => {
-    dateBtnRefs.current[selectedIdx]?.scrollIntoView({
-      behavior: 'smooth',
+    scrollIntoViewSafe(dateBtnRefs.current[selectedIdx], {
       block: 'nearest',
       inline: 'center',
     });
@@ -221,10 +225,7 @@ export function HistoryView({
                   color: 'var(--text-faint)',
                 }}
               >
-                {tr(
-                  'Нажми на потребность — узнаешь что делать',
-                  'Нажмите на потребность — узнаете что делать',
-                )}
+                {trackerTapHint(tr)}
               </div>
             )}
 
@@ -338,7 +339,7 @@ export function HistoryView({
                   {!contact.isTherapist &&
                     ' Иногда за этим стоит что-то важное — терапевт поможет разобраться.'}
                 </div>
-                {bookingLink('Записаться и взять сводку →')}
+                {bookingLink(BOOKING_CTA_LABEL)}
               </div>
             )}
 

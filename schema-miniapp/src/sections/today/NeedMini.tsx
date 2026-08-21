@@ -90,9 +90,9 @@ export function NeedMini({
           <div
             style={{
               position: 'absolute',
-              top: 2,
-              right: 2,
-              fontSize: 7,
+              top: -4,
+              right: -4,
+              fontSize: 11,
               fontWeight: 700,
               lineHeight: 1,
               color: delta > 0 ? 'var(--accent-green)' : 'var(--accent-red)',
@@ -100,8 +100,8 @@ export function NeedMini({
                 delta > 0
                   ? 'color-mix(in srgb, var(--accent-green) 18%, transparent)'
                   : 'color-mix(in srgb, var(--accent-red) 18%, transparent)',
-              borderRadius: 4,
-              padding: '1px 3px',
+              borderRadius: 5,
+              padding: '1px 4px',
             }}
           >
             {delta > 0 ? `+${delta}` : delta}
@@ -110,13 +110,13 @@ export function NeedMini({
       </div>
       <span
         style={{
-          fontSize: 9,
+          fontSize: 11,
           color: 'var(--text-faint)',
           fontWeight: 600,
           textAlign: 'center',
           letterSpacing: '0.02em',
           lineHeight: 1.2,
-          maxWidth: 52,
+          maxWidth: 60,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',

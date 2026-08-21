@@ -6,8 +6,20 @@ import { API_BASE } from '../utils/apiBase';
 import { useTr } from '../utils/addressForm'; import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { EmailIcon, GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider } from './account/ProviderRows';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type Provider = AccountProvider;
+
+// Ж4: подписи провайдеров для диалога отвязки — раньше сообщение всегда
+// говорило либо «Google», либо «Telegram» (VK/MAX/Email молча получали
+// «Telegram» из тернарника) — теперь по реальному провайдеру.
+const PROVIDER_LABELS: Record<Provider['provider'], string> = {
+  google: 'Google',
+  telegram: 'Telegram',
+  vk: 'ВКонтакте',
+  max: 'MAX',
+  email: 'Email',
+};
 
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
@@ -89,8 +101,12 @@ export function AccountPage() {
     window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
   };
 
-  const unlink = async (provider: Provider['provider']) => {
-    if (!confirm(`Отвязать ${provider === 'google' ? 'Google' : 'Telegram'}?`)) return;
+  // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
+  // unlinkProvider хранит, какой провайдер подтверждаем (null = диалог закрыт).
+  const [unlinkProvider, setUnlinkProvider] = useState<Provider['provider'] | null>(null);
+
+  const performUnlink = async (provider: Provider['provider']) => {
+    setUnlinkProvider(null);
     setBusy(true);
     setError(null);
     try {
@@ -173,29 +189,29 @@ export function AccountPage() {
         <div className="card-elevated" style={{ padding: '20px' }}>
           <ProviderRow icon={<GoogleIcon />} title="Google" divider linked={hasGoogle} busy={busy}
             subtitle={providers.find(p => p.provider === 'google')?.email}
-            onLink={linkGoogle} onUnlink={() => unlink('google')} />
+            onLink={linkGoogle} onUnlink={() => setUnlinkProvider('google')} />
 
           <ProviderRow icon={<TelegramIcon />} title="Telegram" linked={hasTelegram} busy={busy}
             subtitle={providers.find(p => p.provider === 'telegram')?.displayName ?? 'привязан'}
-            onLink={linkTelegram} onUnlink={() => unlink('telegram')} />
+            onLink={linkTelegram} onUnlink={() => setUnlinkProvider('telegram')} />
 
           <ProviderRow icon={<VkIcon />} title="ВКонтакте" divider linked={hasVk} busy={busy}
             subtitle={providers.find(p => p.provider === 'vk')?.displayName ?? providers.find(p => p.provider === 'vk')?.email ?? 'привязан'}
-            onLink={linkVk} onUnlink={() => unlink('vk')} />
+            onLink={linkVk} onUnlink={() => setUnlinkProvider('vk')} />
 
           {/* MAX: своего входа для сайтов у площадки нет — привязка начинается
               в самом приложении, поэтому кнопки «Привязать» здесь быть не может. */}
           {hasMax && (
             <ProviderRow icon={<MaxIcon />} title="MAX" divider linked busy={busy}
               subtitle={providers.find(p => p.provider === 'max')?.displayName ?? 'привязан'}
-              onUnlink={() => unlink('max')} />
+              onUnlink={() => setUnlinkProvider('max')} />
           )}
 
           {/* Email */}
           <div style={{ padding: '14px 0' }}>
             <ProviderRow icon={<EmailIcon />} title="Email" linked={hasEmail} busy={busy} emptySubtitle="не привязан"
               subtitle={providers.find(p => p.provider === 'email')?.email ?? 'привязан'}
-              onUnlink={() => unlink('email')}
+              onUnlink={() => setUnlinkProvider('email')}
               onLink={() => { setShowEmailLink(true); setEmailLinkSent(false); setEmailInput(''); }} />
             {showEmailLink && !hasEmail && (
               emailLinkSent ? (
@@ -231,6 +247,17 @@ export function AccountPage() {
       <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 12, padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
         Выйти
       </button>
+
+      {unlinkProvider && (
+        <ConfirmDialog
+          title={`Отвязать ${PROVIDER_LABELS[unlinkProvider]}?`}
+          message="Понадобится другой способ входа в аккаунт."
+          confirmLabel="Отвязать"
+          busy={busy}
+          onConfirm={() => performUnlink(unlinkProvider)}
+          onCancel={() => setUnlinkProvider(null)}
+        />
+      )}
     </div>
   );
 }

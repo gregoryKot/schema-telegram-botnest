@@ -38,7 +38,7 @@ export function CheckInSheet({
   }
 
   return (
-    <BottomSheet onClose={() => {}} zIndex={250}>
+    <BottomSheet dismissable={false} zIndex={250}>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>🎯</div>
         <div

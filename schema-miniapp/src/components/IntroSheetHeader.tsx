@@ -57,16 +57,17 @@ export function IntroSheetHeader({
           {emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
+          <h2
             style={{
               fontSize: 18,
               fontWeight: 700,
               color: 'var(--text)',
               letterSpacing: '-0.3px',
+              margin: 0,
             }}
           >
             {title}
-          </div>
+          </h2>
           <div
             style={{
               fontSize: 12,

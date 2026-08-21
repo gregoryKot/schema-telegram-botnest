@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
 import type { BookingSlot, SessionOption } from '../api';
 import { leadSource } from '../utils/leadSource';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 
 const MSK = 'Europe/Moscow';
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -93,7 +94,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const resultRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (status === 'done' || status === 'payment_fail' || status === 'await_payment') {
-      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollIntoViewSafe(resultRef.current, { block: 'center' });
     }
   }, [status]);
 

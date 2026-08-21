@@ -84,9 +84,11 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
   });
 
-  // Delete
+  // Delete — Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog
+  // (рендерится в ClientHeader); confirmingDelete переключает его видимость.
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // UI
   const [tabLoading, setTabLoading] = useState(false);
@@ -156,10 +158,18 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────────
+  function requestDeleteClient() {
+    if (!selectedClient) return;
+    setConfirmingDelete(true);
+  }
+
+  function cancelDeleteClient() {
+    setConfirmingDelete(false);
+  }
+
   async function deleteClient() {
     if (!selectedClient) return;
-    const name = selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
-    if (!window.confirm(`Удалить ${name}? Связь будет разорвана, данные сохранятся.`)) return;
+    setConfirmingDelete(false);
     setDeleteLoading(true);
     setDeleteError('');
     try {
@@ -332,12 +342,12 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     aliasSaving, aliasError,
     ysqRequested, ysqError,
     exportCopied,
-    deleteLoading, deleteError,
+    deleteLoading, deleteError, confirmingDelete,
     tabLoading, clientTab, setClientTab,
     // Derived
     activeSchemaIds, activeModeIds, ysqSchemaIds, selfSchemaIds,
     // Handlers
-    openClient, deleteClient,
+    openClient, deleteClient, requestDeleteClient, cancelDeleteClient,
     addNote, removeNote,
     patchConcept, toggleSchemaId, toggleModeId,
     saveAlias, saveSessionInfo,

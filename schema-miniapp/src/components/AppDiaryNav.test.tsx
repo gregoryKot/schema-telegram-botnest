@@ -125,6 +125,10 @@ const emptySheets: UseSheetsReturn = {
   close: vi.fn(),
 };
 
+// Ж3 (аудит 2026-08): на «Сегодня» пилюля скрыта (свой CTA, см. описание
+// ниже) — тесты видимости пилюли/нава, которым конкретный экран не важен,
+// используют section='help', чтобы не путать эффект «Сегодня» с остальными.
+// Прямая проверка Ж3 — отдельный describe ниже.
 function baseProps(overrides: Partial<UseSheetsReturn> = {}) {
   return {
     sheets: { ...emptySheets, ...overrides },
@@ -132,7 +136,7 @@ function baseProps(overrides: Partial<UseSheetsReturn> = {}) {
     newDiaryEntry: null as 'schema' | 'mode' | 'gratitude' | null,
     setNewDiaryEntry: vi.fn(),
     diaryActiveSchemaIds: undefined,
-    section: 'today' as const,
+    section: 'help' as const,
     setSection: vi.fn(),
     userRole: 'CLIENT' as const,
   };
@@ -164,6 +168,22 @@ describe('AppDiaryNav — видимость пилюли/нава', () => {
     expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
+});
+
+describe('AppDiaryNav — Ж3: «+» скрыта только на «Сегодня» (не конкурирует с TodayFocusCard)', () => {
+  it('section=today — пилюли нет, нав по-прежнему виден', () => {
+    render(<AppDiaryNav {...baseProps()} section="today" />);
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    expect(screen.getByText('Сегодня')).toBeTruthy();
+  });
+
+  it.each(['help', 'schemas', 'profile'] as const)(
+    'section=%s — пилюля видна',
+    (section) => {
+      render(<AppDiaryNav {...baseProps()} section={section} />);
+      expect(screen.getByLabelText('Быстрое действие')).toBeTruthy();
+    },
+  );
 });
 
 describe('AppDiaryNav — сохранение записей дневника', () => {

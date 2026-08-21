@@ -380,7 +380,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
                     </div>
-                    <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 8, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
+                    <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 11, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
                   </div>
                 )}
                 {insights?.worstDayOfWeek && (

@@ -5,6 +5,16 @@ import { UserProfile } from '../../types';
 export const ONBOARDING_DONE_KEY = 'onboarding_done';
 export const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
 
+// Ж10 (аудит 2026-08): та же видимость, что решает OnboardingWidget.tsx
+// (`if (done || profile === null) return null;`) — нужна и вовне (TodayBlocks
+// сворачивает вторичный блок, пока виден виджет обучения). Один источник
+// правды на ключ ONBOARDING_DONE_KEY, а не вторая копия условия.
+export function isOnboardingWidgetVisible(
+  profile: UserProfile | null,
+): boolean {
+  return profile !== null && !localStorage.getItem(ONBOARDING_DONE_KEY);
+}
+
 export interface StepDef {
   id: string;
   color: string;

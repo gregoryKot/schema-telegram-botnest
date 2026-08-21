@@ -8,56 +8,14 @@ import { CrisisCard } from './CrisisCard';
 import { Topbar } from './SchemaFlashcardTopbar';
 import { FlashcardDoneScreen } from './flashcard/FlashcardDoneScreen';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
-
-const STORAGE_KEY = 'schema_flashcards';
-
-interface FlashcardEntry { id: string | number; date: string; mode: string; reflection: string; needId: string; action: string }
-
-const buildModes = (tr: (ty: string, vy: string) => string) => [
-  {
-    id: 'vulnerable_child',
-    label: 'Уязвимый Ребёнок',
-    desc: 'Грустно, страшно, одиноко, беспомощно',
-    response: tr('Здоровый Взрослый слышит тебя: твоя боль настоящая, и справляться с ней в одиночку не нужно. Позволь себе побыть в этом – без самокритики.', 'Здоровый Взрослый слышит вас: ваша боль настоящая, и справляться с ней в одиночку не нужно. Позвольте себе побыть в этом – без самокритики.'),
-    color: '#60a5fa',
-  },
-  {
-    id: 'angry_child',
-    label: 'Злой Ребёнок',
-    desc: 'Злость, раздражение, хочется взорваться',
-    response: tr('Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.', 'Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давайте выясним, что за ней стоит.'),
-    color: '#f87171',
-  },
-  {
-    id: 'detached',
-    label: 'Отстранённый Защитник',
-    desc: 'Пусто, онемело, всё равно, хочется исчезнуть',
-    response: tr('Это отключение — чтобы не было больно, и это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
-    color: '#94a3b8',
-  },
-  {
-    id: 'critic',
-    label: 'Внутренний Критик',
-    desc: 'Стыд, «опять провал», «этого мало»',
-    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: тебя достаточно — прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
-    color: '#fb923c',
-  },
-];
-
-const NEEDS = [
-  { id: 'attachment', label: 'Привязанность' },
-  { id: 'autonomy',   label: 'Автономия' },
-  { id: 'expression', label: 'Выражение' },
-  { id: 'play',       label: 'Игра и радость' },
-  { id: 'limits',     label: 'Границы' },
-];
-
-type Step = 'mode' | 'response' | 'need' | 'action';
-const STEPS: Step[] = ['mode', 'response', 'need', 'action'];
-
-function loadLocal(): FlashcardEntry[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }
-}
+import {
+  STORAGE_KEY,
+  buildModes,
+  NEEDS,
+  STEPS,
+  loadLocal,
+} from './schemaFlashcard/constants';
+import type { FlashcardEntry, Step } from './schemaFlashcard/types';
 
 interface Props { onClose: () => void; onOpenTracker?: () => void; onComplete?: () => void; }
 

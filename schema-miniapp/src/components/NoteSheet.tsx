@@ -70,7 +70,7 @@ export function NoteSheet({ date, onClose }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>
+        <SectionLabel purple mb={16} as="h2">
           Заметка к дню
         </SectionLabel>
 

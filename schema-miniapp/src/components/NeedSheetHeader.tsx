@@ -52,17 +52,18 @@ export function NeedSheetHeader({
         <IdentityDot id={need.id} size={16} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div
+        <h2
           style={{
             fontSize: 20,
             fontWeight: 600,
             color: 'var(--text)',
             lineHeight: 1.2,
             marginBottom: 8,
+            marginTop: 0,
           }}
         >
           {need.chartLabel}
-        </div>
+        </h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {data.tags.map((tag) => (
             <span

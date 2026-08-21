@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
 // once every ~30 days, never to a brand-new user (skips the very first session),
@@ -39,13 +40,21 @@ export function DonateNudge() {
 function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y();
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
 
   return (
     <div onClick={close} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } }}
       style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} role="button" tabIndex={0}
+      {/* onClick/onKeyDown — не интерактив, а stopPropagation: не дать
+          клику/Enter-Space (например, на кнопке «Позже») всплыть до
+          бэкдропа и вызвать close() второй раз. role="dialog" (К4) не
+          входит в список «интерактивных» ролей jsx-a11y — ложное срабатывание. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div
+        {...dialogA11y}
+        onClick={(e) => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
         style={{ width: '100%', maxWidth: 440, background: 'var(--bg)', borderRadius: '18px 18px 0 0', padding: '28px 22px calc(28px + var(--safe-bottom))', textAlign: 'center', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
