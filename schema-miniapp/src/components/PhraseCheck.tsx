@@ -31,10 +31,10 @@ interface Props {
 
 export function PhraseCheck({ onClose, onComplete }: Props) {
   const tr = useTr();
-  const {
-    phrase, setPhrase, markIndex, setMarkIndex, marks,
-    rewrite, setRewrite, inWarmWords, setInWarmWords, answer,
-  } = usePhraseCheckState();
+  const phraseCheck = usePhraseCheckState();
+  const { phrase, setPhrase, markIndex, setMarkIndex, marks } = phraseCheck;
+  const { rewrite, setRewrite, inWarmWords, setInWarmWords, answer } =
+    phraseCheck;
   const [done, setDone] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [history, setHistory] = useState<PhraseCheckHistoryRow[]>([]);
