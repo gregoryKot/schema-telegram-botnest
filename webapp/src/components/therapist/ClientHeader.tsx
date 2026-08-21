@@ -3,6 +3,7 @@ import type { TherapyClientSummary } from '../../api';
 import { todayStr } from '../../utils/format';
 import { calcTherapyDuration, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -15,9 +16,11 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     clientSchemaNotesData, clientModeNotesData, clientTasks, notes, clientData, clientDiary,
     setShowAssign,
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
-    deleteClient, deleteLoading, deleteError,
+    deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError,
     clientTab, setClientTab, saveAlias,
   } = detail;
+
+  const clientName = selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
 
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -84,7 +87,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
         <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto', alignItems: 'center' }}>
           <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
           <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
-          <button onClick={deleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента"
+          <button onClick={requestDeleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента"
             style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer' }}>
             {deleteLoading ? '…' : (
@@ -117,6 +120,16 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
       </div>
 
       {deleteError && <div style={{ padding: '8px 0', fontSize: 13, color: 'var(--c-rose)' }}>{deleteError}</div>}
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={`Удалить ${clientName}?`}
+          message="Связь будет разорвана, данные сохранятся."
+          confirmLabel="Удалить"
+          onConfirm={deleteClient}
+          onCancel={cancelDeleteClient}
+        />
+      )}
     </div>
   );
 }

@@ -499,9 +499,13 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line); white-space: nowrap; flex-shrink: 0;
 }
 .chip-accent  { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
-.chip-success { background: rgba(107,129,86,0.10); color: var(--c-moss); border-color: rgba(107,129,86,0.22); }
-.chip-warn    { background: rgba(194,134,42,0.10); color: var(--c-amber); border-color: rgba(194,134,42,0.22); }
-.chip-danger  { background: rgba(196,107,107,0.10); color: var(--c-rose); border-color: rgba(196,107,107,0.22); }
+/* В11 (аудит 2026-08): было rgba(107,129,86,…) и т.п. — хардкод одного (светлого)
+   значения токена, из-за чего фон/рамка чипов не следовали за тёмной темой,
+   хотя text-цвет уже брался из var(--c-*). color-mix с тем же токеном — фон
+   пересчитывается сам при смене темы, как в .sb-today-cta/.app-banner. */
+.chip-success { background: color-mix(in srgb, var(--c-moss) 10%, transparent); color: var(--c-moss); border-color: color-mix(in srgb, var(--c-moss) 22%, transparent); }
+.chip-warn    { background: color-mix(in srgb, var(--c-amber) 10%, transparent); color: var(--c-amber); border-color: color-mix(in srgb, var(--c-amber) 22%, transparent); }
+.chip-danger  { background: color-mix(in srgb, var(--c-rose) 10%, transparent); color: var(--c-rose); border-color: color-mix(in srgb, var(--c-rose) 22%, transparent); }
 .chip-line    { background: transparent; color: var(--text-faint); border-color: var(--line); }
 .row-hover    { transition: background .12s; border-radius: 4px; }
 .row-hover:hover { background: var(--surface-2); }
@@ -599,6 +603,23 @@ html[data-theme="dark"] .heat-cell.l4 { background: rgba(144,137,224,0.72); }
 .av-6 { background: #a18044; color: #fff; }
 .av-7 { background: #4f7e80; color: #fff; }
 .av-8 { background: #8e5455; color: #fff; }
+
+/* В11 (аудит 2026-08): не было dark-переопределения — единственный блок
+   палитры, который не следовал за темой. Здесь НЕ повторяем «осветлить, как
+   остальные --c-*» — та лightening-конвенция чинит контраст ТЕКСТА на тёмном
+   фоне страницы, а у аватара текст (белый) лежит НА заливке: светлее заливка
+   = меньше контраст с белым (проверено: у av-6 осветление по той же формуле
+   даёт ~2.4:1 — хуже светлой темы). Поэтому в тёмной теме заливка чуть темнее
+   (~×0.82 по каналам) — тот же оттенок, контраст с белым текстом не ниже
+   светлой темы (av-6: 3.7:1 → 5.2:1 после затемнения). */
+html[data-theme="dark"] .av-1 { background: #5a537a; }
+html[data-theme="dark"] .av-2 { background: #3f586e; }
+html[data-theme="dark"] .av-3 { background: #7e4a65; }
+html[data-theme="dark"] .av-4 { background: #4b6751; }
+html[data-theme="dark"] .av-5 { background: #835434; }
+html[data-theme="dark"] .av-6 { background: #846938; }
+html[data-theme="dark"] .av-7 { background: #416769; }
+html[data-theme="dark"] .av-8 { background: #744546; }
 
 /* ─── KBD ────────────────────────────────────────────────────────────────── */
 .kbd {

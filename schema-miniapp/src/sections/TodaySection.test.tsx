@@ -17,6 +17,8 @@ import {
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { TodaySection } from './TodaySection';
 import { TODAY_MORE_KEY } from './today/helpers';
+import { setSecondaryHidden } from '../utils/todayFocus';
+import { ONBOARDING_DONE_KEY } from './today/onboardingSteps';
 
 // Даты — относительные к моменту запуска теста (не литералы): компонент
 // сравнивает createdAt с «сегодня» (todayStr()), и фиксированная дата в
@@ -238,6 +240,30 @@ describe('TodaySection — «Что ещё можно сегодня» (свор
     fireEvent.click(screen.getByText('Свернуть'));
     expect(screen.queryByTestId('secondary-cards')).toBeNull();
     expect(localStorage.getItem(TODAY_MORE_KEY)).toBeNull();
+  });
+});
+
+describe('Ж10 (аудит 2026-08) — свёрнут по умолчанию, пока виден OnboardingWidget', () => {
+  it('пользователь ранее включил «всегда показывать» (secondaryHidden=false), но онбординг ещё виден — блок всё равно свёрнут по умолчанию', async () => {
+    setSecondaryHidden(false);
+    await renderReady();
+    expect(screen.queryByTestId('secondary-cards')).toBeNull();
+    expect(screen.getByText('Что ещё можно сегодня')).toBeTruthy();
+  });
+
+  it('тот же случай, но пользователь раньше раскрывал блок (память в TODAY_MORE_KEY) — выбор уважается', async () => {
+    setSecondaryHidden(false);
+    localStorage.setItem(TODAY_MORE_KEY, '1');
+    await renderReady();
+    expect(screen.getByTestId('secondary-cards')).toBeTruthy();
+  });
+
+  it('онбординг уже пройден (ONBOARDING_DONE_KEY) + secondaryHidden=false — прежнее поведение: блок открыт без раскрывашки', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+    setSecondaryHidden(false);
+    await renderReady();
+    expect(screen.getByTestId('secondary-cards')).toBeTruthy();
+    expect(screen.queryByText('Что ещё можно сегодня')).toBeNull();
   });
 });
 

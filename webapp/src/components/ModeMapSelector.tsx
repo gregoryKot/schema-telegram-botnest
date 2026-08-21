@@ -3,6 +3,7 @@ import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind } from '../ap
 import { ModeMapEditor } from './ModeMapEditor';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface Props {
   clientId: number;
@@ -86,8 +87,12 @@ export function ModeMapSelector({ clientId }: Props) {
     } finally { setCreating(false); }
   }
 
+  // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
+  // deleteTargetId хранит id карты, которую подтверждаем (null = закрыт).
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
   async function deleteMap(id: number) {
-    if (!window.confirm('Удалить карту режимов? Это действие нельзя отменить.')) return;
+    setDeleteTargetId(null);
     await api.deleteModeMap(id);
     const newMaps = maps.filter(m => m.id !== id);
     setMaps(newMaps);
@@ -155,7 +160,7 @@ export function ModeMapSelector({ clientId }: Props) {
                   {m.title}
                 </button>
                 {maps.length > 1 && activeId === m.id && (
-                  <button onClick={() => deleteMap(m.id)} title="Удалить карту" aria-label="Удалить карту"
+                  <button onClick={() => setDeleteTargetId(m.id)} title="Удалить карту" aria-label="Удалить карту"
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-faint)', fontSize: 11, padding: '4px 8px 4px 2px',
@@ -247,6 +252,15 @@ export function ModeMapSelector({ clientId }: Props) {
           />
         )}
       </div>
+      {deleteTargetId !== null && (
+        <ConfirmDialog
+          title="Удалить карту режимов?"
+          message="Это действие нельзя отменить."
+          confirmLabel="Удалить"
+          onConfirm={() => deleteMap(deleteTargetId)}
+          onCancel={() => setDeleteTargetId(null)}
+        />
+      )}
     </div>
   );
 }

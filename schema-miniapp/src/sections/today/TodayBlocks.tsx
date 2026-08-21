@@ -17,6 +17,7 @@ import { TherapistBanner } from './TherapistBanner';
 // (временная системная карточка, уходит сама).
 export function TodayBlocks({
   today,
+  onboardingVisible,
   userRole,
   onOpenTherapistCabinet,
   streak,
@@ -37,6 +38,7 @@ export function TodayBlocks({
   onSetDiaryTask,
 }: {
   today: ReturnType<typeof useTodayCustomization>;
+  onboardingVisible: boolean;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
   streak: number;
@@ -116,58 +118,69 @@ export function TodayBlocks({
       ) : null,
 
     // Прогрессивное раскрытие: остальное — по желанию.
-    secondary: () => (
-      <>
-        {today.secondaryHidden && (
-          <button
-            onClick={toggleMore}
-            aria-expanded={moreOpen}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              color: 'var(--text-sub)',
-              fontSize: 13,
-              fontWeight: 600,
-              padding: '6px 0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
-            <span
+    //
+    // Ж10 (аудит 2026-08): пока виден OnboardingWidget (первые дни), блок
+    // сворачивается по умолчанию ДАЖЕ если пользователь ранее включил
+    // «всегда показывать» (today.secondaryHidden===false) — 10+ кликабельных
+    // зон не должны конкурировать с обучающей карточкой. Это дефолт НАЧАЛЬНОГО
+    // состояния, не принудительное скрытие: `moreOpen` — память устройства
+    // (TODAY_MORE_KEY), уже раскрытый пользователем блок остаётся раскрытым.
+    // `A || (onboardingVisible && !A)` алгебраически равно `A || onboardingVisible`.
+    secondary: () => {
+      const effectiveHidden = today.secondaryHidden || onboardingVisible;
+      return (
+        <>
+          {effectiveHidden && (
+            <button
+              onClick={toggleMore}
+              aria-expanded={moreOpen}
               style={{
-                display: 'inline-block',
-                transition: 'transform 0.2s',
-                transform: moreOpen ? 'rotate(180deg)' : 'none',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                color: 'var(--text-sub)',
+                fontSize: 13,
+                fontWeight: 600,
+                padding: '6px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                WebkitTapHighlightColor: 'transparent',
               }}
             >
-              ⌄
-            </span>
-          </button>
-        )}
-        {(!today.secondaryHidden || moreOpen) && (
-          <SecondaryCards
-            needs={needs}
-            ratings={ratings}
-            yesterdayRatings={yesterdayRatings}
-            ratedCount={ratedCount}
-            allRated={allRated}
-            diariesLoaded={diariesLoaded}
-            recentDiaries={recentDiaries}
-            onOpenTrackerHistory={onOpenTrackerHistory}
-            onOpenTrackerAt={onOpenTrackerAt}
-            onOpenTracker={onOpenTracker}
-            onOpenDiaries={onOpenDiaries}
-            onSetDiaryTask={onSetDiaryTask}
-          />
-        )}
-      </>
-    ),
+              {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'transform 0.2s',
+                  transform: moreOpen ? 'rotate(180deg)' : 'none',
+                }}
+              >
+                ⌄
+              </span>
+            </button>
+          )}
+          {(!effectiveHidden || moreOpen) && (
+            <SecondaryCards
+              needs={needs}
+              ratings={ratings}
+              yesterdayRatings={yesterdayRatings}
+              ratedCount={ratedCount}
+              allRated={allRated}
+              diariesLoaded={diariesLoaded}
+              recentDiaries={recentDiaries}
+              onOpenTrackerHistory={onOpenTrackerHistory}
+              onOpenTrackerAt={onOpenTrackerAt}
+              onOpenTracker={onOpenTracker}
+              onOpenDiaries={onOpenDiaries}
+              onSetDiaryTask={onSetDiaryTask}
+            />
+          )}
+        </>
+      );
+    },
   };
 
   return (

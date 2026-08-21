@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ToolRow } from '../../components/ToolRow';
 import { buildToolRows, ToolRowsProps } from './toolRows';
 import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
-import { CustomizeButton } from '../../components/plusMenu/CustomizeButton';
 import type { QuickActionId } from '../../utils/quickActions';
 import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
 import { useHiddenActions } from '../../utils/useHiddenActions';
@@ -14,6 +13,12 @@ import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 
 // Строки блока «Инструменты» — из toolRows.ts, общего с листом настройки
 // видимости (QuickActionCustomizeSheet, правило «одна механика — компонент»).
+//
+// Ж2 (аудит 2026-08): раньше здесь рядом с заголовком была ещё и пилюля
+// «Настроить» — второй вход в тот же лист, что и шестерёнка в HelpHeader.
+// Оставлен один вход (шестерёнка, см. HelpHeader.tsx) — пилюля убрана, лист
+// по-прежнему открывается через customizeOpenRef, состояние листа (`show
+// Customize`) остаётся здесь.
 interface Props extends ToolRowsProps {
   onOpenTasks: () => void;
   onOpenPractices: () => void;
@@ -53,20 +58,8 @@ export function ToolsList(props: Props) {
   const visibleRows = orderedRows.filter((r) => !hidden.includes(r.id));
   return (
     <>
-      <div
-        style={{
-          margin: '8px 4px -4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div className="section-label">Инструменты</div>
-        <CustomizeButton
-          label="Настроить"
-          ariaLabel="Настроить список инструментов"
-          onClick={() => setShowCustomize(true)}
-        />
+      <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+        Инструменты
       </div>
 
       {visibleRows.length === 0 ? (
@@ -78,7 +71,7 @@ export function ToolsList(props: Props) {
             padding: 4,
           }}
         >
-          Все инструменты скрыты. Вернуть их можно через «Настроить» выше.
+          Все инструменты скрыты. Вернуть их можно через шестерёнку в шапке.
         </div>
       ) : (
         visibleRows.map((row, index) => (
