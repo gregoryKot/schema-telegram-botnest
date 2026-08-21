@@ -13,6 +13,7 @@ import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 export const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Как это работает', href: '#how' },
   { label: 'Возможности', href: '#features' },
+  { label: 'Приложение', href: '#app' },
   { label: 'Тесты', href: '/tests' },
   { label: 'Статьи', href: '#articles' },
   { label: 'Вопросы', href: '#faq' },

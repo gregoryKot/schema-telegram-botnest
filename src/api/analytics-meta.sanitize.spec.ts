@@ -640,6 +640,15 @@ describe('sanitizeMeta', () => {
     ).toEqual({ action: 'added', surface: 'today' });
   });
 
+  it('home_screen_offer: сайтовая поверхность site_banner проходит авторизованным путём', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'shown',
+        surface: 'site_banner',
+      }),
+    ).toEqual({ action: 'shown', surface: 'site_banner' });
+  });
+
   it('home_screen_offer: неизвестный action → отброшено целиком', () => {
     expect(
       sanitizeMeta('home_screen_offer', {

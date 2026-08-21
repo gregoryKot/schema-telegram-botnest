@@ -4,13 +4,15 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import type { PublicAnalyticsEventName } from '../analytics/analytics.constants';
 import { PRACTICE_LINK_PLACES } from '../analytics/analytics.constants';
 import { PublicEventDto } from './dto/public-event.dto';
+import { HOME_SCREEN_ACTION_SET } from './dto/analytics.dto';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 
 // Анонимная аналитика публичного сайта (правило №8): гость без регистрации
-// проходит мини-тест или кликает ссылку на сайт практики с лендинга — событие
-// пишется с userId = null. Идентичность не верифицирована, поэтому
-// троттлинг-бакет — по IP (правило №5: глобальный UserThrottlerGuard для
-// запросов без кредов возвращает именно IP), и лимит заметно жёстче обычного.
+// проходит мини-тест, кликает ссылку на сайт практики с лендинга или видит
+// блок установки на экран (site_landing) — событие пишется с userId = null.
+// Идентичность не верифицирована, поэтому троттлинг-бакет — по IP (правило
+// №5: глобальный UserThrottlerGuard для запросов без кредов возвращает
+// именно IP), и лимит заметно жёстче обычного.
 @Controller('api')
 export class PublicEventsController {
   private readonly validResults = quizResultIdSet();
@@ -43,9 +45,10 @@ export class PublicEventsController {
   }
 
   /**
-   * Пропускает ТОЛЬКО известные поля по реестрам (тесты, места клика); src
-   * клиенту не доверяем — публичный эндпоинт всегда пишет 'web' (бот шлёт
-   * 'bot' сам, через AnalyticsService напрямую).
+   * Пропускает ТОЛЬКО известные поля по реестрам (тесты, места клика,
+   * предложение значка на экран с лендинга); src клиенту не доверяем —
+   * публичный эндпоинт всегда пишет 'web' (бот шлёт 'bot' сам, через
+   * AnalyticsService напрямую).
    */
   private sanitize(
     name: PublicAnalyticsEventName,
@@ -55,6 +58,18 @@ export class PublicEventsController {
       const place = meta?.place;
       return typeof place === 'string' && this.validPlaces.has(place)
         ? { place }
+        : null;
+    }
+    if (name === 'home_screen_offer') {
+      const action = meta?.action;
+      const surface = meta?.surface;
+      // Публичный путь принимает ТОЛЬКО лендинг (site_landing) — остальные
+      // поверхности (в т.ч. site_banner в кабинете) авторизованы и идут
+      // через POST /api/event, там своя валидация по HOME_SCREEN_SURFACE_SET.
+      return typeof action === 'string' &&
+        HOME_SCREEN_ACTION_SET.has(action) &&
+        surface === 'site_landing'
+        ? { action, surface }
         : null;
     }
     const quiz = meta?.quiz;

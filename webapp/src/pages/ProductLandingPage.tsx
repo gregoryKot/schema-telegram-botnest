@@ -9,6 +9,7 @@ import { Logo, Cta } from './landing/BrandKit';
 import { STEPS, FEATURES, TRUST, H2, EYEBROW, NAV_LINKS } from './landing/productContent';
 import { GlassCard, ArticleCard, FaqList } from './landing/ProductKit';
 import { AuthorSection } from './landing/AuthorSection';
+import { AppInstallSection } from './landing/AppInstallSection';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 import { ProductMobileMenu } from './landing/ProductMobileMenu';
 
@@ -213,6 +214,9 @@ export function ProductLandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Значок на экран (PWA) ── */}
+        <AppInstallSection />
 
         {/* ── Доверие ── */}
         <section style={{ padding: '20px 24px 72px' }}>
