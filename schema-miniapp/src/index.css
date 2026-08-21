@@ -224,6 +224,12 @@ input[type='range']::-moz-range-thumb {
 }
 button {
   font-family: inherit;
+  /* Двойной тап по кнопке не зумит и не задерживает клик — пинч-зум
+     страницы (WCAG 1.4.4) при этом остаётся разрешён, см. index.html. */
+  touch-action: manipulation;
+}
+[role='button'] {
+  touch-action: manipulation;
 }
 ::placeholder {
   color: var(--text-faint);
