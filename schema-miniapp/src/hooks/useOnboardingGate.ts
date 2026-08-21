@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { shouldAskAddressForm } from '../../../shared/src/settings/addressFormPrompt';
 import { api } from '../api';
 import { setFlag } from '../useUserFlags';
 import { logErr } from '../utils/logErr';
@@ -13,13 +14,21 @@ import {
 /**
  * Показ первого входа: онбординг + согласие. Вся логика собрана здесь —
  * размазанной по App.tsx она разъезжалась, см. utils/onboardingState.ts.
+ *
+ * `flagsLoaded` — это «флаги РЕАЛЬНО прочитаны с сервера»
+ * (useUserFlags().loadedFromServer), а не «попытка завершилась»: неудачный
+ * запрос отдаёт дефолты, неотличимые от флагов новичка, и прошедший
+ * онбординг человек проходил его снова на каждом заходе.
  */
 export function useOnboardingGate(serverDone: boolean, flagsLoaded: boolean) {
   const [consentGiven, setConsentGiven] = useState(isDisclaimerAcceptedLocally);
   const [seenLocally, setSeenLocally] = useState(isOnboardingSeenLocally);
   const [dismissed, setDismissed] = useState(false);
+  // Стартовое значение — «вопрос формы обращения точно не всплывёт»: он
+  // отложен ранее нажатым «Позже». Иначе ждём ответа сервера, его разберёт
+  // App (там же вызовется markAddressFormReady).
   const [addressFormReady, setAddressFormReady] = useState(
-    () => !!sessionStorage.getItem('addr_form_asked'),
+    () => !shouldAskAddressForm(null),
   );
 
   // Серверный флаг — источник правды: у Telegram WebView localStorage
@@ -59,10 +68,15 @@ export function useOnboardingGate(serverDone: boolean, flagsLoaded: boolean) {
     latch.current = true;
   }
 
-  // Идемпотентно: зовётся и на шаге согласий, и на финальной кнопке.
+  // Зовётся на каждом шаге онбординга и на финальной кнопке — поэтому
+  // серверную запись делаем один раз за сессию, а не на каждый «Далее».
+  const flagPersisted = useRef(false);
   const persist = useCallback(() => {
     markOnboardingSeenLocally();
-    setFlag('onboardingV2Done', true).catch(logErr('onboardingV2Done'));
+    if (!flagPersisted.current) {
+      flagPersisted.current = true;
+      setFlag('onboardingV2Done', true).catch(logErr('onboardingV2Done'));
+    }
     if (isDisclaimerAcceptedLocally()) return;
     markDisclaimerAcceptedLocally();
     api.acceptDisclaimer().catch(logErr('acceptDisclaimer'));
