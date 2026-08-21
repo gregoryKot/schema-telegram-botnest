@@ -94,6 +94,31 @@ describe('Disclaimer — гейт согласий на шаге not_therapy', (
   });
 });
 
+// Регресс 2026-08-21 («двадцать раз прошёл онбординг»): прогресс сохранялся
+// только на шаге согласий, а у пришедшего с сайта или из бота согласие уже
+// есть — шаг пропускался, и уход с середины не сохранял ничего.
+describe('Disclaimer — прогресс сохраняется на каждом шаге', () => {
+  it('согласие уже дано: первый же «Далее» сохраняет прогресс', () => {
+    const onConsent = vi.fn();
+    render(
+      <Disclaimer onAccept={() => {}} onConsent={onConsent} consentGiven />,
+    );
+    expect(screen.getByText('step-needs-what')).toBeTruthy();
+    fireEvent.click(screen.getByText('Далее →'));
+    expect(onConsent).toHaveBeenCalled();
+  });
+
+  it('заблокированный шаг (галочки не стоят) прогресс не сохраняет', () => {
+    const onConsent = vi.fn();
+    render(<Disclaimer onAccept={() => {}} onConsent={onConsent} />);
+    fireEvent.click(screen.getByText('Далее →')); // welcome → privacy
+    fireEvent.click(screen.getByText('Далее →')); // privacy → not_therapy
+    onConsent.mockClear();
+    fireEvent.click(screen.getByText('Далее →')); // заблокировано
+    expect(onConsent).not.toHaveBeenCalled();
+  });
+});
+
 describe('Disclaimer — точки-навигация и финал', () => {
   it('клик по точке шага переключает контент напрямую', () => {
     render(<Disclaimer onAccept={() => {}} onConsent={() => {}} />);

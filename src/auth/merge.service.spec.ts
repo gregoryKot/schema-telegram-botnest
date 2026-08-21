@@ -34,6 +34,32 @@ function captureRawSql() {
   };
 }
 
+// Дефолтный «пустой» набор флагов/addressForm — как у только что созданного
+// User (схема-дефолты). Одинаковый для source и target делает диф в
+// mergeUserScalarFields пустым, так что существующие ниже тесты (про SQL
+// других таблиц) не задевает перенос флагов — он покрыт отдельно в
+// merge-user-fields.spec.ts.
+function defaultUserFlagsRow() {
+  return {
+    themePref: null,
+    onboardingV1Done: false,
+    onboardingV2Done: false,
+    onboardingSkipped: [],
+    childhoodWheelDone: false,
+    ysqBannerDismissed: false,
+    hintSheetCloseShown: false,
+    hintHistoryDismissed: false,
+    trackerOnboardingDone: false,
+    lastCelebrationDate: null,
+    lastYesterdayBannerDate: null,
+    lastWeeklyQuestionWeek: null,
+    schemaIntrosShown: [],
+    modeIntrosShown: [],
+    defaultSection: null,
+    addressForm: null,
+  };
+}
+
 function makePrisma() {
   const raw = captureRawSql();
   const prisma = {
@@ -41,6 +67,10 @@ function makePrisma() {
       const tx = {
         $executeRaw: raw.spy,
         $queryRaw: jest.fn().mockResolvedValue([{ re: null, rev: null }]),
+        user: {
+          findUnique: jest.fn().mockResolvedValue(defaultUserFlagsRow()),
+          update: jest.fn(),
+        },
       };
       await fn(tx);
     }),

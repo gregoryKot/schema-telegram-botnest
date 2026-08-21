@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
+import {
+  shouldAskAddressForm,
+  markAddressFormAsked,
+} from '../../../shared/src/settings/addressFormPrompt';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 
 /**
@@ -19,14 +23,13 @@ export function AddressFormPicker() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('addr_form_asked')) return;
     api.getSettings()
-      .then(s => { if (!s.addressForm) setShow(true); })
+      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); })
       .catch(() => {});
   }, []);
 
   function close() {
-    sessionStorage.setItem('addr_form_asked', '1');
+    markAddressFormAsked();
     setShow(false);
   }
 

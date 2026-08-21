@@ -27,12 +27,14 @@ vi.mock('../api', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  localStorage.clear();
   updateSettings.mockResolvedValue({});
 });
 
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 function renderPicker(setForm = vi.fn()) {
@@ -60,11 +62,25 @@ describe('AddressFormPicker — видимость', () => {
     expect(screen.queryByText('Как удобнее общаться?')).toBeTruthy();
   });
 
-  it('уже спрашивали в этой сессии — не запрашивает настройки повторно', () => {
-    sessionStorage.setItem('addr_form_asked', '1');
+  // Регресс 2026-08-21: отметка жила в sessionStorage и умирала со вкладкой —
+  // человек, нажавший «Позже», видел вопрос при каждом открытии сайта.
+  it('спрашивали недавно (снуз «Позже») — настройки читаем, но вопрос молчит', async () => {
+    localStorage.setItem('addr_form_asked', String(Date.now()));
+    getSettings.mockResolvedValue({ addressForm: null });
     renderPicker();
-    expect(getSettings).not.toHaveBeenCalled();
+    await act(async () => {});
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+  });
+
+  it('снуз истёк (прошла неделя) — спрашиваем снова', async () => {
+    localStorage.setItem(
+      'addr_form_asked',
+      String(Date.now() - 8 * 86_400_000),
+    );
+    getSettings.mockResolvedValue({ addressForm: null });
+    renderPicker();
+    await act(async () => {});
+    expect(screen.queryByText('Как удобнее общаться?')).toBeTruthy();
   });
 });
 
@@ -82,7 +98,7 @@ describe('AddressFormPicker — выбор', () => {
     expect(setForm).toHaveBeenCalledWith('ty');
     expect(updateSettings).toHaveBeenCalledWith({ addressForm: 'ty' });
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 
   it('«На «вы»» сохраняет выбор «вы»', async () => {
@@ -117,7 +133,7 @@ describe('AddressFormPicker — выбор', () => {
     expect(setForm).toHaveBeenCalledWith('ty'); // интерфейс уже переключился — это честно
     expect(screen.queryByText('Как удобнее общаться?')).toBeTruthy();
     expect(screen.getByText(/Не удалось сохранить выбор/)).toBeTruthy();
-    expect(sessionStorage.getItem('addr_form_asked')).toBeNull();
+    expect(localStorage.getItem('addr_form_asked')).toBeNull();
     expect(reportClientError).toHaveBeenCalledWith({
       message: 'address form save failed',
       section: 'addressForm',
@@ -138,7 +154,7 @@ describe('AddressFormPicker — выбор', () => {
     await act(async () => {});
     expect(updateSettings).toHaveBeenCalledTimes(2);
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 
   it('«Позже» после отказа — мягкий выход всё равно закрывает пикер', async () => {
@@ -152,7 +168,7 @@ describe('AddressFormPicker — выбор', () => {
     fireEvent.click(screen.getByText('Позже'));
     await act(async () => {});
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 
   it('«Позже» закрывает без сохранения формы и без сброса setForm', async () => {
@@ -164,7 +180,7 @@ describe('AddressFormPicker — выбор', () => {
     expect(setForm).not.toHaveBeenCalled();
     expect(updateSettings).not.toHaveBeenCalled();
     expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 });
 

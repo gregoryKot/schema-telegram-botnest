@@ -42,6 +42,31 @@ function findExact(calls: RawCall[], sql: string): RawCall | undefined {
   return calls.find((c) => c.sql === sql);
 }
 
+// «Пустой» набор флагов/addressForm — как у только что созданного User.
+// Одинаковый для source и target держит mergeUserScalarFields (см.
+// merge-user-fields.ts) молчаливым здесь: его SQL-независимая логика
+// (tx.user.findUnique/update) покрыта отдельно в merge-user-fields.spec.ts.
+function defaultUserFlagsRow() {
+  return {
+    themePref: null,
+    onboardingV1Done: false,
+    onboardingV2Done: false,
+    onboardingSkipped: [],
+    childhoodWheelDone: false,
+    ysqBannerDismissed: false,
+    hintSheetCloseShown: false,
+    hintHistoryDismissed: false,
+    trackerOnboardingDone: false,
+    lastCelebrationDate: null,
+    lastYesterdayBannerDate: null,
+    lastWeeklyQuestionWeek: null,
+    schemaIntrosShown: [],
+    modeIntrosShown: [],
+    defaultSection: null,
+    addressForm: null,
+  };
+}
+
 // ── Фейк Prisma для merge(): захватывает и $executeRaw (в транзакции), и
 // $queryRaw (SELECT recoveryEmail перед удалением source). ───────────────────
 function makeMergePrisma(
@@ -59,9 +84,15 @@ function makeMergePrisma(
     queryCalls.push({ sql: normalize(query.sql), values: query.values });
     return Promise.resolve(rows);
   });
+  const userFindUnique = jest.fn().mockResolvedValue(defaultUserFlagsRow());
+  const userUpdate = jest.fn();
   const prisma = {
     $transaction: jest.fn(async (fn: (tx: unknown) => Promise<void>) => {
-      await fn({ $executeRaw: execSpy, $queryRaw: querySpy });
+      await fn({
+        $executeRaw: execSpy,
+        $queryRaw: querySpy,
+        user: { findUnique: userFindUnique, update: userUpdate },
+      });
     }),
     $executeRaw: execSpy,
   };
