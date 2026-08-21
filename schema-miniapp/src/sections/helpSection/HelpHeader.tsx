@@ -26,9 +26,9 @@ export function HelpHeader({
   return (
     <div style={{ padding: '20px 20px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div className="d-display" style={{ fontSize: 26 }}>
+        <h1 className="d-display" style={{ fontSize: 26, margin: 0 }}>
           Здесь и сейчас
-        </div>
+        </h1>
         <button
           {...pressable(onOpenSelfHelp)}
           aria-label="Важное о самопомощи"

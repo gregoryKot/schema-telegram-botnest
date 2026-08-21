@@ -4,6 +4,7 @@ import { BookingPicker } from '../components/BookingPicker';
 import { Btn, ThemeIcon } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
 import { botUrl } from '../utils/botConfig';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import {
   TG_URL, PRACTICE_BOOKING_URL, menuBtnStyle, burgerLine,
   TOPICS_A, TOPICS_B, APP_FEATURES,
@@ -56,7 +57,7 @@ export function LandingPage() {
   const scrollToBooking = useCallback(() => {
     const onPractice = /(^|\.)kotlarewski\./.test(window.location.hostname);
     if (onPractice) {
-      bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollIntoViewSafe(bookingRef.current, { block: 'start' });
     } else {
       window.location.href = PRACTICE_BOOKING_URL;
     }

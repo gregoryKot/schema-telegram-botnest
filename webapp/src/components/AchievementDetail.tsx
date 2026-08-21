@@ -8,6 +8,7 @@ import { drawAchievementCard } from '../../../shared/src/share/cards/achievement
 import type { AchievementMeta } from '../../../shared/src/share/cards/achievementCard';
 import { achievementShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
 interface Props {
   meta: AchievementMeta;
@@ -16,6 +17,7 @@ interface Props {
 
 export function AchievementDetail({ meta, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y();
   const [showShare, setShowShare] = useState(false);
   const draw = useCallback(
     (canvas: HTMLCanvasElement) => drawAchievementCard(canvas, meta),
@@ -38,8 +40,13 @@ export function AchievementDetail({ meta, onClose }: Props) {
         animation: 'fade-in 0.18s ease',
       }}
     >
+      {/* onClick — не интерактив, а stopPropagation (не дать клику дойти до
+          onClick={goBack} на бэкдропе). role="dialog" (К4, useDialogA11y)
+          не входит в список «интерактивных» ролей jsx-a11y — ложное
+          срабатывание, клавиатура тут ничего не активирует. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
       <div
-        role="presentation"
+        {...dialogA11y}
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)',

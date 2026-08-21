@@ -131,7 +131,12 @@ export function NeedFillRow({
           </div>
         </div>
       </div>
-      <Slider value={value} color={color} onChange={onChange} />
+      <Slider
+        value={value}
+        color={color}
+        onChange={onChange}
+        label={meta.label}
+      />
       <div
         style={{
           display: 'grid',

@@ -119,9 +119,9 @@ export function HomeView({
           </span>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="d-display" style={{ fontSize: 27 }}>
+          <h1 className="d-display" style={{ fontSize: 27, margin: 0 }}>
             Мои дневники
-          </div>
+          </h1>
           <div
             style={{
               fontSize: 14,

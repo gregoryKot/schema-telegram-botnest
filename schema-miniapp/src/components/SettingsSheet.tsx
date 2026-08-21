@@ -192,12 +192,13 @@ export function SettingsSheet({
           >
             ‹
           </span>
-          <span
+          <h2
             style={{
               fontSize: 18,
               fontWeight: 600,
               color: 'var(--text)',
               flex: 1,
+              margin: 0,
             }}
           >
             {view === 'time'
@@ -209,7 +210,7 @@ export function SettingsSheet({
                   : view === 'quiet'
                     ? 'Тихие часы'
                     : 'Настройки'}
-          </span>
+          </h2>
           <span
             style={{
               fontSize: 12,

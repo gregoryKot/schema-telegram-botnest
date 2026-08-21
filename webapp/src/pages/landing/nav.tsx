@@ -1,6 +1,7 @@
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { Btn } from '../../components/landing-kit';
 import { MOSS, TG_URL, NAV_LINKS, MOBILE_LINKS } from './constants';
+import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 
 // ─── Telegram link – quiet editorial text link (matches nav "Написать ↗") ────
 export function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
@@ -45,7 +46,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
   const go = (href: string) => {
     if (href.startsWith('#')) {
       goBack();
-      setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
+      setTimeout(() => scrollIntoViewSafe(document.getElementById(href.slice(1))), 60);
     } else {
       // location.assign() navigates the same as `location.href = …` but is a
       // method call, not a property write react-compiler flags as a mutation.

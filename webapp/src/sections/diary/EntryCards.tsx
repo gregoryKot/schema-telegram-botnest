@@ -33,7 +33,7 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
   const emotionMetas = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time">{fmtTime(entry.createdAt)}</span>
       <span className="entry-rule" />
       <div className="entry-body">
@@ -82,7 +82,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   const mode = getModeById(entry.modeId);
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time">{fmtTime(entry.createdAt)}</span>
       <span className="entry-rule" />
       <div className="entry-body">
@@ -132,7 +132,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
   const color = 'var(--c-moss)';
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time" style={{ fontStyle: 'italic' }}>·</span>
       <span className="entry-rule" />
       <div className="entry-body">

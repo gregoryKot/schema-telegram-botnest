@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
+// id атрибут не может содержать пробелы (HTML5) — домены схем на кириллице
+// с пробелами («Отчуждение и отвержение»), делаем безопасный slug для aria-controls.
+function domainPanelId(domain: string): string {
+  return `schema-domain-${domain.replace(/\s+/g, '-')}`;
+}
+
 function hexToRgbStr(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -35,6 +41,8 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
             role="button"
             tabIndex={0}
+            aria-expanded={open === d.domain}
+            aria-controls={domainPanelId(d.domain)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -96,6 +104,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
           </div>
           {open === d.domain && (
             <div
+              id={domainPanelId(d.domain)}
               style={{
                 background: 'rgba(var(--fg-rgb),0.03)',
                 borderRadius: '0 0 14px 14px',

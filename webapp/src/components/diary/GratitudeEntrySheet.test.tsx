@@ -44,3 +44,19 @@ describe('GratitudeEntrySheet — кризисная детекция', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+// В7 дизайн-аудита 2026-08: каждый пункт связан со своим вопросом через
+// aria-label, а не только через исчезающий при вводе placeholder.
+describe('GratitudeEntrySheet — поля связаны с вопросом (В7)', () => {
+  it('каждое поле доступно по своему вопросу как по label', () => {
+    renderSheet();
+    const first = screen.getByLabelText(/Пункт 1: Что-то хорошее/);
+    const second = screen.getByLabelText(/Пункт 2: Кто-то, кто помог/);
+    expect(first).toBe(
+      screen.getByPlaceholderText('Что-то хорошее, что произошло сегодня…'),
+    );
+    expect(second).toBe(
+      screen.getByPlaceholderText('Кто-то, кто помог или поддержал…'),
+    );
+  });
+});

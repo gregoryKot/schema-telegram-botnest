@@ -2,6 +2,7 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { INK, GLASS_BORDER, VIOLET, glow } from './aurora';
 import { Cta } from './BrandKit';
 import { NAV_LINKS } from './productContent';
+import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 
 // Мобильное меню продуктового лендинга (В4, аудит 2026-08) — .pl2-nav
 // исчезал ≤640px без замены, ссылки становились недостижимы с телефона.
@@ -15,7 +16,7 @@ export function ProductMobileMenu({ onClose }: { onClose: () => void }) {
     if (href.startsWith('#')) {
       goBack();
       setTimeout(
-        () => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }),
+        () => scrollIntoViewSafe(document.getElementById(href.slice(1))),
         60,
       );
     } else {

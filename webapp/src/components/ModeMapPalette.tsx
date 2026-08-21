@@ -5,6 +5,7 @@ import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { ShapePicker } from './modeMap/ShapePicker';
 
@@ -218,7 +219,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
-              <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { addFormRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); addInputRef.current?.focus(); }, 60); }}
+              <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { scrollIntoViewSafe(addFormRef.current, { block: 'nearest' }); addInputRef.current?.focus(); }, 60); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}
                 title="Добавить свой режим" aria-label="Добавить свой режим"><MMIcon name="plus" size={15} /></button>
             </div>

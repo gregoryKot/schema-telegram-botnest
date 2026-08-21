@@ -18,7 +18,7 @@ export function AboutSheet({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>
+        <SectionLabel purple mb={16} as="h2">
           Зачем это всё
         </SectionLabel>
         {ABOUT_TEXT.map((p, i) => (

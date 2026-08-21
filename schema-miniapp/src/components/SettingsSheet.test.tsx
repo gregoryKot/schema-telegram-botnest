@@ -219,6 +219,14 @@ async function renderReady(
 }
 
 describe('SettingsSheet — загрузка настроек', () => {
+  // В8 дизайн-аудита 2026-08: заголовок шита — h2.
+  it('«Настройки» — h2', async () => {
+    await renderReady();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Настройки' }),
+    ).toBeTruthy();
+  });
+
   it('до ответа api.getSettings показывает скелетон, а не пустой экран', () => {
     mockApi.getSettings.mockReturnValue(new Promise(() => {})); // висит вечно
     render(<SettingsSheet onClose={() => {}} />);

@@ -46,6 +46,22 @@ describe('SchemaEntrySheet — кризисная детекция', () => {
   });
 });
 
+// В7 дизайн-аудита 2026-08: поле связано с видимым вопросом программно.
+describe('SchemaEntrySheet — поля связаны с вопросом (В7)', () => {
+  it('первый шаг: textarea доступно по вопросу «Что случилось?»', () => {
+    renderSheet();
+    const byLabel = screen.getByLabelText('Что случилось?');
+    const byPlaceholder = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
+    expect(byLabel).toBe(byPlaceholder);
+  });
+
+  it('шаг «Схемы»: поле «откуда это знакомо» доступно по своему вопросу', () => {
+    renderSheet();
+    fireEvent.click(ticks()[5]);
+    expect(screen.getByLabelText('Откуда это знакомо?')).toBeTruthy();
+  });
+});
+
 // Тик-страйп прогресса — 10 div[role=button] без текста (pressable), порядок
 // SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
 function ticks() {

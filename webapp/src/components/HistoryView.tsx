@@ -5,6 +5,7 @@ import { NeedHistorySheet } from './NeedHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
 import { IndexInfoSheet } from './IndexInfoSheet';
 import { NeedsWheel } from '../../../shared/src/components/NeedsWheel';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
@@ -121,7 +122,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   }
 
   useEffect(() => {
-    dateBtnRefs.current[selectedIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    scrollIntoViewSafe(dateBtnRefs.current[selectedIdx], { block: 'nearest', inline: 'center' });
   }, [selectedIdx]);
 
   useEffect(() => {

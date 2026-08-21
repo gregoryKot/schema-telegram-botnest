@@ -7,6 +7,7 @@ import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { useTr } from '../utils/addressForm';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 type TaskType =
   | 'diary_streak'
   | 'tracker_streak'
@@ -131,11 +132,7 @@ export function TaskCreateSheet({
       configRef.current
     ) {
       setTimeout(
-        () =>
-          configRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-          }),
+        () => scrollIntoViewSafe(configRef.current, { block: 'nearest' }),
         50,
       );
     }
@@ -200,7 +197,7 @@ export function TaskCreateSheet({
 
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
-      <SectionLabel purple mb={16}>
+      <SectionLabel purple mb={16} as="h2">
         {clientName ? `Задание для ${clientName}` : 'Новое задание'}
       </SectionLabel>
 

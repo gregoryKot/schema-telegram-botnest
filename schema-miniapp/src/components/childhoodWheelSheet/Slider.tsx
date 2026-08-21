@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+// В9 дизайн-аудита 2026-08: чисто pointer-based слайдер был недоступен с
+// клавиатуры полностью — единственный способ поставить значение в
+// упражнении «Колесо детства». `NeedRatingBar` (10 нативных кнопок) решает
+// ту же механику 0–10, но здесь непрерывный drag-трек с другим визуальным
+// языком (заливка + бегунок) — часть визуальной идентичности этого
+// упражнения, замена на дискретные кнопки была бы переверсткой, а не
+// точечным фиксом (см. prC-notes.md). Поэтому клавиатура добавлена в этот
+// же компонент: role="slider" + aria-value* + стрелки, без изменения
+// внешнего вида ни на пиксель.
+const MIN = 0;
+const MAX = 10;
+
 export function Slider({
   value,
   color,
   onChange,
+  label,
 }: {
   value: number;
   color: string;
   onChange: (v: number) => void;
+  /** Доступное имя слайдера — что именно оцениваем (название потребности). */
+  label?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -49,9 +64,55 @@ export function Slider({
     [calcValue],
   );
 
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const step = (d: number) =>
+        onChange(Math.max(MIN, Math.min(MAX, value + d)));
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'ArrowUp':
+          e.preventDefault();
+          step(1);
+          break;
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          e.preventDefault();
+          step(-1);
+          break;
+        case 'PageUp':
+          e.preventDefault();
+          step(2);
+          break;
+        case 'PageDown':
+          e.preventDefault();
+          step(-2);
+          break;
+        case 'Home':
+          e.preventDefault();
+          onChange(MIN);
+          break;
+        case 'End':
+          e.preventDefault();
+          onChange(MAX);
+          break;
+        default:
+          break;
+      }
+    },
+    [value, onChange],
+  );
+
   return (
     <div
       ref={trackRef}
+      role="slider"
+      tabIndex={0}
+      aria-label={label}
+      aria-valuemin={MIN}
+      aria-valuemax={MAX}
+      aria-valuenow={value}
+      aria-valuetext={`${value} из ${MAX}`}
+      onKeyDown={onKeyDown}
       onPointerDown={onPtrDown}
       onPointerMove={onPtrMove}
       style={{
