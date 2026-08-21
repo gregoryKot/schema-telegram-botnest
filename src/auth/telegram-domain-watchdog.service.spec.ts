@@ -5,6 +5,7 @@
 // (notifyAdminWithFallback) мокается на границе модуля — здесь проверяем
 // только машину состояний (здоров/поломка/переход/суточное напоминание),
 // не сеть и не доставку DM (см. admin-alert.spec.ts).
+import { Logger } from '@nestjs/common';
 import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import type { ConfigService } from '@nestjs/config';
@@ -104,6 +105,11 @@ describe('TelegramDomainWatchdogService.check — поломка', () => {
     clock.advance(25 * 3600_000);
     await service.check();
     expect(mockedNotify).toHaveBeenCalledTimes(2);
+    // Напоминание — то же содержимое, что и первый алерт: причина и починка.
+    expect(mockedNotify).toHaveBeenLastCalledWith(
+      expect.stringContaining('Bot domain invalid'),
+      expect.stringContaining('сломан'),
+    );
   });
 
   it('поломка → здоровый ответ → одиночный DM «снова работает»; следующий здоровый check — без DM', async () => {
@@ -143,24 +149,27 @@ describe('TelegramDomainWatchdogService.check — поломка', () => {
 });
 
 describe('TelegramDomainWatchdogService.check — неизвестность (не поломка)', () => {
-  it('res.ok=false (500) → DM нет', async () => {
+  it('res.ok=false (500) → DM нет, но warn в лог виден (немой сбой запрещён)', async () => {
     mockFetchOk('internal error', false);
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const service = new TelegramDomainWatchdogService(makeConfig());
 
     await service.check();
 
     expect(mockedNotify).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('HTTP 500'));
   });
 });
 
 describe('TelegramDomainWatchdogService.check — конфиг не задан', () => {
   it('BOT_TOKEN не задан → fetch не звался вовсе', async () => {
-    const service = new TelegramDomainWatchdogService(
-      makeConfig({ BOT_TOKEN: undefined }),
-    );
+    const config = makeConfig({ BOT_TOKEN: undefined });
+    const service = new TelegramDomainWatchdogService(config);
 
     await service.check();
 
+    // Выход именно по отсутствию токена: ключ прочитан — и на этом всё.
+    expect(config.get).toHaveBeenCalledWith('BOT_TOKEN');
     expect(global.fetch).not.toHaveBeenCalled();
     expect(mockedNotify).not.toHaveBeenCalled();
   });
