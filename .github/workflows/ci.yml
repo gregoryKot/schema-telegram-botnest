@@ -341,6 +341,14 @@ jobs:
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
       - run: npm run build --prefix webapp
+      # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
+      # печатает «chunks larger than 400 kB» и это молча игнорировалось —
+      # гейт меряет байты webapp/dist (свежесобран шагом выше) и уже
+      # закоммиченного schema-miniapp/dist (checkout принёс его вместе с
+      # репозиторием — джоба не собирает мини-апп отдельно). Шаг стоит СРАЗУ
+      # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
+      # понятной подсказкой «сначала собери».
+      - run: node scripts/check-bundle-size-ratchet.mjs
       # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по
       # образцу scripts/check-coverage-ratchet.mjs бэкенда): сам гоняет
       # `vitest run --coverage` и падает при просадке покрытия ниже
