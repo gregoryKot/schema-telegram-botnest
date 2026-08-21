@@ -13,12 +13,7 @@ import { DisclaimerTodayScreenStep } from './disclaimer/DisclaimerTodayScreenSte
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 import { canOfferHomeScreenNow } from '../utils/homeScreen';
-import {
-  buildSteps,
-  canAdvance,
-  initialStepIndex,
-  CONSENT_STEP,
-} from './disclaimer/steps';
+import { buildSteps, canAdvance, initialStepIndex } from './disclaimer/steps';
 import {
   useOnboardingStepTracking,
   trackOnboardingDone,
@@ -130,9 +125,12 @@ export function Disclaimer({
           <button
             onClick={() => {
               if (blocked) return;
-              // Согласие сохраняем сразу, как только обе галочки стоят: дальше
-              // человек может уйти из аппки, не дойдя до финальной кнопки.
-              if (stepId === CONSENT_STEP) onConsent();
+              // Прогресс сохраняем на КАЖДОМ шаге, а не только на шаге
+              // согласий: у кого согласие уже есть (бот, сайт), юридические
+              // шаги пропускаются, и до финальной кнопки могло не дойти —
+              // человек листал экраны, закрывал мини-апп и проходил онбординг
+              // заново. Вызов идемпотентен (см. persist в useOnboardingGate).
+              onConsent();
               setStep((s) => s + 1);
             }}
             className="btn-primary"

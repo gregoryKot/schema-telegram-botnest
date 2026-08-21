@@ -252,7 +252,8 @@ describe('AppOverlays — цепочки колбэков между шитам�
       />,
     );
     fireEvent.click(screen.getByText('address-done'));
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    // Метка — время в localStorage: переживает вкладку (регресс 2026-08-21)
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
     expect(close).toHaveBeenCalledWith('addressPicker');
     expect(onAddressPickerDone).toHaveBeenCalled();
   });

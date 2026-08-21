@@ -13,6 +13,7 @@ import {
 } from './test-support/App.test-helpers';
 import {
   defaultFlags,
+  unreadableFlags,
   mockProfile,
   mockSettings,
 } from './test-support/App.test-fixtures';
@@ -48,6 +49,21 @@ describe('App — роль пользователя из getProfile решает
 
   it('серверный флаг therapistMode=true у THERAPIST реконсилируется в localStorage/UI после загрузки роли и флагов', async () => {
     mockUseUserFlags.mockReturnValue(defaultFlags({ therapistMode: true }));
+    mockApi.getProfile.mockResolvedValueOnce(
+      mockProfile({ role: 'THERAPIST', name: 'Др. Кто' }),
+    );
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy(),
+    );
+    expect(localStorage.getItem('therapist_mode')).toBe('1');
+  });
+
+  // Регресс 2026-08-21: дефолтные флаги (therapistMode=false) неотличимы от
+  // серверных, и при неудачном запросе кабинет терапевта закрывался сам.
+  it('флаги не прочитались с сервера — запомненный режим терапевта остаётся', async () => {
+    localStorage.setItem('therapist_mode', '1');
+    mockUseUserFlags.mockReturnValue(unreadableFlags());
     mockApi.getProfile.mockResolvedValueOnce(
       mockProfile({ role: 'THERAPIST', name: 'Др. Кто' }),
     );
@@ -99,8 +115,10 @@ describe('App — форма обращения: спрашивает ДО он�
     );
   });
 
-  it('вопрос уже задавался в этой сессии (addr_form_asked) → addressPicker не открывается повторно', async () => {
-    sessionStorage.setItem('addr_form_asked', '1');
+  it('вопрос уже задавался недавно (снуз «Позже») → addressPicker не открывается повторно', async () => {
+    // Регресс 2026-08-21: метка жила в sessionStorage и умирала со вкладкой,
+    // поэтому вопрос возвращался при каждом открытии приложения.
+    localStorage.setItem('addr_form_asked', String(Date.now()));
     mockApi.getSettings.mockResolvedValueOnce(
       mockSettings({ addressForm: null }),
     );

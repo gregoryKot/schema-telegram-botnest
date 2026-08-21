@@ -22,6 +22,7 @@ import { AuthService } from '../auth/auth.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
 import { UserFlagsDto } from './dto/user-flags.dto';
 import { encryptJson, decryptJson } from '../utils/crypto';
+import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -33,30 +34,9 @@ interface AuthRequest extends Request {
 // Остальные домены API вынесены в соседние контроллеры (см. api.module.ts):
 // ysq/pairs/plans/exercises/notes/tracker.controller.ts.
 
-// Флаги, которые клиент может писать. `therapistMode` НАМЕРЕННО отсутствует —
-// это де-факто флаг «терапевтический UI», выставляется сервером из `role`
-// (см. account.service.setRole). Позволить клиенту его переключать — это
-// эскалация привилегий в терапевтский UI. Модульная константа (не поле
-// класса) — нужна
-// для type-level сверки с UserFlagsDto ниже (правило №4: денормализация
-// только с тестом-сверкой; тут сверка компайл-тайм, а не рантайм-тест).
-const FLAG_FIELDS = [
-  'themePref',
-  'onboardingV1Done',
-  'onboardingV2Done',
-  'onboardingSkipped',
-  'childhoodWheelDone',
-  'ysqBannerDismissed',
-  'hintSheetCloseShown',
-  'hintHistoryDismissed',
-  'trackerOnboardingDone',
-  'lastCelebrationDate',
-  'lastYesterdayBannerDate',
-  'lastWeeklyQuestionWeek',
-  'schemaIntrosShown',
-  'modeIntrosShown',
-  'defaultSection',
-] as const;
+// Реестр FLAG_FIELDS — см. ./flag-fields.ts (переиспользуется merge.service
+// при слиянии аккаунтов, правило №4). Модульная константа (не поле класса) —
+// нужна для type-level сверки с UserFlagsDto ниже.
 
 // Компайл-тайм сверка: набор ключей FLAG_FIELDS обязан совпадать с полями
 // UserFlagsDto один-в-один — иначе список того, что читает/пишет контроллер,

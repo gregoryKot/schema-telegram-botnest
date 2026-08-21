@@ -40,8 +40,20 @@ const DEFAULT_FLAGS: UserFlags = {
 
 /** Возврат useUserFlags() с точечными переопределениями — общий билдер вместо
  *  копии литерала в каждом test-файле (правило №11: повтор — в модуль). */
+/** Флаги успешно прочитаны с сервера — обычное состояние в тестах.
+ *  Случай «прочитать не удалось» моделируется unreadableFlags(). */
 export function defaultFlags(overrides: Partial<UserFlags> = {}) {
-  return { flags: { ...DEFAULT_FLAGS, ...overrides }, loaded: true };
+  return {
+    flags: { ...DEFAULT_FLAGS, ...overrides },
+    loaded: true,
+    loadedFromServer: true,
+  };
+}
+
+/** Запрос флагов завершился, но ответа сервера нет (401/сеть): значения —
+ *  дефолтные, и выдавать их за настройки пользователя нельзя. */
+export function unreadableFlags() {
+  return { flags: { ...DEFAULT_FLAGS }, loaded: true, loadedFromServer: false };
 }
 
 export const mockUseUserFlags = vi.fn(() => defaultFlags());

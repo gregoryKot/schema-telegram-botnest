@@ -1,4 +1,5 @@
 import { Need } from '../types';
+import { markAddressFormAsked } from '../../../shared/src/settings/addressFormPrompt';
 import { api, PairsData, StreakData } from '../api';
 import { DiarySection } from '../sections/DiarySection';
 import { Section } from './BottomNav';
@@ -236,7 +237,7 @@ export function AppOverlays({
       {sheets.addressPicker && (
         <AddressFormPicker
           onDone={() => {
-            sessionStorage.setItem('addr_form_asked', '1');
+            markAddressFormAsked();
             sheets.close('addressPicker');
             onAddressPickerDone();
           }}
