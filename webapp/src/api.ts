@@ -6,6 +6,7 @@ export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
+import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
@@ -145,6 +146,7 @@ import type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
 } from './api.types';
 export type {
   UserSettings,
@@ -187,6 +189,7 @@ export type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
   Insights,
 } from './api.types';
 // ─── API object (identical endpoints, different auth header) ──────────────────
@@ -210,9 +213,12 @@ export const api = {
   getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
   saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
-  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
-  // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
-  getPhraseChecks:      () => get<Array<{ id: number; rewrite: string | null; inWarmWords: boolean; createdAt: string }>>('/api/phrase-checks'),
+  // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
+  // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
+  getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
+  createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
+  updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),
+  deletePhraseCheck:    (id: number) => del(`/api/phrase-checks/${id}`),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),

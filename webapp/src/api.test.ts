@@ -772,6 +772,32 @@ describe('личный контент — URL, метод, тело запрос
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/phrase-checks');
   });
 
+  it('createPhraseCheck: POST /api/phrase-checks с телом разбора', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createPhraseCheck({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+  });
+
+  it('updatePhraseCheck: PATCH /api/phrase-checks/:id с rewrite', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 5, rewrite: 'новый ответ' }));
+    await api.updatePhraseCheck(5, 'новый ответ');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ rewrite: 'новый ответ' });
+  });
+
+  it('deletePhraseCheck: DELETE по id', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deletePhraseCheck(5);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('DELETE');
+  });
+
   it('getBeliefChecks: GET /api/belief-checks', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, []));
     await api.getBeliefChecks();
