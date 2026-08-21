@@ -26,10 +26,12 @@ export function detectInstallPlatform(
 
 /** Страница уже открыта как установленное приложение — предлагать нечего. */
 export function isStandalone(): boolean {
-  try {
-    if (window.matchMedia('(display-mode: standalone)').matches) return true;
-  } catch {
-    // jsdom и старые браузеры без matchMedia
+  // typeof-проверка вместо try/catch: у jsdom в тестах matchMedia нет вовсе.
+  if (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches
+  ) {
+    return true;
   }
   return (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
