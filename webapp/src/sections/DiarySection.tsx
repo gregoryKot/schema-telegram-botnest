@@ -8,6 +8,7 @@ import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { loadDraft, clearDraft } from '../utils/drafts';
 import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
+import { DiaryShareButton } from '../share/DiaryShareButton';
 import {
   TODAY,
   fmtDateKey,
@@ -125,6 +126,15 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
     { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто взял управление, что включило, что было нужно',   foot: '5–10 мин' },
     { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что есть благодарность сегодня. Даже самое маленькое',    foot: '2–5 мин' },
   ];
+
+  // Мета для карточки шаринга «сводка дневника» (DiaryShareButton) — только
+  // для конкретного типа (эмодзи/цвет/заголовок), не для «Все» (там нет
+  // единого визуального языка на одну карточку).
+  const SHARE_META: Record<DiaryType, { emoji: string; title: string; color: string; entries: { createdAt: string }[] }> = {
+    schema:    { emoji: '📓', title: 'Дневник схем',         color: 'var(--c-rose)',  entries: schemaEntries },
+    mode:      { emoji: '🔄', title: 'Дневник режимов',      color: 'var(--c-slate)', entries: modeEntries },
+    gratitude: { emoji: '🌱', title: 'Дневник благодарности', color: 'var(--c-moss)', entries: gratitudeEntries },
+  };
 
   const FILTERS: { id: Filter; label: string }[] = [
     { id: 'all',       label: 'Все' },
@@ -262,6 +272,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
         {totalCount > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <span className="eyebrow">Архив · {totalCount}</span>
+            {filter !== 'all' && <DiaryShareButton {...SHARE_META[filter]} />}
           </div>
         )}
         <div className="diary-filters">

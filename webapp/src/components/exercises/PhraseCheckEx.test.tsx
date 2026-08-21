@@ -17,6 +17,7 @@ vi.mock('../../api', () => ({
   api: {
     getPhraseChecks: vi.fn(),
     createPhraseCheck: vi.fn(),
+    updatePhraseCheck: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
@@ -192,6 +193,76 @@ describe('PhraseCheckEx — история: реальные данные, не 
     renderEx();
     await screen.findByText(/Прошлые разборы · 1/);
     expect(screen.getByText(/«старая фраза»/)).toBeTruthy();
+  });
+});
+
+describe('PhraseCheckEx — правка прошлого разбора (паритет с miniapp, правило №16)', () => {
+  function existingEntry(rewrite: string | null = 'старый ответ') {
+    return {
+      id: 1,
+      phrase: 'старая фраза',
+      marks: ['worth'] as const,
+      rewrite,
+      inWarmWords: false,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  it('тап по строке истории открывает карточку с текущим ответом', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+    renderEx();
+    await screen.findByText(/Прошлые разборы · 1/);
+    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+    expect(screen.getByText('Разбор фразы')).toBeTruthy();
+    expect(screen.getByDisplayValue('старый ответ')).toBeTruthy();
+  });
+
+  it('сохранение зовёт api.updatePhraseCheck(id, rewrite) и read-after-write обновляет список', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+    mockApi.updatePhraseCheck.mockResolvedValue({ id: 1, rewrite: 'новый ответ' });
+    renderEx();
+    await screen.findByText(/Прошлые разборы · 1/);
+    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+
+    fireEvent.change(screen.getByDisplayValue('старый ответ'), {
+      target: { value: 'новый ответ' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить ответ'));
+    });
+
+    expect(mockApi.updatePhraseCheck).toHaveBeenCalledWith(1, 'новый ответ');
+    // Карточка закрылась, а строка истории показывает уже новый ответ —
+    // без перезахода за данными (read-after-write, CLAUDE.md).
+    await waitFor(() => expect(screen.queryByText('Разбор фразы')).toBeNull());
+    expect(screen.getByText(/→ «новый ответ»/)).toBeTruthy();
+  });
+
+  it('кризисный текст в поле правки показывает CrisisCard', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+    renderEx();
+    await screen.findByText(/Прошлые разборы · 1/);
+    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+
+    fireEvent.change(screen.getByDisplayValue('старый ответ'), {
+      target: { value: 'не хочу жить' },
+    });
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  it('отказ сети при сохранении правки показывает ошибку, карточка остаётся открытой', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+    mockApi.updatePhraseCheck.mockRejectedValue(new Error('network down'));
+    renderEx();
+    await screen.findByText(/Прошлые разборы · 1/);
+    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить ответ'));
+    });
+
+    expect(screen.getByText(/Не сохранилось/)).toBeTruthy();
+    expect(screen.getByText('Разбор фразы')).toBeTruthy();
   });
 });
 

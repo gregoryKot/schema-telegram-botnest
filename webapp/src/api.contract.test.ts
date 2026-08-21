@@ -48,6 +48,10 @@ const MOCKED_API_METHODS = [
   'getTherapyClients',
   // sections/SchemasSection.test.tsx
   'getProfile', 'getYsqHistory', 'getYsqProgress', 'updateSettings',
+  // components/appShell/useBootstrapLoad.test.ts, AppShell.test-helpers.tsx
+  'getUserFlags',
+  // components/PhraseShareCard.test.tsx, sections/TodaySection.test.tsx
+  'getHealthyPhrase',
   // sections/TodaySection.test.tsx
   'getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'history',
   // sections/DiarySection.test.tsx

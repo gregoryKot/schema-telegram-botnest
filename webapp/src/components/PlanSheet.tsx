@@ -4,6 +4,8 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { CURATED } from './practiceCurated';
+import { getHost } from '../../../shared/src/host';
+import { practiceIcsDataUrl } from '../../../shared/src/utils/ics';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot'; import { detectCrisisAny } from '../utils/crisisMarkers'; import { CrisisCard } from './CrisisCard';
 
 function ianaToUtcOffset(iana: string): number {
@@ -85,6 +87,16 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
       setSavedOk(true);
       setTimeout(() => onSaved(), 1200);
     } catch { setSaveError(true); } finally { setSaving(false); }
+  }
+
+  // Паритет с мини-аппом (правило №16) — генерация вынесена в shared (чистая
+  // функция, ics.ts); скачивание на сайте проще, чем в вебвью мессенджера,
+  // но саму механику отдаём тому же getHost().saveFile (web-адаптер — обычный
+  // <a download>).
+  function handleIcsDownload() {
+    const opt = REMINDER_OPTIONS[reminderIdx];
+    const dataUrl = practiceIcsDataUrl({ text: selectedText, needLabel, localHour: opt.localHour, tzOffset });
+    getHost().saveFile(dataUrl, 'practice.ics');
   }
 
   return (
@@ -214,6 +226,14 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
               </div>
             </div>
           </div>
+
+          {/* ICS download — паритет с мини-аппом, правило №16 */}
+          <button
+            onClick={handleIcsDownload}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
+          >
+            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавить в календарь (.ics)</span>
+          </button>
 
           {saveError && (
             <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>

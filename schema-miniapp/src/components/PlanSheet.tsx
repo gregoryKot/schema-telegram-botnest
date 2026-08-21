@@ -9,6 +9,7 @@ import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { CURATED } from '../../../shared/src/practices/curated';
+import { practiceIcsDataUrl } from '../../../shared/src/utils/ics';
 import { LoadErrorBanner } from './LoadErrorBanner';
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -146,30 +147,13 @@ export function PlanSheet({
   }
 
   function handleIcsDownload() {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
-    const y = date.getUTCFullYear();
-    const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(date.getUTCDate()).padStart(2, '0');
     const opt = REMINDER_OPTIONS[reminderIdx];
-    const h =
-      opt.localHour !== null
-        ? String((opt.localHour - tzOffset + 24) % 24).padStart(2, '0')
-        : '09';
-    const ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Schema//Schema//RU',
-      'BEGIN:VEVENT',
-      `DTSTART:${y}${mo}${d}T${h}0000Z`,
-      `DTEND:${y}${mo}${d}T${h}3000Z`,
-      `SUMMARY:${selectedText}`,
-      `DESCRIPTION:Практика для потребности: ${needLabel}`,
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ].join('\r\n');
-    const dataUrl =
-      'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    const dataUrl = practiceIcsDataUrl({
+      text: selectedText,
+      needLabel,
+      localHour: opt.localHour,
+      tzOffset,
+    });
     getHost().saveFile(dataUrl, 'practice.ics');
   }
 
