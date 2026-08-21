@@ -20,7 +20,7 @@
   "schema-miniapp/src/components/AddHomeScreenButton.tsx": 62,
   "schema-miniapp/src/components/AddressFormPicker.tsx": 135,
   "schema-miniapp/src/components/AmbientBackground.tsx": 40,
-  "schema-miniapp/src/components/AppDiaryNav.tsx": 145,
+  "schema-miniapp/src/components/AppDiaryNav.tsx": 151,
   "schema-miniapp/src/components/AppErrorScreen.tsx": 102,
   "schema-miniapp/src/components/AppOverlays.tsx": 294,
   "schema-miniapp/src/components/AppSections.tsx": 165,

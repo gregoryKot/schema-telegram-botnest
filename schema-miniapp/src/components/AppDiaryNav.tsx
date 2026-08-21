@@ -112,8 +112,14 @@ export function AppDiaryNav({
         }}
       />
 
-      {/* ── Floating pill (always above bottom bar) ── */}
+      {/* ── Floating pill (above bottom bar, все экраны кроме «Сегодня») ──
+          Ж3 (аудит 2026-08): на «Сегодня» уже есть выделенный главный CTA
+          (TodayFocusCard, «Одно дело на сегодня») — три конкурирующих входа
+          (CTA + «+» + раскрывашка вторичных карточек) не давали новичку
+          понять, какое действие «то самое». «+» скрыта только на «Сегодня»,
+          на остальных экранах (нет своего аналогичного CTA) остаётся. */}
       {!therapistMode &&
+        section !== 'today' &&
         !sheets.tracker &&
         !sheets.diaries &&
         !sheets.schemaInfo &&
