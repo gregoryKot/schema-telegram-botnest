@@ -3,16 +3,18 @@
 // переписать в самокоррекцию. Шаги — в подкомпонентах (правило №10),
 // вердикт — чистая функция (verdict.ts). Свободный текст проходит
 // кризисный гейт (правило №7), уезжает зашифрованным на сервер.
+// Состояние мастера (фраза/приметы/переписать) — общее с сайтом, живёт в
+// shared/src/phraseCheck/usePhraseCheckState (правило №3). done/saveError/
+// history/openHistoryId остаются здесь — они специфичны для вёрстки
+// мини-аппа. Новую копию этого стейта заводить не надо — расширяй хук.
 import { useEffect, useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { CrisisGate } from './CrisisGate';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
-import {
-  PHRASE_CRITERIA,
-  type PhraseMarkId,
-} from '../../../shared/src/phraseCheck/criteria';
+import { PHRASE_CRITERIA } from '../../../shared/src/phraseCheck/criteria';
+import { usePhraseCheckState } from '../../../shared/src/phraseCheck/usePhraseCheckState';
 import { MarksStep } from './phraseCheck/MarksStep';
 import { RewriteStep } from './phraseCheck/RewriteStep';
 import { PhraseDoneScreen } from './phraseCheck/DoneScreen';
@@ -29,12 +31,10 @@ interface Props {
 
 export function PhraseCheck({ onClose, onComplete }: Props) {
   const tr = useTr();
-  const [phrase, setPhrase] = useState('');
-  const [markIndex, setMarkIndex] = useState(-1); // -1 — ещё на вводе фразы
-  const [marks, setMarks] = useState<PhraseMarkId[]>([]);
-  const [rewrite, setRewrite] = useState('');
-  // Переписанную фразу предлагаем забрать в «Тёплые слова» — можно снять.
-  const [inWarmWords, setInWarmWords] = useState(true);
+  const {
+    phrase, setPhrase, markIndex, setMarkIndex, marks,
+    rewrite, setRewrite, inWarmWords, setInWarmWords, answer,
+  } = usePhraseCheckState();
   const [done, setDone] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [history, setHistory] = useState<PhraseCheckHistoryRow[]>([]);
@@ -57,11 +57,6 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   }, []);
 
   const openHistoryEntry = history.find((h) => h.id === openHistoryId);
-
-  function answer(id: PhraseMarkId, critic: boolean) {
-    if (critic) setMarks((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setMarkIndex((i) => i + 1);
-  }
 
   function save() {
     const body = {

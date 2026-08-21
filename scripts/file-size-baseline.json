@@ -156,7 +156,7 @@
   "schema-miniapp/src/components/patternSheet/usePatternEntryDelete.ts": 40,
   "schema-miniapp/src/components/patternSheet/usePatternStatus.ts": 19,
   "schema-miniapp/src/components/PatternsHero.tsx": 100,
-  "schema-miniapp/src/components/PhraseCheck.tsx": 270,
+  "schema-miniapp/src/components/PhraseCheck.tsx": 265,
   "schema-miniapp/src/components/phraseCheck/DoneScreen.tsx": 92,
   "schema-miniapp/src/components/phraseCheck/HistoryCard.tsx": 158,
   "schema-miniapp/src/components/phraseCheck/HistoryList.tsx": 57,
