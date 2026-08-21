@@ -14,14 +14,24 @@
 # Output: bucket://<B2_BUCKET>/schemehappens-YYYY-MM-DD.sql.gz.enc
 # Retention: keep last 30 days locally (B2 itself retains forever; rotate via
 # B2 lifecycle rule if you want — Settings → Lifecycle Settings).
+#
+# SKIP_UPLOAD=1 — режим репетиции restore (nightly.yml, джоба backup-restore
+# и src/infra/backup-restore.spec.ts): пропускает B2-креды и сам аплоад,
+# кладёт зашифрованный файл в $BACKUP_OUT_DIR (по умолчанию — текущая
+# директория) и печатает путь. Поведение без SKIP_UPLOAD не меняется ни на
+# байт.
 
 set -euo pipefail
 
+SKIP_UPLOAD="${SKIP_UPLOAD:-0}"
+
 : "${DATABASE_URL:?DATABASE_URL required}"
 : "${ENCRYPTION_KEY:?ENCRYPTION_KEY required}"
-: "${B2_KEY_ID:?B2_KEY_ID required}"
-: "${B2_APP_KEY:?B2_APP_KEY required}"
-: "${B2_BUCKET:?B2_BUCKET required}"
+if [ "$SKIP_UPLOAD" != "1" ]; then
+  : "${B2_KEY_ID:?B2_KEY_ID required}"
+  : "${B2_APP_KEY:?B2_APP_KEY required}"
+  : "${B2_BUCKET:?B2_BUCKET required}"
+fi
 
 DATE=$(date -u +%Y-%m-%d)
 TMP_DIR=$(mktemp -d)
@@ -45,28 +55,40 @@ gzip -c "$DUMP_FILE" | openssl enc -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \
   | (echo -n "$IV" | xxd -r -p; cat) \
   > "$ENC_FILE"
 
-echo "[backup] uploading to B2..."
-# Use B2 native CLI if installed, else fall back to S3-compatible via aws cli.
-if command -v b2 >/dev/null 2>&1; then
-  b2 account authorize "$B2_KEY_ID" "$B2_APP_KEY" >/dev/null
-  b2 file upload "$B2_BUCKET" "$ENC_FILE" "schemehappens-$DATE.sql.gz.enc"
-elif command -v aws >/dev/null 2>&1; then
-  # B2 exposes an S3-compatible endpoint at https://s3.us-east-005.backblazeb2.com
-  : "${B2_ENDPOINT:=https://s3.us-east-005.backblazeb2.com}"
-  AWS_ACCESS_KEY_ID="$B2_KEY_ID" \
-  AWS_SECRET_ACCESS_KEY="$B2_APP_KEY" \
-  aws --endpoint-url "$B2_ENDPOINT" \
-    s3 cp "$ENC_FILE" "s3://$B2_BUCKET/schemehappens-$DATE.sql.gz.enc"
+if [ "$SKIP_UPLOAD" = "1" ]; then
+  OUT_DIR="${BACKUP_OUT_DIR:-.}"
+  mkdir -p "$OUT_DIR"
+  OUT_FILE="$OUT_DIR/schemehappens-$DATE.sql.gz.enc"
+  cp "$ENC_FILE" "$OUT_FILE"
+  echo "[backup] SKIP_UPLOAD=1 — аплоад в B2 пропущен, файл сохранён локально: $OUT_FILE"
 else
-  echo "[backup] ERROR: neither 'b2' nor 'aws' CLI is installed" >&2
-  exit 1
+  echo "[backup] uploading to B2..."
+  # Use B2 native CLI if installed, else fall back to S3-compatible via aws cli.
+  if command -v b2 >/dev/null 2>&1; then
+    b2 account authorize "$B2_KEY_ID" "$B2_APP_KEY" >/dev/null
+    b2 file upload "$B2_BUCKET" "$ENC_FILE" "schemehappens-$DATE.sql.gz.enc"
+  elif command -v aws >/dev/null 2>&1; then
+    # B2 exposes an S3-compatible endpoint at https://s3.us-east-005.backblazeb2.com
+    : "${B2_ENDPOINT:=https://s3.us-east-005.backblazeb2.com}"
+    AWS_ACCESS_KEY_ID="$B2_KEY_ID" \
+    AWS_SECRET_ACCESS_KEY="$B2_APP_KEY" \
+    aws --endpoint-url "$B2_ENDPOINT" \
+      s3 cp "$ENC_FILE" "s3://$B2_BUCKET/schemehappens-$DATE.sql.gz.enc"
+  else
+    echo "[backup] ERROR: neither 'b2' nor 'aws' CLI is installed" >&2
+    exit 1
+  fi
 fi
 
 echo "[backup] done — schemehappens-$DATE.sql.gz.enc"
 
-# To decrypt locally:
-#   FILE=schemehappens-2026-06-01.sql.gz.enc
-#   IV=$(head -c 32 "$FILE")  # first 32 hex chars = 16 byte IV
-#   tail -c +33 "$FILE" \
-#     | openssl enc -d -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \
-#     | gunzip > restored.sql
+# To decrypt / restore: scripts/restore-backup.sh.
+#
+# (Аудит тестовых практик 2026-08, «репетиция restore»: старая версия этого
+# комментария была НЕВЕРНА — она читала `head -c 32` как «32 hex chars»,
+# хотя выше IV префиксуется как 16 СЫРЫХ байт (`xxd -r -p`), а не как hex-
+# текст. По той инструкции восстановление отдавало мусор — воспроизведено и
+# зафиксировано в src/infra/backup-restore.spec.ts и nightly.yml, джоба
+# backup-restore.)
+#   ENCRYPTION_KEY=<тот же 64-hex ключ> bash scripts/restore-backup.sh \
+#     schemehappens-2026-06-01.sql.gz.enc [DATABASE_URL для сразу-залить]

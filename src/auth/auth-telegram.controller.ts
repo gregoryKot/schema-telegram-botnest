@@ -25,6 +25,7 @@ import {
   getCookie,
   requireCsrf,
 } from './auth-http.util';
+import { telegramOauthLoginUrl } from './telegram-oauth-url';
 
 @Controller('api/auth')
 export class AuthTelegramController {
@@ -112,9 +113,13 @@ export class AuthTelegramController {
   }
 
   // ─── Telegram Login Widget — redirect flow ───────────────────────────────
-  // Full-page redirect to oauth.telegram.org (no iframe, no domain setup in
-  // BotFather required). User authorizes in Telegram's own page, then comes
-  // back to widget-redirect with the signed user data as query params.
+  // Full-page redirect to oauth.telegram.org (no iframe). User authorizes in
+  // Telegram's own page, then comes back to widget-redirect with the signed
+  // user data as query params.
+  // ВАЖНО: домен обязан быть привязан к боту через /setdomain в BotFather —
+  // без привязки oauth.telegram.org/auth отвечает голым текстом «Bot domain
+  // invalid» (инцидент 2026-08-21: привязка слетела, вход был сломан у всех,
+  // узнали от пользователя). За привязкой следит TelegramDomainWatchdogService.
 
   @Get('telegram/redirect')
   @UseGuards(OptionalJwtGuard)
@@ -124,11 +129,11 @@ export class AuthTelegramController {
     const frontendBase = this.config
       .getOrThrow<string>('WEBAPP_URL')
       .replace(/\/$/, '');
-    // Return to the frontend SPA page that reads the hash fragment.
-    // oauth.telegram.org puts auth data in #tgAuthResult=BASE64URL_JSON (hash fragment),
-    // which browsers never send to the server. The frontend page reads window.location.hash
-    // and calls /api/auth/telegram/widget directly.
-    const returnTo = `${frontendBase}/auth/telegram`;
+    // Return to the frontend SPA page that reads the hash fragment (built
+    // inside telegramOauthLoginUrl as return_to). oauth.telegram.org puts
+    // auth data in #tgAuthResult=BASE64URL_JSON (hash fragment), which
+    // browsers never send to the server. The frontend page reads
+    // window.location.hash and calls /api/auth/telegram/widget directly.
     // Persist linkUserId in a short-lived SIGNED cookie so we can restore it
     // after redirect. Signed (C1): a raw userId here was client-forgeable and
     // let an attacker link their Telegram to the victim's account.
@@ -142,8 +147,7 @@ export class AuthTelegramController {
         path: '/api/auth',
       });
     }
-    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(frontendBase)}&return_to=${encodeURIComponent(returnTo)}&request_access=write&lang=ru&embed=0`;
-    res.redirect(url);
+    res.redirect(telegramOauthLoginUrl(botId, frontendBase));
   }
 
   @Get('telegram/widget-redirect')

@@ -3,7 +3,7 @@
 // работает»: битый бандл, сломанный SPA-fallback, ошибка рантайма до первого
 // рендера. Гоняется в nightly, в PR-CI не лезет — там уже 7 джоб.
 import { existsSync } from 'fs';
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, webkit } from '@playwright/test';
 
 // В dev-окружении Chromium предустановлен, и его ревизия может не совпасть с
 // той, которую ждёт свежий @playwright/test (качать запрещено — см. правила
@@ -16,10 +16,43 @@ const executablePath = existsSync(PREINSTALLED_CHROMIUM)
   ? PREINSTALLED_CHROMIUM
   : undefined;
 
-// Общее для обоих проектов — только браузер/трейс отличается baseURL.
+// Тот же приём для WebKit (аудит тестовых практик, п.2: iOS-Телеграм и MAX —
+// это WKWebView, движок Safari; до этого CI ни разу не проверял мобильную
+// половину аудитории). В dev-окружении WebKit НЕ предустановлен и качать его
+// нельзя (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1) — `webkit.executablePath()`
+// резолвит путь ожидаемой ревизии из node_modules, а существует он на диске
+// только там, где `playwright install webkit` реально отработал (CI). Флаг
+// PW_WEBKIT=1 — запасной путь для окружений, где бинарь лежит нестандартно
+// (второй способ включения, как просит задание), но основной сигнал — факт
+// наличия файла, а не переменная окружения.
+function webkitBinaryExists(): boolean {
+  try {
+    return existsSync(webkit.executablePath());
+  } catch {
+    return false;
+  }
+}
+const WEBKIT_AVAILABLE = process.env.PW_WEBKIT === '1' || webkitBinaryExists();
+
+// Общее для webapp/miniapp — только браузер/трейс отличается baseURL.
 const commonUse = {
   trace: 'retain-on-failure' as const,
   ...devices['Desktop Chrome'],
+  launchOptions: { executablePath },
+};
+
+// Мобильный профиль мини-аппа (аудит, п.2): мини-апп mobile-first, а смок до
+// сих пор гонял его десктопным вьюпортом — цели нажатия ≥44×44 (правило
+// CLAUDE.md) никто не проверял в реальных пропорциях экрана. `devices['iPhone
+// 14']` даёт нужные viewport/UA/touch, НО заодно тащит свой
+// `defaultBrowserType: 'webkit'` — если его не перебить явно, вьюпорт
+// незаметно переключит движок с Chromium (и executablePath выше окажется
+// путём к чужому браузеру). Возвращаем `chromium` явно: мобильный вьюпорт
+// нужен независимо от WebKit-проекта ниже, тот добавляется отдельно.
+const miniappMobileUse = {
+  ...commonUse,
+  ...devices['iPhone 14'],
+  defaultBrowserType: 'chromium' as const,
   launchOptions: { executablePath },
 };
 
@@ -31,12 +64,21 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list']],
   use: commonUse,
-  // Два проекта — два разных продукта за одним CI-прогоном `npx playwright
+  // Проекты — разные продукты/движки за одним CI-прогоном `npx playwright
   // test` (nightly.yml, джоба browser-smoke, без фильтра по проекту):
-  //  - webapp — сайт schemehappens.ru (существующие смоки, ничего не меняли);
-  //  - miniapp — Telegram Mini App schemehappens.ru/app/ (miniapp-smoke.spec.ts,
-  //    docs/SHIELD_PROMPT.md — до этого файла ни один тест не открывал
-  //    собранный schema-miniapp/dist в браузере).
+  //  - webapp — сайт schemehappens.ru, десктопный Chromium (существующие
+  //    смоки не меняли; a11y-smoke.spec.ts добавлен — там же лежат страницы
+  //    webapp, которым нужен baseURL 4173);
+  //  - miniapp — Telegram Mini App schemehappens.ru/app/ в Chromium, но
+  //    ТЕПЕРЬ мобильным профилем (iPhone 14 viewport/UA/touch) — мини-апп
+  //    mobile-first, а смок до аудита 2026-08 гонял его десктопным вьюпортом;
+  //  - miniapp-webkit — тот же мини-апп, но движком Safari (WKWebView): и
+  //    iOS-Телеграм, и MAX рендерят мини-аппы именно им, а Chromium его не
+  //    ловит в принципе. Добавляется только когда бинарь реально доступен
+  //    (см. WEBKIT_AVAILABLE выше) — локально в этом dev-окружении его нет
+  //    и проект тихо отсутствует в списке (не «скип каждого теста», а
+  //    отсутствие самого проекта: `npx playwright test` не пытается его
+  //    поднять и не падает на отсутствующем браузере).
   projects: [
     {
       name: 'webapp',
@@ -44,14 +86,31 @@ export default defineConfig({
         'crisis-smoke.spec.ts',
         'tracker-smoke.spec.ts',
         'public-pages.spec.ts',
+        'a11y-smoke.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },
     {
       name: 'miniapp',
-      testMatch: ['miniapp-smoke.spec.ts'],
-      use: { ...commonUse, baseURL: 'http://127.0.0.1:4174' },
+      testMatch: ['miniapp-smoke.spec.ts', 'a11y-smoke.spec.ts'],
+      use: { ...miniappMobileUse, baseURL: 'http://127.0.0.1:4174' },
     },
+    ...(WEBKIT_AVAILABLE
+      ? [
+          {
+            name: 'miniapp-webkit',
+            testMatch: ['miniapp-smoke.spec.ts'],
+            use: {
+              ...devices['iPhone 14'],
+              baseURL: 'http://127.0.0.1:4174',
+              trace: 'retain-on-failure' as const,
+              // Никакого launchOptions.executablePath: тут нужен настоящий
+              // WebKit из ревизии @playwright/test, а не Chromium-бинарь
+              // выше — CI ставит его сам (`playwright install webkit`).
+            },
+          },
+        ]
+      : []),
   ],
   webServer: [
     // Отдаём готовую сборку webapp — именно тот артефакт, который уезжает в
