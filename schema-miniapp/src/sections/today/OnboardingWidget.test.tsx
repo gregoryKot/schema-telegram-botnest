@@ -178,4 +178,21 @@ describe('OnboardingWidget', () => {
     fireEvent.click(dots[dots.length - 1]);
     expect(screen.getByText('Колесо детства')).toBeTruthy();
   });
+
+  it('у каждой точки шага есть доступное имя (aria-command-name)', () => {
+    // Регрессия axe: точки-пагинаторы — 24×24 div[role="button"] без
+    // текста и без aria-label, скринридер их пропускал молча.
+    render(<OnboardingWidget {...baseProps()} />);
+    for (const title of [
+      'Тест на схемы',
+      'Оценка потребностей сегодня',
+      'Первая запись в дневнике',
+      'Ежедневное напоминание',
+      'Колесо детства',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: new RegExp(`Шаг «${title}»`) }),
+      ).toBeTruthy();
+    }
+  });
 });
