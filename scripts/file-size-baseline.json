@@ -1117,6 +1117,7 @@
   "webapp/src/components/trackerOverlay/types.ts": 38,
   "webapp/src/components/trackerOverlay/useIsDesktop.ts": 11,
   "webapp/src/components/useIsMobile.ts": 13,
+  "webapp/src/components/useModeMapAutosave.ts": 52,
   "webapp/src/components/useModeMapExport.ts": 54,
   "webapp/src/components/useModeMapHistory.ts": 49,
   "webapp/src/components/WeeklyCardSheet.tsx": 237,
