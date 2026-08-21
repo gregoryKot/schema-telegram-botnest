@@ -3,7 +3,6 @@ import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
-import { api, reportClientError } from '../api';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
@@ -11,9 +10,10 @@ import { ModeMapCanvas } from './ModeMapCanvas';
 import {
   type FlowNode, type FlowEdge,
   edgeColor, edgeStyle, makeMarker,
-  toFlowEdges, toFlowNodes, fromFlowNodes, fromFlowEdges,
+  toFlowEdges, toFlowNodes,
 } from './modeMapFlow';
 import { useModeMapHistory } from './useModeMapHistory';
+import { useModeMapAutosave } from './useModeMapAutosave';
 import { useIsMobile } from './useIsMobile';
 
 
@@ -32,16 +32,10 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const mobile = useIsMobile();
   // On phones the palette starts hidden so the canvas gets the full width.
   const [paletteOpen, setPaletteOpen] = useState(() =>
     mobile ? false : localStorage.getItem('modemap_palette') !== '0');
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Компонента может исчезнуть, пока таймер отложенного сохранения ещё
-  // взведён (уход с экрана карты). Флаг не даёт колбэку setTimeout звать
-  // setState на размонтированном дереве — ни в успехе, ни в ошибке.
-  const isMounted = useRef(true);
   useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates).
@@ -57,17 +51,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const selectedNode = nodes.find(n => n.id === selectedNodeId) ?? null;
   const selectedEdge = edges.find(e => e.id === selectedEdgeId) ?? null;
 
-  const scheduleSave = useCallback((ns: FlowNode[], es: FlowEdge[]) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaveStatus('idle');
-    saveTimer.current = setTimeout(async () => {
-      setSaveStatus('saving');
-      try {
-        await api.updateModeMap(mapId, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
-        setSaveStatus('saved');
-      } catch { setSaveStatus('idle'); }
-    }, 1200);
-  }, [mapId]);
+  const { saveStatus, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
 
   const clearSelection = useCallback(() => { setSelectedNodeId(null); setSelectedEdgeId(null); }, []);
   const { pushHistory, undo, redo, canUndo, canRedo } = useModeMapHistory({
