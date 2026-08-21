@@ -55,6 +55,9 @@ describe('корневой manifest.webmanifest', () => {
     expect(root.start_url).toBe(miniapp.start_url);
     // У мини-аппа id не задан → равен его start_url; сверка выше это и пинит.
     expect(miniapp.id ?? miniapp.start_url).toBe(root.id);
+    // Scope обязан совпадать: при разных scope вид установки зависел от того,
+    // с какой страницы её сделали, и isStandalone() дырявился (ревью 2026-08).
+    expect(miniapp.scope).toBe(root.scope);
   });
 });
 

@@ -26,6 +26,9 @@ describe('StatsReportService.render', () => {
     const webBanner = {
       render: jest.fn().mockResolvedValue('баннеры-переходы: 6'),
     };
+    const siteInstall = {
+      render: jest.fn().mockResolvedValue('установка с сайта: 8'),
+    };
     const screen = {
       render: jest.fn().mockResolvedValue('настройка экранов: 1'),
     };
@@ -49,6 +52,7 @@ describe('StatsReportService.render', () => {
         accountLink,
         plus,
         webBanner,
+        siteInstall,
         screen,
         profilePattern,
         authHealth,
@@ -65,6 +69,7 @@ describe('StatsReportService.render', () => {
         accountLink as never,
         plus as never,
         webBanner as never,
+        siteInstall as never,
         screen as never,
         profilePattern as never,
         authHealth as never,
@@ -83,7 +88,7 @@ describe('StatsReportService.render', () => {
       out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
     ).toBe(true);
     expect(out).toContain(
-      'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nнастройка экранов: 1',
+      'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
@@ -109,6 +114,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(blocks.webBanner.render).toHaveBeenCalledTimes(1);
+    expect(blocks.siteInstall.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
@@ -118,6 +124,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('баннеры-переходы: 6');
+    expect(out).toContain('установка с сайта: 8');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('паттерны со вкладки «Я»: 4');
     expect(out).toContain('вход в мессенджере: всё хорошо');

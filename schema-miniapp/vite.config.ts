@@ -24,7 +24,13 @@ export default defineConfig({
           'Дневник состояний, тест по схемам и практики между сессиями.',
         lang: 'ru',
         display: 'standalone',
-        scope: '/app/',
+        // Scope как у корневого манифеста сайта (webapp/public/manifest.webmanifest,
+        // оба описывают ОДНО приложение: id = start_url = /app/). Разные scope
+        // давали два вида установки: у поставленной из /app/ переходы на сайт
+        // открывались out-of-scope браузерной вкладкой, display-mode: standalone
+        // там не матчился — и баннер «поставь приложение» показывался внутри
+        // уже установленного. Сверка — webapp/src/pwaManifest.test.ts.
+        scope: '/',
         start_url: '/app/',
         // Светлая тема мини-аппа (src/index.css, html[data-theme="light"]) —
         // манифест один, тёмную отрабатывает meta theme-color в index.html.

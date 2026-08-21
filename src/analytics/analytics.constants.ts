@@ -23,7 +23,16 @@
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
-//   home_screen_offer   — предложение значка на экран (meta.action + surface);
+//   home_screen_offer   — предложение значка на экран (meta.action + surface).
+//                         Поверхности мини-аппа (Telegram) шлют событие
+//                         авторизованно через POST /api/event. Сайт добавил
+//                         две свои: баннер «приложение для телефона» в
+//                         кабинете (webapp/src/components/MobileAppBanner.tsx)
+//                         тоже идёт авторизованно через /api/event, а блок
+//                         установки на публичном лендинге
+//                         (webapp/src/pages/landing/AppInstallSection.tsx) —
+//                         анонимно через POST /api/public-event, и там
+//                         принимается ТОЛЬКО surface site_landing;
 //   journey_open        — открыл архив «Мой путь» (без meta);
 //   ysq_help_open       — раскрыл «Как понимать» в результатах теста схем
 //                         (без meta);
@@ -163,6 +172,7 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
+  'home_screen_offer',
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -222,12 +232,30 @@ export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
 export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
 export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 
+// 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
+// баннер «приложение для телефона» в кабинете сайта
+// (webapp/src/components/MobileAppBanner.tsx), авторизованный путь.
+// 'site_landing' — блок установки на публичном лендинге
+// (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
+// анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
+// поверхность (см. sanitize в public-events.controller.ts).
 export const HOME_SCREEN_SURFACES = [
   'onboarding',
   'today',
   'settings',
+  'site_banner',
+  'site_landing',
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
+
+// Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
+// Используется в двух местах: bot.product-metrics.service.ts фильтрует
+// сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
+// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// же surface для отдельного блока «Установка с сайта». IN-список в обоих
+// $queryRaw собирается из этой константы, а не хардкодится дважды.
+export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
 // Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
 // Порядок = порядок показа: по нему строится воронка «докуда доходят».

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
 import { formatQuizMetrics } from './quiz-metrics.format';
@@ -9,8 +10,13 @@ import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
 import {
   ONBOARDING_STEPS,
+  SITE_INSTALL_SURFACES,
   TODAY_BLOCKS,
 } from '../analytics/analytics.constants';
+
+// IN-список сайтовых surface для исключения из воронки мини-аппа — сама
+// строка ${...} собирается один раз, а не в каждом запросе.
+const SITE_SURFACES_LIST = Prisma.join(SITE_INSTALL_SURFACES);
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -171,11 +177,19 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'via'`,
-      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>`
+      // Воронка мини-аппа: сайтовые surface (site_banner/site_landing) не
+      // считаются здесь — у них своя семантика shown/add/added (см. блок
+      // «Установка с сайта», site-install-metrics.*), подмешивать их сюда
+      // значит пачкать воронку Telegram цифрами с другого источника.
+      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>(
+        Prisma.sql`
         SELECT "meta"->>'action' AS action, count(*)::bigint AS c
         FROM "AnalyticsEvent"
         WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
+          AND ("meta"->>'surface' IS NULL
+               OR "meta"->>'surface' NOT IN (${SITE_SURFACES_LIST}))
         GROUP BY "meta"->>'action'`,
+      ),
       ev('journey_open'),
       ev('ysq_help_open'),
     ]);
