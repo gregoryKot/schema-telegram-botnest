@@ -14,6 +14,7 @@ import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrap
 import { useOverlays } from './appShell/useOverlays';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { MobileAppBanner } from './MobileAppBanner';
 
 // – always-needed small helpers (no heavy data deps) –
@@ -67,6 +68,8 @@ const SECTION_LABELS: Record<Section, string> = {
 
 export function AppShell() {
   const { logout } = useAuth();
+  // Запуск установленного приложения на компьютере приходит сюда (?from=app).
+  useDesktopAppLaunch();
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();

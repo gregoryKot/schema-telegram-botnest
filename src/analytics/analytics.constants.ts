@@ -119,6 +119,8 @@
 //                         повторно не считается.
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   desktop_app_open     — запустил установленное приложение на компьютере,
+//                         открылся кабинет сайта (без meta).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -162,6 +164,7 @@ export const ANALYTICS_EVENTS = [
   'client_error',
   'signup_source',
   'profile_pattern_open',
+  'desktop_app_open',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
