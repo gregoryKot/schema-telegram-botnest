@@ -4,6 +4,11 @@
 // ловим и держим событие здесь, а компоненты подписываются на уже пойманное.
 // Safari/iOS события не даёт вовсе — там показываем шаги руками
 // (components/installGuide/installSteps.ts).
+import { isStandalone, webPlatform } from '../../../shared/src/host/web';
+
+// Детект «уже открыто как приложение» — единственная реализация в shared
+// (правило №3), здесь только ре-экспорт для потребителей установки.
+export { isStandalone };
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -12,42 +17,38 @@ export interface BeforeInstallPromptEvent extends Event {
 
 export type InstallPlatform = 'ios' | 'android' | 'desktop';
 
-/** Чистая функция: платформа по user agent (для выбора шагов инструкции). */
+/** Платформа для выбора шагов инструкции — на базе UA-парсера shared-хоста. */
 export function detectInstallPlatform(
-  ua: string = navigator.userAgent,
-  maxTouchPoints: number = navigator.maxTouchPoints ?? 0,
+  ua?: string,
+  maxTouchPoints?: number,
 ): InstallPlatform {
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
-  // iPadOS 13+ прикидывается маком — отличаем по мультитачу.
-  if (/macintosh/i.test(ua) && maxTouchPoints > 1) return 'ios';
-  if (/android/i.test(ua)) return 'android';
-  return 'desktop';
-}
-
-/** Страница уже открыта как установленное приложение — предлагать нечего. */
-export function isStandalone(): boolean {
-  // typeof-проверка вместо try/catch: у jsdom в тестах matchMedia нет вовсе.
-  if (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(display-mode: standalone)').matches
-  ) {
-    return true;
-  }
-  return (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const p = webPlatform(ua, maxTouchPoints);
+  return p === 'ios' || p === 'android' ? p : 'desktop';
 }
 
 let deferred: BeforeInstallPromptEvent | null = null;
 const listeners = new Set<() => void>();
 
+const notify = (): void => listeners.forEach((l) => l());
+
 function onBeforeInstallPrompt(e: Event): void {
   // Без preventDefault Chrome покажет свой мини-бар и «сожжёт» событие.
   e.preventDefault();
   deferred = e as BeforeInstallPromptEvent;
-  listeners.forEach((l) => l());
+  notify();
+}
+
+// Установили мимо нашей кнопки (меню браузера, значок в омнибоксе) —
+// пойманный промпт протух: Chromium отклонит prompt() на нём, а кнопка
+// «Установить» для уже установленного приложения — враньё. Сбрасываем.
+function onAppInstalled(): void {
+  deferred = null;
+  notify();
 }
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+  window.addEventListener('appinstalled', onAppInstalled);
 }
 
 /** Снимок для useSyncExternalStore: пойман ли нативный промпт установки. */
@@ -70,10 +71,16 @@ export async function promptInstall(): Promise<
   const e = deferred;
   if (!e) return 'unavailable';
   deferred = null;
-  listeners.forEach((l) => l());
-  await e.prompt();
-  const choice = await e.userChoice;
-  return choice.outcome;
+  notify();
+  try {
+    await e.prompt();
+    const choice = await e.userChoice;
+    return choice.outcome;
+  } catch {
+    // Протухшее событие (браузер успел установить/запретить) — для
+    // пользователя это «диалога не будет», остаются шаги руками рядом.
+    return 'unavailable';
+  }
 }
 
 /** Браузер сообщил, что приложение установлено (Chromium, событие appinstalled). */

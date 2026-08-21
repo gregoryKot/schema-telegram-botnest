@@ -4,8 +4,20 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import type { PublicAnalyticsEventName } from '../analytics/analytics.constants';
 import { PRACTICE_LINK_PLACES } from '../analytics/analytics.constants';
 import { PublicEventDto } from './dto/public-event.dto';
-import { HOME_SCREEN_ACTION_SET } from './dto/analytics.dto';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
+
+// Анонимному лендингу (userId = null, правило №5/№14) разрешаем ТОЛЬКО эти
+// два действия воронки установки — ровно то, что реально шлёт
+// AppInstallSection.tsx: 'add' (нажал нативную кнопку установки) и 'added'
+// (браузер подтвердил appinstalled). 'shown'/'later'/'never' — состояния
+// воронки, которые неверифицированный источник не должен уметь писать
+// (аноним не обязан быть честным, а later/never в мини-аппе несут действие
+// пользователя внутри приложения). Расширять список — сознательное решение,
+// не копия HOME_SCREEN_ACTION_SET авторизованного пути.
+const PUBLIC_HOME_SCREEN_ACTIONS: ReadonlySet<string> = new Set([
+  'add',
+  'added',
+]);
 
 // Анонимная аналитика публичного сайта (правило №8): гость без регистрации
 // проходит мини-тест, кликает ссылку на сайт практики с лендинга или видит
@@ -67,7 +79,7 @@ export class PublicEventsController {
       // поверхности (в т.ч. site_banner в кабинете) авторизованы и идут
       // через POST /api/event, там своя валидация по HOME_SCREEN_SURFACE_SET.
       return typeof action === 'string' &&
-        HOME_SCREEN_ACTION_SET.has(action) &&
+        PUBLIC_HOME_SCREEN_ACTIONS.has(action) &&
         surface === 'site_landing'
         ? { action, surface }
         : null;

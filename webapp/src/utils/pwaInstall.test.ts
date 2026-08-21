@@ -94,6 +94,25 @@ describe('перехват beforeinstallprompt', () => {
     await expect(promptInstall()).resolves.toBe('unavailable');
   });
 
+  it('appinstalled сжигает пойманный промпт: кнопка не переживёт установку мимо неё', () => {
+    // Регресс ревью 2026-08: установка через меню браузера оставляла живую
+    // кнопку «Установить», а клик по протухшему событию падал без catch.
+    fireBeforeInstallPrompt();
+    expect(hasInstallPrompt()).toBe(true);
+    window.dispatchEvent(new Event('appinstalled'));
+    expect(hasInstallPrompt()).toBe(false);
+  });
+
+  it('протухший prompt() (reject) не роняет промис — unavailable', async () => {
+    const e = new Event('beforeinstallprompt', { cancelable: true });
+    Object.assign(e, {
+      prompt: vi.fn().mockRejectedValue(new Error('already installed')),
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    });
+    window.dispatchEvent(e);
+    await expect(promptInstall()).resolves.toBe('unavailable');
+  });
+
   it('subscribeAppInstalled ловит appinstalled и снимается', () => {
     const cb = vi.fn();
     const off = subscribeAppInstalled(cb);

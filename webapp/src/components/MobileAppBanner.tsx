@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
-import { isStandalone } from '../utils/pwaInstall';
+import { isStandalone, subscribeAppInstalled } from '../utils/pwaInstall';
 import { InstallAppGuide } from './installGuide/InstallAppGuide';
 
 // Баннер «есть приложение для телефона» — только на мобильной вёрстке сайта
@@ -27,9 +27,21 @@ export function MobileAppBanner() {
   const [hidden, setHidden] = useState(() => isStandalone() || isDismissed());
   const [showGuide, setShowGuide] = useState(false);
 
-  const trackGuide = useCallback((action: 'add' | 'added') => {
-    api.trackEvent('home_screen_offer', { action, surface: 'site_banner' });
+  const onInstallClick = useCallback(() => {
+    api.trackEvent('home_screen_offer', { action: 'add', surface: 'site_banner' });
   }, []);
+
+  // 'added' — на уровне баннера, не внутри разворачиваемой инструкции:
+  // appinstalled приходит через секунды после согласия, когда инструкция
+  // уже может быть свёрнута, а событие — единственный достоверный признак
+  // установки (иначе в /stats занижается конверсия add→added).
+  useEffect(
+    () =>
+      subscribeAppInstalled(() =>
+        api.trackEvent('home_screen_offer', { action: 'added', surface: 'site_banner' }),
+      ),
+    [],
+  );
 
   if (hidden) return null;
 
@@ -82,7 +94,7 @@ export function MobileAppBanner() {
           Значок на экран {showGuide ? '▴' : '▾'}
         </button>
       </div>
-      {showGuide && <InstallAppGuide track={trackGuide} />}
+      {showGuide && <InstallAppGuide onInstallClick={onInstallClick} />}
     </div>
   );
 }

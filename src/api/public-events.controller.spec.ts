@@ -162,15 +162,27 @@ describe('PublicEventsController', () => {
     expect(track).not.toHaveBeenCalled();
   });
 
-  it('home_screen_offer: любой валидный action из реестра проходит с site_landing', async () => {
+  it('home_screen_offer: added с site_landing проходит', async () => {
     await controller.track({
       name: 'home_screen_offer',
-      meta: { action: 'later', surface: 'site_landing' },
+      meta: { action: 'added', surface: 'site_landing' },
     });
     expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
-      action: 'later',
+      action: 'added',
       surface: 'site_landing',
     });
+  });
+
+  it("home_screen_offer: 'shown'/'later'/'never' с site_landing дропаются — аноним не пишет состояния воронки, только add/added", async () => {
+    for (const action of ['shown', 'later', 'never']) {
+      await expect(
+        controller.track({
+          name: 'home_screen_offer',
+          meta: { action, surface: 'site_landing' },
+        }),
+      ).resolves.toEqual({ ok: true });
+    }
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('home_screen_offer с мусорным action молча дропается', async () => {

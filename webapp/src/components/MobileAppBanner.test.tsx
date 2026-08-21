@@ -74,6 +74,17 @@ describe('MobileAppBanner', () => {
     });
   });
 
+  it("appinstalled трекает 'added' даже при свёрнутой инструкции", () => {
+    // Регресс ревью 2026-08: подписка жила внутри разворачиваемого гайда и
+    // 'added' терялся, если человек свернул инструкцию до конца установки.
+    render(<MobileAppBanner />);
+    window.dispatchEvent(new Event('appinstalled'));
+    expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', {
+      action: 'added',
+      surface: 'site_banner',
+    });
+  });
+
   it('однажды скрытый — больше не показывается', () => {
     localStorage.setItem(DISMISS_KEY, '1');
     const { container } = render(<MobileAppBanner />);

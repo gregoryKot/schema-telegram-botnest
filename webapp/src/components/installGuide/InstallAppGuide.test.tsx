@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Инструкция «значок на экран»: шаги под платформу из единого источника
 // installSteps; где браузер умеет ставить PWA сам — настоящая кнопка
-// установки (beforeinstallprompt) с событием аналитики через колбэк.
+// установки (beforeinstallprompt) с колбэком аналитики. Событие 'added'
+// компонент не трекает — это делает поверхность (баннер/лендинг).
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InstallAppGuide } from './InstallAppGuide';
@@ -23,7 +24,7 @@ beforeEach(() => {
 
 describe('InstallAppGuide', () => {
   it('iOS: шаги Safari, без кнопки установки (Safari события не даёт)', () => {
-    render(<InstallAppGuide track={vi.fn()} platform="ios" />);
+    render(<InstallAppGuide onInstallClick={vi.fn()} platform="ios" />);
     expect(screen.getByText('В Safari:')).toBeTruthy();
     for (const step of INSTALL_STEPS.ios.steps) {
       expect(screen.getByText(step)).toBeTruthy();
@@ -32,24 +33,24 @@ describe('InstallAppGuide', () => {
   });
 
   it('Android: свои шаги из общего источника', () => {
-    render(<InstallAppGuide track={vi.fn()} platform="android" />);
+    render(<InstallAppGuide onInstallClick={vi.fn()} platform="android" />);
     expect(screen.getByText('В Chrome:')).toBeTruthy();
     expect(screen.getByText(INSTALL_STEPS.android.steps[0])).toBeTruthy();
   });
 
-  it('пойман beforeinstallprompt → кнопка установки, клик зовёт prompt и трекает add', () => {
+  it('пойман beforeinstallprompt → кнопка установки, клик зовёт prompt и колбэк', () => {
     const prompt = fireBeforeInstallPrompt();
-    const track = vi.fn();
-    render(<InstallAppGuide track={track} platform="android" />);
+    const onInstallClick = vi.fn();
+    render(<InstallAppGuide onInstallClick={onInstallClick} platform="android" />);
     fireEvent.click(screen.getByText('Установить приложение'));
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(track).toHaveBeenCalledWith('add');
+    expect(onInstallClick).toHaveBeenCalledTimes(1);
   });
 
-  it('appinstalled → track(added)', () => {
-    const track = vi.fn();
-    render(<InstallAppGuide track={track} platform="desktop" />);
-    window.dispatchEvent(new Event('appinstalled'));
-    expect(track).toHaveBeenCalledWith('added');
+  it('подводка запасного пути опускает только предлог, не имена браузеров', () => {
+    fireBeforeInstallPrompt();
+    render(<InstallAppGuide onInstallClick={vi.fn()} platform="android" />);
+    // Регресс ревью 2026-08: toLowerCase() по всей строке давал «в chrome:».
+    expect(screen.getByText('Запасной путь руками — в Chrome:')).toBeTruthy();
   });
 });

@@ -5,7 +5,7 @@ import { H2, EYEBROW } from './productContent';
 import { Cta } from './BrandKit';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
-import { subscribeAppInstalled } from '../../utils/pwaInstall';
+import { isStandalone, subscribeAppInstalled } from '../../utils/pwaInstall';
 
 // Секция «значок на экране» продуктового лендинга: сайт ставится как
 // приложение прямо из браузера (манифест у корня ведёт в /app/). Шаги — из
@@ -21,16 +21,20 @@ export function AppInstallSection() {
   const { canPrompt, install } = useInstallPrompt();
   useEffect(() => subscribeAppInstalled(() => trackInstall('added')), []);
 
+  // Лендинг в scope установленного приложения: открытый изнутри standalone,
+  // он не должен предлагать поставить то, что уже стоит.
+  if (isStandalone()) return null;
+
   return (
     <section id="app" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <span style={EYEBROW}>Приложение</span>
         <h2 style={{ ...H2, margin: '14px 0 18px', maxWidth: 640 }}>
-          Значок на экране — без App Store
+          Значок на экране — без магазина приложений
         </h2>
         <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 560, margin: '0 0 36px' }}>
           «Всё по схеме» ставится прямо из браузера: значок на экране телефона,
-          запуск на весь экран, вход через Telegram или Google. Данные общие с
+          запуск на весь экран, вход тот же, что на сайте. Данные общие с
           Telegram-версией — дневник, начатый там, продолжается здесь.
         </p>
         <div

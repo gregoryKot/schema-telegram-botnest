@@ -19,6 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe('AppInstallSection', () => {
@@ -50,6 +51,14 @@ describe('AppInstallSection', () => {
       action: 'add',
       surface: 'site_landing',
     });
+  });
+
+  it('внутри установленного приложения (standalone) секции нет', () => {
+    // Scope манифеста — «/», лендинг открывается и внутри приложения:
+    // предлагать поставить то, что уже стоит, — незачем.
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('standalone') }));
+    const { container } = render(<AppInstallSection />);
+    expect(container.firstChild).toBeNull();
   });
 
   it('appinstalled → анонимный track added', () => {

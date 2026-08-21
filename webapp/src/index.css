@@ -989,6 +989,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .app-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .app-banner-cta {
   display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px;
   background: var(--accent);
   border-radius: 12px;
   padding: 10px 16px;
@@ -998,6 +999,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .app-banner-secondary {
   display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px;
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border: none; border-radius: 12px;
   padding: 10px 14px;
@@ -1024,6 +1026,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .install-guide-native {
   display: block; width: 100%;
+  min-height: 44px;
   background: var(--accent);
   border: none; border-radius: 12px;
   padding: 11px 16px; margin-bottom: 10px;

@@ -248,6 +248,15 @@ export const HOME_SCREEN_SURFACES = [
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 
+// Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
+// Используется в двух местах: bot.product-metrics.service.ts фильтрует
+// сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
+// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// же surface для отдельного блока «Установка с сайта». IN-список в обоих
+// $queryRaw собирается из этой константы, а не хардкодится дважды.
+export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
+
 // Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
 // Порядок = порядок показа: по нему строится воронка «докуда доходят».
 // 'done' — нажал финальную кнопку. Парный список на фронте:

@@ -1,7 +1,5 @@
-import { useEffect } from 'react';
 import {
   detectInstallPlatform,
-  subscribeAppInstalled,
   type InstallPlatform,
 } from '../../utils/pwaInstall';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
@@ -11,19 +9,21 @@ import { INSTALL_STEPS } from './installSteps';
 // Где браузер умеет ставить PWA сам (Chromium: beforeinstallprompt) — первой
 // идёт настоящая кнопка установки; шаги руками остаются запасным путём.
 // Стили нейтральные (currentColor), чтобы жить и в тёплой теме кабинета,
-// и на тёмном лендинге. Аналитика — колбэком: баннер шлёт авторизованное
-// событие, лендинг — анонимное через public-event.
+// и на тёмном лендинге. Аналитика — колбэком: событие 'added' здесь не
+// трекается — подписка на appinstalled живёт у поверхности (баннер/лендинг),
+// которая смонтирована всё время, а не только пока инструкция развёрнута.
 export function InstallAppGuide({
-  track,
+  onInstallClick,
   platform = detectInstallPlatform(),
 }: {
-  track: (action: 'add' | 'added') => void;
+  onInstallClick: () => void;
   platform?: InstallPlatform;
 }) {
   const { canPrompt, install } = useInstallPrompt();
   const block = INSTALL_STEPS[platform];
-
-  useEffect(() => subscribeAppInstalled(() => track('added')), [track]);
+  // Строчная только первая буква предлога («В Chrome:» → «в Chrome:») —
+  // toLowerCase() по всей строке калечил бы имена браузеров.
+  const browserMid = block.browser.charAt(0).toLowerCase() + block.browser.slice(1);
 
   return (
     <div className="install-guide">
@@ -31,7 +31,7 @@ export function InstallAppGuide({
         <button
           className="install-guide-native"
           onClick={() => {
-            track('add');
+            onInstallClick();
             install();
           }}
         >
@@ -39,7 +39,7 @@ export function InstallAppGuide({
         </button>
       )}
       <div className="install-guide-browser">
-        {canPrompt ? `Запасной путь руками — ${block.browser.toLowerCase()}` : block.browser}
+        {canPrompt ? `Запасной путь руками — ${browserMid}` : block.browser}
       </div>
       <ol className="install-guide-steps">
         {block.steps.map((s) => (
