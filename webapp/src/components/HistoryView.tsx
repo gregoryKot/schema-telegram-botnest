@@ -10,6 +10,7 @@ import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { BOOKING_CTA_LABEL, trackerTapHint } from '../../../shared/src/history/therapistCta';
 
 interface Props {
   needs: Need[];
@@ -101,7 +102,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const contact = getTherapistContact();
   // Терапевту не предлагаем запись к самому себе (null); один элемент на оба блока.
   const bookingLink = contact.isTherapist ? null : (
-    <a href={contact.bookingUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Записаться →</a>
+    <a href={contact.bookingUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>{BOOKING_CTA_LABEL}</a>
   );
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
@@ -240,7 +241,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
         <div style={{ flex: 1 }} />
         {showHint && (
           <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>
-            {tr('нажми на потребность', 'нажмите на потребность')}
+            {trackerTapHint(tr)}
           </span>
         )}
       </div>

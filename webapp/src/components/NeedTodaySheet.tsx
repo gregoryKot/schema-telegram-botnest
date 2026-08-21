@@ -18,7 +18,7 @@ interface Props {
   onOpenHelp?: () => void;
 }
 
-export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
+export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -85,6 +85,19 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
             <div style={{ height: 6, borderRadius: 6, background: 'var(--surface-2)', overflow: 'hidden' }}>
               <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 6, background: `linear-gradient(to right, ${color}55, ${color})` }} />
             </div>
+            {/* Маркер «вчера» на шкале — паритет с miniapp NeedRatingBar (В10 аудита 2026-08) */}
+            {typeof yesterdayValue === 'number' && yesterdayValue > 0 && (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', left: `${yesterdayValue * 10}%`, top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 2, height: 14, borderRadius: 1,
+                  background: 'var(--text-faint)',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             <div style={{
               position: 'absolute', left: `${value * 10}%`, top: '50%',
               transform: 'translate(-50%, -50%)',
@@ -93,8 +106,19 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
               pointerEvents: 'none',
             }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
-            <span>0</span><span>5</span><span>10</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
+            <span>0</span>
+            {typeof yesterdayValue === 'number' && yesterdayValue > 0 ? (
+              <span style={{ color: 'var(--text-faint)' }}>
+                вчера {yesterdayValue}
+                {value - yesterdayValue !== 0 && (
+                  <span style={{ color, fontWeight: 600 }}>
+                    {' '}{value - yesterdayValue > 0 ? `+${value - yesterdayValue}` : value - yesterdayValue}
+                  </span>
+                )}
+              </span>
+            ) : <span>5</span>}
+            <span>10</span>
           </div>
           {rangeIdx === 2 && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>

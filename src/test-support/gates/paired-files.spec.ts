@@ -26,6 +26,8 @@ const PAIRS = [
   'hooks/useReducedMotionPref.ts',
   'utils/telemetryUrl.ts',
   'utils/telemetryUrl.test.ts',
+  'components/schemaFlashcard/constants.ts',
+  'components/schemaFlashcard/types.ts',
 ];
 
 describe('check-paired-files.mjs', () => {

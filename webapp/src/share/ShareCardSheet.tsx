@@ -3,6 +3,7 @@
 // (вёрстка своя — правило №3: логика в shared/useShareCard, вёрстка per-frontend).
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { TherapyNote } from '../components/TherapyNote';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
 import type { ShareCardKind } from '../../../shared/src/share/analytics';
@@ -18,6 +19,8 @@ interface Props {
   eventKind: ShareCardKind;
   onClose: () => void;
   zIndex?: number;
+  /** Заход на терапию после «Поделиться» — паритет с miniapp (В10 аудита 2026-08) */
+  therapyNote?: boolean;
 }
 
 export function ShareCardSheet({
@@ -29,6 +32,7 @@ export function ShareCardSheet({
   eventKind,
   onClose,
   zIndex = 300,
+  therapyNote,
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -164,6 +168,11 @@ export function ShareCardSheet({
         >
           {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
+        {therapyNote && (
+          <div style={{ marginTop: 12 }}>
+            <TherapyNote compact />
+          </div>
+        )}
       </div>
     </div>
   );
