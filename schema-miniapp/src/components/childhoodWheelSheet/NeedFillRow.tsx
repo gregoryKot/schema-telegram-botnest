@@ -1,6 +1,7 @@
 import { COLORS } from '../../types';
 import { pressable } from '../../utils/a11y';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { AnchorCard } from './AnchorCard';
 import { Slider } from './Slider';
 import type { NeedId, NeedMetaEntry } from './types';
 
@@ -145,70 +146,18 @@ export function NeedFillRow({
           marginTop: 6,
         }}
       >
-        <div
-          style={{
-            fontSize: 11,
-            lineHeight: 1.55,
-            padding: '7px 9px',
-            borderRadius: 10,
-            background:
-              showLow && value <= 4
-                ? 'color-mix(in srgb, var(--accent-red) 10%, transparent)'
-                : 'rgba(var(--fg-rgb),0.03)',
-            color:
-              showLow && value <= 4
-                ? 'color-mix(in srgb, var(--accent-red) 75%, transparent)'
-                : 'rgba(var(--fg-rgb),0.25)',
-            border:
-              showLow && value <= 4
-                ? '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)'
-                : '1px solid transparent',
-            transition: 'all 0.2s',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              display: 'block',
-              marginBottom: 2,
-            }}
-          >
-            0 — дефицит
-          </span>
-          {meta.anchorLow}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            lineHeight: 1.55,
-            padding: '7px 9px',
-            borderRadius: 10,
-            background:
-              showHigh && value >= 8
-                ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                : 'rgba(var(--fg-rgb),0.03)',
-            color:
-              showHigh && value >= 8
-                ? 'color-mix(in srgb, var(--accent-green) 75%, transparent)'
-                : 'rgba(var(--fg-rgb),0.25)',
-            border:
-              showHigh && value >= 8
-                ? '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                : '1px solid transparent',
-            transition: 'all 0.2s',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              display: 'block',
-              marginBottom: 2,
-            }}
-          >
-            10 — насыщение
-          </span>
-          {meta.anchorHigh}
-        </div>
+        <AnchorCard
+          active={showLow && value <= 4}
+          color="var(--accent-red)"
+          title="0 — дефицит"
+          text={meta.anchorLow}
+        />
+        <AnchorCard
+          active={showHigh && value >= 8}
+          color="var(--accent-green)"
+          title="10 — насыщение"
+          text={meta.anchorHigh}
+        />
       </div>
       {openExampleId === id && (
         <div
