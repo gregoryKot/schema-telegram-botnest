@@ -68,7 +68,7 @@ export function Disclaimer({
   const blocked = !canAdvance(stepId, ready);
 
   return (
-    <BottomSheet onClose={() => {}} zIndex={300}>
+    <BottomSheet dismissable={false} zIndex={300}>
       {/* Step dots */}
       <div
         style={{

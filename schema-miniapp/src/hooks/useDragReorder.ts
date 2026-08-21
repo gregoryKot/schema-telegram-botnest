@@ -65,6 +65,10 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
   function beginSwipeGuard() {
     if (guardingRef.current) return;
     guardingRef.current = true;
+    // Страховка для клиентов без setVerticalSwipes (или где App.tsx ещё не
+    // успел его позвать) — политика приложения гасит свайпы хоста насовсем
+    // при expand() (App.tsx, shared/src/host/telegram.ts), а не только на
+    // время драга, так что здесь их только выключаем, не включаем обратно.
     getHost().setVerticalSwipes(false);
     document.addEventListener('touchmove', preventTouchMove, {
       passive: false,
@@ -74,7 +78,9 @@ export function useDragReorder({ ids, onReorder }: UseDragReorderOptions) {
   function endSwipeGuard() {
     if (!guardingRef.current) return;
     guardingRef.current = false;
-    getHost().setVerticalSwipes(true);
+    // НЕ включаем свайпы обратно (setVerticalSwipes(true)) — раньше это
+    // оживляло жест «свернуть мини-апп» после первого драга, хотя политика
+    // приложения держит его выключенным всегда (главная цель волны 2026-08).
     document.removeEventListener('touchmove', preventTouchMove);
   }
 
