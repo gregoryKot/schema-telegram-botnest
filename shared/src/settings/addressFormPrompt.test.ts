@@ -37,9 +37,9 @@ describe('shouldAskAddressForm', () => {
     markAddressFormAsked(NOW);
     expect(shouldAskAddressForm(null, NOW)).toBe(false);
     expect(shouldAskAddressForm(null, NOW + 6 * DAY)).toBe(false);
-    expect(shouldAskAddressForm(null, NOW + (ASK_AGAIN_AFTER_DAYS + 1) * DAY)).toBe(
-      true,
-    );
+    expect(
+      shouldAskAddressForm(null, NOW + (ASK_AGAIN_AFTER_DAYS + 1) * DAY),
+    ).toBe(true);
   });
 
   it('отметка переживает перезагрузку страницы (localStorage, а не sessionStorage)', () => {
