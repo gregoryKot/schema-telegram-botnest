@@ -359,8 +359,8 @@ export function AppShell() {
           <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
             <span>Аккаунт и привязки</span>
           </NavLink>
-          <button className="sb-item" onClick={() => logout()}
-                  style={{ marginTop: 2, color: 'var(--c-rose)' }}>
+          <button className="sb-item sb-danger" onClick={() => logout()}
+                  style={{ marginTop: 2 }}>
             <span>Выйти</span>
           </button>
           <div style={{ display: 'flex', gap: 12, padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>

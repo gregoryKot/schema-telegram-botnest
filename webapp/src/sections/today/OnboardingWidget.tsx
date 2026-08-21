@@ -128,8 +128,14 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
         const isSkipped = skipped.includes(s.id) && !isDone;
         const isCurrent = s.id === visibleStep?.id;
         return (
+          // Контейнер строки НЕ role="button" (axe nested-interactive): внутри
+          // живут настоящие кнопки «отложить»/«вернуть», а вложенный интерактив
+          // ломает скринридер — непонятно, что именно нажимается. Клавиатурный
+          // вход в шаг даёт заголовок-кнопка ниже; клик по всей строке остаётся
+          // для мыши/тапа.
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
-               {...pressable(() => setSelectedId(s.id))}>
+               onClick={() => setSelectedId(s.id)}>
             <span style={{
               width: 14, height: 14, borderRadius: 4,
               border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
@@ -139,7 +145,17 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
               fontSize: 9, color: '#fff',
             }}>{isDone ? '✓' : ''}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.6 : 1 }}>{s.title}</div>
+              {/* Заголовок — единственный таб-стоп строки (см. комментарий у
+                  контейнера). Приглушение выполненного шага — цветом, а не
+                  opacity: 0.6 давала 4.41:1 при норме 4.5 (axe, WCAG 1.4.3). */}
+              <div
+                className="text-md"
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); setSelectedId(s.id); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(s.id); } }}
+                style={{ fontWeight: 600, cursor: 'pointer', color: isDone ? 'var(--text-sub)' : undefined }}
+              >{s.title}</div>
               {isCurrent && !isDone && (
                 <div className="text-sm muted" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.description}</div>
               )}
