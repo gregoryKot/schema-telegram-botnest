@@ -3,7 +3,7 @@ import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
@@ -38,6 +38,10 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const [paletteOpen, setPaletteOpen] = useState(() =>
     mobile ? false : localStorage.getItem('modemap_palette') !== '0');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Компонента может исчезнуть, пока таймер отложенного сохранения ещё
+  // взведён (уход с экрана карты). Флаг не даёт колбэку setTimeout звать
+  // setState на размонтированном дереве — ни в успехе, ни в ошибке.
+  const isMounted = useRef(true);
   useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates).

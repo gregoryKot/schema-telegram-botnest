@@ -9,9 +9,16 @@
 // варьируют, что реально дёргают webapp/schema-miniapp/shared.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { runGate } from './gate-sandbox';
+import { runGate, REAL_SCRIPTS_DIR } from './gate-sandbox';
 
-const REAL_BASELINE = join(__dirname, '..', '..', '..', 'scripts', 'feature-parity-baseline.json');
+const REAL_BASELINE = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  'scripts',
+  'feature-parity-baseline.json',
+);
 
 const CONTROLLER = [
   "import { Controller, Get, Post, Delete, Patch } from '@nestjs/common';",
@@ -53,7 +60,7 @@ const SIMPLE_CONTROLLER = [
 // Обёртки get/post/del — как в webapp/src/api.ts (правило: тот же вызывающий
 // код, что в проде, никаких упрощённых копий).
 const WRAPPERS = [
-  "function get(path) { return fetch(path); }",
+  'function get(path) { return fetch(path); }',
   "function post(path, body) { return fetch(path, { method: 'POST', body }); }",
   "function patchJson(path, body) { return fetch(path, { method: 'PATCH', body }); }",
   "function del(path) { return fetch(path, { method: 'DELETE' }); }",
@@ -88,8 +95,8 @@ function orphanDeclarations(tree: 'webapp' | 'schema-miniapp') {
     [`${tree}/src/apiExtra.ts`]: [
       "import { del, patchJson } from './api';",
       'export const extra = {',
-      "  deleteThing: (id) => del(`/api/things/${id}`),",
-      "  updateThing: (id, body) => patchJson(`/api/things/${id}`, body),",
+      '  deleteThing: (id) => del(`/api/things/${id}`),',
+      '  updateThing: (id, body) => patchJson(`/api/things/${id}`, body),',
       '};',
       '',
     ].join('\n'),
@@ -97,7 +104,10 @@ function orphanDeclarations(tree: 'webapp' | 'schema-miniapp') {
 }
 
 function files(...parts: Record<string, string>[]) {
-  return Object.assign({ 'src/api/things.controller.ts': CONTROLLER }, ...parts);
+  return Object.assign(
+    { 'src/api/things.controller.ts': CONTROLLER },
+    ...parts,
+  );
 }
 
 describe('check-feature-parity.mjs', () => {
@@ -115,14 +125,19 @@ describe('check-feature-parity.mjs', () => {
     // DELETE только в webapp (объявлен И вызван), miniapp его не знает вовсе.
     const res = runGate(
       'check-feature-parity.mjs',
-      files(fullClient('webapp'), fullClient('schema-miniapp'), orphanDeclarations('webapp'), {
-        // Реальный вызывающий для deleteThing — иначе это был бы 'nobody', не 'webapp-only'.
-        'webapp/src/ThingsAdmin.ts': [
-          "import { extra } from './apiExtra';",
-          'export function remove(id) { return extra.deleteThing(id); }',
-          '',
-        ].join('\n'),
-      }),
+      files(
+        fullClient('webapp'),
+        fullClient('schema-miniapp'),
+        orphanDeclarations('webapp'),
+        {
+          // Реальный вызывающий для deleteThing — иначе это был бы 'nobody', не 'webapp-only'.
+          'webapp/src/ThingsAdmin.ts': [
+            "import { extra } from './apiExtra';",
+            'export function remove(id) { return extra.deleteThing(id); }',
+            '',
+          ].join('\n'),
+        },
+      ),
     );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('роуты без записи в бейслайне');
@@ -156,23 +171,35 @@ describe('check-feature-parity.mjs', () => {
     const res = runGate('check-feature-parity.mjs', {
       'src/api/things.controller.ts': CONTROLLER,
       'webapp/src/hook.ts': [
-        "export async function doIt() {",
+        'export async function doIt() {',
         "  const res = await fetch('/api/things', { method: 'GET' });",
-        "  return res.json();",
+        '  return res.json();',
         '}',
         '',
       ].join('\n'),
       'schema-miniapp/src/hook.ts': [
-        "export async function doIt() {",
+        'export async function doIt() {',
         "  const res = await fetch('/api/things', { method: 'GET' });",
-        "  return res.json();",
+        '  return res.json();',
         '}',
         '',
       ].join('\n'),
       'scripts/feature-parity-baseline.json': JSON.stringify({
-        'POST /api/things': { status: 'nobody', reason: 'фикстура: POST нигде не вызывается', since: 'fixture' },
-        'DELETE /api/things/:param': { status: 'nobody', reason: 'фикстура: DELETE нигде не вызывается', since: 'fixture' },
-        'PATCH /api/things/:param': { status: 'nobody', reason: 'фикстура: PATCH нигде не вызывается', since: 'fixture' },
+        'POST /api/things': {
+          status: 'nobody',
+          reason: 'фикстура: POST нигде не вызывается',
+          since: 'fixture',
+        },
+        'DELETE /api/things/:param': {
+          status: 'nobody',
+          reason: 'фикстура: DELETE нигде не вызывается',
+          since: 'fixture',
+        },
+        'PATCH /api/things/:param': {
+          status: 'nobody',
+          reason: 'фикстура: PATCH нигде не вызывается',
+          since: 'fixture',
+        },
       }),
     });
     expect(res.status).toBe(0);
@@ -204,8 +231,10 @@ describe('check-feature-parity.mjs', () => {
       ].join('\n'),
       // Оба фронта передают весь `api`-объект в общий хук, не вызывая
       // getThings/createThing напрямую сами.
-      'webapp/src/UseThings.ts': "import { api } from './api';\nimport { useThings } from '../../shared/src/useThings';\nuseThings(api);\n",
-      'schema-miniapp/src/UseThings.ts': "import { api } from './api';\nimport { useThings } from '../../shared/src/useThings';\nuseThings(api);\n",
+      'webapp/src/UseThings.ts':
+        "import { api } from './api';\nimport { useThings } from '../../shared/src/useThings';\nuseThings(api);\n",
+      'schema-miniapp/src/UseThings.ts':
+        "import { api } from './api';\nimport { useThings } from '../../shared/src/useThings';\nuseThings(api);\n",
       'shared/src/useThings.ts': [
         'export function useThings(deps) {',
         '  return deps.getThings().then(() => deps.createThing({}));',
@@ -213,8 +242,16 @@ describe('check-feature-parity.mjs', () => {
         '',
       ].join('\n'),
       'scripts/feature-parity-baseline.json': JSON.stringify({
-        'DELETE /api/things/:param': { status: 'nobody', reason: 'фикстура: роут не реализован клиентом вовсе', since: 'fixture' },
-        'PATCH /api/things/:param': { status: 'nobody', reason: 'фикстура: роут не реализован клиентом вовсе', since: 'fixture' },
+        'DELETE /api/things/:param': {
+          status: 'nobody',
+          reason: 'фикстура: роут не реализован клиентом вовсе',
+          since: 'fixture',
+        },
+        'PATCH /api/things/:param': {
+          status: 'nobody',
+          reason: 'фикстура: роут не реализован клиентом вовсе',
+          since: 'fixture',
+        },
       }),
     });
     expect(res.status).toBe(0);
@@ -224,13 +261,22 @@ describe('check-feature-parity.mjs', () => {
   it('причина в бейслайне короче 20 символов — exit 1', () => {
     const res = runGate(
       'check-feature-parity.mjs',
-      files(fullClient('webapp'), fullClient('schema-miniapp'), orphanDeclarations('webapp'), {
-        'webapp/src/ThingsAdmin.ts':
-          "import { extra } from './apiExtra';\nexport function remove(id) { return extra.deleteThing(id); }\n",
-        'scripts/feature-parity-baseline.json': JSON.stringify({
-          'DELETE /api/things/:param': { status: 'webapp-only', reason: 'коротко', since: 'abc1234' },
-        }),
-      }),
+      files(
+        fullClient('webapp'),
+        fullClient('schema-miniapp'),
+        orphanDeclarations('webapp'),
+        {
+          'webapp/src/ThingsAdmin.ts':
+            "import { extra } from './apiExtra';\nexport function remove(id) { return extra.deleteThing(id); }\n",
+          'scripts/feature-parity-baseline.json': JSON.stringify({
+            'DELETE /api/things/:param': {
+              status: 'webapp-only',
+              reason: 'коротко',
+              since: 'abc1234',
+            },
+          }),
+        },
+      ),
     );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('исключение без внятной причины');
@@ -240,17 +286,22 @@ describe('check-feature-parity.mjs', () => {
   it('запись бейслайна без `since` — exit 1', () => {
     const res = runGate(
       'check-feature-parity.mjs',
-      files(fullClient('webapp'), fullClient('schema-miniapp'), orphanDeclarations('webapp'), {
-        'webapp/src/ThingsAdmin.ts':
-          "import { extra } from './apiExtra';\nexport function remove(id) { return extra.deleteThing(id); }\n",
-        'scripts/feature-parity-baseline.json': JSON.stringify({
-          'DELETE /api/things/:param': {
-            status: 'webapp-only',
-            reason: 'осознанная причина длиннее двадцати символов',
-            since: '',
-          },
-        }),
-      }),
+      files(
+        fullClient('webapp'),
+        fullClient('schema-miniapp'),
+        orphanDeclarations('webapp'),
+        {
+          'webapp/src/ThingsAdmin.ts':
+            "import { extra } from './apiExtra';\nexport function remove(id) { return extra.deleteThing(id); }\n",
+          'scripts/feature-parity-baseline.json': JSON.stringify({
+            'DELETE /api/things/:param': {
+              status: 'webapp-only',
+              reason: 'осознанная причина длиннее двадцати символов',
+              since: '',
+            },
+          }),
+        },
+      ),
     );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('исключение без `since`');
@@ -325,10 +376,11 @@ describe('check-feature-parity.mjs', () => {
 });
 
 // Реестр (scripts/feature-parity-baseline.json) — не ALLOW/EXCLUDE-массив
-// внутри самого скрипта (ратчет-семантика JSON-объекта описана отдельно в
-// prG-notes.md, обычный merge=ratchet-min сюда не подходит), поэтому формально
-// не под check-gate-exemptions.mjs; тест ниже держит реестр честным сам по
-// себе — правило №13 (отсортирован) и содержательность каждой записи.
+// внутри самого скрипта (значения объектные, не числовые — обычный
+// merge=ratchet-min сюда не подходит, файл намеренно оставлен на обычном
+// текстовом слиянии git, см. коммит, добавивший гейт), поэтому формально не
+// под check-gate-exemptions.mjs; тест ниже держит реестр честным сам по себе
+// — правило №13 (отсортирован) и содержательность каждой записи.
 describe('scripts/feature-parity-baseline.json соответствует своим правилам', () => {
   it('каждая запись — с status/reason/since, ключи отсортированы', () => {
     const baseline = JSON.parse(readFileSync(REAL_BASELINE, 'utf8')) as Record<
@@ -342,5 +394,21 @@ describe('scripts/feature-parity-baseline.json соответствует сво
       if (!v.since) throw new Error(`${key}: since missing`);
       expect(['webapp-only', 'miniapp-only', 'nobody']).toContain(v.status);
     }
+  });
+});
+
+// Правило №10: движок check-feature-parity.mjs раздроблен на движок + модуль
+// правил feature-parity-patterns.mjs. check-unwatched-code.mjs требует, чтобы
+// у каждого исполняемого файла в scripts/ был тест, упоминающий его по имени
+// (не в комментарии) — сам движок упомянут через runGate() выше, эта
+// проверка закрывает вторую половину дробления и заодно фиксирует, что
+// раздел не расползётся молча.
+describe('дробление движок + модуль правил', () => {
+  it('check-feature-parity.mjs импортирует feature-parity-patterns.mjs', () => {
+    const engineSrc = readFileSync(
+      join(REAL_SCRIPTS_DIR, 'check-feature-parity.mjs'),
+      'utf8',
+    );
+    expect(engineSrc).toContain("from './feature-parity-patterns.mjs'");
   });
 });
