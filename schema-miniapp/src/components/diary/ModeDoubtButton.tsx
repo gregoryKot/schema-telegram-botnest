@@ -53,7 +53,7 @@ export function ModeDoubtButton({
         style={{
           width: '100%',
           minHeight: 44,
-          marginTop: 8,
+          margin: '8px 0 16px',
           background: cm('var(--accent-blue)', 10),
           border: `1px solid ${cm('var(--accent-blue)', 35)}`,
           borderRadius: 12,
