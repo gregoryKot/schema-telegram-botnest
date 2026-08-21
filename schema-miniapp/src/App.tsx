@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getHost } from '../../shared/src/host';
+import { shouldAskAddressForm } from '../../shared/src/settings/addressFormPrompt';
 import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
 import { syncMotionAttr } from './utils/reducedMotion';
@@ -62,7 +63,7 @@ function getInitialSection(): Section {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
-  const { flags: serverFlags, loaded: flagsLoaded } = useUserFlags();
+  const { flags: serverFlags, loadedFromServer: flagsLoaded } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
   // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
   // экран обязан сказать об этом, а не молча проглатывать 401 (правило
@@ -98,6 +99,18 @@ export default function App() {
   );
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  // Вкладка «Паттернов» при явном переходе с карточки «Мой портрет». null =
+  // нет ожидающего перехода — SchemasSection сам берёт последнюю открытую
+  // (patternsTabStorage.ts). Эффект гасит запрос сразу после того, как
+  // SchemasSection его подхватил (initialTab читается один раз при
+  // монтировании) — иначе обычный заход через нижнюю навигацию снова
+  // приносил бы старую явную вкладку вместо реально последней.
+  const [patternsTab, setPatternsTab] = useState<'schemas' | 'modes' | null>(
+    null,
+  );
+  useEffect(() => {
+    if (patternsTab !== null) setPatternsTab(null);
+  }, [patternsTab]);
   const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(
     null,
   );
@@ -278,9 +291,10 @@ export default function App() {
         else localStorage.removeItem('pair_card_dismissed');
         // uiPrefsSync: миграция/server-wins кастомизации (подхватится следующим маунтом вкладки).
         syncFromServer(s.uiPrefs);
-        // Форма обращения ещё не выбрана — спросить ДО онбординга (не чаще раза
-        // за сессию), чтобы весь онбординг звучал в выбранной форме.
-        if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
+        // Форма обращения ещё не выбрана — спросить ДО онбординга, чтобы весь
+        // онбординг звучал в выбранной форме. «Позже» откладывает на неделю
+        // (shared/settings/addressFormPrompt), а не на одну вкладку.
+        if (shouldAskAddressForm(s.addressForm)) {
           sheets.open('addressPicker');
         } else {
           onboarding.markAddressFormReady();
@@ -570,6 +584,11 @@ export default function App() {
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
         onNewDiaryEntry={setNewDiaryEntry}
+        patternsTab={patternsTab}
+        onOpenPatterns={(tab) => {
+          setPatternsTab(tab);
+          setSection('schemas');
+        }}
       />
 
       {/* ── История потребностей ── */}

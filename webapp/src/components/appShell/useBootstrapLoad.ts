@@ -59,7 +59,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       if (!d.accepted) return api.acceptDisclaimer().catch(() => fail('дисклеймер'));
     }).catch(() => fail('дисклеймер'));
 
-    Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
+    const needsRatingsPromise = Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
       .then(([n, r, yR]) => {
         setNeeds(n);
         setRatings(r);
@@ -71,7 +71,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
           localStorage.setItem(TODAY_KEY, '1');
         }
       })
-      .catch((e) => setError(String(e)))
+      .catch((e) => { setError(String(e)); fail('needs/ratings'); })
       .finally(() => setLoading(false));
 
     const plansPromise = api.getPendingPlans().then(setPendingPlans).catch(() => fail('задания'));
@@ -126,7 +126,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       }
     }).catch(() => fail('профиль'));
 
-    Promise.allSettled([initPromise, activityPromise, outboxPromise, disclaimerPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
+    Promise.allSettled([initPromise, activityPromise, outboxPromise, disclaimerPromise, needsRatingsPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
       .then(() => {
         if (failed.length) {
           reportClientError({ message: `appshell bootstrap fail: ${failed.join(', ')}`, section: 'appshell.bootstrap' });

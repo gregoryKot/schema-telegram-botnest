@@ -13,6 +13,7 @@ import { EmailTokenService } from './email-token.service';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { TotpService } from './totp.service';
 import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
@@ -34,6 +35,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     MergeService,
     DeviceLinkService,
     SecurityLogService,
+    TelegramDomainWatchdogService,
     TotpService,
     EmailService,
     GoogleProvider,

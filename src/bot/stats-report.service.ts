@@ -7,7 +7,10 @@ import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
+import { WebBannerMetricsService } from './web-banner-metrics.service';
+import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
+import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
@@ -28,7 +31,10 @@ export class StatsReportService {
     private readonly phraseChecks: PhraseCheckMetricsService,
     private readonly accountLink: AccountLinkMetricsService,
     private readonly plus: PlusMetricsService,
+    private readonly webBanner: WebBannerMetricsService,
+    private readonly siteInstall: SiteInstallMetricsService,
     private readonly screen: ScreenMetricsService,
+    private readonly profilePattern: ProfilePatternMetricsService,
     private readonly authHealth: AuthHealthMetricsService,
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
@@ -45,7 +51,10 @@ export class StatsReportService {
       phraseChecks,
       accountLink,
       plus,
+      webBanner,
+      siteInstall,
       screen,
+      profilePattern,
       authHealth,
       clientErrors,
       money,
@@ -58,13 +67,16 @@ export class StatsReportService {
       this.phraseChecks.render(),
       this.accountLink.render(),
       this.plus.render(),
+      this.webBanner.render(),
+      this.siteInstall.render(),
       this.screen.render(),
+      this.profilePattern.render(),
       this.authHealth.render(),
       this.clientErrors.render(),
       this.money.render(),
       this.signupSource.render(),
     ]);
     const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${screen}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
   }
 }

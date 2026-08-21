@@ -5,6 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Ярлык/установка с любой страницы сайта ставит приложение: start_url
+         ведёт в мини-апп /app/ (docs/PWA_PLAN.md — база установки именно он).
+         На персональном домене ссылка убирается в applyPersonalSiteChrome. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Apply theme BEFORE any rendering to prevent white flash -->

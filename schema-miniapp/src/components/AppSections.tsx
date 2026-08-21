@@ -29,6 +29,10 @@ interface Props {
   profileRefreshKey: number;
   displayName: string | null;
   onNewDiaryEntry: (t: 'schema' | 'mode' | 'gratitude') => void;
+  /** null = нет ожидающего явного перехода — SchemasSection сам решает
+   *  вкладку (последняя открытая, см. patternsTabStorage.ts). */
+  patternsTab: 'schemas' | 'modes' | null;
+  onOpenPatterns: (tab: 'schemas' | 'modes') => void;
 }
 
 // Четыре главных экрана (Сегодня/Паттерны/Помощь/Профиль). Перенесено из
@@ -54,6 +58,8 @@ export function AppSections({
   profileRefreshKey,
   displayName,
   onNewDiaryEntry,
+  patternsTab,
+  onOpenPatterns,
 }: Props) {
   return (
     <>
@@ -106,6 +112,7 @@ export function AppSections({
             childhoodRatings={childhoodRatings}
             onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
             onOpenDiaries={() => sheets.open('diaries')}
+            initialTab={patternsTab ?? undefined}
           />
         </ErrorBoundary>
       )}
@@ -141,7 +148,7 @@ export function AppSections({
       )}
 
       {!therapistMode && section === 'profile' && (
-        <ErrorBoundary section="Профиль" key="profile-boundary">
+        <ErrorBoundary section="Я" key="profile-boundary">
           <ProfileSection
             onOpenSettings={() => sheets.open('settings')}
             onOpenTracker={() => {
@@ -149,6 +156,7 @@ export function AppSections({
             }}
             refreshKey={profileRefreshKey}
             displayName={displayName}
+            onOpenPatterns={onOpenPatterns}
           />
         </ErrorBoundary>
       )}

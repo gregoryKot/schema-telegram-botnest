@@ -35,7 +35,7 @@ const TABS: TabDef[] = [
   { id: 'today', label: 'Сегодня', color: ACTIVE },
   { id: 'help', label: 'Помощь', color: ACTIVE },
   { id: 'schemas', label: 'Паттерны', color: ACTIVE },
-  { id: 'profile', label: 'Профиль', color: ACTIVE },
+  { id: 'profile', label: 'Я', color: ACTIVE },
 ];
 
 function TabIcon({

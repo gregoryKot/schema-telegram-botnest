@@ -8,11 +8,14 @@ import type { Achievement } from '../../api';
 import type { ScreenBlockId } from '../../utils/screenBlocks';
 import type { BlockVisibility } from '../schemas/blockVisibility';
 import { StreakData, InsightsData } from './types';
+import type { AboutMeState } from './useAboutMe';
 import { StreakCard } from './StreakCard';
 import { ActivityHeatmap } from './ActivityHeatmap';
 import { AchievementsCard } from './AchievementsCard';
 import { InsightsCard } from './InsightsCard';
 import { JourneyEntryCard } from './JourneyEntryCard';
+import { PortraitCard } from './PortraitCard';
+import { WarmWordsCard } from './WarmWordsCard';
 
 interface Props {
   ready: boolean;
@@ -22,10 +25,13 @@ interface Props {
   insights: InsightsData | null;
   hasInsights: boolean | null | undefined;
   activeDates: Set<string>;
+  aboutMe: AboutMeState;
   onOpenJourney: () => void;
   onOpenTracker?: () => void;
   onShowAchievements: () => void;
   onShowBestDayInfo: () => void;
+  onOpenPatterns: (tab: 'schemas' | 'modes') => void;
+  onOpenPortrait: () => void;
 }
 
 export function ProfileCards({
@@ -36,13 +42,31 @@ export function ProfileCards({
   insights,
   hasInsights,
   activeDates,
+  aboutMe,
   onOpenJourney,
   onOpenTracker,
   onShowAchievements,
   onShowBestDayInfo,
+  onOpenPatterns,
+  onOpenPortrait,
 }: Props) {
   const { isHidden, holdProps, orderedIds } = blocks;
   const cardsById: Partial<Record<ScreenBlockId, ReactNode>> = {
+    portrait: aboutMe.ready && !isHidden('portrait') && (
+      <div {...holdProps('portrait')}>
+        <PortraitCard
+          portrait={aboutMe.portrait}
+          ysqCompletedAt={aboutMe.ysqCompletedAt}
+          onOpenPatterns={() => onOpenPatterns('schemas')}
+          onOpenSheet={onOpenPortrait}
+        />
+      </div>
+    ),
+    warm_words: aboutMe.ready && !isHidden('warm_words') && (
+      <div {...holdProps('warm_words')}>
+        <WarmWordsCard />
+      </div>
+    ),
     journey: ready && !isHidden('journey') && (
       <div {...holdProps('journey')}>
         <JourneyEntryCard onOpen={onOpenJourney} />

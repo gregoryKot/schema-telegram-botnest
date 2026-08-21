@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 // импорты спек и соседей из merge.service продолжали работать.
 export { USER_OWNED_TABLES } from './user-owned-tables';
 import { USER_OWNED_TABLES } from './user-owned-tables';
+import { mergeUserScalarFields } from './merge-user-fields';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -288,44 +289,11 @@ export class MergeService {
           )
       `);
 
-      // 5. Propagate recoveryEmail, disclaimerAccepted and role from source → target.
-      //    Must happen before DELETE so we can still read source fields.
-      //    recoveryEmail is @unique — clear from source first, then set on target
-      //    (otherwise Postgres unique constraint fires within the transaction).
-      const srcEmailRows = await tx.$queryRaw<
-        Array<{ re: string | null; rev: Date | null }>
-      >(Prisma.sql`
-        SELECT "recoveryEmail" AS re, "recoveryEmailVerifiedAt" AS rev
-        FROM "User" WHERE id = ${sourceId}
-      `);
-      const srcEmail = srcEmailRows[0]?.re ?? null;
-      const srcEmailVerified = srcEmailRows[0]?.rev ?? null;
-      if (srcEmail) {
-        // Free the unique slot on source first
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = NULL, "recoveryEmailVerifiedAt" = NULL
-          WHERE id = ${sourceId}
-        `);
-        // Apply to target only if target has no email yet
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = ${srcEmail}, "recoveryEmailVerifiedAt" = ${srcEmailVerified}
-          WHERE id = ${targetId} AND "recoveryEmail" IS NULL
-        `);
-      }
-
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "disclaimerAccepted" = true
-        WHERE id = ${targetId}
-          AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
-      `);
-      // Promote target to THERAPIST if source had that role — merge must not
-      // silently downgrade a user's access level. Also carry therapistMode flag
-      // (account.service.setRole sets them together; merge should mirror that).
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
-        WHERE id = ${targetId}
-          AND (SELECT "role" FROM "User" WHERE id = ${sourceId}) = 'THERAPIST'
-      `);
+      // 5. Propagate recoveryEmail, disclaimerAccepted, role, onboarding-flags
+      //    and addressForm from source → target. Must happen before DELETE so
+      //    we can still read source fields. Вынесено в merge-user-fields.ts
+      //    (правило №10 — этот файл уже на потолке baseline).
+      await mergeUserScalarFields(tx, sourceId, targetId);
 
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(

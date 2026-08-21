@@ -16,12 +16,23 @@
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
-//   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
-//   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
+//   web_banner_open     — нажал баннер-переход (meta.banner). Баннеры живут
+//                         в обоих фронтендах: кабинет мини-аппа зовёт на
+//                         сайт, мобильный сайт — в приложение (/app/);
+//   web_banner_dismiss  — скрыл баннер-переход (meta.banner), те же баннеры;
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
-//   home_screen_offer   — предложение значка на экран (meta.action + surface);
+//   home_screen_offer   — предложение значка на экран (meta.action + surface).
+//                         Поверхности мини-аппа (Telegram) шлют событие
+//                         авторизованно через POST /api/event. Сайт добавил
+//                         две свои: баннер «приложение для телефона» в
+//                         кабинете (webapp/src/components/MobileAppBanner.tsx)
+//                         тоже идёт авторизованно через /api/event, а блок
+//                         установки на публичном лендинге
+//                         (webapp/src/pages/landing/AppInstallSection.tsx) —
+//                         анонимно через POST /api/public-event, и там
+//                         принимается ТОЛЬКО surface site_landing;
 //   journey_open        — открыл архив «Мой путь» (без meta);
 //   ysq_help_open       — раскрыл «Как понимать» в результатах теста схем
 //                         (без meta);
@@ -106,6 +117,8 @@
 //                         согласия, чтобы видеть и конверсию в «принял
 //                         соглашение»). Возвращающийся по той же ссылке
 //                         повторно не считается.
+//   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
+//                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -148,6 +161,7 @@ export const ANALYTICS_EVENTS = [
   'auth_success',
   'client_error',
   'signup_source',
+  'profile_pattern_open',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -158,6 +172,7 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
+  'home_screen_offer',
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -217,12 +232,30 @@ export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
 export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
 export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 
+// 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
+// баннер «приложение для телефона» в кабинете сайта
+// (webapp/src/components/MobileAppBanner.tsx), авторизованный путь.
+// 'site_landing' — блок установки на публичном лендинге
+// (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
+// анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
+// поверхность (см. sanitize в public-events.controller.ts).
 export const HOME_SCREEN_SURFACES = [
   'onboarding',
   'today',
   'settings',
+  'site_banner',
+  'site_landing',
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
+
+// Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
+// Используется в двух местах: bot.product-metrics.service.ts фильтрует
+// сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
+// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// же surface для отдельного блока «Установка с сайта». IN-список в обоих
+// $queryRaw собирается из этой константы, а не хардкодится дважды.
+export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
 // Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
 // Порядок = порядок показа: по нему строится воронка «докуда доходят».
@@ -270,6 +303,12 @@ export const SHARE_CARD_KINDS = [
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 
+// Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
+// схемы или лист режима. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
+export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
+
 // CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts
 // (правило №10: файл держим ≤201 строки).
 export {
@@ -287,10 +326,17 @@ export const TODAY_FOCUS_PRACTICES = [
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 
-// Идентификаторы баннеров «полная версия на сайте» (meta.banner для событий
-// web_banner_open / web_banner_dismiss). Парный список — на фронте мини-аппа
-// (schema-miniapp/src/utils/webBanner.ts), при добавлении баннера синхронь.
-export const WEB_BANNER_IDS = ['cabinet_full', 'mode_map'] as const;
+// Идентификаторы баннеров-переходов (meta.banner для событий web_banner_open
+// / web_banner_dismiss). 'cabinet_full' и 'mode_map' — баннеры «полная
+// версия на сайте» в мини-аппе (schema-miniapp/src/utils/webBanner.ts);
+// 'mobile_app' — баннер «Открыть приложение» на мобильной версии сайта
+// (webapp/src/components/MobileAppBanner.tsx). При добавлении баннера
+// синхронь список с соответствующим фронтом.
+export const WEB_BANNER_IDS = [
+  'cabinet_full',
+  'mode_map',
+  'mobile_app',
+] as const;
 export type WebBannerId = (typeof WEB_BANNER_IDS)[number];
 
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —

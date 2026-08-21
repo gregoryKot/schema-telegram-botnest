@@ -19,6 +19,7 @@ import { botShortUrl } from '../../utils/botConfig';
 import { patternMeta } from './patternMeta';
 import { PatternSheetHeader } from './PatternSheetHeader';
 import { PatternCardSection } from './PatternCardSection';
+import { PatternHelpSection } from './PatternHelpSection';
 import { PatternEntriesSection } from './PatternEntriesSection';
 import { usePatternEntryDelete } from './usePatternEntryDelete';
 import type { MyCardsKind, MyCardItem } from '../myCards/useMyCards';
@@ -46,6 +47,11 @@ interface Props {
   modeEntries?: ModeDiaryEntry[];
   setModeEntries?: Dispatch<SetStateAction<ModeDiaryEntry[]>>;
   onClose: () => void;
+  /** По умолчанию — верхний уровень (профиль/паттерны). PortraitSheet
+   *  открывает список изнутри своего листа и поднимает значение, чтобы
+   *  PatternSheet отрисовался НАД ним, а не под (тот же приём, что у
+   *  вложенного ShareCardSheet ниже — просто ещё один уровень). */
+  zIndex?: number;
 }
 
 export function PatternSheet({
@@ -58,6 +64,7 @@ export function PatternSheet({
   modeEntries = [],
   setModeEntries,
   onClose,
+  zIndex = 200,
 }: Props) {
   const tr = useTr();
   const [subView, setSubView] = useState<'edit' | 'info' | null>(null);
@@ -104,7 +111,7 @@ export function PatternSheet({
 
   return (
     <>
-      <BottomSheet onClose={onClose}>
+      <BottomSheet onClose={onClose} zIndex={zIndex}>
         <div style={{ paddingTop: 4 }}>
           <PatternSheetHeader
             color={meta.color}
@@ -124,6 +131,8 @@ export function PatternSheet({
             onEdit={() => setSubView('edit')}
             onShare={() => setShowShare(true)}
           />
+
+          <PatternHelpSection kind={kind} id={id} />
 
           <PatternEntriesSection
             kind={kind}
@@ -168,7 +177,7 @@ export function PatternSheet({
           filename={`${kind}-card.png`}
           eventKind={kind}
           onClose={() => setShowShare(false)}
-          zIndex={220}
+          zIndex={zIndex + 20}
         />
       )}
     </>

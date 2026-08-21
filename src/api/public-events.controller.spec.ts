@@ -14,13 +14,19 @@ describe('PublicEventDto', () => {
     return errs.map((e) => e.property);
   };
 
-  it('quiz_started / quiz_completed / practice_link_click проходят', async () => {
+  it('quiz_started / quiz_completed / practice_link_click / home_screen_offer проходят', async () => {
     await expect(
       errorsFor({ name: 'quiz_started', meta: { quiz: 'drives' } }),
     ).resolves.toEqual([]);
     await expect(errorsFor({ name: 'quiz_completed' })).resolves.toEqual([]);
     await expect(
       errorsFor({ name: 'practice_link_click', meta: { place: 'author' } }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({
+        name: 'home_screen_offer',
+        meta: { action: 'add', surface: 'site_landing' },
+      }),
     ).resolves.toEqual([]);
   });
 
@@ -132,6 +138,60 @@ describe('PublicEventsController', () => {
         controller.track({ name: 'practice_link_click', meta }),
       ).resolves.toEqual({ ok: true });
     }
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer с лендинга пишется анонимно (surface site_landing)', async () => {
+    await controller.track({
+      name: 'home_screen_offer',
+      meta: { action: 'add', surface: 'site_landing' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
+      action: 'add',
+      surface: 'site_landing',
+    });
+  });
+
+  it('home_screen_offer с валидным action, но не-лендинговой surface — дропается', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'shown', surface: 'today' },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer: added с site_landing проходит', async () => {
+    await controller.track({
+      name: 'home_screen_offer',
+      meta: { action: 'added', surface: 'site_landing' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
+      action: 'added',
+      surface: 'site_landing',
+    });
+  });
+
+  it("home_screen_offer: 'shown'/'later'/'never' с site_landing дропаются — аноним не пишет состояния воронки, только add/added", async () => {
+    for (const action of ['shown', 'later', 'never']) {
+      await expect(
+        controller.track({
+          name: 'home_screen_offer',
+          meta: { action, surface: 'site_landing' },
+        }),
+      ).resolves.toEqual({ ok: true });
+    }
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer с мусорным action молча дропается', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'bogus', surface: 'site_landing' },
+      }),
+    ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
   });
 });

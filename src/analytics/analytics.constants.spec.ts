@@ -15,12 +15,14 @@ import {
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
@@ -35,12 +37,14 @@ const REGISTRIES: Record<string, readonly string[]> = {
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -76,6 +80,18 @@ describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
     // отбросит по ANALYTICS_EVENTS.includes(name) — метрика тихо пропадёт.
     for (const name of PUBLIC_ANALYTICS_EVENTS) {
       expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+});
+
+describe('SITE_INSTALL_SURFACES ⊆ HOME_SCREEN_SURFACES', () => {
+  it('каждая сайтовая surface установки есть в общем реестре поверхностей', () => {
+    // Иначе фильтр воронки мини-аппа (bot.product-metrics.service.ts) и блок
+    // «Установка с сайта» (site-install-metrics.service.ts) молча разъедутся
+    // с DTO-валидацией surface (правило №4: дублированные реестры — только
+    // с тестом-сверкой).
+    for (const surface of SITE_INSTALL_SURFACES) {
+      expect(HOME_SCREEN_SURFACES).toContain(surface);
     }
   });
 });

@@ -15,6 +15,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { pressable } from '../utils/a11y';
+import { hitboxStyle } from '../utils/hitbox';
 import { SkeletonList } from './Skeleton';
 import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
@@ -250,30 +251,31 @@ export function TrackerOverlay({
         <button
           onClick={onClose}
           aria-label="Закрыть"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: 'none',
-            cursor: 'pointer',
-            background: 'var(--surface-2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-sub)',
-          }}
+          style={hitboxStyle(34, 34).outer}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
+          <span
+            style={{
+              ...hitboxStyle(34, 34).inner,
+              borderRadius: 10,
+              background: 'var(--surface-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-sub)',
+            }}
           >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </span>
         </button>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
@@ -291,31 +293,33 @@ export function TrackerOverlay({
             {onOpenNote && (
               <button
                 onClick={onOpenNote}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--surface-2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-sub)',
-                }}
+                aria-label="Заметка"
+                style={hitboxStyle(34, 34).outer}
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  style={{
+                    ...hitboxStyle(34, 34).inner,
+                    borderRadius: 10,
+                    background: 'var(--surface-2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-sub)',
+                  }}
                 >
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                </svg>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
+                </span>
               </button>
             )}
             {onOpenHistory && (
@@ -324,31 +328,33 @@ export function TrackerOverlay({
                   onClose();
                   onOpenHistory();
                 }}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--surface-2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-sub)',
-                }}
+                aria-label="История"
+                style={hitboxStyle(34, 34).outer}
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  style={{
+                    ...hitboxStyle(34, 34).inner,
+                    borderRadius: 10,
+                    background: 'var(--surface-2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-sub)',
+                  }}
                 >
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </span>
               </button>
             )}
           </div>

@@ -154,7 +154,7 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'auth/auth-account.controller.ts:238':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',
-  'auth/auth-telegram.controller.ts:51':
+  'auth/auth-telegram.controller.ts:52':
     'inline-тип Record<string, string> — подписанный Telegram-payload, ' +
     'whitelist срежет поля и сломает hash-верификацию (комментарий в коде)',
   'booking/payment.controller.ts:62':

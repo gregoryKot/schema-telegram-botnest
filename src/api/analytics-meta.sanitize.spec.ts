@@ -296,6 +296,31 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
   });
 
+  it('profile_pattern_open: kind schema/mode проходит', () => {
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'schema' })).toEqual({
+      kind: 'schema',
+    });
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'mode' })).toEqual({
+      kind: 'mode',
+    });
+  });
+
+  it('profile_pattern_open: неизвестный/отсутствующий kind → отброшено', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', { kind: 'diary' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('profile_pattern_open', {})).toBeUndefined();
+  });
+
+  it('profile_pattern_open: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', {
+        kind: 'schema',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ kind: 'schema' });
+  });
+
   it('plus_action: action из allow-list проходит', () => {
     expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
       action: 'tracker',
@@ -613,6 +638,15 @@ describe('sanitizeMeta', () => {
         surface: 'today',
       }),
     ).toEqual({ action: 'added', surface: 'today' });
+  });
+
+  it('home_screen_offer: сайтовая поверхность site_banner проходит авторизованным путём', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'shown',
+        surface: 'site_banner',
+      }),
+    ).toEqual({ action: 'shown', surface: 'site_banner' });
   });
 
   it('home_screen_offer: неизвестный action → отброшено целиком', () => {

@@ -95,7 +95,7 @@ describe('sanitizeUiPrefs', () => {
     }
   });
 
-  it('screen_hidden_*/screen_order_*: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16', () => {
+  it('screen_hidden_*/screen_order_*: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16, неизвестные id тихо фильтруются', () => {
     for (const key of [
       'screen_hidden_profile',
       'screen_hidden_patterns',
@@ -106,12 +106,34 @@ describe('sanitizeUiPrefs', () => {
       expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak']) })).toEqual({
         [key]: JSON.stringify(['streak']),
       });
-      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['nope']) })).toEqual({});
+      // Регрессия «удалили id из реестра блоков» (my_schemas/my_modes слились
+      // в лист «Мой портрет»): устройство, ещё не подтянувшее новый реестр,
+      // может прислать массив с чужим id вперемешку с валидными — ключ не
+      // отбрасывается целиком, невалидный элемент тихо выпадает, остальное
+      // (порядок валидных id) сохраняется как было.
+      expect(
+        sanitizeUiPrefs({
+          [key]: JSON.stringify(['portrait', 'my_schemas', 'warm_words']),
+        }),
+      ).toEqual({ [key]: JSON.stringify(['portrait', 'warm_words']) });
+      // Все элементы невалидны — фильтруется в пустой массив, ключ не
+      // отбрасывается (это не то же самое, что «отсутствие ключа» — сервер
+      // честно хранит «пользователь остался без кастомного порядка»).
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['nope']) })).toEqual({
+        [key]: '[]',
+      });
+      // Длина считается ДО фильтрации — не способ обойти лимит охапкой мусора.
       expect(
         sanitizeUiPrefs({
           [key]: JSON.stringify(Array.from({ length: 17 }, () => 'streak')),
         }),
       ).toEqual({});
+      // Структурно невалидное (не массив/не строки) — по-прежнему весь ключ.
+      expect(sanitizeUiPrefs({ [key]: 'not-json' })).toEqual({});
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify({ a: 1 }) })).toEqual({});
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak', 5]) })).toEqual(
+        {},
+      );
     }
   });
 
@@ -128,7 +150,7 @@ describe('sanitizeUiPrefs', () => {
     });
     expect(
       sanitizeUiPrefs({ screen_order_today: JSON.stringify(['мусор']) }),
-    ).toEqual({});
+    ).toEqual({ screen_order_today: '[]' });
     expect(
       sanitizeUiPrefs({ screen_order_today: JSON.stringify({ a: 1 }) }),
     ).toEqual({});

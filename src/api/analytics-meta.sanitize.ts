@@ -15,6 +15,7 @@ import {
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
   SIGNUP_SOURCE_SET,
+  PROFILE_PATTERN_KIND_SET,
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 
@@ -292,6 +293,13 @@ export function sanitizeMeta(
     const host = meta.host;
     if (host === 'telegram' || host === 'max' || host === 'web') {
       return { host };
+    }
+    return undefined;
+  }
+  if (name === 'profile_pattern_open') {
+    const kind = meta.kind;
+    if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
+      return { kind };
     }
     return undefined;
   }

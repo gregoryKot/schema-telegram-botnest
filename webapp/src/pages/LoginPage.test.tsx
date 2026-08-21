@@ -62,9 +62,9 @@ function authValue(overrides: Partial<AuthState> = {}): AuthState {
   };
 }
 
-function renderPage(auth: AuthState = authValue()) {
+function renderPage(auth: AuthState = authValue(), initialPath = '/login') {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <AuthContext.Provider value={auth}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -88,6 +88,32 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
     expect(screen.getByRole('button', { name: /Войти через Google/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Войти через ВКонтакте/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Войти через Telegram/ })).toBeTruthy();
+  });
+});
+
+// В5 (аудит 2026-08): AuthCallback.tsx уводит сюда с ?error=no_token, когда
+// OAuth-провайдер не вернул токен (например, окно входа закрылось раньше
+// времени) — до этой правки /login эту query никогда не читал, и человек
+// просто видел форму входа заново без единого слова о провале.
+describe('LoginPage — провал OAuth (?error=no_token)', () => {
+  it('показывает нейтральное сообщение о провале входа', () => {
+    renderPage(authValue(), '/login?error=no_token');
+    expect(screen.getByText(/Вход не получился/)).toBeTruthy();
+  });
+
+  it('без ?error никакого сообщения нет', () => {
+    renderPage();
+    expect(screen.queryByText(/Вход не получился/)).toBeNull();
+  });
+
+  it('провал уходит в телеметрию (не только сломанный вход в мессенджере)', async () => {
+    mockGetHost.mockReturnValue({ id: 'web', sessionExchange: () => null });
+    renderPage(authValue(), '/login?error=no_token');
+    await waitFor(() => expect(reportClientError).toHaveBeenCalledTimes(1));
+    const payload = vi.mocked(reportClientError).mock.calls[0][0];
+    expect(payload.section).toBe('auth');
+    expect(payload.message).toContain('хост=web');
+    expect(payload.message).toContain('Вход не получился');
   });
 });
 

@@ -24,6 +24,16 @@ vi.mock('../api', () => ({
     getInsights: vi.fn(),
     history: vi.fn(),
     trackEvent: vi.fn(),
+    // Редизайн вкладки «Я»: useAboutMe + WarmWordsCard грузят это отдельно
+    // от streak/achievements/insights/history — без моков здесь undefined()
+    // упал бы синхронно внутри useEffect.
+    getProfile: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getSchemaDiary: vi.fn(),
+    getModeDiary: vi.fn(),
+    getModeNotes: vi.fn(),
+    getPhraseChecks: vi.fn(),
+    getSchemaNotes: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -62,6 +72,13 @@ vi.mock('../components/AchievementDetail', () => ({
 vi.mock('./profile/BestDayInfoSheet', () => ({
   BestDayInfoSheet: () => <div data-testid="best-day-info" />,
 }));
+vi.mock('./profile/PortraitSheet', () => ({
+  PortraitSheet: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="portrait-sheet">
+      <button onClick={onClose}>portrait-sheet-close</button>
+    </div>
+  ),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -82,6 +99,32 @@ beforeEach(() => {
     totalDays: 0,
   });
   mockApi.history.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({
+    name: null,
+    role: 'CLIENT',
+    ysq: { completedAt: null, activeSchemaIds: [] },
+    notifications: {
+      enabled: false,
+      reminderEnabled: false,
+      timezone: 'UTC',
+      localHour: 9,
+    },
+    streak: 0,
+    lastActivity: {
+      needsTracker: null,
+      schemaDiary: null,
+      modeDiary: null,
+      gratitudeDiary: null,
+    },
+    mySchemaIds: [],
+    myModeIds: [],
+  });
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getPhraseChecks.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
 });
 afterEach(() => {
   cleanup();
@@ -90,7 +133,7 @@ afterEach(() => {
 });
 
 function baseProps() {
-  return { onOpenSettings: vi.fn() };
+  return { onOpenSettings: vi.fn(), onOpenPatterns: vi.fn() };
 }
 
 async function renderReady(
@@ -138,6 +181,16 @@ describe('ProfileSection — открытие «Мой путь» (JourneySheet)
     await renderReady();
     fireEvent.click(screen.getByText(/Мой путь/));
     expect(screen.getByTestId('journey-sheet')).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — открытие «Мой портрет» (PortraitSheet, my_schemas/my_modes переехали внутрь листа)', () => {
+  it('клик по карточке «Мой портрет» открывает лист и закрывается назад', async () => {
+    await renderReady();
+    fireEvent.click(screen.getByText('Мой портрет'));
+    expect(screen.getByTestId('portrait-sheet')).toBeTruthy();
+    fireEvent.click(screen.getByText('portrait-sheet-close'));
+    expect(screen.queryByTestId('portrait-sheet')).toBeNull();
   });
 });
 
@@ -242,6 +295,8 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
     localStorage.setItem(
       'screen_hidden_profile',
       JSON.stringify([
+        'portrait',
+        'warm_words',
         'journey',
         'streak',
         'heatmap',
@@ -281,12 +336,14 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     expect(idxStreak).toBeLessThan(idxJourney);
   });
 
-  it('ArrowUp на ручке второй строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
+  it('ArrowUp на ручке строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
     const { container } = await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    // Порядок листа по умолчанию: Мой путь, Серия дней, Календарь, Достижения,
-    // Инсайты — «Серия дней» вторая строка.
+    // Порядок листа по умолчанию (SCREEN_BLOCK_ORDER.profile после переезда
+    // «Мои схемы»/«Мои режимы» внутрь листа «Мой портрет»): Мой портрет,
+    // Тёплые слова, Мой путь, Серия дней, Календарь, Достижения, Паттерны —
+    // «Серия дней» четвёртая строка, сразу после «Мой путь».
     fireEvent.keyDown(screen.getByLabelText('Переставить: Серия дней'), {
       key: 'ArrowUp',
     });
@@ -297,6 +354,8 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     });
     expect(localStorage.getItem('screen_order_profile')).toBe(
       JSON.stringify([
+        'portrait',
+        'warm_words',
         'streak',
         'journey',
         'heatmap',
@@ -317,7 +376,8 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
-    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой путь'), {
+    // «Мой портрет» — первая строка листа (SCREEN_BLOCK_ORDER.profile).
+    fireEvent.keyDown(screen.getByLabelText('Переставить: Мой портрет'), {
       key: 'ArrowUp',
     });
     expect(mockApi.trackEvent).not.toHaveBeenCalledWith(

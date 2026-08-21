@@ -35,7 +35,9 @@ function dayWord(n: number): string {
   return 'дней';
 }
 
-function FreqBar({ freq }: { freq: number }) {
+/** Полоска недельной частоты — переиспользуется карточками «Мои схемы»/«Мои
+ *  режимы» вкладки «Я» (правило «одна механика — один компонент»). */
+export function FreqBar({ freq }: { freq: number }) {
   const w = 8 + Math.round((Math.min(freq, FREQ_WINDOW) / FREQ_WINDOW) * 30);
   return (
     <span

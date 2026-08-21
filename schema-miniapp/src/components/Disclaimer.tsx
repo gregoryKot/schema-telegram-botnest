@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { pressable } from '../utils/a11y';
+import { hitboxStyle } from '../utils/hitbox';
 import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
 import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
@@ -12,12 +13,7 @@ import { DisclaimerTodayScreenStep } from './disclaimer/DisclaimerTodayScreenSte
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 import { canOfferHomeScreenNow } from '../utils/homeScreen';
-import {
-  buildSteps,
-  canAdvance,
-  initialStepIndex,
-  CONSENT_STEP,
-} from './disclaimer/steps';
+import { buildSteps, canAdvance, initialStepIndex } from './disclaimer/steps';
 import {
   useOnboardingStepTracking,
   trackOnboardingDone,
@@ -77,25 +73,30 @@ export function Disclaimer({
           marginBottom: 24,
         }}
       >
-        {steps.map((id, i) => (
-          <div
-            key={id}
-            {...pressable(() => setStep(i))}
-            style={{
-              width: i === step ? 20 : 8,
-              height: 8,
-              borderRadius: 4,
-              background:
-                i === step
-                  ? 'var(--accent)'
-                  : i < step
-                    ? 'rgba(var(--fg-rgb),0.3)'
-                    : 'rgba(var(--fg-rgb),0.12)',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-            }}
-          />
-        ))}
+        {steps.map((id, i) => {
+          const dotW = i === step ? 20 : 8;
+          return (
+            <div
+              key={id}
+              {...pressable(() => setStep(i))}
+              style={hitboxStyle(dotW, 8, 24).outer}
+            >
+              <div
+                style={{
+                  ...hitboxStyle(dotW, 8, 24).inner,
+                  borderRadius: 4,
+                  background:
+                    i === step
+                      ? 'var(--accent)'
+                      : i < step
+                        ? 'rgba(var(--fg-rgb),0.3)'
+                        : 'rgba(var(--fg-rgb),0.12)',
+                  transition: 'all 0.25s ease',
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -124,9 +125,12 @@ export function Disclaimer({
           <button
             onClick={() => {
               if (blocked) return;
-              // Согласие сохраняем сразу, как только обе галочки стоят: дальше
-              // человек может уйти из аппки, не дойдя до финальной кнопки.
-              if (stepId === CONSENT_STEP) onConsent();
+              // Прогресс сохраняем на КАЖДОМ шаге, а не только на шаге
+              // согласий: у кого согласие уже есть (бот, сайт), юридические
+              // шаги пропускаются, и до финальной кнопки могло не дойти —
+              // человек листал экраны, закрывал мини-апп и проходил онбординг
+              // заново. Вызов идемпотентен (см. persist в useOnboardingGate).
+              onConsent();
               setStep((s) => s + 1);
             }}
             className="btn-primary"

@@ -13,7 +13,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
-import { MobileNavIcon } from './appShell/MobileNavIcon';
+import { MobileNav } from './appShell/MobileNav';
+import { MobileAppBanner } from './MobileAppBanner';
 
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
@@ -422,6 +423,7 @@ export function AppShell() {
         {/* Regular sections */}
         {!therapistMode && (
           <div className="page animate-fade" key={section}>
+            <MobileAppBanner />
             {section === 'today' && (
               <TodaySection
                 needs={needs}
@@ -607,18 +609,7 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <nav className="mobile-nav">
-        {NAV_ITEMS.map(item => (
-          <NavLink
-            key={item.id}
-            to={'/' + item.id}
-            className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
-          >
-            <MobileNavIcon id={item.id} />
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+      <MobileNav items={NAV_ITEMS} />
 
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
