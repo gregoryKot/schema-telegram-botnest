@@ -8,6 +8,7 @@ import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -46,7 +47,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   const customTextRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if ((type === 'schema_intro' || type === 'mode_intro') && configRef.current) {
-      setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+      setTimeout(() => scrollIntoViewSafe(configRef.current, { block: 'nearest' }), 80);
     }
   }, [type]);
 

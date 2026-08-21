@@ -22,6 +22,7 @@ scripts/jscpd-baseline.json               merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
 scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/silent-catch-baseline.json        merge=ratchet-min
+scripts/tiny-fonts-baseline.json          merge=ratchet-min
 scripts/bundle-size-baseline.json         merge=ratchet-min
 e2e-browser/a11y-baseline.json            merge=ratchet-min
 

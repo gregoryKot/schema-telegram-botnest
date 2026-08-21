@@ -93,6 +93,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
               value={item}
               onChange={e => update(i, e.target.value)}
               placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
+              aria-label={`Пункт ${i + 1}: ${PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}`}
               rows={1}
             />
           </div>

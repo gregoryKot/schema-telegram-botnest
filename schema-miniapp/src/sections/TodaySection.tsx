@@ -167,15 +167,16 @@ export function TodaySection({
             gap: 12,
           }}
         >
-          <div
+          <h1
             className="d-display"
             style={{
               fontSize: 26,
               lineHeight: 1.15,
+              margin: 0,
             }}
           >
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
-          </div>
+          </h1>
           <div style={{ marginTop: -6, flexShrink: 0 }}>
             <GearButton
               onClick={today.openByGear}

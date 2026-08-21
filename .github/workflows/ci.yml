@@ -368,6 +368,10 @@ jobs:
       # императивы («Нажми») без местоимения рядом, зеркальные «вы»-формы и
       # бэкенд (`src/`, письма/уведомления). Пофайловый бейслайн.
       - run: node scripts/check-second-person.mjs
+      # Храповик подпороговых fontSize (дизайн-аудит 2026-08, В1): inline
+      # `fontSize: N` ниже 11px — нижний читаемый порог. fs-only, тот же
+      # принцип, что у check-second-person.mjs выше.
+      - run: node scripts/check-tiny-fonts.mjs
       # Драйв-гард парных файлов (правило №3): канонические пары
       # webapp ↔ miniapp обязаны быть побайтово идентичны.
       - run: node scripts/check-paired-files.mjs

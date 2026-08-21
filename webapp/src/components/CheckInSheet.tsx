@@ -3,6 +3,7 @@ import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
 interface Props {
   plan: PracticePlan;
@@ -15,6 +16,7 @@ interface Props {
 export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onDone);
+  const dialogA11y = useDialogA11y();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -34,7 +36,7 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div style={{ background: 'var(--bg)', borderRadius: '24px 24px 0 0', padding: '32px 24px 48px', width: '100%', maxWidth: 560 }}>
+      <div {...dialogA11y} style={{ background: 'var(--bg)', borderRadius: '24px 24px 0 0', padding: '32px 24px 48px', width: '100%', maxWidth: 560 }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 28px' }} />
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>

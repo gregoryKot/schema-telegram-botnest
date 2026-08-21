@@ -5,6 +5,8 @@ import type { UserSettings } from '../api';
 import { Loader } from './Loader';
 import { useSetAddressForm, useTr } from '../utils/addressForm';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { ExportSummaryModal } from './settingsSheet/ExportSummaryModal';
@@ -48,6 +50,7 @@ interface Props {
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y();
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const pair = usePairSettings(userRole);
@@ -98,7 +101,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   }
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
   };
 
   const navItems = [
@@ -130,7 +133,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div {...dialogA11y} className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* ── Header ── */}
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '0 32px', height: 52, borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>

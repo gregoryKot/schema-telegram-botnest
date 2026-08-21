@@ -22,9 +22,12 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
       }}
     >
       <div>
-        <div className="d-display" style={{ fontSize: 27, lineHeight: 1.15 }}>
+        <h1
+          className="d-display"
+          style={{ fontSize: 27, lineHeight: 1.15, margin: 0 }}
+        >
           Паттерны
-        </div>
+        </h1>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>
           Привычные реакции родом из детства
         </div>

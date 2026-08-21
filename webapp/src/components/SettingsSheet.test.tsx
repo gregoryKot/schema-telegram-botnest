@@ -107,6 +107,15 @@ function toggleForRow(title: string): HTMLElement {
   return within(row).getByRole('switch');
 }
 
+describe('SettingsSheet — диалог (К4)', () => {
+  // К4 дизайн-аудита 2026-08: оверлей — role="dialog"/aria-modal.
+  it('размечен как диалог', async () => {
+    await renderSheet();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+});
+
 describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
   it('первый клик открывает предупреждение с кнопками «Отмена»/«Удалить», без вызова api', async () => {
     await renderSheet();

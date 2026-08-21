@@ -157,6 +157,14 @@ describe('TodaySection — приветствие', () => {
     expect(screen.getByText(/Привет, Аня/)).toBeTruthy();
   });
 
+  // В8 дизайн-аудита 2026-08: приветствие — заголовок экрана (h1), не div.
+  it('приветствие — h1', async () => {
+    await renderReady();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+      'Привет, Аня',
+    );
+  });
+
   it('без имени (хост не отдал firstName) — нейтральное приветствие, не пусто', async () => {
     setHost({ ...createWebHost(), user: () => null });
     await renderReady();

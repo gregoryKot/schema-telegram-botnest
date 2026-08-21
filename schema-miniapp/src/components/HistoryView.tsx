@@ -10,6 +10,7 @@ import { api } from '../api';
 import { TODAY_STR, HISTORY_HINT_KEY } from './historyView/constants';
 import { WheelCard } from './historyView/WheelCard';
 import { NeedRow } from './historyView/NeedRow';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { InsightCard } from './historyView/InsightCard';
 import { HistoryDatePicker } from './historyView/HistoryDatePicker';
 import { HistoryControls } from './historyView/HistoryControls';
@@ -80,8 +81,7 @@ export function HistoryView({
   }, [history.length, selectedIdx]);
 
   useEffect(() => {
-    dateBtnRefs.current[selectedIdx]?.scrollIntoView({
-      behavior: 'smooth',
+    scrollIntoViewSafe(dateBtnRefs.current[selectedIdx], {
       block: 'nearest',
       inline: 'center',
     });

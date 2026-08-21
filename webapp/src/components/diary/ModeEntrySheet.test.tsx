@@ -48,3 +48,14 @@ describe('ModeEntrySheet — кризисная детекция', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+// В7 дизайн-аудита 2026-08: поле связано с видимым вопросом (aria-labelledby),
+// не только с исчезающим при вводе placeholder.
+describe('ModeEntrySheet — поле связано с вопросом (В7)', () => {
+  it('textarea доступно по видимому вопросу шага', () => {
+    renderSheetOnFormStep();
+    const byLabel = screen.getByLabelText('Что произошло?');
+    const byPlaceholder = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
+    expect(byLabel).toBe(byPlaceholder);
+  });
+});
