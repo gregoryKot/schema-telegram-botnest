@@ -805,9 +805,7 @@ describe('HelpSection — единственный вход «Настроить
 
   it('пилюли «Настроить» рядом с заголовком «Инструменты» больше нет', async () => {
     await renderReady();
-    expect(
-      screen.queryByLabelText('Настроить список инструментов'),
-    ).toBeNull();
+    expect(screen.queryByLabelText('Настроить список инструментов')).toBeNull();
     expect(screen.queryByText('Настроить')).toBeNull();
   });
 });

@@ -7,7 +7,7 @@
 // тест ловит регресс, если кто-то уберёт этот сброс).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
@@ -585,10 +585,11 @@ describe('TherapistClientSheet — переименование клиента (
 });
 
 describe('TherapistClientSheet — удаление клиента', () => {
-  it('подтверждение удаления вызывает api.removeClient и возвращает к списку', async () => {
+  // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
+  // клик по кнопке-корзине открывает диалог, удаление подтверждается его
+  // собственной кнопкой «Удалить».
+  it('клик по кнопке-корзине открывает диалог, api не вызывается сразу', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
-    mockApi.removeClient.mockResolvedValue(undefined);
-    vi.stubGlobal('confirm', vi.fn(() => true));
     renderSheet();
     await screen.findByText('Иван Петров');
     fireEvent.click(screen.getByText('Иван Петров'));
@@ -596,9 +597,39 @@ describe('TherapistClientSheet — удаление клиента', () => {
 
     fireEvent.click(screen.getByLabelText('Удалить клиента'));
 
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(within(dialog).getByText('Удалить Иван Петров?')).toBeTruthy();
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+
+  it('подтверждение в диалоге вызывает api.removeClient и возвращает к списку', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
+    mockApi.removeClient.mockResolvedValue(undefined);
+    renderSheet();
+    await screen.findByText('Иван Петров');
+    fireEvent.click(screen.getByText('Иван Петров'));
+    await screen.findByText('Обзор');
+
+    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить'));
+
     await waitFor(() => expect(mockApi.removeClient).toHaveBeenCalledWith(7));
     await screen.findByText(/Введи имя клиента выше/);
-    vi.unstubAllGlobals();
+  });
+
+  it('отмена в диалоге не вызывает api', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
+    renderSheet();
+    await screen.findByText('Иван Петров');
+    fireEvent.click(screen.getByText('Иван Петров'));
+    await screen.findByText('Обзор');
+
+    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    fireEvent.click(within(screen.getByRole('dialog')).getByText('Отмена'));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
 });
 

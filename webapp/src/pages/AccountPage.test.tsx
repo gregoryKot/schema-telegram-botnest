@@ -6,7 +6,7 @@
 // (мок API-слоя). AuthContext подставляем напрямую, не через AuthProvider —
 // AuthProvider сам делает refresh-fetch на маунте, что зашумило бы мок.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { AccountPage } from './AccountPage';
@@ -64,8 +64,16 @@ beforeEach(() => {
   meFails = false;
   fetchMock = vi.fn((url: string, init?: RequestInit) => routeFetch(url, init));
   vi.stubGlobal('fetch', fetchMock);
-  vi.stubGlobal('confirm', vi.fn(() => true));
 });
+
+// Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
+// клик по «Отвязать» в строке провайдера открывает диалог, подтверждение
+// нажимается отдельно на его собственной кнопке «Отвязать» (в этот момент
+// на экране их две — строка и диалог, различаем через within(dialog)).
+function confirmUnlink() {
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByText('Отвязать'));
+}
 
 afterEach(() => {
   cleanup();
@@ -143,6 +151,7 @@ describe('AccountPage — реальные данные провайдеров',
     renderPage();
     await screen.findByText('привязан');
     fireEvent.click(screen.getByText('Отвязать'));
+    confirmUnlink();
     meProviders = [];
 
     await waitFor(() => expect(screen.queryByText('Отвязать')).toBeNull());
@@ -151,13 +160,26 @@ describe('AccountPage — реальные данные провайдеров',
 });
 
 describe('AccountPage — отвязка провайдера', () => {
+  it('клик по «Отвязать» открывает диалог подтверждения (не бьёт по api сразу)', async () => {
+    meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
+    renderPage();
+    await screen.findByText('Отвязать');
+
+    fireEvent.click(screen.getByText('Отвязать'));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(within(dialog).getByText('Отвязать Google?')).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/unlink/'))).toBe(false);
+  });
+
   it('успешная отвязка вызывает POST /api/auth/unlink/:provider и обновляет список через refresh', async () => {
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
     await screen.findByText('Отвязать');
 
-    // После unlink следующий /api/auth/me должен вернуть пустой список.
     fireEvent.click(screen.getByText('Отвязать'));
+    confirmUnlink();
+    // После unlink следующий /api/auth/me должен вернуть пустой список.
     meProviders = [];
 
     await waitFor(() => expect(screen.queryByText('Отвязать')).toBeNull());
@@ -167,15 +189,29 @@ describe('AccountPage — отвязка провайдера', () => {
     expect((unlinkCall![1].headers as Record<string, string>).Authorization).toBe('Bearer tok123');
   });
 
-  it('отказ подтверждения (confirm=false) не вызывает api', async () => {
-    vi.stubGlobal('confirm', vi.fn(() => false));
+  it('отмена в диалоге не вызывает api', async () => {
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
     await screen.findByText('Отвязать');
 
     fireEvent.click(screen.getByText('Отвязать'));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByText('Отмена'));
     await act(async () => {});
 
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/unlink/'))).toBe(false);
+  });
+
+  it('Escape в диалоге закрывает его без вызова api', async () => {
+    meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
+    renderPage();
+    await screen.findByText('Отвязать');
+
+    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/unlink/'))).toBe(false);
   });
 
@@ -190,6 +226,7 @@ describe('AccountPage — отвязка провайдера', () => {
     renderPage();
     await screen.findByText('Отвязать');
     fireEvent.click(screen.getByText('Отвязать'));
+    confirmUnlink();
 
     await screen.findByText(/Нельзя отвязать последний способ входа/);
     // Провайдер остался привязанным — отвязка не «тихо прошла».
