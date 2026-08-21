@@ -176,4 +176,12 @@ export interface FlashcardEntry {
   action: string | null;
   createdAt: string;
 }
+export interface PhraseCheckEntry {
+  id: number;
+  phrase: string;
+  marks: import('../../shared/src/phraseCheck/criteria').PhraseMarkId[];
+  rewrite: string | null;
+  inWarmWords: boolean;
+  createdAt: string;
+}
 

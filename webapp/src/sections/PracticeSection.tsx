@@ -23,8 +23,9 @@ const LetterEx         = lazy(() => import('../components/exercises/LetterEx').t
 const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
 const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
+const PhraseCheckEx    = lazy(() => import('../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 
-type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm';
+type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm' | 'phrase';
 interface ExStats { count: number; lastDone: string | null; }
 
 const EXERCISES = [
@@ -35,6 +36,7 @@ const EXERCISES = [
   { id: 'safe'   as ExId, num: '05', eyebrow: 'Ресурс',                title: 'Безопасное место',          desc: 'Описать место, в которое можно мысленно возвращаться в тревогу.',      time: '5–10 мин', color: 'var(--c-moss)' },
   { id: 'wheel'  as ExId, num: '06', eyebrow: 'Истоки',                title: 'Колесо детства',            desc: 'Оценить базовые потребности в детстве. Найти связь с паттернами сегодня.', time: '8–12 мин', color: 'var(--accent-indigo)' },
   { id: 'warm'   as ExId, num: '07', eyebrow: 'Ресурс',                title: 'Тёплые слова',               desc: 'Слова поддержки — перечитать, когда трудно.',                            time: '2–5 мин',  color: 'var(--accent-yellow)' },
+  { id: 'phrase' as ExId, num: '08', eyebrow: 'Внутренний голос',      title: 'Критик или забота?',         desc: 'Разобрать фразу внутреннего голоса по девяти приметам, переписать её.', time: '6–10 мин', color: 'var(--c-teal)' },
 ];
 
 function fmtAgo(d: string | null): string {
@@ -73,6 +75,7 @@ function ExGlyph({ id }: { id: ExId }) {
   if (id === 'letter') return <svg viewBox="0 0 28 28" {...s}><path d="M6 8h16v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8z"/><path d="M6 8l8 7 8-7"/></svg>;
   if (id === 'safe')   return <svg viewBox="0 0 28 28" {...s}><path d="M5 13l9-7 9 7v9a1 1 0 01-1 1h-5v-7h-6v7H6a1 1 0 01-1-1v-9z"/></svg>;
   if (id === 'warm')   return <svg viewBox="0 0 28 28" {...s}><path d="M14 23s-9-5.5-9-12a5.5 5.5 0 019-4.2A5.5 5.5 0 0123 11c0 6.5-9 12-9 12z"/></svg>;
+  if (id === 'phrase') return <svg viewBox="0 0 28 28" {...s}><path d="M4 6h16v11H12l-4 4v-4H4V6z"/><circle cx="20" cy="20" r="4"/><path d="M23 23l3 3"/></svg>;
   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><path d="M14 5v18M5 14h18M7.5 7.5l13 13M20.5 7.5l-13 13"/></svg>;
 }
 
@@ -163,8 +166,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   useEffect(() => {
     Promise.allSettled([
       api.getBeliefChecks(), api.getSchemaNotes(), api.getModeNotes(),
-      api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(),
-    ]).then(([beliefs, schemas, modes, letters, safe, wheel]) => {
+      api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(), api.getPhraseChecks(),
+    ]).then(([beliefs, schemas, modes, letters, safe, wheel, phrases]) => {
       const upd: Partial<Record<ExId, ExStats>> = {};
       if (beliefs.status === 'fulfilled') { const b = beliefs.value; if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null }; }
       if (schemas.status === 'fulfilled') { const s = schemas.value; if (s.length) { const sr = [...s].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.schema = { count: s.length, lastDone: sr[0]?.updatedAt ?? null }; } }
@@ -172,6 +175,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       if (letters.status === 'fulfilled') { const l = letters.value; if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null }; }
       if (safe.status === 'fulfilled' && safe.value) upd.safe = { count: 1, lastDone: safe.value.updatedAt ?? null };
       if (wheel.status === 'fulfilled' && Object.keys(wheel.value as object).length > 0) upd.wheel = { count: 1, lastDone: null };
+      if (phrases.status === 'fulfilled') { const p = phrases.value; if (p.length) upd.phrase = { count: p.length, lastDone: p[0]?.createdAt ?? null }; }
       setStats(upd);
     });
   }, []);
@@ -221,6 +225,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} />}
         {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
+        {openEx === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={handleTaskComplete} />}
       </Suspense>
     );
   }
@@ -244,7 +249,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         Упражнения<br /><span className="it">и задания</span>
       </h1>
       <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
-        {tr('Семь практик схема-терапии плюс твои личные цели.', 'Семь практик схема-терапии плюс ваши личные цели.')}
+        {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
       </p>
       {sessionBanner && (
         <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
@@ -282,7 +287,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       {/* Exercise library */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · 7 упражнений</div>
+        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · {EXERCISES.length} упражнений</div>
         <div className="ex-grid">
           {EXERCISES.map(ex => {
             const s = stats[ex.id];

@@ -23,6 +23,7 @@ vi.mock('../api', () => ({
     getLetters: vi.fn(),
     getSafePlace: vi.fn(),
     getChildhoodRatings: vi.fn(),
+    getPhraseChecks: vi.fn(),
     listMyModeMaps: vi.fn(),
     completeTask: vi.fn(),
     createTask: vi.fn(),
@@ -76,6 +77,7 @@ beforeEach(() => {
   mockApi.getLetters.mockResolvedValue([]);
   mockApi.getSafePlace.mockResolvedValue(null);
   mockApi.getChildhoodRatings.mockResolvedValue({});
+  mockApi.getPhraseChecks.mockResolvedValue([]);
   mockApi.listMyModeMaps.mockResolvedValue([]);
   mockApi.completeTask.mockResolvedValue(undefined);
   mockApi.createTask.mockResolvedValue(undefined);
@@ -91,13 +93,13 @@ afterEach(() => {
 describe('PracticeSection — ты/вы вилка', () => {
   it('подзаголовок звучит на «ты» по умолчанию', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Семь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
     expect(screen.queryByText(/ваши личные цели/)).toBeNull();
   });
 
   it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/Семь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 
@@ -118,7 +120,7 @@ describe('PracticeSection — пустой аккаунт (без хардкод
   it('на пустом аккаунте все упражнения показывают "не начато", а не выдуманную статистику', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getBeliefChecks).toHaveBeenCalled());
-    expect(screen.getAllByText('не начато').length).toBe(7);
+    expect(screen.getAllByText('не начато').length).toBe(8);
   });
 
   it('без активных целей показывает пустое состояние, а не "0 активных" молча', async () => {
@@ -313,6 +315,15 @@ describe('PracticeSection — упражнение открывается по �
 
     await screen.findByPlaceholderText('Например: я всегда всё порчу, меня никто не любит…');
   });
+
+  it('клик "Критик или забота?" открывает PhraseCheckEx (8-е упражнение, дизайн-аудит В2)', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.getPhraseChecks).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Критик или забота?'));
+
+    await screen.findByPlaceholderText('Например: опять всё завалила, ни на что не гожусь');
+  });
 });
 
 describe('PracticeSection — «давность» и число записей форматируются по реальным датам/числам', () => {
@@ -369,7 +380,7 @@ describe('PracticeSection — открытие карточки схемы по 
       </AddressFormContext.Provider>,
     );
     // Экран сразу в режиме упражнения — библиотека (заголовок раздела) не видна.
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 });
 
@@ -396,7 +407,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 
   it('letter_to_self → открывает «Письмо уязвимому ребёнку»', async () => {
@@ -404,7 +415,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 
   it('childhood_wheel → onOpenChildhoodWheel', async () => {
@@ -431,7 +442,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 
   it('mode_intro с текстом-id режима → открывает карточку режима с этим id', async () => {
@@ -439,7 +450,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 
   it('неизвестный тип задания с текстом = id известной схемы — фолбэк на карточку схемы', async () => {
@@ -447,7 +458,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 });
 
@@ -517,7 +528,7 @@ describe('PracticeSection — создание цели обновляет сп�
 
     fireEvent.click(within(overlay).getByText('Цель 1'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
   });
 
   it('«+ Поставить цель» внутри AllGoalsOverlay открывает TaskCreateSheet поверх', async () => {
