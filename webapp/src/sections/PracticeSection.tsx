@@ -14,6 +14,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
+import { CrisisBlock } from './practice/CrisisBlock';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -251,6 +252,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           {sessionBanner.partnerName && <span style={{ color: 'var(--text-faint)' }}> · с {sessionBanner.partnerName}</span>}
         </div>
       )}
+
+      <CrisisBlock />
 
       {/* Tasks from therapist */}
       {(therapistTasks.length > 0 || taskError) && (
