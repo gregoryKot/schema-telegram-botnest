@@ -1,4 +1,14 @@
-/* ── Self-hosted fonts (no Google dependency for Russian users) ───────────── */
+/* Единый контракт токенов (акцент + шрифтовая пара) — webapp ⇄ miniapp.
+   ОБЯЗАН быть первым правилом файла (кроме @charset) — таково правило
+   @import в CSS. Значения — shared/src/theme/tokens.css, не сюда. */
+@import '../../shared/src/theme/tokens.css';
+
+/* ── Instrument Serif — ТОЛЬКО для изолированной айдентики личного сайта
+   терапевта (.landing-personal-brand ниже, домен kotlarewski). Продукт
+   пользуется общей парой Manrope + Spectral из shared/theme/tokens.css.
+   Своя пара, не CDN Google (CSP defaultSrc 'self'). Кириллицы в файле нет
+   (только латиница/цифры) — сознательно: в личном бренде кириллица уже
+   падает на Georgia, это часть текущего вида, менять не задача этой волны. */
 @font-face {
   font-family: 'Instrument Serif';
   font-style: normal;
@@ -50,7 +60,6 @@
 :root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
 
 :root, html[data-theme="light"] {
-  --serif: 'Instrument Serif', ui-serif, Georgia, serif;
   /* ── Backgrounds ─────────────────────────────────────────────────────── */
   --bg:            #f5f2eb;
   --bg-rail:       #efebe1;
@@ -74,13 +83,9 @@
      там даёт только ~4.46:1. Отдельный токен чуть темнее (а11y аудит 2026-08). */
   --kbd-text:      rgba(28,25,22,0.70); /* 5.38:1 к сложенному фону .kbd */
 
-  /* ── Accent ──────────────────────────────────────────────────────────── */
-  --accent:        #4d4799;
-  --accent-soft:   rgba(77,71,153,0.10);
-  --accent-line:   rgba(77,71,153,0.22);
-  --accent-hover:  #5b54a8;
-  --on-accent:     #ffffff;
-  --chip-sel-text: #ffffff;
+  /* ── Accent — терракота, --accent/--accent-soft/--accent-line/--accent-hover/
+     --on-accent/--chip-sel-text заданы в shared/src/theme/tokens.css
+     (единый контракт webapp ⇄ miniapp, дизайн-аудит 2026-08 В11). ────────── */
 
   /* ── Schema / mode palette – restrained, earth-leaning ───────────────── */
   --c-rose:    #c46b6b;
@@ -97,8 +102,8 @@
      не нужно (см. переопределение ниже). */
   --c-rose-strong: #ad4545; /* 4.76:1 к --bg-rail (#efebe1) */
 
-  /* Legacy accent-color aliases (used in existing components) */
-  --accent-indigo: #6760a8;
+  /* Legacy accent-color aliases (used in existing components).
+     --accent-indigo теперь = --accent (shared/theme/tokens.css). */
   --accent-blue:   var(--c-slate);
   --accent-green:  var(--c-moss);
   --accent-yellow: var(--c-amber);
@@ -145,12 +150,7 @@ html[data-theme="dark"] {
   --text-ghost:    rgba(236,234,229,0.20);
   --kbd-text:      rgba(236,234,229,0.58); /* 5.19:1 к сложенному фону .kbd (а11y аудит 2026-08) */
 
-  --accent:        #9089e0;
-  --accent-soft:   rgba(144,137,224,0.15);
-  --accent-line:   rgba(144,137,224,0.30);
-  --accent-hover:  #a59ee8;
-  --on-accent:     #ffffff;
-  --chip-sel-text: #ffffff;
+  /* --accent и производные — shared/src/theme/tokens.css, см. светлую тему выше. */
 
   --c-rose:    #d68585;
   --c-rose-strong: var(--c-rose); /* тёмная тема: обычный --c-rose уже 6.82:1 к --bg-rail */
@@ -162,7 +162,6 @@ html[data-theme="dark"] {
   --c-plum:    #b285ad;
   --c-clay:    #d18f6d;
 
-  --accent-indigo: #9089e0;
   --accent-blue:   var(--c-slate);
   --accent-green:  var(--c-moss);
   --accent-yellow: var(--c-amber);
@@ -181,6 +180,37 @@ html[data-theme="dark"] {
   --shadow-2:      0 0 0 1px rgba(255,255,255,0.06);
 }
 
+/* ─── Личный сайт терапевта (kotlarewski) — своя, НЕ продуктовая айдентика ──
+   LandingPage.tsx и pages/landing/* оборачивают себя в этот класс (App.tsx
+   рендерит их только на домене kotlarewski). Продукт переехал на терракоту
+   и Manrope/Spectral этой волной — личный сайт сознательно остаётся на
+   прежних индиго + Instrument Serif, чтобы не выглядеть «тем же продуктом»
+   (см. docs/DESIGN_AUDIT_2026-08.md, В11, п.4 задачи волны). landing-kit.tsx
+   и pages/landing/*.tsx читают только --accent/--accent-soft/--accent-line/
+   --accent-rgb/--serif — этого набора достаточно, дочерние элементы
+   наследуют переопределение через каскад. */
+.landing-personal-brand {
+  --accent:        #4d4799;
+  --accent-soft:   rgba(77,71,153,0.10);
+  --accent-line:   rgba(77,71,153,0.22);
+  --accent-rgb:    77, 71, 153;
+  --accent-hi:     #5b54a8;
+  --accent-hover:  var(--accent-hi);
+  --on-accent:     #ffffff;
+  --serif:         'Instrument Serif', ui-serif, Georgia, serif;
+  --font-serif:    var(--serif);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+html[data-theme="dark"] .landing-personal-brand {
+  --accent:        #9089e0;
+  --accent-soft:   rgba(144,137,224,0.15);
+  --accent-line:   rgba(144,137,224,0.30);
+  --accent-rgb:    144, 137, 224;
+  --accent-hi:     #a59ee8;
+  --accent-hover:  var(--accent-hi);
+  --on-accent:     #ffffff;
+}
+
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -188,8 +218,7 @@ html { background: var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;

@@ -123,7 +123,7 @@ export function SubscribePage() {
             return (
               <button key={p} type="button" onClick={() => setPeriod(p)} style={{
                 flex: 1, padding: '14px 12px', cursor: 'pointer', borderRadius: 12, fontFamily: 'inherit', textAlign: 'center',
-                background: active ? 'rgba(var(--accent-rgb,77,71,153),0.08)' : 'transparent',
+                background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
               }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{p === 'year' ? 'Год' : 'Месяц'}</div>
@@ -167,7 +167,7 @@ export function SubscribePage() {
 // shrinks to content width and pins to the left edge on desktop.
 const page: React.CSSProperties = { flex: 1, width: '100%', background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', boxSizing: 'border-box' };
 const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'center' };
-const icon: React.CSSProperties = { width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--accent-rgb,77,71,153),0.10)', color: 'var(--accent)', fontSize: 26 };
+const icon: React.CSSProperties = { width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', fontSize: 26 };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,32px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
 const sub_: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' };
 const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', margin: '0 0 18px', fontSize: 14, color: 'var(--text-sub)' };

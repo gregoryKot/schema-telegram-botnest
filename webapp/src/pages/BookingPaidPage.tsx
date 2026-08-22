@@ -155,7 +155,7 @@ const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'c
 const icon: React.CSSProperties = {
   width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: 'rgba(var(--accent-rgb,77,71,153),0.10)', color: 'var(--accent)', fontSize: 28,
+  background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', fontSize: 28,
 };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,34px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
 const sub: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 24px' };

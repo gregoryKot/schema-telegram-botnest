@@ -1,3 +1,9 @@
+/* Единый контракт токенов (акцент + шрифтовая пара Manrope/Spectral,
+   @font-face — shared/src/theme/fonts.css) — webapp ⇄ miniapp. ОБЯЗАН быть
+   самым первым правилом файла (кроме @charset) — таково правило @import в
+   CSS: любое правило перед ним делает импорт невалидным. */
+@import '../../shared/src/theme/tokens.css';
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Всё по схеме — New Design System (index.css)
    Drop-in replacement for src/index.css
@@ -16,50 +22,6 @@ html,
 body {
   height: 100%;
   overscroll-behavior: none;
-}
-
-/* ── Шрифты дневника: Spectral (заголовки) + Manrope (интерфейс) ──────────────
-   Свои файлы, не CDN Google: CSP отдаёт defaultSrc 'self' (src/main.ts), так что
-   внешний fonts.gstatic.com был бы заблокирован — и российский пользователь
-   получил бы системный фолбэк. Manrope вариативный: один файл на 400–700.
-   Кириллица и латиница разными подмножествами — грузится только нужное. */
-@font-face {
-  font-family: 'Manrope';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/manrope-cyrillic.woff2') format('woff2');
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-@font-face {
-  font-family: 'Manrope';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url('/fonts/manrope-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
-    U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Spectral';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/spectral-500-cyrillic.woff2') format('woff2');
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-@font-face {
-  font-family: 'Spectral';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/spectral-500-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
-    U+2215, U+FEFF, U+FFFD;
 }
 
 /* ── Нижняя безопасная зона ──────────────────────────────────────────────────
@@ -98,15 +60,27 @@ body {
   --nav-bg: rgba(22, 18, 15, 0.86);
   --text-sub: rgba(240, 233, 226, 0.64);
   --text-faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08) */
-  --chip-sel-text: #16120f;
-  --on-accent: #ffffff;
 
-  /* Акцент тот же, что в светлой теме, но осветлённый: #9a5b3e на почти
-     чёрном даёт 2.3:1 и не читается. #c97d5a — 5.8:1, проходит и для текста.
-     Служебные цвета (успех/ошибка/графики) остаются РАЗНЫМИ: сведи их
-     в один — и статус перестанет читаться. */
+  /* Значения акцента — те же, что [data-theme='dark'] в shared/src/theme/
+     tokens.css (единый контракт webapp ⇄ miniapp). Продублированы ЗДЕСЬ
+     намеренно: этот bare :root — тёмная тема ПО УМОЛЧАНИЮ (мини-апп
+     dark-first, в отличие от webapp), а shared-контракт по симметрии с
+     webapp отдаёт светлый акцент бару `:root`. Без дубля — вспышка
+     светлой терракоты до того, как JS (App.tsx, applyTheme) успеет
+     проставить data-theme="dark" при первой отрисовке. */
   --accent: #c97d5a;
-  --accent-indigo: #c97d5a;
+  --accent-soft: rgba(201, 125, 90, 0.16);
+  --accent-line: rgba(201, 125, 90, 0.3);
+  --accent-rgb: 201, 125, 90;
+  --accent-hi: #db8e68;
+  --on-accent: #16120f;
+  --chip-sel-text: var(--on-accent);
+  --accent-hover: var(--accent-hi);
+  --accent-bg: var(--accent-soft);
+  --accent-indigo: var(--accent);
+
+  /* Служебные цвета ниже (успех/ошибка/графики) остаются РАЗНЫМИ от
+     --accent: сведи их в один — и статус перестанет читаться. */
   --accent-orange: #d98b4a;
   --accent-green: #6bb083;
   --accent-blue: #6ba3d6;
@@ -126,8 +100,6 @@ body {
   --muted: rgba(240, 233, 226, 0.62);
   --faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08), совпадает с --text-faint */
   --line: rgba(240, 233, 226, 0.1);
-  --accent-hi: #db8e68;
-  --accent-bg: rgba(201, 125, 90, 0.16);
   --calm: #253026;
   --dot: rgba(240, 233, 226, 0.24);
   --chevron: rgba(240, 233, 226, 0.32);
@@ -153,13 +125,10 @@ html[data-theme='light'] {
      #655f5c держит ≥4.5:1 и на голом --bg, и на самой тёмной реальной
      подложке (0.06-тонировка) с запасом. */
   --text-faint: #655f5c; /* ≥4.5:1 к --bg и к тонированным карточкам (0.06) */
-  --chip-sel-text: #221e1b;
-  --on-accent: #ffffff;
 
-  /* Акцент продукта — терракота. Служебные цвета (успех/ошибка/графики)
-     остаются РАЗНЫМИ: сведи их в один — и статус перестанет читаться. */
-  --accent: #9a5b3e;
-  --accent-indigo: #9a5b3e;
+  /* --accent/--on-accent/--chip-sel-text/--accent-indigo/--accent-hi/
+     --accent-bg — shared/src/theme/tokens.css. Служебные цвета ниже
+     (успех/ошибка/графики) остаются РАЗНЫМИ от --accent. */
   --accent-orange: #b4622a;
   --accent-blue: #2f6f9e;
   --accent-green: #4a7c59;
@@ -179,8 +148,6 @@ html[data-theme='light'] {
   --muted: #8a8079;
   --faint: #655f5c; /* ≥4.5:1 к --bg и тонированным карточкам, совпадает с --text-faint */
   --line: rgba(34, 30, 27, 0.07);
-  --accent-hi: #86482d;
-  --accent-bg: #f6eee8;
   --calm: #e7ede4;
   --dot: #e0d6cb;
   --chevron: #c7bdb3;
@@ -194,12 +161,7 @@ html[data-theme='light'] {
 /* ── Base ──────────────────────────────────────────────────────────────────── */
 body {
   background: var(--bg);
-  font-family:
-    'Manrope',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   color: var(--text);
   min-height: 100vh;
@@ -500,7 +462,7 @@ html[data-theme='light'] .card {
 
 /* Заголовки экранов и вопросы — Spectral. */
 .d-display {
-  font-family: 'Spectral', 'Instrument Serif', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 500;
   line-height: 1.25;
   color: var(--text);
