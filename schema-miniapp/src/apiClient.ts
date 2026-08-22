@@ -1,7 +1,11 @@
-// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки get/post/
-// postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — в api.ts, состояние сессии — в session.ts).
+// HTTP-инфраструктура мини-аппа: get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — api.ts, состояние сессии — session.ts).
 import { BASE } from './utils/apiBase';
-import { authHeaders, isSessionDead, markSessionExpired, renewSession } from './session';
+import {
+  authHeaders,
+  isSessionDead,
+  markSessionExpired,
+  renewSession,
+} from './session';
 
 export { BASE, authHeaders };
 
@@ -40,10 +44,9 @@ export class HttpStatusError extends Error {
 }
 
 // Единственная точка отправки. На 401 перевыпускает сессию и повторяет запрос
-// (инцидент 2026-07-29). Перевыпустить не вышло ИЗ-ЗА СЕССИИ (401/403 от
-// refresh) — говорим об этом экрану; не вышло из-за сети/5xx — сессия жива,
-// молчим и оставляем пользователя в приложении, а не «сессия истекла» по
-// живой куке (диагностика 2026-08-21).
+// (инцидент 2026-07-29). Не вышло ИЗ-ЗА СЕССИИ (401/403 от refresh) — говорим
+// об этом экрану; не вышло из-за сети/5xx — сессия жива, молчим, оставляем
+// пользователя в приложении (диагностика 2026-08-21).
 export async function authedFetch(
   path: string,
   init: RequestInit = {},
@@ -61,11 +64,9 @@ export async function authedFetch(
   return retried;
 }
 
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
-// ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
-// прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
-// изменит. POST/DELETE здесь не участвуют: они не идемпотентны на уровне
-// протокола (см. outbox.ts для единственного исключения — оценок).
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки
+// и 502/503/504. 4xx и прочие 5xx не ретраятся — осмысленный ответ сервера.
+// POST/DELETE не участвуют — не идемпотентны (см. outbox.ts, исключение — оценки).
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
@@ -94,8 +95,7 @@ export async function get<T>(path: string): Promise<T> {
   }
 }
 
-// Тело ошибки сервера (message от ValidationPipe/контроллера) полезнее статуса:
-// его показывают пользователю — вытаскиваем один раз для всех не-GET методов.
+// Тело ошибки (message от ValidationPipe) полезнее статуса — вытаскиваем один раз для всех не-GET методов.
 async function sendWithBody(
   path: string,
   method: 'POST' | 'DELETE',

@@ -30,7 +30,9 @@ afterEach(() => {
 
 describe('attemptRenewOnce', () => {
   it('refresh ok — exchange не вызывается', async () => {
-    fetchMock().mockResolvedValueOnce(jsonRes(200, { accessToken: 't', expiresIn: 900 }));
+    fetchMock().mockResolvedValueOnce(
+      jsonRes(200, { accessToken: 't', expiresIn: 900 }),
+    );
     const result = await attemptRenewOnce(EXCHANGE);
     expect(result).toEqual({ ok: true, token: 't', expiresIn: 900 });
     expect(fetchMock()).toHaveBeenCalledTimes(1);
@@ -39,7 +41,9 @@ describe('attemptRenewOnce', () => {
   it('refresh 401, exchange ok — успех через exchange', async () => {
     fetchMock()
       .mockResolvedValueOnce(jsonRes(401, {}))
-      .mockResolvedValueOnce(jsonRes(200, { accessToken: 'e', expiresIn: 900 }));
+      .mockResolvedValueOnce(
+        jsonRes(200, { accessToken: 'e', expiresIn: 900 }),
+      );
     await expect(attemptRenewOnce(EXCHANGE)).resolves.toEqual({
       ok: true,
       token: 'e',

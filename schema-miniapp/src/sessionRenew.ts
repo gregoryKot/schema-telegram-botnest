@@ -43,8 +43,7 @@ async function postAuthAttempt(
 }
 
 export type RenewAttempt =
-  | { ok: true; token: string; expiresIn: number }
-  | { ok: false; dead: boolean };
+  { ok: true; token: string; expiresIn: number } | { ok: false; dead: boolean };
 
 /** Один цикл «сначала refresh-кука (работает и когда initData протухла),
  *  затем обмен initData/exchange хоста (лечит самый первый вход)». Вызывается

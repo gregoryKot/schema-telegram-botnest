@@ -52,14 +52,14 @@ export class ApiError extends Error {
   }
 }
 
+// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
+// res.json() отклоняется, и body остаётся пустым объектом: message ниже не
+// найдётся, в ход идёт дефолтное сообщение по статусу.
 async function apiError(res: Response): Promise<ApiError> {
-  let msg = `API error: ${res.status}`;
-  try {
-    const j = await res.json();
-    if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-  } catch {
-    /* тело не распарсилось как JSON — остаётся код статуса */
-  }
+  const body = await res.json().catch(() => ({}) as { message?: unknown });
+  const msg = body?.message
+    ? typeof body.message === 'string' ? body.message : JSON.stringify(body.message)
+    : `API error: ${res.status}`;
   return new ApiError(res.status, msg);
 }
 
