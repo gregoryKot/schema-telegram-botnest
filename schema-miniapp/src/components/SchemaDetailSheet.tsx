@@ -257,7 +257,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--accent)',
-              color: '#fff',
+              color: 'var(--on-accent)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',

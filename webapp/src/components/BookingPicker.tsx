@@ -128,7 +128,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
       </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 12, textDecoration: 'none', boxShadow: '0 8px 28px rgba(77,71,153,.28)' }}>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 12, textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
         Перейти к оплате →
       </a>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
@@ -216,7 +216,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
                 <button key={o.type} type="button" onClick={() => setSessionType(o.type)} style={{
                   flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
                   borderRadius: 12, fontFamily: 'inherit', transition: 'all .15s',
-                  background: active ? 'rgba(var(--accent-rgb,77,71,153),0.08)' : 'transparent',
+                  background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                   border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
@@ -288,7 +288,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12,
               cursor: 'pointer', opacity: status === 'loading' || !name.trim() || !contact.trim() || !consent ? 0.4 : 1,
-              boxShadow: '0 8px 28px rgba(77,71,153,.28)',
+              boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px',
             }}>
             {status === 'loading'
               ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')

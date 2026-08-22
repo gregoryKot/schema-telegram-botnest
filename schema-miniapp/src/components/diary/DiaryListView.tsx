@@ -178,7 +178,7 @@ export function DiaryListView({
           borderRadius: 16,
           minHeight: 48,
           padding: '14px 20px',
-          color: '#fff',
+          color: 'var(--on-accent)',
           fontSize: 15,
           fontWeight: 600,
           fontFamily: 'inherit',

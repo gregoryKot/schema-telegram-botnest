@@ -100,7 +100,7 @@ export function SessionCard({
                   borderRadius: 8,
                   border: 'none',
                   background: 'var(--accent)',
-                  color: '#fff',
+                  color: 'var(--on-accent)',
                   fontSize: 12,
                   cursor: 'pointer',
                 }}
@@ -241,7 +241,7 @@ export function SessionCard({
                 borderRadius: 20,
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 12,
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -361,7 +361,7 @@ export function SessionCard({
                   borderRadius: 8,
                   border: 'none',
                   background: 'var(--accent)',
-                  color: '#fff',
+                  color: 'var(--on-accent)',
                   fontSize: 12,
                   cursor: 'pointer',
                 }}

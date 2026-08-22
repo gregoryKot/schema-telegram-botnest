@@ -182,9 +182,13 @@
     }
     </script>
 
-    <!-- ── Fonts (self-hosted – no Google dependency) ───────────────────────── -->
-    <link rel="preload" href="/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- ── Fonts (self-hosted – no Google dependency) ─────────────────────────
+         Manrope/Spectral — единая пара продукта (shared/src/theme/tokens.css),
+         нужна каждому визитору, поэтому в preload вместо Instrument Serif
+         (теперь используется только изолированной личной страницей
+         терапевта, .landing-personal-brand — не стоит преференса всем). -->
+    <link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/spectral-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <script src="/telegram-web-app.js" async></script>
   </head>
   <body>

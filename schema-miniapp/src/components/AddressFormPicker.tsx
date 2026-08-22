@@ -76,7 +76,7 @@ export function AddressFormPicker({ onDone }: Props) {
               borderRadius: 14,
               border: 'none',
               background: 'var(--accent)',
-              color: '#fff',
+              color: 'var(--on-accent)',
               fontSize: 15,
               fontWeight: 600,
               cursor: 'pointer',

@@ -232,7 +232,9 @@ export function OnboardingWidget({
               border: 'none',
               fontFamily: 'inherit',
               background: current.color,
-              color: '#fff',
+              // var(--on-accent): буквальный '#fff' в тёмной теме давал 2.6–3.2:1
+              // на всех пяти цветах категории (не проходит WCAG 4.5:1).
+              color: 'var(--on-accent)',
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',

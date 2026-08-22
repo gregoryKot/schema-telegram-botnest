@@ -115,7 +115,11 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
+    // landing-personal-brand изолирует эту страницу от продуктового акцента
+    // (терракота, shared/src/theme/tokens.css) — личный сайт терапевта
+    // сознательно остаётся на прежних индиго + Instrument Serif, см. блок
+    // .landing-personal-brand в webapp/src/index.css.
+    <div className="landing-personal-brand" style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
 
       {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
       {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
