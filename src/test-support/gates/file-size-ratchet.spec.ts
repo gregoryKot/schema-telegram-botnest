@@ -119,6 +119,7 @@ describe('каждое исключение EXCLUDE распознаёт сво�
     'schema-miniapp/build/bundle.js',
     'src/foo.d.ts',
     'src/foo.spec.ts',
+    'test/auth-flows.e2e-spec.ts',
     'webapp/src/foo.test.tsx',
     'game/src/level.ts',
     'webapp/public/max-bridge.js',
@@ -129,5 +130,16 @@ describe('каждое исключение EXCLUDE распознаёт сво�
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
     expect(unmatched).toEqual([]);
+  });
+
+  // Контрольные образцы: исключение для тестов не должно оказаться шире,
+  // чем нужно, — обычный код обязан остаться под храповиком.
+  it('исключение тестов не выпускает из-под гейта обычный код', () => {
+    const covered = (text: string) =>
+      EXCLUDE.some((p) => new RegExp(p.source, p.flags).test(text));
+    expect(covered('test/e2e-support/fake-prisma.ts')).toBe(false);
+    expect(covered('src/auth/auth.service.ts')).toBe(false);
+    expect(covered('webapp/src/components/Inspector.ts')).toBe(false);
+    expect(covered('src/spec.ts')).toBe(false);
   });
 });
