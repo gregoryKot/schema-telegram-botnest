@@ -998,7 +998,7 @@
   "webapp/src/components/appShell/MobileNav.tsx": 22,
   "webapp/src/components/appShell/MobileNavIcon.tsx": 32,
   "webapp/src/components/appShell/navigation.ts": 17,
-  "webapp/src/components/appShell/useBootstrapLoad.ts": 156,
+  "webapp/src/components/appShell/useBootstrapLoad.ts": 164,
   "webapp/src/components/appShell/useOverlays.ts": 48,
   "webapp/src/components/BookingPicker.tsx": 318,
   "webapp/src/components/BottomSheetShell.tsx": 63,

@@ -94,7 +94,15 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     // читает и пишет /api/therapy/therapist-view, здесь только читаем для
     // дефолтного роутинга). Не блокируем профиль её отказом — фолбэк ниже
     // ведёт себя как раньше (пусто = «начинать с кабинета»).
-    const flagsPromise = api.getUserFlags().catch(() => { fail('флаги'); return {}; });
+    // Аннотация возврата, а не каст: без неё фолбэк даёт `{}`, тип
+    // схлопывается в объединение и therapistMode перестаёт читаться (поймано
+    // сборкой webapp после слияния с #411).
+    const flagsPromise = api
+      .getUserFlags()
+      .catch((): { therapistMode?: boolean } => {
+        fail('флаги');
+        return {};
+      });
 
     const profilePromise = Promise.all([api.getProfile(), flagsPromise]).then(([p, serverFlags]) => {
       setUserRole(p.role);
