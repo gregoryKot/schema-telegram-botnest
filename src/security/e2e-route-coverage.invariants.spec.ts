@@ -171,10 +171,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/auth/telegram-oidc', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram-oidc/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram/redirect', reason: REASON.AUTH_LOGIN },
-  {
-    route: 'GET /api/auth/telegram/widget-redirect',
-    reason: REASON.AUTH_LOGIN,
-  },
   { route: 'GET /api/auth/me', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/link-token', reason: REASON.AUTH_LOGIN },
   { route: 'DELETE /api/therapy/custom-modes/:param', reason: REASON.THERAPY },

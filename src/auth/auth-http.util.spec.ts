@@ -11,6 +11,7 @@ import {
   hasCsrfHeader,
   cookieOptions,
   getCookie,
+  isCrossSiteRequest,
   isCrossSiteSession,
   requireCsrf,
   setRefreshCookie,
@@ -169,6 +170,50 @@ describe('кросс-сайтовая сессия (iframe MAX)', () => {
       'rotated',
       expect.objectContaining({ sameSite: 'none' }),
     );
+  });
+});
+
+// isCrossSiteRequest определяет кросс-сайтовость ПЕРВОГО запроса (до того,
+// как есть метка isCrossSiteSession) — Telegram Web грузит мини-апп в iframe,
+// как MAX; нативный вебвью Telegram остаётся на strict (2026-08-21).
+describe('isCrossSiteRequest', () => {
+  const OWN = 'https://schemehappens.ru';
+
+  it('Sec-Fetch-Site: cross-site → true (главный сигнал)', () => {
+    const req = makeRequest({ headers: { 'sec-fetch-site': 'cross-site' } });
+    expect(isCrossSiteRequest(req, OWN)).toBe(true);
+  });
+
+  it('Sec-Fetch-Site: same-origin → false, даже если Origin отличается (заголовок приоритетнее)', () => {
+    const req = makeRequest({
+      headers: { 'sec-fetch-site': 'same-origin', origin: 'https://evil.example' },
+    });
+    expect(isCrossSiteRequest(req, OWN)).toBe(false);
+  });
+
+  it('нет Sec-Fetch-Site, Origin ≠ наш → true (фолбэк для браузеров без заголовка)', () => {
+    const req = makeRequest({ headers: { origin: 'https://web.telegram.org' } });
+    expect(isCrossSiteRequest(req, OWN)).toBe(true);
+  });
+
+  it('нет Sec-Fetch-Site, Origin === наш → false', () => {
+    const req = makeRequest({ headers: { origin: OWN } });
+    expect(isCrossSiteRequest(req, OWN)).toBe(false);
+  });
+
+  it('ни Sec-Fetch-Site, ни Origin (нативный вебвью Telegram) → false, остаётся strict', () => {
+    const req = makeRequest({ headers: {} });
+    expect(isCrossSiteRequest(req, OWN)).toBe(false);
+  });
+
+  it('Sec-Fetch-Site как массив (не строка) → игнорируется, смотрим на Origin', () => {
+    const req = {
+      headers: {
+        'sec-fetch-site': ['cross-site'],
+        origin: 'https://web.telegram.org',
+      },
+    } as unknown as Request;
+    expect(isCrossSiteRequest(req, OWN)).toBe(true);
   });
 });
 

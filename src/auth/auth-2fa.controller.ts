@@ -21,7 +21,7 @@ import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import { requireCsrf, setRefreshCookie } from './auth-http.util';
 
 @Controller('api/auth')
 export class Auth2faController {
@@ -165,11 +165,7 @@ export class Auth2faController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('role_changed', {
       userId,
       event: 'recovery_login',
@@ -200,11 +196,7 @@ export class Auth2faController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 }

@@ -1,8 +1,7 @@
-// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки
-// get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии. Чистый
-// транспорт — доменные методы живут в api.ts, состояние сессии — в session.ts.
+// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки get/post/
+// postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — в api.ts, состояние сессии — в session.ts).
 import { BASE } from './utils/apiBase';
-import { authHeaders, markSessionExpired, renewSession } from './session';
+import { authHeaders, isSessionDead, markSessionExpired, renewSession } from './session';
 
 export { BASE, authHeaders };
 
@@ -40,10 +39,11 @@ export class HttpStatusError extends Error {
   }
 }
 
-// Единственная точка отправки. На 401 один раз перевыпускает сессию и повторяет
-// запрос: initData протухает через час после открытия мини-аппа, и без этого
-// свернутое приложение переставало работать целиком (инцидент 2026-07-29).
-// Перевыпустить не вышло — говорим об этом экрану, а не молчим.
+// Единственная точка отправки. На 401 перевыпускает сессию и повторяет запрос
+// (инцидент 2026-07-29). Перевыпустить не вышло ИЗ-ЗА СЕССИИ (401/403 от
+// refresh) — говорим об этом экрану; не вышло из-за сети/5xx — сессия жива,
+// молчим и оставляем пользователя в приложении, а не «сессия истекла» по
+// живой куке (диагностика 2026-08-21).
 export async function authedFetch(
   path: string,
   init: RequestInit = {},
@@ -53,7 +53,7 @@ export async function authedFetch(
   const res = await send();
   if (res.status !== 401) return res;
   if (!(await renewSession())) {
-    markSessionExpired();
+    if (isSessionDead()) markSessionExpired();
     return res;
   }
   const retried = await send();

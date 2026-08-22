@@ -1,49 +1,72 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { getHost } from '../../../shared/src/host';
+import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
+import { refreshSession } from './refreshSession';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const EXPIRY_SKEW_MS = 60_000; // не дёргаем refresh, если токен ещё жив с запасом
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<'transient' | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasToken = useRef(false);
+  const expiresAtRef = useRef(0);
+  const retryAttemptRef = useRef(0);
 
   const scheduleRefresh = useCallback((expiresIn: number) => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    // Refresh 60s before expiry
+    expiresAtRef.current = Date.now() + expiresIn * 1000;
     const delay = Math.max((expiresIn - 60) * 1000, 5000);
-    refreshTimer.current = setTimeout(async () => {
+    refreshTimer.current = setTimeout(() => {
       // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
-      await doRefresh();
+      void doRefresh();
     }, delay);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
+  // Цепочка авто-обновления раньше обрывалась навсегда после одной осечки —
+  // scheduleRefresh вызывался только из ветки успеха (диагностика «постоянно
+  // нужно логиниться заново», 2026-08-21, пункт 3). Бэкофф растёт с номером
+  // попытки, чтобы не долбить сервер, пока сеть реально недоступна.
+  const scheduleRetry = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    const delay = nextRetryTimerDelayMs(retryAttemptRef.current);
+    retryAttemptRef.current += 1;
+    refreshTimer.current = setTimeout(() => {
+      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
+      void doRefresh();
+    }, delay);
+  }, []);
+
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- react-compiler: ручная мемоизация намеренная
   const doRefresh = useCallback(async (clearOnFailure = true): Promise<boolean> => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include', // send httpOnly cookie
-        headers: { 'x-requested-with': 'webapp', 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        // 401 means token is invalid/revoked – clear state to stop retry loop.
-        if (res.status === 401 && clearOnFailure) setTokenState(null);
-        return false;
-      }
-      const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
+    // Сеть/сервер: in-flight+кросс-табный замок и ретраи — в refreshSession.ts.
+    const result = await refreshSession();
+    if (result.ok) {
       hasToken.current = true;
-      setTokenState(token);
-      scheduleRefresh(expiresIn);
+      setTokenState(result.token);
+      setAuthError(null);
+      retryAttemptRef.current = 0;
+      scheduleRefresh(result.expiresIn);
       return true;
-    } catch {
+    }
+    if (result.dead) {
+      // 401/403 от refresh — сессию не восстановить этим путём.
+      if (clearOnFailure) setTokenState(null);
+      setAuthError(null);
       return false;
     }
-  }, [scheduleRefresh]);
+    // Сеть/5xx/429 — сессия жива, просто не достучались: НЕ разлогиниваем
+    // (RequireAuth не редиректит на /login при authError==='transient'), а
+    // планируем повтор — иначе цепочка обрывается навсегда после осечки.
+    setAuthError('transient');
+    scheduleRetry();
+    return false;
+  }, [scheduleRefresh, scheduleRetry]);
 
   // Try Telegram WebApp auto-auth using initData
   const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
@@ -85,13 +108,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!tgOk) await doRefresh(false);
       setIsLoading(false);
     };
-    init();
+    void init();
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); };
   }, [doRefresh, doTelegramWebAppAuth]);
+
+  // Фоновая вкладка троттлит setTimeout — после сна устройства/долгого фона
+  // scheduleRefresh мог не сработать вовремя, и ни один слушатель online/
+  // visibilitychange раньше не стоял ни у сайта, ни у мини-аппа (2026-08-21,
+  // пункт 3). EXPIRY_SKEW_MS бережёт от лишней ротации токена на каждый фокус.
+  useEffect(() => {
+    const maybeRefresh = () => {
+      if (Date.now() + EXPIRY_SKEW_MS < expiresAtRef.current) return;
+      void doRefresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') maybeRefresh();
+    };
+    window.addEventListener('online', maybeRefresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('online', maybeRefresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [doRefresh]);
 
   const setAccessToken = useCallback((token: string, expiresIn: number) => {
     hasToken.current = true;
     setTokenState(token);
+    setAuthError(null);
+    retryAttemptRef.current = 0;
     scheduleRefresh(expiresIn);
   }, [scheduleRefresh]);
 
@@ -106,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     hasToken.current = false;
     setTokenState(null);
+    setAuthError(null);
     clearLocalData();
   }, []);
 
@@ -114,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       isLoading,
       isAuthenticated: !!accessToken,
+      authError,
       setAccessToken,
       logout,
       refreshToken: doRefresh,
@@ -122,4 +169,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-

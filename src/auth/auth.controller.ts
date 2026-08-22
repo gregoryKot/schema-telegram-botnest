@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { SecurityLogService } from './security-log.service';
@@ -38,6 +39,11 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  // IP-бакет без Authorization бьёт по NAT сильнее дефолта (2026-08-21).
+  @Throttle({
+    short: { limit: 20, ttl: 1000 },
+    long: { limit: 600, ttl: 60_000 },
+  })
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -50,14 +56,15 @@ export class AuthController {
       req.ip,
       req.headers['user-agent'],
     );
-    // Кросс-сайтовость переживает ротацию: иначе сессия в iframe MAX умерла бы
-    // на первом продлении (метка — auth-http.util.ts).
-    setRefreshCookie(
-      res,
-      tokens.refreshToken,
-      30 * 24 * 3600,
-      isCrossSiteSession(req),
-    );
+    // rotated:false → кука не переставляется (refresh-rotation.ts).
+    if (tokens.rotated) {
+      setRefreshCookie(
+        res,
+        tokens.refreshToken,
+        30 * 24 * 3600,
+        isCrossSiteSession(req),
+      );
+    }
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -118,14 +125,9 @@ export class AuthController {
   }
 
   // ─── Issue a short-lived link token for the mini-app ─────────────────────
-  //
-  // The mini-app authenticates with `x-telegram-init-data` rather than JWT.
-  // To kick off a Google (or any OAuth) link from inside the mini-app it
-  // needs a JWT to pass as `?link_token=` to /api/auth/google.
-  //
-  // This endpoint is mounted in api.controller.ts (uses TelegramAuthGuard
-  // which already understands initData). The endpoint here is a JWT-guarded
-  // mirror, used by the web client if it needs one (rare).
+  // Мини-апп аутентифицируется `x-telegram-init-data`, а не JWT — этот токен
+  // даёт ему JWT для запуска Google/OAuth-линковки (`?link_token=`). JWT-
+  // guarded зеркало для веба монтируется отдельно в api.controller.ts.
 
   @Get('link-token')
   @UseGuards(JwtAuthGuard)
@@ -135,9 +137,7 @@ export class AuthController {
   ): { linkToken: string; expiresIn: number } {
     const webUser: WebUser = req.webUser!;
     const linkToken = this.auth.buildLinkToken(webUser.userId);
-    // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
-    // URL/логи. Тело ответа сохранено для обратной совместимости со старыми
-    // клиентами, которые ещё передают ?link_token=.
+    // Основной канал — httpOnly-cookie (S-4); тело ответа для старых клиентов.
     res.cookie('link_token', linkToken, {
       httpOnly: true,
       secure: true,

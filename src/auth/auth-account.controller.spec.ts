@@ -31,6 +31,7 @@ const FAKE_TOKENS: TokenPair = {
   accessToken: 'access-abc',
   refreshToken: 'refresh-abc',
   expiresIn: 900,
+  rotated: true,
 };
 
 type AuthMock = Pick<
@@ -135,9 +136,10 @@ function makeReq(
   opts: {
     csrf?: boolean;
     webUser?: { userId: bigint };
+    headers?: Record<string, string>;
   } = {},
 ): Request {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...opts.headers };
   if (opts.csrf !== false) headers['x-requested-with'] = 'XMLHttpRequest';
   return {
     headers,
@@ -147,11 +149,20 @@ function makeReq(
   } as unknown as Request;
 }
 
-function makeRes(): Response & { cookie: jest.Mock; redirect: jest.Mock } {
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  clearCookie: jest.Mock;
+  redirect: jest.Mock;
+} {
   return {
     cookie: jest.fn(),
+    clearCookie: jest.fn(),
     redirect: jest.fn(),
-  } as unknown as Response & { cookie: jest.Mock; redirect: jest.Mock };
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    clearCookie: jest.Mock;
+    redirect: jest.Mock;
+  };
 }
 
 function makeController(opts: { providers?: ProvidersMock } = {}) {
@@ -326,6 +337,22 @@ describe('AuthAccountController.telegramWebApp', () => {
       accessToken: FAKE_TOKENS.accessToken,
       expiresIn: FAKE_TOKENS.expiresIn,
     });
+  });
+
+  // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
+  // MAX — Strict-кука там не продлевается (2026-08-21, «постоянно нужно
+  // логиниться заново»). Нативное вебвью Telegram не шлёт Sec-Fetch-Site —
+  // остаётся строгим (тест выше, без заголовка → sameSite:strict).
+  it('Sec-Fetch-Site: cross-site (Telegram Web в iframe) → кука SameSite=none', async () => {
+    const { controller } = makeController();
+    const req = makeReq({ headers: { 'sec-fetch-site': 'cross-site' } });
+    const res = makeRes();
+    await controller.telegramWebApp({ initData: 'init-data' }, req, res);
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ sameSite: 'none' }),
+    );
   });
 });
 

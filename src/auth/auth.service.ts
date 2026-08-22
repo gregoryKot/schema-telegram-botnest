@@ -390,22 +390,23 @@ export class AuthService {
 
   // ─── Token issuance ────────────────────────────────────────────────────────
 
+  // Общий для issueTokens/rotateRefreshToken JWT access-токен.
+  private signAccessToken(userId: bigint): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign({ sub: String(userId), type: 'access' }, secret, {
+      expiresIn: ACCESS_TOKEN_TTL_S,
+      algorithm: 'HS256',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+  }
+
   async issueTokens(
     userId: bigint,
     ip?: string,
     userAgent?: string,
   ): Promise<TokenPair> {
-    const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign(
-      { sub: String(userId), type: 'access' },
-      secret,
-      {
-        expiresIn: ACCESS_TOKEN_TTL_S,
-        algorithm: 'HS256',
-        issuer: JWT_ISSUER,
-        audience: JWT_AUDIENCE,
-      },
-    );
+    const accessToken = this.signAccessToken(userId);
 
     const rawRefresh = crypto.randomBytes(40).toString('hex');
     const tokenHash = this.hashToken(rawRefresh);
@@ -510,26 +511,12 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token already used or expired');
     }
 
-    const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign(
-      { sub: String(session.userId), type: 'access' },
-      secret,
-      {
-        expiresIn: ACCESS_TOKEN_TTL_S,
-        algorithm: 'HS256',
-        issuer: JWT_ISSUER,
-        audience: JWT_AUDIENCE,
-      },
-    );
+    const accessToken = this.signAccessToken(session.userId);
 
+    const base = { accessToken, expiresIn: ACCESS_TOKEN_TTL_S };
     // Ротировали недавно — только access, кука прежняя (rotated:false).
-    if (shouldSkipRotation(session.createdAt as Date | undefined, now)) {
-      return {
-        accessToken,
-        refreshToken: rawRefresh,
-        expiresIn: ACCESS_TOKEN_TTL_S,
-        rotated: false,
-      };
+    if (shouldSkipRotation(session.createdAt, now)) {
+      return { ...base, refreshToken: rawRefresh, rotated: false };
     }
 
     // Issue new token in the same family. The mark-old-as-used + create-new
@@ -557,12 +544,7 @@ export class AuthService {
       }),
     ]);
 
-    return {
-      accessToken,
-      refreshToken: newRaw,
-      expiresIn: ACCESS_TOKEN_TTL_S,
-      rotated: true,
-    };
+    return { ...base, refreshToken: newRaw, rotated: true };
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────
