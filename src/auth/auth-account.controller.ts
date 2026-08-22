@@ -27,7 +27,11 @@ import {
   InitDataBodyDto,
 } from './dto/auth-scalar.dto';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import {
+  isCrossSiteRequest,
+  requireCsrf,
+  setRefreshCookie,
+} from './auth-http.util';
 
 @Controller('api/auth')
 export class AuthAccountController {
@@ -78,11 +82,7 @@ export class AuthAccountController {
         );
         return;
       }
-      res.cookie(
-        REFRESH_COOKIE,
-        r.tokens.refreshToken,
-        cookieOptions(30 * 24 * 3600),
-      );
+      setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
       res.redirect(
         r.purpose === 'link_email_auth'
           ? `${frontendBase}/account?linked=email`
@@ -139,11 +139,14 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
+    // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
+    // MAX — strict-кука там не продлевается (2026-08-21, «постоянно нужно
+    // логиниться заново»). Нативное вебвью Telegram остаётся на strict.
+    const crossSite = isCrossSiteRequest(
+      req,
+      this.config.getOrThrow<string>('WEBAPP_URL'),
     );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -213,11 +216,7 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('merge_confirmed', {
       target,
       source,

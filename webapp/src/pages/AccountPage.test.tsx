@@ -44,6 +44,9 @@ function routeFetch(url: string, init?: RequestInit): Promise<Response> {
   if (url.includes('/api/auth/email/link-to-account') && method === 'POST') {
     return Promise.resolve(jsonResponse(200, {}));
   }
+  if (url.includes('/api/auth/link-token')) {
+    return Promise.resolve(jsonResponse(200, {}));
+  }
   return Promise.resolve(jsonResponse(404, { message: 'not mocked: ' + url }));
 }
 
@@ -269,6 +272,37 @@ describe('AccountPage — привязка email', () => {
 
     await screen.findByText(/Email уже занят/);
     expect(screen.queryByText(/Письмо отправлено на/)).toBeNull();
+  });
+});
+
+// П5 (симптом 2026-08-21): linkGoogle/linkVk запрашивают link-token ПЕРЕД
+// редиректом — без этой httpOnly-куки сервер не видит текущего пользователя,
+// и вместо привязки создаётся/логинится ДРУГОЙ аккаунт. linkTelegram этого
+// не делал — здесь регрессионный тест на то, что теперь делает, как соседи.
+describe('AccountPage — привязка Telegram', () => {
+  it('перед редиректом на /api/auth/telegram/redirect запрашивает link-token (как linkGoogle/linkVk)', async () => {
+    const originalHref = window.location.href;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, href: '' },
+    });
+    try {
+      renderPage();
+      await screen.findByText('Аккаунт');
+
+      // Кнопки «Привязать» в порядке разметки: Google, Telegram, VK, Email.
+      fireEvent.click(screen.getAllByText('Привязать')[1]);
+
+      await waitFor(() => expect(
+        fetchMock.mock.calls.some(([url]: [string]) => String(url).includes('/api/auth/link-token')),
+      ).toBe(true));
+      expect(window.location.href).toContain('/api/auth/telegram/redirect');
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...window.location, href: originalHref },
+      });
+    }
   });
 });
 

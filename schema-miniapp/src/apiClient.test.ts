@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get, post } from './apiClient';
 import { clearSession, SESSION_EXPIRED_EVENT } from './session';
+import { REFRESH_RETRY_DELAYS_MS } from '../../shared/src/auth/sessionRefresh';
 
 function jsonRes(status: number, body: unknown = {}) {
   return {
@@ -95,5 +96,56 @@ describe('authedFetch: 401 → перевыпуск сессии → повто�
     fetchMock().mockResolvedValue(jsonRes(403, {}));
     await expect(get('/api/disclaimer')).rejects.toThrow('API error: 403');
     expect(urls()).toEqual(['/api/disclaimer']);
+  });
+
+  // Регресс «постоянно нужно логиниться заново» (диагностика 2026-08-21):
+  // исходный запрос 401 (access-токен истёк), но сам refresh-эндпоинт
+  // отвечает 500/сетевой ошибкой — временная беда инфры, а не невалидный
+  // refresh-токен. Раньше это трактовалось одинаково с 401/403 от refresh, и
+  // LoginScreen показывался при живой 30-дневной куке.
+  it('refresh падает с 500 (не 401/403) → сессия остаётся живой, LoginScreen НЕ показывается', async () => {
+    vi.useFakeTimers();
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+
+    fetchMock()
+      .mockResolvedValueOnce(jsonRes(401, {})) // исходный GET: токен истёк
+      .mockResolvedValue(jsonRes(500, {})); // refresh И exchange — 5xx
+
+    const promise = get('/api/disclaimer');
+    // Подписываемся на rejection СРАЗУ (до продвижения таймеров) — иначе
+    // промис отклоняется раньше, чем на него повесят обработчик, и vitest
+    // ловит его как unhandled rejection.
+    const assertion = expect(promise).rejects.toThrow('API error: 401');
+    for (const ms of REFRESH_RETRY_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(ms);
+    }
+    await assertion;
+    expect(onExpired).not.toHaveBeenCalled();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    vi.useRealTimers();
+  });
+
+  it('refresh падает по сети (fetch throws) → тоже не считается истёкшей сессией', async () => {
+    vi.useFakeTimers();
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+
+    fetchMock()
+      .mockResolvedValueOnce(jsonRes(401, {}))
+      .mockRejectedValue(new TypeError('offline'));
+
+    const promise = get('/api/disclaimer');
+    // Подписываемся на rejection СРАЗУ (до продвижения таймеров) — иначе
+    // промис отклоняется раньше, чем на него повесят обработчик, и vitest
+    // ловит его как unhandled rejection.
+    const assertion = expect(promise).rejects.toThrow('API error: 401');
+    for (const ms of REFRESH_RETRY_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(ms);
+    }
+    await assertion;
+    expect(onExpired).not.toHaveBeenCalled();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    vi.useRealTimers();
   });
 });

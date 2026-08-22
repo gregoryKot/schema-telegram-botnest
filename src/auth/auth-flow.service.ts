@@ -11,7 +11,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
-import { REFRESH_COOKIE, cookieOptions, getCookie } from './auth-http.util';
+import { getCookie, setRefreshCookie } from './auth-http.util';
 import { signOAuthState, readOAuthState } from './oauth-state';
 
 export type SignInOutcome =
@@ -142,11 +142,10 @@ export class AuthFlowService {
       );
       return;
     }
-    res.cookie(
-      REFRESH_COOKIE,
-      outcome.tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    // crossSite:false — OAuth-редирект (Google/VK/Telegram-OIDC) приходит
+    // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
+    // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
+    setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
     res.redirect(
       `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`,
     );

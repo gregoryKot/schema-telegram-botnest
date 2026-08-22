@@ -147,14 +147,18 @@ function countBodyParams(): number {
 // src/api/dto/booking.dto.ts), booking/booking-admin.controller.ts:172
 // (interface CreateRuleDto в availability.service.ts → class CreateRuleDto в
 // booking-admin.dto.ts). Планка ниже ужата с 9 до 6.
+// Строки auth-account.controller.ts:237 и auth-telegram.controller.ts:45
+// сдвинуты веткой auth-stability (комментарии над @Body() схлопнуты в
+// однострочные) — тот же нарушитель, что и раньше, номер строки просто
+// обновлён вслед за рефактором (см. правило записи выше).
 const VIOLATIONS_LEGACY: Record<string, string> = {
   'api/tracker.controller.ts:194':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
-  'auth/auth-account.controller.ts:238':
+  'auth/auth-account.controller.ts:237':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',
-  'auth/auth-telegram.controller.ts:52':
+  'auth/auth-telegram.controller.ts:45':
     'inline-тип Record<string, string> — подписанный Telegram-payload, ' +
     'whitelist срежет поля и сломает hash-верификацию (комментарий в коде)',
   'booking/payment.controller.ts:62':

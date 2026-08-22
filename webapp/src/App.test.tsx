@@ -150,6 +150,19 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     resolveRefresh(jsonResponse(401, {}));
     await screen.findByRole('button', { name: /Войти через Google/ });
   });
+
+  // Диагностика «постоянно нужно логиниться заново» (2026-08-21): 5xx на
+  // /api/auth/refresh раньше вёл себя как 401 и редиректил на /login поверх
+  // живой куки. Теперь — «нет связи», НЕ /login.
+  it('5xx на /api/auth/refresh — «нет связи», а не редирект на /login (2026-08-21)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(500, {}));
+    stubLocation({ pathname: '/account', href: 'http://localhost/account' });
+    const App = await loadApp();
+    render(<App />);
+
+    await screen.findByText('Нет связи с сервером', {}, { timeout: 3000 });
+    expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+  });
 });
 
 describe('App — страница ошибки входа (/auth/error)', () => {

@@ -89,6 +89,7 @@ describe('AuthController.refresh', () => {
       accessToken: 'acc-1',
       refreshToken: 'ref-2',
       expiresIn: 900,
+      rotated: true,
     });
     const controller = makeController(auth);
     const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'ref-1' } });
@@ -115,6 +116,7 @@ describe('AuthController.refresh', () => {
       accessToken: 'acc-1',
       refreshToken: 'ref-2',
       expiresIn: 900,
+      rotated: true,
     });
     const controller = makeController(auth);
     const req = makeReq({
@@ -134,6 +136,28 @@ describe('AuthController.refresh', () => {
       '1',
       expect.objectContaining({ sameSite: 'none' }),
     );
+  });
+
+  // Пункт 2 диагностики 2026-08-21: частая ротация одной сессии — источник
+  // гонки (см. refresh-rotation.ts). rotated:false → сервис отдаёт тот же
+  // refreshToken, что пришёл, и контроллер обязан НЕ трогать Set-Cookie —
+  // иначе TTL куки продлевался бы на каждой загрузке страницы почём зря.
+  it('rotated:false (частая ротация подавлена) → access новый, Set-Cookie не выставляется', async () => {
+    const { auth, mocks } = makeAuth();
+    mocks.rotateRefreshToken.mockResolvedValue({
+      accessToken: 'acc-fresh',
+      refreshToken: 'ref-1', // тот же токен, что пришёл — кука не менялась
+      expiresIn: 900,
+      rotated: false,
+    });
+    const controller = makeController(auth);
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'ref-1' } });
+    const { res, mocks: resMocks } = makeRes();
+
+    const result = await controller.refresh(req, res);
+
+    expect(result).toEqual({ accessToken: 'acc-fresh', expiresIn: 900 });
+    expect(resMocks.cookie).not.toHaveBeenCalled();
   });
 });
 

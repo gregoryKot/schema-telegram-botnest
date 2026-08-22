@@ -86,20 +86,18 @@ export function AccountPage() {
       headers: { Authorization: `Bearer ${accessToken ?? ''}` },
     });
   };
-  const linkGoogle = async () => {
+  // Общий шаг привязки: одна и та же механика для всех OAuth-провайдеров
+  // (сначала link-token кука, потом редирект) — раньше linkTelegram копией не
+  // делал await fetchLinkToken() (симптом 2026-08-21: без куки сервер не
+  // видел юзера, вместо привязки создавался/логинился ДРУГОЙ аккаунт).
+  const linkVia = async (path: string) => {
     sessionStorage.setItem('auth_return_to', '/account');
     await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/google`;
+    window.location.href = `${API_BASE}${path}`;
   };
-  const linkVk = async () => {
-    sessionStorage.setItem('auth_return_to', '/account');
-    await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/vk`;
-  };
-  const linkTelegram = () => {
-    sessionStorage.setItem('auth_return_to', '/account');
-    window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
-  };
+  const linkGoogle = () => linkVia('/api/auth/google');
+  const linkVk = () => linkVia('/api/auth/vk');
+  const linkTelegram = () => linkVia('/api/auth/telegram/redirect');
 
   // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
   // unlinkProvider хранит, какой провайдер подтверждаем (null = диалог закрыт).
