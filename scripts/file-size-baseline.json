@@ -446,7 +446,7 @@
   "scripts/check-deploy-paths.mjs": 300,
   "scripts/check-eslint-ratchet.mjs": 142,
   "scripts/check-feature-parity.mjs": 111,
-  "scripts/check-file-size-ratchet.mjs": 161,
+  "scripts/check-file-size-ratchet.mjs": 154,
   "scripts/check-frontend-coverage-ratchet.mjs": 164,
   "scripts/check-gate-exemptions.mjs": 239,
   "scripts/check-gendered-forms.mjs": 179,
