@@ -600,7 +600,7 @@ export function TrackerOverlay({
                 border: 'none',
                 fontFamily: 'inherit',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',

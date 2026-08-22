@@ -98,7 +98,7 @@ export function DonateNudge() {
             fontWeight: 700,
             fontFamily: 'inherit',
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--on-accent)',
             border: 'none',
             borderRadius: 12,
             cursor: 'pointer',

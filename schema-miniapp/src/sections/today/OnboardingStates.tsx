@@ -55,7 +55,7 @@ export function OnboardingDoneCard({ onHide }: { onHide: () => void }) {
           border: 'none',
           fontFamily: 'inherit',
           background: 'var(--accent)',
-          color: '#fff',
+          color: 'var(--on-accent)',
           fontSize: 15,
           fontWeight: 600,
           cursor: 'pointer',

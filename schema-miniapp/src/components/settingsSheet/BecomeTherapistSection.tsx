@@ -281,7 +281,7 @@ export function BecomeTherapistSection({
                 borderRadius: 10,
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
