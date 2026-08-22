@@ -48,14 +48,15 @@ export interface ReuseVerdict {
 export function classifyReuse(
   revokedAt: Date | null,
   now: Date,
-  userId: unknown,
+  userId: bigint,
 ): ReuseVerdict {
   const theft = isTheftReuse(revokedAt, now);
+  const who = String(userId);
   return {
     theft,
     logMessage: theft
-      ? `Refresh token reuse detected — revoking family (userId ${userId})`
-      : `Refresh token reuse within grace window — race, not theft (userId ${userId})`,
+      ? `Refresh token reuse detected — revoking family (userId ${who})`
+      : `Refresh token reuse within grace window — race, not theft (userId ${who})`,
   };
 }
 

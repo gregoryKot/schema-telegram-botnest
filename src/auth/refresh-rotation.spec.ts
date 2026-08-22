@@ -19,10 +19,7 @@ describe('isTheftReuse', () => {
   it('отозван только что (дребезг: две вкладки/оборванный Set-Cookie) → не кража', () => {
     expect(isTheftReuse(NOW, NOW)).toBe(false);
     expect(
-      isTheftReuse(
-        new Date(NOW.getTime() - (REFRESH_REUSE_GRACE_MS - 1)),
-        NOW,
-      ),
+      isTheftReuse(new Date(NOW.getTime() - (REFRESH_REUSE_GRACE_MS - 1)), NOW),
     ).toBe(false);
   });
 
@@ -34,21 +31,14 @@ describe('isTheftReuse', () => {
 
   it('отозван давно (за пределами окна) → кража', () => {
     expect(
-      isTheftReuse(
-        new Date(NOW.getTime() - REFRESH_REUSE_GRACE_MS - 1),
-        NOW,
-      ),
+      isTheftReuse(new Date(NOW.getTime() - REFRESH_REUSE_GRACE_MS - 1), NOW),
     ).toBe(true);
   });
 });
 
 describe('classifyReuse', () => {
   it('кража → theft:true, сообщение упоминает family/userId', () => {
-    const v = classifyReuse(
-      new Date(NOW.getTime() - 60_000),
-      NOW,
-      42n,
-    );
+    const v = classifyReuse(new Date(NOW.getTime() - 60_000), NOW, 42n);
     expect(v.theft).toBe(true);
     expect(v.logMessage).toMatch(/reuse detected/i);
     expect(v.logMessage).toContain('42');

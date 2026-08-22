@@ -186,13 +186,18 @@ describe('isCrossSiteRequest', () => {
 
   it('Sec-Fetch-Site: same-origin → false, даже если Origin отличается (заголовок приоритетнее)', () => {
     const req = makeRequest({
-      headers: { 'sec-fetch-site': 'same-origin', origin: 'https://evil.example' },
+      headers: {
+        'sec-fetch-site': 'same-origin',
+        origin: 'https://evil.example',
+      },
     });
     expect(isCrossSiteRequest(req, OWN)).toBe(false);
   });
 
   it('нет Sec-Fetch-Site, Origin ≠ наш → true (фолбэк для браузеров без заголовка)', () => {
-    const req = makeRequest({ headers: { origin: 'https://web.telegram.org' } });
+    const req = makeRequest({
+      headers: { origin: 'https://web.telegram.org' },
+    });
     expect(isCrossSiteRequest(req, OWN)).toBe(true);
   });
 

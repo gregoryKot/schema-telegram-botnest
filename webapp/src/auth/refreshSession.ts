@@ -59,3 +59,11 @@ export function refreshSession(): Promise<RefreshOutcome> {
   });
   return inFlight;
 }
+
+/** Только для тестов: сбрасывает замок между кейсами. Модульное состояние
+ *  живёт дольше одного теста — если предыдущий кейс переключил fake timers
+ *  на реальные ДО того, как ретраи внутри inFlight отработали, промис навсегда
+ *  зависает и следующий вызов refreshSession() получает его же. */
+export function resetRefreshLockForTests(): void {
+  inFlight = null;
+}

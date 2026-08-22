@@ -14,6 +14,7 @@ import { act, render, renderHook, waitFor } from '@testing-library/react';
 import { useEffect, type ReactNode } from 'react';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './authContext';
+import { resetRefreshLockForTests } from './refreshSession';
 
 interface TelegramWindow extends Window {
   Telegram?: { WebApp?: { initData?: string } };
@@ -39,6 +40,10 @@ beforeEach(() => {
   delete (window as unknown as TelegramWindow).Telegram;
   localStorage.clear();
   sessionStorage.clear();
+  // Модульный in-flight замок refreshSession.ts переживает между тестами —
+  // предыдущий кейс мог переключить fake timers на реальные до того, как его
+  // ретраи отработали, оставив промис навсегда pending (см. resetRefreshLockForTests).
+  resetRefreshLockForTests();
 });
 
 afterEach(() => {
@@ -188,9 +193,113 @@ describe('провал проактивного refresh', () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(840000); });
 
-    // doRefresh() ловит исключение в catch{} и просто возвращает false —
-    // accessToken старый (возможно уже просроченный) остаётся в стейте.
+    // Сетевая ошибка ловится внутри refreshSession.ts (attemptOnce) и
+    // классифицируется как временная — accessToken старый (возможно уже
+    // просроченный) остаётся в стейте, доRefresh() просто вернул false.
     expect(result.current.accessToken).toBe('still-valid');
+  });
+});
+
+// ── Регресс «постоянно нужно логиниться заново» (диагностика 2026-08-21) ─────
+// 401/403 → сессия мертва; сеть/5xx/429 → сессия жива, authError='transient',
+// LoginScreen/редирект не показываются, а цепочка ретраев не обрывается.
+describe('authError — сеть/5xx не считается «сессии нет»', () => {
+  it('500 на refresh не трогает accessToken и выставляет authError=\'transient\'', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    vi.useFakeTimers();
+    act(() => { result.current.setAccessToken('still-valid', 900); });
+    fetchMock.mockResolvedValue(jsonResponse(500, {}));
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(840000); });
+    // Ретраи внутри refreshSession.ts (500мс+1500мс) укладываются в запас до
+    // следующего адванса ниже — здесь важно только то, что сессия не умерла.
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+
+    expect(result.current.accessToken).toBe('still-valid');
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.authError).toBe('transient');
+  });
+
+  it('403 — та же смерть сессии, что 401 (не только код 401)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    vi.useFakeTimers();
+    act(() => { result.current.setAccessToken('will-expire', 900); });
+    fetchMock.mockResolvedValue(jsonResponse(403, {}));
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(840000); });
+
+    expect(result.current.accessToken).toBeNull();
+    expect(result.current.authError).toBeNull();
+  });
+
+  it('ретрай-таймер продолжает цепочку сам — вторая попытка происходит без нового явного вызова', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    vi.useFakeTimers();
+    act(() => { result.current.setAccessToken('will-recover', 900); });
+    fetchMock.mockResolvedValue(jsonResponse(500, {}));
+    // Проактивный таймер (840с) срабатывает, refreshSession ретраит и сдаётся
+    // временной бедой — здесь ставится ретрай-таймер (пункт 3 диагностики).
+    await act(async () => { await vi.advanceTimersByTimeAsync(840000 + 5000); });
+    expect(result.current.authError).toBe('transient');
+
+    // Сеть «починилась»: следующий тик ретрай-таймера (первый шаг бэкоффа —
+    // 30с, RETRY_TIMER_DELAYS_MS[0]) сам подхватывает и восстанавливает сессию
+    // — без единого ручного вызова refreshToken().
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'recovered', expiresIn: 900 }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+
+    expect(result.current.accessToken).toBe('recovered');
+    expect(result.current.authError).toBeNull();
+  });
+});
+
+// ── online/visibilitychange — перевыпуск после сна устройства (2026-08-21, п.3) ─
+describe('useAuthRetryOnFocus — перевыпуск по online/visibilitychange', () => {
+  it('online при устаревшем токене вызывает refresh без ожидания следующего запроса', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => { result.current.setAccessToken('stale', 30); }); // 30с < EXPIRY_SKEW_MS(60с) — сразу «устарел»
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'from-online', expiresIn: 900 }));
+    act(() => { window.dispatchEvent(new Event('online')); });
+
+    await waitFor(() => expect(result.current.accessToken).toBe('from-online'));
+  });
+
+  it('видимая вкладка (visibilitychange) при устаревшем токене тоже вызывает refresh', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => { result.current.setAccessToken('stale', 30); });
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'from-visible', expiresIn: 900 }));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+
+    await waitFor(() => expect(result.current.accessToken).toBe('from-visible'));
+  });
+
+  it('online при свежем токене НЕ делает лишний сетевой вызов', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => { result.current.setAccessToken('fresh', 900); }); // живёт 15 минут — далеко не «устарел»
+
+    fetchMock.mockClear();
+    act(() => { window.dispatchEvent(new Event('online')); });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.accessToken).toBe('fresh');
   });
 });
 
@@ -221,6 +330,27 @@ describe('refreshToken() — прямой вызов', () => {
 
     expect(ok).toBe(false);
     expect(result.current.accessToken).toBeNull();
+  });
+
+  // Диагностика 2026-08-21, пункт 2: два параллельных refresh — это две
+  // ротации ОДНОГО refresh-токена, сервер видит в этом кражу и отзывает всю
+  // семью. refreshSession.ts делит параллельные вызовы одним промисом.
+  it('два параллельных вызова делят один сетевой вызов (иначе сервер сочтёт это кражей refresh-токена)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(401, {}));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'shared-tok', expiresIn: 900 }));
+    const refreshCallsBefore = fetchMock.mock.calls.length;
+    let a = false;
+    let b = false;
+    await act(async () => {
+      [a, b] = await Promise.all([result.current.refreshToken(), result.current.refreshToken()]);
+    });
+
+    expect(a).toBe(true);
+    expect(b).toBe(true);
+    expect(fetchMock.mock.calls.length - refreshCallsBefore).toBe(1);
   });
 });
 
