@@ -52,7 +52,7 @@ export function YsqIntro({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 'var(--space-8)',
           marginBottom: 20,
         }}
       >
@@ -66,9 +66,9 @@ export function YsqIntro({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
+              gap: 'var(--space-14)',
               background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
             }}
           >
@@ -131,7 +131,7 @@ export function YsqIntro({
               width: '100%',
               padding: '14px 0',
               border: 'none',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',
               fontSize: 15,
@@ -159,7 +159,7 @@ export function YsqIntro({
           width: '100%',
           padding: '14px 0',
           border: 'none',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           background: 'rgba(var(--fg-rgb),0.07)',
           color: 'var(--text-sub)',
           fontSize: 15,

@@ -78,7 +78,7 @@ export function ShareCardSheet({
 
           <div
             style={{
-              borderRadius: 20,
+              borderRadius: 'var(--r-20)',
               overflow: 'hidden',
               border: '1px solid rgba(var(--fg-rgb),0.07)',
               boxShadow: '0 14px 34px rgba(0,0,0,0.25)',
@@ -99,9 +99,9 @@ export function ShareCardSheet({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 'var(--space-8)',
               padding: '15px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background:
                 'linear-gradient(135deg, var(--accent), var(--accent-hi))',
@@ -123,7 +123,7 @@ export function ShareCardSheet({
               marginTop: 10,
               padding: '13px 0',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               background: copyBg(18, 'rgba(var(--fg-rgb),0.06)'),
               color: copyColor('rgba(var(--fg-rgb),0.65)'),
               fontSize: 14,
@@ -160,7 +160,7 @@ export function ShareCardSheet({
                 color: 'rgba(var(--fg-rgb),0.7)',
                 lineHeight: 1.6,
                 background: 'rgba(var(--fg-rgb),0.04)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 14px',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
@@ -178,7 +178,7 @@ export function ShareCardSheet({
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: copyBg(20, 'rgba(var(--fg-rgb),0.08)'),
                 color: copyColor('rgba(var(--fg-rgb),0.7)'),
                 fontSize: 14,

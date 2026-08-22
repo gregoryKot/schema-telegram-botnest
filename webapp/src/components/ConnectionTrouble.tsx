@@ -18,7 +18,7 @@ export function ConnectionTrouble() {
       </div>
       <button
         onClick={() => void refreshToken()}
-        style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        style={{ padding: '10px 24px', border: 'none', borderRadius: 'var(--r-8)', background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
       >
         Повторить
       </button>

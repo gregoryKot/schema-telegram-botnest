@@ -233,7 +233,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
               return (
                 <button key={opt.v} onClick={() => patchData({ side: active ? undefined : opt.v })}
                   style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    padding: '7px 4px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                    padding: '7px 4px', borderRadius: 'var(--r-6)', fontSize: 12, cursor: 'pointer',
                     border: `1.5px solid ${active ? opt.color : 'rgba(var(--fg-rgb),0.14)'}`,
                     background: active ? `color-mix(in srgb, ${opt.color} 14%, transparent)` : 'none',
                     color: active ? opt.color : 'var(--text-sub)', fontWeight: active ? 600 : 400 }}>
@@ -291,7 +291,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           const active = !!node.data.fillFull === opt.fillFull && !!node.data.filled === opt.filled;
           return (
             <button key={opt.label} onClick={() => patchData({ filled: opt.filled, fillFull: opt.fillFull })}
-              style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
+              style={{ flex: 1, padding: '6px 4px', borderRadius: 'var(--r-6)', fontSize: 11.5, cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
@@ -312,7 +312,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           return (
             <button key={opt.v} onClick={() => patchData({ strokeWidth: opt.v })} title={opt.label} aria-label={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
+                padding: '8px 4px', borderRadius: 'var(--r-6)', cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <span style={{ width: 26, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
@@ -333,7 +333,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           return (
             <button key={opt.v} onClick={() => patchData({ fontSize: opt.v })}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38,
-                borderRadius: 6, cursor: 'pointer',
+                borderRadius: 'var(--r-6)', cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: opt.fs, fontWeight: 600 }}>
@@ -353,7 +353,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           const active = (node.data.display ?? 'full') === opt.v;
           return (
             <button key={opt.v} onClick={() => patchData({ display: opt.v })}
-              style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
+              style={{ flex: 1, padding: '6px 4px', borderRadius: 'var(--r-6)', fontSize: 11.5, cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
@@ -448,7 +448,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k}
             onClick={() => chooseType(k)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 14, textAlign: 'left', fontSize: 12, cursor: 'pointer',
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 'var(--r-14)', textAlign: 'left', fontSize: 12, cursor: 'pointer',
               border: `1px solid ${edgeType === k ? 'var(--accent)' : 'var(--line-strong)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
               color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)' }}>
@@ -459,7 +459,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
       </div>
 
       {/* Suggestion box — pick a phrase for the line or refresh for more */}
-      <div style={{ marginBottom: 14, padding: '8px 9px', borderRadius: 8,
+      <div style={{ marginBottom: 14, padding: '8px 9px', borderRadius: 'var(--r-8)',
         border: '1px solid var(--line)', background: 'var(--surface-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 7 }}>
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-faint)', flex: 1 }}>
@@ -473,7 +473,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
             const active = edge.label === p;
             return (
               <button key={p} onClick={() => onChange({ ...edge, label: p })}
-                style={{ padding: '4px 9px', borderRadius: 14, fontSize: 11.5, cursor: 'pointer',
+                style={{ padding: '4px 9px', borderRadius: 'var(--r-14)', fontSize: 11.5, cursor: 'pointer',
                   border: `1px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                   background: active ? 'var(--accent-soft)' : 'var(--bg-elev)',
                   color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
@@ -501,8 +501,8 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           return (
             <button key={opt.k} onClick={() => onChange({ ...edge, data: { ...edge.data, lineStyle: opt.k } })}
               title={opt.label} aria-label={opt.label}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                padding: '7px 4px', borderRadius: 6, cursor: 'pointer',
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)',
+                padding: '7px 4px', borderRadius: 'var(--r-6)', cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <svg width={36} height={6} viewBox="0 0 36 6">
@@ -526,7 +526,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           return (
             <button key={opt.v} onClick={() => onChange({ ...edge, data: { ...edge.data, width: opt.v } })} title={opt.label} aria-label={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
+                padding: '8px 4px', borderRadius: 'var(--r-6)', cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <span style={{ width: 28, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
@@ -581,7 +581,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
 function dirBtnStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    gap: 2, padding: '6px 4px', borderRadius: 6, cursor: 'pointer',
+    gap: 2, padding: '6px 4px', borderRadius: 'var(--r-6)', cursor: 'pointer',
     border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
     background: active ? 'var(--accent-soft)' : 'none',
     color: active ? 'var(--accent)' : 'var(--text-sub)',
@@ -608,13 +608,13 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.05em', color: 'var(--text-faint)', marginBottom: 5, display: 'block',
 };
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 10px', borderRadius: 6,
+  width: '100%', padding: '8px 10px', borderRadius: 'var(--r-6)',
   border: '1px solid var(--line-strong)',
   background: 'var(--bg-elev)', color: 'var(--text)',
   fontSize: 13, marginBottom: 14, boxSizing: 'border-box', outline: 'none',
 };
 const deleteBtnStyle: React.CSSProperties = {
-  marginTop: 'auto', padding: '8px 12px', borderRadius: 6,
+  marginTop: 'auto', padding: '8px 12px', borderRadius: 'var(--r-6)',
   border: '1px solid var(--line)',
   background: 'none', color: 'var(--accent-red)', fontSize: 12.5, cursor: 'pointer',
 };

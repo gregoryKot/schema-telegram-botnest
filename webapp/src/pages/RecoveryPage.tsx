@@ -67,11 +67,11 @@ function RecoveryRequest() {
         )}{' '}
         Иначе доступ к аккаунту восстановить нельзя.
       </div>
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
         <input
           type="email" required value={email} onChange={e => setEmail(e.target.value)}
           placeholder="you@example.com"
-          style={{ padding: '13px 16px', border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', color: 'var(--text)', fontSize: 15 }}
+          style={{ padding: '13px 16px', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', background: 'var(--surface)', color: 'var(--text)', fontSize: 15 }}
         />
         {error && <div className="text-sm" style={{ color: 'var(--c-rose)' }}>{error}</div>}
         <button type="submit" disabled={busy || !email.trim()} className="btn btn-primary">

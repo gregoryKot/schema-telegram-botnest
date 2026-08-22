@@ -199,7 +199,7 @@ export function HistoryView({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 'var(--space-12)',
               padding: '0 16px',
             }}
           >
@@ -243,11 +243,11 @@ export function HistoryView({
                   }
                 }}
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 'var(--space-12)',
                   cursor: 'pointer',
                   background:
                     ratedCount === 0
@@ -259,7 +259,7 @@ export function HistoryView({
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-10)',
                     flexShrink: 0,
                     background:
                       'color-mix(in srgb, var(--accent-blue) 14%, transparent)',
@@ -322,7 +322,7 @@ export function HistoryView({
             {needsLow.length > 0 && (
               <div
                 className="card"
-                style={{ borderRadius: 16, padding: '16px' }}
+                style={{ borderRadius: 'var(--r-16)', padding: '16px' }}
               >
                 <div
                   style={{
@@ -356,7 +356,7 @@ export function HistoryView({
                 }
               }}
               style={{
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 cursor: 'pointer',
                 border: noteText
@@ -366,7 +366,7 @@ export function HistoryView({
                 background: noteText ? undefined : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
               }}
             >
               <span style={{ fontSize: 16 }}>📝</span>
@@ -403,7 +403,7 @@ export function HistoryView({
                     style={{
                       fontSize: 11,
                       padding: '3px 10px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       fontWeight: 500,
                       background:
                         'color-mix(in srgb, var(--accent) 12%, transparent)',

@@ -28,11 +28,11 @@ export function DisclaimerDiariesWhyStep() {
           key={type}
           className="card"
           style={{
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             marginBottom: 10,
             display: 'flex',
-            gap: 12,
+            gap: 'var(--space-12)',
             alignItems: 'flex-start',
           }}
         >

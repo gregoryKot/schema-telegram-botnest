@@ -48,7 +48,7 @@ export function SchemaPicker({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 width: '100%',
                 minHeight: 48,
                 padding: '12px 2px',
@@ -76,7 +76,7 @@ export function SchemaPicker({
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   padding: '12px 0 6px',
                 }}
               >

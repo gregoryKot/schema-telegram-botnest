@@ -58,7 +58,7 @@ export function NeedTodaySheet({
           style={{
             display: 'flex',
             alignItems: 'baseline',
-            gap: 4,
+            gap: 'var(--space-4)',
             marginBottom: 10,
           }}
         >
@@ -83,7 +83,7 @@ export function NeedTodaySheet({
           style={{
             background: color + '18',
             border: `1px solid ${color}33`,
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '10px 14px',
             marginBottom: 20,
             fontSize: 13,
@@ -137,7 +137,7 @@ export function NeedTodaySheet({
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '8px 0',
                   borderBottom:
                     i < data.examples.length - 1
@@ -196,7 +196,7 @@ export function NeedTodaySheet({
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     padding: '8px 0',
                     borderBottom:
                       i < data.reflection.length - 1
@@ -258,12 +258,12 @@ export function NeedTodaySheet({
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     background: active
                       ? color + '33'
                       : 'rgba(var(--fg-rgb),0.04)',
                     border: `1px solid ${active ? color + '55' : 'rgba(var(--fg-rgb),0.08)'}`,
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     padding: '10px 12px',
                     cursor: 'pointer',
                   }}
@@ -315,7 +315,7 @@ export function NeedTodaySheet({
             marginBottom: 24,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8,
+            gap: 'var(--space-8)',
           }}
         >
           <div
@@ -326,7 +326,7 @@ export function NeedTodaySheet({
               justifyContent: 'space-between',
               background: color + '12',
               border: `1px solid ${color}28`,
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 16px',
               cursor: 'pointer',
             }}
@@ -359,7 +359,7 @@ export function NeedTodaySheet({
                   'color-mix(in srgb, var(--accent-red) 8%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 16px',
                 cursor: 'pointer',
               }}

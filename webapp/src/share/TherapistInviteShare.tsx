@@ -14,7 +14,7 @@ export function TherapistInviteShare({ inviteUrl }: { inviteUrl: string }) {
         onClick={() => setOpen(true)}
         style={{
           padding: '9px 18px',
-          borderRadius: 20,
+          borderRadius: 'var(--r-20)',
           border: '1px solid var(--line)',
           background: 'transparent',
           color: 'var(--text-sub)',

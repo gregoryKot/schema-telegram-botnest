@@ -54,7 +54,7 @@ export function DesktopLayout({
                 marginBottom: 12,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 color,
               }}
             >
@@ -235,7 +235,7 @@ export function DesktopLayout({
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '24px 1fr',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '10px 0',
                   borderBottom:
                     i < arr.length - 1

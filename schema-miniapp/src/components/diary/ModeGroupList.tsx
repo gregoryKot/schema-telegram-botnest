@@ -21,7 +21,9 @@ export function ModeGroupList({
           <div className="d-caps" style={{ marginBottom: 8 }}>
             {group.group}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}
+          >
             {group.items.map((m) => (
               <button
                 key={m.id}

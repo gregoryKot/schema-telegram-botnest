@@ -14,10 +14,10 @@ export function AddressFormSection({ settings, patch, setAddressForm }: Props) {
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '10px 12px',
           display: 'flex',
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         {(['ty', 'vy'] as const).map((form) => {
@@ -41,7 +41,7 @@ export function AddressFormSection({ settings, patch, setAddressForm }: Props) {
               style={{
                 flex: 1,
                 padding: '10px 0',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 textAlign: 'center',
                 background: active
                   ? 'var(--accent)'

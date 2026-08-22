@@ -20,7 +20,11 @@ export function DisclaimerNeedsWhyStep() {
 
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 12,
+        }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
           {tr(

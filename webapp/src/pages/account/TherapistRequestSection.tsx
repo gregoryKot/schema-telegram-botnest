@@ -73,29 +73,29 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
           {tr('Заявка одобрена. Перезайди в приложение.', 'Заявка одобрена. Перезайдите в приложение.')}
         </div>
       ) : !open ? (
-        <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+        <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 'var(--r-6)', border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
           Я психолог — подать заявку
         </button>
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>
           {req?.status === 'rejected' && (
-            <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 'var(--r-8)' }}>
               Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
             </div>
           )}
           <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
+            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 'var(--r-10)', padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
           <textarea value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
             placeholder="Квалификация: образование, направление, опыт, сертификаты"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
+            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 'var(--r-10)', padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
           <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д."
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
+            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 'var(--r-10)', padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
           <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2}
             placeholder="Сообщение админу (необязательно)"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
-            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 'var(--r-10)', padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+            <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
+            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
           </div>
           {err && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{err}</div>}
         </div>

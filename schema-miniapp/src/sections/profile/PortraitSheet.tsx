@@ -69,7 +69,7 @@ export function PortraitSheet({ aboutMe, onOpenPatterns, onClose }: Props) {
             marginTop: 4,
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
           }}
         >
           <MyPatternsCard

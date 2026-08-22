@@ -48,7 +48,7 @@ export function WarmWords({ onClose }: Props) {
           style={{
             background: 'rgba(251,191,36,0.06)',
             border: '1px solid rgba(251,191,36,0.12)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
             fontSize: 12,
@@ -119,7 +119,7 @@ export function WarmWords({ onClose }: Props) {
                     padding: '12px 14px',
                     background: 'rgba(var(--fg-rgb),0.03)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     marginBottom: 8,
                   }}
                 >
@@ -129,7 +129,7 @@ export function WarmWords({ onClose }: Props) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       marginBottom: 6,
-                      gap: 8,
+                      gap: 'var(--space-8)',
                     }}
                   >
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>

@@ -66,7 +66,7 @@ export function AllTasksSheet({
           style={{
             width: 40,
             height: 40,
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             flexShrink: 0,
             background: 'rgba(251,146,60,0.12)',
             display: 'flex',
@@ -86,7 +86,7 @@ export function AllTasksSheet({
             padding: '36px 20px',
             textAlign: 'center',
             background: 'var(--surface)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             border: '1px dashed var(--border-color)',
             marginBottom: 16,
           }}
@@ -137,7 +137,7 @@ export function AllTasksSheet({
         style={{
           width: '100%',
           padding: '14px',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           background:
             'linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 10%, transparent))',

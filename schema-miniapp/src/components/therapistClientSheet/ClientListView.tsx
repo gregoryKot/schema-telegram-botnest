@@ -80,7 +80,7 @@ export function ClientListView({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 marginBottom: 4,
               }}
             >
@@ -100,7 +100,7 @@ export function ClientListView({
                     'color-mix(in srgb, var(--accent) 20%, transparent)',
                   border:
                     '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   padding: '3px 10px',
                   fontSize: 11,
                   fontWeight: 700,
@@ -121,7 +121,7 @@ export function ClientListView({
               Клиенты · Задания · Концептуализация
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 4 }}>
             {/* Exit therapist mode — always visible escape hatch */}
             <button
               onClick={onClose}
@@ -213,7 +213,7 @@ export function ClientListView({
                   style={{
                     flex: 1,
                     padding: '9px 4px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     border: 'none',
                     background:
                       addMode === mode
@@ -244,7 +244,7 @@ export function ClientListView({
                     style={{
                       width: '100%',
                       padding: '12px 0',
-                      borderRadius: 12,
+                      borderRadius: 'var(--r-12)',
                       border: 'none',
                       background:
                         'color-mix(in srgb, var(--accent) 20%, transparent)',
@@ -270,7 +270,7 @@ export function ClientListView({
                         marginBottom: 10,
                         background: 'rgba(var(--fg-rgb),0.05)',
                         border: '1px solid rgba(var(--fg-rgb),0.1)',
-                        borderRadius: 10,
+                        borderRadius: 'var(--r-10)',
                         padding: '9px 12px',
                         outline: 'none',
                         cursor: 'text',
@@ -279,13 +279,13 @@ export function ClientListView({
                         fontFamily: 'monospace',
                       }}
                     />
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                       <button
                         onClick={copyInvite}
                         style={{
                           flex: 1,
                           padding: '10px 0',
-                          borderRadius: 10,
+                          borderRadius: 'var(--r-10)',
                           border: 'none',
                           background: inviteCopied
                             ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'
@@ -326,7 +326,7 @@ export function ClientListView({
             {/* Telegram ID form */}
             {addMode === 'telegram' && (
               <>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                   <input
                     value={addInput}
                     onChange={(e) => {
@@ -341,7 +341,7 @@ export function ClientListView({
                       flex: 1,
                       background: 'rgba(var(--fg-rgb),0.06)',
                       border: `1px solid ${addError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`,
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       padding: '9px 12px',
                       outline: 'none',
                       color: 'var(--text)',
@@ -353,7 +353,7 @@ export function ClientListView({
                     disabled={addLoading || !addInput.trim()}
                     style={{
                       padding: '9px 16px',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: 'none',
                       background: addInput.trim()
                         ? 'rgba(var(--fg-rgb),0.12)'
@@ -385,7 +385,7 @@ export function ClientListView({
             {/* Virtual client form */}
             {addMode === 'virtual' && (
               <>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                   <input
                     value={addInput}
                     onChange={(e) => {
@@ -399,7 +399,7 @@ export function ClientListView({
                       flex: 1,
                       background: 'rgba(var(--fg-rgb),0.06)',
                       border: `1px solid ${addError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`,
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       padding: '9px 12px',
                       outline: 'none',
                       color: 'var(--text)',
@@ -411,7 +411,7 @@ export function ClientListView({
                     disabled={addLoading || !addInput.trim()}
                     style={{
                       padding: '9px 16px',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: 'none',
                       background: addInput.trim()
                         ? 'var(--accent)'
@@ -476,7 +476,7 @@ export function ClientListView({
             {...pressable(() => openAddMode('invite'))}
             style={{
               border: '1px dashed rgba(var(--fg-rgb),0.18)',
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               padding: '14px 16px',
               textAlign: 'center',
               cursor: 'pointer',

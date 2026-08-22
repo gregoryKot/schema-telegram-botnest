@@ -98,7 +98,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 flex: 1,
                 height: 3,
-                borderRadius: 2,
+                borderRadius: 'var(--r-2)',
                 background:
                   i <= stepIndex
                     ? 'var(--accent-blue)'
@@ -139,7 +139,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 20,
           }}
         >
@@ -147,7 +147,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               background: cm('var(--accent-blue)', 12),
               border: `1px solid ${cm('var(--accent-blue)', 20)}`,
               display: 'flex',
@@ -179,7 +179,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 background: cm('var(--accent-blue)', 6),
                 border: `1px solid ${cm('var(--accent-blue)', 12)}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 marginBottom: 14,
               }}
@@ -209,7 +209,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 boxSizing: 'border-box',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: `1px solid ${belief.trim() ? cm('var(--accent-blue)', 30) : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '13px 14px',
                 color: 'var(--text)',
                 fontSize: 14,
@@ -227,7 +227,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: belief.trim()
                   ? cm('var(--accent-blue)', 15)
@@ -252,7 +252,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 background: cm('var(--accent-red)', 6),
                 border: `1px solid ${cm('var(--accent-red)', 12)}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '10px 14px',
                 marginBottom: 14,
               }}
@@ -291,7 +291,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: cm('var(--accent-blue)', 15),
                 color: 'var(--accent-blue)',
@@ -312,7 +312,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 background: cm('var(--accent-green)', 6),
                 border: `1px solid ${cm('var(--accent-green)', 12)}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '10px 14px',
                 marginBottom: 14,
               }}
@@ -355,7 +355,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: cm('var(--accent-blue)', 15),
                 color: 'var(--accent-blue)',
@@ -376,7 +376,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 background: cm('var(--accent)', 6),
                 border: `1px solid ${cm('var(--accent)', 12)}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '10px 14px',
                 marginBottom: 14,
               }}
@@ -412,7 +412,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 boxSizing: 'border-box',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: `1px solid ${reframe.trim() ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '13px 14px',
                 color: 'var(--text)',
                 fontSize: 14,
@@ -436,7 +436,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: cm('var(--accent-green)', 15),
                 color: 'var(--accent-green)',
@@ -474,7 +474,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                   padding: '10px 14px',
                   background: 'rgba(var(--fg-rgb),0.03)',
                   border: '1px solid rgba(var(--fg-rgb),0.06)',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   marginBottom: 7,
                 }}
               >

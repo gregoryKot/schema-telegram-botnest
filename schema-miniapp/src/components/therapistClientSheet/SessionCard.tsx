@@ -79,7 +79,7 @@ export function SessionCard({
                 style={{
                   background: 'rgba(var(--fg-rgb),0.07)',
                   border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   padding: '5px 8px',
                   outline: 'none',
                   color: 'var(--text)',
@@ -97,7 +97,7 @@ export function SessionCard({
                 aria-label="Сохранить"
                 style={{
                   padding: '5px 10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'var(--accent)',
                   color: 'var(--on-accent)',
@@ -112,7 +112,7 @@ export function SessionCard({
                 aria-label="Отменить"
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'rgba(var(--fg-rgb),0.08)',
                   color: 'var(--text-sub)',
@@ -170,7 +170,7 @@ export function SessionCard({
                   ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
                   : 'rgba(var(--fg-rgb),0.05)',
               padding: '3px 8px',
-              borderRadius: 20,
+              borderRadius: 'var(--r-20)',
             }}
           >
             {selectedClient.lastActiveDate === today
@@ -185,7 +185,7 @@ export function SessionCard({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexWrap: 'wrap',
         }}
       >
@@ -194,7 +194,7 @@ export function SessionCard({
           <div
             style={{
               display: 'flex',
-              gap: 4,
+              gap: 'var(--space-4)',
               alignItems: 'center',
               flexWrap: 'wrap',
             }}
@@ -211,7 +211,7 @@ export function SessionCard({
                 }
                 style={{
                   padding: '4px 9px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 12,
@@ -238,7 +238,7 @@ export function SessionCard({
               aria-label="Сохранить"
               style={{
                 padding: '4px 10px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 border: 'none',
                 background: 'var(--accent)',
                 color: 'var(--on-accent)',
@@ -254,7 +254,7 @@ export function SessionCard({
               aria-label="Отменить"
               style={{
                 padding: '4px 8px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 border: 'none',
                 background: 'rgba(var(--fg-rgb),0.07)',
                 color: 'var(--text-sub)',
@@ -269,7 +269,7 @@ export function SessionCard({
           <div
             style={{
               display: 'flex',
-              gap: 4,
+              gap: 'var(--space-4)',
               alignItems: 'center',
               cursor: 'pointer',
             }}
@@ -299,7 +299,7 @@ export function SessionCard({
                         fontSize: 12,
                         fontWeight: 600,
                         padding: '3px 8px',
-                        borderRadius: 20,
+                        borderRadius: 'var(--r-20)',
                         background:
                           'color-mix(in srgb, var(--accent) 15%, transparent)',
                         color: 'var(--accent)',
@@ -340,7 +340,7 @@ export function SessionCard({
                 style={{
                   background: 'rgba(var(--fg-rgb),0.07)',
                   border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   padding: '5px 8px',
                   outline: 'none',
                   color: 'var(--text)',
@@ -358,7 +358,7 @@ export function SessionCard({
                 aria-label="Сохранить"
                 style={{
                   padding: '5px 10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'var(--accent)',
                   color: 'var(--on-accent)',
@@ -373,7 +373,7 @@ export function SessionCard({
                 aria-label="Отменить"
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'rgba(var(--fg-rgb),0.08)',
                   color: 'var(--text-sub)',
@@ -391,7 +391,7 @@ export function SessionCard({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
               }}
               {...pressable(() => {
                 setLocalNextSession(selectedClient.nextSession ?? '');

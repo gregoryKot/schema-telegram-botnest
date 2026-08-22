@@ -104,7 +104,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           aria-valuemax={TOTAL_STEPS}
           style={{
             height: 3,
-            borderRadius: 2,
+            borderRadius: 'var(--r-2)',
             background: 'rgba(var(--fg-rgb),0.1)',
             marginBottom: 16,
             overflow: 'hidden',
@@ -114,7 +114,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             style={{
               width: `${progress}%`,
               height: '100%',
-              borderRadius: 2,
+              borderRadius: 'var(--r-2)',
               background: 'var(--accent-green)',
               transition: 'width 0.2s',
             }}
@@ -125,7 +125,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 18,
           }}
         >
@@ -133,7 +133,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               background:
                 'color-mix(in srgb, var(--accent-green) 12%, transparent)',
               border:
@@ -167,7 +167,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
               style={{
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.08)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 marginBottom: 14,
                 fontSize: 12.5,
@@ -190,7 +190,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
                 boxSizing: 'border-box',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: `1px solid ${phrase.trim() ? 'color-mix(in srgb, var(--accent-green) 30%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '13px 14px',
                 color: 'var(--text)',
                 fontSize: 14,

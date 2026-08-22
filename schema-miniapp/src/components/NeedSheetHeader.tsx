@@ -32,7 +32,7 @@ export function NeedSheetHeader({
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 14,
+        gap: 'var(--space-14)',
         marginBottom: 24,
         cursor: 'pointer',
       }}
@@ -41,7 +41,7 @@ export function NeedSheetHeader({
         style={{
           width: 48,
           height: 48,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           flexShrink: 0,
           background: color + '26',
           display: 'flex',
@@ -71,7 +71,7 @@ export function NeedSheetHeader({
               style={{
                 fontSize: 11,
                 padding: '3px 8px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 background: color + '1f',
                 color,
               }}

@@ -118,7 +118,7 @@ export function ModeMapSelector({ clientId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Map selector bar — pill-style tabs */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 4,
+        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
         padding: '8px 12px',
         borderBottom: '1px solid var(--line)',
         overflowX: 'auto', flexShrink: 0, minHeight: 42,
@@ -133,7 +133,7 @@ export function ModeMapSelector({ clientId }: Props) {
                 onBlur={() => renameMap(m.id, editTitle)}
                 onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
                 style={{
-                  fontSize: 13, fontWeight: 500, padding: '4px 8px', borderRadius: 6,
+                  fontSize: 13, fontWeight: 500, padding: '4px 8px', borderRadius: 'var(--r-6)',
                   border: '1.5px solid var(--accent)', background: 'var(--bg-elev)',
                   color: 'var(--text)', outline: 'none', width: 120,
                 }}
@@ -196,13 +196,13 @@ export function ModeMapSelector({ clientId }: Props) {
             style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{
             position: 'fixed', left: menuPos.x, top: menuPos.y, zIndex: 61, width: 280,
-            background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
+            background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-8)',
             padding: 5, boxShadow: 'var(--shadow-2)',
           }}>
             {KINDS.map(k => (
               <button key={k} onClick={() => createMap(k)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
-                  borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
+                  borderRadius: 'var(--r-6)', cursor: 'pointer', background: 'none', border: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
@@ -223,16 +223,16 @@ export function ModeMapSelector({ clientId }: Props) {
           </div>
         )}
         {!loading && maps.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}><MMIcon name="map" size={26} /></div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 'var(--space-12)' }}>
+            <div style={{ width: 52, height: 52, borderRadius: 'var(--r-12)', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}><MMIcon name="map" size={26} /></div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Нет карт режимов</div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
               {tr('Выбери тип первой карты', 'Выберите тип первой карты')}
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
               {KINDS.map(k => (
                 <button key={k} onClick={() => createMap(k)} disabled={creating}
-                  style={{ width: 200, padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                  style={{ width: 200, padding: '14px 16px', borderRadius: 'var(--r-10)', cursor: 'pointer', textAlign: 'left',
                     background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{KIND_META[k].label}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>

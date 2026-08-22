@@ -35,7 +35,7 @@ export function Btn({
     dark:    { background: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.2)', color: INK_ON_DARK },
   };
   const css: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)',
     padding: BTN_PAD[size], fontSize: BTN_FS[size], fontWeight: 700, fontFamily: 'inherit',
     borderRadius: radius === 'pill' ? R.pill : R.btn,
     border: '1.5px solid transparent', boxSizing: 'border-box',

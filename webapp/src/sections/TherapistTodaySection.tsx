@@ -99,7 +99,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                       const time = sessionTime(c);
                       return (
                         <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 0',
                             borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
                             background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                           <span style={{ fontWeight: 500, fontSize: 14, color: 'var(--text)', flex: 1 }}>
@@ -127,7 +127,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                     const done = c.todayIndex != null;
                     return (
                       <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 0',
                           borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
                           background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
@@ -179,14 +179,14 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
             {needingAttention.length > 0 && (
               <div>
                 <div className="eyebrow" style={{ marginBottom: 14, color: 'var(--c-amber)',
-                  display: 'flex', alignItems: 'center', gap: 8 }}>
+                  display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--c-amber)', display: 'inline-block' }} />
                   Требуют внимания
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   {needingAttention.map(c => (
                     <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 0',
                         borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
                         background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                       <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500, flex: 1 }}>

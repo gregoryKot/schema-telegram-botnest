@@ -34,11 +34,11 @@ export function AuthErrorPage() {
             {reason}
           </p>
         )}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--text)', color: 'var(--bg)', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-12)', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--text)', color: 'var(--bg)', borderRadius: 'var(--r-8)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
             Попробовать снова
           </a>
-          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '13px 28px', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', borderRadius: 12, fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
+          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '13px 28px', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', borderRadius: 'var(--r-12)', fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
             Написать
           </a>
         </div>

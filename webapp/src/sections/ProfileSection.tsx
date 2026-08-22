@@ -136,7 +136,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         {!ready && (
           <>
             {[110, 80, 72].map((h, i) => (
-              <div key={i} style={{ height: h, borderRadius: 20, background: 'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)', backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
+              <div key={i} style={{ height: h, borderRadius: 'var(--r-20)', background: 'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)', backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
             ))}
           </>
         )}
@@ -185,7 +185,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             <div className="section-head"><h3>Стрик</h3></div>
             {/* Top row: big number + secondary stats */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)' }}>
                 <div style={{
                   fontSize: 56, fontWeight: 900, lineHeight: 1, letterSpacing: '-3px',
                   color: currentStreak > 0
@@ -243,7 +243,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
             {/* CTA to fill today (streak broken) */}
             {currentStreak === 0 && totalDays > 0 && onOpenTracker && (
-              <button onClick={onOpenTracker} style={{ marginTop: 14, width: '100%', padding: '10px 0', border: 'none', borderRadius: 12, background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={onOpenTracker} style={{ marginTop: 14, width: '100%', padding: '10px 0', border: 'none', borderRadius: 'var(--r-12)', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Заполнить сегодня →
               </button>
             )}
@@ -331,7 +331,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое – за первую запись в дневник</div>
             ) : (
               /* Horizontal scroll of earned achievements */
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
                 {earnedList.map(a => {
                   const m = ACHIEVEMENT_META[a.id];
                   if (!m) return null;
@@ -340,7 +340,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       padding: '10px 12px',
-                      borderRadius: 14,
+                      borderRadius: 'var(--r-14)',
                       background: 'color-mix(in srgb, var(--accent) 9%, transparent)',
                       border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
                       minWidth: 64,
@@ -355,7 +355,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     flexShrink: 0,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '10px 12px',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     background: 'rgba(var(--fg-rgb),0.04)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                     minWidth: 64,
@@ -377,9 +377,9 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
             {/* Best / worst day pills */}
             {((insights?.bestDayOfWeek || insights?.worstDayOfWeek) && (insights?.totalDays ?? 0) >= 7) && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 16 }}>
                 {insights?.bestDayOfWeek && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-yellow) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--accent-yellow) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
@@ -388,7 +388,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                   </div>
                 )}
                 {insights?.worstDayOfWeek && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>тяжелее</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)' }}>{insights.worstDayOfWeek}</div>
@@ -399,7 +399,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             )}
 
             {/* Need bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
               {insights?.weeklyStats.filter(s => s.avg !== null).map(s => {
                 const isUp = s.trend === '↑';
                 const isDown = s.trend === '↓';
@@ -411,8 +411,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{NEED_NAMES[s.needId]}</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>{(s.avg ?? 0).toFixed(1)} <span style={{ fontSize: 11 }}>{s.trend}</span></span>
                     </div>
-                    <div style={{ height: 6, borderRadius: 4, background: 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 4, width: `${barW}%`, background: barColor, opacity: 0.7, transition: 'width 0.4s ease' }} />
+                    <div style={{ height: 6, borderRadius: 'var(--r-4)', background: 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 'var(--r-4)', width: `${barW}%`, background: barColor, opacity: 0.7, transition: 'width 0.4s ease' }} />
                     </div>
                   </div>
                 );
@@ -450,7 +450,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         </div>
 
         {/* ── Настройки и аккаунт (только мобайл, на десктопе есть в сайдбаре) ── */}
-        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
@@ -494,12 +494,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
         >
-        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-8)' }}>
               {achievements.map(a => {
                 const m = ACHIEVEMENT_META[a.id];
                 if (!m) return null;
@@ -522,7 +522,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     style={{
                       background: a.earned ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
                       border: `1px solid ${a.earned ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'rgba(var(--fg-rgb),0.06)'}`,
-                      borderRadius: 16, padding: '14px 10px 12px',
+                      borderRadius: 'var(--r-16)', padding: '14px 10px 12px',
                       textAlign: 'center',
                       cursor: a.earned ? 'pointer' : 'default',
                     }}
@@ -555,7 +555,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => setShowBestDayInfo(false)}
         >
-          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>

@@ -9,7 +9,11 @@ export function JourneyEntryCard({ onOpen }: { onOpen: () => void }) {
     <div
       {...pressable(onOpen)}
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px', cursor: 'pointer' }}
+      style={{
+        borderRadius: 'var(--r-20)',
+        padding: '16px 16px',
+        cursor: 'pointer',
+      }}
     >
       <div
         style={{

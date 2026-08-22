@@ -55,7 +55,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
               style={{
                 background: 'rgba(var(--fg-rgb),0.03)',
                 border: '1px solid rgba(var(--fg-rgb),0.06)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 marginBottom: 8,
               }}
@@ -104,7 +104,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
           style={{
             background: 'rgba(var(--fg-rgb),0.03)',
             border: '1px solid rgba(var(--fg-rgb),0.07)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: 14,
             marginTop: 8,
           }}
@@ -150,7 +150,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
               disabled={noteSaving || !newNoteText.trim()}
               style={{
                 padding: '8px 18px',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 border: 'none',
                 background: newNoteText.trim()
                   ? 'color-mix(in srgb, var(--accent) 25%, transparent)'

@@ -20,7 +20,7 @@ const btnStyle = (active: boolean): React.CSSProperties => ({
 
 export function ShapePicker({ newType, newCopingSub, setNewType, setNewCopingSub }: Props) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
       {([
         { type: 'child' as NodeType,   label: 'Дет.',  shape: 'circle'  },
         { type: 'critic' as NodeType,  label: 'Крит.', shape: 'oct'     },

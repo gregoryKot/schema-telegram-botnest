@@ -238,7 +238,7 @@ export function AppShell() {
       <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center' }}>
         <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Не удалось загрузить</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{tr('Проверь подключение и попробуй ещё раз', 'Проверьте подключение и попробуйте ещё раз')}</div>
-        <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 'var(--r-8)', background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
           Повторить
         </button>
       </div>
@@ -288,7 +288,7 @@ export function AppShell() {
                       onChange={e => setClientSearch(e.target.value)}
                       placeholder="Поиск клиента…"
                       style={{
-                        width: '100%', padding: '5px 9px', borderRadius: 6,
+                        width: '100%', padding: '5px 9px', borderRadius: 'var(--r-6)',
                         border: '1px solid rgba(var(--fg-rgb),0.13)',
                         background: 'rgba(var(--fg-rgb),0.05)',
                         color: 'var(--text)', fontSize: 12.5, outline: 'none',
@@ -363,7 +363,7 @@ export function AppShell() {
                   style={{ marginTop: 2 }}>
             <span>Выйти</span>
           </button>
-          <div style={{ display: 'flex', gap: 12, padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
             <a href="/privacy" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Конфиденциальность</a>
             <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
           </div>

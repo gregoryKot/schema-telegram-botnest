@@ -87,7 +87,13 @@ export function DiaryListView({
           borderBottom: '1px solid var(--line)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-10)',
+          }}
+        >
           <button
             onClick={onBack}
             aria-label="Назад"
@@ -175,7 +181,7 @@ export function DiaryListView({
           right: 20,
           background: 'var(--accent)',
           border: 'none',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           minHeight: 48,
           padding: '14px 20px',
           color: 'var(--on-accent)',

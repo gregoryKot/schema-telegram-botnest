@@ -27,7 +27,7 @@ export function ViewCard({ viewing, modes, onClose }: ViewCardProps) {
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '16px',
           }}
         >

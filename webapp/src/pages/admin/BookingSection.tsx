@@ -125,7 +125,7 @@ function PricesManager({ adminKey }: { adminKey: string }) {
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Цены</h2>
       {paid.map((o) => (
-        <div key={o.type} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', flexWrap: 'wrap' }}>
+        <div key={o.type} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
           <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.label} · {o.durationMin} мин</span>
           <input type="number" min={0} value={draft[o.type] ?? 0}
             onChange={(e) => setDraft({ ...draft, [o.type]: Math.max(0, Math.round(Number(e.target.value))) })}
@@ -157,7 +157,7 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
       {opts.map((o) => (
-        <div key={o.period} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', flexWrap: 'wrap' }}>
+        <div key={o.period} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
           <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.period === 'year' ? 'Год' : 'Месяц'}</span>
           <input type="number" min={1} value={draft[o.period] ?? 0}
             onChange={(e) => setDraft({ ...draft, [o.period]: Math.max(1, Math.round(Number(e.target.value))) })}
@@ -198,7 +198,7 @@ function ScheduleManager({ rules, rulesFailed, onChange, adminKey }: { rules: Av
       {rulesFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить расписание — возможно, неверный админ-ключ или нет соединения.</p>}
       {!rulesFailed && rules.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет правил. Добавьте слоты ниже.</p>}
       {rules.map(r => (
-        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)', opacity: r.isActive ? 1 : 0.45 }}>
+        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '8px 0', borderBottom: '1px solid var(--line)', opacity: r.isActive ? 1 : 0.45 }}>
           <strong style={{ width: 36, color: 'var(--text)' }}>{DAYS[r.dayOfWeek]}</strong>
           <span style={{ flex: 1, color: 'var(--text-sub)', fontSize: 14 }}>
             {pad(r.startHour)}:{pad(r.startMinute)}–{pad(r.endHour)}:{pad(r.endMinute)} · {r.sessionDuration} мин (+{r.bufferMin})
@@ -209,7 +209,7 @@ function ScheduleManager({ rules, rulesFailed, onChange, adminKey }: { rules: Av
           <button aria-label="Удалить правило" style={{ ...btnGhost, padding: '4px 10px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => api.adminDeleteRule(adminKey, r.id).then(onChange)}>✕</button>
         </div>
       ))}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 16 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)', alignItems: 'center', marginTop: 16 }}>
         <select style={input} value={day} onChange={e => setDay(Number(e.target.value))}>
           {DAYS_FULL.map((d, i) => <option key={i} value={i}>{d}</option>)}
         </select>
@@ -265,7 +265,7 @@ function BookingsManager({ adminKey }: { adminKey: string }) {
       {!bookingsFailed && bookings.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Записей нет.</p>}
       {bookings.map(b => (
         <div key={b.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
             <strong style={{ color: 'var(--text)', fontSize: 14 }}>{fmtTime.format(new Date(b.startsAt))} МСК</strong>
             <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: statusBg(b.status), color: '#fff' }}>{statusLabel(b.status)}</span>
             <span style={{ flex: 1 }} />

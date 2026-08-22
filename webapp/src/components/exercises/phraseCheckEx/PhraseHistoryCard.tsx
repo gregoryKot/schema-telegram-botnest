@@ -43,7 +43,7 @@ export function PhraseHistoryCard({
           style={{
             background: 'var(--surface-2)',
             border: '1px solid var(--line)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: markLabels.length > 0 ? 10 : 16,
             fontSize: 14,

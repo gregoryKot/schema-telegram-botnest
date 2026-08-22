@@ -14,7 +14,7 @@ export interface AccountProvider {
 const iconBox = {
   width: 36,
   height: 36,
-  borderRadius: 10,
+  borderRadius: 'var(--r-10)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -24,7 +24,7 @@ const btnGhost = {
   background: 'transparent',
   border: '1px solid rgba(var(--fg-rgb),0.15)',
   color: 'var(--text-sub)',
-  borderRadius: 8,
+  borderRadius: 'var(--r-8)',
   padding: '6px 12px',
   fontSize: 12,
   cursor: 'pointer',
@@ -34,7 +34,7 @@ const btnSolid = {
   background: 'var(--text)',
   border: 'none',
   color: 'var(--bg)',
-  borderRadius: 6,
+  borderRadius: 'var(--r-6)',
   padding: '7px 14px',
   fontSize: 12,
   fontWeight: 600,
@@ -78,7 +78,7 @@ export function ProviderRow({
           : {}),
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
         {icon}
         <div>
           <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>
@@ -109,6 +109,9 @@ export function ProviderRow({
   );
 }
 
+// Цвета логотипов ниже (#4285F4/#34A853/#FBBC05/#EA4335 — Google,
+// #2AABEE — Telegram, #0077FF — VK) — официальные брендовые цвета сторонних
+// сервисов, не токены продукта. Не заводить в контракт, не менять по теме.
 export function GoogleIcon() {
   return (
   <div style={{ ...iconBox, background: 'rgba(var(--fg-rgb),0.04)' }}>

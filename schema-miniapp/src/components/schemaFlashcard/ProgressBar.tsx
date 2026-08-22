@@ -2,14 +2,14 @@ import { STEPS } from './constants';
 
 export function ProgressBar({ stepIndex }: { stepIndex: number }) {
   return (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 20 }}>
       {STEPS.map((s, i) => (
         <div
           key={s}
           style={{
             flex: 1,
             height: 4,
-            borderRadius: 2,
+            borderRadius: 'var(--r-2)',
             background:
               i < stepIndex
                 ? 'var(--accent)'

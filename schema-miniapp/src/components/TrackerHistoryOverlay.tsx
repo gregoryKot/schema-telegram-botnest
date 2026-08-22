@@ -104,7 +104,7 @@ export function TrackerHistoryOverlay({
               padding: '0 4px 0 0',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 'var(--space-4)',
             }}
           >
             ‹ Назад
@@ -122,7 +122,7 @@ export function TrackerHistoryOverlay({
                 'color-mix(in srgb, var(--accent) 10%, var(--surface-2))',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '6px 12px',
               cursor: 'pointer',
               fontSize: 12,
@@ -153,7 +153,7 @@ export function TrackerHistoryOverlay({
             padding: '16px 20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <SkeletonCard h={180} />

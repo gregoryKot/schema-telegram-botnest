@@ -58,7 +58,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
       aside={
         <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color }}>Потребность</div>
-          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><IdentityDot color={needColor} /> {needLabel}</h3>
+          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}><IdentityDot color={needColor} /> {needLabel}</h3>
           <p className="body">Практика помогает восстановить потребность через конкретное действие</p>
         </div>
       }
@@ -75,9 +75,9 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
               <div className="prompt-num">·</div>
               <div style={{ width: '100%' }}>
                 <div className="prompt-label">Готовые варианты</div>
-                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   {allOptions.map(({ text, isUser, id }) => (
-                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                       <div
                         onClick={() => selectText(text)}
                         role="button" tabIndex={0}
@@ -91,7 +91,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
                       {isUser && id !== undefined && (
                         <button
                           onClick={() => handleDeletePractice(id)}
-                          style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deletingIds.has(id) ? 'default' : 'pointer', fontSize: 16, color: deletingIds.has(id) ? 'var(--text-ghost)' : 'var(--c-rose)', border: 'none' }}
+                          style={{ width: 32, height: 32, borderRadius: 'var(--r-8)', flexShrink: 0, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deletingIds.has(id) ? 'default' : 'pointer', fontSize: 16, color: deletingIds.has(id) ? 'var(--text-ghost)' : 'var(--c-rose)', border: 'none' }}
                           aria-label="Удалить"
                         >×</button>
                       )}
@@ -131,7 +131,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
             <div className="prompt-num">·</div>
             <div style={{ width: '100%' }}>
               <div className="prompt-label">Практика</div>
-              <div style={{ marginTop: 8, padding: '14px 16px', borderRadius: 12, background: `${color}18`, border: `1px solid ${color}33`, fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
+              <div style={{ marginTop: 8, padding: '14px 16px', borderRadius: 'var(--r-12)', background: `${color}18`, border: `1px solid ${color}33`, fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
                 {selectedText}
               </div>
             </div>
@@ -142,7 +142,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
             <div className="prompt-num">·</div>
             <div style={{ width: '100%' }}>
               <div className="prompt-label">Напомнить завтра</div>
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {REMINDER_OPTIONS.map((opt, i) => (
                   <div
                     key={i}
@@ -169,7 +169,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
           {/* ICS download — паритет с мини-аппом, правило №16 */}
           <button
             onClick={handleIcsDownload}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
           >
             <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавить в календарь (.ics)</span>
           </button>

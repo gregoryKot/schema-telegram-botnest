@@ -51,7 +51,7 @@ export function BottomSheetShell({
           style={{
             width: 36,
             height: 4,
-            borderRadius: 2,
+            borderRadius: 'var(--r-2)',
             background: 'var(--surface-3)',
             margin: '0 auto 20px',
           }}

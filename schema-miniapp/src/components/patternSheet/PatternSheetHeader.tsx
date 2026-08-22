@@ -16,7 +16,7 @@ export function PatternSheetHeader({ color, name, subtitle, onBack }: Props) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         marginBottom: 18,
       }}
     >
@@ -24,7 +24,7 @@ export function PatternSheetHeader({ color, name, subtitle, onBack }: Props) {
         style={{
           width: 48,
           height: 48,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           flexShrink: 0,
           background: cm(color, 9),
           border: `1px solid ${cm(color, 16)}`,
@@ -58,7 +58,7 @@ export function PatternSheetHeader({ color, name, subtitle, onBack }: Props) {
         style={{
           minWidth: 44,
           minHeight: 44,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: '1px solid var(--border-color)',
           background: 'var(--surface-2)',
           color: 'var(--text-sub)',

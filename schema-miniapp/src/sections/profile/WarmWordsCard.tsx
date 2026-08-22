@@ -44,7 +44,7 @@ export function WarmWordsCard() {
         {...pressable(() => setOpen(true))}
         className="card"
         style={{
-          borderRadius: 20,
+          borderRadius: 'var(--r-20)',
           padding: '16px 16px 18px',
           cursor: 'pointer',
         }}

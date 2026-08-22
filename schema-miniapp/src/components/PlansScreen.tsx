@@ -61,7 +61,13 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           padding: '16px 20px 14px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-12)',
+          }}
+        >
           <button
             onClick={onClose}
             aria-label="Назад"
@@ -70,7 +76,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             <span
               style={{
                 ...hitboxStyle(34, 34).inner,
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: 'var(--surface-2)',
                 display: 'flex',
                 alignItems: 'center',
@@ -158,7 +164,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 }}
                 style={{
                   padding: '12px 28px',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   border: 'none',
                   fontFamily: 'inherit',
                   background: 'var(--surface)',
@@ -191,7 +197,11 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                   Ожидают выполнения
                 </div>
                 <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-10)',
+                  }}
                 >
                   {pending.map((plan) => (
                     <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />
@@ -216,7 +226,11 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                   Выполненные
                 </div>
                 <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-10)',
+                  }}
                 >
                   {completed.map((plan) => (
                     <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />

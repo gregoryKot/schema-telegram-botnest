@@ -33,7 +33,7 @@ export function ModeMapLegend({ onClose }: { onClose: () => void }) {
   return (
     <div style={{
       background: 'var(--bg-elev)', border: '1px solid var(--line)',
-      borderRadius: 12, padding: '11px 13px', boxShadow: 'var(--shadow-2)',
+      borderRadius: 'var(--r-12)', padding: '11px 13px', boxShadow: 'var(--shadow-2)',
       fontSize: 12, minWidth: 188,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -42,7 +42,7 @@ export function ModeMapLegend({ onClose }: { onClose: () => void }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {ITEMS.map(it => (
-          <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
             <Glyph shape={it.shape} color={it.color} />
             <span style={{ color: 'var(--text-sub)' }}>{it.label}</span>
           </div>

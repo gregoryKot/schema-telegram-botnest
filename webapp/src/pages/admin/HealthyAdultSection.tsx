@@ -70,7 +70,7 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
           переменной <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
           администратором канала.
         </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap', alignItems: 'center' }}>
           <button style={btnGhost} onClick={() => testPost()} disabled={testing}>
             {testing ? 'Отправка…' : 'Проверить: отправить сейчас'}
           </button>
@@ -79,7 +79,7 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
           </span>
         </div>
         {testMsg && (
-          <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, margin: '10px 0 0', color: 'var(--text)', background: 'rgba(var(--fg-rgb),0.04)', padding: 10, borderRadius: 8 }}>
+          <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, margin: '10px 0 0', color: 'var(--text)', background: 'rgba(var(--fg-rgb),0.04)', padding: 10, borderRadius: 'var(--r-8)' }}>
             {testMsg}
           </p>
         )}
@@ -89,7 +89,7 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
         <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>
           Добавить фразу
         </h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)', alignItems: 'flex-start' }}>
           <textarea
             style={{ ...input, flex: 1, minHeight: 60, resize: 'vertical', lineHeight: 1.5 }}
             placeholder="Безличная поддерживающая фраза (без «ты/вы»)…"
@@ -166,7 +166,7 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button style={btn} onClick={save} disabled={busy || !dirty}>Сохранить</button>
         <button style={btnGhost} onClick={toggle} disabled={busy}>
           {row.enabled ? 'Выключить' : 'Включить'}

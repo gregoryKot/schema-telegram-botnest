@@ -137,7 +137,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
           <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
                onClick={() => setSelectedId(s.id)}>
             <span style={{
-              width: 14, height: 14, borderRadius: 4,
+              width: 14, height: 14, borderRadius: 'var(--r-4)',
               border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
               background: isDone ? 'var(--c-moss)' : 'transparent',
               flexShrink: 0, marginTop: 4,
@@ -161,7 +161,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
               )}
             </div>
             {isCurrent && !isDone ? (
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexShrink: 0 }}>
                 <span
                   className="link"
                   style={{ cursor: 'pointer' }}

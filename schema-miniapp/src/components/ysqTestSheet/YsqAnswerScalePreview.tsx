@@ -5,7 +5,7 @@ export function YsqAnswerScalePreview() {
     <div
       style={{
         background: 'rgba(var(--fg-rgb),0.05)',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         padding: '12px 16px',
         marginBottom: 20,
       }}
@@ -20,13 +20,19 @@ export function YsqAnswerScalePreview() {
       >
         Шкала ответов:
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 'var(--space-4)',
+        }}
+      >
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <div key={n} style={{ textAlign: 'center', flex: 1 }}>
             <div
               style={{
                 height: 34,
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: `color-mix(in srgb, var(--accent) ${6 + n * 13}%, rgba(var(--fg-rgb),0.06))`,
                 display: 'flex',
                 alignItems: 'center',

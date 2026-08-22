@@ -21,7 +21,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 'var(--space-10)',
         }}
       >
         {concept.history.map((snap, i) => {
@@ -52,7 +52,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
               style={{
                 background: 'rgba(var(--fg-rgb),0.03)',
                 border: '1px solid rgba(var(--fg-rgb),0.06)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
               }}
             >
@@ -95,7 +95,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                     background:
                       'color-mix(in srgb, var(--accent) 10%, transparent)',
                     border: 'none',
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-8)',
                     padding: '4px 10px',
                     cursor: 'pointer',
                   }}
@@ -108,7 +108,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                   style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: 4,
+                    gap: 'var(--space-4)',
                     marginBottom: 6,
                   }}
                 >
@@ -118,7 +118,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                       style={{
                         fontSize: 11,
                         padding: '2px 8px',
-                        borderRadius: 20,
+                        borderRadius: 'var(--r-20)',
                         background: color + '20',
                         color,
                       }}
@@ -141,7 +141,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
-                          gap: 4,
+                          gap: 'var(--space-4)',
                           marginBottom: 3,
                         }}
                       >
@@ -151,7 +151,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                             style={{
                               fontSize: 11,
                               padding: '2px 8px',
-                              borderRadius: 20,
+                              borderRadius: 'var(--r-20)',
                               background: group.color + '20',
                               color: group.color,
                             }}

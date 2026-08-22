@@ -32,7 +32,7 @@ export function ToolRow({
         borderRadius: 18,
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         minHeight: 66,
         animation: 'slide-up 0.3s ease both',
         animationDelay: `${index * 45}ms`,

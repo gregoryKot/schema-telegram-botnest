@@ -122,7 +122,7 @@ export function OnboardingWidget({
       style={{
         background: 'rgba(var(--fg-rgb),0.04)',
         border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '16px 18px',
         overflow: 'hidden',
       }}
@@ -147,7 +147,7 @@ export function OnboardingWidget({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 10,
           }}
         >
@@ -155,7 +155,7 @@ export function OnboardingWidget({
             style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
@@ -203,13 +203,13 @@ export function OnboardingWidget({
       </div>
 
       {/* Buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 14 }}>
         {isCurrentDone ? (
           <div
             style={{
               flex: 1,
               padding: '11px 0',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               textAlign: 'center',
               background:
                 'color-mix(in srgb, var(--accent-green) 10%, transparent)',
@@ -228,7 +228,7 @@ export function OnboardingWidget({
             style={{
               flex: 1,
               padding: '11px 0',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: current.color,
@@ -248,7 +248,7 @@ export function OnboardingWidget({
             onClick={handleSkip}
             style={{
               padding: '11px 14px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.06)',
@@ -282,7 +282,7 @@ export function OnboardingWidget({
               <div
                 style={{
                   ...dotHitbox.inner,
-                  borderRadius: 4,
+                  borderRadius: 'var(--r-4)',
                   transition: 'all 0.25s ease',
                   background: d
                     ? 'color-mix(in srgb, var(--accent-green) 65%, transparent)'

@@ -161,7 +161,7 @@ export function SecondaryCards({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '7px 0',
                   borderTop:
                     i > 0 ? '1px solid var(--border-color)' : undefined,
@@ -171,7 +171,7 @@ export function SecondaryCards({
                   style={{
                     width: 4,
                     height: 36,
-                    borderRadius: 4,
+                    borderRadius: 'var(--r-4)',
                     flexShrink: 0,
                     background: typeColor,
                   }}

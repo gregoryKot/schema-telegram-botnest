@@ -22,7 +22,11 @@ export function DisclaimerNeedsWhatStep() {
 
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 12,
+        }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
           У каждого человека есть{' '}
@@ -54,7 +58,7 @@ export function DisclaimerNeedsWhatStep() {
                 alignItems: 'center',
                 gap: 7,
                 padding: '7px 11px',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: `color-mix(in srgb, ${color} 12%, transparent)`,
                 border: `1px solid color-mix(in srgb, ${color} 26%, transparent)`,
               }}

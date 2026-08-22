@@ -37,7 +37,7 @@ const rowStyle = {
   minHeight: 60,
   display: 'flex',
   alignItems: 'center',
-  gap: 10,
+  gap: 'var(--space-10)',
   padding: '10px 2px',
   border: 'none',
   borderTop: '1px solid var(--border-color)',
@@ -160,7 +160,7 @@ export function MyPatternsCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px 6px' }}
+      style={{ borderRadius: 'var(--r-20)', padding: '16px 16px 6px' }}
     >
       <div className="d-caps" style={{ marginBottom: 10 }}>
         {TITLE[kind]}

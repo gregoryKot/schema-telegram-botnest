@@ -44,7 +44,7 @@ export function SkeletonCard({
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        gap: 'var(--space-12)',
         ...style,
       }}
     >

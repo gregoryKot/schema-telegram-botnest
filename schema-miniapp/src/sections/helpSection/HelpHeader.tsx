@@ -33,7 +33,9 @@ export function HelpHeader({
   const tr = useTr();
   return (
     <div style={{ padding: '20px 20px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
+      >
         <h1 className="d-display" style={{ fontSize: 26, margin: 0 }}>
           Здесь и сейчас
         </h1>

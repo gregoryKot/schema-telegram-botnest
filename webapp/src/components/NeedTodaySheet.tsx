@@ -82,8 +82,8 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
             onPointerMove={onPtrMove}
             style={{ position: 'relative', padding: '12px 0', cursor: 'pointer', touchAction: 'none', userSelect: 'none', marginBottom: 8 }}
           >
-            <div style={{ height: 6, borderRadius: 6, background: 'var(--surface-2)', overflow: 'hidden' }}>
-              <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 6, background: `linear-gradient(to right, ${color}55, ${color})` }} />
+            <div style={{ height: 6, borderRadius: 'var(--r-6)', background: 'var(--surface-2)', overflow: 'hidden' }}>
+              <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 'var(--r-6)', background: `linear-gradient(to right, ${color}55, ${color})` }} />
             </div>
             {/* Маркер «вчера» на шкале — паритет с miniapp NeedRatingBar (В10 аудита 2026-08) */}
             {typeof yesterdayValue === 'number' && yesterdayValue > 0 && (
@@ -121,13 +121,13 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
             <span>10</span>
           </div>
           {rangeIdx === 2 && (
-            <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
+            <div style={{ padding: '10px 12px', borderRadius: 'var(--r-8)', background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
               {tr('Хороший день – заметь это', 'Хороший день – заметьте это')}
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
             {data.tags.map(tag => (
-              <span key={tag} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: `${color}18`, color }}>
+              <span key={tag} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 'var(--r-20)', background: `${color}18`, color }}>
                 {tag}
               </span>
             ))}
@@ -152,7 +152,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           {showExamples && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
               {data.examples.map((ex, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < data.examples.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.examples.length - 1 ? '1px solid var(--line)' : 'none' }}>
                   <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>›</span>
                   <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ex}</span>
                 </div>
@@ -177,7 +177,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
             {showReflection && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
                 {data.reflection.map((q, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
                     <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>?</span>
                     <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{q}</span>
                   </div>
@@ -232,7 +232,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           <div className="prompt-num">·</div>
           <div style={{ width: '100%' }}>
             <div className="prompt-label">Что с этим сделать?</div>
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               <div
                 onClick={() => setShowPlan(true)}
                 role="button" tabIndex={0}

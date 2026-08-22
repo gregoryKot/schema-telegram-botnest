@@ -82,7 +82,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
             <h3>{tr('Говори от лица режима', 'Говорите от лица режима')}</h3>
             <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </div>
-          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
             <GlyphArrowLeft /> Сменить режим
           </button>
           <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
@@ -115,7 +115,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
             <div id="mode-entry-question" className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
             <div className="flash-hint">{tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')}</div>
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
-            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 12, background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
+            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 'var(--r-12)', background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c-moss)', marginBottom: 6 }}>Например, можно сказать себе:</div>
               <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-sub)', lineHeight: 1.55 }}>«{hint}»</div>
             </div>

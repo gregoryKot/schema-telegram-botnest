@@ -10,7 +10,7 @@ export function TbBtn({ children, label, onClick, disabled, active, caret }: {
   return (
     <div style={{ position: 'relative', display: 'flex' }}>
       <button onClick={onClick} disabled={disabled}
-        style={{ minWidth: 32, height: 30, padding: caret ? '0 6px 0 8px' : '0 7px', borderRadius: 6, border: 'none',
+        style={{ minWidth: 32, height: 30, padding: caret ? '0 6px 0 8px' : '0 7px', borderRadius: 'var(--r-6)', border: 'none',
           cursor: disabled ? 'default' : 'pointer', gap: 3,
           background: active ? 'var(--accent-soft)' : hover && !disabled ? 'var(--surface-2)' : 'none', fontSize: 15, lineHeight: 1,
           color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
@@ -54,7 +54,7 @@ export function Dropdown({ children, onClose, anchorRef }: {
         style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
       {pos && (
         <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 40, width: 220,
-          background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
+          background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-8)',
           padding: 4, boxShadow: 'var(--shadow-2)' }}>
           {children}
         </div>

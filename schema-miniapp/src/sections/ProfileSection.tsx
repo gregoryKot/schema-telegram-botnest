@@ -107,7 +107,7 @@ export function ProfileSection({
           padding: '16px 16px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 'var(--space-10)',
         }}
       >
         {/* ── Скелетон ── */}
@@ -123,7 +123,7 @@ export function ProfileSection({
                 key={i}
                 style={{
                   height: h,
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   background:
                     'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
                   backgroundSize: '200% auto',

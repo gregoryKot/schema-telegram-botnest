@@ -58,7 +58,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
       {clientDiary.length > 0 && (
         <div style={{ marginBottom: 40 }}>
           <div className="eyebrow" style={{ marginBottom: 16 }}>Дневник событий · {clientDiary.length}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             {clientDiary.map((entry, i) => {
               let color: string;
               let title: string;
@@ -89,7 +89,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                   style={{ borderLeft: `3px solid ${color}`, paddingLeft: 16, paddingBottom: 20, marginBottom: 4, cursor: 'pointer' }}
                   {...pressable(() => setExpandedDiary(expanded ? null : i))}
                 >
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-12)' }}>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 10 }}>{typeLabel}</span>
@@ -122,7 +122,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
             return (
               <div key={n.schemaId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 12 }}>
                   <IdentityDot color={domain?.color} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.name ?? n.schemaId}</span>
                 </div>
@@ -157,7 +157,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             const group = MODE_GROUPS.find(g => g.items.some(x => x.id === n.modeId));
             return (
               <div key={n.modeId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 12 }}>
                   <IdentityDot color={group?.color} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.name ?? n.modeId}</span>
                 </div>

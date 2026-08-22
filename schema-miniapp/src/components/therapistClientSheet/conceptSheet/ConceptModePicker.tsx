@@ -43,7 +43,7 @@ export function ConceptModePicker({
                   onClick={() => onToggle(mode.id)}
                   style={{
                     padding: '5px 10px',
-                    borderRadius: 20,
+                    borderRadius: 'var(--r-20)',
                     border: 'none',
                     cursor: 'pointer',
                     background: active

@@ -216,7 +216,7 @@ export function TaskCreateSheet({
             {...pressable(() => setType(opt.type))}
             style={{
               padding: '10px 14px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               cursor: 'pointer',
               background:
                 type === opt.type
@@ -225,7 +225,7 @@ export function TaskCreateSheet({
               border: `1px solid ${type === opt.type ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <div>
@@ -255,7 +255,7 @@ export function TaskCreateSheet({
       {selected.hasStreak && (
         <div style={{ marginBottom: 20 }}>
           <SectionLabel mb={8}>Цель в днях</SectionLabel>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             {STREAK_OPTIONS.map((d) => (
               <div
                 key={d}
@@ -264,7 +264,7 @@ export function TaskCreateSheet({
                   flex: 1,
                   textAlign: 'center',
                   padding: '8px 0',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   cursor: 'pointer',
                   background:
                     targetDays === d
@@ -297,7 +297,7 @@ export function TaskCreateSheet({
                 {...pressable(() => setSelectedSchemaId(s.id))}
                 style={{
                   padding: '10px 14px',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   cursor: 'pointer',
                   background:
                     selectedSchemaId === s.id
@@ -306,7 +306,7 @@ export function TaskCreateSheet({
                   border: `1px solid ${selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                 }}
               >
                 <div
@@ -349,7 +349,7 @@ export function TaskCreateSheet({
                 {...pressable(() => setSelectedModeId(m.id))}
                 style={{
                   padding: '10px 14px',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   cursor: 'pointer',
                   background:
                     selectedModeId === m.id
@@ -358,7 +358,7 @@ export function TaskCreateSheet({
                   border: `1px solid ${selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                 }}
               >
                 <div
@@ -401,7 +401,7 @@ export function TaskCreateSheet({
               minHeight: 72,
               background: 'rgba(var(--fg-rgb),0.05)',
               border: '1px solid rgba(var(--fg-rgb),0.12)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '10px 12px',
               color: 'var(--text)',
               fontSize: 14,
@@ -426,7 +426,7 @@ export function TaskCreateSheet({
               width: '100%',
               background: 'rgba(var(--fg-rgb),0.05)',
               border: '1px solid rgba(var(--fg-rgb),0.12)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '10px 12px',
               color: 'var(--text)',
               fontSize: 14,

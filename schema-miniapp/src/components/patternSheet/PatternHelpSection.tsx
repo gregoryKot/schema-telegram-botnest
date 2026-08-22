@@ -24,9 +24,9 @@ interface Props {
 
 const TIP_ROW_STYLE: CSSProperties = {
   display: 'flex',
-  gap: 8,
+  gap: 'var(--space-8)',
   background: 'rgba(var(--fg-rgb),0.05)',
-  borderRadius: 10,
+  borderRadius: 'var(--r-10)',
   padding: '10px 12px',
   marginBottom: 10,
 };
@@ -65,11 +65,11 @@ export function PatternHelpSection({ kind, id }: Props) {
               'color-mix(in srgb, var(--accent-green) 8%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 22%, transparent)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             marginBottom: 10,
             display: 'flex',
-            gap: 10,
+            gap: 'var(--space-10)',
           }}
         >
           <span style={{ fontSize: 18, flexShrink: 0 }}>🌿</span>
@@ -125,7 +125,7 @@ export function PatternHelpSection({ kind, id }: Props) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
         {QUICK_PRACTICE_IDS.map((pid) => {
           const practice = buildQuickPractice(pid, tr);
           return (
@@ -137,7 +137,7 @@ export function PatternHelpSection({ kind, id }: Props) {
                 alignItems: 'center',
                 gap: 6,
                 padding: '8px 12px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 border: '1px solid var(--border-color)',
                 background: 'var(--surface-2)',
                 color: 'var(--text)',

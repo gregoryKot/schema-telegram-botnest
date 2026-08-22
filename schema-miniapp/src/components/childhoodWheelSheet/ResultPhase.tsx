@@ -126,7 +126,7 @@ export function ResultPhase({
                 key={id}
                 style={{
                   background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   padding: '12px 14px',
                   marginBottom: 10,
                 }}
@@ -135,7 +135,7 @@ export function ResultPhase({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 'var(--space-8)',
                     marginBottom: 8,
                   }}
                 >
@@ -182,7 +182,7 @@ export function ResultPhase({
                         style={{
                           fontSize: 11,
                           padding: '3px 10px',
-                          borderRadius: 20,
+                          borderRadius: 'var(--r-20)',
                           background: hint.color + '18',
                           color: hint.color,
                           cursor: schemaData ? 'pointer' : 'default',
@@ -213,7 +213,7 @@ export function ResultPhase({
               background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
               cursor: 'pointer',
               marginTop: 4,
@@ -251,7 +251,7 @@ export function ResultPhase({
               'color-mix(in srgb, var(--accent-green) 10%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             marginBottom: 24,
           }}
@@ -283,13 +283,13 @@ export function ResultPhase({
         <TherapyNote compact />
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
         <button
           onClick={onEdit}
           style={{
             flex: 1,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
             background: 'transparent',
             color: 'var(--text-sub)',
@@ -304,7 +304,7 @@ export function ResultPhase({
           style={{
             flex: 2,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'rgba(var(--fg-rgb),0.08)',
             color: 'rgba(var(--fg-rgb),0.7)',

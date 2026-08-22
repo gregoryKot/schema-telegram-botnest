@@ -18,7 +18,7 @@ export function GearButton({
       style={{
         width: 44,
         height: 44,
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         border: '1px solid var(--border-color)',
         background: 'var(--surface)',
         color: 'var(--text-sub)',

@@ -126,7 +126,7 @@ export function Slider({
       <div
         style={{
           height: 6,
-          borderRadius: 6,
+          borderRadius: 'var(--r-6)',
           background: 'rgba(var(--fg-rgb),0.07)',
           overflow: 'hidden',
         }}
@@ -135,7 +135,7 @@ export function Slider({
           style={{
             width: `${pct}%`,
             height: '100%',
-            borderRadius: 6,
+            borderRadius: 'var(--r-6)',
             background: `linear-gradient(to right, ${color}55, ${color})`,
           }}
         />

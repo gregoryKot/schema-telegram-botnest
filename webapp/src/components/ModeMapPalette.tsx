@@ -115,7 +115,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
       {/* Search */}
       <div style={{ padding: '10px 10px 8px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…"
-          style={{ width: '100%', padding: '6px 10px', borderRadius: 6, boxSizing: 'border-box',
+          style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--r-6)', boxSizing: 'border-box',
             border: '1px solid var(--line-strong)', background: 'var(--bg-elev)',
             color: 'var(--text)', fontSize: 12.5, outline: 'none' }} />
       </div>
@@ -291,11 +291,11 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 function GroupDot({ type, color }: { type: NodeType; color: string }) {
   if (type === 'child') return <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />;
   if (type === 'coping') return <div style={{ width: 10, height: 10, background: color, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)', flexShrink: 0 }} />;
-  return <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />;
+  return <div style={{ width: 10, height: 10, borderRadius: 'var(--r-2)', background: color, flexShrink: 0 }} />;
 }
 
 const itemStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 8,
+  display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
   width: '100%', padding: '6px 14px',
   background: 'none', border: 'none', cursor: 'pointer',
   color: 'var(--text)', textAlign: 'left', outline: 'none',

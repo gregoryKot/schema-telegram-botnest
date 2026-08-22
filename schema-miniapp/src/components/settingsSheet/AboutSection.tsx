@@ -4,7 +4,10 @@ export function AboutSection() {
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>О ПРИЛОЖЕНИИ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, padding: '20px 16px' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: '20px 16px' }}
+      >
         <div
           style={{
             fontSize: 22,
@@ -51,7 +54,7 @@ export function AboutSection() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 16,
           }}
         >

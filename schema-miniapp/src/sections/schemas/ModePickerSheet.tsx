@@ -65,7 +65,13 @@ export function ModePickerSheet({
           >
             С чего начать
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+            }}
+          >
             {POPULAR_MODE_IDS.map((id) => {
               const mode = ALL_MODES.find((m) => m.id === id);
               if (!mode) return null;
@@ -78,9 +84,9 @@ export function ModePickerSheet({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     padding: '10px 12px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     cursor: 'pointer',
                     background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)',
                     border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`,
@@ -158,7 +164,13 @@ export function ModePickerSheet({
               >
                 {group.group}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-4)',
+                }}
+              >
                 {group.items
                   .filter((m) => !POPULAR_MODE_IDS.includes(m.id))
                   .map((m) => {
@@ -170,9 +182,9 @@ export function ModePickerSheet({
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 10,
+                          gap: 'var(--space-10)',
                           padding: '10px 12px',
-                          borderRadius: 12,
+                          borderRadius: 'var(--r-12)',
                           cursor: 'pointer',
                           background: active
                             ? cm(c, 9)
@@ -227,7 +239,7 @@ export function ModePickerSheet({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background:
               'linear-gradient(135deg, var(--accent), var(--accent-blue))',

@@ -72,7 +72,7 @@ export function PlanCard({
       style={{
         background: colors.bg,
         border: `1px solid ${colors.border}`,
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '14px 16px',
         overflow: 'hidden',
       }}
@@ -112,14 +112,14 @@ export function PlanCard({
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button
             onClick={() => checkin(true)}
             style={{
               flex: 1,
               padding: '9px 0',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               fontFamily: 'inherit',
               background: 'rgba(52,211,153,0.12)',
               outline: '1px solid rgba(52,211,153,0.22)',
@@ -137,7 +137,7 @@ export function PlanCard({
               flex: 1,
               padding: '9px 0',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               fontFamily: 'inherit',
               background: 'rgba(248,113,113,0.08)',
               outline: '1px solid rgba(248,113,113,0.18)',

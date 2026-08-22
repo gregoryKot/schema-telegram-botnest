@@ -10,7 +10,7 @@ const BASE: CSSProperties = {
   width: '100%',
   textAlign: 'left',
   padding: '14px 18px',
-  borderRadius: 10,
+  borderRadius: 'var(--r-10)',
   fontSize: 14.5,
   lineHeight: 1.5,
   fontFamily: 'inherit',
@@ -43,7 +43,7 @@ export function PhraseMarkStep({
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)', marginBottom: 20 }}>
         <button
           onClick={() => onAnswer(c.id, false)}
           style={{

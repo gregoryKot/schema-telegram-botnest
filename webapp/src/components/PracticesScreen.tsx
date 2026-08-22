@@ -97,7 +97,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
             {errorToast && <span className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>Ошибка сохранения</span>}
             {addedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Добавлено</span>}
             <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
@@ -171,7 +171,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           <div className="text-sm muted" style={{ marginBottom: 12, maxWidth: 600 }}>
             Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>
-          <div style={{ display: 'flex', gap: 8, maxWidth: 600 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)', maxWidth: 600 }}>
             <input
               value={input}
               onChange={e => setInput(e.target.value)}

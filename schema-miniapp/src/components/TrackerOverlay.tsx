@@ -216,7 +216,7 @@ export function TrackerOverlay({
             padding: '0 20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <SkeletonList rows={5} h={56} />
@@ -256,7 +256,7 @@ export function TrackerOverlay({
           <span
             style={{
               ...hitboxStyle(34, 34).inner,
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'var(--surface-2)',
               display: 'flex',
               alignItems: 'center',
@@ -289,7 +289,7 @@ export function TrackerOverlay({
         </div>
         {/* Карандаш + история */}
         {!isBackfill ? (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             {onOpenNote && (
               <button
                 onClick={onOpenNote}
@@ -299,7 +299,7 @@ export function TrackerOverlay({
                 <span
                   style={{
                     ...hitboxStyle(34, 34).inner,
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-10)',
                     background: 'var(--surface-2)',
                     display: 'flex',
                     alignItems: 'center',
@@ -334,7 +334,7 @@ export function TrackerOverlay({
                 <span
                   style={{
                     ...hitboxStyle(34, 34).inner,
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-10)',
                     background: 'var(--surface-2)',
                     display: 'flex',
                     alignItems: 'center',
@@ -385,10 +385,10 @@ export function TrackerOverlay({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             cursor: 'pointer',
             padding: '6px 16px',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
           }}
@@ -414,7 +414,7 @@ export function TrackerOverlay({
                   delta > 0
                     ? 'color-mix(in srgb, var(--accent-green) 12%, transparent)'
                     : 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '1px 7px',
               }}
             >
@@ -555,7 +555,7 @@ export function TrackerOverlay({
           paddingBottom: 'max(20px, var(--safe-bottom))',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexShrink: 0,
         }}
       >
@@ -573,13 +573,13 @@ export function TrackerOverlay({
         )}
 
         {/* Nav */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={() => idx > 0 && setIdx(idx - 1)}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: idx === 0 ? 'var(--surface)' : 'var(--surface-2)',
@@ -596,7 +596,7 @@ export function TrackerOverlay({
               style={{
                 flex: 2,
                 padding: '13px',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 fontFamily: 'inherit',
                 background: 'var(--accent)',

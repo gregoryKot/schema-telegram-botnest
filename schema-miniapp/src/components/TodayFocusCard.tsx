@@ -49,12 +49,18 @@ export function TodayFocusCard({
           animationDelay: '80ms',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-12)',
+          }}
+        >
           <div
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               fontSize: 22,
               background:
@@ -95,7 +101,7 @@ export function TodayFocusCard({
                   'color-mix(in srgb, var(--accent) 10%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '8px 12px',
                 fontSize: 12,
                 fontWeight: 600,

@@ -21,7 +21,10 @@ export function PartnerSection({ onInfo }: { onInfo: () => void }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <SectionHeader onInfo={onInfo}>ПАРТНЁР</SectionHeader>
-      <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: 16 }}
+      >
         <PairPanel pair={pair} compact />
       </div>
     </div>

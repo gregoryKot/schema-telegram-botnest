@@ -43,7 +43,7 @@ export function ResponseStep({
           style={{
             background: 'rgba(52,211,153,0.07)',
             border: '1px solid rgba(52,211,153,0.18)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '16px',
             marginBottom: 16,
           }}
@@ -80,7 +80,7 @@ export function ResponseStep({
             boxSizing: 'border-box',
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -92,13 +92,13 @@ export function ResponseStep({
           }}
         />
         <CrisisGate texts={[reflection]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={onBack}
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -117,7 +117,7 @@ export function ResponseStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.08)',

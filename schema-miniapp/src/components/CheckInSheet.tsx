@@ -60,7 +60,7 @@ export function CheckInSheet({
         style={{
           background: color + '18',
           border: `1px solid ${color}33`,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '16px 18px',
           marginBottom: 28,
           fontSize: 16,
@@ -83,14 +83,14 @@ export function CheckInSheet({
         Получилось?
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
         <button
           onClick={() => checkin(false)}
           disabled={saving}
           style={{
             flex: 1,
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
             background: 'rgba(var(--fg-rgb),0.05)',
             color: 'var(--text-sub)',
@@ -106,7 +106,7 @@ export function CheckInSheet({
           style={{
             flex: 2,
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: saving ? 'rgba(var(--fg-rgb),0.1)' : color,
             color: 'var(--text)',

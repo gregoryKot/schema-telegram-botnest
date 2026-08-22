@@ -35,10 +35,10 @@ export function NameSection({
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '12px 16px',
           display: 'flex',
-          gap: 8,
+          gap: 'var(--space-8)',
           alignItems: 'center',
         }}
       >
@@ -77,7 +77,7 @@ export function NameSection({
             style={{
               background: 'color-mix(in srgb, var(--accent) 20%, transparent)',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '6px 14px',
               color: 'var(--accent)',
               fontSize: 13,
@@ -116,7 +116,10 @@ export function ShareSection({ setExportText }: ShareProps) {
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <Row
           label="Пригласить друга"
           sub="Карточка со ссылкой на бота"
@@ -164,7 +167,10 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ДАННЫЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <Row label="О данных и конфиденциальности" onClick={onPrivacy} />
         <Row
           label="Удалить все данные"

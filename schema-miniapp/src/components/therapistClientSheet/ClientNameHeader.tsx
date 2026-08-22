@@ -28,7 +28,13 @@ export function ClientNameHeader({
   if (renamingAlias) {
     return (
       <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--space-8)',
+            alignItems: 'center',
+          }}
+        >
           <input
             ref={aliasInputRef}
             value={aliasInput}
@@ -40,7 +46,7 @@ export function ClientNameHeader({
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.07)',
               border: '1px solid rgba(var(--fg-rgb),0.15)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '7px 10px',
               outline: 'none',
               color: 'var(--text)',
@@ -53,7 +59,7 @@ export function ClientNameHeader({
             aria-label="Сохранить"
             style={{
               padding: '7px 12px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'var(--accent)',
               color: 'var(--on-accent)',
@@ -72,7 +78,7 @@ export function ClientNameHeader({
             aria-label="Отменить"
             style={{
               padding: '7px 10px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',

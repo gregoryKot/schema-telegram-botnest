@@ -27,7 +27,7 @@ export function YsqResultActions({
         <div
           style={{
             background: 'rgba(255,100,100,0.08)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '14px 16px',
           }}
         >
@@ -40,14 +40,14 @@ export function YsqResultActions({
           >
             Результаты будут удалены. Точно начать заново?
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             <button
               onClick={() => setRetakeConfirm(false)}
               style={{
                 flex: 1,
                 padding: '10px',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: 'rgba(var(--fg-rgb),0.08)',
                 color: 'var(--text-sub)',
                 fontSize: 14,
@@ -62,7 +62,7 @@ export function YsqResultActions({
                 flex: 1,
                 padding: '10px',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: 'rgba(255,100,100,0.2)',
                 color: 'var(--accent-red)',
                 fontSize: 14,
@@ -81,7 +81,7 @@ export function YsqResultActions({
             width: '100%',
             padding: '14px 0',
             border: 'none',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             background: 'rgba(var(--fg-rgb),0.07)',
             color: 'var(--text-sub)',
             fontSize: 15,

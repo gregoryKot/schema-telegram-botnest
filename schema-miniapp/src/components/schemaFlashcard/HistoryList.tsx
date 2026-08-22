@@ -52,7 +52,7 @@ export function HistoryList({
                   padding: '12px 14px',
                   background: 'var(--surface)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   marginBottom: 8,
                   cursor: 'pointer',
                 }}

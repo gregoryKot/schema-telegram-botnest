@@ -292,7 +292,7 @@ export function TodaySection({
                 return (
                   <div key={task.id} className="list-line">
                     <span style={{
-                      width: 14, height: 14, borderRadius: 4,
+                      width: 14, height: 14, borderRadius: 'var(--r-4)',
                       border: `1.5px solid ${isDone ? 'var(--text)' : 'var(--line-strong)'}`,
                       background: isDone ? 'var(--text)' : 'transparent',
                       flexShrink: 0, marginTop: 4,

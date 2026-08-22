@@ -69,7 +69,7 @@ export function ClientListView({
         </div>
 
         {/* Filter bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', marginBottom: 28 }}>
           <div className="tabs" style={{ marginBottom: 0 }}>
             <button className={`tab ${listTab === 'clients' ? 'is-active' : ''}`} onClick={() => setListTab('clients')}>
               Клиенты{clients.length > 0 && <span className="count">{clients.length}</span>}
@@ -88,7 +88,7 @@ export function ClientListView({
                 const label = { all: 'Все', active: 'Активны', wait: 'Ждут', virtual: 'Оффлайн' }[k];
                 return (
                   <button key={k} onClick={() => setFilterStatus(k)}
-                          style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12.5, border: 'none', cursor: 'pointer',
+                          style={{ padding: '5px 12px', borderRadius: 'var(--r-6)', fontSize: 12.5, border: 'none', cursor: 'pointer',
                                    fontWeight: filterStatus === k ? 600 : 500,
                                    background: filterStatus === k ? 'var(--surface-3)' : 'transparent',
                                    color: filterStatus === k ? 'var(--text)' : 'var(--text-faint)' }}>
@@ -140,12 +140,12 @@ export function ClientListView({
                     <h3>Активны сегодня</h3>
                     <span className="hint">{activeToday.length} из {clients.length}</span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
                     {activeToday.map(client => (
                       <button
                         key={client.telegramId}
                         onClick={() => openClient(client)}
-                        style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+                        style={{ padding: '6px 12px', borderRadius: 'var(--r-20)', border: '1px solid var(--line)', background: 'transparent', fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
                       >
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
                         {client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}
@@ -213,7 +213,7 @@ export function ClientListView({
                     {filtered.filter(c => !!c.name).map(client => (
                       <div key={client.telegramId} className="r-row" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                             <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name}</span>
                             {client.lastActiveDate === today && (
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
@@ -238,7 +238,7 @@ export function ClientListView({
                             const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
                             return (
                               <span key={id} className="tag-mini">
-                                <span style={{ width: 8, height: 8, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
+                                <span style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
                                 {schema?.name ?? id}
                               </span>
                             );
@@ -257,7 +257,7 @@ export function ClientListView({
                       return (
                         <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                               <span className="text-md" style={{ fontWeight: 600 }}>{name}</span>
                               <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
                             </div>

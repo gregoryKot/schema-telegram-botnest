@@ -101,7 +101,7 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             padding: '10px 16px',
@@ -123,7 +123,7 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
             style={{
               flexShrink: 0,
               padding: '6px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(248,113,113,0.15)',

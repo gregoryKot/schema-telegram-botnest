@@ -72,7 +72,7 @@ export function BecomeTherapistSection() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
             <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" style={inputStyle} />
             <textarea value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3}
               placeholder="Квалификация: образование, направление, опыт, сертификаты"
@@ -82,7 +82,7 @@ export function BecomeTherapistSection() {
               placeholder="Сообщение (необязательно)"
               style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
             {reqError && <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{reqError}</div>}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
               <button onClick={() => { setShowReqForm(false); setReqError(''); }}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 7, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                 Отмена

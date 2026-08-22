@@ -50,7 +50,7 @@ export function NeedRatingBar({
               <div
                 style={{
                   height: 12,
-                  borderRadius: 4,
+                  borderRadius: 'var(--r-4)',
                   background: filled ? color : 'rgba(var(--fg-rgb),0.09)',
                   boxShadow: isYesterday
                     ? `inset 0 0 0 1.5px ${color}80`

@@ -89,7 +89,7 @@ export function MergePage() {
         </div>
       )}
 
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
+      <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
         <input
           type="checkbox"
           checked={acknowledged}
@@ -102,10 +102,10 @@ export function MergePage() {
         </span>
       </label>
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 20 }}>
         <button disabled={busy || !acknowledged} onClick={confirm} className="btn btn-primary">
           {busy ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)' }}>
               <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
               Объединяю…
             </span>

@@ -27,13 +27,13 @@ export function AddClientForm({ addClient }: Props) {
           {addCreated.inviteUrl ? (
             <div style={{ marginBottom: 24, maxWidth: 520 }}>
               <div className="eyebrow" style={{ marginBottom: 10 }}>Ссылка-приглашение</div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <code style={{ flex: 1, minWidth: 200, fontSize: 12.5, color: 'var(--text-sub)', background: 'rgba(var(--fg-rgb),0.05)', padding: '9px 13px', borderRadius: 8, wordBreak: 'break-all', fontFamily: 'monospace' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'center', flexWrap: 'wrap' }}>
+                <code style={{ flex: 1, minWidth: 200, fontSize: 12.5, color: 'var(--text-sub)', background: 'rgba(var(--fg-rgb),0.05)', padding: '9px 13px', borderRadius: 'var(--r-8)', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                   {addCreated.inviteUrl}
                 </code>
                 <button
                   onClick={copyAddInvite}
-                  style={{ padding: '9px 18px', borderRadius: 20, border: 'none', background: addCopied ? 'var(--c-moss)' : 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'background 0.2s' }}
+                  style={{ padding: '9px 18px', borderRadius: 'var(--r-20)', border: 'none', background: addCopied ? 'var(--c-moss)' : 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'background 0.2s' }}
                 >
                   {addCopied ? '✓ Скопировано' : 'Скопировать'}
                 </button>
@@ -49,16 +49,16 @@ export function AddClientForm({ addClient }: Props) {
               Добавлен как оффлайн-клиент — записи и концептуализация без привязки к боту.
             </p>
           )}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
             <button
               onClick={resetAddClient}
-              style={{ padding: '9px 20px', borderRadius: 20, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+              style={{ padding: '9px 20px', borderRadius: 'var(--r-20)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
             >
               Добавить ещё
             </button>
             <button
               onClick={resetAddClient}
-              style={{ padding: '9px 20px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}
+              style={{ padding: '9px 20px', borderRadius: 'var(--r-20)', border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}
             >
               к списку
             </button>
@@ -87,7 +87,7 @@ export function AddClientForm({ addClient }: Props) {
             <button
               onClick={submitAddClient}
               disabled={!addValid || addSubmitting}
-              style={{ padding: '7px 18px', borderRadius: 20, border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
+              style={{ padding: '7px 18px', borderRadius: 'var(--r-20)', border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
             >
               {addSubmitting ? '...' : 'Добавить'}
             </button>
@@ -99,7 +99,7 @@ export function AddClientForm({ addClient }: Props) {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 480, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}
           >
             <span style={{ fontSize: 14, color: 'var(--text-sub)' }}>Создать ссылку-приглашение</span>
-            <div style={{ width: 38, height: 20, borderRadius: 10, background: withInvite ? 'var(--accent)' : 'var(--surface-3)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+            <div style={{ width: 38, height: 20, borderRadius: 'var(--r-10)', background: withInvite ? 'var(--accent)' : 'var(--surface-3)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
               <div style={{ position: 'absolute', top: 3, left: withInvite ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
             </div>
           </button>

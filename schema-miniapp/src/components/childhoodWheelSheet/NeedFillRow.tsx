@@ -33,7 +33,7 @@ export function NeedFillRow({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 8,
         }}
       >
@@ -41,7 +41,7 @@ export function NeedFillRow({
           style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: color + '1f',
             display: 'flex',
             alignItems: 'center',
@@ -77,7 +77,7 @@ export function NeedFillRow({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             flexShrink: 0,
           }}
         >
@@ -142,7 +142,7 @@ export function NeedFillRow({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: 8,
+          gap: 'var(--space-8)',
           marginTop: 6,
         }}
       >
@@ -163,7 +163,7 @@ export function NeedFillRow({
         <div
           style={{
             marginTop: 10,
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             overflow: 'hidden',
             border:
               '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
@@ -206,7 +206,7 @@ export function NeedFillRow({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 'var(--space-8)',
                   }}
                 >
                   <span
@@ -214,7 +214,7 @@ export function NeedFillRow({
                       fontSize: 10,
                       fontWeight: 700,
                       padding: '2px 7px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       background: badgeColor + '22',
                       color: badgeColor,
                       flexShrink: 0,

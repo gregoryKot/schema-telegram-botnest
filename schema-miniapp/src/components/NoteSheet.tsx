@@ -102,7 +102,7 @@ export function NoteSheet({ date, onClose }: Props) {
                   alignItems: 'center',
                   gap: 5,
                   padding: '6px 12px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   cursor: 'pointer',
                   background: on
                     ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
@@ -131,7 +131,7 @@ export function NoteSheet({ date, onClose }: Props) {
             minHeight: 100,
             background: 'rgba(var(--fg-rgb),0.05)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 15,
@@ -173,7 +173,10 @@ export function NoteSheet({ date, onClose }: Props) {
           onClick={handleSave}
           disabled={!hasContent || saving}
           className="btn-primary"
-          style={{ borderRadius: 12, opacity: hasContent ? 1 : 0.35 }}
+          style={{
+            borderRadius: 'var(--r-12)',
+            opacity: hasContent ? 1 : 0.35,
+          }}
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>

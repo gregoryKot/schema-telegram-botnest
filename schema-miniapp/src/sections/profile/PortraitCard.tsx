@@ -61,7 +61,9 @@ export function NeedBar({
   maxCount: number;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}
+    >
       <div
         style={{
           width: 150,
@@ -80,7 +82,7 @@ export function NeedBar({
         style={{
           flex: 1,
           height: 8,
-          borderRadius: 4,
+          borderRadius: 'var(--r-4)',
           background: 'var(--progress-track)',
           overflow: 'hidden',
         }}
@@ -88,7 +90,7 @@ export function NeedBar({
         <div
           style={{
             height: '100%',
-            borderRadius: 4,
+            borderRadius: 'var(--r-4)',
             width: `${(n.count / maxCount) * 100}%`,
             background: n.color,
             transition: 'width 0.4s ease',
@@ -125,7 +127,11 @@ export function PortraitCard({
     <div
       {...pressable(onOpenSheet)}
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px 18px', cursor: 'pointer' }}
+      style={{
+        borderRadius: 'var(--r-20)',
+        padding: '16px 16px 18px',
+        cursor: 'pointer',
+      }}
     >
       <div
         style={{
@@ -133,7 +139,7 @@ export function PortraitCard({
           justifyContent: 'space-between',
           alignItems: 'baseline',
           marginBottom: 4,
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         <div className="d-caps">Мой портрет</div>
@@ -187,7 +193,7 @@ export function PortraitCard({
             style={{
               marginTop: 12,
               padding: '10px 16px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: '1.5px dashed var(--border-color)',
               background: 'transparent',
               color: 'var(--text-sub)',
@@ -203,7 +209,13 @@ export function PortraitCard({
       )}
 
       {hasData && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-10)',
+          }}
+        >
           {portrait.needs.map((n) => (
             <NeedBar key={n.id} n={n} maxCount={maxCount} />
           ))}
@@ -230,7 +242,7 @@ export function PortraitCard({
                 fontSize: 11,
                 fontWeight: 700,
                 padding: '3px 8px',
-                borderRadius: 8,
+                borderRadius: 'var(--r-8)',
                 ...(delta < 0
                   ? {
                       color: 'var(--accent-green)',

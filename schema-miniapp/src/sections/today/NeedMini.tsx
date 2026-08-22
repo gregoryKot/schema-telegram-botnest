@@ -50,7 +50,7 @@ export function NeedMini({
         style={{
           width: 46,
           height: 46,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           position: 'relative',
           overflow: 'hidden',
           background: filled ? `rgba(${rgb},0.14)` : 'var(--surface)',

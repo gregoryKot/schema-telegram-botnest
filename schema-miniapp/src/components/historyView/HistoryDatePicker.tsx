@@ -50,7 +50,7 @@ export function HistoryDatePicker({
                 width: 44,
                 padding: '8px 0 10px',
                 border: 'none',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 fontFamily: 'inherit',
                 cursor: 'pointer',
                 textAlign: 'center',
@@ -61,7 +61,7 @@ export function HistoryDatePicker({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
               }}
             >
               <span
@@ -92,7 +92,7 @@ export function HistoryDatePicker({
                 style={{
                   width: 24,
                   height: 3,
-                  borderRadius: 2,
+                  borderRadius: 'var(--r-2)',
                   background: active
                     ? 'rgba(255,255,255,0.25)'
                     : 'rgba(var(--fg-rgb),0.08)',
@@ -104,7 +104,7 @@ export function HistoryDatePicker({
                     style={{
                       width: `${barW}%`,
                       height: '100%',
-                      borderRadius: 2,
+                      borderRadius: 'var(--r-2)',
                       background: active ? '#fff' : barColor,
                     }}
                   />

@@ -13,7 +13,9 @@ export function ProfileHeaderActions({
   onCustomize: () => void;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
+    >
       <CustomizeButton
         label="Настроить"
         ariaLabel="Настроить экран профиля"
@@ -25,7 +27,7 @@ export function ProfileHeaderActions({
         style={{
           width: 44,
           height: 44,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           background: 'rgba(var(--fg-rgb),0.06)',
           color: 'var(--text-sub)',

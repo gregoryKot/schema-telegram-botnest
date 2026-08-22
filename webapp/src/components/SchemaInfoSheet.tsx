@@ -108,7 +108,7 @@ function NeedsTab() {
       </p>
       {NEEDS_DATA.map((n, i) => (
         <div key={n.title} style={{ borderBottom: '1px solid var(--line)', padding: '20px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', marginBottom: 10 }}>
             <IdentityDot id={NEED_ORDER[i]} size={16} />
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--text)' }}>{n.title}</div>
@@ -153,7 +153,7 @@ function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
               <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{d.domain}</span>
             </div>
@@ -200,7 +200,7 @@ function ModesTab() {
         style={{
           background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
           border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-          borderRadius: 16, padding: '16px 20px', marginBottom: 24, cursor: 'pointer',
+          borderRadius: 'var(--r-16)', padding: '16px 20px', marginBottom: 24, cursor: 'pointer',
         }}
       >
         <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 6 }}>Режим прямо сейчас</div>
@@ -216,7 +216,7 @@ function ModesTab() {
           <div className="eyebrow" style={{ color: g.color, marginBottom: 12 }}>{g.group}</div>
           {g.items.map((m) => (
             <div key={m.name} style={{ borderBottom: '1px solid var(--line)', padding: '16px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', marginBottom: 8 }}>
                 <IdentityDot color={g.color} size={16} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{m.name}</div>
@@ -242,7 +242,7 @@ function ModesTab() {
               <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>Режим прямо сейчас</div>
               <h1 className="hub-title" style={{ marginBottom: 8 }}>{tr('Как ты', 'Как вы')}<br /><span className="it">сейчас?</span></h1>
               <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 36 }}>{tr('Выбери самое близкое ощущение', 'Выберите самое близкое ощущение')}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-10)' }}>
                 {MODE_CHECKIN.map((item) => (
                   <div
                     key={item.label}
@@ -381,9 +381,9 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
               role="button" tabIndex={0}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 14,
+                display: 'flex', alignItems: 'center', gap: 'var(--space-14)',
                 background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                borderRadius: 16, padding: '16px 20px', marginBottom: 12, cursor: 'pointer',
+                borderRadius: 'var(--r-16)', padding: '16px 20px', marginBottom: 12, cursor: 'pointer',
               }}>
               <span style={{ fontSize: 22 }}>⏸</span>
               <div style={{ flex: 1 }}>
@@ -401,7 +401,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
               border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-              borderRadius: 16, padding: '18px 20px', cursor: 'pointer',
+              borderRadius: 'var(--r-16)', padding: '18px 20px', cursor: 'pointer',
             }}
           >
             <div>
