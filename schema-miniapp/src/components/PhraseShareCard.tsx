@@ -1,38 +1,18 @@
 // «Фраза для себя» на экране «Здесь и сейчас»: случайная фраза Здорового
 // взрослого из пула + шэр красивой карточкой. Контент готовый (не PII).
-import { useCallback, useEffect, useState } from 'react';
+// Состояние — общее с webapp (shared/usePhraseShareCard, правило №3),
+// вёрстка своя.
 import { api } from '../api';
 import { SkeletonLines } from './Skeleton';
 import { SharePill } from '../share/SharePill';
 import { ShareCardSheet } from '../share/ShareCardSheet';
-import { drawPhraseCard } from '../../../shared/src/share/cards/phraseCard';
+import { usePhraseShareCard } from '../../../shared/src/share/usePhraseShareCard';
 import { phraseShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
 
 export function PhraseShareCard() {
-  const [phrase, setPhrase] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showShare, setShowShare] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .getHealthyPhrase()
-      .then((r) => setPhrase(r.text))
-      .catch(() => setPhrase(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(load, [load]);
-
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement) => {
-      if (phrase) drawPhraseCard(canvas, phrase);
-    },
-    [phrase],
-  );
-
-  // Нет пула — не показываем блок вовсе (не пустой прямоугольник)
+  const { phrase, loading, showShare, setShowShare, reload, draw } =
+    usePhraseShareCard(api.getHealthyPhrase);
   if (!loading && !phrase) return null;
 
   return (
@@ -85,7 +65,7 @@ export function PhraseShareCard() {
               Голос Здорового взрослого — тёплая опора в моменте
             </div>
             <button
-              onClick={load}
+              onClick={reload}
               style={{
                 border: 'none',
                 background: 'transparent',

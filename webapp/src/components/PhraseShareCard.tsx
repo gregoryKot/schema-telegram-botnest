@@ -1,49 +1,18 @@
 // «Фраза для себя»: случайная фраза Здорового Взрослого из пула + шэр
 // карточкой. Паритет с schema-miniapp/src/components/PhraseShareCard.tsx
 // (правило №16 — GET /api/healthy-phrase был доступен только мини-аппу).
-// Контент готовый (не PII), рисование карточки и текст — из shared.
-import { useCallback, useEffect, useState } from 'react';
+// Состояние — общее (shared/usePhraseShareCard, правило №3), вёрстка своя.
 import { api } from '../api';
 import { Skeleton } from './Skeleton';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { SharePillButton } from '../share/SharePillButton';
-import { drawPhraseCard } from '../../../shared/src/share/cards/phraseCard';
+import { usePhraseShareCard } from '../../../shared/src/share/usePhraseShareCard';
 import { phraseShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
 
 export function PhraseShareCard() {
-  const [phrase, setPhrase] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showShare, setShowShare] = useState(false);
-
-  // fetch() без setLoading(true) внутри: на монтировании loading уже true, а
-  // синхронный setState прямо в теле эффекта запускает каскад ререндеров
-  // (react-hooks/set-state-in-effect). Кнопка «ещё фраза» зовёт reload(),
-  // который перед запросом честно возвращает скелетон.
-  const fetchPhrase = useCallback(() => {
-    api
-      .getHealthyPhrase()
-      .then((r) => setPhrase(r.text))
-      .catch(() => setPhrase(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const reload = useCallback(() => {
-    setLoading(true);
-    fetchPhrase();
-  }, [fetchPhrase]);
-
-  useEffect(fetchPhrase, [fetchPhrase]);
-
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement) => {
-      if (phrase) drawPhraseCard(canvas, phrase);
-    },
-    [phrase],
-  );
-
-  // Нет пула — не показываем блок вовсе (не пустой прямоугольник, и без
-  // висящего в воздухе разделителя над пустотой)
+  const { phrase, loading, showShare, setShowShare, reload, draw } =
+    usePhraseShareCard(api.getHealthyPhrase);
   if (!loading && !phrase) return null;
 
   return (

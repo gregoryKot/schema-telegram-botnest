@@ -1,50 +1,22 @@
-// Кнопка шаринга дневника (архив, DiarySection.tsx): сводная карточка
-// «N записей · веду с даты» — без приватного текста записей. Паритет с
-// schema-miniapp/src/share/DiaryShareButton.tsx (правило №16), логика
-// рисования — из shared (правило №3), вёрстка своя.
-import { useCallback, useState } from 'react';
+// Единственная копия логики и вёрстки — в shared (правило №3): вёрстка
+// была идентична миниаппу 1-в-1. Инъекция платформенного — ниже.
+import {
+  DiaryShareButton as Shared,
+  type DiaryShareButtonProps,
+} from '../../../shared/src/share/DiaryShareButton';
 import { SharePillButton } from './SharePillButton';
 import { ShareCardSheet } from './ShareCardSheet';
-import { drawDiaryCard, earliestDateLabel } from '../../../shared/src/share/cards/diaryCard';
-import { diaryShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
 
-interface Props {
-  emoji: string;
-  title: string;
-  /** CSS-переменная или hex */
-  color: string;
-  entries: Array<{ createdAt: string }>;
-}
+type OwnProps = Pick<DiaryShareButtonProps, 'emoji' | 'title' | 'color' | 'entries'>;
 
-export function DiaryShareButton({ emoji, title, color, entries }: Props) {
-  const [open, setOpen] = useState(false);
-  const count = entries.length;
-  const since = earliestDateLabel(entries);
-
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement) => {
-      drawDiaryCard(canvas, { emoji, title, color, count, since });
-    },
-    [emoji, title, color, count, since],
-  );
-
-  if (count === 0) return null;
-
+export function DiaryShareButton(props: OwnProps) {
   return (
-    <>
-      <SharePillButton onClick={() => setOpen(true)} label="Поделиться дневником" />
-      {open && (
-        <ShareCardSheet
-          title="Поделиться дневником"
-          draw={draw}
-          shareText={diaryShareText(title, emoji, count, since, botShortUrl)}
-          filename="diary.png"
-          eventKind="diary"
-          onClose={() => setOpen(false)}
-          therapyNote
-        />
-      )}
-    </>
+    <Shared
+      {...props}
+      botShortUrl={botShortUrl}
+      ShareCardSheet={ShareCardSheet}
+      renderButton={(onClick) => <SharePillButton onClick={onClick} label="Поделиться дневником" />}
+    />
   );
 }
