@@ -5,8 +5,6 @@ import {
   Body,
   Req,
   Res,
-  Query,
-  UnauthorizedException,
   BadRequestException,
   Logger,
   UseGuards,
@@ -19,12 +17,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { SecurityLogService } from './security-log.service';
 import type { Request, Response } from 'express';
 import { AuthFlowService } from './auth-flow.service';
-import {
-  REFRESH_COOKIE,
-  cookieOptions,
-  getCookie,
-  requireCsrf,
-} from './auth-http.util';
+import { getCookie, requireCsrf, setRefreshCookie } from './auth-http.util';
 import { telegramOauthLoginUrl } from './telegram-oauth-url';
 
 @Controller('api/auth')
@@ -101,11 +94,8 @@ export class AuthTelegramController {
     if (outcome.kind === 'totp_challenge') {
       return { totp: true, challengeToken: outcome.challengeToken };
     }
-    res.cookie(
-      REFRESH_COOKIE,
-      outcome.tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    // crossSite:false — виджет постится с нашей же страницы (fetch), не iframe.
+    setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
     return {
       accessToken: outcome.tokens.accessToken,
       expiresIn: outcome.tokens.expiresIn,
@@ -114,8 +104,12 @@ export class AuthTelegramController {
 
   // ─── Telegram Login Widget — redirect flow ───────────────────────────────
   // Full-page redirect to oauth.telegram.org (no iframe). User authorizes in
-  // Telegram's own page, then comes back to widget-redirect with the signed
-  // user data as query params.
+  // Telegram's own page, then comes back to return_to (frontend
+  // TelegramWidgetCallback.tsx — читает hash/query, разбирает все три
+  // формата возврата и сама шлёт POST /api/auth/telegram/widget; серверный
+  // GET /api/auth/telegram/widget-redirect, дублировавший эту логику, был
+  // мёртвым кодом — return_to сюда никогда не вёл — и удалён, см. CLAUDE.md
+  // правило №11).
   // ВАЖНО: домен обязан быть привязан к боту через /setdomain в BotFather —
   // без привязки oauth.telegram.org/auth отвечает голым текстом «Bot domain
   // invalid» (инцидент 2026-08-21: привязка слетела, вход был сломан у всех,
@@ -148,103 +142,5 @@ export class AuthTelegramController {
       });
     }
     res.redirect(telegramOauthLoginUrl(botId, frontendBase));
-  }
-
-  @Get('telegram/widget-redirect')
-  async telegramWidgetRedirect(
-    @Query() query: Record<string, string>,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-
-    // oauth.telegram.org/auth?embed=0 sends auth data in the URL *hash fragment*
-    // (#tgAuthResult=BASE64URL_JSON), which browsers never send to the server.
-    // When we receive a request with no query params, serve a tiny HTML trampoline
-    // that reads the hash client-side and bounces back with the data as a query param.
-    if (Object.keys(query).length === 0) {
-      res.type('text/html').send(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Вход через Telegram...</title></head><body>
-<script>
-try {
-  var h = window.location.hash.slice(1);
-  var p = new URLSearchParams(h);
-  var r = p.get('tgAuthResult');
-  if (r) {
-    window.location.replace(window.location.pathname + '?tgAuthResult=' + encodeURIComponent(r));
-  } else {
-    window.location.replace('/auth/error?reason=telegram_no_data');
-  }
-} catch(e) {
-  window.location.replace('/auth/error?reason=telegram_fragment_error');
-}
-</script>
-<p style="font-family:sans-serif;text-align:center;margin-top:40px">Загрузка...</p>
-</body></html>`);
-      return;
-    }
-
-    try {
-      const telegramHandler = this.providers.get('telegram');
-      if (!telegramHandler.verifyClientData)
-        throw new BadRequestException('Telegram provider missing');
-
-      // oauth.telegram.org/auth?embed=0 may also return data as a query param:
-      //   ?tgAuthResult=BASE64URL_JSON  (wrapped format)
-      //   ?id=...&hash=...             (flat Login Widget format)
-      // Detect and normalise to plain fields before passing to verifyClientData.
-      let fields: Record<string, string> = { ...query };
-      if (query['tgAuthResult']) {
-        try {
-          const decoded = JSON.parse(
-            Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'),
-          ) as Record<string, string | number | boolean | null>;
-          fields = {};
-          for (const [k, v] of Object.entries(decoded)) {
-            if (v != null) fields[k] = String(v);
-          }
-          this.logger.debug(
-            `telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`,
-          );
-        } catch (e) {
-          throw new UnauthorizedException(
-            `Failed to decode tgAuthResult: ${(e as Error).message}`,
-          );
-        }
-      }
-
-      const identity = telegramHandler.verifyClientData(fields);
-
-      const savedLinkCookie = getCookie(req, 'tg_link_user');
-      res.clearCookie('tg_link_user', { path: '/api/auth' });
-      // Проверяем подпись куки (C1) вместо сырого BigInt(cookie).
-      const linkUserId = this.flow.readLinkState(savedLinkCookie);
-
-      const outcome = await this.flow.signInOrLinkOrMerge(
-        'telegram',
-        identity,
-        {
-          linkUserId,
-          ip: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
-      );
-      this.flow.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
-    } catch (err) {
-      const msg = (err as Error).message ?? 'unknown';
-      // Первый аргумент .error() уходит админу в DM (AlertLogger троттлит по
-      // его содержимому). Держим его ПОСТОЯННЫМ: имена query-параметров и текст
-      // ошибки парсинга полностью подконтрольны анониму (GET без auth и без
-      // @Throttle), и, варьируя буквы, он обходил бы троттл и заливал чат
-      // (M4). Переменное — вторым аргументом: оно идёт только в лог, не в DM
-      // (тот же инвариант H0/H6, что в client-errors.controller.ts).
-      this.logger.error(
-        'telegram widget-redirect error (детали в логах)',
-        `${msg} | query keys=${JSON.stringify(Object.keys(query))}`,
-      );
-      res.redirect(
-        `${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`,
-      );
-    }
   }
 }

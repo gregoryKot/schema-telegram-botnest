@@ -218,10 +218,16 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
-  it('повторное использование уже провёрнутого токена палит всю family (theft detection)', async () => {
+  // Регрессия на инцидент 2026-08-21 «постоянно нужно логиниться заново»:
+  // ДО grace-окна любой повтор убивал всю family, включая обычный дребезг
+  // (две вкладки, оборванный Set-Cookie). Ниже — оба исхода по отдельности.
+  it('повторное использование СПУСТЯ grace-окно палит всю family (настоящая кража)', async () => {
     const { svc, webSessions, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
     await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    // Атакующий использует украденный токен позже — за пределами grace-окна
+    // (REFRESH_REUSE_GRACE_MS=30с), не сразу вслед за легитимной ротацией.
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 31_000));
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     );
@@ -230,6 +236,26 @@ describe('AuthService — refresh-token rotation', () => {
     expect(securityLog.log).toHaveBeenCalledWith(
       'refresh_token_reuse',
       expect.objectContaining({ userId: 1n }),
+    );
+  });
+
+  it('повторное использование СРАЗУ после ротации (дребезг: две вкладки, оборванный Set-Cookie) НЕ палит family', async () => {
+    const { svc, webSessions, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const rotated = await svc.rotateRefreshToken(issued.refreshToken);
+    // Реюз старого токена практически сразу — внутри REFRESH_REUSE_GRACE_MS.
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    // family жива — токен-наследник, выданный легитимной ротацией, работает.
+    const rotatedHash = createHash('sha256')
+      .update(rotated.refreshToken)
+      .digest('hex');
+    const survivor = webSessions.find((s) => s.tokenHash === rotatedHash);
+    expect(survivor?.revokedAt).toBeNull();
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'refresh_token_reuse',
+      expect.anything(),
     );
   });
 
@@ -259,6 +285,49 @@ describe('AuthService — refresh-token rotation', () => {
     await expect(svc.rotateRefreshToken(token)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+});
+
+// Пункт 2 диагностики 2026-08-21 «постоянно нужно логиниться заново»: каждая
+// загрузка страницы дёргала refresh и ротировала куку — само по себе источник
+// гонки reuse-детекции. shouldSkipRotation (refresh-rotation.ts) подавляет
+// повторную ротацию одной сессии в пределах REFRESH_ROTATE_MIN_INTERVAL_MS.
+describe('AuthService — rotateRefreshToken: интервал ротации', () => {
+  it('ротировали только что (< 5 мин назад) → access новый, refresh ТОТ ЖЕ, кука не меняется', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE; // сессия только что создана/ротирована
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 60_000)); // +1 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(false);
+    expect(result.refreshToken).toBe(issued.refreshToken); // не поменялся
+    expect(result.accessToken).not.toBe(''); // access всё равно свежий JWT
+    expect(webSessions).toHaveLength(1); // новая строка НЕ создана
+    expect(webSessions[0].revokedAt).toBeNull(); // старая НЕ отозвана
+  });
+
+  it('ротировали давно (≥ 5 мин назад) → обычная ротация, refresh новый', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE;
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 5 * 60_000)); // ровно 5 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(true);
+    expect(result.refreshToken).not.toBe(issued.refreshToken);
+    expect(webSessions).toHaveLength(2);
+    expect(webSessions[0].revokedAt).not.toBeNull(); // старая отозвана
+  });
+
+  it('createdAt отсутствует в строке сессии (fake-Prisma без @default) → всё равно ротирует (не падает)', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    expect(webSessions[0].createdAt).toBeUndefined(); // как и в проде до фикса
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(result.rotated).toBe(true);
   });
 });
 

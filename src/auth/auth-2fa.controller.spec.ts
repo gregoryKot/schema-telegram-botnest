@@ -122,11 +122,20 @@ function makeReq(
   } as unknown as Request;
 }
 
-function makeRes(): Response & { cookie: jest.Mock; redirect: jest.Mock } {
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  clearCookie: jest.Mock;
+  redirect: jest.Mock;
+} {
   return {
     cookie: jest.fn(),
+    clearCookie: jest.fn(),
     redirect: jest.fn(),
-  } as unknown as Response & { cookie: jest.Mock; redirect: jest.Mock };
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    clearCookie: jest.Mock;
+    redirect: jest.Mock;
+  };
 }
 
 function makeController() {
