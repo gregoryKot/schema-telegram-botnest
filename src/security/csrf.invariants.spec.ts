@@ -112,14 +112,58 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     });
   });
 
-  // Кросс-сайтовую сессию заводит ровно одна точка входа — обмен подписи MAX.
-  // Если crossSite: true появится где-то ещё, это надо увидеть на ревью.
-  it('crossSite включает только обмен подписи MAX', () => {
-    const optedIn = ctrlFiles.filter((f) =>
-      /crossSite|setRefreshCookie\([^)]*true/s.test(
-        readFileSync(join(AUTH_DIR, f), 'utf8'),
-      ),
+  // Кросс-сайтовую сессию (sameSite:none) заводит ровно две точки входа —
+  // обе по одной и той же причине: мессенджер грузит мини-апп в iframe, где
+  // strict-кука не продлевается.
+  //  - auth-max.controller.ts — MAX (был всегда);
+  //  - auth-account.controller.ts (POST /api/auth/telegram/webapp) — Telegram
+  //    Web (web.telegram.org, Telegram Web A/K) тоже открывает мини-апп в
+  //    iframe (2026-08-21, «постоянно нужно логиниться заново»); crossSite
+  //    там вычисляется через isCrossSiteRequest(), а не хардкодится.
+  // Если crossSite появится в третьем месте, это надо увидеть на ревью —
+  // поэтому детектор матчит фактический КОД (crossSite: true/=isCrossSite-
+  // Request(...), либо buквальный/переменный 4-й аргумент setRefreshCookie),
+  // а не слово «crossSite» где угодно — иначе он ловит и комментарии вроде
+  // `// crossSite:false — виджет постится с нашей же страницы (fetch)`.
+  function stripComments(code: string): string {
+    return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  }
+  const CROSS_SITE_CODE =
+    /crossSite\s*[:=]\s*(true\b|isCrossSiteRequest\()|setRefreshCookie\([^)]*,\s*(true|crossSite)\s*\)/;
+  function usesCrossSite(code: string): boolean {
+    return CROSS_SITE_CODE.test(stripComments(code));
+  }
+
+  it('гейт ловит факт. код, а не слово «crossSite» в комментарии (сэндбокс)', () => {
+    // Контрольный "законный" образец: комментарий с crossSite:false и
+    // жёстко false в коде — не должен триггерить (реальный кейс
+    // auth-telegram.controller.ts).
+    const commentOnly = `
+      // crossSite:false — виджет постится с нашей же страницы (fetch), не iframe.
+      setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
+    `;
+    expect(usesCrossSite(commentOnly)).toBe(false);
+
+    // Контрольный "незаконный" образец: третий контроллер реально включил
+    // crossSite — обязан продолжать краснеть.
+    const thirdControllerLiteral = `
+      setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, true);
+    `;
+    expect(usesCrossSite(thirdControllerLiteral)).toBe(true);
+
+    const thirdControllerComputed = `
+      const crossSite = isCrossSiteRequest(req, webappUrl);
+      setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
+    `;
+    expect(usesCrossSite(thirdControllerComputed)).toBe(true);
+  });
+
+  it('crossSite включает только обмен подписи MAX и Telegram Web (webapp)', () => {
+    const optedIn = ctrlFiles
+      .filter((f) => usesCrossSite(readFileSync(join(AUTH_DIR, f), 'utf8')))
+      .sort();
+    expect(optedIn).toEqual(
+      ['auth-account.controller.ts', 'auth-max.controller.ts'].sort(),
     );
-    expect(optedIn).toEqual(['auth-max.controller.ts']);
   });
 });
