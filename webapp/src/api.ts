@@ -152,6 +152,9 @@ export const api = {
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
   // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
+  // Случайная фраза Здорового Взрослого для карточки шаринга («Фраза для
+  // себя», PhraseShareCard.tsx) — паритет с мини-аппом, правило №16.
+  getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
   getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
   createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
   updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),

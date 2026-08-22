@@ -19,6 +19,7 @@ import { Sparkline } from './today/Sparkline';
 import { SkeletonLines } from './today/SkeletonLines';
 import { OnboardingWidget } from './today/OnboardingWidget';
 import { useTaskActions } from './today/useTaskActions';
+import { PhraseShareCard } from '../components/PhraseShareCard';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -436,6 +437,8 @@ export function TodaySection({
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
             {streak === 0 ? tr('Оцени потребности – начнётся стрик', 'Оцените потребности – начнётся стрик') : 'дней подряд'}
           </div>
+
+          <PhraseShareCard />
 
         </aside>
       </div>

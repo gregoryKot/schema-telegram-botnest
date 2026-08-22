@@ -89,21 +89,38 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       }
     }).catch(() => fail('YSQ'));
 
-    const profilePromise = api.getProfile().then(p => {
+    // Серверное предпочтение «кабинет vs клиент» (правило №16 — GET
+    // /api/user-flags был доступен только мини-аппу; тот же therapistMode
+    // читает и пишет /api/therapy/therapist-view, здесь только читаем для
+    // дефолтного роутинга). Не блокируем профиль её отказом — фолбэк ниже
+    // ведёт себя как раньше (пусто = «начинать с кабинета»).
+    // Аннотация возврата, а не каст: без неё фолбэк даёт `{}`, тип
+    // схлопывается в объединение и therapistMode перестаёт читаться (поймано
+    // сборкой webapp после слияния с #411).
+    const flagsPromise = api
+      .getUserFlags()
+      .catch((): { therapistMode?: boolean } => {
+        fail('флаги');
+        return {};
+      });
+
+    const profilePromise = Promise.all([api.getProfile(), flagsPromise]).then(([p, serverFlags]) => {
       setUserRole(p.role);
       // Психолог по умолчанию попадает в кабинет (запрос: «если я психолог —
       // всегда начинать со странички психолога»). Уважаем явный выбор
-      // клиентского режима (localStorage '0'); при заходе на дефолтный лендинг
-      // (/, /today) без такого выбора — ведём в кабинет.
+      // клиентского режима: локальный (localStorage '0') или, если этот
+      // браузер видит терапевта впервые, сделанный на другой площадке
+      // (мини-апп) — тот же аккаунт, серверный therapistMode===false.
       if (p.role === 'THERAPIST') {
         const pref = localStorage.getItem('therapist_mode');
+        const wantsCabinet = pref !== null ? pref !== '0' : serverFlags.therapistMode !== false;
         const onDefaultLanding =
           initialPathname === '/' || initialPathname === '/today';
-        if (pref !== '0' && !initialPathname.startsWith('/cabinet') && onDefaultLanding) {
+        if (wantsCabinet && !initialPathname.startsWith('/cabinet') && onDefaultLanding) {
           localStorage.setItem('therapist_mode', '1');
           navigate('/cabinet');
         } else if (pref === null) {
-          localStorage.setItem('therapist_mode', '1');
+          localStorage.setItem('therapist_mode', wantsCabinet ? '1' : '0');
         }
       }
       if (p.role !== 'THERAPIST' && initialPathname.startsWith('/cabinet')) {

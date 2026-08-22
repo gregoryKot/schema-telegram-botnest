@@ -1,27 +1,14 @@
-import { useEffect, useState } from 'react';
-import { api, type UserPractice } from '../api';
+import { api } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { CURATED } from './practiceCurated';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot'; import { detectCrisisAny } from '../utils/crisisMarkers'; import { CrisisCard } from './CrisisCard';
-
-function ianaToUtcOffset(iana: string): number {
-  try {
-    const now = new Date();
-    const utcMs = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
-    const localMs = new Date(now.toLocaleString('en-US', { timeZone: iana })).getTime();
-    return Math.round((localMs - utcMs) / 3600000);
-  } catch { return 3; }
-}
-
-
-const REMINDER_OPTIONS = [
-  { label: 'Утром', localHour: 9 },
-  { label: 'Днём', localHour: 13 },
-  { label: 'Вечером', localHour: 19 },
-  { label: 'Без напоминания', localHour: null },
-];
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
+import {
+  usePlanSheetState,
+  REMINDER_OPTIONS,
+} from '../../../shared/src/practices/usePlanSheetState';
 
 interface Props {
   needId: string;
@@ -32,60 +19,30 @@ interface Props {
   onSaved: () => void;
 }
 
-function defaultReminderIdx(): number {
-  const h = new Date().getHours();
-  if (h < 12) return 0;
-  if (h < 17) return 1;
-  return 2;
-}
-
 export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSaved }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
-  const [selectedText, setSelectedText] = useState('');
-  const [customText, setCustomText] = useState('');
-  const [reminderIdx, setReminderIdx] = useState(defaultReminderIdx);
-  const [tzOffset, setTzOffset] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const [savedOk, setSavedOk] = useState(false);
-  const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
-  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
-  const [practicesFailed, setPracticesFailed] = useState(false);
-
-  useEffect(() => {
-    // Сбой ≠ пусто: без флага свои практики молча пропадали из выбора,
-    // и человек видел только готовый список — как будто своих нет.
-    api.getPractices(needId).then(p => { setUserPractices(p); setPracticesFailed(false); })
-      .catch(() => setPracticesFailed(true));
-    // Часовой пояс — деградация подсказки времени до дефолта, лог достаточен.
-    api.getSettings().then(s => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
-      .catch(e => console.error('getSettings failed', e));
-  }, [needId]);
-
-  const curated = CURATED[needId] ?? [];
-  const allOptions = [
-    ...userPractices.map(p => ({ text: p.text, isUser: true, id: p.id })),
-    ...curated.filter(t => !userPractices.some(p => p.text === t)).map(t => ({ text: t, isUser: false, id: undefined as number | undefined })),
-  ];
-
-  function selectText(text: string) { setSelectedText(text); setCustomText(''); setPhase('confirm'); }
-  function handleCustomSubmit() { const t = customText.trim(); if (!t) return; setSelectedText(t); setPhase('confirm'); }
-
-  async function handleSave() {
-    if (!selectedText || saving) return;
-    setSaving(true);
-    try {
-      const opt = REMINDER_OPTIONS[reminderIdx];
-      let reminderUtcHour: number | undefined;
-      if (opt.localHour !== null) reminderUtcHour = ((opt.localHour - tzOffset) % 24 + 24) % 24;
-      if (!userPractices.some(p => p.text === selectedText)) await api.addPractice(needId, selectedText);
-      await api.createPlan(needId, selectedText, reminderUtcHour);
-      setSavedOk(true);
-      setTimeout(() => onSaved(), 1200);
-    } catch { setSaveError(true); } finally { setSaving(false); }
-  }
+  const {
+    selectedText,
+    customText,
+    setCustomText,
+    reminderIdx,
+    setReminderIdx,
+    saving,
+    saveError,
+    setSaveError,
+    savedOk,
+    phase,
+    setPhase,
+    deletingIds,
+    practicesFailed,
+    allOptions,
+    selectText,
+    handleCustomSubmit,
+    handleDeletePractice,
+    handleSave,
+    handleIcsDownload,
+  } = usePlanSheetState(needId, needLabel, api, onSaved);
 
   return (
     <ExScreen
@@ -133,13 +90,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
                       </div>
                       {isUser && id !== undefined && (
                         <button
-                          onClick={() => {
-                            if (deletingIds.has(id)) return;
-                            setDeletingIds(prev => new Set([...prev, id]));
-                            api.deletePractice(id)
-                              .then(() => setUserPractices(prev => prev.filter(p => p.id !== id)))
-                              .catch(() => setDeletingIds(prev => { const s = new Set(prev); s.delete(id); return s; }));
-                          }}
+                          onClick={() => handleDeletePractice(id)}
                           style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deletingIds.has(id) ? 'default' : 'pointer', fontSize: 16, color: deletingIds.has(id) ? 'var(--text-ghost)' : 'var(--c-rose)', border: 'none' }}
                           aria-label="Удалить"
                         >×</button>
@@ -214,6 +165,14 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
               </div>
             </div>
           </div>
+
+          {/* ICS download — паритет с мини-аппом, правило №16 */}
+          <button
+            onClick={handleIcsDownload}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
+          >
+            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавить в календарь (.ics)</span>
+          </button>
 
           {saveError && (
             <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>

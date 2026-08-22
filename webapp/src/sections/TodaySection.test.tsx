@@ -51,6 +51,7 @@ vi.mock('../api', () => ({
     completeTask: vi.fn(),
     createTask: vi.fn(),
     trackEvent: vi.fn(),
+    getHealthyPhrase: vi.fn().mockResolvedValue({ text: null }),
   },
   reportClientError: vi.fn(),
 }));

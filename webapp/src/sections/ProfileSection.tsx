@@ -9,6 +9,7 @@ import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { pressable } from '../utils/a11y';
+import { MonthShareButton } from './profile/heatmapShare';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -274,7 +275,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
           return (
             <div className="section">
-              <div className="section-head"><h3>Активность</h3></div>
+              <div className="section-head">
+                <h3>Активность</h3>
+                <MonthShareButton activeDates={activeDates} totalDays={totalDays} />
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ display: 'flex', gap: 3, minWidth: 'max-content' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 16 }}>

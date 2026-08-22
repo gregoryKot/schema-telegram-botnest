@@ -10,6 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { setHost, type HostBridge } from '../../../shared/src/host';
 
 vi.mock('../api', () => ({
   api: {
@@ -57,7 +58,7 @@ beforeEach(() => {
   mockApi.deletePractice.mockResolvedValue(undefined);
 });
 
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); setHost(null); });
 
 describe('PlanSheet — выбор готового варианта', () => {
   it('клик по готовой практике переводит в подтверждение с текстом практики', async () => {
@@ -194,6 +195,23 @@ describe('PlanSheet — удаление своей практики', () => {
     await waitFor(() => expect(mockApi.deletePractice).toHaveBeenCalled());
     await act(async () => {});
     expect(screen.getAllByText('Стойкая практика').length).toBeGreaterThan(0);
+  });
+});
+
+describe('PlanSheet — .ics-экспорт (паритет с мини-аппом, правило №16)', () => {
+  it('клик «Добавить в календарь» зовёт host.saveFile с .ics файлом', async () => {
+    const saveFile = vi.fn();
+    setHost({ id: 'web', saveFile } as unknown as HostBridge);
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'Своя практика' } });
+    fireEvent.click(screen.getByText('Продолжить →'));
+
+    fireEvent.click(screen.getByText('Добавить в календарь (.ics)'));
+    expect(saveFile).toHaveBeenCalledWith(
+      expect.stringContaining('text/calendar'),
+      'practice.ics',
+    );
   });
 });
 

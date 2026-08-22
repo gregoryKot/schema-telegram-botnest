@@ -5,7 +5,8 @@
 // нечего»); дизайн-аудит 2026-08 (В2) отменил это решение явно. Логика — из
 // shared, вёрстка — webapp-стиль (ExScreen), шаги вынесены в phraseCheckEx/*
 // (правило №10). Свободный текст проходит кризисный гейт ДО сохранения
-// (правило №7).
+// (правило №7). Строки истории кликабельны — открывают PhraseHistoryCard
+// с правкой ответа (паритет с miniapp, гейт паритета фич правило №16).
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import type { PhraseCheckEntry } from '../../api';
@@ -13,9 +14,10 @@ import { ExScreen, GlyphArrowRight } from './ExScreen';
 import { PhraseMarkStep } from './phraseCheckEx/PhraseMarkStep';
 import { PhraseRewriteStep } from './phraseCheckEx/PhraseRewriteStep';
 import { PhraseDoneCard } from './phraseCheckEx/PhraseDoneCard';
+import { PhraseHistoryCard } from './phraseCheckEx/PhraseHistoryCard';
+import { PhraseHistoryRows } from './phraseCheckEx/PhraseHistoryRows';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
@@ -40,6 +42,7 @@ export function PhraseCheckEx({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [history, setHistory] = useState<PhraseCheckEntry[]>([]);
+  const [openHistoryId, setOpenHistoryId] = useState<number | null>(null);
   const phraseRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -81,39 +84,51 @@ export function PhraseCheckEx({
   const stepNumber = markIndex < 0 ? 1 : Math.min(markIndex + 2, TOTAL_STEPS);
   const progress = (stepNumber / TOTAL_STEPS) * 100;
   const pastEntries = history.filter((h) => h.phrase !== phrase.trim()).slice(0, 3);
+  const openHistoryEntry = history.find((h) => h.id === openHistoryId);
+
+  function updateHistoryEntry(id: number, newRewrite: string | null) {
+    setHistory((prev) => prev.map((h) => (h.id === id ? { ...h, rewrite: newRewrite } : h)));
+  }
+
+  const historyOverlay = openHistoryEntry && (
+    <PhraseHistoryCard
+      entry={openHistoryEntry}
+      onClose={() => setOpenHistoryId(null)}
+      onUpdated={updateHistoryEntry}
+      tr={tr}
+    />
+  );
 
   if (done) {
     return (
-      <ExScreen
-        onBack={goBack}
-        eyebrow="Критик или забота? · сохранено"
-        eyebrowColor="var(--c-moss)"
-        title={<>Разобрано.<br /><span className="it">Голос учится заново.</span></>}
-        lede={tr(
-          'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-          'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-        )}
-        aside={
-          pastEntries.length > 0 ? (
-            <div className="aside-card">
-              <div className="aside-card-eyebrow">Прошлые разборы · {history.length}</div>
-              {pastEntries.map((h) => (
-                <div key={h.id} className="history-row">
-                  <span className="history-date">{fmtAgo(h.createdAt)}</span>
-                  <span className="history-snippet">«{h.phrase}»</span>
-                </div>
-              ))}
-            </div>
-          ) : undefined
-        }
-      >
-        <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} />
-        <div className="ex-foot">
-          <button className="ex-btn ex-btn-outline" onClick={again}>Проверить ещё одну</button>
-          <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
-        </div>
-      </ExScreen>
+      <>
+        <ExScreen
+          onBack={goBack}
+          eyebrow="Критик или забота? · сохранено"
+          eyebrowColor="var(--c-moss)"
+          title={<>Разобрано.<br /><span className="it">Голос учится заново.</span></>}
+          lede={tr(
+            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+          )}
+          aside={
+            pastEntries.length > 0 ? (
+              <div className="aside-card">
+                <div className="aside-card-eyebrow">Прошлые разборы · {history.length}</div>
+                <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} />
+              </div>
+            ) : undefined
+          }
+        >
+          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} />
+          <div className="ex-foot">
+            <button className="ex-btn ex-btn-outline" onClick={again}>Проверить ещё одну</button>
+            <span className="spacer" />
+            <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
+          </div>
+        </ExScreen>
+        {historyOverlay}
+      </>
     );
   }
 
@@ -127,6 +142,7 @@ export function PhraseCheckEx({
       : { title: 'Не оценка, а тренировка', body: 'Даже дословная переписанная фраза — тоже работа: она остаётся под рукой как образец на следующий раз.' };
 
   return (
+    <>
     <ExScreen
       onBack={goBack}
       eyebrow="№ 08 · Внутренний голос"
@@ -185,12 +201,7 @@ export function PhraseCheckEx({
           {pastEntries.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div className="aside-card-eyebrow" style={{ marginBottom: 10 }}>Прошлые разборы · {history.length}</div>
-              {pastEntries.map((h) => (
-                <div key={h.id} className="history-row">
-                  <span className="history-date">{fmtAgo(h.createdAt)}</span>
-                  <span className="history-snippet">«{h.phrase}»{h.rewrite ? ` → «${h.rewrite}»` : ''}</span>
-                </div>
-              ))}
+              <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
             </div>
           )}
         </>
@@ -219,6 +230,8 @@ export function PhraseCheckEx({
         />
       )}
     </ExScreen>
+    {historyOverlay}
+    </>
   );
 }
 

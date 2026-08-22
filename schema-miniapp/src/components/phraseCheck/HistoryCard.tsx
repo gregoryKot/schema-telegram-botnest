@@ -1,14 +1,15 @@
 // Карточка прошлого разбора (тап по строке в «Прошлые разборы»,
 // PhraseCheck.tsx). Исходная фраза и отметки критика — цитата момента, не
 // редактируются; правится только ответ Здорового Взрослого (правило: добрый
-// ответ себе со временем находится точнее). Read-after-write (правило
-// CLAUDE.md о read-after-write тестах) держит onUpdated — родитель обновляет
-// список сразу после успешного PATCH, без перезахода.
-import { useState } from 'react';
+// ответ себе со временем находится точнее). Состояние — общее с webapp
+// (shared/usePhraseHistoryCard, правило №3), вёрстка своя. Read-after-write
+// (правило CLAUDE.md о read-after-write тестах) держит onUpdated — родитель
+// обновляет список сразу после успешного PATCH, без перезахода.
 import { BottomSheet } from '../BottomSheet';
 import { CrisisGate } from '../CrisisGate';
 import { PhraseCheckShare } from './PhraseCheckShare';
-import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
+import { usePhraseHistoryCard } from '../../../../shared/src/phraseCheck/usePhraseHistoryCard';
+import { PhraseMarkPills } from '../../../../shared/src/phraseCheck/PhraseMarkPills';
 import { api } from '../../api';
 import type { PhraseCheckHistoryRow } from './HistoryList';
 
@@ -23,26 +24,8 @@ export function PhraseCheckHistoryCard({
   onUpdated: (id: number, rewrite: string | null) => void;
   tr: (ty: string, vy: string) => string;
 }) {
-  const [rewrite, setRewrite] = useState(entry.rewrite ?? '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
-
-  const marks = entry.marks
-    .map((id) => PHRASE_CRITERIA.find((c) => c.id === id)?.short)
-    .filter((s): s is string => Boolean(s));
-
-  async function save() {
-    setSaving(true);
-    setError(false);
-    try {
-      const res = await api.updatePhraseCheck(entry.id, rewrite.trim());
-      onUpdated(entry.id, res.rewrite);
-    } catch {
-      setError(true);
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { rewrite, setRewrite, saving, error, markLabels, save } =
+    usePhraseHistoryCard(entry, api.updatePhraseCheck, onUpdated);
 
   return (
     <BottomSheet onClose={onClose} zIndex={220}>
@@ -57,7 +40,7 @@ export function PhraseCheckHistoryCard({
             border: '1px solid rgba(var(--fg-rgb),0.08)',
             borderRadius: 14,
             padding: '12px 14px',
-            marginBottom: marks.length > 0 ? 10 : 16,
+            marginBottom: markLabels.length > 0 ? 10 : 16,
             fontSize: 14,
             lineHeight: 1.5,
             color: 'var(--text-sub)',
@@ -66,42 +49,14 @@ export function PhraseCheckHistoryCard({
           «{entry.phrase}»
         </div>
 
-        {marks.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 6,
-              marginBottom: 16,
-            }}
-          >
-            {marks.map((m) => (
-              <span
-                key={m}
-                style={{
-                  fontSize: 11.5,
-                  padding: '4px 9px',
-                  borderRadius: 999,
-                  background:
-                    'color-mix(in srgb, var(--accent-red) 8%, transparent)',
-                  color: 'var(--text-sub)',
-                }}
-              >
-                {m}
-              </span>
-            ))}
-          </div>
-        )}
+        <PhraseMarkPills labels={markLabels} />
 
         <div className="section-label" style={{ marginBottom: 8 }}>
           {tr('Твой ответ себе', 'Ваш ответ себе')}
         </div>
         <textarea
           value={rewrite}
-          onChange={(e) => {
-            setRewrite(e.target.value);
-            setError(false);
-          }}
+          onChange={(e) => setRewrite(e.target.value)}
           placeholder="Каким может быть ответ Здорового Взрослого?"
           rows={4}
           style={{
@@ -139,7 +94,7 @@ export function PhraseCheckHistoryCard({
         )}
 
         <button
-          onClick={save}
+          onClick={() => void save()}
           disabled={saving}
           className="btn-primary"
           style={{ width: '100%', marginBottom: 14, opacity: saving ? 0.6 : 1 }}
