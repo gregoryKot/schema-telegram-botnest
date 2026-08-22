@@ -78,11 +78,10 @@ export function OnboardingResumeCard({
   onResume: () => void;
 }) {
   return (
+    // .card — тот же переход, что в OnboardingWidget.tsx (полировка, п.4).
     <div
+      className="card"
       style={{
-        background: 'rgba(var(--fg-rgb),0.04)',
-        border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'center',

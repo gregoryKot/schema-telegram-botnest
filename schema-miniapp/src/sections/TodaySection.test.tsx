@@ -321,6 +321,11 @@ describe('TodaySection — порядок блоков band', () => {
     !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
   it('по умолчанию фраза выше «что ещё», онбординг первый, значок последний', async () => {
+    // Полировка 2026-08, п.1: значок — только после воронки новичка (см.
+    // describe ниже), поэтому здесь порядок band проверяем на «прошёл
+    // онбординг» — иначе тест порядка блоков смешивался бы с тестом
+    // видимости значка.
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
     await renderReady();
     const onboarding = screen.getByTestId('onboarding');
     const phrase = screen.getByTestId('phrase-card');
@@ -333,6 +338,7 @@ describe('TodaySection — порядок блоков band', () => {
   });
 
   it('сохранённый порядок меняет DOM: «что ещё» поднимается над фразой', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
     localStorage.setItem(
       'screen_order_today',
       JSON.stringify(['secondary', 'phrase']),
@@ -345,5 +351,21 @@ describe('TodaySection — порядок блоков band', () => {
     // Закреплённые блоки на местах: значок — под band даже после перестановки.
     expect(follows(phrase, offer)).toBe(true);
     expect(follows(screen.getByTestId('onboarding'), secondary)).toBe(true);
+  });
+});
+
+// Полировка 2026-08, п.1 (наблюдение 1): три CTA подряд на первом экране
+// новичка (тест → «Одно дело» → значок). Предложение значка откладывается,
+// пока идёт воронка онбординга — не срочное, и само возвращается снузом.
+describe('TodaySection — значок на экран откладывается, пока виден онбординг', () => {
+  it('онбординг не пройден (профиль загружен, ONBOARDING_DONE_KEY нет) — значка нет', async () => {
+    await renderReady();
+    expect(screen.queryByTestId('home-screen-offer')).toBeNull();
+  });
+
+  it('онбординг пройден (ONBOARDING_DONE_KEY=1) — значок показывается', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+    await renderReady();
+    expect(screen.getByTestId('home-screen-offer')).toBeTruthy();
   });
 });

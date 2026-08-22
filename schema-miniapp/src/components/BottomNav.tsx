@@ -1,13 +1,4 @@
-// BottomNav.tsx — Redesigned bottom navigation
-// Place at: src/components/BottomNav.tsx
-// Replaces the existing BottomNav component fully.
-//
-// Changes from original:
-//  – Thinner top indicator pill instead of a line
-//  – Active icon gets a soft glow (drop-shadow filter)
-//  – Each tab has its own accent color
-//  – Uses new --surface, --border-color tokens
-
+// BottomNav.tsx — нижняя навигация мини-аппа.
 import React from 'react';
 
 export type Section = 'today' | 'help' | 'schemas' | 'profile';
@@ -182,7 +173,11 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                       position: 'absolute',
                       inset: '-6px -10px',
                       borderRadius: 'var(--r-12)',
-                      background: 'var(--accent-bg)',
+                      // 6%, не общий --accent-bg (12%): текст на плашке — тот
+                      // же --accent, заливка той же насыщенности съедает его
+                      // контраст (a11y-smoke: 4.27:1 → 4.62:1 light/5.44 dark).
+                      background:
+                        'color-mix(in srgb, var(--accent) 6%, transparent)',
                       border: '1px solid var(--line)',
                     }}
                   />

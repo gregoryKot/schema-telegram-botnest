@@ -1,6 +1,4 @@
-// TodaySection.tsx — Redesigned Today screen
-// Place at: src/sections/TodaySection.tsx
-// Replaces the existing TodaySection.
+// TodaySection.tsx — Redesigned Today screen.
 //
 // Key differences from original:
 //  – NeedMini grid with fill-bar indicators (tap opens tracker at that need)
@@ -139,6 +137,7 @@ export function TodaySection({
     };
   }, [refreshKey]);
 
+  const onboardingVisible = isOnboardingWidgetVisible(profile);
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
   const allRated = needs.length > 0 && ratedCount === needs.length;
@@ -219,7 +218,7 @@ export function TodaySection({
         {/* ── Band переставляемых блоков (screen_order_today) ── */}
         <TodayBlocks
           today={today}
-          onboardingVisible={isOnboardingWidgetVisible(profile)}
+          onboardingVisible={onboardingVisible}
           userRole={userRole}
           onOpenTherapistCabinet={onOpenTherapistCabinet}
           streak={streak}
@@ -240,8 +239,8 @@ export function TodaySection({
           onSetDiaryTask={() => setShowDiaryTask(true)}
         />
 
-        {/* ── Значок на экран — закреплён под band: временная карточка ── */}
-        <HomeScreenOfferCard />
+        {/* Значок — не третий CTA подряд поверх онбординга (полировка, п.1). */}
+        {!onboardingVisible && <HomeScreenOfferCard />}
       </div>
 
       {today.sheet && (
