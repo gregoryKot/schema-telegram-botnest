@@ -58,7 +58,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>{title}</h2>
       {topics.map((t, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 0' }}>
           <input style={{ ...input, flex: 2 }} placeholder="Текст" value={t.label} onChange={e => update(i, { label: e.target.value })} />
           <input style={{ ...input, flex: 1 }} placeholder="Ссылка (#booking, /reviews...)" value={t.href} onChange={e => update(i, { href: e.target.value })} />
           <button aria-label="Переместить выше" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
@@ -66,7 +66,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
           <button aria-label="Удалить" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => remove(i)}>✕</button>
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 12 }}>
         <button style={btnGhost} onClick={add}>+ Добавить пункт</button>
         <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
       </div>

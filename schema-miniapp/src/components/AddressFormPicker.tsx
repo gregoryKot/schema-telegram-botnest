@@ -67,13 +67,15 @@ export function AddressFormPicker({ onDone }: Props) {
         >
           Поменять можно в любой момент в настройках.
         </div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        <div
+          style={{ display: 'flex', gap: 'var(--space-10)', marginBottom: 10 }}
+        >
           <button
             onClick={() => choose('ty')}
             style={{
               flex: 1,
               padding: '14px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background: 'var(--accent)',
               color: 'var(--on-accent)',
@@ -89,7 +91,7 @@ export function AddressFormPicker({ onDone }: Props) {
             style={{
               flex: 1,
               padding: '14px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.08)',
               color: 'var(--text)',
@@ -119,7 +121,7 @@ export function AddressFormPicker({ onDone }: Props) {
           style={{
             width: '100%',
             padding: '10px 0',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             border: 'none',
             background: 'transparent',
             color: 'var(--text-faint)',

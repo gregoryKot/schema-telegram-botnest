@@ -25,7 +25,7 @@ export function JoinCodeView({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 16,
         }}
       >
@@ -47,7 +47,7 @@ export function JoinCodeView({
         style={{
           width: '100%',
           padding: '12px 14px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           background: 'rgba(var(--fg-rgb),0.06)',
           border: '1px solid rgba(var(--fg-rgb),0.1)',
           color: 'var(--text)',
@@ -79,7 +79,7 @@ export function JoinCodeView({
           width: '100%',
           padding: '14px',
           border: 'none',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           background: code.trim()
             ? 'var(--accent)'
             : 'color-mix(in srgb, var(--accent) 30%, transparent)',

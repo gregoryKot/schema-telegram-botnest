@@ -74,10 +74,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   }
 
   const progressBar = (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 28 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 28 }}>
       {STEPS.map((s, i) => (
         <div key={s} style={{
-          flex: 1, height: 3, borderRadius: 2,
+          flex: 1, height: 3, borderRadius: 'var(--r-2)',
           background: i < stepIndex ? 'var(--accent)'
             : i === stepIndex ? 'rgba(var(--fg-rgb),0.25)'
             : 'var(--line)',
@@ -137,7 +137,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               <div key={card.id} onClick={() => setViewing(card)} role="button" tabIndex={0}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewing(card); } }} style={{
                 padding: '16px 20px', background: 'transparent',
-                border: '1px solid var(--line)', borderRadius: 16, marginBottom: 10, cursor: 'pointer',
+                border: '1px solid var(--line)', borderRadius: 'var(--r-16)', marginBottom: 10, cursor: 'pointer',
               }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{card.date}</div>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.4 }}>
@@ -189,13 +189,13 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           </p>
           <div style={{
             background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)',
-            borderRadius: 20, padding: '24px', marginBottom: 36, textAlign: 'left',
+            borderRadius: 'var(--r-20)', padding: '24px', marginBottom: 36, textAlign: 'left',
           }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#60a5fa', marginBottom: 18 }}>
               Три вдоха прямо сейчас
             </div>
             {['Вдох через нос – 4 секунды', 'Задержи – 2 секунды', 'Медленный выдох – 6 секунд'].map((t, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 12 : 0 }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', marginBottom: i < 2 ? 12 : 0 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                   background: 'rgba(96,165,250,0.14)', border: '1px solid rgba(96,165,250,0.22)',
@@ -246,14 +246,14 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             )}
           </div>
           {progressBar}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
             {MODES.map(m => (
               <button key={m.id} onClick={() => { setSelectedMode(m.id); setStep('response'); }} style={{
-                textAlign: 'left', padding: '18px 20px', borderRadius: 16,
+                textAlign: 'left', padding: '18px 20px', borderRadius: 'var(--r-16)',
                 border: '1px solid var(--line)', background: 'transparent', cursor: 'pointer',
                 fontFamily: 'inherit',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', marginBottom: 6 }}>
                   <IdentityDot color={m.color} size={16} />
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: m.color }}>{m.label}</span>
                 </div>
@@ -278,7 +278,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           {progressBar}
           <div style={{
             background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.18)',
-            borderRadius: 20, padding: '20px', marginBottom: 24,
+            borderRadius: 'var(--r-20)', padding: '20px', marginBottom: 24,
           }}>
             <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 12 }}>
               {tr('Говорит тебе', 'Говорит вам')}
@@ -320,16 +320,16 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <p style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.6 }}>
             Какая потребность сейчас не удовлетворена?
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)', marginBottom: 20 }}>
             {NEEDS.map(n => {
               const sel = selectedNeed === n.id;
               return (
                 <button key={n.id} onClick={() => { setSelectedNeed(n.id); setStep('action'); }} style={{
-                  textAlign: 'left', padding: '16px 20px', borderRadius: 14, cursor: 'pointer',
+                  textAlign: 'left', padding: '16px 20px', borderRadius: 'var(--r-14)', cursor: 'pointer',
                   border: `1px solid ${sel ? 'var(--accent)' : 'var(--line)'}`,
                   background: sel ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent',
                   color: 'var(--text)', fontSize: 15,
-                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 12,
+                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 'var(--space-12)',
                 }}>
                   <IdentityDot id={n.id} size={16} />
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 18 }}>{n.label}</span>
@@ -354,9 +354,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         {progressBar}
         {needInfo && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 14,
+            display: 'flex', alignItems: 'center', gap: 'var(--space-14)',
             background: 'transparent', border: '1px solid var(--line)',
-            borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+            borderRadius: 'var(--r-14)', padding: '14px 18px', marginBottom: 20,
           }}>
             <IdentityDot id={needInfo.id} size={18} />
             <div>

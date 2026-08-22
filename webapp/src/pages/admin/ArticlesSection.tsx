@@ -33,7 +33,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
       {failed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить статьи — возможно, неверный админ-ключ или нет соединения.</p>}
       {!failed && articles.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Пока нет статей.</p>}
       {articles.map(a => (
-        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
           <div style={{ flex: 1 }}>
             <div style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600 }}>{a.title}</div>
             <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>/{a.slug} · {a.readMin} мин · {new Date(a.date).toLocaleDateString('ru')}</div>

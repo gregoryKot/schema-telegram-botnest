@@ -53,7 +53,7 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
         !resignConfirm ? (
           <div style={{ padding: '10px 0' }}>
             <button onClick={() => setResignConfirm(true)}
-              style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+              style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
               Перестать быть специалистом
             </button>
           </div>
@@ -65,14 +65,14 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
                 'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
               )}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
               <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
-                style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
                 Отмена
               </button>
               <button disabled={resignBusy}
                 onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
-                style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'var(--accent-red, #e5484d)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 {resignBusy ? '…' : 'Снять роль'}
               </button>
             </div>

@@ -24,7 +24,10 @@ export function LinkAccountSection() {
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ДАННЫЕ С САЙТА И ИЗ TELEGRAM</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, padding: 14 }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: 14 }}
+      >
         {link.state === 'idle' && (
           <>
             <div
@@ -113,7 +116,7 @@ const btnStyle = {
   marginTop: 12,
   width: '100%',
   minHeight: 44,
-  borderRadius: 12,
+  borderRadius: 'var(--r-12)',
   border: 'none',
   background: 'var(--text)',
   color: 'var(--bg)',
@@ -126,7 +129,7 @@ const codeStyle = {
   marginTop: 12,
   width: '100%',
   minHeight: 52,
-  borderRadius: 12,
+  borderRadius: 'var(--r-12)',
   border: '1px dashed rgba(var(--fg-rgb),0.25)',
   background: 'transparent',
   color: 'var(--text)',

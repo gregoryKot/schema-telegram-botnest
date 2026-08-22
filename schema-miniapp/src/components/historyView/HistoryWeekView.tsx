@@ -35,7 +35,7 @@ export function HistoryWeekView({
         padding: '0 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 'var(--space-8)',
       }}
     >
       <div className="section-label" style={{ marginBottom: 4 }}>
@@ -56,7 +56,10 @@ export function HistoryWeekView({
       <InsightCard needs={needs} ratings={selectedRatings} onTap={onTapNeed} />
 
       {needsLow.length > 0 && (
-        <div className="card" style={{ borderRadius: 16, padding: '16px' }}>
+        <div
+          className="card"
+          style={{ borderRadius: 'var(--r-16)', padding: '16px' }}
+        >
           <div
             style={{
               fontSize: 13,
@@ -83,7 +86,7 @@ export function HistoryWeekView({
         style={{
           width: '100%',
           padding: '14px 0',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           fontFamily: 'inherit',
           color: 'var(--text-sub)',
           fontSize: 14,
@@ -92,7 +95,7 @@ export function HistoryWeekView({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         Карточка недели

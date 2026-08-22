@@ -29,7 +29,7 @@ export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, 
             Карточка осталась только на этом устройстве — до сервера не доехала. На других устройствах и у терапевта её не будет.
           </div>
         )}
-        <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
+        <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 'var(--r-20)', padding: '24px', marginBottom: 32, textAlign: 'left' }}>
           {[
             { label: 'Режим',       value: modeLabel },
             needLabel ? { label: 'Потребность', value: needLabel } : null,
@@ -50,7 +50,7 @@ export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, 
             Открыть трекер →
           </button>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button onClick={handleNew} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>Ещё одну</button>
           <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
         </div>

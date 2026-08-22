@@ -15,7 +15,7 @@ export function AnchorCard({
         fontSize: 11,
         lineHeight: 1.55,
         padding: '7px 9px',
-        borderRadius: 10,
+        borderRadius: 'var(--r-10)',
         background: active
           ? `color-mix(in srgb, ${color} 10%, transparent)`
           : 'rgba(var(--fg-rgb),0.03)',

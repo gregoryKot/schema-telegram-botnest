@@ -60,7 +60,7 @@ export function TwoFactorChallengePage() {
         Подойдёт и один из recovery-кодов, если доступ к телефону потерян.
       </div>
 
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
         <input
           ref={inputRef}
           type="text"
@@ -73,7 +73,7 @@ export function TwoFactorChallengePage() {
           style={{
             padding: '14px 16px',
             border: '1px solid var(--line)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: 'var(--surface)',
             color: 'var(--text)',
             fontSize: 22,

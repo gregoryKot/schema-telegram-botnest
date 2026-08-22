@@ -112,7 +112,7 @@ export function PatternFrequencyList({
             </div>
             <div
               className="card"
-              style={{ borderRadius: 16, overflow: 'hidden' }}
+              style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
             >
               {items.map((it, i) => {
                 const active = it.id === selectedId;
@@ -126,7 +126,7 @@ export function PatternFrequencyList({
                       minHeight: 60,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--space-10)',
                       padding: '14px 16px',
                       border: 'none',
                       borderTop:
@@ -217,7 +217,7 @@ export function PatternFrequencyList({
           padding: 15,
           background: 'transparent',
           border: '1.5px dashed var(--border-color)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           color: 'var(--text-sub)',
           fontSize: 14,
           fontWeight: 600,

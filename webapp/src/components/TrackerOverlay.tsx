@@ -213,7 +213,7 @@ export function TrackerOverlay({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           background: 'none',
           border: 'none',
           color: 'var(--text-sub)',
@@ -245,7 +245,7 @@ export function TrackerOverlay({
             style={{
               width: 30,
               height: 30,
-              borderRadius: 6,
+              borderRadius: 'var(--r-6)',
               display: 'grid',
               placeItems: 'center',
               background: 'none',
@@ -278,7 +278,7 @@ export function TrackerOverlay({
             style={{
               width: 30,
               height: 30,
-              borderRadius: 6,
+              borderRadius: 'var(--r-6)',
               display: 'grid',
               placeItems: 'center',
               background: 'none',
@@ -314,7 +314,7 @@ export function TrackerOverlay({
         alignItems: 'center',
         borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
         flexShrink: 0,
-        gap: 8,
+        gap: 'var(--space-8)',
       }}
     >
       {/* Left: previous need */}
@@ -325,7 +325,7 @@ export function TrackerOverlay({
           style={{
             display: 'inline-flex',
             alignItems: 'baseline',
-            gap: 8,
+            gap: 'var(--space-8)',
             background: 'none',
             border: 'none',
             cursor: idx === 0 ? 'default' : 'pointer',
@@ -373,7 +373,7 @@ export function TrackerOverlay({
             onClick={() => setShowCompletion(true)}
             style={{
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: 'none',
               background: 'var(--text)',
               color: 'var(--bg)',
@@ -390,9 +390,9 @@ export function TrackerOverlay({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: 'none',
               background: 'var(--text)',
               color: 'var(--bg)',
@@ -423,7 +423,7 @@ export function TrackerOverlay({
             }}
             style={{
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: '1px solid rgba(var(--fg-rgb),0.12)',
               background: 'transparent',
               color: 'var(--text-sub)',

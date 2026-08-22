@@ -73,7 +73,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                       style={{
                         background: 'rgba(var(--fg-rgb),0.03)',
                         border: '1px solid rgba(var(--fg-rgb),0.07)',
-                        borderRadius: 12,
+                        borderRadius: 'var(--r-12)',
                         padding: '12px 14px',
                         marginBottom: 8,
                       }}
@@ -162,7 +162,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                       style={{
                         background: 'rgba(var(--fg-rgb),0.03)',
                         border: '1px solid rgba(var(--fg-rgb),0.07)',
-                        borderRadius: 12,
+                        borderRadius: 'var(--r-12)',
                         padding: '12px 14px',
                         marginBottom: 8,
                       }}

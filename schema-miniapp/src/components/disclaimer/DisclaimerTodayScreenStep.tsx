@@ -22,7 +22,11 @@ export function DisclaimerTodayScreenStep() {
 
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 12,
+        }}
       >
         {/* Строка безличная — вилка обращения не нужна (правило CLAUDE.md). */}
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
@@ -45,7 +49,7 @@ export function DisclaimerTodayScreenStep() {
                 alignItems: 'center',
                 gap: 7,
                 padding: '7px 11px',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: 'rgba(var(--fg-rgb),0.05)',
                 border: '1px solid rgba(var(--fg-rgb),0.08)',
               }}
@@ -67,7 +71,7 @@ export function DisclaimerTodayScreenStep() {
       <div
         style={{
           padding: '13px 16px',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
         }}
       >
@@ -83,7 +87,7 @@ export function DisclaimerTodayScreenStep() {
       <div
         style={{
           padding: '13px 16px',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           marginTop: 8,
           background: 'rgba(var(--fg-rgb),0.05)',
         }}

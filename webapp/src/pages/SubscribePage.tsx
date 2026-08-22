@@ -82,7 +82,7 @@ export function SubscribePage() {
       // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
       // (check-second-person.mjs не видит здесь ни местоимений, ни императивов).
       <div role="alert">
-        <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)' }}>Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения.</p>
+        <p style={{ ...sub_, color: 'var(--accent-red)' }}>Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения.</p>
         <button onClick={() => window.location.reload()} style={primaryBtn}>Обновить</button>
       </div>
     ) : (
@@ -114,15 +114,15 @@ export function SubscribePage() {
       <>
         <h1 style={{ ...h1, marginTop: 8 }}>Поддержать подпиской</h1>
         <p style={sub_}>SchemeHappens бесплатный. Регулярная поддержка помогает его развивать. Отписаться можно в любой момент.</p>
-        {ret === 'fail' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 14 }}>Оплата не прошла. Можно попробовать снова.</p>}
+        {ret === 'fail' && <p style={{ ...sub_, color: 'var(--accent-red)', fontSize: 14 }}>Оплата не прошла. Можно попробовать снова.</p>}
 
-        <div style={{ display: 'flex', gap: 10, margin: '4px 0 16px' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)', margin: '4px 0 16px' }}>
           {(['month', 'year'] as const).map((p) => {
             const o = opts.find((x) => x.period === p);
             const active = period === p;
             return (
               <button key={p} type="button" onClick={() => setPeriod(p)} style={{
-                flex: 1, padding: '14px 12px', cursor: 'pointer', borderRadius: 12, fontFamily: 'inherit', textAlign: 'center',
+                flex: 1, padding: '14px 12px', cursor: 'pointer', borderRadius: 'var(--r-12)', fontFamily: 'inherit', textAlign: 'center',
                 background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
               }}>
@@ -136,14 +136,14 @@ export function SubscribePage() {
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
         <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
-        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
           <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
             Согласен на <b>регулярные автосписания</b> раз в {periodLabel(period)}. Отменить можно в любой момент.
           </span>
         </label>
 
-        {status === 'error' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 13, margin: '12px 0 0' }}>Не получилось. Попробовать ещё раз.</p>}
+        {status === 'error' && <p style={{ ...sub_, color: 'var(--accent-red)', fontSize: 13, margin: '12px 0 0' }}>Не получилось. Попробовать ещё раз.</p>}
         <button onClick={submit} disabled={status === 'loading' || !price || !consent} style={{ ...primaryBtn, marginTop: 14, opacity: status === 'loading' || !price || !consent ? 0.5 : 1 }}>
           {status === 'loading' ? 'Перехожу к оплате…' : price ? `Оформить за ${price.toLocaleString('ru-RU')} ₽/${periodLabel(period)}` : 'Оформить'}
         </button>
@@ -170,9 +170,9 @@ const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'c
 const icon: React.CSSProperties = { width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', fontSize: 26 };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,32px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
 const sub_: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' };
-const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', margin: '0 0 18px', fontSize: 14, color: 'var(--text-sub)' };
-const field: React.CSSProperties = { width: '100%', padding: '13px 15px', fontSize: 15, boxSizing: 'border-box', background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)', borderRadius: 12, color: 'var(--text)', outline: 'none', fontFamily: 'inherit' };
-const primaryBtn: React.CSSProperties = { display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', textDecoration: 'none' };
+const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '14px 16px', margin: '0 0 18px', fontSize: 14, color: 'var(--text-sub)' };
+const field: React.CSSProperties = { width: '100%', padding: '13px 15px', fontSize: 15, boxSizing: 'border-box', background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)', borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit' };
+const primaryBtn: React.CSSProperties = { display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer', textDecoration: 'none' };
 const hint: React.CSSProperties = { fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.6, margin: '12px 0 0' };
 const textLink: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline', marginTop: 4 };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };

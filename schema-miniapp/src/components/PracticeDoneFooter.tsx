@@ -33,7 +33,7 @@ export function PracticeDoneFooter({ count, onShare, onShown }: Props) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
+        gap: 'var(--space-8)',
       }}
     >
       {count != null && count > 0 && (

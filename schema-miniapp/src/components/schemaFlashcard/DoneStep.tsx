@@ -85,7 +85,7 @@ export function DoneStep({
             style={{
               width: '100%',
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface)',
@@ -100,13 +100,13 @@ export function DoneStep({
             Открыть трекер →
           </button>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={onNew}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -123,7 +123,7 @@ export function DoneStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.06)',

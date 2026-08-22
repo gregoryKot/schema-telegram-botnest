@@ -70,14 +70,14 @@ export function HealthyAdultImport({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
-      <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button style={btn} onClick={submit} disabled={busy || lineCount === 0}>
           {busy ? 'Добавляю…' : `Добавить (${lineCount})`}
         </button>
       </div>
 
       {report && (
-        <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, margin: '12px 0 0', color: 'var(--text)', background: 'rgba(var(--fg-rgb),0.04)', padding: 10, borderRadius: 8, lineHeight: 1.6 }}>
+        <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, margin: '12px 0 0', color: 'var(--text)', background: 'rgba(var(--fg-rgb),0.04)', padding: 10, borderRadius: 'var(--r-8)', lineHeight: 1.6 }}>
           {report}
         </p>
       )}
@@ -90,7 +90,7 @@ function PoolMeter({ status }: { status: HealthyAdultPoolStatus | null }) {
   if (status === null) {
     // Скелетон по форме будущей строки, а не спиннер (правило про загрузку).
     return (
-      <div style={{ height: 34, borderRadius: 8, background: 'rgba(var(--fg-rgb),0.06)' }} />
+      <div style={{ height: 34, borderRadius: 'var(--r-8)', background: 'rgba(var(--fg-rgb),0.06)' }} />
     );
   }
   const low = status.daysLeft < 7;
@@ -100,7 +100,7 @@ function PoolMeter({ status }: { status: HealthyAdultPoolStatus | null }) {
         fontSize: 13,
         lineHeight: 1.5,
         padding: '8px 10px',
-        borderRadius: 8,
+        borderRadius: 'var(--r-8)',
         color: low ? 'var(--accent-red)' : 'var(--text-sub)',
         background: low ? 'rgba(var(--accent-red-rgb,200,60,60),0.08)' : 'rgba(var(--fg-rgb),0.04)',
       }}

@@ -108,13 +108,13 @@ export function BookingPaidPage() {
         )}
         <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
 
-        {cancelError && <p style={{ ...sub, fontSize: 13, color: 'var(--accent-red, #c0392b)', margin: '0 0 14px' }}>{cancelError}</p>}
+        {cancelError && <p style={{ ...sub, fontSize: 13, color: 'var(--accent-red)', margin: '0 0 14px' }}>{cancelError}</p>}
         {!confirmCancel ? (
           <button onClick={() => setConfirmCancel(true)} style={textLink}>Отменить запись</button>
         ) : (
           <div style={{ marginTop: 4 }}>
             <p style={{ ...sub, fontSize: 14, margin: '0 0 12px' }}>Точно отменить эту встречу?</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-10)', justifyContent: 'center' }}>
               <button onClick={doCancel} style={dangerBtn}>Да, отменить</button>
               <button onClick={() => setConfirmCancel(false)} style={ghostSmall}>Оставить</button>
             </div>
@@ -159,15 +159,15 @@ const icon: React.CSSProperties = {
 };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,34px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
 const sub: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 24px' };
-const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 14, padding: '16px 18px', margin: '0 0 18px' };
+const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '16px 18px', margin: '0 0 18px' };
 const primaryBtn: React.CSSProperties = {
   display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px',
   fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff',
-  border: 'none', borderRadius: 12, cursor: 'pointer', textDecoration: 'none',
+  border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer', textDecoration: 'none',
 };
 const ghostBtn: React.CSSProperties = { ...primaryBtn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' };
 const hint: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '14px 0 22px' };
 const textLink: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline' };
-const dangerBtn: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--accent-red, #c0392b)', background: 'transparent', color: 'var(--accent-red, #c0392b)' };
-const ghostSmall: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--line-strong)', background: 'transparent', color: 'var(--text-sub)' };
+const dangerBtn: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)', border: '1.5px solid var(--accent-red)', background: 'transparent', color: 'var(--accent-red)' };
+const ghostSmall: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)', border: '1.5px solid var(--line-strong)', background: 'transparent', color: 'var(--text-sub)' };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };

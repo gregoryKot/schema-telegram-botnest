@@ -11,7 +11,7 @@ import { useTr } from '../utils/addressForm';
 const BTN_STYLE = {
   padding: '13px 28px',
   border: 'none',
-  borderRadius: 14,
+  borderRadius: 'var(--r-14)',
   background: 'var(--accent)',
   color: 'var(--text)',
   fontSize: 15,

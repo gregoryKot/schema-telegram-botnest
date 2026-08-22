@@ -105,7 +105,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
     <div style={{
       width: 264, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto',
       background: 'var(--bg-elev)', border: '1px solid var(--line)',
-      borderRadius: 12, padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
+      borderRadius: 'var(--r-12)', padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
@@ -131,8 +131,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
             <button key={i} disabled={!clickable}
               onClick={() => { if (!clickable) return; if (s.add) onAdd(s.add); else s.action?.(); }}
               title={clickable ? (s.add ? 'Добавить на холст' : 'Открыть поле') : undefined}
-              style={{ display: 'flex', gap: 8, textAlign: 'left', width: '100%',
-                background: 'none', border: 'none', padding: '6px 5px', borderRadius: 6,
+              style={{ display: 'flex', gap: 'var(--space-8)', textAlign: 'left', width: '100%',
+                background: 'none', border: 'none', padding: '6px 5px', borderRadius: 'var(--r-6)',
                 cursor: clickable ? 'pointer' : 'default', alignItems: 'flex-start' }}
               onMouseEnter={e => { if (clickable) e.currentTarget.style.background = 'var(--surface-2)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
@@ -184,9 +184,9 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
             ↻
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
           {random.map((t, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
+            <div key={i} style={{ display: 'flex', gap: 'var(--space-8)', fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
               <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-line)', marginTop: 6 }} /><span>{t}</span>
             </div>
           ))}

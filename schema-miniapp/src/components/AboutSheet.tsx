@@ -40,7 +40,7 @@ export function AboutSheet({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 24,
           }}
         >
@@ -50,7 +50,7 @@ export function AboutSheet({
               style={{
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.07)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
               }}
             >
@@ -58,7 +58,7 @@ export function AboutSheet({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   marginBottom: 6,
                 }}
               >
@@ -93,7 +93,7 @@ export function AboutSheet({
             background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             cursor: 'pointer',
             display: 'flex',

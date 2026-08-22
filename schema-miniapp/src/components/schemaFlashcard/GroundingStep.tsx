@@ -49,7 +49,7 @@ export function GroundingStep({
           style={{
             background: cm('var(--accent-blue)', 7),
             border: `1px solid ${cm('var(--accent-blue)', 18)}`,
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '18px 16px',
             marginBottom: 24,
             textAlign: 'left',
@@ -75,7 +75,7 @@ export function GroundingStep({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 'var(--space-12)',
                 marginBottom: i < 2 ? 10 : 0,
               }}
             >
@@ -118,7 +118,7 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: cm('var(--accent-blue)', 12),
@@ -138,7 +138,7 @@ export function GroundingStep({
             style={{
               width: '100%',
               padding: '11px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               fontFamily: 'inherit',
               border: 'none',
               background: 'var(--surface)',
@@ -157,7 +157,7 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '11px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: 'transparent',

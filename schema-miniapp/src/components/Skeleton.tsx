@@ -50,7 +50,13 @@ export function SkeletonLines({
   widths?: (number | string)[];
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-8)',
+      }}
+    >
       {widths.map((w, i) => (
         <Skeleton key={i} w={w} h={12} radius={6} />
       ))}
@@ -89,7 +95,7 @@ export function TodayScreenSkeleton() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -104,7 +110,7 @@ export function TodayScreenSkeleton() {
           padding: '16px 20px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
         <SkeletonCard h={56} />
@@ -137,7 +143,7 @@ export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
           padding: '16px 20px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
         {Array.from({ length: cards }).map((_, i) => (

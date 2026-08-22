@@ -21,7 +21,13 @@ export function ProfileHeader({
         padding: '20px 20px 0',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-14)',
+        }}
+      >
         <div
           style={{
             width: 52,

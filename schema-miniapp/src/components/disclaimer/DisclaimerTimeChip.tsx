@@ -10,7 +10,7 @@ export function DisclaimerTimeChip({ children }: { children: ReactNode }) {
         display: 'flex',
         alignItems: 'center',
         padding: '13px 16px',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
       }}
     >

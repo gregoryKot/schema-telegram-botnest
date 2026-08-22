@@ -38,7 +38,7 @@ export function PhraseCheckHistoryCard({
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
             border: '1px solid rgba(var(--fg-rgb),0.08)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: markLabels.length > 0 ? 10 : 16,
             fontSize: 14,
@@ -64,7 +64,7 @@ export function PhraseCheckHistoryCard({
             boxSizing: 'border-box',
             background: 'rgba(var(--fg-rgb),0.04)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
             color: 'var(--text)',
             fontSize: 14,

@@ -103,7 +103,7 @@ export function ModeDiaryWizard({
         <div
           style={{
             background: 'var(--calm)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 12,
           }}

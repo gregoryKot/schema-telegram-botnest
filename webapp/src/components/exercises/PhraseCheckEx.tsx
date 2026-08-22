@@ -164,9 +164,9 @@ export function PhraseCheckEx({
         aria-valuenow={stepNumber}
         aria-valuemin={1}
         aria-valuemax={TOTAL_STEPS}
-        style={{ height: 3, borderRadius: 2, background: 'var(--line)', marginBottom: 28, overflow: 'hidden' }}
+        style={{ height: 3, borderRadius: 'var(--r-2)', background: 'var(--line)', marginBottom: 28, overflow: 'hidden' }}
       >
-        <div style={{ width: `${progress}%`, height: '100%', borderRadius: 2, background: 'var(--c-teal)', transition: 'width 0.2s' }} />
+        <div style={{ width: `${progress}%`, height: '100%', borderRadius: 'var(--r-2)', background: 'var(--c-teal)', transition: 'width 0.2s' }} />
       </div>
 
       {markIndex < 0 && (

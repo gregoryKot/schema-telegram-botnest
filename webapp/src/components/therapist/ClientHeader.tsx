@@ -30,7 +30,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   return (
     <div className="therapist-client-header" style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
       {/* Row 1: back + name + actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', marginBottom: 14 }}>
         <button onClick={() => switchView('list')}
           style={{ background: 'none', border: 'none', fontSize: 12.5, color: 'var(--text-faint)', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' }}>
           ← Все клиенты
@@ -55,11 +55,11 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
               {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
             </span>
             <button onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
-              style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать" aria-label="Переименовать">✎</button>
+              style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 'var(--r-4)', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать" aria-label="Переименовать">✎</button>
             {/* Inline meta */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
               {selectedClient.lastActiveDate === todayStr() && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--c-moss)', flexShrink: 0 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', fontSize: 12, color: 'var(--c-moss)', flexShrink: 0 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--c-moss)' }} />был сегодня
                 </span>
               )}
@@ -84,12 +84,12 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
         )}
 
         {/* Actions — right */}
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)', flexShrink: 0, marginLeft: 'auto', alignItems: 'center' }}>
           <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
           <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
           <button onClick={requestDeleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента"
             style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer' }}>
+              borderRadius: 'var(--r-8)', border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer' }}>
             {deleteLoading ? '…' : (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 7h16 M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2 M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
@@ -113,7 +113,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
           <button key={t} className={`tab${clientTab === t ? ' is-active' : ''}`} onClick={() => setClientTab(t)}>
             {label}
             {count != null && count > 0 && (
-              <span style={{ marginLeft: 6, background: 'var(--surface-3)', borderRadius: 10, padding: '1px 6px', fontSize: 10.5, fontWeight: 500 }}>{count}</span>
+              <span style={{ marginLeft: 6, background: 'var(--surface-3)', borderRadius: 'var(--r-10)', padding: '1px 6px', fontSize: 10.5, fontWeight: 500 }}>{count}</span>
             )}
           </button>
         ))}

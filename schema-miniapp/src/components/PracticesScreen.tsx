@@ -65,7 +65,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           padding: '16px 20px 8px',
         }}
       >
@@ -172,7 +172,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                 style={{
                   flexShrink: 0,
                   padding: '7px 12px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   background: active
                     ? color + '28'
                     : 'rgba(var(--fg-rgb),0.05)',
@@ -216,12 +216,12 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: `${needColor}12`,
               border: `1px solid ${needColor}25`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>📍</span>
@@ -246,12 +246,12 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: 'rgba(251,191,36,0.08)',
               border: '1px solid rgba(251,191,36,0.2)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>💛</span>
@@ -290,7 +290,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           Небольшое конкретное действие — например «позвонить другу» или
           «прогулка 20 минут»
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -303,7 +303,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.05)',
               border: '1px solid rgba(var(--fg-rgb),0.1)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 14px',
               color: 'var(--text)',
               fontSize: 14,
@@ -316,7 +316,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             disabled={!input.trim() || saving}
             style={{
               padding: '12px 18px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               background: input.trim() ? needColor : 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text)',

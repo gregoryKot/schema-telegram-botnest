@@ -100,7 +100,7 @@ export function DonateNudge() {
             background: 'var(--accent)',
             color: 'var(--on-accent)',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             cursor: 'pointer',
             marginBottom: 10,
           }}

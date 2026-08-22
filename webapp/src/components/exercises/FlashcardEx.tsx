@@ -99,7 +99,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
             {d.schemas.map(s => (
               <div key={s.id} {...pressable(() => setPicked({ id: s.id, name: s.name, desc: s.libraryDesc, color: d.color, domain: d.domain }))}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '16px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, marginTop: 10 }} />
+                <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: d.color, marginTop: 10 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.1, color: 'var(--text)', marginBottom: 4 }}>{s.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.libraryDesc}</div>
@@ -156,7 +156,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
             {g.items.map(m => (
               <div key={m.id} {...pressable(() => { setShowPortrait(!localStorage.getItem(portraitSeenKey(m.id))); setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group }); })}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: g.color, marginTop: 8 }} />
+                <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: g.color, marginTop: 8 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.15, color: 'var(--text)', marginBottom: 4 }}>{m.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{m.short}</div>

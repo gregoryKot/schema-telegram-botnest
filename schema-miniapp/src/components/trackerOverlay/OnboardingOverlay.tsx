@@ -39,7 +39,7 @@ export function OnboardingOverlay({
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border-color)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 16px',
         }}
       >
@@ -61,7 +61,7 @@ export function OnboardingOverlay({
         <div
           style={{
             display: 'flex',
-            gap: 12,
+            gap: 'var(--space-12)',
             alignItems: 'flex-start',
             marginBottom: 12,
           }}
@@ -91,14 +91,14 @@ export function OnboardingOverlay({
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button
             onClick={dismissOnb}
             style={{
               padding: '7px 12px',
               border: 'none',
               fontFamily: 'inherit',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'transparent',
               color: 'var(--text-faint)',
               fontSize: 11,
@@ -116,7 +116,7 @@ export function OnboardingOverlay({
               padding: '8px',
               border: 'none',
               fontFamily: 'inherit',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'var(--surface-2)',
               color: 'var(--accent)',
               fontSize: 12,

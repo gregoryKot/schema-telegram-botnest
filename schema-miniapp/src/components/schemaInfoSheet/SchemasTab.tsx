@@ -59,7 +59,13 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-10)',
+              }}
+            >
               <div
                 style={{
                   width: 10,

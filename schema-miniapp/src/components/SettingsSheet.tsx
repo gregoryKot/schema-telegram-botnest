@@ -139,7 +139,7 @@ export function SettingsSheet({
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
           }}
         >
           <SkeletonList rows={5} h={64} />
@@ -167,7 +167,7 @@ export function SettingsSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             padding: '16px 20px 8px',
           }}
         >

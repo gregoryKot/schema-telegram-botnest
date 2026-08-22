@@ -106,9 +106,9 @@ function WarmWordsToggle({
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 10,
+        gap: 'var(--space-10)',
         padding: '12px 14px',
-        borderRadius: 10,
+        borderRadius: 'var(--r-10)',
         border: '1px solid var(--line)',
         margin: '16px 0',
         opacity: hasRewrite ? 1 : 0.5,

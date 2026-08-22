@@ -69,14 +69,14 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
       <Field label="Описание (для карточки и превью)">
         <textarea style={{ ...input, minHeight: 70, resize: 'vertical', fontFamily: 'inherit' }} value={description} onChange={e => setDescription(e.target.value)} />
       </Field>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-12)', marginBottom: 14 }}>
         <Field label="Дата" style={{ flex: 1 }}><input style={input} type="date" value={date} onChange={e => setDate(e.target.value)} /></Field>
         <Field label="Время чтения (мин)" style={{ width: 140 }}><input style={input} type="number" min={1} value={readMin} onChange={e => setReadMin(Number(e.target.value))} /></Field>
       </div>
 
       <Field label="Картинка-хедер (необязательно)">
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-          {heroImage && <img src={heroImage} alt="" style={{ width: 160, height: 90, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />}
+        <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexWrap: 'wrap' }}>
+          {heroImage && <img src={heroImage} alt="" style={{ width: 160, height: 90, objectFit: 'cover', borderRadius: 'var(--r-10)', border: '1px solid var(--line)' }} />}
           <input type="file" accept="image/*" onChange={onHeroFile} />
           {heroImage && <button type="button" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setHeroImage(null)}>Убрать</button>}
         </div>
@@ -90,7 +90,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
       </Field>
 
       <Field label="Текст статьи">
-        <div style={{ border: '1.5px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ border: '1.5px solid var(--line)', borderRadius: 'var(--r-8)', overflow: 'hidden' }}>
           <EditorToolbar editor={editor} />
           <div style={{ padding: '12px 14px', maxHeight: 480, overflowY: 'auto' }}>
             <EditorContent editor={editor} />
@@ -100,7 +100,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
 
       {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '8px 0' }}>{error}</p>}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 16 }}>
         <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
         <button style={btnGhost} onClick={onCancel}>Отмена</button>
       </div>
@@ -121,10 +121,10 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   const tbBtn = (active: boolean): React.CSSProperties => ({
     padding: '6px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
     background: active ? 'var(--accent)' : 'transparent', color: active ? '#fff' : 'var(--text-sub)',
-    border: 'none', borderRadius: 6,
+    border: 'none', borderRadius: 'var(--r-6)',
   });
   return (
-    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', padding: '8px 10px', borderBottom: '1.5px solid var(--line)', background: 'rgba(var(--fg-rgb),0.02)' }}>
+    <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', padding: '8px 10px', borderBottom: '1.5px solid var(--line)', background: 'rgba(var(--fg-rgb),0.02)' }}>
       <button type="button" aria-label="Жирный" style={tbBtn(editor.isActive('bold'))} onClick={() => editor.chain().focus().toggleBold().run()}>Ж</button>
       <button type="button" aria-label="Курсив" style={tbBtn(editor.isActive('italic'))} onClick={() => editor.chain().focus().toggleItalic().run()}><i>К</i></button>
       <button type="button" aria-label="Заголовок 2" style={tbBtn(editor.isActive('heading', { level: 2 }))} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>

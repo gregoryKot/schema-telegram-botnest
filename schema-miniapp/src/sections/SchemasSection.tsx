@@ -122,7 +122,7 @@ export function SchemasSection({
             display: 'flex',
             background: 'var(--surface-2)',
             border: '1px solid var(--border-color)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: 3,
           }}
         >

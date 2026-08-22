@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 14,
+          gap: 'var(--space-14)',
           textAlign: 'center',
         }}
       >
@@ -69,13 +69,13 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           {this.state.error.message}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={() => this.setState({ error: null })}
             style={{
               padding: '11px 20px',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               background: 'var(--accent)',
               color: 'var(--on-accent)',
               fontSize: 14,
@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
             style={{
               padding: '11px 20px',
               border: '1px solid rgba(var(--fg-rgb),0.15)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               background: 'none',
               color: 'var(--text)',
               fontSize: 14,

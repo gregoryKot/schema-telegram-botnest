@@ -57,11 +57,11 @@ function FullTaskRow({
         padding: '14px',
         background: 'var(--surface)',
         border: `1px solid ${isAssigned && !task.doneToday ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--border-color)'}`,
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         marginBottom: 8,
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         cursor: task.doneToday ? 'default' : 'pointer',
         opacity: task.doneToday ? 0.55 : 1,
         transition: 'all 0.15s',
@@ -72,7 +72,7 @@ function FullTaskRow({
           style={{
             width: 28,
             height: 28,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             flexShrink: 0,
             background: 'var(--calm)',
             display: 'flex',
@@ -140,7 +140,7 @@ function FullTaskRow({
             background: 'rgba(52,211,153,0.12)',
             outline: '1px solid rgba(52,211,153,0.22)',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             padding: '7px 12px',
             color: 'var(--accent-green)',
             fontSize: 12,
@@ -184,7 +184,7 @@ function CompactTaskRow({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '11px 0',
         borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
       }}
@@ -238,7 +238,7 @@ function CompactTaskRow({
           style={{
             padding: '6px 12px',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background:
               'color-mix(in srgb, var(--accent-green) 14%, transparent)',
             color: 'var(--accent-green)',

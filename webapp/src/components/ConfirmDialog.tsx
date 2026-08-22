@@ -74,7 +74,7 @@ export function ConfirmDialog({
         onKeyDown={(e) => e.stopPropagation()}
         style={{
           background: 'var(--bg)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           padding: '28px 28px 32px',
           width: '100%',
           maxWidth: 420,
@@ -114,14 +114,14 @@ export function ConfirmDialog({
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={onCancel}
             disabled={busy}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: '1px solid var(--line)',
               background: 'transparent',
               color: 'var(--text)',
@@ -139,7 +139,7 @@ export function ConfirmDialog({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background: danger ? 'var(--c-rose)' : 'var(--accent)',
               color: '#fff',

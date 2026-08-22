@@ -67,14 +67,14 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                   ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                   : 'rgba(var(--fg-rgb),0.06)',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '5px 10px',
                 color: showHistory ? 'var(--accent)' : 'var(--text-sub)',
                 fontSize: 12,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
               }}
             >
               История ({(concept.history as unknown[]).length})
@@ -89,7 +89,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
               style={{
                 width: '100%',
                 padding: '10px 16px',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 border: `1px solid ${cm('var(--accent-blue)', 20)}`,
                 background: cm('var(--accent-blue)', 6),
                 color: ysqRequested ? '#06d6a0' : cm('var(--accent-blue)', 80),
@@ -120,7 +120,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             style={{
               background: 'rgba(var(--fg-rgb),0.03)',
               border: '1px solid rgba(var(--fg-rgb),0.07)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '10px 14px',
               marginBottom: 14,
             }}
@@ -146,7 +146,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                     style={{
                       fontSize: 11,
                       padding: '3px 9px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       background: 'rgba(var(--fg-rgb),0.07)',
                       color: 'var(--text-sub)',
                     }}
@@ -185,7 +185,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                     onClick={() => toggleSchemaId(schema.id)}
                     style={{
                       padding: '5px 10px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       cursor: 'pointer',
                       border: fromYsq
                         ? `1px solid ${domain.color}55`
@@ -239,7 +239,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
                   boxSizing: 'border-box',
                   background: 'rgba(var(--fg-rgb),0.04)',
                   border: '1px solid rgba(var(--fg-rgb),0.08)',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   padding: '10px 12px',
                   outline: 'none',
                   resize: 'none',
@@ -258,7 +258,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: conceptDirty
               ? `linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), ${cm('var(--accent-blue)', 20)})`
@@ -297,7 +297,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
               width: '100%',
               marginTop: 8,
               padding: '11px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: '1px solid rgba(var(--fg-rgb),0.1)',
               background: exportCopied
                 ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'

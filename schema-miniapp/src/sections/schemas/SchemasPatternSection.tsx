@@ -80,7 +80,7 @@ export function SchemasPatternSection({
               padding: 15,
               background: 'transparent',
               border: '1.5px dashed var(--border-color)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               color: 'var(--text-sub)',
               fontSize: 14,
               fontWeight: 600,

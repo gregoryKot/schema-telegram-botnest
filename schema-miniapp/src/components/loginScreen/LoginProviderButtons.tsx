@@ -16,7 +16,7 @@ const BTN_BASE: CSSProperties = {
   width: '100%',
   minHeight: 48,
   padding: '13px 16px',
-  borderRadius: 14,
+  borderRadius: 'var(--r-14)',
   border: 'none',
   fontSize: 15,
   fontWeight: 600,
@@ -25,7 +25,7 @@ const BTN_BASE: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 8,
+  gap: 'var(--space-8)',
 };
 
 const PRIMARY: CSSProperties = {
@@ -48,7 +48,7 @@ export function LoginProviderButtons() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 'var(--space-8)',
         marginTop: 16,
       }}
     >

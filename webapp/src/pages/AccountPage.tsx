@@ -170,13 +170,13 @@ export function AccountPage() {
       </p>
 
       {success && (
-        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-green)', fontSize: 13 }}>
+        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-green)', fontSize: 13 }}>
           {success}
         </div>
       )}
 
       {error && (
-        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
+        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -213,22 +213,22 @@ export function AccountPage() {
               onLink={() => { setShowEmailLink(true); setEmailLinkSent(false); setEmailInput(''); }} />
             {showEmailLink && !hasEmail && (
               emailLinkSent ? (
-                <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-10)', fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
                   Письмо отправлено на <b>{emailInput}</b>. {tr('Перейди по ссылке в письме — она привяжет email к аккаунту.', 'Перейдите по ссылке в письме — она привяжет email к аккаунту.')}
                   <button onClick={() => { setEmailLinkSent(false); setEmailInput(''); }} style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                     Ввести другой email
                   </button>
                 </div>
               ) : (
-                <form onSubmit={sendEmailLink} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                <form onSubmit={sendEmailLink} style={{ marginTop: 12, display: 'flex', gap: 'var(--space-8)' }}>
                   <input
                     type="email" required ref={emailInputRef}
                     placeholder="your@email.com"
                     value={emailInput}
                     onChange={e => setEmailInput(e.target.value)}
-                    style={{ flex: 1, padding: '9px 12px', fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 8, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+                    style={{ flex: 1, padding: '9px 12px', fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 'var(--r-8)', background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
                   />
-                  <button type="submit" disabled={emailLinkBusy} style={{ padding: '9px 14px', fontSize: 12, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, cursor: emailLinkBusy ? 'default' : 'pointer', opacity: emailLinkBusy ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+                  <button type="submit" disabled={emailLinkBusy} style={{ padding: '9px 14px', fontSize: 12, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-8)', cursor: emailLinkBusy ? 'default' : 'pointer', opacity: emailLinkBusy ? 0.7 : 1, whiteSpace: 'nowrap' }}>
                     {emailLinkBusy ? '…' : 'Отправить'}
                   </button>
                 </form>
@@ -242,7 +242,7 @@ export function AccountPage() {
 
       <TherapistRequestSection accessToken={accessToken} />
 
-      <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 12, padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
+      <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 'var(--r-12)', padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
         Выйти
       </button>
 

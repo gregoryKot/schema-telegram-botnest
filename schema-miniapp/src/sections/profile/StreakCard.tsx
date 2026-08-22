@@ -20,7 +20,7 @@ export function StreakCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, padding: '20px 20px 18px' }}
+      style={{ borderRadius: 'var(--r-20)', padding: '20px 20px 18px' }}
     >
       {/* Top row: big number + secondary stats */}
       <div
@@ -31,7 +31,13 @@ export function StreakCard({
           marginBottom: 18,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 'var(--space-10)',
+          }}
+        >
           <div
             style={{
               fontSize: 56,
@@ -184,7 +190,7 @@ export function StreakCard({
             width: '100%',
             padding: '10px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: 'rgba(var(--fg-rgb),0.06)',
             color: 'var(--text-sub)',
             fontSize: 13,

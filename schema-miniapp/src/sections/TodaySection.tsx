@@ -165,7 +165,7 @@ export function TodaySection({
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <h1
@@ -202,7 +202,7 @@ export function TodaySection({
           padding: '16px 20px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
         {/* ── Onboarding widget — закреплён над band: воронка новичка ── */}

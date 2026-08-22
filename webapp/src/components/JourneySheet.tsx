@@ -67,7 +67,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               ← Назад
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
               <h1
                 style={{
                   fontSize: 24,
@@ -88,7 +88,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                     gap: 7,
                     minHeight: 40,
                     padding: '0 16px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     border:
                       '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
                     background:
@@ -119,7 +119,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                       key={i}
                       style={{
                         height: h,
-                        borderRadius: 16,
+                        borderRadius: 'var(--r-16)',
                         marginBottom: 8,
                         background:
                           'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',

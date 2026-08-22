@@ -66,7 +66,7 @@ export function ShareCardSheet({
 
         <div
           style={{
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             overflow: 'hidden',
             border: '1px solid var(--line)',
             boxShadow: '0 14px 34px rgba(0,0,0,0.22)',
@@ -86,7 +86,7 @@ export function ShareCardSheet({
               color: 'var(--text-sub)',
               lineHeight: 1.6,
               background: 'var(--surface-2)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 14px',
               overflowX: 'auto',
               whiteSpace: 'pre-wrap',
@@ -109,7 +109,7 @@ export function ShareCardSheet({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             background: 'var(--accent)',
             color: 'var(--on-accent)',
             opacity: s.sharing ? 0.6 : 1,
@@ -125,7 +125,7 @@ export function ShareCardSheet({
             marginTop: 10,
             padding: '12px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: 'var(--surface-2)',
             color: s.copied ? 'var(--c-moss)' : s.failed ? 'var(--accent-red)' : 'var(--text-sub)',
             fontSize: 14,

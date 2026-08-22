@@ -32,7 +32,7 @@ export function CustomizeRow({
       ref={rowRef}
       style={{
         display: 'flex',
-        gap: 4,
+        gap: 'var(--space-4)',
         transform: `translateY(${offsetY}px)${lifted ? ' scale(1.02)' : ''}`,
         transition: lifted ? 'none' : 'transform 150ms ease',
         boxShadow: lifted ? '0 8px 24px rgba(var(--fg-rgb),0.18)' : undefined,

@@ -95,7 +95,7 @@ export function NeedHistorySheet({
         <div
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             display: 'flex',
             alignItems: 'center',
@@ -186,11 +186,11 @@ export function NeedHistorySheet({
                   ? 'color-mix(in srgb, var(--accent-red) 8%, transparent)'
                   : 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
               border: `1px solid ${childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 20%, transparent)' : 'color-mix(in srgb, var(--accent-green) 20%, transparent)'}`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: 'var(--space-12)',
             }}
           >
             <div>
@@ -247,7 +247,7 @@ export function NeedHistorySheet({
         <div
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
           }}
         >

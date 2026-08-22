@@ -11,9 +11,9 @@ export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
     <div
       role="alert"
       style={{
-        display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', flexWrap: 'wrap',
+        display: 'flex', alignItems: 'center', gap: 'var(--space-10)', justifyContent: 'space-between', flexWrap: 'wrap',
         padding: '10px 16px', marginBottom: 20,
-        background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 12,
+        background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 'var(--r-12)',
         fontSize: 13, color: 'var(--c-rose)', lineHeight: 1.5,
       }}
     >
@@ -24,7 +24,7 @@ export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
         )}
       </span>
       <button onClick={onRetry} style={{
-        flexShrink: 0, padding: '6px 14px', borderRadius: 10, border: 'none', fontFamily: 'inherit',
+        flexShrink: 0, padding: '6px 14px', borderRadius: 'var(--r-10)', border: 'none', fontFamily: 'inherit',
         background: 'rgba(248,113,113,0.15)', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
       }}>
         Обновить

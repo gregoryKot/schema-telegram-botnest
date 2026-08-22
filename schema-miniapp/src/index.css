@@ -218,7 +218,7 @@ button {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 16px;
+  border-radius: var(--r-16);
   padding: 16px 0;
   min-height: 48px;
   width: 100%;
@@ -251,7 +251,7 @@ html[data-theme='light'] .btn-primary {
   background: var(--surface-2);
   color: var(--accent);
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-14);
   padding: 13px 0;
   min-height: 48px;
   font-size: 14px;
@@ -425,7 +425,7 @@ html[data-theme='light'] .card {
 
 /* ── Field focus ────────────────────────────────────────────────────────────── */
 .field-input {
-  border-radius: 14px;
+  border-radius: var(--r-14);
 }
 .field-input:focus {
   border-color: rgba(var(--fg-rgb), 0.25) !important;
@@ -471,7 +471,7 @@ html[data-theme='light'] .card {
 .d-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-12);
   width: 100%;
   min-height: 60px;
   padding: 14px 16px;
@@ -499,7 +499,7 @@ html[data-theme='light'] .card {
 
 /* Запись в списке дневника: строки внутри панели, не отдельные карточки. */
 .d-entry {
-  padding: 16px;
+  padding: var(--space-16);
 }
 .d-entry + .d-entry {
   border-top: 1px solid var(--line);

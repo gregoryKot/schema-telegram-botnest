@@ -145,9 +145,9 @@ function LinkDeviceContent({ code }: { code: string }) {
           {!preview.sameAccount && total > 0 && (
             <>
               <div className="hint" style={{ marginBottom: 8 }}>Что переедет из приложения:</div>
-              <div className="card" style={{ padding: 16, borderRadius: 14, marginBottom: 18 }}>
+              <div className="card" style={{ padding: 16, borderRadius: 'var(--r-14)', marginBottom: 18 }}>
                 {Object.entries(preview.summary).map(([table, n]) => (
-                  <div key={table} style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
+                  <div key={table} style={{ display: 'flex', gap: 'var(--space-10)', padding: '4px 0' }}>
                     <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
                     <span className="hint">{n}</span>
                   </div>

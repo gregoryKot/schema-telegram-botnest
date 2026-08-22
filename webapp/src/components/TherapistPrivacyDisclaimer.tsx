@@ -56,7 +56,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
         <div style={{
           background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
           border: '1px solid color-mix(in srgb, var(--accent) 16%, transparent)',
-          borderRadius: 14, padding: '16px 18px', marginBottom: 22,
+          borderRadius: 'var(--r-14)', padding: '16px 18px', marginBottom: 22,
         }}>
           <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.7 }}>
             На этом стоят и этические кодексы психологов —{' '}
@@ -71,7 +71,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
           А обо всём остальном мы уже позаботились. Вот что делаем со своей стороны:
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-14)', marginBottom: 24 }}>
           {[
             ['Шифрование',
               'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],

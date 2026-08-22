@@ -108,7 +108,7 @@ export function BottomSheet({
               <div
                 style={{
                   ...handleHit.inner,
-                  borderRadius: 2,
+                  borderRadius: 'var(--r-2)',
                   background: 'rgba(var(--fg-rgb),0.18)',
                 }}
               />

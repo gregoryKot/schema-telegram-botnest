@@ -158,7 +158,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -173,7 +173,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 'var(--space-4)',
                 }}
               >
                 {active && (
@@ -181,7 +181,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                     style={{
                       position: 'absolute',
                       inset: '-6px -10px',
-                      borderRadius: 12,
+                      borderRadius: 'var(--r-12)',
                       background: 'var(--accent-bg)',
                       border: '1px solid var(--line)',
                     }}

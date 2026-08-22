@@ -42,7 +42,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
     >
       {items === null && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
           {[0, 1, 2].map((i) => (
             <SkeletonCard key={i} height={92} />
           ))}
@@ -81,7 +81,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
           <div className="text-xs faint" style={{ marginBottom: 14 }}>
             {items.length} {pluralEntries(items.length)}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
             {items.map((item) => {
               const mode = getModeById(item.modeId);
               return (
@@ -90,7 +90,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      gap: 8,
+                      gap: 'var(--space-8)',
                       marginBottom: 8,
                     }}
                   >

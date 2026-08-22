@@ -27,7 +27,7 @@ export function TrackerDoneSummary({
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border-color)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 18px',
           display: 'flex',
           alignItems: 'center',
@@ -56,7 +56,7 @@ export function TrackerDoneSummary({
         style={{
           width: '100%',
           padding: '14px',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           border:
             '1px solid color-mix(in srgb, var(--accent-green) 25%, transparent)',
           background:

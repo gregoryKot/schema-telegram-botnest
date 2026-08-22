@@ -61,7 +61,7 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
           {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
         </p>
-        <a href="/donate" onClick={close} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '14px', fontSize: 16, fontWeight: 700, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, textDecoration: 'none', marginBottom: 10 }}>
+        <a href="/donate" onClick={close} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '14px', fontSize: 16, fontWeight: 700, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', textDecoration: 'none', marginBottom: 10 }}>
           Поддержать
         </a>
         <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', padding: '6px' }}>

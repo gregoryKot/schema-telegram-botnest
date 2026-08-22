@@ -69,7 +69,7 @@ export function Disclaimer({
         style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           marginBottom: 24,
         }}
       >
@@ -84,7 +84,7 @@ export function Disclaimer({
               <div
                 style={{
                   ...hitboxStyle(dotW, 8, 24).inner,
-                  borderRadius: 4,
+                  borderRadius: 'var(--r-4)',
                   background:
                     i === step
                       ? 'var(--accent)'
@@ -103,14 +103,14 @@ export function Disclaimer({
       <div style={{ minHeight: 260 }}>{content}</div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 20 }}>
         {step > 0 && (
           <button
             onClick={() => setStep((s) => s - 1)}
             style={{
               flex: 1,
               padding: '14px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',

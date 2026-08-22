@@ -33,7 +33,7 @@ export function PracticesList({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 'var(--space-8)',
         marginBottom: 16,
       }}
     >
@@ -58,9 +58,9 @@ export function PracticesList({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
           }}
         >

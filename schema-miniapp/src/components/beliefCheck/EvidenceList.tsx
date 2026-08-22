@@ -31,7 +31,7 @@ export function EvidenceList({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 'var(--space-8)',
                 padding: '7px 0',
                 borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
               }}
@@ -62,7 +62,7 @@ export function EvidenceList({
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 14 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -72,7 +72,7 @@ export function EvidenceList({
             flex: 1,
             background: 'rgba(var(--fg-rgb),0.04)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             padding: '10px 12px',
             color: 'var(--text)',
             fontSize: 14,
@@ -84,7 +84,7 @@ export function EvidenceList({
           onClick={onAdd}
           style={{
             padding: '10px 14px',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             border: 'none',
             background: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
             color: accentColor,

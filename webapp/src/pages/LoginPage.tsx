@@ -125,7 +125,7 @@ export function LoginPage() {
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center', maxWidth: 320 }}>{error}</p>}
         <button className="btn-outline" onClick={retryTelegramAuth} disabled={miniAppLoading}>Попробовать снова</button>
         {/* Экран обязан назвать, кому написать (пара к AppErrorScreen, правило №3). */}
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center', maxWidth: 320 }}><AuthFailureHelp hostId={getHost().id} /></div>
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-8)', textAlign: 'center', maxWidth: 320 }}><AuthFailureHelp hostId={getHost().id} /></div>
       </div>
     );
   }
@@ -145,7 +145,7 @@ export function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}><MMIcon name="compass" size={34} stroke={1.6} /></div>
+          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 'var(--r-20)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}><MMIcon name="compass" size={34} stroke={1.6} /></div>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Всё по схеме</h1>
           <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
             Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
@@ -158,7 +158,7 @@ export function LoginPage() {
             Войдите, чтобы продолжить
           </p>
 
-          {/* Google */}
+          {/* Google — официальные брендовые цвета логотипа, не токены продукта */}
           <button className="btn-outline" onClick={handleGoogle} style={{ marginBottom: 8 }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -169,14 +169,14 @@ export function LoginPage() {
             Войти через Google
           </button>
 
-          {/* VK */}
+          {/* VK — официальный брендовый цвет (#0077FF), не токен продукта */}
           <button className="btn-outline" onClick={handleVk} style={{ marginBottom: 12 }}>
-            <span style={{ background: '#0077FF', color: 'white', borderRadius: 4, padding: '1px 6px', fontWeight: 700, fontSize: 12 }}>VK</span>
+            <span style={{ background: '#0077FF', color: 'white', borderRadius: 'var(--r-4)', padding: '1px 6px', fontWeight: 700, fontSize: 12 }}>VK</span>
             Войти через ВКонтакте
           </button>
 
           {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', margin: '16px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
             <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>или</span>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
@@ -206,7 +206,7 @@ export function LoginPage() {
               </button>
             </p>
           ) : emailSent ? (
-            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, textAlign: 'center' }}>
+            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-10)', textAlign: 'center' }}>
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 4px' }}>Письмо отправлено</p>
               <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>Проверь почту и перейди по ссылке — она действует 30 минут</p>
               <button
@@ -224,12 +224,12 @@ export function LoginPage() {
                 placeholder="your@email.com"
                 value={emailValue}
                 onChange={e => setEmailValue(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1.5px solid var(--line)', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', marginBottom: 8 }}
+                style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1.5px solid var(--line)', borderRadius: 'var(--r-10)', background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', marginBottom: 8 }}
               />
               <button
                 type="submit"
                 disabled={emailLoading}
-                style={{ width: '100%', padding: '11px', fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, cursor: emailLoading ? 'default' : 'pointer', opacity: emailLoading ? 0.7 : 1 }}
+                style={{ width: '100%', padding: '11px', fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-10)', cursor: emailLoading ? 'default' : 'pointer', opacity: emailLoading ? 0.7 : 1 }}
               >
                 {emailLoading ? 'Отправляем…' : 'Отправить ссылку'}
               </button>

@@ -134,7 +134,7 @@ export function HeroCta({
             fontSize: 15,
             fontWeight: 800,
             padding: 13,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'inherit',

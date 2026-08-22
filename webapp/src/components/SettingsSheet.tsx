@@ -171,14 +171,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
               {/* ── TIME VIEW ── */}
               {subView === 'time' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-8)' }}>
                   {HOURS.map(h => {
                     const active = h === localHour;
                     return (
                       <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setSubView('main'); }}
                         role="button" tabIndex={0}
                         onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyLocalHour: h }); setSubView('main'); } }}
-                        style={{ padding: '14px 0', borderRadius: 8, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}
+                        style={{ padding: '14px 0', borderRadius: 'var(--r-8)', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}
                       >{pad(h)}:00</div>
                     );
                   })}
@@ -257,7 +257,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Имя */}
                 <SHead id="s-name" label="Имя" />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
@@ -282,7 +282,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {/* Уведомления */}
                 <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
                 {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-12)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
                       ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
                     </span>
@@ -309,12 +309,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Обращение */}
                 <SHead id="s-address" label="Обращение" />
-                <div style={{ display: 'flex', gap: 8, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   {(['ty', 'vy'] as const).map(form => {
                     const active = (settings.addressForm ?? 'ty') === form;
                     return (
                       <button key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
-                        style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 8, border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
+                        style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 'var(--r-8)', border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
                       >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
                     );
                   })}
@@ -348,7 +348,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         дневникам, заметкам и результатам опросников (объём настраивается после
                         подключения, отключить терапевта можно в любой момент).
                       </p>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                         <input value={therapyJoinCode} onChange={e => setTherapyJoinCode(e.target.value.toUpperCase())}
                           placeholder="ABCDEF" maxLength={8}
                           style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, borderRadius: 7, padding: '8px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'monospace', letterSpacing: 3, outline: 'none' }}
@@ -409,8 +409,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                     ))
                   ) : joinView === 'main' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                         <button onClick={createInviteAndShare} disabled={pairLoading}
                           style={{ padding: '8px 16px', border: 'none', borderRadius: 7, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer', opacity: pairLoading ? 0.7 : 1, fontFamily: 'inherit' }}>
                           {pairLoading ? '...' : pairData?.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
@@ -434,7 +434,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div>
                       <button onClick={() => setJoinView('main')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: '0 0 12px', fontFamily: 'inherit', display: 'block' }}>← Назад</button>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                         <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код"
                           style={{ flex: 1, padding: '8px 12px', borderRadius: 7, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${joinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, color: 'var(--text)', fontSize: 15, fontFamily: 'monospace', outline: 'none', letterSpacing: 4, textAlign: 'center' }}
                         />

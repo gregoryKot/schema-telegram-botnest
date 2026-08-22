@@ -53,7 +53,7 @@ class ErrorBoundary extends Component<
           style={{
             padding: '13px 28px',
             border: 'none',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             background: '#7c3aed',
             color: '#fff',
             fontSize: 15,

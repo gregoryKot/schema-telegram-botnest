@@ -61,13 +61,13 @@ export function SelfHelpSheet({
           Самопомощь не заменяет терапию. Если тяжело подолгу и часто — не
           обязательно нести это в одиночку.
         </P>
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 4 }}>
           {onOpenCrisis && (
             <button
               onClick={onOpenCrisis}
               style={{
                 padding: '13px 16px',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 border: 'none',
                 background: 'rgba(var(--fg-rgb),0.06)',
                 color: 'var(--text-sub)',

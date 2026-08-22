@@ -15,7 +15,7 @@ export function SharePillButton({ onClick, label }: { onClick: () => void; label
         justifyContent: 'center',
         minHeight: 40,
         width: 40,
-        borderRadius: 12,
+        borderRadius: 'var(--r-12)',
         border: '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
         background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
         color: 'var(--accent)',

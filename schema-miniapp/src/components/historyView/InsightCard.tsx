@@ -35,11 +35,11 @@ export function InsightCard({
       style={{
         background: `color-mix(in srgb, ${color} 8%, var(--surface))`,
         border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         cursor: onTap ? 'pointer' : 'default',
         boxShadow: `0 2px 12px color-mix(in srgb, ${color} 10%, transparent)`,
       }}
@@ -48,7 +48,7 @@ export function InsightCard({
         style={{
           width: 40,
           height: 40,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           flexShrink: 0,
           background: `color-mix(in srgb, ${color} 18%, transparent)`,
           display: 'flex',

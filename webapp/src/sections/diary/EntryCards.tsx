@@ -12,14 +12,14 @@ export function DeleteBtn({ color, onClick }: { color: string; onClick: () => vo
   const [confirm, setConfirm] = useState(false);
   if (!confirm) return (
     <button onClick={e => { e.stopPropagation(); setConfirm(true); }} style={{
-      marginTop: 12, background: color + '18', border: 'none', borderRadius: 8,
+      marginTop: 12, background: color + '18', border: 'none', borderRadius: 'var(--r-8)',
       padding: '6px 12px', color, fontSize: 12, cursor: 'pointer',
     }}>Удалить</button>
   );
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 12 }} role="presentation" onClick={e => e.stopPropagation()}>
-      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: 'var(--c-rose)18', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
-      <button onClick={() => setConfirm(false)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
+    <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }} role="presentation" onClick={e => e.stopPropagation()}>
+      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 'var(--r-8)', border: 'none', background: 'var(--c-rose)18', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
+      <button onClick={() => setConfirm(false)} style={{ padding: '8px 14px', borderRadius: 'var(--r-8)', border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
     </div>
   );
 }
@@ -189,12 +189,12 @@ export function DraftBanner({ type, color, title, onContinue, onDelete }: {
     : type === 'mode' ? (draft.data as Record<string, string>)?.situation
     : (draft.data as Record<string, string[]>)?.items?.[0];
   return (
-    <div style={{ borderRadius: 10, padding: '12px 14px 12px 0', marginBottom: 10, display: 'flex', alignItems: 'stretch', gap: 0, background: `color-mix(in srgb, ${color} 6%, var(--bg))`, border: `1px solid color-mix(in srgb, ${color} 20%, var(--line))` }}>
+    <div style={{ borderRadius: 'var(--r-10)', padding: '12px 14px 12px 0', marginBottom: 10, display: 'flex', alignItems: 'stretch', gap: 0, background: `color-mix(in srgb, ${color} 6%, var(--bg))`, border: `1px solid color-mix(in srgb, ${color} 20%, var(--line))` }}>
       {/* Colored left stripe */}
       <div style={{ width: 3, borderRadius: '10px 0 0 10px', background: color, flexShrink: 0, marginRight: 14 }} />
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>Черновик</span>
           <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{title} · {formatDraftAge(draft.startedAt)}</span>
           <div style={{ flex: 1 }} />

@@ -47,7 +47,7 @@ export function ActivityHeatmap({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px 14px' }}
+      style={{ borderRadius: 'var(--r-20)', padding: '16px 16px 14px' }}
     >
       <div
         style={{

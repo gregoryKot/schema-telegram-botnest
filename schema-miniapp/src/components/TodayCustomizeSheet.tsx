@@ -123,7 +123,7 @@ export function TodayCustomizeSheet({
           <SettingsLabel>Одно дело на сегодня</SettingsLabel>
           <div
             className="card"
-            style={{ borderRadius: 16, overflow: 'hidden' }}
+            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
           >
             {FOCUS_OPTIONS.map((opt, i) => {
               const active = opt.id === practice;
@@ -161,11 +161,11 @@ export function TodayCustomizeSheet({
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               padding: '13px 16px',
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <ThemeIcon theme={theme} />
@@ -201,7 +201,7 @@ export function TodayCustomizeSheet({
           </div>
           <div
             className="card"
-            style={{ borderRadius: 16, overflow: 'hidden' }}
+            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
           >
             {visibleIds.map((id, i) => {
               const meta = rowMeta[id];
@@ -227,7 +227,7 @@ export function TodayCustomizeSheet({
         <div style={{ marginTop: 16 }}>
           <div
             className="card"
-            style={{ borderRadius: 16, overflow: 'hidden' }}
+            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
           >
             <Row label="Общие настройки приложения" onClick={onOpenSettings} />
           </div>

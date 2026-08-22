@@ -88,7 +88,7 @@ export function HealthyAdultCheck({ adminKey }: { adminKey: string }) {
         style={{ ...input, resize: 'vertical', marginBottom: 10 }}
       />
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
         <button
           style={{ ...btn, opacity: busy || draft.trim() === '' ? 0.5 : 1 }}
           disabled={busy || draft.trim() === ''}

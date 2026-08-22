@@ -140,7 +140,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
               'color-mix(in srgb, var(--accent-green) 6%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
           }}
@@ -170,7 +170,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
             boxSizing: 'border-box',
             background: 'rgba(var(--fg-rgb),0.04)',
             border: `1px solid ${text.trim() ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -196,7 +196,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
           style={{
             width: '100%',
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: text.trim()
               ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'

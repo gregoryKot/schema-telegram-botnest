@@ -150,7 +150,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                     </div>
                   </div>
 
-                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>{opt.time}</span>
                     <div style={{
                       width: 20, height: 20, borderRadius: '50%',
@@ -185,7 +185,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                       key={d}
                       onClick={() => setTargetDays(d)}
                       style={{
-                        padding: '5px 14px', borderRadius: 4, cursor: 'pointer',
+                        padding: '5px 14px', borderRadius: 'var(--r-4)', cursor: 'pointer',
                         fontWeight: 500, fontSize: 13, fontFamily: 'inherit',
                         background: targetDays === d ? 'var(--text)' : 'transparent',
                         color: targetDays === d ? 'var(--bg)' : 'var(--text-sub)',
@@ -214,11 +214,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         padding: '11px 0',
                         borderBottom: i < ALL_SCHEMAS_FLAT.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
                         cursor: 'pointer',
-                        gap: 12,
+                        gap: 'var(--space-12)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 3, height: 20, borderRadius: 2, background: s.domainColor, flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+                        <div style={{ width: 3, height: 20, borderRadius: 'var(--r-2)', background: s.domainColor, flexShrink: 0 }} />
                         <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedSchemaId === s.id ? 600 : 400 }}>{s.name}</span>
                       </div>
                       {selectedSchemaId === s.id && (
@@ -248,10 +248,10 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         padding: '11px 0',
                         borderBottom: i < ALL_MODES.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
                         cursor: 'pointer',
-                        gap: 12,
+                        gap: 'var(--space-12)',
                       }}
                     >
-                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                         <IdentityDot color={m.groupColor} /> {m.name}
                       </span>
                       {selectedModeId === m.id && (
@@ -312,7 +312,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
               onClick={handleCreate}
               disabled={!canSave || saving}
               style={{
-                padding: '9px 20px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                padding: '9px 20px', borderRadius: 'var(--r-6)', border: 'none', cursor: 'pointer',
                 background: canSave && !saving ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)',
                 color: canSave && !saving ? 'var(--bg)' : 'var(--text-faint)',
                 fontSize: 13, fontWeight: 500, fontFamily: 'inherit',

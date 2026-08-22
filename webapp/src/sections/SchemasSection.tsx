@@ -169,12 +169,12 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 4, height: 22, background: c, borderRadius: 2, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+                      <span style={{ width: 4, height: 22, background: c, borderRadius: 'var(--r-2)', flexShrink: 0 }} />
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{schema.name}</span>
                     </div>
-                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 4 }} />
+                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 'var(--r-4)', overflow: 'hidden' }}>
+                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 'var(--r-4)' }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       {score && score.avg > 0 ? `${score.avg}/6` : score && score.pct5plus > 0 ? `${score.pct5plus}%` : '–'}
@@ -217,9 +217,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             <button onClick={() => setShowSchemaPicker(true)} className="link">+ Добавить</button>
           </div>
           {profileLoading ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[80, 100, 90, 110].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <div key={i} style={{ height: 32, width: w, borderRadius: 'var(--r-20)', background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
               ))}
             </div>
           ) : allSchemaIds.length === 0 ? (
@@ -227,7 +227,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               {tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               {allSchemaIds.map(id => {
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
                 const schema = domain?.schemas.find(s => s.id === id);
@@ -235,7 +235,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 const c = domain.color;
                 return (
                   <button key={id} onClick={() => setDetailSchemaId(id)} style={{
-                    padding: '6px 13px', borderRadius: 20,
+                    padding: '6px 13px', borderRadius: 'var(--r-20)',
                     border: `1.5px solid ${cm(c, 35)}`,
                     background: cm(c, 9),
                     color: c, fontSize: 13, fontWeight: 600,
@@ -262,19 +262,19 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               const activeCount = domain.schemas.filter(s => allSchemaIds.includes(s.id)).length;
               return (
                 <div key={domain.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 16 }}>
                     <span style={{ width: 24, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
                     <span style={{ fontSize: 14, fontWeight: 600, color: c }}>{domain.domain}</span>
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                       {activeCount > 0 ? `${activeCount} из ${domain.schemas.length} активны` : `${domain.schemas.length} схем`}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-8)' }}>
                     {domain.schemas.map(s => {
                       const isMine = allSchemaIds.includes(s.id);
                       return (
                         <div key={s.id} {...pressable(() => setDetailSchemaId(s.id))} style={{
-                          cursor: 'pointer', borderRadius: 10,
+                          cursor: 'pointer', borderRadius: 'var(--r-10)',
                           background: isMine ? cm(c, 7) : 'var(--surface-2)',
                           border: `1px solid ${isMine ? cm(c, 22) : 'var(--line)'}`,
                           borderLeft: `3px solid ${isMine ? c : 'var(--line)'}`,
@@ -302,20 +302,20 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             <button onClick={() => setShowModePicker(true)} className="link">+ Добавить</button>
           </div>
           {profileLoading ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[90, 110, 80].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <div key={i} style={{ height: 32, width: w, borderRadius: 'var(--r-20)', background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
               ))}
             </div>
           ) : myModes.length === 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</div>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               {myModes.map(m => {
                 const c = m.groupColor;
                 return (
                   <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                    padding: '6px 13px', borderRadius: 20,
+                    padding: '6px 13px', borderRadius: 'var(--r-20)',
                     border: `1.5px solid ${cm(c, 35)}`,
                     background: cm(c, 9),
                     color: c, fontSize: 13, fontWeight: 600,
@@ -337,7 +337,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <div className="section">
             <button onClick={() => setShowMyMap(true)} style={{
               width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 14,
+              display: 'flex', alignItems: 'center', gap: 'var(--space-14)', padding: '16px 18px', borderRadius: 'var(--r-14)',
               border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
               WebkitTapHighlightColor: 'transparent',
             }}>
@@ -364,23 +364,23 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               const c = group.color;
               return (
                 <div key={group.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 12 }}>
                     <span style={{ width: 20, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
                     <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{group.group}</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-8)' }}>
                     {group.items.map(m => {
                       const active = myModeIds.includes(m.id);
                       return (
                         <div key={m.id} {...pressable(() => setIntroModeId(m.id))} style={{
-                          padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                          padding: '12px 14px', borderRadius: 'var(--r-12)', cursor: 'pointer',
                           background: active ? cm(c, 8) : 'var(--surface-2)',
                           border: `1px solid ${active ? cm(c, 28) : 'var(--line)'}`,
-                          display: 'flex', alignItems: 'flex-start', gap: 10,
+                          display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)',
                           transition: 'all 0.15s',
                         }}>
                           <div style={{
-                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            width: 36, height: 36, borderRadius: 'var(--r-10)', flexShrink: 0,
                             background: active ? cm(c, 22) : cm(c, 14),
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 20,
@@ -501,7 +501,7 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '12px 16px', flexShrink: 0,
         borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
         <button onClick={goBack} aria-label="Назад" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
           <GlyphArrowLeft />
@@ -526,7 +526,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
@@ -543,14 +543,14 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             С чего начать
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {POPULAR_MODE_IDS.map(id => {
               const mode = ALL_MODES.find(m => m.id === id);
               if (!mode) return null;
               const active = ids.includes(id);
               const c = mode.groupColor; // CSS variable
               return (
-                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
+                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
                   <IdentityDot color={c} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
@@ -573,11 +573,11 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
               <div className="eyebrow" style={{ color: c, marginBottom: 8, opacity: 0.8 }}>
                 {group.group}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {group.items.filter(m => !POPULAR_MODE_IDS.includes(m.id)).map(m => {
                   const active = ids.includes(m.id);
                   return (
-                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
+                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
                       <IdentityDot color={c} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>

@@ -327,7 +327,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       </div>
       {nodes.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)',
+          <div style={{ width: 52, height: 52, borderRadius: 'var(--r-12)', background: 'var(--surface-2)', border: '1px solid var(--line)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', marginBottom: 14 }}>
             <MMIcon name="map" size={26} />
           </div>
@@ -409,7 +409,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                     return (
                       <button key={sid} disabled={!selectedNodeId}
                         onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
-                        style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8, opacity: selectedNodeId ? 1 : 0.55 }}>
+                        style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-8)', opacity: selectedNodeId ? 1 : 0.55 }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.domainColor, flexShrink: 0 }} />
                         <span>{s.name}</span>
                       </button>
@@ -439,9 +439,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                       ['Двойной клик', 'Переименовать'],
                       ['Esc', 'Снять выделение'],
                     ] as [string, string][]).map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, padding: '5px 10px', fontSize: 12 }}>
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-14)', padding: '5px 10px', fontSize: 12 }}>
                         <span style={{ color: 'var(--text-sub)' }}>{v}</span>
-                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>{k}</kbd>
+                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 'var(--r-4)', whiteSpace: 'nowrap' }}>{k}</kbd>
                       </div>
                     ))}
                   </Dropdown>

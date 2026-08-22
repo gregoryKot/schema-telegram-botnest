@@ -28,13 +28,13 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
               type="datetime-local"
               value={localNextSession}
               onChange={e => setLocalNextSession(e.target.value)}
-              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
             />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button onClick={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 8 }}>
+              <button onClick={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                 {sessionInfoSaving ? '...' : 'Сохранить'}
               </button>
-              <button onClick={() => setEditingNextSession(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
+              <button onClick={() => setEditingNextSession(false)} style={{ padding: '6px 10px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
             </div>
             {sessionInfoError && <div role="alert" style={{ fontSize: 12, color: 'var(--c-rose)', marginTop: 6 }}>{sessionInfoError}</div>}
           </div>
@@ -70,18 +70,18 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
               type="date"
               value={localStartDate}
               onChange={e => setLocalStartDate(e.target.value)}
-              style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
             />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button onClick={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 8 }}>
+              <button onClick={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                 {sessionInfoSaving ? '...' : 'Сохранить'}
               </button>
-              <button onClick={() => setEditingStartDate(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
+              <button onClick={() => setEditingStartDate(false)} style={{ padding: '6px 10px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
             </div>
             {sessionInfoError && <div role="alert" style={{ fontSize: 12, color: 'var(--c-rose)', marginTop: 6 }}>{sessionInfoError}</div>}
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
             <span style={{ fontSize: 14, color: 'var(--text)' }}>
               {selectedClient.therapyStartDate ? fmtDate(selectedClient.therapyStartDate) : <span style={{ color: 'var(--text-faint)' }}>Не указана</span>}
             </span>
@@ -98,7 +98,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
           <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
           <div className="section">
             <div className="eyebrow" style={{ marginBottom: 12 }}>Индекс сегодня</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 8 }}>
               <div style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1, color: indexColor(selectedClient.todayIndex) }}>
                 {selectedClient.todayIndex.toFixed(1)}
               </div>
@@ -140,15 +140,15 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
             <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
             <div className="section">
               <div className="eyebrow" style={{ marginBottom: 14 }}>Потребности сегодня</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
                 {Object.entries(NEED_LABELS).map(([id, { label, color }]) => {
                   const v = today.ratings[id];
                   if (v == null) return null;
                   return (
-                    <div key={id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'center' }}>
+                    <div key={id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 'var(--space-8)', alignItems: 'center' }}>
                       <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>{label}</div>
-                      <div style={{ width: 80, height: 3, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
-                        <div style={{ width: `${v * 10}%`, height: '100%', background: color, borderRadius: 2 }} />
+                      <div style={{ width: 80, height: 3, background: 'var(--surface-3)', borderRadius: 'var(--r-2)', overflow: 'hidden' }}>
+                        <div style={{ width: `${v * 10}%`, height: '100%', background: color, borderRadius: 'var(--r-2)' }} />
                       </div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: v <= 4 ? 'var(--c-rose)' : v <= 6 ? 'var(--c-amber)' : color, minWidth: 14, textAlign: 'right' }}>{v}</div>
                     </div>
@@ -165,7 +165,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       {/* Quick actions */}
       <div className="section">
         <div className="eyebrow" style={{ marginBottom: 14 }}>Действия</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
           {[
             { label: '+ Заметка сессии', action: () => setClientTab('sessions') },
             { label: '+ Назначить задание', action: () => setShowAssign(true) },

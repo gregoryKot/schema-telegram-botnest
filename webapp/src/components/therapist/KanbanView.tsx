@@ -56,15 +56,15 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'start' }}>
       {cols.map(col => (
         <div key={col.label}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 14 }}>
             <span className="eyebrow">{col.label}</span>
             {col.items.length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: col.color, background: `color-mix(in srgb, ${col.color} 12%, transparent)`, borderRadius: 10, padding: '1px 8px' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: col.color, background: `color-mix(in srgb, ${col.color} 12%, transparent)`, borderRadius: 'var(--r-10)', padding: '1px 8px' }}>
                 {col.items.length}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             {col.items.length === 0 && (
               <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>–</div>
             )}
@@ -72,7 +72,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
               <div
                 key={task.id}
                 {...pressable(() => onOpenClient(task.userId))}
-                style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px', cursor: 'pointer', border: '1px solid var(--line)', transition: 'border-color 0.15s' }}
+                style={{ background: 'var(--surface-2)', borderRadius: 'var(--r-10)', padding: '12px 14px', cursor: 'pointer', border: '1px solid var(--line)', transition: 'border-color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = col.color)}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
               >

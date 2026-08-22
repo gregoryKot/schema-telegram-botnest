@@ -84,7 +84,7 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
   const sep = <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(var(--fg-rgb),0.12)', margin: '2px 1px' }} />;
   return (
     <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
-      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8, alignItems: 'center',
+      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 'var(--r-8)', alignItems: 'center',
         background: 'var(--bg-elev)', border: '1px solid var(--line-strong)',
         boxShadow: 'var(--shadow-2)' }}>
         <button style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
@@ -174,7 +174,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
           onDoubleClick={e => e.stopPropagation()}
           className="nodrag"
           style={{ width: '90%', fontSize: fs, fontWeight: 600, textAlign: 'center',
-            border: '1px solid var(--accent)', borderRadius: 4, background: 'var(--bg-elev)',
+            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)',
             color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
@@ -188,7 +188,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>{data.healthyResponse}</div>}
       {showSchema && schema && (
-        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%',
+        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 'var(--space-4)', maxWidth: '100%',
           padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
           background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
           border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,

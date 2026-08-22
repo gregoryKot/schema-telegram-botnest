@@ -21,7 +21,7 @@ export function InviteLinkBox({
     <div
       style={{
         background: 'rgba(var(--fg-rgb),0.04)',
-        borderRadius: 12,
+        borderRadius: 'var(--r-12)',
         padding: '12px 14px',
       }}
     >
@@ -53,7 +53,7 @@ export function InviteLinkBox({
           width: '100%',
           padding: '10px',
           border: 'none',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           background: copied
             ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
             : 'color-mix(in srgb, var(--accent) 20%, transparent)',

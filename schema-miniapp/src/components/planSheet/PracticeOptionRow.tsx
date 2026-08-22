@@ -18,7 +18,9 @@ export function PracticeOptionRow({
   onDelete: () => void;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
+    >
       <div
         onClick={onSelect}
         role="button"
@@ -32,11 +34,11 @@ export function PracticeOptionRow({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 'var(--space-10)',
           flex: 1,
           background: 'rgba(var(--fg-rgb),0.05)',
           border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           padding: '11px 14px',
           cursor: 'pointer',
         }}
@@ -80,7 +82,7 @@ export function PracticeOptionRow({
           style={{
             width: 32,
             height: 32,
-            borderRadius: 8,
+            borderRadius: 'var(--r-8)',
             flexShrink: 0,
             background: 'rgba(255,100,100,0.1)',
             display: 'flex',

@@ -25,7 +25,7 @@ export function YsqInactiveSchemas({
           width: '100%',
           padding: '11px 16px',
           border: 'none',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           background: 'rgba(var(--fg-rgb),0.05)',
           color: 'var(--text-sub)',
           fontSize: 14,
@@ -56,7 +56,7 @@ export function YsqInactiveSchemas({
                 style={{
                   marginBottom: 8,
                   background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   padding: '12px 14px',
                 }}
               >
@@ -94,7 +94,7 @@ export function YsqInactiveSchemas({
                   style={{
                     height: 3,
                     background: 'rgba(var(--fg-rgb),0.1)',
-                    borderRadius: 2,
+                    borderRadius: 'var(--r-2)',
                   }}
                 >
                   <div
@@ -102,7 +102,7 @@ export function YsqInactiveSchemas({
                       height: '100%',
                       width: `${avgBarPct(s.avg)}%`,
                       background: barColor,
-                      borderRadius: 2,
+                      borderRadius: 'var(--r-2)',
                     }}
                   />
                 </div>

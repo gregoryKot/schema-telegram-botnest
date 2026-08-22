@@ -32,7 +32,7 @@ export function NeedAdviceModal({ onClose }: { onClose: () => void }) {
         onKeyDown={e => e.stopPropagation()}
         style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-3)', margin: '0 auto 20px' }} />
+        <div style={{ width: 36, height: 4, borderRadius: 'var(--r-2)', background: 'var(--surface-3)', margin: '0 auto 20px' }} />
         <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>О советах</div>
         {DISCLAIMER_CONTENT.map((p, i) => (
           <p key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 14 }}>{p}</p>

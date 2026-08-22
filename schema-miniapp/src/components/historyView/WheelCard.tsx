@@ -27,7 +27,7 @@ export function WheelCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, paddingTop: 4, paddingBottom: 8 }}
+      style={{ borderRadius: 'var(--r-20)', paddingTop: 4, paddingBottom: 8 }}
     >
       <div key={selectedDate}>
         <NeedsWheel

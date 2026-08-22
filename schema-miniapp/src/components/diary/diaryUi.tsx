@@ -108,7 +108,7 @@ export function DiaryRow({
           style={{
             width: 7,
             height: 7,
-            borderRadius: 4,
+            borderRadius: 'var(--r-4)',
             flexShrink: 0,
             background: selected ? 'var(--accent)' : 'var(--dot)',
           }}

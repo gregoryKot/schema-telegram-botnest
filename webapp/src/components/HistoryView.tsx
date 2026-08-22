@@ -73,7 +73,7 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
       display: 'flex', alignItems: 'center', gap: 16,
       padding: '12px 0', cursor: onClick ? 'pointer' : 'default',
     }}>
-      <div style={{ width: 3, height: 28, borderRadius: 2, background: color, flexShrink: 0 }} />
+      <div style={{ width: 3, height: 28, borderRadius: 'var(--r-2)', background: color, flexShrink: 0 }} />
       <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', width: 100, flexShrink: 0 }}>{need.chartLabel}</span>
       <svg style={{ flex: 1, height: 28, display: 'block', overflow: 'visible' }}
         viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
@@ -165,7 +165,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
       {/* ── Date strip ── */}
       <div style={{ overflowX: 'auto', scrollbarWidth: 'none', padding: '0 20px 16px' }}>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
           {history.map((day, i) => {
             const active = i === selectedIdx;
             const avg = dayAvg(day, needs);
@@ -177,7 +177,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 ref={el => { dateBtnRefs.current[i] = el; }}
                 onClick={() => setSelectedIdx(i)}
                 style={{
-                  flexShrink: 0, width: 44, padding: '7px 0 9px', border: 'none', borderRadius: 12,
+                  flexShrink: 0, width: 44, padding: '7px 0 9px', border: 'none', borderRadius: 'var(--r-12)',
                   fontFamily: 'inherit', cursor: 'pointer', textAlign: 'center',
                   background: active ? 'var(--text)' : 'rgba(var(--fg-rgb),0.05)',
                   transition: 'all 0.15s ease',
@@ -192,9 +192,9 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                   fontSize: 16, fontWeight: 700, lineHeight: 1,
                   color: active ? 'var(--bg)' : 'var(--text)',
                 }}>{getDayNum(day.date)}</span>
-                <div style={{ width: 20, height: 3, borderRadius: 2, background: active ? 'rgba(255,255,255,0.35)' : 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
+                <div style={{ width: 20, height: 3, borderRadius: 'var(--r-2)', background: active ? 'rgba(255,255,255,0.35)' : 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
                   {avg !== null && (
-                    <div style={{ width: `${Math.round((avg / 10) * 100)}%`, height: '100%', background: active ? 'rgba(255,255,255,0.8)' : barColor, borderRadius: 2 }} />
+                    <div style={{ width: `${Math.round((avg / 10) * 100)}%`, height: '100%', background: active ? 'rgba(255,255,255,0.8)' : barColor, borderRadius: 'var(--r-2)' }} />
                   )}
                 </div>
               </button>
@@ -204,13 +204,13 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       </div>
 
       {/* ── Subview toggle + depth ── */}
-      <div style={{ padding: '0 20px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', background: 'rgba(var(--fg-rgb),0.06)', borderRadius: 10, padding: 3 }}>
+      <div style={{ padding: '0 20px 20px', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+        <div style={{ display: 'flex', background: 'rgba(var(--fg-rgb),0.06)', borderRadius: 'var(--r-10)', padding: 3 }}>
           {(['day', 'week'] as const).map(v => {
             const active = subView === v;
             return (
               <button key={v} onClick={() => setSubView(v)} style={{
-                padding: '6px 14px', border: 'none', borderRadius: 8, fontFamily: 'inherit',
+                padding: '6px 14px', border: 'none', borderRadius: 'var(--r-8)', fontFamily: 'inherit',
                 background: active ? 'var(--text)' : 'transparent',
                 color: active ? 'var(--bg)' : 'var(--text-faint)',
                 fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer',
@@ -223,12 +223,12 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
         </div>
 
         {onChangeDays && (
-          <div style={{ display: 'flex', background: 'rgba(var(--fg-rgb),0.06)', borderRadius: 10, padding: 3 }}>
+          <div style={{ display: 'flex', background: 'rgba(var(--fg-rgb),0.06)', borderRadius: 'var(--r-10)', padding: 3 }}>
             {DAYS_OPTIONS.map(d => {
               const active = days === d;
               return (
                 <button key={d} onClick={() => onChangeDays(d)} style={{
-                  padding: '6px 10px', border: 'none', borderRadius: 8, fontFamily: 'inherit',
+                  padding: '6px 10px', border: 'none', borderRadius: 'var(--r-8)', fontFamily: 'inherit',
                   background: active ? 'var(--text)' : 'transparent',
                   color: active ? 'var(--bg)' : 'var(--text-faint)',
                   fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer',
@@ -309,12 +309,12 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 return (
                   <div key={n.id} onClick={() => handleTapNeed(n)} role="button" tabIndex={0}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTapNeed(n); } }} style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
+                    display: 'flex', alignItems: 'center', gap: 'var(--space-14)',
                     padding: '14px 0',
                     borderBottom: i < needs.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
                     cursor: 'pointer',
                   }}>
-                    <div style={{ width: 3, height: 32, borderRadius: 2, background: val > 0 ? color : 'rgba(var(--fg-rgb),0.1)', flexShrink: 0 }} />
+                    <div style={{ width: 3, height: 32, borderRadius: 'var(--r-2)', background: val > 0 ? color : 'rgba(var(--fg-rgb),0.1)', flexShrink: 0 }} />
                     <IdentityDot id={n.id} size={14} />
                     <span style={{ flex: 1, fontSize: 15, color: 'var(--text)', fontWeight: 400 }}>{n.chartLabel}</span>
                     {val > 0 && (
@@ -341,8 +341,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                   marginTop: 20, padding: '16px 0',
                   borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
                 }}>
-                  <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 3, background: color, borderRadius: 2, flexShrink: 0 }} />
+                  <div style={{ display: 'flex', gap: 'var(--space-10)', marginBottom: 10 }}>
+                    <div style={{ width: 3, background: color, borderRadius: 'var(--r-2)', flexShrink: 0 }} />
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>Стоит уделить внимание</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{low.chartLabel}</div>
@@ -359,7 +359,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             {/* Note */}
             <div onClick={() => setShowNote(true)} role="button" tabIndex={0}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowNote(true); } }} style={{
-              display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 'var(--space-12)', cursor: 'pointer',
               padding: '14px 0', marginTop: 4,
               borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
             }}>
@@ -372,7 +372,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingBottom: 8 }}>
                 {noteTags.map(tag => (
                   <span key={tag} style={{
-                    fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 500,
+                    fontSize: 11, padding: '3px 10px', borderRadius: 'var(--r-20)', fontWeight: 500,
                     background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)',
                   }}>{tag}</span>
                 ))}
@@ -413,9 +413,9 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
             <button onClick={() => setShowWeekCard(true)} style={{
               marginTop: 20, padding: '13px 0', border: '1px solid rgba(var(--fg-rgb),0.1)',
-              borderRadius: 12, background: 'transparent', fontFamily: 'inherit',
+              borderRadius: 'var(--r-12)', background: 'transparent', fontFamily: 'inherit',
               color: 'var(--text-sub)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)',
             }}>
               Карточка недели →
             </button>

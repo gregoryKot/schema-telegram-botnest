@@ -209,7 +209,7 @@ export function HelpSection({
           padding: '0 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
         {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}

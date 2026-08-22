@@ -93,7 +93,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
           style={{
             width: 36,
             height: 4,
-            borderRadius: 2,
+            borderRadius: 'var(--r-2)',
             background: 'var(--border-color)',
             margin: '8px auto 20px',
           }}
@@ -104,7 +104,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
           style={{
             display: 'flex',
             alignItems: 'flex-start',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 16,
           }}
         >
@@ -149,7 +149,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
           style={{
             background: 'var(--surface-2)',
             border: '1px solid var(--border-color)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             marginBottom: 14,
           }}
@@ -180,7 +180,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               style={{
                 background: 'var(--surface-2)',
                 border: '1px solid var(--border-color)',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 padding: '4px 16px',
                 marginBottom: 16,
               }}
@@ -190,7 +190,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
                   key={i}
                   style={{
                     display: 'flex',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     padding: '10px 0',
                     borderTop:
                       i > 0 ? '1px solid var(--border-color)' : undefined,
@@ -223,13 +223,13 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
         )}
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={toggleSchema}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: isAdded
@@ -253,7 +253,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--accent)',
@@ -276,10 +276,10 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             minHeight: 44,
             padding: '0 16px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border:
               '1px solid color-mix(in srgb, var(--accent) 24%, transparent)',
             background: 'color-mix(in srgb, var(--accent) 9%, transparent)',

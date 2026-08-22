@@ -45,7 +45,7 @@ export function PortraitNeedRows({ needs }: Props) {
                 minHeight: 44,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 'var(--space-8)',
                 padding: '6px 2px',
                 border: 'none',
                 background: 'transparent',

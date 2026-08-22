@@ -106,7 +106,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         <>
           <div
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               overflow: 'hidden',
               border: '1px solid var(--line)',
               marginBottom: 24,
@@ -178,7 +178,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               style={{
                 width: 36,
                 height: 4,
-                borderRadius: 2,
+                borderRadius: 'var(--r-2)',
                 background: 'var(--surface-3)',
                 margin: '0 auto 20px',
               }}
@@ -199,7 +199,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                 color: 'var(--text-sub)',
                 lineHeight: 1.6,
                 background: 'var(--surface-2)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 14px',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
@@ -217,7 +217,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: fallbackCopied
                   ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
                   : 'var(--surface-2)',

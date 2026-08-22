@@ -14,7 +14,7 @@ const shareBtnStyle = (color: string) =>
     gap: 6,
     background: `color-mix(in srgb, ${color} 12%, transparent)`,
     border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
-    borderRadius: 12,
+    borderRadius: 'var(--r-12)',
     minHeight: 40,
     padding: '0 14px',
     color,

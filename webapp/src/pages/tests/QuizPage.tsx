@@ -93,8 +93,8 @@ export function QuizPage() {
           <div aria-hidden style={{ fontSize: 56, margin: '18px 0 6px' }}>{quiz.emoji}</div>
           <h1 style={{ fontSize: 'clamp(30px, 5vw, 44px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.08, margin: '0 0 18px' }}>{quiz.title}</h1>
           <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, whiteSpace: 'pre-line', maxWidth: 560, margin: '0 0 26px' }}>{quiz.intro}</p>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={start} style={{ padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14, border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e', boxShadow: `0 8px 30px ${glow(VIOLET, .45)}` }}>
+          <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button onClick={start} style={{ padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e', boxShadow: `0 8px 30px ${glow(VIOLET, .45)}` }}>
               Начать →
             </button>
             <span style={{ fontSize: 12.5, fontWeight: 700, color: FAINT }}>{quiz.questions.length} вопросов · ~2 минуты</span>
@@ -108,7 +108,7 @@ export function QuizPage() {
           <h2 style={{ fontSize: 'clamp(21px, 3.6vw, 28px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.25, margin: '0 0 20px' }}>
             {runner.question.text}
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
             {runner.question.options.map((o, idx) => (
               <button
                 key={o.label}
@@ -132,18 +132,18 @@ export function QuizPage() {
             <h1 style={{ fontSize: 'clamp(26px, 4.6vw, 38px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.12, margin: '0 0 14px' }}>{runner.result.title}</h1>
             <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, margin: 0 }}>{runner.result.text}</p>
           </div>
-          <div style={{ ...GLASS_CARD, padding: '18px 20px', marginBottom: 26, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ ...GLASS_CARD, padding: '18px 20px', marginBottom: 26, display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start' }}>
             <span aria-hidden style={{ fontSize: 20 }}>💡</span>
             <p style={{ fontSize: 14.5, lineHeight: 1.65, color: SUB, margin: 0 }}>{runner.result.hint}</p>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 22 }}>
-            <button onClick={() => { void share(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14, border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap', marginBottom: 22 }}>
+            <button onClick={() => { void share(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e' }}>
               {copied ? 'Скопировано ✓' : 'Поделиться результатом'}
             </button>
-            <button onClick={() => { completedSent.current = false; runner.restart(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14, cursor: 'pointer', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}` }}>
+            <button onClick={() => { completedSent.current = false; runner.restart(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', cursor: 'pointer', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}` }}>
               Пройти ещё раз
             </button>
-            <Link to="/tests" style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, borderRadius: 14, textDecoration: 'none', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}`, boxSizing: 'border-box' }}>
+            <Link to="/tests" style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, borderRadius: 'var(--r-14)', textDecoration: 'none', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}`, boxSizing: 'border-box' }}>
               Другие тесты
             </Link>
           </div>
@@ -153,7 +153,7 @@ export function QuizPage() {
             потребностей.
           </p>
           {/* Мягкий мост к практике (событие practice_link_click, place: quiz) */}
-          <div style={{ ...GLASS_CARD, marginTop: 18, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 520, boxSizing: 'border-box' }}>
+          <div style={{ ...GLASS_CARD, marginTop: 18, padding: '16px 18px', display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start', maxWidth: 520, boxSizing: 'border-box' }}>
             <span aria-hidden style={{ fontSize: 20 }}>👤</span>
             <p style={{ fontSize: 13.5, lineHeight: 1.65, color: SUB, margin: 0 }}>
               Хочется разобрать результат с живым специалистом? Автор проекта —

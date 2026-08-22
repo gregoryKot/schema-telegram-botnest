@@ -18,7 +18,7 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 'var(--space-12)',
       }}
     >
       <div>
@@ -36,7 +36,7 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexShrink: 0,
         }}
       >
@@ -47,7 +47,7 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
           style={{
             minHeight: 48,
             padding: '0 14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'var(--surface-2)',
             color: 'var(--accent)',

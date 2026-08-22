@@ -61,7 +61,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
             <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
           </div>
         </div>
@@ -100,7 +100,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             </div>
             {onOpenTracker && (
               <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
-                padding: '12px 28px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
+                padding: '12px 28px', borderRadius: 'var(--r-14)', border: 'none', fontFamily: 'inherit',
                 background: 'transparent', outline: '1px solid var(--line)',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
@@ -116,7 +116,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Ожидают выполнения
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
                   {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -128,7 +128,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Выполненные
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
                   {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -159,7 +159,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
     <div style={{
       background: colors.bg,
       border: `1px solid ${colors.border}`,
-      borderRadius: 20,
+      borderRadius: 'var(--r-20)',
       padding: '14px 16px',
       overflow: 'hidden',
     }}>
@@ -185,16 +185,16 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button onClick={() => checkin(true)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 12, fontFamily: 'inherit',
+            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
             background: 'rgba(52,211,153,0.12)', outline: '1px solid rgba(52,211,153,0.22)',
             color: 'var(--accent-green)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>
             ✓ Выполнено
           </button>
           <button onClick={() => checkin(false)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 12, fontFamily: 'inherit',
+            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
             background: 'rgba(248,113,113,0.08)', outline: '1px solid rgba(248,113,113,0.18)',
             color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
           }}>
