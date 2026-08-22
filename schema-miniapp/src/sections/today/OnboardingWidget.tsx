@@ -118,15 +118,9 @@ export function OnboardingWidget({
   }
 
   return (
-    <div
-      style={{
-        background: 'rgba(var(--fg-rgb),0.04)',
-        border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 'var(--r-20)',
-        padding: '16px 18px',
-        overflow: 'hidden',
-      }}
-    >
+    // .card (--surface) вместо своего rgba(var(--fg-rgb),0.04) — единый
+    // ритм плотностей с карточками ниже (полировка 2026-08, п.4).
+    <div className="card" style={{ padding: '16px 18px', overflow: 'hidden' }}>
       <style>{`@keyframes obSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }`}</style>
       {/* Progress counter */}
       <div
@@ -262,7 +256,9 @@ export function OnboardingWidget({
         )}
       </div>
 
-      {/* Step dots */}
+      {/* Step dots: зелёный «выполнено» — намеренно тот же --accent-green,
+          что и checkmark TodayFocusCard/«✓ Выполнено» выше (аудит 2026-08,
+          п.2 полировки: разобрано, не тронуто — см. prM-notes.md). */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
         {STEPS.map((s) => {
           const d = s.isDone(profile, ctx);
