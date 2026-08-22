@@ -14,6 +14,7 @@ import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
 import { normalizeAddressForm } from '../notification/address-form';
+import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
 
 const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -40,6 +41,7 @@ export interface TokenPair {
   accessToken: string;
   refreshToken: string; // raw token — hash is stored in DB
   expiresIn: number; // seconds
+  rotated: boolean; // false = кука не меняется, см. refresh-rotation.ts
 }
 
 @Injectable()
@@ -426,6 +428,7 @@ export class AuthService {
       accessToken,
       refreshToken: rawRefresh,
       expiresIn: ACCESS_TOKEN_TTL_S,
+      rotated: true, // первая выдача — семантически тоже "новый refresh"
     };
   }
 
@@ -492,13 +495,13 @@ export class AuthService {
 
     if (!session) throw new UnauthorizedException('Unknown refresh token');
 
-    if (session.revokedAt || session.expiresAt < new Date()) {
-      // Token already used or expired — if it has a family, revoke the entire family (theft detected)
-      if (session.family) {
+    // Дребезг vs кража (2026-08-21) — classifyReuse, refresh-rotation.ts.
+    const now = new Date();
+    if (session.revokedAt || session.expiresAt < now) {
+      const verdict = classifyReuse(session.revokedAt, now, session.userId);
+      this.logger.warn(verdict.logMessage);
+      if (verdict.theft && session.family) {
         await this.revokeFamilyExcept(session.family, null);
-        this.logger.warn(
-          `Refresh token reuse detected — revoked family ${session.family} for userId ${session.userId}`,
-        );
         this.securityLog.log('refresh_token_reuse', {
           userId: session.userId,
           family: session.family,
@@ -507,9 +510,6 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token already used or expired');
     }
 
-    // Issue new token in the same family. The mark-old-as-used + create-new
-    // pair MUST be atomic — otherwise a crash between them leaves the user
-    // with no valid session at all.
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     const accessToken = jwt.sign(
       { sub: String(session.userId), type: 'access' },
@@ -522,6 +522,19 @@ export class AuthService {
       },
     );
 
+    // Ротировали недавно — только access, кука прежняя (rotated:false).
+    if (shouldSkipRotation(session.createdAt as Date | undefined, now)) {
+      return {
+        accessToken,
+        refreshToken: rawRefresh,
+        expiresIn: ACCESS_TOKEN_TTL_S,
+        rotated: false,
+      };
+    }
+
+    // Issue new token in the same family. The mark-old-as-used + create-new
+    // pair MUST be atomic — otherwise a crash between them leaves the user
+    // with no valid session at all.
     const newRaw = crypto.randomBytes(40).toString('hex');
     const newHash = this.hashToken(newRaw);
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
@@ -544,7 +557,12 @@ export class AuthService {
       }),
     ]);
 
-    return { accessToken, refreshToken: newRaw, expiresIn: ACCESS_TOKEN_TTL_S };
+    return {
+      accessToken,
+      refreshToken: newRaw,
+      expiresIn: ACCESS_TOKEN_TTL_S,
+      rotated: true,
+    };
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────
