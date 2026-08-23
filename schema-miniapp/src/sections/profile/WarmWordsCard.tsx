@@ -1,39 +1,28 @@
-// Карточка-превью «Тёплые слова» — редизайн вкладки «Я». Данные грузятся
-// отдельно от useWarmWords (shared/src/warmWords/useWarmWords.ts): тот хук
-// трекает WARM_WORDS_OPEN_EVENT при загрузке, а превью на вкладке «Я» — не
-// открытие раздела, только карточка списка. Событие остаётся честным —
-// считает только реальные открытия полного списка (тап по этой карточке
-// рендерит существующий WarmWords, который сам трекает открытие).
-import { useEffect, useState } from 'react';
-import { api } from '../../api';
+// Карточка-превью «Тёплые слова» — редизайн вкладки «Я». Данные приходят уже
+// готовыми из useAboutMe (см. её комментарий про «вторую волну»): раньше эта
+// карточка грузила getModeNotes/getModeDiary/getPhraseChecks САМА при своём
+// монтировании, а монтировалась только после готовности aboutMe — сеть
+// уходила вторым кругом (замер 2026-08-22, 3G: +621мс). Теперь карточка
+// чисто презентационная, а её собственный скелетон живёт в
+// ProfileCardSkeletons.tsx рядом с остальными карточками профиля.
+//
+// Открытие полного списка по-прежнему трекает WARM_WORDS_OPEN_EVENT — это
+// делает shared/src/warmWords/useWarmWords.ts внутри компонента WarmWords,
+// сюда трекинг не переезжает: эта карточка — только превью, не открытие.
+import { useState } from 'react';
 import { pressable } from '../../utils/a11y';
-import {
-  collectWarmWords,
-  type WarmWordsItem,
-} from '../../../../shared/src/warmWords/collectWarmWords';
+import type { WarmWordsItem } from '../../../../shared/src/warmWords/collectWarmWords';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { WarmWords } from '../../components/WarmWords';
 
-export function WarmWordsCard() {
-  const [items, setItems] = useState<WarmWordsItem[] | null>(null);
+interface Props {
+  items: WarmWordsItem[];
+}
+
+export function WarmWordsCard({ items }: Props) {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    let ignore = false;
-    Promise.all([api.getModeNotes(), api.getModeDiary(), api.getPhraseChecks()])
-      .then(([notes, entries, phrases]) => {
-        if (!ignore) setItems(collectWarmWords(notes, entries, phrases));
-      })
-      .catch((e) => {
-        console.error('WarmWordsCard load failed', e);
-        if (!ignore) setItems([]);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  if (!items || items.length === 0) return null;
+  if (items.length === 0) return null;
   // Детерминированный выбор превью — самая свежая фраза (collectWarmWords
   // уже сортирует по убыванию даты), без Math.random в рендере.
   const preview = items[0];

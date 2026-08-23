@@ -23,6 +23,25 @@ export function Skeleton({
   );
 }
 
+/**
+ * Силуэт целого экрана (шапка + карточки) — фолбэк для Suspense-границы
+ * основного контента AppShell (переключение раздела / вход в кабинет
+ * терапевта). Аудит 2026-08-22: раньше единый Suspense на весь canvas ронял
+ * ЛЮБУЮ ленивую шторку в общий крутилка-на-всю-высоту `Loader`; для замены
+ * основного контента (не шторки поверх) правило CLAUDE.md требует силуэт по
+ * форме, а не спиннер.
+ */
+export function ScreenSkeleton() {
+  return (
+    <div aria-hidden style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+      <Skeleton width="45%" height={22} style={{ marginBottom: 4 }} />
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard height={80} />
+    </div>
+  );
+}
+
 /** Карточка-силуэт: строка-заголовок + строки текста, размеры под контент. */
 export function SkeletonCard({
   height = 120,

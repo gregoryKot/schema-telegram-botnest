@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
@@ -57,6 +58,12 @@ export function SafePlaceEx({
     setSenses((s) => ({ ...s, [k]: v }));
   }
 
+  // Раньше сбой saveSafePlace намеренно глотался («best-effort») и экран
+  // всё равно показывал «готово» — тот же экран-тупик, что нашли в
+  // FlashcardEx (аудит 2026-08-22, находка №2): человек уходит с уверенностью,
+  // что место сохранено, а на деле запрос не прошёл. Плюс не было защиты от
+  // двойного нажатия. useSavingAction — общий примитив (см. его комментарий).
+  const { saving, error, run } = useSavingAction();
   async function save() {
     const desc = [
       overview,
@@ -64,13 +71,8 @@ export function SafePlaceEx({
         (s) => `${s.label}: ${senses[s.k]}`,
       ),
     ].join('\n');
-    try {
-      await api.saveSafePlace(desc);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-    onComplete?.();
-    setDone(true);
+    const ok = await run(() => api.saveSafePlace(desc));
+    if (ok) { onComplete?.(); setDone(true); }
   }
 
   if (done) {
@@ -247,14 +249,19 @@ export function SafePlaceEx({
       {detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell) && (
         <CrisisCard surface="safe_place" />
       )}
+      {error && (
+        <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>
+          {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
+        </div>
+      )}
       <div className="ex-foot">
         <span className="spacer" />
         <button
           className="ex-btn ex-btn-primary"
-          disabled={!filled}
+          disabled={!filled || saving}
           onClick={save}
         >
-          Сохранить место <GlyphCheck />
+          {saving ? 'Сохраняю…' : <>Сохранить место <GlyphCheck /></>}
         </button>
       </div>
     </ExScreen>

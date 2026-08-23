@@ -10,16 +10,23 @@ import { Need, DayHistory } from './types';
 applyTheme(getTheme());
 syncMotionAttr();
 import { api, PracticePlan, PairsData, StreakData, UserTask } from './api';
-import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
+import { DEFAULT_SECTION_KEY } from './utils/defaultSectionKey';
 import { Section } from './components/BottomNav';
-import { TherapistClientSheet } from './components/TherapistClientSheet';
+import { LazyTherapistClientSheet as TherapistClientSheet } from './components/LazyTherapistClientSheet';
 import { TodayScreenSkeleton, ScreenSkeleton } from './components/Skeleton';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './components/YSQTestSheet';
 import { shouldShowWeeklyQuestion } from './components/WeeklyQuestion';
+// CHILDHOOD_DONE_KEY/shouldShowChildhoodWheel/YSQ_*_KEY — из общего реестра
+// ключей (утиль, не компонент), НЕ из ChildhoodWheelSheet.tsx/YSQTestSheet.tsx
+// (правка производительности 2026-08-22): те стали ленивыми (LazyOverlays.tsx),
+// и статический импорт значений из них держал бы весь их код в графе,
+// реально достижимом от entry — React.lazy не смог бы вынести компонент в
+// отдельный чанк (см. предупреждение сборки [INEFFECTIVE_DYNAMIC_IMPORT]).
 import {
   shouldShowChildhoodWheel,
   CHILDHOOD_DONE_KEY,
-} from './components/ChildhoodWheelSheet';
+  YSQ_PROGRESS_KEY,
+  YSQ_RESULT_KEY,
+} from './utils/storageKeys';
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
@@ -34,6 +41,7 @@ import {
 } from './utils/todayConstants';
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
+import { preloadOtherSections } from './utils/preloadSections';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { AmbientBackground } from './components/AmbientBackground';
@@ -65,6 +73,17 @@ const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 export default function App() {
   const { flags: serverFlags, loadedFromServer: flagsLoaded } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
+  // Догружаем секции, которые пользователь не открыл первыми, в простое
+  // браузера — переключение вкладок остаётся мгновенным (см. preloadSections.ts,
+  // замер 2026-08-22: единый стартовый чанк — 1,26 МБ, 2,3 c до первого
+  // рендера на 3G). Только начальная секция важна — она уже грузится сама
+  // (React.lazy в AppSections.tsx), дальнейшая смена вкладки эту догрузку
+  // не перезапускает.
+  useEffect(() => {
+    preloadOtherSections(section);
+    // Только при маунте: начальная секция за жизнь компонента не меняется,
+    // повторный запуск плана на каждую смену вкладки не нужен.
+  }, []);
   // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
   // экран обязан сказать об этом, а не молча проглатывать 401 (правило
   // «никаких молча неработающих экранов», инцидент 2026-07-29).

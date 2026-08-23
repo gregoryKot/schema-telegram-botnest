@@ -8,7 +8,10 @@ import { CrisisSheet } from './helpSection/CrisisSheet';
 import { SafePlace } from '../components/SafePlace';
 import { WarmWords } from '../components/WarmWords';
 import { TherapyNote } from '../components/TherapyNote';
-import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
+// Из общего реестра ключей, не из ChildhoodWheelSheet.tsx (компонент теперь
+// ленивый, LazyOverlays.tsx) — иначе открытие «Помощи» тянуло бы за собой и
+// код колеса детства ещё до того, как его реально открыли.
+import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';

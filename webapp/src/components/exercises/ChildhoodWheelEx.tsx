@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphArrowRight } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
 
 const NEEDS = [
@@ -211,14 +212,14 @@ export function ChildhoodWheelEx({
     ) / 10;
   const lowNeeds = NEEDS.filter((n) => ratings[n.id] <= 4);
 
+  // Та же беда, что нашли в FlashcardEx (аудит 2026-08-22, находка №2):
+  // сбой saveChildhoodRatings молча игнорировался, а колесо всё равно
+  // показывало результат как сохранённый, и не было ни индикации отправки,
+  // ни защиты от двойного нажатия. useSavingAction — общий примитив.
+  const { saving, error, run } = useSavingAction();
   async function save() {
-    try {
-      await api.saveChildhoodRatings(ratings);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-    onSaved?.(ratings);
-    setDone(true);
+    const ok = await run(() => api.saveChildhoodRatings(ratings));
+    if (ok) { onSaved?.(ratings); setDone(true); }
   }
 
   if (done) {
@@ -440,10 +441,15 @@ export function ChildhoodWheelEx({
           </div>
         </div>
       ))}
+      {error && (
+        <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>
+          {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
+        </div>
+      )}
       <div className="ex-foot">
         <span className="spacer" />
-        <button className="ex-btn ex-btn-primary" onClick={save}>
-          Посмотреть результат <GlyphArrowRight />
+        <button className="ex-btn ex-btn-primary" disabled={saving} onClick={save}>
+          {saving ? 'Сохраняю…' : <>Посмотреть результат <GlyphArrowRight /></>}
         </button>
       </div>
     </ExScreen>

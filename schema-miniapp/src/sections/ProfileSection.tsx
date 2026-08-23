@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getHost } from '../../../shared/src/host';
-import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
 import { ACHIEVEMENT_META } from './profile/constants';
-import { StreakData, InsightsData } from './profile/types';
 import { ProfileHeader } from './profile/ProfileHeader';
 import { ProfileCards } from './profile/ProfileCards';
 import { useAboutMe } from './profile/useAboutMe';
+import { useProfileStats } from './profile/useProfileStats';
 import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
 import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
@@ -38,11 +37,21 @@ export function ProfileSection({
   const tgName = getHost().user()?.firstName ?? '';
   const firstName = displayName || tgName;
 
-  const [streak, setStreak] = useState<StreakData | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[] | null>(null);
-  const [insights, setInsights] = useState<InsightsData | null>(null);
-  const [ready, setReady] = useState(false);
-  const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
+  // Прогрессивный рендер (замер 2026-08-22, профиль 3G+CPU×4): раньше
+  // streak/achievements/insights/history(112) грузились одним Promise.all
+  // с единым `ready`, и самый долгий ответ держал пустым весь экран
+  // (1321мс). useProfileStats даёт каждому источнику свой ready; тяжёлая
+  // history(112) для тепловой карты вынесена совсем отдельно и лениво —
+  // см. HeatmapCard внутри ProfileCards.
+  const {
+    streak,
+    streakReady,
+    achievements,
+    achievementsReady,
+    insights,
+    insightsReady,
+    hasInsights,
+  } = useProfileStats(refreshKey);
   const aboutMe = useAboutMe(refreshKey);
 
   const [journeyOpen, setJourneyOpen] = useState(false);
@@ -55,35 +64,8 @@ export function ProfileSection({
 
   const blocks = useScreenBlocks('profile', SCREEN_HIDDEN_KEYS.profile);
 
-  useEffect(() => {
-    // Раньше streak/achievements/insights обнулялись перед рефетчем — провал
-    // повторного запроса подменял реальный стрик показанным «0». Скелетон
-    // и так управляется отдельным ready, обнулять данные не нужно.
-    setReady(false);
-    void Promise.all([
-      api
-        .getStreak()
-        .then(setStreak)
-        .catch((e) => console.error('getStreak failed', e)),
-      api
-        .getAchievements()
-        .then(setAchievements)
-        .catch((e) => console.error('getAchievements failed', e)),
-      api
-        .getInsights()
-        .then(setInsights)
-        .catch((e) => console.error('getInsights failed', e)),
-      api
-        .history(112)
-        .then((h) => setActiveDates(new Set(h.map((d) => d.date))))
-        .catch((e) => console.error('history failed', e)),
-    ]).finally(() => setReady(true));
-  }, [refreshKey]);
-
   const currentStreak = streak?.currentStreak ?? 0;
   const totalDays = streak?.totalDays ?? 0;
-  const hasInsights =
-    insights && insights.weeklyStats.some((s) => s.avg !== null);
 
   return (
     <div
@@ -110,39 +92,19 @@ export function ProfileSection({
           gap: 'var(--space-10)',
         }}
       >
-        {/* ── Скелетон ── */}
-        {/* Первый блок (150) — силуэт карточки «Мой портрет», добавленной
-            редизайном вкладки «Я» (правило «скелетоны по форме контента»).
-            Списки «Мои схемы»/«Мои режимы»/«Тёплые слова» пропущены здесь
-            намеренно: они прячутся при нулевых данных, и фиксированный
-            силуэт для них соврал бы форме на пустом аккаунте. */}
-        {!ready && (
-          <>
-            {[150, 88, 110, 80].map((h, i) => (
-              <div
-                key={i}
-                style={{
-                  height: h,
-                  borderRadius: 'var(--r-20)',
-                  background:
-                    'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
-                  backgroundSize: '200% auto',
-                  animation: 'shimmer 1.5s linear infinite',
-                }}
-              />
-            ))}
-          </>
-        )}
-
-        {/* ── Карточки: скрываемые через «Настроить» / долгое нажатие ── */}
+        {/* ── Карточки: скрываемые через «Настроить» / долгое нажатие ──
+            Общего скелетона на весь блок больше нет — каждая карточка
+            показывает свой силуэт, пока летят именно её данные
+            (ProfileCardSkeletons.tsx). */}
         <ProfileCards
-          ready={ready}
           blocks={blocks}
           streak={streak}
+          streakReady={streakReady}
           achievements={achievements}
+          achievementsReady={achievementsReady}
           insights={insights}
+          insightsReady={insightsReady}
           hasInsights={hasInsights}
-          activeDates={activeDates}
           aboutMe={aboutMe}
           onOpenJourney={() => setJourneyOpen(true)}
           onOpenTracker={onOpenTracker}

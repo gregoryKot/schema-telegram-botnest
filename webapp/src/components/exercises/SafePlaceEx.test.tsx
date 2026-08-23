@@ -83,6 +83,46 @@ describe('SafePlaceEx — сохранение и обращение ты/вы',
     expect(mockApi.saveSafePlace).toHaveBeenCalledWith(expect.stringContaining('дача у бабушки'));
   });
 
+  // Аудит 2026-08-22, находка №2 (та же беда, что в FlashcardEx): раньше
+  // save() глотал ошибку («best-effort») и не показывал состояние отправки.
+  it('во время сохранения кнопка заблокирована и подписана «Сохраняю…»', async () => {
+    let resolveSave: () => void = () => {};
+    mockApi.saveSafePlace.mockImplementation(() => new Promise<void>((res) => { resolveSave = res; }));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+
+    const btn = screen.getByRole('button', { name: /Сохраняю/ }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    resolveSave();
+    await screen.findByText('«лес»');
+  });
+
+  it('ошибка сохранения показывает сообщение, а не тихо переходит к «готово»', async () => {
+    mockApi.saveSafePlace.mockRejectedValue(new Error('offline'));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    // Остаёмся на экране ввода (кнопка «Сохранить место» всё ещё тут) —
+    // не перескочили на «готово», как раньше делал best-effort catch.
+    expect(screen.getByRole('button', { name: /Сохранить место/ })).toBeTruthy();
+  });
+
+  it('повторное нажатие во время отправки не шлёт запрос дважды', async () => {
+    mockApi.saveSafePlace.mockImplementation(() => new Promise<void>(() => {}));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    expect(mockApi.saveSafePlace).toHaveBeenCalledTimes(1);
+  });
+
   it('форма «ты» — заголовок обращается на «ты»', async () => {
     renderEx('ty');
     fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });

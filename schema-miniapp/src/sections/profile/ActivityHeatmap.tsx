@@ -1,5 +1,10 @@
 import { MonthShareButton } from './heatmapShare';
 
+// Шаг сетки календаря: не отступ макета, а плотность 16-недельной сетки.
+// Экспортируется, чтобы скелетон (HeatmapCard) строил силуэт по тому же
+// числу, а не по своей копии.
+export const HEATMAP_CELL_GAP = 3;
+
 interface ActivityHeatmapProps {
   activeDates: Set<string>;
   /** Для карточки «Мой месяц» (шэр) */
@@ -71,12 +76,18 @@ export function ActivityHeatmap({
         <MonthShareButton activeDates={activeDates} totalDays={totalDays} />
       </div>
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'flex', gap: 3, minWidth: 'max-content' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: HEATMAP_CELL_GAP,
+            minWidth: 'max-content',
+          }}
+        >
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 3,
+              gap: HEATMAP_CELL_GAP,
               paddingTop: 16,
             }}
           >
@@ -110,7 +121,7 @@ export function ActivityHeatmap({
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 3,
+                  gap: HEATMAP_CELL_GAP,
                 }}
               >
                 <div

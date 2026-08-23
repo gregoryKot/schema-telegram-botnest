@@ -26,8 +26,11 @@ import {
   type YsqHistoryEntry,
 } from './ysqScoring';
 
-export const YSQ_RESULT_KEY = 'ysq_result';
-export const YSQ_PROGRESS_KEY = 'ysq_progress';
+// Сами значения — в ysqStorageKeys.ts (см. его комментарий): импорт здесь
+// нужен для внутреннего использования хуком ниже, ре-экспорт — чтобы старые
+// потребители `from './useYsqTest'` не заметили переезда.
+import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
+export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 
 export interface YsqApi {
   getYsqHistory: () => Promise<YsqHistoryEntry[] | null | undefined>;

@@ -16,6 +16,12 @@ import {
   weekModeFrequency,
 } from '../../utils/patternsSummary';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
+import {
+  collectWarmWords,
+  type WarmWordsItem,
+  type WarmWordsModeNoteSource,
+  type WarmWordsPhraseCheckSource,
+} from '../../../../shared/src/warmWords/collectWarmWords';
 
 export type AboutMeState = ReturnType<typeof useAboutMe>;
 
@@ -27,6 +33,10 @@ export function useAboutMe(refreshKey?: number) {
   const [ysqHistory, setYsqHistory] = useState<YsqHistoryEntry[]>([]);
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
+  const [modeNotes, setModeNotes] = useState<WarmWordsModeNoteSource[]>([]);
+  const [phraseChecks, setPhraseChecks] = useState<
+    WarmWordsPhraseCheckSource[]
+  >([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -53,6 +63,21 @@ export function useAboutMe(refreshKey?: number) {
         .getModeDiary()
         .then(setModeEntries)
         .catch((e) => console.error('getModeDiary failed', e)),
+      // «Тёплые слова» (карточка-превью WarmWordsCard) раньше грузились в
+      // WarmWordsCard.tsx САМОЙ карточкой при её монтировании — а карточка
+      // монтировалась только после готовности этого хука, поэтому её три
+      // запроса уходили ВТОРОЙ волной (замер 2026-08-22, 3G: первая волна
+      // закрылась на 695мс, вторая — только к 1316мс, лишний круг +621мс).
+      // getModeDiary для тёплых слов переиспользуем — тот же modeEntries,
+      // что и для портрета выше, второй раз его не просим.
+      api
+        .getModeNotes()
+        .then(setModeNotes)
+        .catch((e) => console.error('getModeNotes failed', e)),
+      api
+        .getPhraseChecks()
+        .then(setPhraseChecks)
+        .catch((e) => console.error('getPhraseChecks failed', e)),
     ]).finally(() => setReady(true));
   }, [refreshKey]);
 
@@ -64,6 +89,12 @@ export function useAboutMe(refreshKey?: number) {
     myModeIds,
     ysqHistory,
   });
+
+  const warmWordsItems: WarmWordsItem[] = collectWarmWords(
+    modeNotes,
+    modeEntries,
+    phraseChecks,
+  );
 
   return {
     ready,
@@ -77,5 +108,6 @@ export function useAboutMe(refreshKey?: number) {
     setModeEntries,
     schemaWeekFreq: weekSchemaFrequency(schemaEntries),
     modeWeekFreq: weekModeFrequency(modeEntries),
+    warmWordsItems,
   };
 }
