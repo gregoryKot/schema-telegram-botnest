@@ -15,6 +15,7 @@ import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+import { Skeleton } from '../components/Skeleton';
 import { pressable } from '../utils/a11y';
 import { needColor } from '../../../shared/src/needs/needColors';
 
@@ -219,7 +220,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           {profileLoading ? (
             <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[80, 100, 90, 110].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 'var(--r-20)', background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <Skeleton key={i} height={32} width={w} radius={20} />
               ))}
             </div>
           ) : allSchemaIds.length === 0 ? (
@@ -304,7 +305,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           {profileLoading ? (
             <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[90, 110, 80].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 'var(--r-20)', background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <Skeleton key={i} height={32} width={w} radius={20} />
               ))}
             </div>
           ) : myModes.length === 0 ? (

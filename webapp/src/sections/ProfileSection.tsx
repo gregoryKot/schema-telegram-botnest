@@ -5,6 +5,7 @@ import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { JourneySheet } from '../components/JourneySheet';
+import { Skeleton } from '../components/Skeleton';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
@@ -111,7 +112,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const earnedList    = achievements?.filter(a => a.earned) ?? [];
   const hasInsights   = insights && insights.weeklyStats.some(s => s.avg !== null);
 
-
   return (
     <div className="page-inner-wide">
 
@@ -136,7 +136,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         {!ready && (
           <>
             {[110, 80, 72].map((h, i) => (
-              <div key={i} style={{ height: h, borderRadius: 'var(--r-20)', background: 'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)', backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
+              <Skeleton key={i} height={h} radius={20} style={{ marginBottom: 8 }} />
             ))}
           </>
         )}

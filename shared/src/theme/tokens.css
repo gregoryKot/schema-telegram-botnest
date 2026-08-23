@@ -156,3 +156,42 @@
   --space-40: 40px;
   --space-48: 48px;
 }
+
+/* ── Skeleton shimmer (components/Skeleton.tsx, оба фронтенда) ───────────
+   Единственный источник цвета/анимации плашки-скелетона (правило №3 и
+   «одна механика — один компонент» CLAUDE.md) — раньше правило было
+   побайтово одинаковой копией в webapp/src/index.css и
+   schema-miniapp/src/index.css, jscpd считал это дублем.
+   База — rgba(var(--fg-rgb),0.07): отличима от --bg в ЛЮБОЙ фазе анимации,
+   в обеих темах (--fg-rgb объявлен в каждом index.css и инвертируется
+   темой сам). Раньше плашка была переливом двух почти-фоновых цветов
+   (surface → surface-2 → surface) — в светлой теме miniapp --surface-2
+   (#f2ece4) почти совпадал с --bg (#faf7f3), и в середине цикла плашка
+   растворялась в фон (маленькие чипы читались как «белые пятна», скрин
+   владельца 2026-08-23, вкладка «Паттерны»). Теперь база постоянна и видна
+   всегда, поверх бежит только узкая полоса-блик — свип, не перелив всей
+   плашки. Шиммер глушится reduced-motion блоком каждого index.css
+   (animation-duration: 0.01ms !important на `*::after`). */
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: rgba(var(--fg-rgb), 0.07);
+}
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--fg-rgb), 0.14),
+    transparent
+  );
+  animation: skel-shimmer 1.4s infinite;
+}
+@keyframes skel-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}

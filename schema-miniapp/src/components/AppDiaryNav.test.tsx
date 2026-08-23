@@ -196,7 +196,8 @@ describe('AppDiaryNav — сохранение записей дневника',
         setNewDiaryEntry={setNewDiaryEntry}
       />,
     );
-    expect(screen.getByText('SchemaEntrySheet')).toBeTruthy();
+    // Шит теперь ленивый (LazyDiarySheets) — ждём появления, не берём синхронно.
+    expect(await screen.findByText('SchemaEntrySheet')).toBeTruthy();
     fireEvent.click(screen.getByText('save-schema'));
     await waitFor(() =>
       expect(api.createSchemaDiary).toHaveBeenCalledWith({ trigger: 't' }),
@@ -205,7 +206,7 @@ describe('AppDiaryNav — сохранение записей дневника',
 
   it('newDiaryEntry=mode — onSave зовёт createModeDiary', async () => {
     render(<AppDiaryNav {...baseProps()} newDiaryEntry="mode" />);
-    fireEvent.click(screen.getByText('save-mode'));
+    fireEvent.click(await screen.findByText('save-mode'));
     await waitFor(() =>
       expect(api.createModeDiary).toHaveBeenCalledWith({ modeId: 'x' }),
     );
@@ -213,7 +214,7 @@ describe('AppDiaryNav — сохранение записей дневника',
 
   it('newDiaryEntry=gratitude — onSave зовёт createGratitudeDiary(date, items)', async () => {
     render(<AppDiaryNav {...baseProps()} newDiaryEntry="gratitude" />);
-    fireEvent.click(screen.getByText('save-gratitude'));
+    fireEvent.click(await screen.findByText('save-gratitude'));
     await waitFor(() =>
       expect(api.createGratitudeDiary).toHaveBeenCalledWith('2026-08-03', [
         'a',
@@ -221,7 +222,7 @@ describe('AppDiaryNav — сохранение записей дневника',
     );
   });
 
-  it('закрытие карточки схемы зовёт setNewDiaryEntry(null)', () => {
+  it('закрытие карточки схемы зовёт setNewDiaryEntry(null)', async () => {
     const setNewDiaryEntry = vi.fn();
     render(
       <AppDiaryNav
@@ -230,7 +231,7 @@ describe('AppDiaryNav — сохранение записей дневника',
         setNewDiaryEntry={setNewDiaryEntry}
       />,
     );
-    fireEvent.click(screen.getByText('close-schema'));
+    fireEvent.click(await screen.findByText('close-schema'));
     expect(setNewDiaryEntry).toHaveBeenCalledWith(null);
   });
 });

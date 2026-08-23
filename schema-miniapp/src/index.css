@@ -424,14 +424,6 @@ html[data-theme='light'] .card {
     transform: translateX(0);
   }
 }
-@keyframes shimmer {
-  from {
-    background-position: 200% center;
-  }
-  to {
-    background-position: 0% center;
-  }
-}
 @keyframes slide-in-right {
   from {
     opacity: 0;
@@ -566,3 +558,6 @@ html[data-reduce-motion='1'] *::after {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* Правила .skel живут в shared/src/theme/tokens.css — общий источник цвета
+   плашки-скелетона для webapp и мини-аппа (см. комментарий там). */

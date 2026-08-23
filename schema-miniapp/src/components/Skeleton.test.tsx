@@ -24,6 +24,18 @@ describe('Skeleton — примитив', () => {
     expect(el.style.width).toBe('40px');
     expect(el.style.borderRadius).toBe('50%');
   });
+
+  // Регрессия: раньше цвет плашки был инлайновым градиентом двух
+  // почти-фоновых цветов (--surface/--surface-2) — в светлой теме они почти
+  // совпадали, и плашка растворялась в фоне (скрин владельца 2026-08-23,
+  // вкладка «Паттерны»). Теперь цвет/анимация — только в общем классе .skel
+  // (index.css, база rgba(var(--fg-rgb),0.07)), не в инлайн-стиле.
+  it('цвет плашки — из общего класса .skel, не из инлайн-градиента', () => {
+    const { container } = render(<Skeleton />);
+    const el = container.firstElementChild as HTMLElement;
+    expect(el.className).toContain('skel');
+    expect(el.style.background).toBe('');
+  });
 });
 
 describe('Skeleton — композиты', () => {

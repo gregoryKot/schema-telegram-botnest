@@ -205,12 +205,29 @@ vi.mock('../components/AppOverlays', () => ({
 // снесено (EnvironmentTeardownError).
 vi.mock('../utils/preloadSections', () => ({
   preloadOtherSections: vi.fn(),
+  onIdle: vi.fn(),
+}));
+
+// Тот же риск, что у preloadOtherSections выше — прогрев ДАННЫХ чужих
+// вкладок (prefetchSectionData.ts) дёргает реальные api.* по идентичному
+// requestIdleCallback/setTimeout расписанию (своя логика — в
+// prefetchSectionData.test.ts).
+vi.mock('../utils/prefetchSectionData', () => ({
+  prefetchOtherSectionsData: vi.fn(),
 }));
 
 // App.tsx рендерит ленивую обёртку (LazyTherapistClientSheet.tsx,
 // React.lazy+Suspense — правка производительности 2026-08-22), но
 // подставная типизация берётся у настоящего компонента: сигнатура пропов
 // обязана совпадать с прод-кодом (см. комментарий в шапке файла).
+// Та же защита для чанков дневниковых шитов (LazyDiarySheets.tsx): App.tsx
+// зовёт preloadDiarySheets на маунте, реальные import() улетали бы после
+// teardown jsdom. Сами Lazy*-обёртки здесь не нужны — AppOverlays замокан.
+vi.mock('../components/LazyDiarySheets', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  preloadDiarySheets: vi.fn(() => []),
+}));
+
 vi.mock('../components/LazyTherapistClientSheet', () => ({
   LazyTherapistClientSheet: (
     p: ComponentProps<typeof TherapistClientSheetT>,

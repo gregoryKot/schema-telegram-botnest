@@ -86,8 +86,8 @@ describe('SchemasPatternSection — группировка схем пользо
     expect(screen.getByTestId('pattern-list').textContent).toContain('(0)');
   });
 
-  it('во время загрузки — скелетон вместо списка групп', () => {
-    render(
+  it('во время загрузки — скелетон-строки (форма списка), а не список групп', () => {
+    const { container } = render(
       <SchemasPatternSection
         {...BASE_PROPS}
         profileLoading={true}
@@ -95,6 +95,20 @@ describe('SchemasPatternSection — группировка схем пользо
       />,
     );
     expect(screen.queryByTestId('pattern-list')).toBeNull();
+    // Форма — строки PatternFrequencyList, не чипы; минимум 3, даже когда
+    // локально известна всего одна схема (см. CatalogParts.test.tsx).
+    expect(container.querySelectorAll('.card > div').length).toBe(3);
+  });
+
+  it('во время загрузки — строк скелетона столько же, сколько локально известных схем', () => {
+    const { container } = render(
+      <SchemasPatternSection
+        {...BASE_PROPS}
+        profileLoading={true}
+        allSchemaIds={['abandonment', 'defectiveness', 'mistrust', 'failure']}
+      />,
+    );
+    expect(container.querySelectorAll('.card > div').length).toBe(4);
   });
 
   it('нет выбранных схем, но hasSchemas (тест пройден) — кнопка «Добавить схему»', () => {

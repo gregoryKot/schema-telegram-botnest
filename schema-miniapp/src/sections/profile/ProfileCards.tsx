@@ -69,7 +69,7 @@ export function ProfileCards({
   const cardsById: Partial<Record<ScreenBlockId, ReactNode>> = {
     portrait: !isHidden('portrait') && (
       <div {...holdProps('portrait')}>
-        {aboutMe.ready ? (
+        {aboutMe.portraitReady ? (
           <PortraitCard
             portrait={aboutMe.portrait}
             ysqCompletedAt={aboutMe.ysqCompletedAt}
@@ -83,7 +83,7 @@ export function ProfileCards({
     ),
     warm_words: !isHidden('warm_words') && (
       <div {...holdProps('warm_words')}>
-        {aboutMe.ready ? (
+        {aboutMe.warmWordsReady ? (
           <WarmWordsCard items={aboutMe.warmWordsItems} />
         ) : (
           <WarmWordsCardSkeleton />

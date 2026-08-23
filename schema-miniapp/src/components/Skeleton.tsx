@@ -4,7 +4,10 @@
 // (нейроинклюзивность) и ощущение, что экран уже «на месте».
 //
 // Skeleton — примитив-плашка. Композиты (TodayScreenSkeleton и т.п.) собирают
-// из него силуэт конкретного экрана. Шиммер глушится reduced-motion блоком CSS.
+// из него силуэт конкретного экрана. Цвет/анимация — класс `.skel` в index.css
+// (единственный источник стиля): база rgba(var(--fg-rgb),0.07) + узкая
+// полоса-блик, не перелив двух почти-фоновых цветов (--surface-2 в светлой
+// теме почти равен --bg — плашка растворялась в фоне). Шиммер глушится CSS.
 import { useSafeTop } from '../utils/safezone';
 
 export function Skeleton({
@@ -23,15 +26,12 @@ export function Skeleton({
   return (
     <div
       aria-hidden
+      className="skel"
       style={{
         width: circle ? h : w,
         height: h,
         borderRadius: circle ? '50%' : radius,
         flexShrink: 0,
-        background:
-          'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
-        backgroundSize: '200% auto',
-        animation: 'shimmer 1.5s linear infinite',
         ...style,
       }}
     />
