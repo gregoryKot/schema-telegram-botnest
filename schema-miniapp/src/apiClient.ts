@@ -1,4 +1,5 @@
 // HTTP-инфраструктура мини-аппа: get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — api.ts, состояние сессии — session.ts).
+// Кеш GET (дедуп + stale-while-revalidate) и инвалидация мутаций — shared/src/api/apiCache*.ts (правило №3); authedFetch — единственная точка отправки, хук здесь покрывает и ratingApi/updatePhraseCheck (прямые вызовы authedFetch).
 import { BASE } from './utils/apiBase';
 import {
   authHeaders,
@@ -6,6 +7,8 @@ import {
   markSessionExpired,
   renewSession,
 } from './session';
+import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
+import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 
 export { BASE, authHeaders };
 
@@ -54,13 +57,17 @@ export async function authedFetch(
   const send = () =>
     fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
   const res = await send();
-  if (res.status !== 401) return res;
+  if (res.status !== 401) {
+    if (res.ok) applyMutationInvalidation(init.method, path, init.body);
+    return res;
+  }
   if (!(await renewSession())) {
     if (isSessionDead()) markSessionExpired();
     return res;
   }
   const retried = await send();
   if (retried.status === 401) markSessionExpired();
+  else if (retried.ok) applyMutationInvalidation(init.method, path, init.body);
   return retried;
 }
 
@@ -70,7 +77,7 @@ export async function authedFetch(
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
-export async function get<T>(path: string): Promise<T> {
+async function rawGet<T>(path: string): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await authedFetch(path);
@@ -93,6 +100,14 @@ export async function get<T>(path: string): Promise<T> {
       throw err;
     }
   }
+}
+
+// Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
+// одновременных запросов и stale-while-revalidate на возврате в открытый
+// экран. /api/auth/* и health исключены isCacheableGetPath.
+export function get<T>(path: string): Promise<T> {
+  if (!isCacheableGetPath(path)) return rawGet<T>(path);
+  return cachedGet(path, () => rawGet<T>(path));
 }
 
 // Тело ошибки (message от ValidationPipe) полезнее статуса — вытаскиваем один раз для всех не-GET методов.

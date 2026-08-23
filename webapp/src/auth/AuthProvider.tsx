@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
+import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
 import { refreshSession } from './refreshSession';
@@ -107,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenState(null);
     setAuthError(null);
     clearLocalData();
+    // Кеш API — в памяти вкладки, не переживает смену пользователя.
+    clearApiCache();
   }, []);
 
   return (

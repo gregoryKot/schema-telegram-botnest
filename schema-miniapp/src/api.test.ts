@@ -9,6 +9,7 @@
 // session.test.ts), Bearer — после.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from './api';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function mockFetchOnce(status: number, body?: unknown) {
   const json = vi.fn().mockResolvedValue(body ?? {});
@@ -19,6 +20,9 @@ function mockFetchOnce(status: number, body?: unknown) {
 
 beforeEach(() => {
   global.fetch = vi.fn();
+  // Кеш GET-ответов (apiCache.ts) — модуль-синглтон; без сброса повторный
+  // api.getDisclaimer() отвечал бы из кеша предыдущего теста.
+  clearApiCache();
   (window as unknown as { Telegram?: unknown }).Telegram = {
     WebApp: { initData: 'query_id=AAA&user=%7B%7D&hash=deadbeef' },
   };

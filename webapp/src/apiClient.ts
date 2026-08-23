@@ -8,6 +8,13 @@
 // запроса — mini-апп это уже умел (apiClient.ts:authedFetch), сайт просто
 // бросал ошибку. Один истёкший access-токен ронял действие пользователя
 // вместо тихого продления.
+//
+// Кеш GET (дедуп + stale-while-revalidate) и инвалидация мутаций —
+// shared/src/api/apiCache*.ts (правило №3): authedFetch — единственная
+// точка отправки, хук здесь покрывает и ratingApi (прямой вызов authedFetch).
+import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
+import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
 
@@ -69,15 +76,28 @@ async function apiError(res: Response): Promise<ApiError> {
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const send = () => fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
   const res = await send();
-  if (res.status !== 401 || !_refresh) return res;
+  if (res.status !== 401 || !_refresh) {
+    if (res.ok) applyMutationInvalidation(init.method, path, init.body);
+    return res;
+  }
   if (!(await _refresh())) return res;
-  return send();
+  const retried = await send();
+  if (retried.ok) applyMutationInvalidation(init.method, path, init.body);
+  return retried;
 }
 
-export async function get<T>(path: string): Promise<T> {
+async function rawGet<T>(path: string): Promise<T> {
   const res = await authedFetch(path);
   if (!res.ok) throw await apiError(res);
   return res.json();
+}
+
+// Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
+// одновременных запросов и stale-while-revalidate на возврате в открытый
+// экран. /api/auth/* и health исключены isCacheableGetPath.
+export function get<T>(path: string): Promise<T> {
+  if (!isCacheableGetPath(path)) return rawGet<T>(path);
+  return cachedGet(path, () => rawGet<T>(path));
 }
 
 export async function post(path: string, body: unknown): Promise<void> {

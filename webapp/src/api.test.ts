@@ -12,6 +12,7 @@
 // заново», 2026-08-21, пункт 4).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api, ApiError, setTokenProvider, setRefreshHandler, reportClientError } from './api';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -34,6 +35,10 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
+  // Кеш GET-ответов (apiCache.ts) живёт в памяти модуля — без сброса каждый
+  // повторный api.getSettings() в этом файле отвечал бы из кеша предыдущего
+  // теста, а не бил mock fetch заново.
+  clearApiCache();
   setTokenProvider(() => null);
   // По умолчанию — режим «хэндлера нет» (как в проде до маунта TokenBridge):
   // refresh не удался, authedFetch отдаёт исходный 401 без второго запроса.
@@ -80,6 +85,9 @@ describe('authHeaders — формат заголовка авторизации
     );
 
     current = 'second';
+    // Второй вызов обязан реально дойти до сети (а не отдаться из свежего
+    // кеша apiCache.ts) — тест проверяет именно чтение токена ПЕРЕД отправкой.
+    clearApiCache();
     await api.getSettings();
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe(
       'Bearer second',
