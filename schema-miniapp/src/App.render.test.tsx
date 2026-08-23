@@ -5,7 +5,13 @@
 // секция из URL/localStorage, офлайн-баннер по реальным browser-событиям.
 // Дочерние секции/оверлеи — заглушки (App.test-helpers.tsx).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor, cleanup, fireEvent, act } from '@testing-library/react';
+import {
+  screen,
+  waitFor,
+  cleanup,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import {
   renderApp,
   setUrl,
@@ -162,12 +168,9 @@ describe('App — офлайн-баннер по реальным browser-соб
 // 4044 → 4398мс). Гейт — loading=false (см. эффект prefetchStarted в App.tsx).
 describe('прогрев данных чужих вкладок ждёт первый экран', () => {
   it('prefetchOtherSectionsData/preloadDiarySheets не зовутся, пока needs висит', async () => {
-    const { prefetchOtherSectionsData } = await import(
-      './utils/prefetchSectionData'
-    );
-    const { preloadDiarySheets } = await import(
-      './components/LazyDiarySheets'
-    );
+    const { prefetchOtherSectionsData } =
+      await import('./utils/prefetchSectionData');
+    const { preloadDiarySheets } = await import('./components/LazyDiarySheets');
     let resolveNeeds: (v: never[]) => void = () => {};
     mockApi.needs.mockReturnValueOnce(
       new Promise<never[]>((r) => {
