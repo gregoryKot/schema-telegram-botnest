@@ -42,6 +42,8 @@ import {
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { preloadOtherSections } from './utils/preloadSections';
+import { prefetchOtherSectionsData } from './utils/prefetchSectionData';
+import { preloadDiarySheets } from './components/LazyDiarySheets';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { AmbientBackground } from './components/AmbientBackground';
@@ -78,7 +80,7 @@ export default function App() {
   // замер 2026-08-22: единый стартовый чанк — 1,26 МБ, 2,3 c до первого
   // рендера на 3G). Только начальная секция важна — она уже грузится сама
   // (React.lazy в AppSections.tsx), дальнейшая смена вкладки эту догрузку
-  // не перезапускает.
+  // не перезапускает. Та же идея для ДАННЫХ чужих вкладок — prefetchSectionData.ts.
   useEffect(() => {
     preloadOtherSections(section);
     // Только при маунте: начальная секция за жизнь компонента не меняется,
@@ -212,6 +214,20 @@ export default function App() {
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Прогрев ДАННЫХ чужих вкладок и чанков дневниковых шитов — только когда
+  // данные первого экрана уже приехали (loading=false). Прогрев с маунта
+  // толкался с needs/ratings и чанком TodaySection за канал: замер
+  // 2026-08-23, холодный старт 3G 4044 → 4398мс. Idle-колбэк не защищает —
+  // он про простой ПРОЦЕССОРА, а узкое место здесь сеть.
+  const prefetchStarted = useRef(false);
+  useEffect(() => {
+    if (loading || prefetchStarted.current) return;
+    prefetchStarted.current = true;
+    prefetchOtherSectionsData(section, setHelpPracticeCount);
+    // Дневниковые шиты («+») ленивые (LazyDiarySheets.tsx) — их чанки
+    // догружаются той же idle-очередью, чтобы первое нажатие «+» не ждало сеть.
+    preloadDiarySheets();
+  }, [loading]);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -268,10 +284,8 @@ export default function App() {
         .catch(logErr('api.init'));
     }
     api.recordActivity().catch(logErr('recordActivity'));
-    const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
-    Promise.all(NEED_IDS.map((id) => api.getPractices(id)))
-      .then((r) => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0)))
-      .catch(() => setHelpPracticeCount(0));
+    // getPractices×5 (бейдж «Помощи») — не первому рендеру «Сегодня»,
+    // перенесён в prefetchOtherSectionsData (эффект выше).
     api
       .getPlanHistory(30)
       .then((p) => setHelpPlanCount(p.length))

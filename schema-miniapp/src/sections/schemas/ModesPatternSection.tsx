@@ -7,7 +7,7 @@ import { PatternFrequencyList } from '../../components/PatternFrequencyList';
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { usePatternStatus } from '../../components/patternSheet/usePatternStatus';
 import { modeEntryCounts } from '../../components/patternSheet/patternStatus';
-import { ChipsSkeleton } from './CatalogParts';
+import { PatternListSkeleton } from './CatalogParts';
 import { buildModeFreqGroups } from './modeGroups';
 import { WeekTopSummary } from '../../utils/patternsSummary';
 import type { ModeDiaryEntry } from '../../types';
@@ -45,7 +45,7 @@ export function ModesPatternSection({
     <>
       {myModeIds.length > 0 &&
         (profileLoading ? (
-          <ChipsSkeleton widths={[90, 110, 80]} />
+          <PatternListSkeleton rows={myModeIds.length} />
         ) : (
           <PatternFrequencyList
             groups={groups}

@@ -58,7 +58,7 @@ export function SkeletonCard({
       style={{
         height,
         borderRadius: radius,
-        border: '1px solid rgba(255,255,255,.08)',
+        border: '1px solid var(--line)',
         padding: '22px 20px',
         boxSizing: 'border-box',
         display: 'flex',
@@ -70,6 +70,31 @@ export function SkeletonCard({
       <Skeleton width="55%" height={18} />
       <Skeleton width="90%" height={12} />
       <Skeleton width="70%" height={12} />
+    </div>
+  );
+}
+
+/** Список плоских плашек одной высоты — без рамки/строк (в отличие от
+ * SkeletonCard), для списков строк-элементов (лента, практики). Параллель
+ * schema-miniapp/src/components/Skeleton.tsx SkeletonList — там она собрана
+ * из плоского miniapp-SkeletonCard, здесь напрямую из Skeleton, потому что
+ * webapp-SkeletonCard тяжелее (рамка + внутренние строки). */
+export function SkeletonList({
+  rows = 4,
+  height = 72,
+  radius = 16,
+  gap = 10,
+}: {
+  rows?: number;
+  height?: number;
+  radius?: number;
+  gap?: number;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} height={height} radius={radius} />
+      ))}
     </div>
   );
 }

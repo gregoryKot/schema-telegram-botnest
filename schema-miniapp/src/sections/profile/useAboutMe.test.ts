@@ -71,7 +71,7 @@ describe('useAboutMe — одна волна из шести запросов', 
 });
 
 describe('useAboutMe — happy path', () => {
-  it('объединяет активные и ручные схемы без дублей, ready=true после загрузки', async () => {
+  it('объединяет активные и ручные схемы без дублей, обе готовности true после загрузки', async () => {
     mockApi.getProfile.mockResolvedValue({
       ...emptyProfile,
       ysq: {
@@ -90,7 +90,11 @@ describe('useAboutMe — happy path', () => {
     mockApi.getPhraseChecks.mockResolvedValue([]);
 
     const { result } = renderHook(() => useAboutMe());
-    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
 
     expect(new Set(result.current.mySchemaIds)).toEqual(
       new Set(['abandonment', 'mistrust', 'defectiveness']),
@@ -110,14 +114,18 @@ describe('useAboutMe — happy path', () => {
     mockApi.getPhraseChecks.mockResolvedValue([]);
 
     const { result } = renderHook(() => useAboutMe());
-    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
 
     expect(result.current.mySchemaIds).toEqual([]);
     expect(result.current.portrait.totalSchemas).toBe(0);
     expect(result.current.warmWordsItems).toEqual([]);
   });
 
-  it('провал остальных пяти источников (не только getProfile) тоже не роняет хук — ready=true с безопасными дефолтами', async () => {
+  it('провал остальных пяти источников (не только getProfile) тоже не роняет хук — готовности true с безопасными дефолтами', async () => {
     mockApi.getProfile.mockResolvedValue(emptyProfile);
     mockApi.getYsqHistory.mockRejectedValue(new Error('network'));
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network'));
@@ -126,7 +134,11 @@ describe('useAboutMe — happy path', () => {
     mockApi.getPhraseChecks.mockRejectedValue(new Error('network'));
 
     const { result } = renderHook(() => useAboutMe());
-    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
 
     expect(result.current.schemaEntries).toEqual([]);
     expect(result.current.modeEntries).toEqual([]);
@@ -155,9 +167,46 @@ describe('useAboutMe — happy path', () => {
     mockApi.getPhraseChecks.mockResolvedValue([]);
 
     const { result } = renderHook(() => useAboutMe());
-    await waitFor(() => expect(result.current.ready).toBe(true));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
 
     expect(result.current.warmWordsItems).toHaveLength(2);
     expect(result.current.warmWordsItems[0].text).toBe('Свежее тёплое слово');
+  });
+});
+
+// Замер 2026-08-23: вкладка «Я» была ~2× дольше соседних, потому что обе
+// карточки ждали общий Promise.all из шести запросов. Гейт per-карточка:
+// портрет готов по своим двум источникам, не дожидаясь «тёплых слов».
+describe('useAboutMe — готовность по карточкам, не общая', () => {
+  it('портрет готов, пока getModeNotes/getPhraseChecks ещё висят', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockReturnValue(new Promise(() => {}));
+    mockApi.getPhraseChecks.mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderHook(() => useAboutMe());
+
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    expect(result.current.warmWordsReady).toBe(false);
+  });
+
+  it('и наоборот: тёплые слова готовы, пока профиль ещё висит', async () => {
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
+    mockApi.getYsqHistory.mockReturnValue(new Promise(() => {}));
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAboutMe());
+
+    await waitFor(() => expect(result.current.warmWordsReady).toBe(true));
+    expect(result.current.portraitReady).toBe(false);
   });
 });

@@ -52,6 +52,8 @@ describe('defaultReminderIdx', () => {
 });
 
 describe('usePlanSheetState — загрузка', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('успешно грузит практики и таймзону, allOptions мержит свои+готовые', async () => {
     const api = makeApi({
       getPractices: vi
@@ -103,6 +105,12 @@ describe('usePlanSheetState — загрузка', () => {
   });
 
   it('невалидный часовой пояс — ianaToUtcOffset деградирует до 3, а не падает', async () => {
+    // Час напоминания по умолчанию зависит от времени суток
+    // (defaultReminderIdx: до 12 — «Утром» 9, после — «Днём» 13). Без
+    // закреплённых часов тест зелёный только до полудня по часам машины —
+    // так он и жил до 2026-08-23, когда впервые прогнался после обеда.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 0, 1, 9));
     const api = makeApi({
       getSettings: vi.fn().mockResolvedValue({ notifyTimezone: 'Not/AZone' }),
     });

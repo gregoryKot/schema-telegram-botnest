@@ -17,6 +17,16 @@
     <!-- iOS «На экран „Домой“» не читает manifest.icons надёжно — нужен
          явный link. Тот же файл, что у сайта (webapp/public/), одна копия. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Чанк стартовой вкладки «Сегодня» — единственный файл первого экрана,
+         который сборка НЕ включает в свой список modulepreload (он чисто
+         динамический, React.lazy). Без этой строки он начинал качаться
+         только ПОСЛЕ исполнения index.js — последним, последовательно
+         (замер 2026-08-23: +200-700мс к первому контенту). Имена ассетов
+         стабильны (без контент-хеша, правило №13), поэтому статическая
+         ссылка не протухает; в dev-режиме файла нет — браузер молча
+         игнорирует несработавший preload. Если сохранённая вкладка не
+         «Сегодня», лишние ~10КБ — приемлемая цена за доминирующий случай. -->
+    <link rel="modulepreload" href="/app/assets/TodaySection.js" />
     <script src="/telegram-web-app.js"></script>
     <!-- Мост MAX: подключается только внутри MAX, решает это сам загрузчик.
          Отдельным файлом, а не инлайном — у нас script-src 'self' без
@@ -25,7 +35,7 @@
     <script type="module" crossorigin src="/app/assets/index.js"></script>
     <link rel="modulepreload" crossorigin href="/app/assets/hitbox.js">
     <link rel="modulepreload" crossorigin href="/app/assets/a11y.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/schemaTherapyData.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/BottomSheet.js">
     <link rel="modulepreload" crossorigin href="/app/assets/safezone.js">
     <link rel="modulepreload" crossorigin href="/app/assets/Skeleton.js">
     <link rel="modulepreload" crossorigin href="/app/assets/CrisisCard.js">
@@ -36,16 +46,12 @@
     <link rel="modulepreload" crossorigin href="/app/assets/QuickPracticeSheet.js">
     <link rel="modulepreload" crossorigin href="/app/assets/SaveErrorNote.js">
     <link rel="modulepreload" crossorigin href="/app/assets/ysqStorageKeys.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/haptic.js">
     <link rel="modulepreload" crossorigin href="/app/assets/useDragReorder.js">
     <link rel="modulepreload" crossorigin href="/app/assets/needData.js">
     <link rel="modulepreload" crossorigin href="/app/assets/CustomizeButton.js">
     <link rel="modulepreload" crossorigin href="/app/assets/IdentityDot.js">
     <link rel="modulepreload" crossorigin href="/app/assets/charts.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/modeCards.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/schemaCard.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/healthyAdultHints.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/utils.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/GratitudeEntrySheet.js">
     <link rel="stylesheet" crossorigin href="/app/assets/index.css">
   <link rel="manifest" href="/app/manifest.webmanifest"></head>
   <body>

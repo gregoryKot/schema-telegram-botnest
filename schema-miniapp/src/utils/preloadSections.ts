@@ -6,8 +6,9 @@ const ALL_SECTIONS: Section[] = ['today', 'schemas', 'help', 'profile'];
 /** requestIdleCallback с фолбэком на setTimeout — WebView Telegram/MAX
  * (как и Safari) его не реализует, хотя в типах DOM метод объявлен как
  * гарантированный. 200 мс — не встаём в очередь сразу за первым рендером,
- * но и не тянем резину. */
-function onIdle(cb: () => void): void {
+ * но и не тянем резину. Экспортирован — та же схема нужна прогреву данных
+ * чужих вкладок, prefetchSectionData.ts (не плодить вторую копию). */
+export function onIdle(cb: () => void): void {
   if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(cb);
   } else {

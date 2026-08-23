@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { api } from '../api';
 import { BottomNav, Section } from './BottomNav';
 import { FloatingPill } from './FloatingPill';
-import { SchemaEntrySheet } from './diary/SchemaEntrySheet';
-import { ModeEntrySheet } from './diary/ModeEntrySheet';
-import { GratitudeEntrySheet } from './diary/GratitudeEntrySheet';
+// Ленивые: статический импорт тянул modeCards/healthyAdultHints/62КБ
+// GratitudeEntrySheet в стартовый граф (замер 2026-08-23, LazyDiarySheets.tsx).
+import {
+  LazySchemaEntrySheet as SchemaEntrySheet,
+  LazyModeEntrySheet as ModeEntrySheet,
+  LazyGratitudeEntrySheet as GratitudeEntrySheet,
+} from './LazyDiarySheets';
 import {
   QuickActionOverlays,
   type OverlayQuickActionId,
