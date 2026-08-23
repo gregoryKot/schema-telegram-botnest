@@ -12,10 +12,17 @@ import { act, renderHook } from '@testing-library/react';
 beforeEach(() => {
   vi.resetModules();
   vi.stubGlobal('fetch', vi.fn());
+  // Хост — Telegram: у веб-хоста authedFetch сначала меняет refresh-куку на
+  // токен (hasInstantAuth), и одиночный мок fetch съедался бы обменом. Эти
+  // тесты — про флаги, не про авторизацию.
+  (window as unknown as { Telegram?: unknown }).Telegram = {
+    WebApp: { initData: 'query_id=AAA&hash=deadbeef' },
+  };
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  delete (window as unknown as { Telegram?: unknown }).Telegram;
 });
 
 async function freshModule() {

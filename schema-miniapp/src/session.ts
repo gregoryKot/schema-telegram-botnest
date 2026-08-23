@@ -104,9 +104,19 @@ export function isSessionDead(): boolean {
   return lastFailureDead && Date.now() < deadUntil;
 }
 
+/** Может ли запрос авторизоваться прямо сейчас: живой Bearer или подпись
+ *  площадки (initData в каждом запросе у Telegram/MAX). false — только
+ *  веб-хост (PWA с ярлыка, вкладка) без токена: его authHeaders() пуст, и
+ *  запрос без предварительного обмена refresh-куки обречён на 401. */
+export function hasInstantAuth(): boolean {
+  return tokenIsFresh() || Object.keys(getHost().authHeaders()).length > 0;
+}
+
 /** Стартовый обмен — один раз за загрузку, фоном: сессию надо выпустить, ПОКА
- *  initData свежая. Запросы его не ждут; через час свернутое приложение
- *  найдёт живую refresh-куку вместо просроченной подписи. */
+ *  initData свежая. В Telegram/MAX запросы его не ждут (подпись и так в
+ *  каждом запросе); веб-хост без токена наоборот ЖДЁТ его в authedFetch —
+ *  см. hasInstantAuth. Через час свернутое приложение найдёт живую
+ *  refresh-куку вместо просроченной подписи. */
 export function ensureSession(): Promise<boolean> {
   bootstrapped ??= renewSession();
   return bootstrapped;

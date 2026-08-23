@@ -3,6 +3,8 @@
 import { BASE } from './utils/apiBase';
 import {
   authHeaders,
+  ensureSession,
+  hasInstantAuth,
   isSessionDead,
   markSessionExpired,
   renewSession,
@@ -56,6 +58,14 @@ export async function authedFetch(
 ): Promise<Response> {
   const send = () =>
     fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
+  // Веб-хост (PWA с ярлыка / вкладка) без живого токена: authHeaders() пуст,
+  // запрос обречён на 401 → renew → повтор. До этой правки ВЕСЬ стартовый
+  // залп (~19 GET) ходил по этому кругу — каждый запрос дважды плюс общий
+  // обмен куки между попытками; отсюда «в Телеграме летает, из ярлыка
+  // долго» (2026-08-23). Ждём один общий обмен (ensureSession дедуплицирует)
+  // и уходим сразу с Bearer. Обмен не удался (кука мертва/сети нет) —
+  // отправляем как раньше: существующая ветка 401 покажет экран входа.
+  if (!hasInstantAuth()) await ensureSession();
   const res = await send();
   if (res.status !== 401) {
     if (res.ok) applyMutationInvalidation(init.method, path, init.body);

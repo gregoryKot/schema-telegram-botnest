@@ -153,3 +153,65 @@ describe('authedFetch: 401 → перевыпуск сессии → повто�
     vi.useRealTimers();
   });
 });
+
+// «В Телеграме летает, из ярлыка долго» (2026-08-23): у веб-хоста (PWA/
+// вкладка) authHeaders() пуст, и до фикса каждый запрос холодного старта
+// ходил кругом 401 → общий refresh → повтор — весь залп по два раза.
+// Теперь authedFetch без мгновенной авторизации сначала ждёт ОДИН общий
+// обмен куки (ensureSession) и уходит сразу с Bearer.
+describe('веб-хост (PWA): обмен куки ДО первого запроса', () => {
+  beforeEach(() => {
+    delete (window as unknown as { Telegram?: unknown }).Telegram;
+  });
+
+  it('без токена сначала /api/auth/refresh, затем запрос сразу с Bearer', async () => {
+    fetchMock()
+      .mockResolvedValueOnce(
+        jsonRes(200, { accessToken: 'tok-pwa', expiresIn: 900 }),
+      )
+      .mockResolvedValueOnce(jsonRes(200, { accepted: true }));
+
+    await expect(
+      get<{ accepted: boolean }>('/api/disclaimer'),
+    ).resolves.toEqual({ accepted: true });
+    expect(urls()).toEqual(['/api/auth/refresh', '/api/disclaimer']);
+    const [, init] = fetchMock().mock.calls[1] as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer tok-pwa',
+    );
+  });
+
+  it('параллельный залп делит ОДИН обмен — не по обмену на запрос', async () => {
+    global.fetch = vi.fn((url: unknown) =>
+      Promise.resolve(
+        String(url) === '/api/auth/refresh'
+          ? jsonRes(200, { accessToken: 'tok', expiresIn: 900 })
+          : jsonRes(200, {}),
+      ),
+    );
+
+    await Promise.all([
+      get('/api/needs'),
+      get('/api/ratings'),
+      get('/api/settings'),
+    ]);
+
+    expect(urls().filter((u) => u === '/api/auth/refresh')).toHaveLength(1);
+    // Обмен ушёл раньше любого запроса данных — залп его дождался.
+    expect(urls()[0]).toBe('/api/auth/refresh');
+    // Ни один запрос данных не получил 401 и не ходил дважды.
+    expect(urls().filter((u) => u === '/api/needs')).toHaveLength(1);
+  });
+
+  it('кука мертва: запрос всё равно уходит, и экран узнаёт о смерти сессии', async () => {
+    const listener = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, listener);
+    global.fetch = vi.fn(() => Promise.resolve(jsonRes(401, {})));
+
+    await expect(get('/api/needs')).rejects.toThrow();
+    // Запрос данных отправлен (деградация, не вечное ожидание обмена).
+    expect(urls()).toContain('/api/needs');
+    expect(listener).toHaveBeenCalled();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, listener);
+  });
+});

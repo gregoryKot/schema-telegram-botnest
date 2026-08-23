@@ -15,6 +15,7 @@ import {
   authHeaders,
   clearSession,
   ensureSession,
+  hasInstantAuth,
   isSessionDead,
   renewSession,
   markSessionExpired,
@@ -225,5 +226,23 @@ describe('online/visibilitychange — перевыпуск после сна у�
     await vi.waitFor(() =>
       expect(authHeaders().Authorization).toBe('Bearer from-visible'),
     );
+  });
+});
+
+describe('hasInstantAuth', () => {
+  it('Telegram: initData есть в каждом запросе — авторизация мгновенная', () => {
+    expect(hasInstantAuth()).toBe(true);
+  });
+
+  it('веб-хост без токена: мгновенной авторизации нет — нужен обмен куки', () => {
+    delete (window as unknown as { Telegram?: unknown }).Telegram;
+    expect(hasInstantAuth()).toBe(false);
+  });
+
+  it('веб-хост с живым токеном: авторизация мгновенная (Bearer)', async () => {
+    delete (window as unknown as { Telegram?: unknown }).Telegram;
+    fetchMock().mockResolvedValueOnce(okToken('tok-web'));
+    await renewSession();
+    expect(hasInstantAuth()).toBe(true);
   });
 });
