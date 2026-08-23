@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get, post } from './apiClient';
 import { clearSession, SESSION_EXPIRED_EVENT } from './session';
 import { REFRESH_RETRY_DELAYS_MS } from '../../shared/src/auth/sessionRefresh';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function jsonRes(status: number, body: unknown = {}) {
   return {
@@ -24,6 +25,9 @@ const urls = () => fetchMock().mock.calls.map((c) => String(c[0]));
 
 beforeEach(() => {
   clearSession();
+  // Кеш GET-ответов (apiCache.ts) — модуль-синглтон; без сброса повторный
+  // get('/api/disclaimer') отвечал бы из кеша предыдущего теста.
+  clearApiCache();
   global.fetch = vi.fn();
   (window as unknown as { Telegram?: unknown }).Telegram = {
     WebApp: { initData: 'query_id=AAA&hash=deadbeef' },

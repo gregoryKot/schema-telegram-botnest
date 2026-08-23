@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels'; import { useTr } from '../utils/addressForm';
 
@@ -43,6 +44,9 @@ export function MergePage() {
       }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
+      // Данные другого аккаунта переехали на текущий userId — старый кеш
+      // (списки без перенесённых записей) обязан уйти вместе с ним.
+      clearApiCache();
       navigate('/account', { replace: true });
     } catch (e) {
       setError(String(e));

@@ -13,6 +13,7 @@
 import { getHost } from '../../shared/src/host';
 import { renewWithRetries } from '../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../shared/src/auth/crossTabLock';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 import { attemptRenewOnce } from './sessionRenew';
 import { registerSessionRetryListeners } from './sessionRetryListeners';
 
@@ -117,6 +118,8 @@ export function adoptSession(token: string, expiresIn: number): void {
   bootstrapped = Promise.resolve(true);
   inFlight = null;
   remember(token, expiresIn);
+  // Сессия — от ДРУГОГО аккаунта (device-link): кеш прежнего userId не переживает смену.
+  clearApiCache();
 }
 
 /** Сессию восстановить не удалось — экран обязан сказать это пользователю. */
