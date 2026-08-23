@@ -25,6 +25,7 @@ import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
 import { OnboardingOverlay } from './trackerOverlay/OnboardingOverlay';
 import { TrackerDoneSummary } from './trackerOverlay/TrackerDoneSummary';
+import { SAVE_DEBOUNCE_MS } from './trackerOverlay/saveDebounce';
 
 interface Props {
   needs: Need[];
@@ -151,7 +152,7 @@ export function TrackerOverlay({
           } catch (e) {
             console.error('saveRating failed', e); // сеть/5xx — уже в outbox
           }
-        }, 500);
+        }, SAVE_DEBOUNCE_MS);
         return;
       }
       onChange(needId, v);
@@ -175,7 +176,7 @@ export function TrackerOverlay({
         } catch (e) {
           console.error('saveRating failed', e);
         }
-      }, 500);
+      }, SAVE_DEBOUNCE_MS);
     },
     [onChange, onSaved, isOffline, isBackfill, date],
   );

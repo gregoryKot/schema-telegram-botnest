@@ -11,6 +11,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import type { ServerResponse } from 'http';
+import { cacheControlFor } from './infra/static-cache';
 import type { Request, Response } from 'express';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
@@ -50,6 +52,15 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
       // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
       renderPath: '/*path',
       exclude: ['/api/{*path}'],
+      // Cache-Control по типу файла (src/infra/static-cache.ts): иммутабельным
+      // объявляем только то, чьё имя меняется вместе с содержимым. Раньше вся
+      // статика шла с max-age=0, и каждый запуск начинался с круга ревалидации
+      // (замер 2026-08-22: 857мс до первой строчки JS даже с тёплым кэшем).
+      serveStaticOptions: {
+        setHeaders: (res: ServerResponse, filePath: string) => {
+          res.setHeader('Cache-Control', cacheControlFor(filePath));
+        },
+      },
     }),
     PrismaModule,
     NotificationModule,
