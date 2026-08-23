@@ -2,10 +2,12 @@ import { Need } from '../types';
 import { api, UserTask } from '../api';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Section } from './BottomNav';
-import { TodaySection } from '../sections/TodaySection';
-import { SchemasSection } from '../sections/SchemasSection';
-import { HelpSection } from '../sections/HelpSection';
-import { ProfileSection } from '../sections/ProfileSection';
+import {
+  LazyTodaySection as TodaySection,
+  LazySchemasSection as SchemasSection,
+  LazyHelpSection as HelpSection,
+  LazyProfileSection as ProfileSection,
+} from './LazySections';
 import { UseSheetsReturn } from '../hooks/useSheets';
 
 interface Props {

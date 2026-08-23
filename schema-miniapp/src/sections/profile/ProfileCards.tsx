@@ -3,6 +3,12 @@
 // рендерятся в blocks.orderedIds — долгое нажатие открывает лист «Настроить
 // экран» с подсветкой строки. Вынесено из ProfileSection — файл в бейслайне
 // ratchet (правило №10 CLAUDE.md), новой логике было некуда без выноса.
+//
+// Прогрессивный рендер (замер 2026-08-22): раньше все карточки прятались за
+// одним общим `ready`, и самый долгий из четырёх запросов держал пустым
+// весь экран. Теперь у каждой карточки своя проверка готовности — она
+// показывает СВОЙ скелетон (ProfileCardSkeletons.tsx), пока её данные летят,
+// не дожидаясь соседей. «Мой путь» вообще без данных — рендерится сразу.
 import { Fragment, type ReactNode } from 'react';
 import type { Achievement } from '../../api';
 import type { ScreenBlockId } from '../../utils/screenBlocks';
@@ -10,21 +16,29 @@ import type { BlockVisibility } from '../schemas/blockVisibility';
 import { StreakData, InsightsData } from './types';
 import type { AboutMeState } from './useAboutMe';
 import { StreakCard } from './StreakCard';
-import { ActivityHeatmap } from './ActivityHeatmap';
+import { HeatmapCard } from './HeatmapCard';
 import { AchievementsCard } from './AchievementsCard';
 import { InsightsCard } from './InsightsCard';
 import { JourneyEntryCard } from './JourneyEntryCard';
 import { PortraitCard } from './PortraitCard';
 import { WarmWordsCard } from './WarmWordsCard';
+import {
+  PortraitCardSkeleton,
+  WarmWordsCardSkeleton,
+  StreakCardSkeleton,
+  AchievementsCardSkeleton,
+  InsightsCardSkeleton,
+} from './ProfileCardSkeletons';
 
 interface Props {
-  ready: boolean;
   blocks: BlockVisibility;
   streak: StreakData | null;
+  streakReady: boolean;
   achievements: Achievement[] | null;
+  achievementsReady: boolean;
   insights: InsightsData | null;
+  insightsReady: boolean;
   hasInsights: boolean | null | undefined;
-  activeDates: Set<string>;
   aboutMe: AboutMeState;
   onOpenJourney: () => void;
   onOpenTracker?: () => void;
@@ -35,13 +49,14 @@ interface Props {
 }
 
 export function ProfileCards({
-  ready,
   blocks,
   streak,
+  streakReady,
   achievements,
+  achievementsReady,
   insights,
+  insightsReady,
   hasInsights,
-  activeDates,
   aboutMe,
   onOpenJourney,
   onOpenTracker,
@@ -52,60 +67,89 @@ export function ProfileCards({
 }: Props) {
   const { isHidden, holdProps, orderedIds } = blocks;
   const cardsById: Partial<Record<ScreenBlockId, ReactNode>> = {
-    portrait: aboutMe.ready && !isHidden('portrait') && (
+    portrait: !isHidden('portrait') && (
       <div {...holdProps('portrait')}>
-        <PortraitCard
-          portrait={aboutMe.portrait}
-          ysqCompletedAt={aboutMe.ysqCompletedAt}
-          onOpenPatterns={() => onOpenPatterns('schemas')}
-          onOpenSheet={onOpenPortrait}
-        />
+        {aboutMe.ready ? (
+          <PortraitCard
+            portrait={aboutMe.portrait}
+            ysqCompletedAt={aboutMe.ysqCompletedAt}
+            onOpenPatterns={() => onOpenPatterns('schemas')}
+            onOpenSheet={onOpenPortrait}
+          />
+        ) : (
+          <PortraitCardSkeleton />
+        )}
       </div>
     ),
-    warm_words: aboutMe.ready && !isHidden('warm_words') && (
+    warm_words: !isHidden('warm_words') && (
       <div {...holdProps('warm_words')}>
-        <WarmWordsCard />
+        {aboutMe.ready ? (
+          <WarmWordsCard items={aboutMe.warmWordsItems} />
+        ) : (
+          <WarmWordsCardSkeleton />
+        )}
       </div>
     ),
-    journey: ready && !isHidden('journey') && (
+    // Без своих данных — открывает архив, ничего не грузит, рендерится
+    // сразу (было гейтено общим `ready` без причины).
+    journey: !isHidden('journey') && (
       <div {...holdProps('journey')}>
         <JourneyEntryCard onOpen={onOpenJourney} />
       </div>
     ),
-    streak: ready && streak !== null && !isHidden('streak') && (
+    streak: !isHidden('streak') && (
       <div {...holdProps('streak')}>
-        <StreakCard
-          currentStreak={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          totalDays={streak.totalDays}
-          todayDone={streak.todayDone}
-          weekDots={streak.weekDots}
-          onOpenTracker={onOpenTracker}
-        />
+        {!streakReady ? (
+          <StreakCardSkeleton />
+        ) : (
+          streak !== null && (
+            <StreakCard
+              currentStreak={streak.currentStreak}
+              longestStreak={streak.longestStreak}
+              totalDays={streak.totalDays}
+              todayDone={streak.todayDone}
+              weekDots={streak.weekDots}
+              onOpenTracker={onOpenTracker}
+            />
+          )
+        )}
       </div>
     ),
-    heatmap: ready && activeDates.size > 0 && !isHidden('heatmap') && (
+    // Своя ленивая загрузка (HeatmapCard) — не зависит от streakReady:
+    // тяжёлый history(112) не должен ждать даже стрик, только появление
+    // карточки во вьюпорте (см. HeatmapCard.tsx).
+    heatmap: !isHidden('heatmap') && (
       <div {...holdProps('heatmap')}>
-        <ActivityHeatmap
-          activeDates={activeDates}
-          totalDays={streak?.totalDays ?? 0}
-        />
+        <HeatmapCard totalDays={streak?.totalDays ?? 0} />
       </div>
     ),
-    achievements: ready && achievements && !isHidden('achievements') && (
+    achievements: !isHidden('achievements') && (
       <div {...holdProps('achievements')}>
-        <AchievementsCard
-          achievements={achievements}
-          onOpen={onShowAchievements}
-        />
+        {!achievementsReady ? (
+          <AchievementsCardSkeleton />
+        ) : (
+          achievements !== null && (
+            <AchievementsCard
+              achievements={achievements}
+              onOpen={onShowAchievements}
+            />
+          )
+        )}
       </div>
     ),
-    insights: ready && hasInsights && insights && !isHidden('insights') && (
+    insights: !isHidden('insights') && (
       <div {...holdProps('insights')}>
-        <InsightsCard
-          insights={insights}
-          onShowBestDayInfo={onShowBestDayInfo}
-        />
+        {!insightsReady ? (
+          <InsightsCardSkeleton />
+        ) : (
+          hasInsights &&
+          insights && (
+            <InsightsCard
+              insights={insights}
+              onShowBestDayInfo={onShowBestDayInfo}
+            />
+          )
+        )}
       </div>
     ),
   };

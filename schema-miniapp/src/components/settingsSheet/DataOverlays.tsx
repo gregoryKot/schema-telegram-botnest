@@ -1,7 +1,10 @@
 import { api } from '../../api';
 import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
+// Из общего реестра ключей, не из YSQTestSheet.tsx (компонент теперь ленивый,
+// LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
+// eager) тянуло бы за собой и код теста YSQ.
+import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
 import {
   privacyStorageText,
   PRIVACY_NO_SHARE_TEXT,

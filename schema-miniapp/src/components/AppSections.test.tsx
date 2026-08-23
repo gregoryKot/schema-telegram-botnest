@@ -158,15 +158,21 @@ function baseProps(overrides: Partial<Parameters<typeof AppSections>[0]> = {}) {
   };
 }
 
+// Секции — React.lazy (правка производительности 2026-08-22, LazySections.tsx):
+// даже с замоканным модулем сам динамический import() резолвится асинхронно
+// (микротаска), поэтому первый кадр после render() — Suspense-фолбэк
+// (скелетон), не сама секция. Взаимодействие с секцией — через
+// screen.findByText (ждёт, пока лениво загруженный компонент подключится),
+// а не screen.getByText.
 describe('AppSections — маршрутизация по section', () => {
   it.each([
     ['today', 'TodaySection'],
     ['schemas', 'SchemasSection'],
     ['help', 'HelpSection'],
     ['profile', 'ProfileSection'],
-  ] as const)('section=%s рендерит только %s', (section, expected) => {
+  ] as const)('section=%s рендерит только %s', async (section, expected) => {
     render(<AppSections {...baseProps({ section })} />);
-    expect(screen.getByText(expected)).toBeTruthy();
+    expect(await screen.findByText(expected)).toBeTruthy();
     for (const other of [
       'TodaySection',
       'SchemasSection',
@@ -191,18 +197,18 @@ describe('AppSections — колбэки TodaySection', () => {
     ['today-open-tracker-history', 'tracker', { trackerTab: 'history' }],
     ['today-open-diaries', 'diaries', undefined],
     ['today-open-wheel', 'childhoodWheel', undefined],
-  ] as const)('%s → open(%s, %j)', (btn, key, payload) => {
+  ] as const)('%s → open(%s, %j)', async (btn, key, payload) => {
     const open = vi.fn();
     render(<AppSections {...baseProps({ sheets: makeSheets(open) })} />);
-    fireEvent.click(screen.getByText(btn));
+    fireEvent.click(await screen.findByText(btn));
     if (payload === undefined) expect(open).toHaveBeenCalledWith(key);
     else expect(open).toHaveBeenCalledWith(key, payload);
   });
 
-  it('onOpenSchema прокидывает opts.startTest/tab/highlight в schemaInfo-пейлоад', () => {
+  it('onOpenSchema прокидывает opts.startTest/tab/highlight в schemaInfo-пейлоад', async () => {
     const open = vi.fn();
     render(<AppSections {...baseProps({ sheets: makeSheets(open) })} />);
-    fireEvent.click(screen.getByText('today-open-schema'));
+    fireEvent.click(await screen.findByText('today-open-schema'));
     expect(open).toHaveBeenCalledWith('schemaInfo', {
       schemaAutoStartTest: true,
       schemaInitialTab: 'modes',
@@ -210,27 +216,27 @@ describe('AppSections — колбэки TodaySection', () => {
     });
   });
 
-  it('onOpenTherapistCabinet — переключает вид кабинета и режим терапевта', () => {
+  it('onOpenTherapistCabinet — переключает вид кабинета и режим терапевта', async () => {
     const setCabinetView = vi.fn();
     const switchTherapistMode = vi.fn();
     render(
       <AppSections {...baseProps({ setCabinetView, switchTherapistMode })} />,
     );
-    fireEvent.click(screen.getByText('today-open-cabinet'));
+    fireEvent.click(await screen.findByText('today-open-cabinet'));
     expect(setCabinetView).toHaveBeenCalledWith('list');
     expect(switchTherapistMode).toHaveBeenCalledWith(true);
   });
 });
 
 describe('AppSections — колбэки SchemasSection/HelpSection/ProfileSection', () => {
-  it('SchemasSection: onOpenSchema/onOpenChildhoodWheel/onOpenDiaries', () => {
+  it('SchemasSection: onOpenSchema/onOpenChildhoodWheel/onOpenDiaries', async () => {
     const open = vi.fn();
     render(
       <AppSections
         {...baseProps({ section: 'schemas', sheets: makeSheets(open) })}
       />,
     );
-    fireEvent.click(screen.getByText('schemas-open-schema'));
+    fireEvent.click(await screen.findByText('schemas-open-schema'));
     fireEvent.click(screen.getByText('schemas-open-wheel'));
     fireEvent.click(screen.getByText('schemas-open-diaries'));
     expect(open).toHaveBeenCalledWith('schemaInfo', {
@@ -256,7 +262,7 @@ describe('AppSections — колбэки SchemasSection/HelpSection/ProfileSecti
         })}
       />,
     );
-    fireEvent.click(screen.getByText('help-open-wheel'));
+    fireEvent.click(await screen.findByText('help-open-wheel'));
     expect(open).toHaveBeenCalledWith('childhoodWheel');
     fireEvent.click(screen.getByText('help-open-practices'));
     expect(open).toHaveBeenCalledWith('practices');
@@ -274,14 +280,14 @@ describe('AppSections — колбэки SchemasSection/HelpSection/ProfileSecti
     expect(setHelpTasksKey).toHaveBeenCalled();
   });
 
-  it('ProfileSection: onOpenSettings/onOpenTracker', () => {
+  it('ProfileSection: onOpenSettings/onOpenTracker', async () => {
     const open = vi.fn();
     render(
       <AppSections
         {...baseProps({ section: 'profile', sheets: makeSheets(open) })}
       />,
     );
-    fireEvent.click(screen.getByText('profile-open-settings'));
+    fireEvent.click(await screen.findByText('profile-open-settings'));
     expect(open).toHaveBeenCalledWith('settings');
     fireEvent.click(screen.getByText('profile-open-tracker'));
     expect(open).toHaveBeenCalledWith('trackerOverlay', {

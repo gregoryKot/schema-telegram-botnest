@@ -71,9 +71,27 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     expect(screen.getByRole('button', { name: /Посмотреть результат/ })).toBeTruthy();
   });
 
-  it('ошибка сохранения не блокирует переход к результату (best-effort, как в LetterEx/SafePlaceEx)', async () => {
+  // Раньше ошибка сохранения молча игнорировалась («best-effort»), и экран
+  // всё равно переходил к результату — тот же экран-тупик, что нашли в
+  // FlashcardEx (аудит 2026-08-22, находка №2): человек уходит с уверенностью,
+  // что колесо сохранено, а на деле запрос не прошёл. useSavingAction теперь
+  // держит на экране слайдеров и показывает сообщение об ошибке.
+  it('ошибка сохранения показывает сообщение и НЕ переходит к результату', async () => {
     mockApi.saveChildhoodRatings.mockRejectedValue(new Error('offline'));
+    const onSaved = vi.fn();
+    renderEx(onSaved);
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/Среднее 5\/10/)).toBeNull();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('после ошибки повторное нажатие с рабочей сетью успешно сохраняет (retry)', async () => {
+    mockApi.saveChildhoodRatings.mockRejectedValueOnce(new Error('offline'));
     renderEx();
+    const btn = screen.getByRole('button', { name: /Посмотреть результат/ });
+    fireEvent.click(btn);
+    await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
   });

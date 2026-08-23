@@ -1,5 +1,10 @@
 import { DOW, TODAY_DOW_IDX } from './constants';
 
+// Отбивка шапки и шаг недельных полос — их повторяет скелетон карточки
+// (ProfileCardSkeletons), поэтому число одно на обоих, а не скопировано.
+export const STREAK_HEAD_GAP = 18;
+export const STREAK_BAR_GAP = 5;
+
 interface StreakCardProps {
   currentStreak: number;
   longestStreak: number;
@@ -28,7 +33,7 @@ export function StreakCard({
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          marginBottom: 18,
+          marginBottom: STREAK_HEAD_GAP,
         }}
       >
         <div
@@ -134,7 +139,7 @@ export function StreakCard({
 
       {/* Week bars */}
       {weekDots.length > 0 && (
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: 'flex', gap: STREAK_BAR_GAP }}>
           {weekDots.map((done, i) => {
             const isToday = i === TODAY_DOW_IDX;
             return (
@@ -145,7 +150,7 @@ export function StreakCard({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: STREAK_BAR_GAP,
                 }}
               >
                 <div

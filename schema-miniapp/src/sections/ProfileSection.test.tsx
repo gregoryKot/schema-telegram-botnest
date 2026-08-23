@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-// ProfileSection — экран «Профиль» (0% покрытия): скелетон ПО ФОРМЕ карточек
-// на время четырёх параллельных загрузок (правило «скелетоны по форме
-// контента»), затем карточки рисуются только когда за ними стоят реальные
-// данные (стрик/ачивки/инсайты — не заглушка на чистом аккаунте). Тяжёлые
-// листы мокаем, дочерние карточки (свои тесты) оставляем реальными.
+// ProfileSection — экран «Я»: прогрессивный рендер (замер 2026-08-22,
+// профиль 3G+CPU×4). Раньше streak/achievements/insights/history(112)
+// грузились одним Promise.all с единым `ready` — самый долгий ответ
+// (history) держал пустым весь экран (1321мс). Теперь у каждой карточки
+// свой скелетон ПО ФОРМЕ контента, и она рисуется, как только пришли именно
+// её данные — не дожидаясь соседей. Тяжёлая history(112) для тепловой карты
+// вынесена в отдельный ленивый HeatmapCard (свой тест).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -24,9 +26,9 @@ vi.mock('../api', () => ({
     getInsights: vi.fn(),
     history: vi.fn(),
     trackEvent: vi.fn(),
-    // Редизайн вкладки «Я»: useAboutMe + WarmWordsCard грузят это отдельно
-    // от streak/achievements/insights/history — без моков здесь undefined()
-    // упал бы синхронно внутри useEffect.
+    // Редизайн вкладки «Я»: useAboutMe грузит это отдельно от
+    // streak/achievements/insights (useProfileStats) — без моков здесь
+    // undefined() упал бы синхронно внутри useEffect.
     getProfile: vi.fn(),
     getYsqHistory: vi.fn(),
     getSchemaDiary: vi.fn(),
@@ -136,29 +138,94 @@ function baseProps() {
   return { onOpenSettings: vi.fn(), onOpenPatterns: vi.fn() };
 }
 
+// «Мой портрет» (карточка useAboutMe) — самый тяжёлый узел загрузки: у него
+// шесть параллельных запросов (getProfile/getYsqHistory/getSchemaDiary/
+// getModeDiary/getModeNotes/getPhraseChecks) против одиночных цепочек
+// streak/achievements/insights, поэтому он settle-ится последним или
+// одновременно с ними — ждать его достаточно, чтобы остальные тоже осели.
 async function renderReady(
   props: Partial<Parameters<typeof ProfileSection>[0]> = {},
 ) {
   const utils = render(<ProfileSection {...baseProps()} {...props} />);
-  await screen.findByText(/Мой путь/);
+  await screen.findByText('Мой портрет');
   return utils;
 }
 
-describe('ProfileSection — скелетон на время загрузки (по форме контента)', () => {
-  it('пока getStreak/getAchievements/getInsights/history не ответили — виден скелетон, не карточки', () => {
+describe('ProfileSection — прогрессивный рендер (каждая карточка ждёт только свои данные)', () => {
+  it('пока getStreak не ответил — виден скелетон стрика, но карточка ачивок с реальными данными уже показана', async () => {
     mockApi.getStreak.mockReturnValue(new Promise(() => {}));
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+    ]);
     render(<ProfileSection {...baseProps()} />);
-    // «Мой путь» рендерится только после ready=true.
-    expect(screen.queryByText(/Мой путь/)).toBeNull();
+
+    await screen.findByTestId('streak-skeleton');
+    expect(screen.queryByText('всего')).toBeNull();
+    await waitFor(() => expect(screen.getByText(/Достижени/)).toBeTruthy());
+  });
+
+  it('все три запроса (streak/achievements/insights) уходят одной волной — без ожидания друг друга', () => {
+    render(<ProfileSection {...baseProps()} />);
+    expect(mockApi.getStreak).toHaveBeenCalledTimes(1);
+    expect(mockApi.getAchievements).toHaveBeenCalledTimes(1);
+    expect(mockApi.getInsights).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Мой путь» не зависит ни от одного запроса — виден сразу, до разрешения любого промиса', () => {
+    mockApi.getStreak.mockReturnValue(new Promise(() => {}));
+    mockApi.getAchievements.mockReturnValue(new Promise(() => {}));
+    mockApi.getInsights.mockReturnValue(new Promise(() => {}));
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
+    render(<ProfileSection {...baseProps()} />);
+    expect(screen.getByText(/Мой путь/)).toBeTruthy();
+  });
+
+  it('тепловая карта не блокирует первый экран: history() зависает, но стрик и ачивки всё равно отрисовываются', async () => {
+    mockApi.history.mockReturnValue(new Promise(() => {}));
+    mockApi.getStreak.mockResolvedValue({
+      currentStreak: 3,
+      longestStreak: 3,
+      totalDays: 5,
+      todayDone: true,
+      weekDots: [],
+    });
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+    ]);
+    await renderReady();
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Достижени/)).toBeTruthy());
+  });
+
+  it('ошибка одной карточки (achievements) не роняет соседние — стрик и инсайты рисуются как обычно', async () => {
+    mockApi.getAchievements.mockRejectedValue(new Error('network'));
+    mockApi.getStreak.mockResolvedValue({
+      currentStreak: 2,
+      longestStreak: 4,
+      totalDays: 6,
+      todayDone: true,
+      weekDots: [],
+    });
+    await renderReady();
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    expect(screen.queryByText(/Достижени/)).toBeNull();
+  });
+
+  it('getModeNotes/getPhraseChecks уходят вместе с первой волной aboutMe, а не второй (regression: замер 2026-08-22, +621мс на 3G)', () => {
+    render(<ProfileSection {...baseProps()} />);
+    expect(mockApi.getModeNotes).toHaveBeenCalledTimes(1);
+    expect(mockApi.getPhraseChecks).toHaveBeenCalledTimes(1);
+    // Не дублируем ради тёплых слов — тот же modeEntries, что и для портрета.
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('ProfileSection — карточки рисуются только из реальных данных', () => {
   it('на чистом аккаунте (нулевой стрик, без ачивок/инсайтов) — карточки стрика/инсайтов не показаны', async () => {
     await renderReady();
-    // StreakCard рисуется только когда streak !== null — но на чистом
-    // аккаунте это пустой объект стрика; проверяем, что «выдуманных» цифр
-    // инсайтов точно нет (hasInsights требует реальный avg).
+    await waitFor(() =>
+      expect(screen.queryByTestId('streak-skeleton')).toBeNull(),
+    );
     expect(screen.queryByText(/растёт/)).toBeNull();
   });
 
@@ -168,11 +235,6 @@ describe('ProfileSection — карточки рисуются только из
     ]);
     await renderReady();
     await waitFor(() => expect(screen.getByText(/Достижени/)).toBeTruthy());
-  });
-
-  it('activeDates строится из реального history(), heatmap не рисуется без записей', async () => {
-    await renderReady();
-    expect(mockApi.history).toHaveBeenCalledWith(112);
   });
 });
 
@@ -207,7 +269,7 @@ describe('ProfileSection — детали достижения из общего
 });
 
 describe('ProfileSection — обновление по refreshKey', () => {
-  it('смена refreshKey перезапрашивает все четыре источника заново', async () => {
+  it('смена refreshKey перезапрашивает все источники заново', async () => {
     const { rerender } = await renderReady({ refreshKey: 1 });
     mockApi.getStreak.mockClear();
     rerender(<ProfileSection {...baseProps()} refreshKey={2} />);
@@ -245,6 +307,7 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
       { id: 'first_day', earned: true },
     ]);
     await renderReady();
+    expect(screen.queryByTestId('streak-skeleton')).toBeNull();
     expect(screen.queryByText('всего')).toBeNull();
     expect(await screen.findByText(/Достижени/)).toBeTruthy();
   });
@@ -267,6 +330,7 @@ describe('ProfileSection — скрываемые блоки (useScreenBlocks)',
     expect(localStorage.getItem('screen_hidden_profile')).toBe('["streak"]');
     fireEvent.click(screen.getByText('Готово'));
     expect(screen.queryByText('всего')).toBeNull();
+    expect(screen.queryByTestId('streak-skeleton')).toBeNull();
   });
 
   it('долгое нажатие на карточку открывает лист с via=longpress', async () => {
@@ -325,7 +389,10 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
     mockApi.getAchievements.mockResolvedValue([
       { id: 'first_day', earned: true },
     ]);
-    const { container } = await renderReady();
+    await renderReady();
+    await waitFor(() => expect(screen.getByText(/Достижени/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    const container = screen.getByText('всего').closest('.section-pad')!;
     const texts = Array.from(container.querySelectorAll('.card')).map(
       (c) => c.textContent,
     );
@@ -337,7 +404,7 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
   });
 
   it('ArrowUp на ручке строки листа поднимает «Серию дней»: шлёт screen_block_move, персистит и переставляет карточки', async () => {
-    const { container } = await renderReady();
+    await renderReady();
     fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
     await screen.findByText('Настроить экран');
     // Порядок листа по умолчанию (SCREEN_BLOCK_ORDER.profile после переезда
@@ -364,6 +431,8 @@ describe('ProfileSection — порядок карточек (useScreenBlocks/us
       ]),
     );
     fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(screen.getByText('всего')).toBeTruthy());
+    const container = screen.getByText('всего').closest('.section-pad')!;
     const texts = Array.from(container.querySelectorAll('.card')).map(
       (c) => c.textContent,
     );

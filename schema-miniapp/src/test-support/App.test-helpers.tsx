@@ -196,8 +196,25 @@ vi.mock('../components/AppOverlays', () => ({
   ),
 }));
 
-vi.mock('../components/TherapistClientSheet', () => ({
-  TherapistClientSheet: (p: ComponentProps<typeof TherapistClientSheetT>) => (
+// App.tsx зовёт preloadOtherSections в простое (правка производительности
+// 2026-08-22) — она сама по себе дёргает РЕАЛЬНЫЙ dynamic import() секций
+// (sectionLoaders.ts не мокается через AppSections-заглушку выше, это
+// отдельный модуль). Логика самой предзагрузки уже покрыта отдельно
+// (utils/preloadSections.test.ts) — здесь она просто мешает: async import()
+// иногда резолвится уже ПОСЛЕ того, как тест завершился и jsdom-окружение
+// снесено (EnvironmentTeardownError).
+vi.mock('../utils/preloadSections', () => ({
+  preloadOtherSections: vi.fn(),
+}));
+
+// App.tsx рендерит ленивую обёртку (LazyTherapistClientSheet.tsx,
+// React.lazy+Suspense — правка производительности 2026-08-22), но
+// подставная типизация берётся у настоящего компонента: сигнатура пропов
+// обязана совпадать с прод-кодом (см. комментарий в шапке файла).
+vi.mock('../components/LazyTherapistClientSheet', () => ({
+  LazyTherapistClientSheet: (
+    p: ComponentProps<typeof TherapistClientSheetT>,
+  ) => (
     <div data-testid="therapist-client-sheet" data-view={p.view}>
       <button data-testid="therapist-client-sheet-close" onClick={p.onClose}>
         close

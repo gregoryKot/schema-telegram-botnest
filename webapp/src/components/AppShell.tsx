@@ -9,20 +9,20 @@ import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
+import { ScreenSkeleton } from './Skeleton';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
+import { AppOverlays } from './appShell/AppOverlays';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { MobileAppBanner } from './MobileAppBanner';
 
 // – always-needed small helpers (no heavy data deps) –
-import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
-import { TaskCreateSheet } from './TaskCreateSheet';
 
 // – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
 const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => ({ default: m.TodaySection })));
@@ -32,19 +32,14 @@ const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m =>
 const PracticeSection = lazy(() => import('../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
 
 // – lazy: heavy overlays –
+// SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
+// TherapistPrivacyDisclaimer переехали в appShell/AppOverlays.tsx (правило
+// №10 — файл был на потолке 300 строк), там же их lazy()-объявления.
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
-const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ default: m.SettingsSheet })));
-const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({ default: m.PracticesScreen })));
-const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
-const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
-const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
-const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
-
-const LazyLoader = () => <Loader minHeight="100dvh" />;
 
 import type { StreakData } from '../api';
 
@@ -398,7 +393,17 @@ export function AppShell() {
 
         {/* Canvas */}
         <div className="canvas">
-        <Suspense fallback={<LazyLoader />}>
+        {/*
+          Аудит 2026-08-22: раньше ОДИН Suspense накрывал и основной контент
+          (разделы/кабинет терапевта), и ВСЕ ленивые шторки поверх него — если
+          шторка ещё качала свой чанк, React прятал под фолбэк весь общий
+          Suspense-boundary целиком, то есть уже отрисованный раздел под ней.
+          Ниже — своя Suspense-граница на каждую независимую сущность:
+          основной контент получает силуэт экрана (он и правда заменяется
+          целиком), а шторки поверх — fallback={null}, потому что контент под
+          ними никуда не девается, пока грузится чанк шторки.
+        */}
+        <Suspense fallback={<ScreenSkeleton />}>
 
         {/* Therapist mode */}
         {therapistMode && location.pathname === '/cabinet/today' && (
@@ -484,22 +489,28 @@ export function AppShell() {
           </div>
         )}
 
+        </Suspense>
+        {/* Конец Suspense-границы основного контента — дальше только шторки
+            поверх него, у каждой своя граница (см. комментарий выше). */}
+
         {/* ── TrackerOverlay ── */}
         {ov.showTrackerOverlay && (
-          <TrackerOverlay
-            needs={needs}
-            ratings={ratings}
-            saved={saved}
-            isOffline={isOffline}
-            onChange={handleChange}
-            onSaved={handleSaved}
-            onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
-            initialNeedId={ov.trackerNeedId}
-            onOpenNote={() => ov.setShowTodayNote(true)}
-            onOpenGoal={() => ov.setShowTrackerGoal(true)}
-            onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
-            yesterdayRatings={yesterdayRatings}
-          />
+          <Suspense fallback={null}>
+            <TrackerOverlay
+              needs={needs}
+              ratings={ratings}
+              saved={saved}
+              isOffline={isOffline}
+              onChange={handleChange}
+              onSaved={handleSaved}
+              onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
+              initialNeedId={ov.trackerNeedId}
+              onOpenNote={() => ov.setShowTodayNote(true)}
+              onOpenGoal={() => ov.setShowTrackerGoal(true)}
+              onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
+              yesterdayRatings={yesterdayRatings}
+            />
+          </Suspense>
         )}
 
         {/* ── History overlay ── */}
@@ -531,83 +542,32 @@ export function AppShell() {
           </Suspense>
         )}
 
-        {/* ── Fullscreen overlays ── */}
-        {ov.showSettings && (
-          <SettingsSheet
-            onClose={() => ov.setShowSettings(false)}
-            userRole={userRole}
-            displayName={displayName}
-            onNameChanged={setDisplayName}
-            onOpenTherapistCabinet={() => { ov.setShowSettings(false); navigate('/cabinet'); }}
-            therapistMode={therapistMode}
-            onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
-            onResignTherapist={async () => {
-              await api.resignTherapist();
-              setUserRole('CLIENT');
-              localStorage.setItem('therapist_mode', '0');
-              ov.setShowSettings(false);
-              navigate('/today');
-            }}
-          />
-        )}
-        {ov.showPractices && (
-          <PracticesScreen
-            onClose={() => ov.setShowPractices(false)}
-            onOpenTracker={() => { ov.setShowPractices(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-          />
-        )}
-        {ov.showPlans && (
-          <PlansScreen
-            onClose={() => ov.setShowPlans(false)}
-            onOpenTracker={() => { ov.setShowPlans(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-          />
-        )}
-        {ov.showSchemaInfo && (
-          <SchemaInfoSheet
-            onClose={() => { ov.setShowSchemaInfo(false); ov.setSchemaAutoStartTest(false); ov.setSchemaHighlight(undefined); }}
-            ratings={ratings}
-            autoStartTest={ov.schemaAutoStartTest}
-            initialTab={ov.schemaInitialTab}
-            highlightSchema={ov.schemaHighlight}
-          />
-        )}
-        {ov.showChildhoodWheel && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <ChildhoodWheelEx
-              onBack={() => ov.setShowChildhoodWheel(false)}
-              onSaved={(r) => setChildhoodRatings(r)}
-            />
-          </div>
-        )}
-        {ov.showTodayNote && (
-          <NoteSheet date={TODAY_DATE} onClose={() => {
-            ov.setShowTodayNote(false);
-            if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
-          }} />
-        )}
-        {ov.showTrackerGoal && (
-          <TaskCreateSheet
-            defaultType="tracker_streak"
-            onCreated={() => ov.setShowTrackerGoal(false)}
-            onClose={() => ov.setShowTrackerGoal(false)}
-          />
-        )}
-        {ov.showTherapistDisclaimer && (
-          <TherapistPrivacyDisclaimer onDone={() => {
-            // Persist on ANY close path (button OR browser-back), otherwise a
-            // back-button dismissal leaves the flag unset and the disclaimer
-            // re-shows on every entry into the therapist cabinet.
-            localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
-            ov.setShowTherapistDisclaimer(false);
-          }} />
-        )}
+        {/* ── Полноэкранные шторки (настройки/практики/планы/справочник схем/
+            колесо детства/заметка/цель/дисклеймер кабинета) — вынесены в
+            AppOverlays.tsx (правило №10), каждая со своей Suspense-границей
+            (fallback={null} — контент под ней уже смонтирован отдельно
+            выше, аудит 2026-08-22, находка №1). */}
+        <AppOverlays
+          ov={ov}
+          userRole={userRole}
+          setUserRole={setUserRole}
+          displayName={displayName}
+          setDisplayName={setDisplayName}
+          therapistMode={therapistMode}
+          switchTherapistMode={switchTherapistMode}
+          navigate={navigate}
+          ratings={ratings}
+          setChildhoodRatings={setChildhoodRatings}
+          childhoodWheelPending={childhoodWheelPending}
+          setChildhoodWheelPending={setChildhoodWheelPending}
+          todayDate={TODAY_DATE}
+        />
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
           <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); ov.setShowTodayNote(true); }} />
         )}
 
-        </Suspense>
         </div>{/* end canvas */}
       </div>{/* end main */}
 
