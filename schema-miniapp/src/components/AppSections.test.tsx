@@ -13,6 +13,7 @@ import {
   cleanup,
   waitFor,
 } from '@testing-library/react';
+import type { Section } from './BottomNav';
 import { AppSections } from './AppSections';
 import type { UseSheetsReturn } from '../hooks/useSheets';
 import { api } from '../api';
@@ -132,6 +133,7 @@ function makeSheets(open = vi.fn()): UseSheetsReturn {
 
 function baseProps(overrides: Partial<Parameters<typeof AppSections>[0]> = {}) {
   return {
+    prerenderedSections: new Set<Section>(),
     therapistMode: false,
     section: 'today' as const,
     needs: [],
@@ -293,5 +295,28 @@ describe('AppSections — колбэки SchemasSection/HelpSection/ProfileSecti
     expect(open).toHaveBeenCalledWith('trackerOverlay', {
       trackerNeedId: null,
     });
+  });
+});
+
+// Третий ярус прогрева (usePrerenderSections): вкладка из prerenderedSections
+// монтируется СКРЫТОЙ до первого тапа — первый тап становится переключением
+// видимости, а не тяжёлым первым коммитом («ничего не поменялось» 2026-08-24:
+// keep-mounted ускорял только возвраты, болели первые открытия).
+describe('prerender: вкладка собирается скрытой до первого тапа', () => {
+  it('секция из prerenderedSections смонтирована, но скрыта; активная — видима', async () => {
+    render(
+      <AppSections
+        {...baseProps({
+          section: 'today',
+          prerenderedSections: new Set<Section>(['help']),
+        })}
+      />,
+    );
+    // Ленивые обёртки — ждём подключения чанков (см. комментарий выше).
+    const help = await screen.findByText('HelpSection');
+    expect(help.closest('[hidden]')?.hidden).toBe(true);
+    expect(await screen.findByText('TodaySection')).toBeTruthy();
+    // Не предзаказанная и не активная — не смонтирована вовсе.
+    expect(screen.queryByText('ProfileSection')).toBeNull();
   });
 });

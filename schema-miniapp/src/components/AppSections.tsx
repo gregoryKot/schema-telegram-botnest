@@ -13,6 +13,9 @@ import { UseSheetsReturn } from '../hooks/useSheets';
 import { KeepMountedSection } from './KeepMountedSection';
 
 interface Props {
+  /** Вкладки, собранные заранее в простое (usePrerenderSections) — их
+   *  KeepMountedSection монтирует скрытыми до первого тапа. */
+  prerenderedSections: Set<Section>;
   therapistMode: boolean;
   section: Section;
   needs: Need[];
@@ -45,6 +48,7 @@ interface Props {
 // перемонтирование стоило ~100мс мёртвых + мигание + тяжёлый коммит на
 // каждом переключении; см. комментарий в KeepMountedSection.tsx).
 export function AppSections({
+  prerenderedSections,
   therapistMode,
   section,
   needs,
@@ -75,7 +79,10 @@ export function AppSections({
   }, [section]);
   return (
     <>
-      <KeepMountedSection active={!therapistMode && section === 'today'}>
+      <KeepMountedSection
+        active={!therapistMode && section === 'today'}
+        prerender={prerenderedSections.has('today')}
+      >
         {
           <ErrorBoundary section="Сегодня" key="today-boundary">
             <TodaySection
@@ -113,7 +120,10 @@ export function AppSections({
         }
       </KeepMountedSection>
 
-      <KeepMountedSection active={!therapistMode && section === 'schemas'}>
+      <KeepMountedSection
+        active={!therapistMode && section === 'schemas'}
+        prerender={prerenderedSections.has('schemas')}
+      >
         {
           <ErrorBoundary section="Паттерны" key="schemas-boundary">
             <SchemasSection
@@ -133,7 +143,10 @@ export function AppSections({
         }
       </KeepMountedSection>
 
-      <KeepMountedSection active={!therapistMode && section === 'help'}>
+      <KeepMountedSection
+        active={!therapistMode && section === 'help'}
+        prerender={prerenderedSections.has('help')}
+      >
         {
           <ErrorBoundary section="Помощь" key="help-boundary">
             <HelpSection
@@ -165,7 +178,10 @@ export function AppSections({
         }
       </KeepMountedSection>
 
-      <KeepMountedSection active={!therapistMode && section === 'profile'}>
+      <KeepMountedSection
+        active={!therapistMode && section === 'profile'}
+        prerender={prerenderedSections.has('profile')}
+      >
         {
           <ErrorBoundary section="Я" key="profile-boundary">
             <ProfileSection

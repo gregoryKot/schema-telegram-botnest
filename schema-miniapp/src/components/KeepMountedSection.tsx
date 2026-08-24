@@ -14,15 +14,23 @@ import { useRef, type ReactNode } from 'react';
 // Цена: эффекты скрытой вкладки продолжают жить (refreshKey-рефетчи проходят
 // фоном — данные свежи к возврату), а ленивые по вьюпорту куски (HeatmapCard
 // через IntersectionObserver) в display:none не грузятся — и не должны.
+// prerender=true собирает вкладку скрытой ЗАРАНЕЕ, не дожидаясь первого
+// тапа: стоимость тяжёлого первого коммита платится в простое после старта
+// (usePrerenderSections), и даже ПЕРВЫЙ тап по вкладке становится
+// переключением видимости. Без этого «ничего не поменялось» (владелец,
+// 2026-08-24): keep-mounted ускорял только возвраты, а болело именно
+// первое открытие каждой вкладки за сессию.
 export function KeepMountedSection({
   active,
+  prerender = false,
   children,
 }: {
   active: boolean;
+  prerender?: boolean;
   children: ReactNode;
 }) {
   const wasActive = useRef(false);
-  if (active) wasActive.current = true;
+  if (active || prerender) wasActive.current = true;
   if (!wasActive.current) return null;
   return (
     <div style={active ? undefined : { display: 'none' }} hidden={!active}>
