@@ -43,6 +43,13 @@ export function SchemasSection({
     () => initialTab ?? readStoredPatternsTab() ?? 'schemas',
   );
   useEffect(() => writeStoredPatternsTab(tab), [tab]);
+  // Явный переход «открой вкладку X» (карточка портрета в «Я») теперь
+  // приходит к уже смонтированной секции (KeepMountedSection) — раньше
+  // initialTab применялся только инициализатором useState при
+  // перемонтировании. App гасит сигнал в null сразу после доставки.
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const {
     manualSchemaIds,
     myModeIds,
