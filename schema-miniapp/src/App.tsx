@@ -145,10 +145,19 @@ export default function App() {
   );
   // Роль нужна внутри switchTherapistMode (который объявлен раньше setUserRole).
   const userRoleRef = useRef<'CLIENT' | 'THERAPIST'>('CLIENT');
+  // true после первого ручного переключения режима — реконсиляция ниже
+  // тогда не смеет перетирать выбор серверным флагом.
+  const userToggledModeRef = useRef(false);
   // persist=true — запомнить режим на сервере (localStorage в Telegram WebView
   // стирается). Сервер принимает флаг только у THERAPIST — на клиенте лишний
   // 403-запрос не шлём.
   const switchTherapistMode = (on: boolean, persist = true) => {
+    // Ручной выбор сильнее поздней реконсиляции из серверного флага: без
+    // этого терапевт, включивший режим в первые секунды (пока флаги ещё
+    // едут по сети), получал молчаливый откат — поздний эффект ниже
+    // перетирал его клик значением с сервера (реальное падение CI
+    // 2026-08-24, гонка воспроизводима на медленной сети).
+    userToggledModeRef.current = true;
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
     if (persist && userRoleRef.current === 'THERAPIST') {
@@ -176,6 +185,9 @@ export default function App() {
   useEffect(() => {
     if (modeReconciledRef.current || !flagsLoaded || !roleLoaded) return;
     modeReconciledRef.current = true;
+    // Пользователь уже переключил режим руками за время загрузки флагов —
+    // его выбор не перетираем (см. switchTherapistMode выше).
+    if (userToggledModeRef.current) return;
     if (userRoleRef.current === 'THERAPIST') {
       const remembered = serverFlags.therapistMode;
       setTherapistMode(remembered);
