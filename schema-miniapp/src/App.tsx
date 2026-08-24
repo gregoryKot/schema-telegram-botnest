@@ -43,6 +43,7 @@ import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { preloadOtherSections } from './utils/preloadSections';
 import { prefetchOtherSectionsData } from './utils/prefetchSectionData';
+import { usePrerenderSections } from './utils/usePrerenderSections';
 import { preloadDiarySheets } from './components/LazyDiarySheets';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { LoginScreen } from './components/LoginScreen';
@@ -231,6 +232,10 @@ export default function App() {
   // толкался с needs/ratings и чанком TodaySection за канал: замер
   // 2026-08-23, холодный старт 3G 4044 → 4398мс. Idle-колбэк не защищает —
   // он про простой ПРОЦЕССОРА, а узкое место здесь сеть.
+  // Третий ярус прогрева: скрытая сборка чужих вкладок в простое (код и
+  // данные уже тёплые — см. эффект ниже), чтобы и ПЕРВЫЙ тап по вкладке был
+  // переключением видимости, а не тяжёлым коммитом (usePrerenderSections).
+  const prerenderedSections = usePrerenderSections(!loading, section);
   const prefetchStarted = useRef(false);
   useEffect(() => {
     if (loading || prefetchStarted.current) return;
@@ -609,6 +614,7 @@ export default function App() {
 
       {/* ── Main sections (hidden when therapistMode) ── */}
       <AppSections
+        prerenderedSections={prerenderedSections}
         therapistMode={therapistMode}
         section={section}
         needs={needs}
