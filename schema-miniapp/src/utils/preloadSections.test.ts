@@ -56,15 +56,15 @@ describe('preloadOtherSections — без requestIdleCallback (фолбэк setT
     preloadOtherSections('today');
     expect(loaders.schemas).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(loaders.schemas).toHaveBeenCalledTimes(1);
     expect(loaders.help).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(loaders.help).toHaveBeenCalledTimes(1);
     expect(loaders.profile).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(loaders.profile).toHaveBeenCalledTimes(1);
   });
 });

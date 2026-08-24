@@ -80,27 +80,27 @@ describe('prefetchOtherSectionsData — план и приоритет', () => {
     expect(apiMock.getProfile).not.toHaveBeenCalled();
 
     // Виток 1 — «Паттерны» (schemas): getProfile/getSchemaDiary/getModeDiary.
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(apiMock.getProfile).toHaveBeenCalledTimes(1);
     expect(apiMock.getSchemaDiary).toHaveBeenCalledTimes(1);
     expect(apiMock.getModeDiary).toHaveBeenCalledTimes(1);
     expect(apiMock.getTasks).not.toHaveBeenCalled();
 
     // Виток 2 — «Помощь»: getTasks/getTaskHistory.
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(apiMock.getTasks).toHaveBeenCalledTimes(1);
     expect(apiMock.getTaskHistory).toHaveBeenCalledTimes(1);
     expect(apiMock.getStreak).not.toHaveBeenCalled();
 
     // Виток 3 — «Я»: getStreak/getAchievements/getInsights.
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(apiMock.getStreak).toHaveBeenCalledTimes(1);
     expect(apiMock.getAchievements).toHaveBeenCalledTimes(1);
     expect(apiMock.getInsights).toHaveBeenCalledTimes(1);
     expect(apiMock.getPractices).not.toHaveBeenCalled();
 
     // Последний шаг — счётчик практик «Помощи» (не привязан к вкладке).
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(apiMock.getPractices).toHaveBeenCalledTimes(5);
   });
 
@@ -110,15 +110,15 @@ describe('prefetchOtherSectionsData — план и приоритет', () => {
     expect(rest).toEqual(['today', 'schemas', 'profile']);
 
     // «Сегодня» — без прогрева, сразу следующий виток («Паттерны»).
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(600);
     expect(apiMock.getProfile).toHaveBeenCalledTimes(1);
     expect(apiMock.getTasks).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200); // «Я»
+    await vi.advanceTimersByTimeAsync(600); // «Я»
     expect(apiMock.getStreak).toHaveBeenCalledTimes(1);
     expect(apiMock.getTasks).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200); // счётчик практик — последний шаг
+    await vi.advanceTimersByTimeAsync(600); // счётчик практик — последний шаг
     expect(apiMock.getPractices).toHaveBeenCalledTimes(5);
   });
 
@@ -145,7 +145,7 @@ describe('prefetchOtherSectionsData — счётчик практик «Помо
     vi.useFakeTimers();
     const onCount = vi.fn();
     prefetchOtherSectionsData('today', onCount);
-    await vi.advanceTimersByTimeAsync(800);
+    await vi.advanceTimersByTimeAsync(3000);
     expect(onCount).toHaveBeenCalledWith(2);
   });
 
@@ -154,7 +154,7 @@ describe('prefetchOtherSectionsData — счётчик практик «Помо
     apiMock.getPractices.mockRejectedValueOnce(new Error('offline'));
     const onCount = vi.fn();
     prefetchOtherSectionsData('today', onCount);
-    await vi.advanceTimersByTimeAsync(800);
+    await vi.advanceTimersByTimeAsync(3000);
     expect(onCount).toHaveBeenCalledWith(0);
   });
 
@@ -163,11 +163,11 @@ describe('prefetchOtherSectionsData — счётчик практик «Помо
     apiMock.getSchemaDiary.mockRejectedValueOnce(new Error('network'));
     const onCount = vi.fn();
     prefetchOtherSectionsData('today', onCount);
-    await vi.advanceTimersByTimeAsync(200); // schemas (одна из них падает)
-    await vi.advanceTimersByTimeAsync(200); // help — обязан всё равно стартовать
+    await vi.advanceTimersByTimeAsync(600); // schemas (одна из них падает)
+    await vi.advanceTimersByTimeAsync(600); // help — обязан всё равно стартовать
     expect(apiMock.getTasks).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(200); // profile
-    await vi.advanceTimersByTimeAsync(200); // счётчик практик
+    await vi.advanceTimersByTimeAsync(600); // profile
+    await vi.advanceTimersByTimeAsync(600); // счётчик практик
     expect(onCount).toHaveBeenCalledWith(2);
   });
 });

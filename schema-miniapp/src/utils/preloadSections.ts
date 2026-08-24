@@ -4,15 +4,20 @@ import { SECTION_LOADERS } from './sectionLoaders';
 const ALL_SECTIONS: Section[] = ['today', 'schemas', 'help', 'profile'];
 
 /** requestIdleCallback с фолбэком на setTimeout — WebView Telegram/MAX
- * (как и Safari) его не реализует, хотя в типах DOM метод объявлен как
- * гарантированный. 200 мс — не встаём в очередь сразу за первым рендером,
- * но и не тянем резину. Экспортирован — та же схема нужна прогреву данных
- * чужих вкладок, prefetchSectionData.ts (не плодить вторую копию). */
+ * (как и весь WebKit/iOS) его не реализует, хотя в типах DOM метод объявлен
+ * как гарантированный. Фолбэк 600 мс, не 200: на iOS «простоя» браузер не
+ * сообщает, и при 200 мс вся цепочка догрузок (парс чанков — задачи по
+ * 100-300 мс на телефоне) стреляла прямо в разгар старта — тапы первую
+ * минуту ждали за этими задачами (жалоба владельца 2026-08-23). 600 мс
+ * растягивают цепочку за пределы стартового окна; там, где rIC есть
+ * (Chrome/Android), поведение прежнее — честный простой.
+ * Экспортирован — та же схема нужна прогреву данных чужих вкладок,
+ * prefetchSectionData.ts (не плодить вторую копию). */
 export function onIdle(cb: () => void): void {
   if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(cb);
   } else {
-    setTimeout(cb, 200);
+    setTimeout(cb, 600);
   }
 }
 
