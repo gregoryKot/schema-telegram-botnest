@@ -66,6 +66,8 @@ export class NotesController {
     return this.notesService.upsertModeNote(uid(req), body.modeId, {
       ...trimFields(body),
       needs: body.needs?.trim(),
+      modeFunction: body.modeFunction?.trim(),
+      needsMet: body.needsMet?.trim(),
     });
   }
 }
