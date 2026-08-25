@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import type { Section } from '../components/BottomNav';
 import { onIdle } from './preloadSections';
 
@@ -35,12 +35,21 @@ export function usePrerenderSections(
     function mountNext(index: number): void {
       if (index >= rest.length) return;
       onIdle(() => {
-        setPrerendered((prev) => {
-          if (prev.has(rest[index])) return prev;
-          const next = new Set(prev);
-          next.add(rest[index]);
-          return next;
-        });
+        // startTransition: сборка скрытой вкладки — НИЗКОПРИОРИТЕТНЫЙ,
+        // ПРЕРЫВАЕМЫЙ рендер. Без него фоновый коммит блокировал главный
+        // поток сотнями миллисекунд, и тап, попавший в эту блокировку,
+        // ждал её целиком («первую минуту ужасно», владелец 2026-08-24:
+        // прогрев переложил работу с тапа в фон, но фон — это и есть
+        // первая минута). React прерывает transition на входе пользователя,
+        // обрабатывает тап и достраивает вкладку после.
+        startTransition(() =>
+          setPrerendered((prev) => {
+            if (prev.has(rest[index])) return prev;
+            const next = new Set(prev);
+            next.add(rest[index]);
+            return next;
+          }),
+        );
         mountNext(index + 1);
       });
     }

@@ -19,7 +19,7 @@
 // без единой смены кадра: старый экран просто висит. useFirstPaintDone ниже
 // разрывает этот коммит: первый кадр — всегда дешёвый скелетон-силуэт (экран
 // меняется мгновенно), тяжёлое дерево монтируется кадром позже.
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, startTransition, Suspense, useEffect, useState } from 'react';
 import type { ComponentProps } from 'react';
 import type { TodaySection as TodaySectionT } from '../sections/TodaySection';
 import type { SchemasSection as SchemasSectionT } from '../sections/SchemasSection';
@@ -36,7 +36,10 @@ function useFirstPaintDone(): boolean {
   useEffect(() => {
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setDone(true));
+      // startTransition: тяжёлое дерево секции строится прерываемо — тап по
+      // другой вкладке во время сборки не ждёт её конца, а скелетон остаётся
+      // на экране до готовности (transition не показывает fallback заново).
+      raf2 = requestAnimationFrame(() => startTransition(() => setDone(true)));
     });
     return () => {
       cancelAnimationFrame(raf1);
