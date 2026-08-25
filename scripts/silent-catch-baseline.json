@@ -2,7 +2,6 @@
   "schema-miniapp/src/apiClient.ts": 1,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
   "schema-miniapp/src/components/therapist/useClientDetail.ts": 1,
-  "schema-miniapp/src/registerServiceWorker.ts": 1,
   "schema-miniapp/src/sections/DiarySection.tsx": 1,
   "schema-miniapp/src/useUserFlags.ts": 3,
   "schema-miniapp/src/utils/homeScreen.ts": 2,
