@@ -1081,7 +1081,7 @@
   "webapp/src/components/modeMapIcons.tsx": 67,
   "webapp/src/components/modeMapLayout.ts": 139,
   "webapp/src/components/ModeMapLegend.tsx": 53,
-  "webapp/src/components/ModeMapNodeEditor.tsx": 620,
+  "webapp/src/components/ModeMapNodeEditor.tsx": 263,
   "webapp/src/components/ModeMapNodes.tsx": 385,
   "webapp/src/components/ModeMapPalette.tsx": 310,
   "webapp/src/components/modeMapRegistry.ts": 20,
