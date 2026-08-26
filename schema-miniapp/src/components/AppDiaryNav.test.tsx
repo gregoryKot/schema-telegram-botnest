@@ -125,10 +125,8 @@ const emptySheets: UseSheetsReturn = {
   close: vi.fn(),
 };
 
-// Ж3 (аудит 2026-08): на «Сегодня» пилюля скрыта (свой CTA, см. описание
-// ниже) — тесты видимости пилюли/нава, которым конкретный экран не важен,
-// используют section='help', чтобы не путать эффект «Сегодня» с остальными.
-// Прямая проверка Ж3 — отдельный describe ниже.
+// Тесты видимости пилюли/нава используют section='help' исторически (при
+// Ж3 «Сегодня» была особым случаем; с 2026-08-25 — нет, см. describe ниже).
 function baseProps(overrides: Partial<UseSheetsReturn> = {}) {
   return {
     sheets: { ...emptySheets, ...overrides },
@@ -170,14 +168,11 @@ describe('AppDiaryNav — видимость пилюли/нава', () => {
   });
 });
 
-describe('AppDiaryNav — Ж3: «+» скрыта только на «Сегодня» (не конкурирует с TodayFocusCard)', () => {
-  it('section=today — пилюли нет, нав по-прежнему виден', () => {
-    render(<AppDiaryNav {...baseProps()} section="today" />);
-    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
-    expect(screen.getByText('Сегодня')).toBeTruthy();
-  });
-
-  it.each(['help', 'schemas', 'profile'] as const)(
+// Ж3 (аудит 2026-08, #405) прятала «+» на «Сегодня»; владелец откатил
+// решение 2026-08-25 — пропажа привычной кнопки с главного экрана читалась
+// как поломка. Теперь «+» видна на всех четырёх экранах.
+describe('AppDiaryNav — «+» видна на всех экранах, включая «Сегодня»', () => {
+  it.each(['today', 'help', 'schemas', 'profile'] as const)(
     'section=%s — пилюля видна',
     (section) => {
       render(<AppDiaryNav {...baseProps()} section={section} />);
