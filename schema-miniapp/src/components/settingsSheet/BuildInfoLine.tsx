@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react';
 
-// Строка диагностики в «О приложении»: когда собрана запущенная версия и
+// Строка диагностики в «О приложении»: какой версии запущенное приложение и
 // стоит ли офлайн-кеш (service worker). Родилась из недели отладки скорости
 // PWA (2026-08-25): владелец и стенд смотрели на разные версии, не имея
 // способа это заметить, — один скриншот настроек теперь отвечает на оба
-// вопроса. __BUILD_AT__ подставляет сборка (vite define), в тестах его нет —
-// компонент честно пишет «дев-режим», а не падает.
-declare const __BUILD_AT__: string | undefined;
+// вопроса.
+//
+// Дату версии даёт document.lastModified — браузер берёт её из HTTP-заголовка
+// Last-Modified у index.html (mtime файла в образе = момент сборки деплоя).
+// Зашить время в бандл нельзя: dist закоммичен, CI сверяет его с пересборкой
+// байт-в-байт, и любой new Date() времени сборки роняет джобу miniapp
+// (поймано на PR #431).
 
-function buildLabel(): string {
-  try {
-    if (typeof __BUILD_AT__ !== 'string') return 'дев-режим';
-    const d = new Date(__BUILD_AT__);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}.${mm} ${hh}:${mi}`;
-  } catch {
-    return 'дев-режим';
-  }
+function versionLabel(): string {
+  const d = new Date(document.lastModified);
+  if (Number.isNaN(d.getTime())) return 'неизвестно';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}.${mm} ${hh}:${mi}`;
 }
 
 export function BuildInfoLine() {
@@ -48,7 +48,7 @@ export function BuildInfoLine() {
         marginTop: 6,
       }}
     >
-      Сборка от {buildLabel()} · офлайн-кеш:{' '}
+      Версия от {versionLabel()} · офлайн-кеш:{' '}
       {sw === 'checking' ? '…' : sw === 'on' ? 'стоит' : 'снят'}
     </div>
   );

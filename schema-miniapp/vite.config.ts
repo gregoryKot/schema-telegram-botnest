@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  // Метка сборки для строки диагностики в настройках (BuildInfoLine):
-  // «какая версия реально запущена» — по одному скриншоту, без гаданий.
-  define: { __BUILD_AT__: JSON.stringify(new Date().toISOString()) },
+  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба
+  // miniapp пересобирает его для сверки байт-в-байт — любой new Date()
+  // в бандле роняет её (поймано на PR #431). Метка версии для BuildInfoLine
+  // берётся в рантайме из document.lastModified (HTTP Last-Modified).
   plugins: [
     react(),
     // PWA-каркас (docs/PWA_PLAN.md фаза 1, docs/MULTI_HOST_PLAN.md шаг 3).

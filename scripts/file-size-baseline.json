@@ -452,7 +452,7 @@
   "schema-miniapp/src/utils/usePrerenderSections.ts": 62,
   "schema-miniapp/src/utils/useQuickActionOrder.ts": 34,
   "schema-miniapp/src/utils/webBanner.ts": 27,
-  "schema-miniapp/vite.config.ts": 118,
+  "schema-miniapp/vite.config.ts": 119,
   "scripts/check-address-agreement.mjs": 87,
   "scripts/check-address-form.mjs": 124,
   "scripts/check-alert-throttle.mjs": 215,

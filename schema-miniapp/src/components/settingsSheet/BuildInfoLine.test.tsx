@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-// Строка диагностики «Сборка от … · офлайн-кеш: …» (см. комментарий в
+// Строка диагностики «Версия от … · офлайн-кеш: …» (см. комментарий в
 // BuildInfoLine.tsx): неделя отладки скорости PWA прошла вслепую — владелец
-// и стенд смотрели на разные версии без способа это заметить.
+// и стенд смотрели на разные версии без способа это заметить. Дата — из
+// document.lastModified (заголовок Last-Modified), не из времени сборки:
+// зашитый в бандл new Date() ронял сверку dist в CI (PR #431).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { BuildInfoLine } from './BuildInfoLine';
@@ -16,6 +18,12 @@ beforeEach(() => {
     configurable: true,
   });
 });
+
+const setLastModified = (value: string) =>
+  Object.defineProperty(document, 'lastModified', {
+    value,
+    configurable: true,
+  });
 
 describe('BuildInfoLine', () => {
   it('SW снят — так и пишет (наш штатный случай после эксперимента 2026-08-25)', async () => {
@@ -34,13 +42,18 @@ describe('BuildInfoLine', () => {
     );
   });
 
-  it('метка сборки всегда есть: дата dd.mm hh:mm из vite define или «дев-режим»', () => {
-    // vitest берёт define из vite.config — тогда рендерится реальная дата;
-    // без define (чистый jsdom) компонент пишет «дев-режим», а не падает.
+  it('дата версии — dd.mm hh:mm из document.lastModified', () => {
     getRegistrationsMock.mockResolvedValue([]);
+    // Формат document.lastModified — MM/DD/YYYY hh:mm:ss (спека HTML).
+    setLastModified('08/25/2026 21:07:00');
     render(<BuildInfoLine />);
-    expect(
-      screen.getByText(/Сборка от (дев-режим|\d{2}\.\d{2} \d{2}:\d{2})/),
-    ).toBeTruthy();
+    expect(screen.getByText(/Версия от 25\.08 21:07/)).toBeTruthy();
+  });
+
+  it('нечитаемый lastModified — честное «неизвестно», не NaN', () => {
+    getRegistrationsMock.mockResolvedValue([]);
+    setLastModified('');
+    render(<BuildInfoLine />);
+    expect(screen.getByText(/Версия от неизвестно/)).toBeTruthy();
   });
 });
