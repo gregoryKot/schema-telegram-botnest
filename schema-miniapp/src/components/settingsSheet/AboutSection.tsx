@@ -1,4 +1,5 @@
 import { SettingsLabel } from './ui';
+import { BuildInfoLine } from './BuildInfoLine';
 
 export function AboutSection() {
   return (
@@ -126,6 +127,7 @@ export function AboutSection() {
           Это образовательный инструмент — не медицинский и не психологический
           сервис.
         </div>
+        <BuildInfoLine />
       </div>
     </div>
   );

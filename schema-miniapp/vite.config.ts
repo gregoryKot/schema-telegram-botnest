@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба
+  // miniapp пересобирает его для сверки байт-в-байт — любой new Date()
+  // в бандле роняет её (поймано на PR #431). Метка версии для BuildInfoLine
+  // берётся в рантайме из document.lastModified (HTTP Last-Modified).
   plugins: [
     react(),
     // PWA-каркас (docs/PWA_PLAN.md фаза 1, docs/MULTI_HOST_PLAN.md шаг 3).
@@ -37,8 +41,18 @@ export default defineConfig({
         theme_color: '#faf7f3',
         background_color: '#faf7f3',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
           {
             src: '/icon-512-maskable.png',
             sizes: '512x512',
