@@ -23,7 +23,7 @@ const btnStyle: CSSProperties = {
   border: 'none',
   borderRadius: 6,
   padding: '4px 10px',
-  fontSize: 10,
+  fontSize: 11,
   fontFamily: 'inherit',
   cursor: 'pointer',
 };
@@ -46,7 +46,7 @@ export function PerfHud() {
         background: 'rgba(10, 12, 10, 0.82)',
         color: '#9fdf9f',
         fontFamily: 'ui-monospace, Menlo, monospace',
-        fontSize: 10,
+        fontSize: 11,
         lineHeight: 1.6,
         borderRadius: 10,
         padding: '8px 10px',
