@@ -129,9 +129,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
         bottom: 0,
         left: 0,
         right: 0,
+        // Размытия нет и быть не должно: стоило ~1.4с на кадр в PWA
+        // (CLAUDE.md «Никакого размытия»). --nav-bg непрозрачен.
         background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--border-color)',
         zIndex: 50,
         paddingBottom: 'var(--safe-bottom)',

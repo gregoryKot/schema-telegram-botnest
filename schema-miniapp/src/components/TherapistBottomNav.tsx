@@ -12,9 +12,8 @@ export function TherapistBottomNav({
         left: 0,
         right: 0,
         zIndex: 50,
+        // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
         background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid rgba(var(--fg-rgb),0.08)',
         paddingBottom: 'var(--safe-bottom)',
       }}

@@ -48,7 +48,6 @@ import { usePerfTapTracking } from './utils/usePerfTapTracking';
 import { preloadDiarySheets } from './components/LazyDiarySheets';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { LoginScreen } from './components/LoginScreen';
-import { AmbientBackground } from './components/AmbientBackground';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
@@ -582,8 +581,6 @@ export default function App() {
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
-      {/* Ambient gradient blobs — colors adapt per theme via CSS vars */}
-      <AmbientBackground />
       <OfflineBanner isOffline={isOffline} />
 
       {/* ── Therapist app mode — full app replacement ── */}

@@ -78,9 +78,8 @@ export function TrackerHistoryOverlay({
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
           background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           padding: `${safeTop + 16}px 20px 14px`,
           borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
         }}

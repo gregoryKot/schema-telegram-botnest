@@ -34,7 +34,7 @@ export function LandingStyles() {
 
         @keyframes hero-in    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
         @keyframes line-in    { from { transform:translateY(110%) } to { transform:none } }
-        @keyframes blob-float { 0%,100% { transform:translate(0,0) scale(1) } 50% { transform:translate(2%,2%) scale(1.03) } }
+        /* blob-float удалён: мёртвый код, ни один элемент его не использовал (правило №11) */
         @keyframes scroll-bar { 0%,100% { opacity:.3; transform:scaleY(.5) } 50% { opacity:1; transform:scaleY(1) } }
         @keyframes pulse-dot  { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.65) } }
         @keyframes marquee-fwd { from { transform:translateX(0) } to { transform:translateX(-100%) } }
