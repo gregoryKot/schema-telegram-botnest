@@ -67,9 +67,9 @@ describe('buildYsqResultView', () => {
 
   it('дата прохождения показывается по-русски, без даты — null', () => {
     const scores = computeScores(answersFor([]));
-    expect(buildYsqResultView(scores, [], '2026-03-14T10:00:00Z')?.dateLabel).toBe(
-      '14 марта 2026 г.',
-    );
+    expect(
+      buildYsqResultView(scores, [], '2026-03-14T10:00:00Z')?.dateLabel,
+    ).toBe('14 марта 2026 г.');
     expect(buildYsqResultView(scores, [], null)?.dateLabel).toBeNull();
   });
 
@@ -90,7 +90,9 @@ describe('buildYsqResultView', () => {
     const target = SCHEMAS[0].name;
     const id = SCHEMA_NAME_TO_ID[target];
     const scores = computeScores(answersFor([target]));
-    expect(buildYsqResultView(scores, [], null)?.getSchemaDelta(target)).toBeNull();
+    expect(
+      buildYsqResultView(scores, [], null)?.getSchemaDelta(target),
+    ).toBeNull();
     const noAvg = [
       { id: 2, completedAt: 'now', scores: [{ id, pct5plus: 100 }] },
       { id: 1, completedAt: 'then', scores: [{ id, pct5plus: 50 }] },
