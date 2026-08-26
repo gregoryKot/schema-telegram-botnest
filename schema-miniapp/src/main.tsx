@@ -16,6 +16,7 @@ import {
   watchVisibility,
   scheduleBenchmarks,
 } from './utils/perfLog';
+import { applyExperiments } from './utils/perfExperiments';
 
 // Метка «js»: сколько прошло от старта страницы до исполнения бандла —
 // это сеть + парсинг/компиляция JS. Монитор кадров и бенчмарк скорости
@@ -25,6 +26,7 @@ startJankMonitor();
 startTimerMonitor();
 watchVisibility();
 scheduleBenchmarks();
+applyExperiments();
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
