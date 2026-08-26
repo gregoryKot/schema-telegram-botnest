@@ -96,7 +96,11 @@ const EXPECTED_CRISIS_FILES = [
   'schema-miniapp/src/components/SafePlace.tsx',
   'schema-miniapp/src/components/NoteSheet.tsx',
   'schema-miniapp/src/components/WeeklyQuestion.tsx',
-  'schema-miniapp/src/components/BeliefCheck.tsx',
+  // Проверка убеждения: свободный текст живёт в двух шагах, детекция
+  // переехала вместе с ними (BeliefCheck.tsx остался оркестратором без
+  // <textarea>) — тот же случай, что ModeEntrySheet → ModeEntryForm ниже.
+  'schema-miniapp/src/components/beliefCheck/BeliefStep.tsx',
+  'schema-miniapp/src/components/beliefCheck/ReframeStep.tsx',
   'schema-miniapp/src/components/IntroSheetFlashcard.tsx',
   'schema-miniapp/src/components/schemaFlashcard/ResponseStep.tsx',
   'schema-miniapp/src/components/schemaFlashcard/ActionStep.tsx',
