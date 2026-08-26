@@ -44,6 +44,7 @@ import { AppOverlays } from './components/AppOverlays';
 import { preloadOtherSections } from './utils/preloadSections';
 import { prefetchOtherSectionsData } from './utils/prefetchSectionData';
 import { usePrerenderSections } from './utils/usePrerenderSections';
+import { usePerfTapTracking } from './utils/usePerfTapTracking';
 import { preloadDiarySheets } from './components/LazyDiarySheets';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { LoginScreen } from './components/LoginScreen';
@@ -56,8 +57,6 @@ import { shouldShowLoginScreen } from './utils/loginScreenGate';
 import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
 import { syncFromServer } from './utils/uiPrefsSync';
 import { logErr } from './utils/logErr';
-
-type TrackerTab = 'today' | 'history';
 
 function getInitialSection(): Section {
   const params = new URLSearchParams(window.location.search);
@@ -97,10 +96,6 @@ export default function App() {
     flagsLoaded,
   );
   const historyDays = 30;
-  const _tabScrollPositions = useRef<Record<TrackerTab, number>>({
-    today: 0,
-    history: 0,
-  });
   const sheets = useSheets();
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(
     null,
@@ -236,6 +231,8 @@ export default function App() {
   // данные уже тёплые — см. эффект ниже), чтобы и ПЕРВЫЙ тап по вкладке был
   // переключением видимости, а не тяжёлым коммитом (usePrerenderSections).
   const prerenderedSections = usePrerenderSections(!loading, section);
+  // Замер «тап по вкладке → отрисовка» для панели PerfHud (см. perfLog.ts).
+  usePerfTapTracking(section, prerenderedSections, loading);
   const prefetchStarted = useRef(false);
   useEffect(() => {
     if (loading || prefetchStarted.current) return;
