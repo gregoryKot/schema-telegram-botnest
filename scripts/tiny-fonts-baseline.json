@@ -16,7 +16,7 @@
   "schema-miniapp/src/components/tasks/TaskRow.tsx": 2,
   "schema-miniapp/src/components/TherapistBottomNav.tsx": 3,
   "schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx": 1,
-  "schema-miniapp/src/components/therapistClientSheet/ClientNotesSheet.tsx": 4,
+  "schema-miniapp/src/components/therapistClientSheet/ClientNotesSheet.tsx": 3,
   "schema-miniapp/src/components/therapistClientSheet/ClinicalSnapshot.tsx": 5,
   "schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx": 2,
   "schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptModePicker.tsx": 1,

@@ -9,13 +9,18 @@ import { AddressFormProvider } from './utils/AddressFormProvider';
 import { UpdateToast } from './components/UpdateToast';
 import { PerfHud } from './components/PerfHud';
 import { registerServiceWorker } from './registerServiceWorker';
-import { perfMark, startJankMonitor } from './utils/perfLog';
+import {
+  perfMark,
+  startJankMonitor,
+  scheduleBenchmarks,
+} from './utils/perfLog';
 
 // Метка «js»: сколько прошло от старта страницы до исполнения бандла —
-// это сеть + парсинг/компиляция JS. Монитор кадров работает только при
-// включённой панели замеров (см. perfLog.ts).
+// это сеть + парсинг/компиляция JS. Монитор кадров и бенчмарк скорости
+// движка работают только при включённой панели замеров (см. perfLog.ts).
 perfMark('js');
 startJankMonitor();
+scheduleBenchmarks();
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
