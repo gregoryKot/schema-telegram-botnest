@@ -1,6 +1,6 @@
 {
-  "miniapp:index.js": 514304,
-  "miniapp:total-js": 1298887,
+  "miniapp:index.js": 513628,
+  "miniapp:total-js": 1298149,
   "webapp:largest-chunk": 417170,
-  "webapp:total-js": 3107900
+  "webapp:total-js": 3107328
 }

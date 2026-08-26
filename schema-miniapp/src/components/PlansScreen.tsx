@@ -54,9 +54,8 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
           background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--border-color)',
           padding: '16px 20px 14px',
         }}

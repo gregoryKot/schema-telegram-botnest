@@ -124,7 +124,14 @@
   --sheet-bg:      var(--bg-elev);
   --sheet-bg-2:    var(--bg-rail);
   --sidebar-bg:    var(--bg-rail);
-  --nav-bg:        rgba(239,235,225,0.96);
+  /* Непрозрачный, а не rgba(...,0.96): blur под .mobile-nav снят (см.
+     index.css/.mobile-nav — замеры 2026-08-26, PWA на iOS считает
+     backdrop-filter программно). Полупрозрачность без размытия давала бы
+     чёткое просвечивание контента под подписями вкладок. Значение — тот же
+     цвет, что был у полупрозрачного (rgba(239,235,225,0.96) = #efebe1 =
+     --bg-rail): сквозь 4% просвета читался практически он, и панель
+     осталась отдельной поверхностью, а не слилась с фоном страницы. */
+  --nav-bg:        var(--bg-rail);
   --track-color:   var(--surface-3);
 
   /* ── Elevation / shadow ──────────────────────────────────────────────── */
@@ -181,7 +188,9 @@ html[data-theme="dark"] {
   --sheet-bg:      var(--bg-elev);
   --sheet-bg-2:    var(--bg-rail);
   --sidebar-bg:    var(--bg-rail);
-  --nav-bg:        rgba(16, 16, 21, 0.96);
+  /* Непрозрачный, как в светлой теме: см. комментарий у --nav-bg выше.
+     rgba(16,16,21,0.96) = #101015 = --bg-rail. */
+  --nav-bg:        var(--bg-rail);
   --track-color:   var(--surface-3);
 
   --shadow-1:      none;
@@ -755,7 +764,10 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-up    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes cookie-in   { from { opacity: 0; transform: translateY(28px); filter: blur(6px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+/* filter: blur(6px)→blur(0) убран (см. index.css/.mobile-nav): переразмывал
+   текст с кнопками каждый кадр на первом экране; opacity+translateY дают
+   тот же эффект появления. */
+@keyframes cookie-in   { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cookie-sheen{ from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
 @keyframes spin        { to { transform: rotate(360deg); } }
 
@@ -1021,8 +1033,12 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--nav-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* Без backdrop-filter: в установленном на телефон приложении (PWA) iOS
+     считает размытие программно, и каждый кадр экрана стоил ~1.4с —
+     приложение вязло метрономом (замеры на устройстве владельца
+     2026-08-26). Парная правка — schema-miniapp/src/components/BottomNav.tsx,
+     там уже снято. --nav-bg теперь непрозрачен (см. токен ниже), поэтому
+     панель выглядит как прежде. */
   border-top: 1px solid var(--line);
   z-index: 49;
   display: flex;

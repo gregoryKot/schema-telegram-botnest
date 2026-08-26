@@ -136,12 +136,9 @@ export function LoginPage() {
       alignItems: 'center', justifyContent: 'center', padding: '24px',
       position: 'relative', overflow: 'hidden',
     }}>
-      {/* Ambient blobs */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'var(--blob-1)', filter: 'blur(80px)', top: '-10%', left: '-15%' }} />
-        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'var(--blob-2)', filter: 'blur(80px)', bottom: '-5%', right: '-10%' }} />
-      </div>
-
+      {/* Ambient blobs удалены: --blob-1/--blob-2 не определены нигде в
+         webapp/shared — рисовалась пустота, а blur(80px) x2 считался
+         честно каждый кадр (см. index.css/.mobile-nav). */}
       <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
