@@ -1049,7 +1049,7 @@
   "webapp/src/components/diary/SchemaEntrySheet.tsx": 235,
   "webapp/src/components/DonateNudge.tsx": 73,
   "webapp/src/components/ErrorBoundary.tsx": 84,
-  "webapp/src/components/exercises/BeliefCheckEx.tsx": 556,
+  "webapp/src/components/exercises/BeliefCheckEx.tsx": 370,
   "webapp/src/components/exercises/ChildhoodWheelEx.tsx": 457,
   "webapp/src/components/exercises/ExScreen.tsx": 109,
   "webapp/src/components/exercises/FlashcardEx.tsx": 201,
