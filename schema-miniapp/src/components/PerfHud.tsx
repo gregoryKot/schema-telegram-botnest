@@ -12,6 +12,7 @@ import {
   formatReport,
   SECTION_LABELS,
 } from '../utils/perfLog';
+import { isExperimentOn, toggleExperiment } from '../utils/perfExperiments';
 
 // Панель замеров скорости поверх приложения (см. perfLog.ts — зачем и что
 // меряется). Включение/выключение — пять тапов по строке версии в
@@ -87,7 +88,7 @@ export function PerfHud() {
           </div>
         ))
       )}
-      <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
         <button
           style={btnStyle}
           onClick={() => {
@@ -100,6 +101,14 @@ export function PerfHud() {
         </button>
         <button style={btnStyle} onClick={() => setPerfHudEnabled(false)}>
           Выключить
+        </button>
+        {/* Эксперименты (см. perfLog.ts): тап переключает и перезагружает
+            страницу — прогон идёт с чистого старта в новых условиях. */}
+        <button style={btnStyle} onClick={() => toggleExperiment('noanim')}>
+          анимации: {isExperimentOn('noanim') ? 'ВЫКЛ' : 'вкл'}
+        </button>
+        <button style={btnStyle} onClick={() => toggleExperiment('noblur')}>
+          блюр: {isExperimentOn('noblur') ? 'ВЫКЛ' : 'вкл'}
         </button>
       </div>
     </div>
