@@ -7,7 +7,6 @@ import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
 import { NeedRatingBar } from './NeedRatingBar';
 import { NeedSheetHeader } from './NeedSheetHeader';
-import { NeedDisclaimerSheet } from './NeedDisclaimerSheet';
 import { pressable } from '../utils/a11y';
 import { CollapsibleSection } from './needToday/CollapsibleSection';
 import {
@@ -36,7 +35,6 @@ export function NeedTodaySheet({
   onOpenHelp,
 }: Props) {
   const tr = useTr();
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
@@ -252,10 +250,6 @@ export function NeedTodaySheet({
             onClose();
           }}
         />
-      )}
-
-      {showDisclaimer && (
-        <NeedDisclaimerSheet onClose={() => setShowDisclaimer(false)} />
       )}
     </BottomSheet>
   );
