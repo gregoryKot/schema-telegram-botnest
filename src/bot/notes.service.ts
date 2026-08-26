@@ -28,7 +28,7 @@ export const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
   strings: [...COMMON_NOTE_FIELDS, 'reality'],
 };
 export const MODE_NOTE_SCHEMA: EncryptSchema = {
-  strings: [...COMMON_NOTE_FIELDS, 'needs'],
+  strings: [...COMMON_NOTE_FIELDS, 'needs', 'modeFunction', 'needsMet'],
 };
 
 // Карточки схем/режимов (UserSchemaNote / UserModeNote) + доступ терапевта
@@ -112,7 +112,11 @@ export class NotesService {
   async upsertModeNote(
     userId: bigint,
     modeId: string,
-    data: CommonNoteFields & { needs?: string },
+    data: CommonNoteFields & {
+      needs?: string;
+      modeFunction?: string;
+      needsMet?: string;
+    },
   ) {
     const enc = encryptRecord(data, MODE_NOTE_SCHEMA);
     const res = await this.prisma.userModeNote.upsert({

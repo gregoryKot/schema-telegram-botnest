@@ -1,7 +1,9 @@
 /**
- * Семь вопросов карточки «Знакомство с режимом» — паритет с карточкой схемы
- * (SCHEMA_QUESTIONS, webapp/src/components/exercises/flashcardQuestions.ts —
- * 7 вопросов). Общий источник для обоих фронтендов (правило №3/№11
+ * Девять вопросов карточки «Знакомство с режимом» — классический бланк
+ * проработки режима: к семи вопросам (паритет с карточкой схемы —
+ * SCHEMA_QUESTIONS, webapp/src/components/exercises/flashcardQuestions.ts)
+ * добавлены «какая у режима функция» (modeFunction) и «даёт ли поведение то,
+ * что нужно» (needsMet). Общий источник для обоих фронтендов (правило №3/№11
  * CLAUDE.md) — раньше вопросы дублировались (QUESTIONS в
  * schema-miniapp/src/components/ModeIntroSheet.tsx и MODE_QUESTIONS в
  * webapp/src/components/exercises/flashcardQuestions.ts, только 5 штук).
@@ -25,7 +27,9 @@ export type ModeIntroKey =
   | 'feelings'
   | 'thoughts'
   | 'behavior'
+  | 'modeFunction'
   | 'needs'
+  | 'needsMet'
   | 'origins'
   | 'healthyView';
 
@@ -42,7 +46,9 @@ const FALLBACK_PLACEHOLDER: Record<ModeIntroKey, string> = {
   feelings: 'Тревога, комок в горле, напряжение в плечах…',
   thoughts: '«Я недостаточно хорош», «Лучше не рисковать»…',
   behavior: 'Замолкаю, избегаю, злюсь, переусердствую…',
+  modeFunction: 'Защитить от боли отвержения, не дать снова ошибиться…',
   needs: 'Безопасности, признания, контакта…',
+  needsMet: 'На время становится легче, но потребность остаётся…',
   origins: 'Может быть, когда-то это помогало справляться с трудным…',
   healthyView: '«Это тяжело, но это можно пережить — есть на что опереться»',
 };
@@ -74,10 +80,22 @@ export function buildModeIntroQuestions(card?: ModeCard): ModeIntroQuestion[] {
       placeholder: card?.behavior ?? FALLBACK_PLACEHOLDER.behavior,
     },
     {
+      key: 'modeFunction',
+      label: 'Какая у этого режима функция?',
+      hint: 'От чего он защищает, что старается предотвратить или дать',
+      placeholder: FALLBACK_PLACEHOLDER.modeFunction,
+    },
+    {
       key: 'needs',
       label: 'Чего он на самом деле хочет?',
       hint: 'Глубинная потребность за этим режимом',
       placeholder: card?.need ?? FALLBACK_PLACEHOLDER.needs,
+    },
+    {
+      key: 'needsMet',
+      label: 'Даёт ли он то, что нужно?',
+      hint: 'Удовлетворяет ли это поведение потребность на самом деле — и какой ценой',
+      placeholder: card?.cost ?? FALLBACK_PLACEHOLDER.needsMet,
     },
     {
       key: 'origins',

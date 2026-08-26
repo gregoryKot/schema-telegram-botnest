@@ -20,7 +20,9 @@ interface IntroData {
   feelings: string;
   thoughts: string;
   behavior: string;
+  modeFunction: string;
   needs: string;
+  needsMet: string;
   origins: string;
   healthyView: string;
 }
@@ -30,7 +32,9 @@ const EMPTY: IntroData = {
   feelings: '',
   thoughts: '',
   behavior: '',
+  modeFunction: '',
   needs: '',
+  needsMet: '',
   origins: '',
   healthyView: '',
 };
@@ -116,6 +120,8 @@ export function ModeIntroSheet({
             thoughts,
             behavior,
             needs,
+            modeFunction: n.modeFunction ?? '',
+            needsMet: n.needsMet ?? '',
             origins: n.origins ?? '',
             healthyView: n.healthyView ?? '',
           };

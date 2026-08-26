@@ -212,6 +212,8 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     origins: e(`${BOT}/notes.service.ts`),
     healthyView: e(`${BOT}/notes.service.ts`),
     behavior: e(`${BOT}/notes.service.ts`),
+    modeFunction: e(`${BOT}/notes.service.ts`),
+    needsMet: e(`${BOT}/notes.service.ts`),
   },
   UserBeliefCheck: {
     belief: e(`${BOT}/exercises.service.ts`),
