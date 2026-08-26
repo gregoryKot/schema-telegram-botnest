@@ -3,6 +3,7 @@
 // {} прошёл бы незамеченным через фейки, которые игнорируют аргументы.
 import { BookingStatus } from '@prisma/client';
 import { BookingService } from './booking.service';
+import { assertWithinAvailability } from './booking.availability';
 
 function makeService(row: any) {
   const prisma: any = {
@@ -60,16 +61,8 @@ describe('BookingService.cancel — точное сообщение для COMPL
 describe('BookingService.assertWithinAvailability — сообщение точной длительности', () => {
   it('длительность вне диапазона 15-180 — сообщение ИМЕННО "Invalid duration"', async () => {
     const prisma: any = { availabilityRule: { findMany: jest.fn() } };
-    const service = new BookingService(
-      prisma,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      { get: () => undefined } as any,
-    );
     await expect(
-      (service as any).assertWithinAvailability(new Date(), 5),
+      assertWithinAvailability(prisma, new Date(), 5),
     ).rejects.toThrow('Invalid duration');
     expect(prisma.availabilityRule.findMany).not.toHaveBeenCalled();
   });
