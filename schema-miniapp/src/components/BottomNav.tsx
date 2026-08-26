@@ -145,7 +145,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
               key={tab.id}
               // Точка отсчёта замера тапа (perfLog): pointerdown — момент
               // касания пальцем, click на телефоне приходит позже.
-              onPointerDown={() => tapStart(tab.id)}
+              // e.timeStamp — время САМОГО касания: если главный поток был
+              // занят, обработчик запустится позже, и разница = очередь.
+              onPointerDown={(e) => tapStart(tab.id, e.timeStamp)}
               onClick={() => onSelect(tab.id)}
               style={{
                 flex: 1,
