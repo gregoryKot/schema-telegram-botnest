@@ -71,7 +71,7 @@
   "schema-miniapp/src/components/settingsSheet/AppearanceSection.tsx": 4,
   "schema-miniapp/src/components/settingsSheet/TherapistPrivacyToggles.tsx": 4,
   "schema-miniapp/src/components/settingsSheet/ui.tsx": 2,
-  "schema-miniapp/src/components/TaskCreateSheet.tsx": 1,
+  "schema-miniapp/src/components/taskCreate/TaskTypeSelector.tsx": 1,
   "schema-miniapp/src/components/tasks/TaskRow.tsx": 4,
   "schema-miniapp/src/components/TherapistBottomNav.tsx": 4,
   "schema-miniapp/src/components/therapistClientSheet/ActionButtons.tsx": 1,
