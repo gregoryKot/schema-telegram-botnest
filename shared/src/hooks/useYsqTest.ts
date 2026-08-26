@@ -12,19 +12,7 @@ export * from './ysqScoring';
 export * from './ysqShareText';
 
 import { QUESTIONS, TOTAL_PAGES } from './ysqQuestions';
-import {
-  SCHEMAS,
-  DOMAIN_ORDER,
-  NEED_LABELS,
-  SCHEMA_NAME_TO_ID,
-  type SchemaInfo,
-} from './ysqSchemas';
-import {
-  computeScores,
-  isSchemaScoreActive,
-  type Phase,
-  type YsqHistoryEntry,
-} from './ysqScoring';
+import { computeScores, type Phase, type YsqHistoryEntry } from './ysqScoring';
 
 // Сами значения — в ysqStorageKeys.ts (см. его комментарий): импорт здесь
 // нужен для внутреннего использования хуком ниже, ре-экспорт — чтобы старые
@@ -32,40 +20,16 @@ import {
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 
-export interface YsqApi {
-  getYsqHistory: () => Promise<YsqHistoryEntry[] | null | undefined>;
-  getYsqResult: () => Promise<
-    { answers: number[]; completedAt: string } | null | undefined
-  >;
-  getYsqProgress: () => Promise<
-    { answers: number[]; page: number } | null | undefined
-  >;
-  saveYsqProgress: (answers: number[], page: number) => Promise<unknown>;
-  saveYsqResult: (answers: number[]) => Promise<unknown>;
-  deleteYsqProgress: () => Promise<unknown>;
-  deleteYsqResult: () => Promise<unknown>;
-}
-
-export interface UseYsqTestOptions {
-  api: YsqApi;
-  autoResume?: boolean;
-}
-
-export interface ResultViewDomain {
-  needId: string;
-  label: string;
-  schemas: SchemaInfo[];
-}
-
-export interface ResultView {
-  activeSchemas: SchemaInfo[];
-  inactiveSchemas: SchemaInfo[];
-  activeByDomain: ResultViewDomain[];
-  dateLabel: string | null;
-  activeCount: number;
-  activeLabel: string;
-  getSchemaDelta: (schemaName: string) => number | null;
-}
+// Типы и сборка результата переехали в соседние модули (правило №10);
+// ре-экспорт держит прежний путь импорта у потребителей.
+import type { UseYsqTestOptions } from './ysqTest.types';
+export type {
+  YsqApi,
+  UseYsqTestOptions,
+  ResultViewDomain,
+  ResultView,
+} from './ysqTest.types';
+import { buildYsqResultView } from './buildYsqResultView';
 
 // Ответ выбран, но переход на следующий вопрос (или сабмит результата)
 // откладывается на длительность анимации выбора ответа в UI теста.
@@ -349,63 +313,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
 
   const scores = phase === 'result' ? computeScores(answers) : null;
 
-  const resultView = useMemo<ResultView | null>(() => {
-    if (!scores) return null;
-    const sortedSchemas = [...SCHEMAS].sort(
-      (a, b) =>
-        scores[b.name].pct5plus - scores[a.name].pct5plus ||
-        scores[b.name].avg - scores[a.name].avg,
-    );
-    const activeSchemas = sortedSchemas.filter((s) =>
-      isSchemaScoreActive(scores[s.name]),
-    );
-    const inactiveSchemas = sortedSchemas.filter(
-      (s) => !isSchemaScoreActive(scores[s.name]),
-    );
-
-    const activeByDomain = DOMAIN_ORDER.map((needId) => ({
-      needId,
-      label: NEED_LABELS[needId],
-      schemas: activeSchemas.filter((s) => s.needId === needId),
-    })).filter((d) => d.schemas.length > 0);
-
-    const dateLabel = completedAt
-      ? new Date(completedAt).toLocaleDateString('ru-RU', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
-      : null;
-
-    const activeCount = activeSchemas.length;
-    const activeLabel =
-      activeCount === 0
-        ? 'Активных схем не найдено'
-        : `${activeCount}\u00A0${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
-
-    // Дельта со прошлого прохождения — в единицах среднего балла (главная
-    // метрика карточки), напр. «+0.4». Старые записи истории могли не хранить
-    // avg — тогда дельту не показываем (null), а не смешиваем с pct5plus.
-    const prevEntry = history.length >= 2 ? history[1] : null;
-    const getSchemaDelta = (schemaName: string): number | null => {
-      if (!prevEntry) return null;
-      const id = SCHEMA_NAME_TO_ID[schemaName];
-      if (!id) return null;
-      const prev = prevEntry.scores.find((s) => s.id === id);
-      if (prev == null || prev.avg == null) return null;
-      return Math.round(((scores[schemaName]?.avg ?? 0) - prev.avg) * 10) / 10;
-    };
-
-    return {
-      activeSchemas,
-      inactiveSchemas,
-      activeByDomain,
-      dateLabel,
-      activeCount,
-      activeLabel,
-      getSchemaDelta,
-    };
-  }, [scores, history, completedAt]);
+  const resultView = useMemo(
+    () => buildYsqResultView(scores, history, completedAt),
+    [scores, history, completedAt],
+  );
 
   return {
     phase,
