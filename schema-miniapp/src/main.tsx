@@ -7,7 +7,15 @@ import './index.css';
 import App from './App';
 import { AddressFormProvider } from './utils/AddressFormProvider';
 import { UpdateToast } from './components/UpdateToast';
+import { PerfHud } from './components/PerfHud';
 import { registerServiceWorker } from './registerServiceWorker';
+import { perfMark, startJankMonitor } from './utils/perfLog';
+
+// Метка «js»: сколько прошло от старта страницы до исполнения бандла —
+// это сеть + парсинг/компиляция JS. Монитор кадров работает только при
+// включённой панели замеров (см. perfLog.ts).
+perfMark('js');
+startJankMonitor();
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -91,6 +99,8 @@ createRoot(document.getElementById('root')!).render(
         {/* Внутри AddressFormProvider ради useTr (форма обращения) — сам
             тост не fullscreen, useHistorySheet не нужен (см. её комментарий). */}
         <UpdateToast />
+        {/* Панель замеров — вне App: живёт и на экране-скелетоне загрузки. */}
+        <PerfHud />
       </AddressFormProvider>
     </ErrorBoundary>
   </StrictMode>,

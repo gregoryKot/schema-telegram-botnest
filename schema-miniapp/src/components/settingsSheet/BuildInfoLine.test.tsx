@@ -5,13 +5,20 @@
 // document.lastModified (заголовок Last-Modified), не из времени сборки:
 // зашитый в бандл new Date() ронял сверку dist в CI (PR #431).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  cleanup,
+  fireEvent,
+} from '@testing-library/react';
 import { BuildInfoLine } from './BuildInfoLine';
 
 const getRegistrationsMock = vi.fn();
 
 beforeEach(() => {
   cleanup();
+  localStorage.clear();
   getRegistrationsMock.mockReset();
   Object.defineProperty(navigator, 'serviceWorker', {
     value: { getRegistrations: getRegistrationsMock },
@@ -55,5 +62,25 @@ describe('BuildInfoLine', () => {
     setLastModified('');
     render(<BuildInfoLine />);
     expect(screen.getByText(/Версия от неизвестно/)).toBeTruthy();
+  });
+
+  it('пять тапов по строке включают панель замеров, ещё пять — выключают', () => {
+    getRegistrationsMock.mockResolvedValue([]);
+    render(<BuildInfoLine />);
+    const line = screen.getByText(/Версия от/);
+    for (let i = 0; i < 5; i++) fireEvent.click(line);
+    expect(localStorage.getItem('perf_hud_on')).toBe('1');
+    expect(screen.getByText(/замеры: вкл/)).toBeTruthy();
+    for (let i = 0; i < 5; i++) fireEvent.click(line);
+    expect(localStorage.getItem('perf_hud_on')).toBe('0');
+    expect(screen.queryByText(/замеры: вкл/)).toBeNull();
+  });
+
+  it('четыре тапа — недостаточно: случайные касания панель не включают', () => {
+    getRegistrationsMock.mockResolvedValue([]);
+    render(<BuildInfoLine />);
+    const line = screen.getByText(/Версия от/);
+    for (let i = 0; i < 4; i++) fireEvent.click(line);
+    expect(localStorage.getItem('perf_hud_on')).toBeNull();
   });
 });

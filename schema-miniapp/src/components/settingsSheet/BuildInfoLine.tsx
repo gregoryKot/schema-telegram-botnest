@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { isPerfHudEnabled, setPerfHudEnabled } from '../../utils/perfLog';
 
 // Строка диагностики в «О приложении»: какой версии запущенное приложение и
 // стоит ли офлайн-кеш (service worker). Родилась из недели отладки скорости
@@ -24,6 +25,23 @@ function versionLabel(): string {
 
 export function BuildInfoLine() {
   const [sw, setSw] = useState<'checking' | 'on' | 'off'>('checking');
+  // Пять тапов по строке подряд включают панель замеров скорости (PerfHud,
+  // см. perfLog.ts). Скрытый тумблер для отладки с владельцем — обычному
+  // пользователю панель не нужна и не видна.
+  const [hudOn, setHudOn] = useState(isPerfHudEnabled);
+  const tapsRef = useRef({ count: 0, last: 0 });
+  const handleTap = () => {
+    const t = Date.now();
+    if (t - tapsRef.current.last > 2000) tapsRef.current.count = 0;
+    tapsRef.current.last = t;
+    tapsRef.current.count += 1;
+    if (tapsRef.current.count >= 5) {
+      tapsRef.current.count = 0;
+      const next = !isPerfHudEnabled();
+      setPerfHudEnabled(next);
+      setHudOn(next);
+    }
+  };
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
@@ -40,7 +58,12 @@ export function BuildInfoLine() {
   }, []);
 
   return (
+    // Строка — информационная, а не интерактивная: onClick здесь лишь
+    // скрытый счётчик тапов отладочного тумблера, клавиатурного/тач-аналога
+    // ему не положено (образец — HeroCta.tsx).
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
+      onClick={handleTap}
       style={{
         fontSize: 11,
         color: 'var(--text-faint)',
@@ -50,6 +73,7 @@ export function BuildInfoLine() {
     >
       Версия от {versionLabel()} · офлайн-кеш:{' '}
       {sw === 'checking' ? '…' : sw === 'on' ? 'стоит' : 'снят'}
+      {hudOn ? ' · замеры: вкл' : ''}
     </div>
   );
 }

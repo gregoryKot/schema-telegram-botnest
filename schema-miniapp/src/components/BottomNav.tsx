@@ -1,5 +1,6 @@
 // BottomNav.tsx — нижняя навигация мини-аппа.
 import React from 'react';
+import { tapStart } from '../utils/perfLog';
 
 export type Section = 'today' | 'help' | 'schemas' | 'profile';
 
@@ -142,6 +143,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
           return (
             <button
               key={tab.id}
+              // Точка отсчёта замера тапа (perfLog): pointerdown — момент
+              // касания пальцем, click на телефоне приходит позже.
+              onPointerDown={() => tapStart(tab.id)}
               onClick={() => onSelect(tab.id)}
               style={{
                 flex: 1,

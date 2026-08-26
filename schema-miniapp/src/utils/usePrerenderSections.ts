@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type { Section } from '../components/BottomNav';
 import { onIdle } from './preloadSections';
+import { perfMark } from './perfLog';
 
 const ALL_SECTIONS: Section[] = ['today', 'schemas', 'help', 'profile'];
 
@@ -35,6 +36,9 @@ export function usePrerenderSections(
     function mountNext(index: number): void {
       if (index >= rest.length) return;
       onIdle(() => {
+        // Метка для панели замеров: видно, толкается ли фоновая сборка
+        // вкладок с тапами владельца в первую минуту (perfLog).
+        perfMark(`сборка:${rest[index]}`);
         // startTransition: сборка скрытой вкладки — НИЗКОПРИОРИТЕТНЫЙ,
         // ПРЕРЫВАЕМЫЙ рендер. Без него фоновый коммит блокировал главный
         // поток сотнями миллисекунд, и тап, попавший в эту блокировку,
