@@ -346,7 +346,7 @@
   "schema-miniapp/src/schemaBeliefs.ts": 81,
   "schema-miniapp/src/schemaTherapyData.ts": 22,
   "schema-miniapp/src/sections/DiarySection.tsx": 205,
-  "schema-miniapp/src/sections/HelpSection.tsx": 404,
+  "schema-miniapp/src/sections/HelpSection.tsx": 286,
   "schema-miniapp/src/sections/helpSection/AllTasksSheet.tsx": 162,
   "schema-miniapp/src/sections/helpSection/CrisisSheet.tsx": 36,
   "schema-miniapp/src/sections/helpSection/HelpHeader.tsx": 87,
