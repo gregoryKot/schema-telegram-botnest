@@ -1,4 +1,4 @@
-import { BookingStatus, SessionType } from '@prisma/client';
+import { Booking, BookingStatus, SessionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { RobokassaService } from './robokassa.service';
@@ -32,11 +32,6 @@ export interface BookingResult {
   meetingUrl: string | null;
 }
 
-type BookingRow = { id: number; meetingUrl?: string | null } & Record<
-  string,
-  unknown
->;
-
 /**
  * Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ.
  * Один путь для бесплатной сессии и для dev-режима без Robokassa — раньше
@@ -44,7 +39,7 @@ type BookingRow = { id: number; meetingUrl?: string | null } & Record<
  */
 async function confirmNow(
   deps: CheckoutDeps,
-  booking: BookingRow,
+  booking: Booking,
   cancelToken: string,
 ): Promise<BookingResult> {
   const plain = decryptRecord(booking, deps.schema);
@@ -61,7 +56,7 @@ async function confirmNow(
 
 export async function completeCheckout(
   deps: CheckoutDeps,
-  booking: BookingRow,
+  booking: Booking,
   opts: {
     isFree: boolean;
     cancelToken: string;
