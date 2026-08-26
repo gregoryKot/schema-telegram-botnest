@@ -21,13 +21,29 @@ type SchemaNoteData = {
 type ModeNoteData = {
   modeId: string;
   triggers: string; feelings: string; thoughts: string;
-  needs: string; behavior: string;
+  needs: string; behavior: string; origins: string; healthyView: string;
+  modeFunction: string; needsMet: string;
 };
 
 interface Props {
   clientSchemaNotesData: SchemaNoteData[];
   clientModeNotesData: ModeNoteData[];
   clientDiary: DiaryEntry[];
+}
+
+// Общий грид заполненных полей карточки (схема и режим) — раньше разметка
+// жила дублем в обоих блоках (jscpd-храповик).
+function NoteFieldGrid({ fields }: { fields: { label: string; val?: string }[] }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
+      {fields.filter(f => f.val?.trim()).map(f => (
+        <div key={f.label}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, clientDiary }: Props) {
@@ -126,22 +142,15 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                   <IdentityDot color={domain?.color} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.name ?? n.schemaId}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                  {[
-                    { label: 'Триггеры', val: n.triggers },
-                    { label: 'Чувства', val: n.feelings },
-                    { label: 'Мысли', val: n.thoughts },
-                    { label: 'Корни', val: n.origins },
-                    { label: 'Проверка реальности', val: n.reality },
-                    { label: 'Здоровый взгляд', val: n.healthyView },
-                    { label: 'Поведение', val: n.behavior },
-                  ].filter(f => f.val?.trim()).map(f => (
-                    <div key={f.label}>
-                      <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                    </div>
-                  ))}
-                </div>
+                <NoteFieldGrid fields={[
+                  { label: 'Триггеры', val: n.triggers },
+                  { label: 'Чувства', val: n.feelings },
+                  { label: 'Мысли', val: n.thoughts },
+                  { label: 'Корни', val: n.origins },
+                  { label: 'Проверка реальности', val: n.reality },
+                  { label: 'Здоровый взгляд', val: n.healthyView },
+                  { label: 'Поведение', val: n.behavior },
+                ]} />
               </div>
             );
           })}
@@ -161,20 +170,17 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                   <IdentityDot color={group?.color} />
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.name ?? n.modeId}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                  {[
-                    { label: 'Триггеры', val: n.triggers },
-                    { label: 'Чувства', val: n.feelings },
-                    { label: 'Мысли', val: n.thoughts },
-                    { label: 'Потребности', val: n.needs },
-                    { label: 'Поведение', val: n.behavior },
-                  ].filter(f => f.val?.trim()).map(f => (
-                    <div key={f.label}>
-                      <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                    </div>
-                  ))}
-                </div>
+                <NoteFieldGrid fields={[
+                  { label: 'Триггеры', val: n.triggers },
+                  { label: 'Чувства', val: n.feelings },
+                  { label: 'Мысли', val: n.thoughts },
+                  { label: 'Поведение', val: n.behavior },
+                  { label: 'Функция режима', val: n.modeFunction },
+                  { label: 'Потребности', val: n.needs },
+                  { label: 'Даёт ли то, что нужно', val: n.needsMet },
+                  { label: 'Корни', val: n.origins },
+                  { label: 'Здоровый взгляд', val: n.healthyView },
+                ]} />
               </div>
             );
           })}

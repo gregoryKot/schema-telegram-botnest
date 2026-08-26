@@ -83,4 +83,14 @@ export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
   @MaxLength(NOTE_MAX)
   needs?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  modeFunction?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  needsMet?: string;
 }

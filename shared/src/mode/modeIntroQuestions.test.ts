@@ -1,5 +1,6 @@
-// Тесты buildModeIntroQuestions: 7 вопросов, паритет с картой полей
-// ModeCard, фолбэк без карточки, form-agnostic формулировки (правило ты/вы).
+// Тесты buildModeIntroQuestions: 9 вопросов (бланк проработки режима),
+// паритет с картой полей ModeCard, фолбэк без карточки, form-agnostic
+// формулировки (правило ты/вы).
 // Карточка — фикстура-заглушка того же shape, что и реальный ModeCard из
 // shared/src/mode/modeCards/ (агент А, контракт mode-intro-card) — тест не
 // зависит от того, готов ли уже реальный модуль.
@@ -24,15 +25,17 @@ const EXPECTED_ORDER = [
   'feelings',
   'thoughts',
   'behavior',
+  'modeFunction',
   'needs',
+  'needsMet',
   'origins',
   'healthyView',
 ];
 
 describe('buildModeIntroQuestions', () => {
-  it('возвращает ровно 7 вопросов в заданном порядке', () => {
+  it('возвращает ровно 9 вопросов в заданном порядке', () => {
     const qs = buildModeIntroQuestions(CARD);
-    expect(qs).toHaveLength(7);
+    expect(qs).toHaveLength(9);
     expect(qs.map((q) => q.key)).toEqual(EXPECTED_ORDER);
   });
 
@@ -44,13 +47,16 @@ describe('buildModeIntroQuestions', () => {
     expect(byKey.thoughts).toBe(CARD.voice);
     expect(byKey.behavior).toBe(CARD.behavior);
     expect(byKey.needs).toBe(CARD.need);
+    // needsMet («даёт ли то, что нужно») иллюстрируется ценой стратегии из
+    // портрета; у modeFunction поля в ModeCard нет — всегда фолбэк.
+    expect(byKey.needsMet).toBe(CARD.cost);
     expect(byKey.origins).toBe(CARD.origin);
     expect(byKey.healthyView).toBe(CARD.healthyAdult);
   });
 
   it('без карточки — общий плейсхолдер-фолбэк (не пусто, не выдумка про юзера)', () => {
     const qs = buildModeIntroQuestions(undefined);
-    expect(qs).toHaveLength(7);
+    expect(qs).toHaveLength(9);
     for (const q of qs) {
       expect(q.placeholder.trim().length).toBeGreaterThan(0);
     }

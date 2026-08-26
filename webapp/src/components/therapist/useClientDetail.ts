@@ -32,7 +32,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   }>>([]);
   const [clientModeNotesData, setClientModeNotesData] = useState<Array<{
     modeId: string; triggers: string; feelings: string; thoughts: string;
-    needs: string; behavior: string;
+    needs: string; behavior: string; origins: string; healthyView: string;
+    modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const [notes, setNotes] = useState<TherapistNote[]>([]);

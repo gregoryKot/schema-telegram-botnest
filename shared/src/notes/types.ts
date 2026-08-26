@@ -26,6 +26,9 @@ export interface UserModeNote {
   behavior: string;
   origins: string;
   healthyView: string;
+  /** Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно». */
+  modeFunction: string;
+  needsMet: string;
   updatedAt: string;
 }
 
