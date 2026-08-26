@@ -1,7 +1,8 @@
 {
   "schema-miniapp/src/components/AchievementDetail.tsx": 2,
   "schema-miniapp/src/components/AddressFormPicker.tsx": 1,
-  "schema-miniapp/src/components/BeliefCheck.tsx": 3,
+  "schema-miniapp/src/components/BeliefCheck.tsx": 1,
+  "schema-miniapp/src/components/beliefCheck/HistoryList.tsx": 2,
   "schema-miniapp/src/components/BreathingCard.tsx": 3,
   "schema-miniapp/src/components/CheckInSheet.tsx": 1,
   "schema-miniapp/src/components/childhoodWheelSheet/NeedFillRow.tsx": 1,
