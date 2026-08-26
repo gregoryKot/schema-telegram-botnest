@@ -10,7 +10,7 @@ import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { CatchupTimer } from './telegram.catchup-timer';
-import { BotService, NEED_IDS } from '../bot/bot.service';
+import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
 import { PairsService } from '../bot/pairs.service';
@@ -21,17 +21,18 @@ import {
 } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
 import { NotificationPlannerService } from '../notification/notification.planner.service';
-import {
-  renderTemplate,
-  buildSummaryText,
-} from '../notification/notification.templates';
+import { renderTemplate } from '../notification/notification.templates';
 import {
   isQuietHours,
   localDateString,
   nextQuietEnd,
-  utcInstantForLocalHour,
 } from '../notification/notification.time';
 import { normalizeAddressForm } from '../notification/address-form';
+import {
+  runDiaryComplete,
+  maybeNotifyPairPartners,
+  type DiaryCompleteDeps,
+} from './telegram.diary-complete';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
@@ -247,152 +248,23 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Трекер заполнен: сводка, вехи, напарник — см. telegram.diary-complete.ts. */
   async onDiaryComplete(userId: bigint) {
-    await this.notificationService.cancel(userId, 'reminder');
-    await this.notificationService.cancel(userId, 'pre_reminder');
-    await this.notificationService.cancel(userId, 'low_streak_insight');
-    await this.cadenceService.registerFill(userId);
-
-    const settings = await this.botService.getUserSettings(userId);
-    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-    const notifyLocalHour = settings?.notifyLocalHour ?? 21;
-    const ratings = await this.botService.getRatings(userId);
-    const text = buildSummaryText(
-      this.botService.getNeeds(),
-      ratings,
-      tz,
-      normalizeAddressForm(settings?.addressForm),
-    );
-
-    await this.notificationService.cancel(userId, 'summary');
-    // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
-    // arrive first and summary follows in the next processQueue cycle.
-    const now = new Date();
-    const todayStr = localDateString(tz, now);
-    const todaySendAt = utcInstantForLocalHour(todayStr, notifyLocalHour, tz);
-    const sendAt =
-      todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
-    await this.notificationService.schedule(userId, 'summary', sendAt, {
-      text,
-    });
-
-    // 4.5 (аудит 2026-07): лёгкий социальный триггер для напарника — до
-    // раннего return'а comeback-ветки, чтобы срабатывал в обоих путях.
-    await this.maybeNotifyPairPartners(userId).catch((err) =>
-      this.logger.error('maybeNotifyPairPartners failed', err),
-    );
-
-    const total = await this.analyticsService.getTotalDaysFilled(userId);
-
-    // Возвращение после перерыва ≥3 дней: тёплое «с возвращением» вместо вех —
-    // одно празднование в день, без упоминания длины перерыва и сгоревших серий.
-    const gap = await this.analyticsService.getGapBeforeLatestFill(userId);
-    if (gap !== null && gap >= 3) {
-      const last = await this.notificationService.lastSentAt(
-        userId,
-        'comeback',
-      );
-      const sentToday = last !== null && localDateString(tz, last) === todayStr;
-      if (
-        !sentToday &&
-        !(await this.notificationService.hasPending(userId, 'comeback'))
-      ) {
-        // Value-based возврат: добавляем зеркало собственных данных (сильнейшая потребность).
-        const insight = await this.analyticsService.getProfileInsight(userId);
-        const strongestNeed = insight
-          ? this.botService.getNeeds().find((n) => n.id === insight.strongest)
-              ?.chartLabel
-          : undefined;
-        await this.notificationService.schedule(
-          userId,
-          'comeback',
-          new Date(),
-          {
-            totalDays: total,
-            strongestNeed,
-            strongestAvg: insight?.strongestAvg,
-          },
-        );
-      }
-      return;
-    }
-
-    const streak = await this.analyticsService.getConsecutiveDays(userId);
-    for (const days of [7, 14, 30] as const) {
-      if (
-        streak === days &&
-        !(await this.notificationService.hasEver(userId, `streak_${days}`))
-      ) {
-        await this.notificationService.schedule(
-          userId,
-          `streak_${days}`,
-          new Date(),
-        );
-      }
-    }
-
-    for (const days of [1, 3, 7] as const) {
-      if (
-        total === days &&
-        !(await this.notificationService.hasEver(userId, `onboarding_${days}`))
-      ) {
-        await this.notificationService.schedule(
-          userId,
-          `onboarding_${days}`,
-          new Date(),
-        );
-      }
-    }
-    for (const days of [30, 60, 90] as const) {
-      if (
-        total === days &&
-        !(await this.notificationService.hasEver(userId, `anniversary_${days}`))
-      ) {
-        await this.notificationService.schedule(
-          userId,
-          `anniversary_${days}`,
-          new Date(),
-        );
-      }
-    }
+    return runDiaryComplete(this.diaryDeps(), userId);
   }
 
-  // Парный триггер (аудит 2026-07, этап 4.5): юзер заполнил трекер — мягко
-  // подсказать активным напарникам. Ограничители: уведомления партнёра
-  // включены; партнёр сегодня ещё не заполнил сам; максимум один
-  // pair_activity в день (по его таймзоне); тихие часы/бюджет — через очередь.
   async maybeNotifyPairPartners(userId: bigint): Promise<void> {
-    const pairs = await this.pairsService.getUserPairs(userId);
-    for (const pair of pairs) {
-      if (pair.status !== 'active' || pair.partnerId === null) continue;
-      const partnerId = BigInt(pair.partnerId);
+    return maybeNotifyPairPartners(this.diaryDeps(), userId);
+  }
 
-      const settings = await this.botService.getUserSettings(partnerId);
-      if (!settings || settings.notifyEnabled === false) continue;
-
-      // Напарник уже заполнил сегодня сам — подсказка не нужна.
-      const partnerRatings = await this.botService.getRatings(partnerId);
-      if (NEED_IDS.every((id) => partnerRatings[id] !== undefined)) continue;
-
-      const tz = settings.notifyTimezone ?? 'Europe/Moscow';
-      const todayStr = localDateString(tz, new Date());
-      const last = await this.notificationService.lastSentAt(
-        partnerId,
-        'pair_activity',
-      );
-      const sentToday = last !== null && localDateString(tz, last) === todayStr;
-      if (
-        sentToday ||
-        (await this.notificationService.hasPending(partnerId, 'pair_activity'))
-      ) {
-        continue;
-      }
-
-      await this.notificationService.schedule(
-        partnerId,
-        'pair_activity',
-        new Date(),
-      );
-    }
+  private diaryDeps(): DiaryCompleteDeps {
+    return {
+      botService: this.botService,
+      analyticsService: this.analyticsService,
+      pairsService: this.pairsService,
+      notificationService: this.notificationService,
+      cadenceService: this.cadenceService,
+      logger: this.logger,
+    };
   }
 }
