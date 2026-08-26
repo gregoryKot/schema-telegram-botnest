@@ -10,6 +10,9 @@ import {
   tapDone,
   recordJank,
   startJankMonitor,
+  startTimerMonitor,
+  watchVisibility,
+  getTimerJankSummary,
   runMicroBench,
   scheduleBenchmarks,
   _benchSink,
@@ -144,6 +147,46 @@ describe('отчёт', () => {
     expect(report).toContain(
       'тап Паттерны на 8.0с: 1240мс (очередь 100 + экран 1140, сборка)',
     );
+  });
+});
+
+describe('таймер-монитор (независимый от кадров)', () => {
+  it('при выключенной панели не заводит интервал', () => {
+    vi.useFakeTimers();
+    startTimerMonitor();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('пауза между тиками больше 300мс записывается отдельно от кадров', () => {
+    setPerfHudEnabled(true);
+    vi.useFakeTimers();
+    // старт → тик через 100мс (норма) → тик, пришедший на 1.5с позже
+    mockNow(0, 100, 1600);
+    startTimerMonitor();
+    vi.advanceTimersByTime(100);
+    vi.advanceTimersByTime(100);
+    vi.useRealTimers();
+    expect(getTimerJankSummary()).toEqual({ count: 1, totalMs: 1500 });
+    expect(getJankSummary()).toEqual({ count: 0, totalMs: 0 });
+  });
+});
+
+describe('слежка за видимостью', () => {
+  it('при включённой панели пишет метку состояния и реагирует на смену', () => {
+    setPerfHudEnabled(true);
+    watchVisibility();
+    expect(
+      getMarks().some((m) => /^видимость:visible[+-]фокус$/.test(m.name)),
+    ).toBe(true);
+    const before = getMarks().length;
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(getMarks().length).toBe(before + 1);
+  });
+
+  it('при выключенной — молчит', () => {
+    watchVisibility();
+    expect(getMarks()).toEqual([]);
   });
 });
 

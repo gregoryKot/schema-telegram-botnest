@@ -12,6 +12,8 @@ import { registerServiceWorker } from './registerServiceWorker';
 import {
   perfMark,
   startJankMonitor,
+  startTimerMonitor,
+  watchVisibility,
   scheduleBenchmarks,
 } from './utils/perfLog';
 
@@ -20,6 +22,8 @@ import {
 // движка работают только при включённой панели замеров (см. perfLog.ts).
 perfMark('js');
 startJankMonitor();
+startTimerMonitor();
+watchVisibility();
 scheduleBenchmarks();
 
 class ErrorBoundary extends Component<

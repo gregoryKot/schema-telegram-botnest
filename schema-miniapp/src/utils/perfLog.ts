@@ -41,6 +41,7 @@ interface Jank {
 const marks: Mark[] = [];
 const taps: TapEntry[] = [];
 const janks: Jank[] = [];
+const timerJanks: Jank[] = [];
 let pendingTap: {
   target: Section;
   t0: number;
@@ -126,6 +127,41 @@ export function recordJank(atMs: number, ms: number): void {
 
 const JANK_GAP_MS = 100;
 const JANK_WINDOW_MS = 120_000;
+const TIMER_TICK_MS = 100;
+const TIMER_GAP_MS = 300;
+
+/** Второй монитор, НЕЗАВИСИМЫЙ от кадров: setInterval(100мс). Прогон
+ *  2026-08-26 показал метроном — rAF-кадры шли ровно раз в ~1.5с первую
+ *  минуту (42 «блока» по ~1490мс), при этом бенчмарк исполнялся быстро.
+ *  Это почерк троттлинга ОТРИСОВКИ, а не занятого потока; таймер-монитор
+ *  их различает: таймеры молчат вместе с кадрами → задушен весь процесс;
+ *  таймеры тикают, кадры стоят → задушен только рендер-конвейер. */
+export function startTimerMonitor(): void {
+  if (!isPerfHudEnabled()) return;
+  let last = now();
+  const id = setInterval(() => {
+    const t = now();
+    if (t - last > TIMER_GAP_MS) {
+      timerJanks.push({ atMs: last, ms: t - last });
+      if (timerJanks.length > 200) timerJanks.shift();
+      notify();
+    }
+    last = t;
+    if (t > JANK_WINDOW_MS) clearInterval(id);
+  }, TIMER_TICK_MS);
+}
+
+/** Метки видимости/фокуса страницы: если первую минуту страница числится
+ *  hidden или без фокуса — вот причина, по которой WebKit душит отрисовку. */
+export function watchVisibility(): void {
+  if (!isPerfHudEnabled()) return;
+  const state = () =>
+    `видимость:${document.visibilityState}${document.hasFocus() ? '+фокус' : '-фокус'}`;
+  perfMark(state());
+  document.addEventListener('visibilitychange', () => perfMark(state()));
+  window.addEventListener('focus', () => perfMark(state()));
+  window.addEventListener('blur', () => perfMark(state()));
+}
 
 /** Дыры между кадрами первые 2 минуты жизни приложения: кадр, пришедший
  *  позже чем через 100мс, — это блокировка главного потока, тап в этот
@@ -186,6 +222,12 @@ export function getJanks(): Jank[] {
 export function getJankSummary(): { count: number; totalMs: number } {
   return { count: janks.length, totalMs: janks.reduce((s, j) => s + j.ms, 0) };
 }
+export function getTimerJankSummary(): { count: number; totalMs: number } {
+  return {
+    count: timerJanks.length,
+    totalMs: timerJanks.reduce((s, j) => s + j.ms, 0),
+  };
+}
 
 export function formatReport(): string {
   const lines: string[] = [];
@@ -198,6 +240,13 @@ export function formatReport(): string {
   );
   for (const b of janks) {
     lines.push(`  блок на ${sec(b.atMs)}: ${Math.round(b.ms)}мс`);
+  }
+  const tj = getTimerJankSummary();
+  lines.push(
+    `таймер-паузы >${TIMER_GAP_MS}мс (шаг ${TIMER_TICK_MS}мс): ${tj.count} шт, ${sec(tj.totalMs)} всего`,
+  );
+  for (const b of timerJanks) {
+    lines.push(`  таймер-пауза на ${sec(b.atMs)}: ${Math.round(b.ms)}мс`);
   }
   for (const t of taps) {
     lines.push(
@@ -214,5 +263,6 @@ export function _resetPerfLog(): void {
   marks.length = 0;
   taps.length = 0;
   janks.length = 0;
+  timerJanks.length = 0;
   pendingTap = null;
 }
