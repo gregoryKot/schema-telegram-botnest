@@ -8,6 +8,7 @@ import {
   getMarks,
   getJanks,
   getJankSummary,
+  getTimerJankSummary,
   formatReport,
   SECTION_LABELS,
 } from '../utils/perfLog';
@@ -63,6 +64,10 @@ export function PerfHud() {
     >
       <div>
         метки: {marks.map((m) => `${m.name} ${sec(m.atMs)}`).join(' · ') || '—'}
+      </div>
+      <div>
+        таймер-паузы &gt;300мс: {getTimerJankSummary().count} шт ·{' '}
+        {sec(getTimerJankSummary().totalMs)} всего
       </div>
       <div>
         блоки &gt;100мс: {jank.count} шт · {sec(jank.totalMs)} всего
