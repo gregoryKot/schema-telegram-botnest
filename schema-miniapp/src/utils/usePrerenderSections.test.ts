@@ -1,56 +1,49 @@
 // @vitest-environment jsdom
 // usePrerenderSections — третий ярус прогрева: скрытая сборка чужих вкладок
-// по одной за виток простоя, только после готовности первого экрана
-// (см. комментарий в usePrerenderSections.ts, разбор 2026-08-24).
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+// по одной с паузой 2.5с после готовности первого экрана. Пауза вместо
+// onIdle: на iOS requestIdleCallback нет, 600мс-фолбэк врезал сборки в пик
+// старта (панель замеров владельца 2026-08-26 — блоки 1.7-1.9с ровно на
+// метках сборка:*).
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePrerenderSections } from './usePrerenderSections';
 
-let idleQueue: (() => void)[] = [];
-
 beforeEach(() => {
-  idleQueue = [];
-  Object.defineProperty(window, 'requestIdleCallback', {
-    value: (cb: () => void) => {
-      idleQueue.push(cb);
-      return idleQueue.length;
-    },
-    configurable: true,
-  });
+  vi.useFakeTimers();
 });
 afterEach(() => {
-  Reflect.deleteProperty(window, 'requestIdleCallback');
+  vi.useRealTimers();
 });
 
-const runIdleTick = () => {
-  const cbs = idleQueue;
-  idleQueue = [];
-  act(() => cbs.forEach((cb) => cb()));
+const tick = (ms: number) => {
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
 };
 
 describe('usePrerenderSections', () => {
   it('до готовности первого экрана не планирует ничего', () => {
     const { result } = renderHook(() => usePrerenderSections(false, 'today'));
+    tick(10_000);
     expect(result.current.size).toBe(0);
-    expect(idleQueue.length).toBe(0);
   });
 
-  it('после готовности собирает чужие вкладки по одной за виток, текущую не трогает', () => {
+  it('после готовности собирает чужие вкладки по одной каждые 2.5с, текущую не трогает', () => {
     const { result, rerender } = renderHook(
       ({ ready }) => usePrerenderSections(ready, 'today'),
       { initialProps: { ready: false } },
     );
     rerender({ ready: true });
 
+    tick(2_400);
     expect(result.current.size).toBe(0);
-    runIdleTick();
+    tick(200);
     expect([...result.current]).toEqual(['schemas']);
-    runIdleTick();
+    tick(2_500);
     expect([...result.current]).toEqual(['schemas', 'help']);
-    runIdleTick();
+    tick(2_500);
     expect([...result.current]).toEqual(['schemas', 'help', 'profile']);
     expect(result.current.has('today')).toBe(false);
-    expect(idleQueue.length).toBe(0);
   });
 
   it('план строится один раз — повторная смена ready его не перезапускает', () => {
@@ -58,12 +51,27 @@ describe('usePrerenderSections', () => {
       ({ ready }) => usePrerenderSections(ready, 'today'),
       { initialProps: { ready: true } },
     );
-    runIdleTick();
-    runIdleTick();
-    runIdleTick();
+    tick(10_000);
+    expect(result.current.size).toBe(3);
     rerender({ ready: false });
     rerender({ ready: true });
-    expect(idleQueue.length).toBe(0);
+    tick(10_000);
     expect(result.current.size).toBe(3);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('смена вкладки пальцем план не перестраивает и таймеры не сбрасывает', () => {
+    const { result, rerender } = renderHook(
+      ({ current }: { current: 'today' | 'help' }) =>
+        usePrerenderSections(true, current),
+      { initialProps: { current: 'today' as 'today' | 'help' } },
+    );
+    tick(2_500);
+    expect([...result.current]).toEqual(['schemas']);
+    rerender({ current: 'help' });
+    tick(2_500);
+    expect([...result.current]).toEqual(['schemas', 'help']);
+    tick(2_500);
+    expect([...result.current]).toEqual(['schemas', 'help', 'profile']);
   });
 });

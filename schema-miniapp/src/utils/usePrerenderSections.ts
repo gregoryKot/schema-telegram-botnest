@@ -1,23 +1,28 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import type { Section } from '../components/BottomNav';
-import { onIdle } from './preloadSections';
 import { perfMark } from './perfLog';
 
 const ALL_SECTIONS: Section[] = ['today', 'schemas', 'help', 'profile'];
 
+/** Пауза между сборками скрытых вкладок. Первая версия хука ждала «простоя»
+ *  через onIdle, но на iOS requestIdleCallback нет — фолбэк ждал всего 600мс,
+ *  и сборки врезались в самую занятую фазу старта: панель замеров на телефоне
+ *  владельца (2026-08-26) показала блоки 1.7-1.9с ровно на метках
+ *  сборка:schemas/help/profile (5.1с, 6.8с, 8.4с жизни), и тапы этих секунд
+ *  стояли за ними в очереди. 2.5с разносит сборки друг от друга и от пика
+ *  стартовых запросов — тап, попавший между ними, ждёт максимум одну. */
+const PRERENDER_SPACING_MS = 2500;
+
 /**
- * Собирает скрытые вкладки заранее — по одной за виток простоя, начиная
- * после того, как данные первого экрана приехали (ready=true). Третий и
- * последний ярус прогрева: код секций тянет preloadSections, данные —
- * prefetchSectionData, а сам ТЯЖЁЛЫЙ ПЕРВЫЙ КОММИТ экрана до этого хука
- * никто не оплачивал заранее — он случался прямо в момент первого тапа
- * (~0.5-1с замершего экрана на телефонном профиле CPU 6x, замер
- * 2026-08-24; «ничего не поменялось» после keep-mounted — болели именно
- * первые открытия). Теперь коммит уходит в простой: KeepMountedSection
- * монтирует вкладку скрытой, и первый тап — уже переключение видимости.
+ * Собирает скрытые вкладки заранее — по одной, с паузой, начиная после того,
+ * как данные первого экрана приехали (ready=true). Третий и последний ярус
+ * прогрева: код секций тянет preloadSections, данные — prefetchSectionData,
+ * а сам ТЯЖЁЛЫЙ ПЕРВЫЙ КОММИТ экрана до этого хука никто не оплачивал
+ * заранее — он случался прямо в момент первого тапа (~0.5-1с замершего
+ * экрана, замер 2026-08-24). Теперь коммит уходит в паузы между стартовой
+ * работой: KeepMountedSection монтирует вкладку скрытой (и замораживает до
+ * показа), и первый тап — уже переключение видимости.
  *
- * По одной за виток — сборка секции блокирует главный поток на сотни
- * миллисекунд; подряд все три заморозили бы приложение заметно для пальца.
  * Тап по ещё не собранной вкладке работает как раньше (скелетон первым
  * кадром) и сам же её монтирует — гонки с планом нет, KeepMountedSection
  * идемпотентен.
@@ -28,39 +33,36 @@ export function usePrerenderSections(
 ): Set<Section> {
   const [prerendered, setPrerendered] = useState<Set<Section>>(new Set());
   const started = useRef(false);
+  // Реф-зеркало: план фиксирует вкладку на момент готовности, смена вкладки
+  // его не перестраивает — и не попадает в зависимости эффекта.
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
   useEffect(() => {
     if (!ready || started.current) return;
     started.current = true;
-    const rest = ALL_SECTIONS.filter((s) => s !== current);
-    function mountNext(index: number): void {
-      if (index >= rest.length) return;
-      onIdle(() => {
-        // Метка для панели замеров: видно, толкается ли фоновая сборка
-        // вкладок с тапами владельца в первую минуту (perfLog).
-        perfMark(`сборка:${rest[index]}`);
-        // startTransition: сборка скрытой вкладки — НИЗКОПРИОРИТЕТНЫЙ,
-        // ПРЕРЫВАЕМЫЙ рендер. Без него фоновый коммит блокировал главный
-        // поток сотнями миллисекунд, и тап, попавший в эту блокировку,
-        // ждал её целиком («первую минуту ужасно», владелец 2026-08-24:
-        // прогрев переложил работу с тапа в фон, но фон — это и есть
-        // первая минута). React прерывает transition на входе пользователя,
-        // обрабатывает тап и достраивает вкладку после.
-        startTransition(() =>
-          setPrerendered((prev) => {
-            if (prev.has(rest[index])) return prev;
-            const next = new Set(prev);
-            next.add(rest[index]);
-            return next;
-          }),
-        );
-        mountNext(index + 1);
-      });
-    }
-    mountNext(0);
-    // Только по ready: current фиксируется на момент готовности (started-гард),
-    // смена вкладки план не перестраивает.
-  }, [ready, current]);
+    const rest = ALL_SECTIONS.filter((s) => s !== currentRef.current);
+    const timers = rest.map((section, i) =>
+      setTimeout(
+        () => {
+          perfMark(`сборка:${section}`);
+          // startTransition: сборка скрытой вкладки — НИЗКОПРИОРИТЕТНЫЙ,
+          // ПРЕРЫВАЕМЫЙ рендер: тап, пришедший во время неё, React
+          // обрабатывает первым и достраивает вкладку после.
+          startTransition(() =>
+            setPrerendered((prev) => {
+              if (prev.has(section)) return prev;
+              const next = new Set(prev);
+              next.add(section);
+              return next;
+            }),
+          );
+        },
+        PRERENDER_SPACING_MS * (i + 1),
+      ),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [ready]);
 
   return prerendered;
 }
