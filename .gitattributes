@@ -25,6 +25,7 @@ scripts/silent-catch-baseline.json        merge=ratchet-min
 scripts/tiny-fonts-baseline.json          merge=ratchet-min
 scripts/scale-drift-baseline.json         merge=ratchet-min
 scripts/bundle-size-baseline.json         merge=ratchet-min
+scripts/render-poison-baseline.json       merge=ratchet-min
 e2e-browser/a11y-baseline.json            merge=ratchet-min
 
 # больше — лучше

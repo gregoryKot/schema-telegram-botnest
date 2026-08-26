@@ -138,7 +138,7 @@ export function LandingPage() {
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px',
-        background: 'var(--nav-bg)', backdropFilter: 'blur(20px)',
+        background: 'var(--nav-bg)', // см. index.css/.mobile-nav
         borderBottom: '1px solid var(--line)',
         transform: showBar ? 'translateY(0)' : 'translateY(-100%)',
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',

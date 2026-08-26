@@ -20,7 +20,7 @@ export function AppPreview() {
         background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))',
         border: `1px solid ${GLASS_BORDER}`, borderRadius: 32,
         boxShadow: `0 40px 90px rgba(0,0,0,.5), 0 0 60px ${glow(VIOLET, .18)}`,
-        backdropFilter: 'blur(12px)', animation: 'pl2-float 7s ease-in-out infinite',
+        animation: 'pl2-float 7s ease-in-out infinite', // backdropFilter снят: см. index.css/.mobile-nav (тут ещё и едет по translateY — блюр пересчитывался бы каждый кадр)
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
           <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', color: INK }}>Сегодня</span>
@@ -51,11 +51,11 @@ export function AppPreview() {
           </svg>
         </div>
       </div>
-      <div className="pl2-chip" style={{ position: 'absolute', top: 30, right: -10, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(PINK, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 6s ease-in-out .8s infinite' }}>
+      <div className="pl2-chip" style={{ position: 'absolute', top: 30, right: -10, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(PINK, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 6s ease-in-out .8s infinite' }}>
         <span style={{ color: PINK }}>🔍 Схема замечена</span>
         <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>Покинутость · 3-й раз за неделю</div>
       </div>
-      <div className="pl2-chip" style={{ position: 'absolute', bottom: 44, left: -16, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(EMERALD, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 8s ease-in-out 1.6s infinite' }}>
+      <div className="pl2-chip" style={{ position: 'absolute', bottom: 44, left: -16, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(EMERALD, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 8s ease-in-out 1.6s infinite' }}>
         <span style={{ color: EMERALD }}>🌱 Критик — тише</span>
         <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>реже, чем месяц назад</div>
       </div>
