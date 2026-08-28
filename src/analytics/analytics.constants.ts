@@ -121,6 +121,10 @@
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   desktop_app_open     — запустил установленное приложение на компьютере,
 //                         открылся кабинет сайта (без meta).
+//   case_*               — разбор случая («Что это было»); имена, мета и
+//                         описания каждого — в case-steps.constants.ts.
+import { CASE_EVENTS } from './case-steps.constants';
+
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -165,6 +169,8 @@ export const ANALYTICS_EVENTS = [
   'signup_source',
   'profile_pattern_open',
   'desktop_app_open',
+  // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
+  ...CASE_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

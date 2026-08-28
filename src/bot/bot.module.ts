@@ -8,6 +8,7 @@ import { StatsReportService } from './stats-report.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { PracticeMetricsService } from './practice-metrics.service';
+import { CaseMetricsService } from './case-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
@@ -70,6 +71,7 @@ const INTERNAL_PROVIDERS = [
   AccountLinkMetricsService,
   SignupSourceMetricsService,
   PracticeMetricsService,
+  CaseMetricsService,
   PhraseCheckMetricsService,
   PlusMetricsService,
   WebBannerMetricsService,
