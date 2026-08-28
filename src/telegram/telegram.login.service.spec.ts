@@ -96,7 +96,7 @@ describe('/start login_<КОД> — карточка сверки', () => {
     }
     const other = makeCtx();
     await service.handleStart(other, 'login_ZZZZZZZZ', 777);
-    expect(other.reply).toHaveBeenCalled();
+    expect(other.reply.mock.calls[0][0]).toMatch(/не найден|истёк/i);
   });
 });
 
@@ -200,10 +200,13 @@ describe('устойчивость', () => {
     const errors = jest.spyOn(Logger.prototype, 'error');
     service.onModuleInit();
 
-    await runAction(fakeBot, 'tglogin:no:K7M2QX94', { from: { id: 42 } });
+    const ctx = await runAction(fakeBot, 'tglogin:no:K7M2QX94', {
+      from: { id: 42 },
+    });
 
     // Сказать «вход отклонён», когда он не отклонён, — хуже, чем показать сбой.
-    expect(errors).toHaveBeenCalled();
+    expect(errors.mock.calls[0][0]).toContain('БД легла');
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
   });
 
   it('карта промахов не растёт бесконечно', async () => {

@@ -572,8 +572,12 @@ describe('AuthAccountController — билет входа в email-флоу', ()
 
   it('без билета прежнее поведение — ничего не подтверждаем', async () => {
     const { controller, tickets } = makeController();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), makeRes());
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
+    );
   });
 
   it('билет протух — вход в этом браузере всё равно состоялся', async () => {
@@ -581,6 +585,15 @@ describe('AuthAccountController — билет входа в email-флоу', ()
     tickets.approveLoginIfPossible.mockResolvedValue(false);
     const res = makeRes();
     await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
-    expect(res.redirect).toHaveBeenCalled();
+    // Провал билета не отменяет вход по ссылке из письма: и кука, и токен
+    // выданы, человек в этом браузере вошёл.
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true }),
+    );
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
+    );
   });
 });
