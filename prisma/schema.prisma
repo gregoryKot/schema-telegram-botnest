@@ -596,6 +596,11 @@ model UserModeNote {
   // Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно»
   modeFunction String   @default("")
   needsMet     String   @default("")
+  // Имя, которым человек называет режим своими словами («Стена»), и вопрос
+  // «чего боишься, если этот режим перестанет так делать» — оба свободный
+  // текст, шифруются (MODE_NOTE_SCHEMA).
+  alias        String   @default("")
+  fear         String   @default("")
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

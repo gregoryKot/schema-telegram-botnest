@@ -214,6 +214,8 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     behavior: e(`${BOT}/notes.service.ts`),
     modeFunction: e(`${BOT}/notes.service.ts`),
     needsMet: e(`${BOT}/notes.service.ts`),
+    alias: e(`${BOT}/notes.service.ts`),
+    fear: e(`${BOT}/notes.service.ts`),
   },
   UserBeliefCheck: {
     belief: e(`${BOT}/exercises.service.ts`),
