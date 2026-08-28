@@ -4,10 +4,14 @@
  *
  * 'case' сознательно не добавлен в shared DiaryType/DRAFT_KEYS
  * (shared/src/types.ts, shared/src/utils/drafts.ts): это Record<DiaryType, …>
- * в файлах вне caseFlow — расширение задело бы TYPE_COLORS/SHARE_META в
- * webapp/src/sections/DiarySection.tsx и webapp/src/components/diary/
- * DiaryEmptyExplainer.tsx, которые ТЗ этой задачи трогать не позволяет.
- * Ключ хранилища следует той же схеме именования, что и DRAFT_KEYS.
+ * в файлах, которые ТЗ соответствующих задач не позволяло трогать (webapp
+ * TYPE_COLORS/SHARE_META в DiarySection.tsx и т.п.). Ключ хранилища следует
+ * той же схеме именования, что и DRAFT_KEYS.
+ *
+ * localStorage — per-origin: webapp (schemehappens.ru) и schema-miniapp
+ * (schemehappens.ru/app/, отдельный origin для service worker) не видят
+ * хранилище друг друга, так что общий ключ между площадками безопасен —
+ * черновик одной площадки никогда не всплывёт на другой.
  *
  * Отказ хранилища здесь НЕ глотается молча: в черновике лежат три минуты
  * работы человека, и «Дописать потом» обещает, что они не пропадут. Молчащая
@@ -15,6 +19,10 @@
  * сломанного входа (правило №14). Поэтому каждый сбой уходит в console.error:
  * приватный режим и переполненное хранилище — реальные сценарии, а не
  * теоретические.
+ *
+ * Один источник для webapp/schema-miniapp (правило №3 CLAUDE.md) — до 2026-08
+ * жил только в schema-miniapp/src/components/caseFlow/caseDraft.ts, хотя ни
+ * одна строка не была завязана на платформу (только localStorage/console).
  */
 import type { CaseFlowFields, CaseFlowStep } from './caseFlowTypes';
 

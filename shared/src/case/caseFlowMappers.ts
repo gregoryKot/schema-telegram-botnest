@@ -1,16 +1,16 @@
 /**
  * Чистые функции потока «Разбор случая»: перевод локального CaseFlowFields
- * в CaseAnswers/onSave/onSaveCard. Вынесено из CaseFlowSheet.tsx, чтобы
- * оркестратор оставался тонким (CLAUDE.md — «держи оркестратор тонким»).
+ * в CaseAnswers/onSave/onSaveCard. Вынесено из CaseFlowSheet.tsx (miniapp),
+ * чтобы оркестратор оставался тонким (CLAUDE.md — «держи оркестратор
+ * тонким») — и подняно в shared 2026-08 (правило №3): ни один импорт здесь
+ * не завязан на платформу, webapp и miniapp зовут один и тот же код вместо
+ * двух копий одной и той же логики маппинга.
  */
-import type {
-  CaseAnswers,
-  CaseGateId,
-} from '../../../../shared/src/case/caseTypes';
-import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
-import type { ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
-import type { RecognitionView } from '../../../../shared/src/case/caseRecognition';
-import { findPickerGroupIdByModeId } from '../../../../shared/src/mode/modeFeelGates';
+import type { CaseAnswers, CaseGateId } from './caseTypes';
+import type { CaseChip } from './caseBodyChips';
+import type { ModeEntrySaveData } from '../mode/modeDiarySteps';
+import type { RecognitionView } from './caseRecognition';
+import { findPickerGroupIdByModeId } from '../mode/modeFeelGates';
 import type { CaseCardBody, CaseFlowFields } from './caseFlowTypes';
 
 /** Кастует id ворот в CaseGateId — FEEL_GATES и CaseGateId читают из одного
@@ -20,8 +20,9 @@ export function asCaseGateId(id: string | null): CaseGateId {
   return (id ?? 'unknown') as CaseGateId;
 }
 
-/** Ворота по modeId, выбранному в обход шага gate («Все режимы по группам»
- *  внутри ModeStateStep) — тот же приём, что у pickMode в ModeEntrySheet. */
+/** Ворота по modeId, выбранному в обход отдельного шага gate (например,
+ *  выбор из полного списка режимов) — тот же приём, что у pickMode в
+ *  ModeEntrySheet. */
 export function gateIdForMode(modeId: string): CaseGateId {
   return asCaseGateId(findPickerGroupIdByModeId(modeId));
 }
@@ -35,7 +36,7 @@ export function chipLabels(chips: CaseChip[], ids: string[]): string[] {
 }
 
 /** Полный CaseAnswers из накопленных полей — вызывать только когда
- *  gateId/modeId уже гарантированно заданы (после шагов gate/candidate). */
+ *  gateId/modeId уже гарантированно заданы (после шага выбора режима). */
 export function buildAnswers(fields: CaseFlowFields): CaseAnswers {
   return {
     scene: fields.scene,

@@ -82,6 +82,13 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // SchemaEntrySheet), который прогоняет detectCrisisAny по всем полям.
   'schema-miniapp/src/components/diary/DiaryTextArea.tsx':
     'дочерний <textarea>-контрол, детекция в родительском шите',
+  // Разбор случая (webapp): сцена — поле общего shared-хука
+  // useCaseFlowState (crisis = detectCrisisAny(scene, bodyOwn, impulseOwn,
+  // alias)), CrisisCard рисует CaseFlowFoot на том же экране. Тот же приём,
+  // что у DiaryTextArea.tsx строкой выше — не выдуманное исключение
+  // (правило №15), а тот же класс «дочерний контрол».
+  'webapp/src/components/caseFlow/CaseSceneScreen.tsx':
+    'дочерний <textarea>-контрол потока разбора случая, детекция в общем shared/src/case/useCaseFlowState.ts',
 };
 
 // Файлы, где кризисная детекция ОБЯЗАНА появиться в рамках текущей задачи
@@ -138,8 +145,11 @@ describe('трипваер: кризисная детекция для своб�
     // пула, чтобы увидеть претензии до сохранения; это не свободный текст
     // клиента терапии. Потолок поднимается только так — правкой в диффе,
     // видимой на ревью, а не молча.
+    // 19 → 20 (2026-08, перенос «Разбор случая» в webapp): CaseSceneScreen.tsx —
+    // дочерний <textarea>-контрол потока, тот же класс, что уже допущенный
+    // DiaryTextArea.tsx строкой выше (детекция стоит в родительском shared-хуке).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      19,
+      20,
     );
   });
 

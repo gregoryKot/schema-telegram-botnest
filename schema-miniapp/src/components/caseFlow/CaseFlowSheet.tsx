@@ -19,8 +19,9 @@ export type { CaseFlowSheetProps } from './useCaseFlow';
 
 /**
  * Оркестратор потока «Разбор случая»: чистая JSX-маршрутизация по шагу.
- * Состояние и переходы — в useCaseFlow.ts (composer над useCaseFlowState/
- * useCaseFlowSave), разметка каждого шага — в своём файле (правило №10
+ * Состояние и переходы — в useCaseFlow.ts (склейка shared-хуков состояния/
+ * сохранения с платформенным выбором режима), разметка каждого шага — в
+ * своём файле (правило №10
  * CLAUDE.md — держим оркестратор тонким).
  */
 export function CaseFlowSheet(props: CaseFlowSheetProps) {

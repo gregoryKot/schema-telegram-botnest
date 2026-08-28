@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { haptic } from '../../haptic';
 import { PrimaryAction } from '../diary/diaryFlowUi';
 import { TertiaryLink } from './caseFlowUi';
-import { CASE_ALIAS_CHIPS } from './caseAliasChips';
+import { CASE_ALIAS_CHIPS } from '../../../../shared/src/case/caseAliasChips';
 import type { Tr } from '../../../../shared/src/case/caseTypes';
 
 /** Ограничение DTO — src/api/dto/notes.dto.ts, поле alias. */

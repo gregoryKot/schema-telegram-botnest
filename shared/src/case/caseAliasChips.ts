@@ -6,6 +6,9 @@
  *
  * 'impulse_own' сознательно без пары: «своё» уже текст человека, вторая
  * заготовка поверх него не нужна.
+ *
+ * Один источник для webapp/schema-miniapp (правило №3 CLAUDE.md) — константа
+ * не завязана ни на один платформенный модуль.
  */
 export const CASE_ALIAS_CHIPS: Record<string, string> = {
   impulse_close: 'Стена',

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { haptic } from '../../haptic';
-import { useTr } from '../../utils/addressForm';
-import { api } from '../../api';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { haptic } from '../host/haptic';
+import { useTr } from '../utils/addressForm';
+import { detectCrisisAny } from '../utils/crisisMarkers';
 import { saveCaseDraft, loadCaseDraft } from './caseDraft';
 import {
   INITIAL_CASE_FIELDS,
@@ -11,9 +10,16 @@ import {
   type CaseFlowFields,
   type CaseFlowStep,
 } from './caseFlowTypes';
-import { asCaseGateId, gateIdForMode } from './caseFlowMappers';
-import { suggestSecondDoor } from '../../../../shared/src/case/caseImpulses';
-import type { CaseCriterionAnswers } from '../../../../shared/src/case/caseTypes';
+import { suggestSecondDoor } from './caseImpulses';
+import type { CaseCriterionAnswers } from './caseTypes';
+
+/** Единственное, чем платформы платят за общий хук — событие аналитики.
+ *  haptic/useTr/detectCrisisAny у webapp и schema-miniapp — буквально одна
+ *  и та же реализация (реэкспорт), поэтому здесь импортированы напрямую, а
+ *  не через DI. */
+export interface CaseFlowStateDeps {
+  trackEvent(name: string, meta?: Record<string, unknown>): void;
+}
 
 function initialState(): { step: CaseFlowStep; fields: CaseFlowFields } {
   const draft = loadCaseDraft();
@@ -26,14 +32,23 @@ function initialState(): { step: CaseFlowStep; fields: CaseFlowFields } {
 }
 
 /**
- * Поля потока + навигация между шагами ДО сохранения (hook…criterion).
- * Сохранение/узнавание/имя — в useCaseFlowSave.ts (тот же файл распух бы
- * за 300 строк — правило №10 CLAUDE.md).
+ * Поля потока + переходы ДО сохранения (hook…criterion), общие для webapp и
+ * schema-miniapp (правило №3 CLAUDE.md — код поднят в shared 2026-08).
+ *
+ * Выбор режима (gate/candidate у миниаппа, один экран у webapp) и связанная
+ * с ним навигация «назад» здесь СОЗНАТЕЛЬНО не живут: это единственное
+ * место, где у площадок разный интерфейс (мини-апп заходит на 'candidate',
+ * webapp — никогда), и втискивание обоих вариантов в общий хук раздуло бы
+ * API вдвое ради шага, который каждая площадка проходит по-своему. Каждая
+ * площадка добавляет свою функцию выбора режима и goBack поверх этого хука
+ * (patch/setStep уже здесь) — см. schema-miniapp и webapp
+ * components/caseFlow/useCaseFlowState.ts.
  */
 export function useCaseFlowState(
   onClose: () => void,
   onSteadyDay: () => void,
   onHardNow: () => void,
+  deps: CaseFlowStateDeps,
 ) {
   const tr = useTr();
   const init = useState(initialState)[0];
@@ -66,7 +81,7 @@ export function useCaseFlowState(
   const goToScene = () => {
     if (!startedRef.current) {
       startedRef.current = true;
-      api.trackEvent('case_started', {});
+      deps.trackEvent('case_started', {});
     }
     haptic.tap();
     setStep('scene');
@@ -78,41 +93,11 @@ export function useCaseFlowState(
   };
   const handleSceneNext = () => {
     haptic.tap();
-    api.trackEvent('case_scene', {
+    deps.trackEvent('case_scene', {
       source: fields.sceneFromFrame ? 'frame' : 'own',
     });
     setStep('gate');
   };
-  const goBack = () => {
-    haptic.tap();
-    if (step === 'scene') setStep('hook');
-    else if (step === 'gate') setStep('scene');
-    else if (step === 'candidate') {
-      patch({ gateId: null });
-      setStep('gate');
-    } else if (step === 'body') setStep('candidate');
-    else if (step === 'impulse') setStep('body');
-    else if (step === 'criterion') setStep('impulse');
-  };
-
-  const pickGroup = (id: string) => {
-    patch({ gateId: asCaseGateId(id) });
-    setStep('candidate');
-  };
-  const pickModeFromGate = (id: string) => {
-    patch({ modeId: id, gateId: fields.gateId ?? gateIdForMode(id) });
-    setStep('body');
-  };
-  const pickModeFromCandidate = (id: string) => {
-    patch({ modeId: id });
-    setStep('body');
-  };
-  const backToGate = () => {
-    patch({ gateId: null });
-    setStep('gate');
-  };
-  const pickGroupOnCandidate = (id: string) =>
-    patch({ gateId: asCaseGateId(id) });
   const handleBodyNext = () => {
     haptic.tap();
     setStep('impulse');
@@ -178,17 +163,11 @@ export function useCaseFlowState(
     secondDoorModeId,
     progress: PROGRESS_META[step],
     crisis,
-    onBack: NO_BACK_STEPS.has(step) ? undefined : goBack,
     handleLater,
     handleHardNow,
     goToScene,
     handleSteadyDay,
     handleSceneNext,
-    pickGroup,
-    pickModeFromGate,
-    pickModeFromCandidate,
-    backToGate,
-    pickGroupOnCandidate,
     handleBodyNext,
     handleImpulseNext,
     toggleBodyChip,
@@ -197,4 +176,4 @@ export function useCaseFlowState(
   };
 }
 
-export type CaseFlowState = ReturnType<typeof useCaseFlowState>;
+export type CaseFlowBaseState = ReturnType<typeof useCaseFlowState>;
