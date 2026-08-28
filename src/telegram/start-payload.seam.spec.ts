@@ -26,7 +26,7 @@ function startUpdate(text: string): Update {
       text,
       entities: [{ type: 'bot_command', offset: 0, length: '/start'.length }],
     },
-  } as Update;
+  } as unknown as Update;
 }
 
 /** Регистрирует хендлер ТАК ЖЕ, как прод (`bot.command('start', …)`). */
@@ -70,7 +70,9 @@ describe('readStartPayload — шов с настоящим telegraf', () => {
     // Именно это поле читал прод до 2026-08-28. Если однажды telegraf начнёт
     // его проставлять и у command, тест упадёт — и это повод перечитать
     // start-payload.ts, а не «просто поправить ожидание».
-    expect((ctx as Context & { startPayload?: string }).startPayload).toBeUndefined();
+    expect(
+      (ctx as Context & { startPayload?: string }).startPayload,
+    ).toBeUndefined();
     // А то поле, которое читаем мы, — на месте.
     expect((ctx as Context & { payload?: string }).payload).toBe('src_seed1');
   });

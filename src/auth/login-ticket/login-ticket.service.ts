@@ -151,11 +151,31 @@ export class LoginTicketService {
     if (row.intent !== 'login') {
       throw new BadRequestException('Этот код не для входа');
     }
-    if (row.approvedUserId) throw new BadRequestException('Код уже подтверждён');
+    if (row.approvedUserId)
+      throw new BadRequestException('Код уже подтверждён');
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { approvedUserId, approvedAt: new Date() },
     });
+  }
+
+  /**
+   * Подтвердить вход, не роняя поток, который УЖЕ состоялся: OAuth-callback,
+   * переход по ссылке из письма и второй фактор вызывают это после того, как
+   * человек вошёл в браузере. Провал билета не повод отдавать ему ошибку — но
+   * и молчать нельзя, иначе «приложение не впустило» останется без следа.
+   */
+  async approveLoginIfPossible(
+    userCode: string,
+    approvedUserId: bigint,
+  ): Promise<boolean> {
+    try {
+      await this.approveLogin(userCode, approvedUserId);
+      return true;
+    } catch (err) {
+      this.logger.warn(`ticket approve skipped: ${(err as Error).message}`);
+      return false;
+    }
   }
 
   /**

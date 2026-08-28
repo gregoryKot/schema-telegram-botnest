@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
+import { markAuthSeen, clearAuthSeen } from '../../../shared/src/auth/authSeen';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
 import { refreshSession } from './refreshSession';
@@ -37,6 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Общая точка «сессия жива» для refresh/Telegram-auth/логина — сбрасывает
   // authError и бэкофф ретраев, планирует следующий проактивный refresh.
   const applyToken = useCallback((token: string, expiresIn: number) => {
+    // Отметка «в этом контейнере вход удавался» (shared/auth/authSeen):
+    // экран входа обязан отличать новичка от истёкшей сессии.
+    markAuthSeen();
     hasToken.current = true;
     setTokenState(token);
     setAuthError(null);
@@ -107,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasToken.current = false;
     setTokenState(null);
     setAuthError(null);
+    clearAuthSeen();
     clearLocalData();
     // Кеш API — в памяти вкладки, не переживает смену пользователя.
     clearApiCache();

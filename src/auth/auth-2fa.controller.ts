@@ -203,7 +203,7 @@ export class Auth2faController {
     // начал вход у себя. Провал подтверждения не роняет вход в браузере: он
     // уже состоялся, а приложение честно увидит истёкший билет.
     if (dto.ticket) {
-      await this.tickets.approveLogin(dto.ticket, userId).catch(() => null);
+      await this.tickets.approveLoginIfPossible(dto.ticket, userId);
     }
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }

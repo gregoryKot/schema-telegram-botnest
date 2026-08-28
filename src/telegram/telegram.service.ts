@@ -6,7 +6,7 @@ import {
   Optional,
   Logger,
 } from '@nestjs/common';
-import { Telegraf, Context, Markup } from 'telegraf';
+import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
 import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
@@ -18,6 +18,13 @@ import { NotificationService } from '../notification/notification.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
 import { readStartPayload } from './start-payload';
+import {
+  buildAddressKeyboard,
+  buildConsentKeyboard,
+  buildWelcomeKeyboard,
+} from './telegram.keyboards';
+// Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
+export { buildWelcomeKeyboard };
 import { isLoginPayload } from './login-payload';
 import { TelegramLoginService } from './telegram.login.service';
 import {
@@ -53,36 +60,8 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 
 Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
 
-export function buildWelcomeKeyboard(): ReturnType<
-  typeof Markup.inlineKeyboard
-> {
-  return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
-    [Markup.button.callback('🎲 Мини-тесты на 2 минуты', 'qz:list')],
-    [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
-  ]);
-}
-
-// Онбординг −1 шаг (аудит 2026-07, этап 4.3): согласие и выбор ты/вы — один
-// экран с двумя кнопками вместо двух последовательных сообщений.
-function buildConsentKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('✅ Принять — общаемся на «ты»', 'accept:ty')],
-    [Markup.button.callback('✅ Принять — на «вы»', 'accept:vy')],
-  ]);
-}
-
 const ADDRESS_PROMPT =
   'Один вопрос, чтобы дальше было комфортно: как удобнее общаться?';
-
-export function buildAddressKeyboard() {
-  return Markup.inlineKeyboard([
-    [
-      Markup.button.callback('На «ты»', 'addr:ty'),
-      Markup.button.callback('На «вы»', 'addr:vy'),
-    ],
-  ]);
-}
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {

@@ -1,4 +1,11 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 
 /**
  * Тела запросов билета входа — правило №6 CLAUDE.md: рантайм-валидация

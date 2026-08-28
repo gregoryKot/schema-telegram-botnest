@@ -1,5 +1,6 @@
 // Привязка мини-аппа к уже существующему аккаунту (device authorization grant,
-// RFC 8628) — клиентская половина. Серверная — src/auth/device-link.service.ts.
+// RFC 8628) — клиентская половина. Серверная — src/auth/login-ticket/ (билет с
+// intent='link': тот же механизм, что у входа, CLAUDE.md «одна механика»).
 //
 // Почему через браузер, а не прямо здесь: Google запрещает OAuth во встроенных
 // вебвью, а у MAX нет входа для сайтов вовсе. Значит вход происходит в одном
@@ -24,9 +25,11 @@ export function linkUrl(userCode: string): string {
 }
 
 export async function startLink(provider: string): Promise<LinkStart> {
-  const res = await authedFetch('/api/auth/device-link/start', {
+  const res = await authedFetch('/api/auth/ticket/start', {
     method: 'POST',
-    body: JSON.stringify({ provider }),
+    // intent обязателен: тот же роут выписывает и билет ВХОДА (у него
+    // хозяина нет), поэтому намерение называем явно.
+    body: JSON.stringify({ intent: 'link', provider, hostId: getHost().id }),
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return (await res.json()) as LinkStart;
@@ -62,7 +65,7 @@ export async function pollLink(
   const deadline = now() + start.expiresIn * 1000;
 
   while (now() < deadline) {
-    const res = await fetch(`${BASE}/api/auth/device-link/poll`, {
+    const res = await fetch(`${BASE}/api/auth/ticket/poll`, {
       method: 'POST',
       credentials: 'include',
       headers: {

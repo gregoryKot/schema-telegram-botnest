@@ -37,13 +37,16 @@ export function makeDeps() {
   const rows: Row[] = [];
   let seq = 0;
   const providers = [
-    { userId: MAX_USER, provider: 'max', providerId: '777', displayName: 'Гриша' },
+    {
+      userId: MAX_USER,
+      provider: 'max',
+      providerId: '777',
+      displayName: 'Гриша',
+    },
   ];
 
   const match = (r: Row, where: Where): boolean =>
-    Object.entries(where).every(
-      ([k, v]) => (r as never as Where)[k] === v,
-    );
+    Object.entries(where).every(([k, v]) => (r as never as Where)[k] === v);
 
   const loginTicket = {
     create: ({ data }: { data: Partial<Row> }) => {
@@ -68,7 +71,13 @@ export function makeDeps() {
       const row = rows.find((r) => match(r, where));
       return Promise.resolve(row ? { ...row } : null);
     },
-    update: ({ where, data }: { where: { id: string }; data: Partial<Row> }) => {
+    update: ({
+      where,
+      data,
+    }: {
+      where: { id: string };
+      data: Partial<Row>;
+    }) => {
       const row = rows.find((r) => r.id === where.id)!;
       Object.assign(row, data);
       return Promise.resolve({ ...row });
@@ -91,7 +100,8 @@ export function makeDeps() {
         const byUser = clauses.some(
           (c) => 'userId' in c && c.userId === r.userId,
         );
-        const stale = clauses.some((c) => 'expiresAt' in c) && r.expiresAt < now;
+        const stale =
+          clauses.some((c) => 'expiresAt' in c) && r.expiresAt < now;
         if (byUser || stale) rows.splice(i, 1);
       }
       return Promise.resolve({ count: 0 });
@@ -125,7 +135,13 @@ export function makeDeps() {
 
   const securityLog = { log: jest.fn() } as unknown as SecurityLogService;
   const tickets = new LoginTicketService(prisma, auth);
-  const links = new TicketLinkService(prisma, auth, merge, securityLog, tickets);
+  const links = new TicketLinkService(
+    prisma,
+    auth,
+    merge,
+    securityLog,
+    tickets,
+  );
 
   return { rows, prisma, auth, merge, securityLog, tickets, links };
 }

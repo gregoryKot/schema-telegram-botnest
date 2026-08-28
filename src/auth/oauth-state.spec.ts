@@ -4,11 +4,7 @@
 // linkUserId=<жертва>, предъявлял свой provider-code и получал сессию жертвы
 // в обход 2FA. Эти тесты фиксируют, что подделка отвергается.
 import * as jwt from 'jsonwebtoken';
-import {
-  signOAuthState,
-  readOAuthState,
-  readOAuthTicket,
-} from './oauth-state';
+import { signOAuthState, readOAuthState, readOAuthTicket } from './oauth-state';
 
 const SECRET = 'test-jwt-secret';
 const ISS = 'schemehappens.ru';

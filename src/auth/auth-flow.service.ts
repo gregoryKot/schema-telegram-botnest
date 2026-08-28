@@ -12,11 +12,7 @@ import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
 import { getCookie, setRefreshCookie } from './auth-http.util';
-import {
-  signOAuthState,
-  readOAuthState,
-  readOAuthTicket,
-} from './oauth-state';
+import { signOAuthState, readOAuthState, readOAuthTicket } from './oauth-state';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 
 export type SignInOutcome =
@@ -165,13 +161,7 @@ export class AuthFlowService {
     // должен получить именно того пользователя, который сейчас вошёл. Ошибка
     // здесь не должна ронять вход в самом браузере — он уже состоялся.
     const claimed = ticketCode
-      ? await this.tickets
-          .approveLogin(ticketCode, outcome.userId)
-          .then(() => true)
-          .catch((err: Error) => {
-            this.logger.error(`ticket approve failed: ${err.message}`);
-            return false;
-          })
+      ? await this.tickets.approveLoginIfPossible(ticketCode, outcome.userId)
       : false;
     res.redirect(
       `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}${claimed ? '&ticket=1' : ''}`,
@@ -188,7 +178,10 @@ export class AuthFlowService {
   linkUserIdFromState(state: string): bigint | null {
     return readOAuthState(this.stateSecret(), state);
   }
-  buildLinkState(linkUserId: bigint | null, ticketCode?: string | null): string {
+  buildLinkState(
+    linkUserId: bigint | null,
+    ticketCode?: string | null,
+  ): string {
     return signOAuthState(this.stateSecret(), linkUserId, ticketCode ?? null);
   }
   ticketFromState(state: string): string | null {
@@ -219,7 +212,8 @@ export class AuthFlowService {
       );
     // `?ticket=` ставит контейнер, начавший вход у себя (ярлык, вкладка).
     // Дальше код едет внутри подписи, а не в открытом query.
-    const ticket = typeof req.query?.ticket === 'string' ? req.query.ticket : null;
+    const ticket =
+      typeof req.query?.ticket === 'string' ? req.query.ticket : null;
     const state = this.buildLinkState(req.webUser?.userId ?? null, ticket);
     res.cookie('oauth_state', state, {
       httpOnly: true,

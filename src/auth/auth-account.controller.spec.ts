@@ -173,7 +173,7 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
   const emailTokens = makeEmailTokens();
-  const tickets = { approveLogin: jest.fn().mockResolvedValue(undefined) };
+  const tickets = { approveLoginIfPossible: jest.fn().mockResolvedValue(true) };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
@@ -561,19 +561,24 @@ describe('AuthAccountController — билет входа в email-флоу', ()
 
   it('переход по ссылке подтверждает билет тем, кто вошёл', async () => {
     const { controller, tickets } = makeController();
-    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), makeRes());
-    expect(tickets.approveLogin).toHaveBeenCalledWith('K7M2QX94', 1n);
+    await controller.emailLoginCallback(
+      'tok-1',
+      'K7M2QX94',
+      makeReq(),
+      makeRes(),
+    );
+    expect(tickets.approveLoginIfPossible).toHaveBeenCalledWith('K7M2QX94', 1n);
   });
 
   it('без билета прежнее поведение — ничего не подтверждаем', async () => {
     const { controller, tickets } = makeController();
     await controller.emailLoginCallback('tok-1', '', makeReq(), makeRes());
-    expect(tickets.approveLogin).not.toHaveBeenCalled();
+    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
   });
 
   it('билет протух — вход в этом браузере всё равно состоялся', async () => {
     const { controller, tickets } = makeController();
-    tickets.approveLogin.mockRejectedValue(new Error('истёк'));
+    tickets.approveLoginIfPossible.mockResolvedValue(false);
     const res = makeRes();
     await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
     expect(res.redirect).toHaveBeenCalled();

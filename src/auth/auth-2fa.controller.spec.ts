@@ -145,7 +145,7 @@ function makeController() {
   const securityLog = makeSecurityLog();
   const totp = makeTotp();
   const emailSvc = makeEmail();
-  const tickets = { approveLogin: jest.fn().mockResolvedValue(undefined) };
+  const tickets = { approveLoginIfPossible: jest.fn().mockResolvedValue(true) };
   const controller = new Auth2faController(
     auth as unknown as AuthService,
     config,
@@ -442,7 +442,7 @@ describe('Auth2faController.totpChallenge — билет входа', () => {
       ticket: 'K7M2QX94',
     });
 
-    expect(tickets.approveLogin).toHaveBeenCalledWith('K7M2QX94', 7n);
+    expect(tickets.approveLoginIfPossible).toHaveBeenCalledWith('K7M2QX94', 7n);
   });
 
   it('код неверный — билет НЕ подтверждается', async () => {
@@ -455,23 +455,27 @@ describe('Auth2faController.totpChallenge — билет входа', () => {
         ticket: 'K7M2QX94',
       }),
     ).rejects.toThrow(UnauthorizedException);
-    expect(tickets.approveLogin).not.toHaveBeenCalled();
+    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
   });
 
   it('обычный вход без билета — прежнее поведение', async () => {
     const { controller, tickets, totp } = makeController();
     totp.verifyCode.mockResolvedValue(true);
 
-    const out = await controller.totpChallenge(makeReq({}), makeRes(), challenge);
+    const out = await controller.totpChallenge(
+      makeReq({}),
+      makeRes(),
+      challenge,
+    );
 
-    expect(tickets.approveLogin).not.toHaveBeenCalled();
+    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
     expect(out.accessToken).toBeTruthy();
   });
 
   it('билет протух — второй фактор всё равно впускает в браузере', async () => {
     const { controller, tickets, totp } = makeController();
     totp.verifyCode.mockResolvedValue(true);
-    tickets.approveLogin.mockRejectedValue(new Error('истёк'));
+    tickets.approveLoginIfPossible.mockResolvedValue(false);
 
     const out = await controller.totpChallenge(makeReq({}), makeRes(), {
       ...challenge,

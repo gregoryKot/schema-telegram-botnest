@@ -146,9 +146,9 @@ describe('POST ticket/poll', () => {
     const { ctl } = makeCtl();
     const res = makeRes();
 
-    expect(await ctl.poll({ deviceCode: 'd'.repeat(64) }, makeReq(), res)).toEqual(
-      { status: 'pending' },
-    );
+    expect(
+      await ctl.poll({ deviceCode: 'd'.repeat(64) }, makeReq(), res),
+    ).toEqual({ status: 'pending' });
     expect(res.cookie).not.toHaveBeenCalled();
   });
 

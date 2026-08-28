@@ -8,7 +8,13 @@
 //   2. одноразовость — второй опрос второй сессии не даёт;
 //   3. отказ («это не я») отличим от истечения — экран обязан сказать разное.
 import { BadRequestException } from '@nestjs/common';
-import { makeDeps, startLogin, startLink, TG_USER, WEB_USER } from './login-ticket.harness.spec';
+import {
+  makeDeps,
+  startLogin,
+  startLink,
+  TG_USER,
+  WEB_USER,
+} from './login-ticket.harness.spec';
 
 describe('start — контейнер просит билет', () => {
   it('выдаёт два РАЗНЫХ кода: длинный для опроса и короткий для сверки', async () => {
@@ -86,7 +92,9 @@ describe('forConfirm — что бот покажет человеку', () => {
   it('код набран строчными и с пробелами — принимается', async () => {
     const { tickets } = makeDeps();
     const { userCode } = await startLogin(tickets);
-    expect(await tickets.forConfirm(`  ${userCode.toLowerCase()} `)).not.toBeNull();
+    expect(
+      await tickets.forConfirm(`  ${userCode.toLowerCase()} `),
+    ).not.toBeNull();
   });
 
   it('чужой код — null, ничего не подсказывая о том, чего нет', async () => {
@@ -202,5 +210,38 @@ describe('poll — контейнер забирает сессию', () => {
   it('несуществующий длинный код — expired, без намёка на то, что бывает иначе', async () => {
     const { tickets } = makeDeps();
     expect(await tickets.poll('f'.repeat(64))).toEqual({ status: 'expired' });
+  });
+});
+
+describe('approveLoginIfPossible — подтверждение, не роняющее чужой поток', () => {
+  it('успех — true, билет подтверждён', async () => {
+    const { tickets } = makeDeps();
+    const { deviceCode, userCode } = await startLogin(tickets);
+
+    expect(await tickets.approveLoginIfPossible(userCode, TG_USER)).toBe(true);
+    expect((await tickets.poll(deviceCode)).status).toBe('linked');
+  });
+
+  it('билет истёк — false, и это НЕ роняет вход, который уже состоялся', async () => {
+    const { tickets } = makeDeps();
+    // OAuth-callback и второй фактор зовут это после того, как человек вошёл в
+    // браузере: провал билета там не повод отдавать ему ошибку.
+    await expect(
+      tickets.approveLoginIfPossible('ZZZZZZZZ', TG_USER),
+    ).resolves.toBe(false);
+  });
+});
+
+describe('forConfirm — сбой чтения', () => {
+  it('упавший запрос к БД — null, а не выброшенное исключение в чат бота', async () => {
+    const { tickets, prisma } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    (
+      prisma as unknown as {
+        loginTicket: { findUnique: () => Promise<never> };
+      }
+    ).loginTicket.findUnique = () => Promise.reject(new Error('БД недоступна'));
+
+    await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
   });
 });

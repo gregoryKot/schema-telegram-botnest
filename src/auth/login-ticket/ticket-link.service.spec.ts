@@ -76,7 +76,11 @@ describe('approve — подтверждение привязки', () => {
       merged: true,
     });
     expect(merge.merge).toHaveBeenCalledWith(MAX_USER, WEB_USER);
-    expect(auth.linkProviderToUser).toHaveBeenCalledWith(WEB_USER, 'max', '777');
+    expect(auth.linkProviderToUser).toHaveBeenCalledWith(
+      WEB_USER,
+      'max',
+      '777',
+    );
     expect(securityLog.log).toHaveBeenCalledWith('merge_confirmed', {
       target: WEB_USER,
       source: MAX_USER,
@@ -132,6 +136,10 @@ describe('связка привязки целиком', () => {
     const result = await tickets.poll(deviceCode);
 
     expect(result.status).toBe('linked');
-    expect(auth.issueTokens).toHaveBeenCalledWith(WEB_USER, undefined, undefined);
+    expect(auth.issueTokens).toHaveBeenCalledWith(
+      WEB_USER,
+      undefined,
+      undefined,
+    );
   });
 });

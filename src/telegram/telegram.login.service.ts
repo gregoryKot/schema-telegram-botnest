@@ -85,7 +85,7 @@ export class TelegramLoginService implements OnModuleInit {
     this.bot.action(/^tglogin:yes:([A-Z0-9]{8})$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const code = ctx.match![1];
+        const code = ctx.match[1];
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const form = await resolveForm(this.botService, rawId);
@@ -106,8 +106,10 @@ export class TelegramLoginService implements OnModuleInit {
         );
         await ctx
           .editMessageText(
+            // Безлично: форма обращения читается из профиля, а сюда мы
+            // попадаем в том числе когда прочитать её не удалось.
             'Не получилось подтвердить: код истёк или его уже использовали. ' +
-              'Начните вход в приложении заново.',
+              'Вход придётся начать заново.',
           )
           .catch(() => null);
       }
@@ -116,15 +118,18 @@ export class TelegramLoginService implements OnModuleInit {
     this.bot.action(/^tglogin:no:([A-Z0-9]{8})$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const code = ctx.match![1];
-        await this.ticketService.deny(code).catch(() => null);
+        const code = ctx.match[1];
+        // Без глушителя: провал отказа обязан дойти до catch ниже — сказать
+        // «вход отклонён», когда он не отклонён, хуже, чем показать ошибку.
+        await this.ticketService.deny(code);
         this.securityLog.log('login_ticket_denied', {
           telegramId: ctx.from?.id,
         });
         await ctx
           .editMessageText(
-            'Вход отклонён. Доступ никто не получил. Если такую ссылку ' +
-              'кто-то прислал — не открывайте её больше.',
+            // Тоже безлично — см. выше.
+            'Вход отклонён — доступ никто не получил. Если такую ссылку ' +
+              'кто-то прислал, лучше её больше не открывать.',
           )
           .catch(() => null);
       } catch (err) {

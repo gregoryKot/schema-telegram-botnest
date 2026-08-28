@@ -64,7 +64,8 @@ export class TicketLinkService {
     if (row.intent !== 'link') {
       throw new BadRequestException('Этот код не для привязки');
     }
-    if (row.approvedUserId) throw new BadRequestException('Код уже подтверждён');
+    if (row.approvedUserId)
+      throw new BadRequestException('Код уже подтверждён');
     // Запоминаем источник до всякой записи: дальше хозяин строки меняется, и
     // читать его оттуда уже нельзя.
     const sourceUserId = row.userId;

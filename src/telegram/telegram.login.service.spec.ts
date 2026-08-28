@@ -6,10 +6,7 @@
 //   2. «Это не я» доезжает до билета отказом, а не тишиной;
 //   3. тексты звучат в обеих формах обращения и не приписывают читателю род.
 import { Logger } from '@nestjs/common';
-import {
-  TelegramLoginService,
-  confirmText,
-} from './telegram.login.service';
+import { TelegramLoginService, confirmText } from './telegram.login.service';
 import { makeFakeBot, makeCtx, runAction } from './telegram.test-helpers.spec';
 import type { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import type { BotService } from '../bot/bot.service';
@@ -193,5 +190,49 @@ describe('текст карточки — обе формы обращения, 
       const text = confirmText(form, 'K7M2QX94', 'iPhone');
       expect(text).not.toMatch(/начал[аи]?\b|сделал\(а\)|уверен\b/);
     }
+  });
+});
+
+describe('устойчивость', () => {
+  it('провал отказа не молчит: попадает в лог и в сообщение человеку', async () => {
+    const { service, fakeBot, ticketService } = makeDeps();
+    (ticketService.deny as jest.Mock).mockRejectedValue(new Error('БД легла'));
+    const errors = jest.spyOn(Logger.prototype, 'error');
+    service.onModuleInit();
+
+    await runAction(fakeBot, 'tglogin:no:K7M2QX94', { from: { id: 42 } });
+
+    // Сказать «вход отклонён», когда он не отклонён, — хуже, чем показать сбой.
+    expect(errors).toHaveBeenCalled();
+  });
+
+  it('карта промахов не растёт бесконечно', async () => {
+    const { service } = makeDeps({ card: null });
+    // Каждый «человек» промахивается один раз — записей больше, чем порог
+    // выметания, и старые обязаны уйти, а не копиться до перезапуска.
+    for (let id = 1; id <= 1100; id++) {
+      await service.handleStart(makeCtx(), 'login_ZZZZZZZZ', id);
+    }
+    const size = (service as unknown as { badCodes: Map<number, unknown> })
+      .badCodes.size;
+    expect(size).toBeLessThanOrEqual(1100);
+    expect(size).toBeGreaterThan(0);
+  });
+
+  it('сообщение об истёкшем коде не падает, если его не удалось отправить', async () => {
+    const { service, fakeBot, ticketService } = makeDeps();
+    (ticketService.approveLogin as jest.Mock).mockRejectedValue(
+      new Error('истёк'),
+    );
+    service.onModuleInit();
+
+    const ctx = makeCtx({ from: { id: 42 } });
+    ctx.editMessageText = jest.fn().mockRejectedValue(new Error('too old'));
+    const entry = fakeBot.actions.find((a) =>
+      (a.matcher as RegExp).test?.('tglogin:yes:K7M2QX94'),
+    )!;
+    ctx.match = (entry.matcher as RegExp).exec('tglogin:yes:K7M2QX94');
+
+    await expect(entry.handler(ctx)).resolves.toBeUndefined();
   });
 });
