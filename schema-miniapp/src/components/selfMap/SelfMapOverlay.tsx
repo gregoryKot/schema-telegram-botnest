@@ -1,4 +1,4 @@
-import { SelfMapScreen } from './SelfMapScreen';
+import { LazySelfMapScreen as SelfMapScreen } from '../LazyOverlays';
 import { useSelfMapData } from '../../hooks/useSelfMapData';
 import { ScreenSkeleton } from '../Skeleton';
 import { BottomSheet } from '../BottomSheet';

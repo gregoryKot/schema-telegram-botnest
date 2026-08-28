@@ -62,12 +62,12 @@ export function CaseCriterionScreen({
 
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 18 }}>
+      <div className="d-display" style={{ fontSize: 21, marginBottom: 20 }}>
         Это была часть или обычная досада?
       </div>
 
       {questions.map((q) => (
-        <div key={q.key} style={{ marginBottom: 18 }}>
+        <div key={q.key} style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 15, color: 'var(--text)', marginBottom: 10 }}>
             {q.text}
           </div>
@@ -92,7 +92,7 @@ export function CaseCriterionScreen({
             fontSize: 14,
             color: 'var(--accent)',
             lineHeight: 1.5,
-            marginBottom: 18,
+            marginBottom: 20,
           }}
         >
           {buildVerdictReply(tr)[verdict]}

@@ -82,7 +82,7 @@ export function SelfMapScreen({
       </div>
 
       <CapsLabel>Где я сейчас</CapsLabel>
-      <DiaryPanel style={{ marginBottom: 22 }}>
+      <DiaryPanel style={{ marginBottom: 24 }}>
         <div style={{ padding: '16px 14px', fontSize: 15, lineHeight: 1.5 }}>
           {whereIAm}
         </div>

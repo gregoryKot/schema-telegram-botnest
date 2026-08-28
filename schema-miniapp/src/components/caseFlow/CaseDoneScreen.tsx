@@ -67,7 +67,7 @@ export function CaseDoneScreen({
           fontSize: 14,
           color: 'var(--muted)',
           lineHeight: 1.5,
-          marginBottom: 22,
+          marginBottom: 24,
         }}
       >
         {buildDiaryPayoff(tr)}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
-import { CaseFlowSheet } from './CaseFlowSheet';
+import { LazyCaseFlowSheet as CaseFlowSheet } from '../LazyOverlays';
 
 /**
  * Разбор случая. Счётчик прошлых разборов нужен потоку, чтобы показать

@@ -41,7 +41,7 @@ export function CaseNameScreen({
           fontSize: 14,
           color: 'var(--muted)',
           lineHeight: 1.5,
-          marginBottom: 18,
+          marginBottom: 20,
         }}
       >
         {tr(

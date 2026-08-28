@@ -25,7 +25,7 @@ export function SelfMapLane({
   if (!lane.visible) return null;
 
   return (
-    <div style={{ marginBottom: 22 }}>
+    <div style={{ marginBottom: 24 }}>
       <CapsLabel>{lane.title}</CapsLabel>
       {lane.locked ? (
         <DiaryPanel style={{ opacity: 0.6 }}>

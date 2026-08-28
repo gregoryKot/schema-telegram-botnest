@@ -108,7 +108,7 @@ export function CaseSceneScreen({
         </div>
       )}
 
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 20 }}>
         <PrimaryAction label="Дальше" disabled={!canNext} onClick={onNext} />
       </div>
     </div>
