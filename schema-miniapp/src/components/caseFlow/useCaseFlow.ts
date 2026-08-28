@@ -7,7 +7,10 @@ import {
 import { useCaseFlowSave } from '../../../../shared/src/case/useCaseFlowSave';
 import { NO_BACK_STEPS } from '../../../../shared/src/case/caseFlowTypes';
 import type { CaseFlowSheetProps } from '../../../../shared/src/case/caseFlowTypes';
-import { asCaseGateId, gateIdForMode } from '../../../../shared/src/case/caseFlowMappers';
+import {
+  asCaseGateId,
+  gateIdForMode,
+} from '../../../../shared/src/case/caseFlowMappers';
 
 export type { CaseFlowSheetProps } from '../../../../shared/src/case/caseFlowTypes';
 
@@ -59,7 +62,8 @@ export function useCaseFlow(props: CaseFlowSheetProps) {
     patch({ gateId: null });
     setStep('gate');
   };
-  const pickGroupOnCandidate = (id: string) => patch({ gateId: asCaseGateId(id) });
+  const pickGroupOnCandidate = (id: string) =>
+    patch({ gateId: asCaseGateId(id) });
 
   return {
     ...state,

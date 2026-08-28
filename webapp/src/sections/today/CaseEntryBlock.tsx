@@ -1,10 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { api } from '../../api';
 import type { UserProfile } from '../../types';
 import { CaseEntryCard } from './CaseEntryCard';
 import { OnboardingWidget } from './OnboardingWidget';
-import { CaseFlowScreen } from '../../components/caseFlow/CaseFlowScreen';
-import { SelfMapOverlay } from '../../components/selfMap/SelfMapOverlay';
+
+// Ленивые чанки (по образцу SchemaEx/ModeEx выше в TodaySection.tsx и
+// параллельного схлопывания в schema-miniapp, правило CLAUDE.md про
+// бандл-храповик): десять экранов потока и карта себя открываются по явному
+// тапу, а не при каждом заходе на /today — не должны утяжелять чанк раздела.
+const CaseFlowScreen = lazy(() =>
+  import('../../components/caseFlow/CaseFlowScreen').then((m) => ({
+    default: m.CaseFlowScreen,
+  })),
+);
+const SelfMapOverlay = lazy(() =>
+  import('../../components/selfMap/SelfMapOverlay').then((m) => ({
+    default: m.SelfMapOverlay,
+  })),
+);
 
 /**
  * Точка входа в разбор случая на /today + условный показ онбординга
@@ -71,43 +84,47 @@ export function CaseEntryBlock({
       )}
 
       {showFlow && (
-        <CaseFlowScreen
-          caseCount={caseCount ?? 0}
-          onSave={async (data) => {
-            await api.createModeDiary(data);
-          }}
-          onSaveCard={async (body) => {
-            await api.saveModeNote(body);
-          }}
-          onSteadyDay={onOpenTracker}
-          onOpenMap={() => {
-            setShowFlow(false);
-            setShowMap(true);
-          }}
-          onClose={() => {
-            setShowFlow(false);
-            load();
-          }}
-          onDoubt={() => {}}
-          // CaseFlowScreen сам подменяет onHardNow на goBack из useHistorySheet
-          // (CLAUDE.md: закрытие fixed-оверлея — только через goBack, не через
-          // onClose напрямую) — этот проп по факту не вызывается, но нужен по
-          // общей форме CaseFlowSheetProps (shared, тот же контракт у miniapp,
-          // где onHardNow вызывается напрямую).
-          onHardNow={() => {}}
-        />
+        <Suspense fallback={null}>
+          <CaseFlowScreen
+            caseCount={caseCount ?? 0}
+            onSave={async (data) => {
+              await api.createModeDiary(data);
+            }}
+            onSaveCard={async (body) => {
+              await api.saveModeNote(body);
+            }}
+            onSteadyDay={onOpenTracker}
+            onOpenMap={() => {
+              setShowFlow(false);
+              setShowMap(true);
+            }}
+            onClose={() => {
+              setShowFlow(false);
+              load();
+            }}
+            onDoubt={() => {}}
+            // CaseFlowScreen сам подменяет onHardNow на goBack из useHistorySheet
+            // (CLAUDE.md: закрытие fixed-оверлея — только через goBack, не через
+            // onClose напрямую) — этот проп по факту не вызывается, но нужен по
+            // общей форме CaseFlowSheetProps (shared, тот же контракт у miniapp,
+            // где onHardNow вызывается напрямую).
+            onHardNow={() => {}}
+          />
+        </Suspense>
       )}
 
       {showMap && (
-        <SelfMapOverlay
-          onClose={() => setShowMap(false)}
-          onStartCase={() => {
-            setShowMap(false);
-            setShowFlow(true);
-          }}
-          onOpenTracker={onOpenTracker}
-          onOpenSchema={onOpenSchema}
-        />
+        <Suspense fallback={null}>
+          <SelfMapOverlay
+            onClose={() => setShowMap(false)}
+            onStartCase={() => {
+              setShowMap(false);
+              setShowFlow(true);
+            }}
+            onOpenTracker={onOpenTracker}
+            onOpenSchema={onOpenSchema}
+          />
+        </Suspense>
       )}
     </>
   );

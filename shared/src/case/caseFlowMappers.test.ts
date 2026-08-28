@@ -55,7 +55,11 @@ describe('buildAnswers', () => {
 });
 
 const recognition: RecognitionView = {
-  chain: { scene: 'Сцена целиком', body: 'сердце колотится', impulse: 'свернуть разговор' },
+  chain: {
+    scene: 'Сцена целиком',
+    body: 'сердце колотится',
+    impulse: 'свернуть разговор',
+  },
   termParagraph: null,
   verdictReply: '',
   clinicalName: 'Уязвимый Ребёнок',
@@ -68,7 +72,10 @@ const recognition: RecognitionView = {
 
 describe('toSaveData', () => {
   it('маппит из recognition, не из сырых полей', () => {
-    const data = toSaveData(fields({ modeId: 'vulnerable_child' }), recognition);
+    const data = toSaveData(
+      fields({ modeId: 'vulnerable_child' }),
+      recognition,
+    );
     expect(data).toEqual({
       modeId: 'vulnerable_child',
       situation: 'Сцена целиком',
@@ -90,7 +97,11 @@ describe('toSaveData', () => {
 
 describe('toCardBody', () => {
   it('обрезает alias и подставляет undefined для пустого', () => {
-    const body = toCardBody('vulnerable_child', '  Стена  ', recognition.traits);
+    const body = toCardBody(
+      'vulnerable_child',
+      '  Стена  ',
+      recognition.traits,
+    );
     expect(body.alias).toBe('Стена');
     const skipped = toCardBody('vulnerable_child', '   ', recognition.traits);
     expect(skipped.alias).toBeUndefined();
