@@ -17,6 +17,9 @@ import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
+import { readStartPayload } from './start-payload';
+import { isLoginPayload } from './login-payload';
+import { TelegramLoginService } from './telegram.login.service';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -96,6 +99,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly analyticsEvents: AnalyticsService,
+    private readonly loginService: TelegramLoginService,
   ) {}
 
   private stopping = false;
@@ -146,8 +150,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
         await this.accountService.registerUser(userId, ctx.from?.first_name);
-        const payload = (ctx as Context & { startPayload?: string })
-          .startPayload;
+        const payload = readStartPayload(ctx);
         // Атрибуция посева (src_<slug>) — ровно один раз, при первом
         // касании нового юзера, ДО гейта согласия (чтобы видеть и конверсию
         // «переход → принял соглашение»). Возвращающийся по той же ссылке
@@ -157,6 +160,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           void this.analyticsEvents.track(userId, 'signup_source', {
             src: sourceSlug,
           });
+        }
+        // Вход по диплинку из приложения. Раньше гейта согласия: человек уже
+        // соглашался при первом входе, а тут он ждёт подтверждения на другом
+        // экране — упереться здесь в стену согласия значило бы подвесить его.
+        if (isLoginPayload(payload)) {
+          await this.loginService.handleStart(ctx, payload!, rawId);
+          return;
         }
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();

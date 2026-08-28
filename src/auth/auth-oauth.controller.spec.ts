@@ -30,6 +30,7 @@ interface FlowMocks {
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
   linkUserIdFromState: jest.Mock;
+  ticketFromState: jest.Mock;
   buildLinkState: jest.Mock;
   readLinkState: jest.Mock;
 }
@@ -54,6 +55,9 @@ function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
     linkUserIdFromState: jest.fn().mockReturnValue(null),
+    // Билет входа: у обычного веб-логина его нет, у входа из установленного
+    // приложения — есть, и он едет пятым аргументом в finishOAuthRedirect.
+    ticketFromState: jest.fn().mockReturnValue(null),
     buildLinkState: jest.fn().mockReturnValue('signed-oauth-state'),
     readLinkState: jest.fn().mockReturnValue(null),
   };
@@ -210,6 +214,7 @@ describe('AuthOauthController.vkCallback', () => {
       'vk',
       res,
       WEBAPP_URL,
+      null,
     );
   });
 
@@ -367,6 +372,7 @@ describe('AuthOauthController.telegramOidcCallback', () => {
       'telegram-oidc',
       res,
       WEBAPP_URL,
+      null,
     );
   });
 

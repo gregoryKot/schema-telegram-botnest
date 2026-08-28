@@ -17,6 +17,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
@@ -33,6 +34,7 @@ export class Auth2faController {
     private readonly securityLog: SecurityLogService,
     private readonly totp: TotpService,
     private readonly emailSvc: EmailService,
+    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── 2FA (TOTP) management ────────────────────────────────────────────────
@@ -197,6 +199,12 @@ export class Auth2faController {
       req.headers['user-agent'],
     );
     setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
+    // Второй фактор пройден — теперь можно впустить и тот контейнер, который
+    // начал вход у себя. Провал подтверждения не роняет вход в браузере: он
+    // уже состоялся, а приложение честно увидит истёкший билет.
+    if (dto.ticket) {
+      await this.tickets.approveLogin(dto.ticket, userId).catch(() => null);
+    }
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 }

@@ -12,11 +12,11 @@ import { mergeUserScalarFields } from './merge-user-fields';
 // valid for the new one). Source's rows are simply destroyed. EmailToken:
 // verification-токены старого аккаунта не должны подтверждать e-mail нового,
 // а после DELETE User стали бы сиротами (FK у него нет) — spec-сверка реестров
-// (аудит 2026-07, S-2). DeviceLinkRequest: код привязки живёт минуты.
+// (аудит 2026-07, S-2). LoginTicket: код входа/привязки живёт минуты.
 export const SECURITY_SENSITIVE_TABLES = [
   'WebSession',
   'EmailToken',
-  'DeviceLinkRequest',
+  'LoginTicket',
 ] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include

@@ -23,6 +23,7 @@ import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
+import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
@@ -172,6 +173,7 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
   const emailTokens = makeEmailTokens();
+  const tickets = { approveLogin: jest.fn().mockResolvedValue(undefined) };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
@@ -179,6 +181,7 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
     emailTokens as unknown as EmailTokenService,
+    tickets as unknown as LoginTicketService,
   );
   return {
     controller,
@@ -188,6 +191,7 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
     merge,
     securityLog,
     emailTokens,
+    tickets,
   };
 }
 
@@ -203,7 +207,7 @@ describe('AuthAccountController.emailLoginLink', () => {
   it('валидный запрос → делегирует в auth.requestEmailLogin', async () => {
     const { controller, auth } = makeController();
     const res = await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
-    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru');
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', undefined);
     expect(res).toEqual({ ok: true });
   });
 });
@@ -218,7 +222,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       FAKE_TOKENS.refreshToken,
@@ -238,7 +242,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/account?linked=email`,
     );
@@ -255,7 +259,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
@@ -267,7 +271,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
     emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
-      controller.emailLoginCallback('bad-tok', makeReq(), res),
+      controller.emailLoginCallback('bad-tok', '', makeReq(), res),
     ).resolves.toBeUndefined();
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith(
@@ -539,5 +543,39 @@ describe('AuthAccountController.unlink', () => {
       ip: '198.51.100.1',
     });
     expect(res).toEqual({ ok: true });
+  });
+});
+
+// Вход по email из установленного приложения. Письмо часто открывают на
+// ДРУГОМ устройстве — раньше сессия доставалась тому браузеру, а исходный
+// экран навсегда оставался с надписью «письмо отправлено».
+describe('AuthAccountController — билет входа в email-флоу', () => {
+  it('код билета доезжает до сервиса при запросе письма', async () => {
+    const { controller, auth } = makeController();
+    await controller.emailLoginLink(
+      { email: 'a@b.ru', ticket: 'K7M2QX94' },
+      makeReq(),
+    );
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
+  });
+
+  it('переход по ссылке подтверждает билет тем, кто вошёл', async () => {
+    const { controller, tickets } = makeController();
+    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), makeRes());
+    expect(tickets.approveLogin).toHaveBeenCalledWith('K7M2QX94', 1n);
+  });
+
+  it('без билета прежнее поведение — ничего не подтверждаем', async () => {
+    const { controller, tickets } = makeController();
+    await controller.emailLoginCallback('tok-1', '', makeReq(), makeRes());
+    expect(tickets.approveLogin).not.toHaveBeenCalled();
+  });
+
+  it('билет протух — вход в этом браузере всё равно состоялся', async () => {
+    const { controller, tickets } = makeController();
+    tickets.approveLogin.mockRejectedValue(new Error('истёк'));
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
+    expect(res.redirect).toHaveBeenCalled();
   });
 });

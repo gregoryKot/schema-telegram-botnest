@@ -21,6 +21,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
 import {
   EmailBodyDto,
   TokenBodyDto,
@@ -44,6 +45,7 @@ export class AuthAccountController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
+    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -59,12 +61,13 @@ export class AuthAccountController {
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(dto.email);
+    return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
+    @Query('ticket') ticket: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
@@ -83,6 +86,12 @@ export class AuthAccountController {
         return;
       }
       setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
+      // Билет входа подтверждаем ПОСЛЕ выдачи сессии: контейнер, ждущий
+      // опросом, должен получить именно вошедшего пользователя. Провал не
+      // роняет вход в этом браузере — он уже состоялся.
+      if (ticket) {
+        await this.tickets.approveLogin(ticket, r.userId).catch(() => null);
+      }
       res.redirect(
         r.purpose === 'link_email_auth'
           ? `${frontendBase}/account?linked=email`

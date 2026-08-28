@@ -120,7 +120,10 @@ export class AuthService {
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
-  async requestEmailLogin(email: string): Promise<{ ok: true }> {
+  async requestEmailLogin(
+    email: string,
+    ticket?: string,
+  ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
@@ -132,7 +135,7 @@ export class AuthService {
     );
 
     // userId только что найден/создан выше — форма обращения уже выбрана.
-    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink');
+    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink', ticket);
     return { ok: true };
   }
 
@@ -604,6 +607,10 @@ export class AuthService {
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,
+    // Билет входа: письмо часто открывают на ДРУГОМ устройстве, и раньше
+    // сессия доставалась тому браузеру, где кликнули по ссылке, а исходный
+    // экран так и оставался с надписью «письмо отправлено».
+    ticket?: string,
   ): Promise<void> {
     const raw = crypto.randomBytes(32).toString('base64url');
     const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
@@ -620,7 +627,8 @@ export class AuthService {
     const base = this.config
       .getOrThrow<string>('WEBAPP_URL')
       .replace(/\/$/, '');
-    const link = `${base}/api/auth/email/callback?token=${raw}`;
+    const tail = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
+    const link = `${base}/api/auth/email/callback?token=${raw}${tail}`;
     const form = await this.userAddressForm(userId);
     void this.emailSvc
       .sendLoginLink(lower, link, form)

@@ -12,7 +12,12 @@ import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
 import { getCookie, setRefreshCookie } from './auth-http.util';
-import { signOAuthState, readOAuthState } from './oauth-state';
+import {
+  signOAuthState,
+  readOAuthState,
+  readOAuthTicket,
+} from './oauth-state';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
 
 export type SignInOutcome =
   | {
@@ -41,6 +46,7 @@ export class AuthFlowService {
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
     private readonly totp: TotpService,
+    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -120,12 +126,15 @@ export class AuthFlowService {
 
   // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
   // Routes the user to the right next page based on the outcome.
-  finishOAuthRedirect(
+  async finishOAuthRedirect(
     outcome: SignInOutcome,
     provider: string,
     res: Response,
     frontendBase: string,
-  ): void {
+    // Билет входа: вход начат в контейнере, который сессию из браузера не
+    // увидит. Код подтверждаем ЗДЕСЬ, а браузеру говорим вернуться в приложение.
+    ticketCode: string | null = null,
+  ): Promise<void> {
     if (outcome.kind === 'merge') {
       const params = new URLSearchParams({
         token: outcome.mergeToken,
@@ -137,8 +146,14 @@ export class AuthFlowService {
       return;
     }
     if (outcome.kind === 'totp_challenge') {
+      // Билет доживает до второго шага: подтвердим его после кода 2FA, иначе
+      // человек с включённой двухфакторкой упёрся бы в тупик — в браузере
+      // вошёл, а приложение ждёт до истечения билета.
+      const tail = ticketCode
+        ? `&ticket=${encodeURIComponent(ticketCode)}`
+        : '';
       res.redirect(
-        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`,
+        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}${tail}`,
       );
       return;
     }
@@ -146,8 +161,20 @@ export class AuthFlowService {
     // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
     // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
     setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
+    // Билет подтверждаем ПОСЛЕ выдачи сессии: контейнер, который ждёт опросом,
+    // должен получить именно того пользователя, который сейчас вошёл. Ошибка
+    // здесь не должна ронять вход в самом браузере — он уже состоялся.
+    const claimed = ticketCode
+      ? await this.tickets
+          .approveLogin(ticketCode, outcome.userId)
+          .then(() => true)
+          .catch((err: Error) => {
+            this.logger.error(`ticket approve failed: ${err.message}`);
+            return false;
+          })
+      : false;
     res.redirect(
-      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`,
+      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}${claimed ? '&ticket=1' : ''}`,
     );
   }
 
@@ -161,8 +188,11 @@ export class AuthFlowService {
   linkUserIdFromState(state: string): bigint | null {
     return readOAuthState(this.stateSecret(), state);
   }
-  buildLinkState(linkUserId: bigint | null): string {
-    return signOAuthState(this.stateSecret(), linkUserId);
+  buildLinkState(linkUserId: bigint | null, ticketCode?: string | null): string {
+    return signOAuthState(this.stateSecret(), linkUserId, ticketCode ?? null);
+  }
+  ticketFromState(state: string): string | null {
+    return readOAuthTicket(this.stateSecret(), state);
   }
   readLinkState(raw: string | null | undefined): bigint | null {
     return readOAuthState(this.stateSecret(), raw);
@@ -187,7 +217,10 @@ export class AuthFlowService {
       throw new BadRequestException(
         `Provider ${provider} doesn't support OAuth`,
       );
-    const state = this.buildLinkState(req.webUser?.userId ?? null);
+    // `?ticket=` ставит контейнер, начавший вход у себя (ярлык, вкладка).
+    // Дальше код едет внутри подписи, а не в открытом query.
+    const ticket = typeof req.query?.ticket === 'string' ? req.query.ticket : null;
+    const state = this.buildLinkState(req.webUser?.userId ?? null, ticket);
     res.cookie('oauth_state', state, {
       httpOnly: true,
       secure: true,
@@ -230,7 +263,13 @@ export class AuthFlowService {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      this.finishOAuthRedirect(outcome, provider, res, frontendBase);
+      await this.finishOAuthRedirect(
+        outcome,
+        provider,
+        res,
+        frontendBase,
+        this.ticketFromState(state),
+      );
     } catch (err) {
       this.logger.error(
         `${provider} callback error: ${(err as Error).message}`,

@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { TotpService } from './totp.service';
+import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 
 type AuthServiceMock = Pick<
@@ -87,18 +88,23 @@ function makeService(opts: {
   registry?: AuthProviderRegistry;
   merge?: MergeService;
   totp?: TotpService;
+  tickets?: { approveLogin: jest.Mock };
 }): AuthFlowService {
   const auth = opts.auth ?? makeAuth();
   const config = opts.config ?? makeConfig();
   const registry = opts.registry ?? makeRegistry().registry;
   const merge = opts.merge ?? makeMerge();
   const totp = opts.totp ?? makeTotp();
+  const tickets = opts.tickets ?? {
+    approveLogin: jest.fn().mockResolvedValue(undefined),
+  };
   return new AuthFlowService(
     auth as unknown as AuthService,
     config,
     registry,
     merge,
     totp,
+    tickets as unknown as LoginTicketService,
   );
 }
 
@@ -579,6 +585,110 @@ describe('AuthFlowService.oauthCallback', () => {
     await svc.oauthCallback('google', 'code-1', state, '', req, res);
     expect(res.redirect).toHaveBeenCalledWith(
       `${FRONTEND}/auth/error?reason=google_failed`,
+    );
+  });
+});
+
+// Билет входа: вход начат в установленном приложении, Google требует
+// системный браузер — без этого куска сессия оставалась бы в браузере, а
+// приложение стояло бы на экране входа (разбор 2026-08-28).
+describe('finishOAuthRedirect — возврат сессии в контейнер, начавший вход', () => {
+  function makeRes() {
+    return {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as Response & { redirect: jest.Mock; cookie: jest.Mock };
+  }
+
+  const tokensOutcome = {
+    kind: 'tokens' as const,
+    userId: 999n,
+    tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 900 },
+  };
+
+  it('подтверждает билет тем пользователем, который только что вошёл', async () => {
+    const tickets = { approveLogin: jest.fn().mockResolvedValue(undefined) };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(tickets.approveLogin).toHaveBeenCalledWith('K7M2QX94', 999n);
+    // Флаг говорит странице «скажи человеку вернуться в приложение».
+    expect(res.redirect.mock.calls[0][0]).toContain('&ticket=1');
+  });
+
+  it('без билета — прежний редирект, без лишнего флага', async () => {
+    const tickets = { approveLogin: jest.fn() };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(tickets.approveLogin).not.toHaveBeenCalled();
+    expect(res.redirect.mock.calls[0][0]).not.toContain('ticket=1');
+  });
+
+  it('билет протух — вход в БРАУЗЕРЕ всё равно состоялся, флага нет', async () => {
+    const tickets = {
+      approveLogin: jest.fn().mockRejectedValue(new Error('истёк')),
+    };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('access_token=a');
+    expect(res.redirect.mock.calls[0][0]).not.toContain('ticket=1');
+  });
+
+  it('второй фактор: билет доезжает до страницы 2FA, а не теряется', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('/auth/2fa?token=chal');
+    expect(res.redirect.mock.calls[0][0]).toContain('ticket=K7M2QX94');
+  });
+
+  it('второй фактор без билета — прежний адрес без хвоста', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toBe(
+      'https://schemehappens.ru/auth/2fa?token=chal',
     );
   });
 });

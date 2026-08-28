@@ -1,4 +1,10 @@
-import { IsString, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 // L4 (аудит 2026-08, правило №6): сырые @Body('email'/'token'/'initData')
 // скаляры не валидировались в рантайме — {token:123} роняло createHash(123),
@@ -11,6 +17,15 @@ export class EmailBodyDto {
   @IsString()
   @MaxLength(320)
   email!: string;
+
+  // Билет входа: письмо часто открывают на ДРУГОМ устройстве, и сессия
+  // доставалась бы тому браузеру, а исходный экран остался бы с надписью
+  // «письмо отправлено». С билетом сессию заберёт тот, кто вход начал.
+  @IsOptional()
+  @IsString()
+  @Length(8, 8)
+  @Matches(/^[A-Za-z0-9]+$/)
+  ticket?: string;
 }
 
 export class TokenBodyDto {
