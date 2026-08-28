@@ -632,6 +632,13 @@ export default function App() {
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
         onNewDiaryEntry={setNewDiaryEntry}
+        onStartCase={() => sheets.open('caseFlow')}
+        onOpenMap={() => sheets.open('selfMap')}
+        // «Ровный день» ведёт в трекер потребностей: спокойный день тоже
+        // отмечается, а не проваливается в пустоту.
+        onSteadyDay={() =>
+          sheets.open('trackerOverlay', { trackerNeedId: null })
+        }
         patternsTab={patternsTab}
         onOpenPatterns={(tab) => {
           setPatternsTab(tab);

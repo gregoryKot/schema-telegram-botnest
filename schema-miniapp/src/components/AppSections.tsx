@@ -36,6 +36,9 @@ interface Props {
   profileRefreshKey: number;
   displayName: string | null;
   onNewDiaryEntry: (t: 'schema' | 'mode' | 'gratitude') => void;
+  onStartCase: () => void;
+  onOpenMap: () => void;
+  onSteadyDay: () => void;
   /** null = нет ожидающего явного перехода — SchemasSection сам решает
    *  вкладку (последняя открытая, см. patternsTabStorage.ts). */
   patternsTab: 'schemas' | 'modes' | null;
@@ -71,6 +74,9 @@ export function AppSections({
   onNewDiaryEntry,
   patternsTab,
   onOpenPatterns,
+  onStartCase,
+  onOpenMap,
+  onSteadyDay,
 }: Props) {
   // Раньше возврат к верху происходил сам: перемонтирование секции схлопывало
   // высоту страницы. Секции больше не перемонтируются — скроллим явно.
@@ -115,6 +121,9 @@ export function AppSections({
                 switchTherapistMode(true);
               }}
               onNewDiaryEntry={onNewDiaryEntry}
+              onStartCase={onStartCase}
+              onOpenMap={onOpenMap}
+              onSteadyDay={onSteadyDay}
             />
           </ErrorBoundary>
         }
