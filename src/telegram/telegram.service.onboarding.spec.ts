@@ -90,7 +90,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_xyz789',
+      payload: 'pair_xyz789',
     });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'XYZ789');
     expect(ctx.reply).toHaveBeenCalledWith(
@@ -107,7 +107,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_bad',
+      payload: 'pair_bad',
     });
     expect(ctx.reply).toHaveBeenCalledWith(
       expect.stringContaining('недействительна'),

@@ -40,7 +40,7 @@ function makePrisma() {
     'diaryDraft',
     'emailToken',
     'analyticsEvent',
-    'deviceLinkRequest',
+    'loginTicket',
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',

@@ -44,7 +44,12 @@ export type SecurityEvent =
   // пользователей Telegram, и на сервере это было неотличимо от фонового шума
   // неавторизованных запросов).
   | 'empty_signature'
-  | 'refresh_token_reuse';
+  | 'refresh_token_reuse'
+  // «Это не я» при сверке кода входа, а также перебор кодов через чат бота.
+  // Намеренно НЕ в ALERT_EVENTS: одиночный промах по кнопке — фоновый шум, а
+  // шквал одинаковых DM = замьюченный чат = ноль алертов (урок 2026-07-29).
+  // Картину даёт не отдельное событие, а счётчик в /stats.
+  | 'login_ticket_denied';
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.

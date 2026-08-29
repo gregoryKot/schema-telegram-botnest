@@ -13,10 +13,9 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
+import { sendMagicLink } from './magic-link';
 import { normalizeAddressForm } from '../notification/address-form';
 import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
-
-const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -120,7 +119,10 @@ export class AuthService {
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
-  async requestEmailLogin(email: string): Promise<{ ok: true }> {
+  async requestEmailLogin(
+    email: string,
+    ticket?: string,
+  ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
@@ -132,7 +134,7 @@ export class AuthService {
     );
 
     // userId только что найден/создан выше — форма обращения уже выбрана.
-    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink');
+    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink', ticket);
     return { ok: true };
   }
 
@@ -597,35 +599,28 @@ export class AuthService {
     });
     return normalizeAddressForm(owner?.addressForm);
   }
-  // Общий хвост email-логина и привязки email: токен + ссылка + письмо
-  // (fire-and-forget — ответ мгновенный даже при медленной доставке).
-  private async sendMagicLink(
+  // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
+  private sendMagicLink(
     userId: bigint,
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,
+    ticket?: string,
   ): Promise<void> {
-    const raw = crypto.randomBytes(32).toString('base64url');
-    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await this.prisma.emailToken.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId,
-        tokenHash,
-        email: encField(lower) ?? lower,
-        purpose,
-        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
+    return sendMagicLink(
+      {
+        prisma: this.prisma,
+        webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
+        encryptEmail: (e) => encField(e) ?? e,
+        addressForm: (id) => this.userAddressForm(id),
+        send: (email, link, form) =>
+          this.emailSvc.sendLoginLink(email, link, form),
+        onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
       },
-    });
-    const base = this.config
-      .getOrThrow<string>('WEBAPP_URL')
-      .replace(/\/$/, '');
-    const link = `${base}/api/auth/email/callback?token=${raw}`;
-    const form = await this.userAddressForm(userId);
-    void this.emailSvc
-      .sendLoginLink(lower, link, form)
-      .catch((err) =>
-        this.logger.error(`${logLabel} failed: ${(err as Error).message}`),
-      );
+      userId,
+      lower,
+      purpose,
+      ticket,
+    );
   }
 }

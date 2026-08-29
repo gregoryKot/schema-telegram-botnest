@@ -1,16 +1,28 @@
+import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
+import { getHost } from '../../../../shared/src/host';
+import { createLoginTicketApi } from '../../../../shared/src/auth/loginTicketApi';
+import {
+  loginUrl,
+  useLoginTicket,
+} from '../../../../shared/src/auth/useLoginTicket';
+import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWait';
+import { BASE } from '../../utils/apiBase';
+import { botUsername } from '../../utils/botConfig';
+import { adoptSession } from '../../session';
 
-// Ключ синхронизирован с webapp/src/pages/AuthCallback.tsx — туда бэкенд
-// после OAuth редиректит и оттуда возвращает обратно в мини-апп.
-const RETURN_TO_KEY = 'auth_return_to';
-const APP_PATH = '/app/';
+// Вход по билету (shared/src/auth/useLoginTicket).
+//
+// Раньше кнопки уводили страницу на `/api/auth/google` и `oauth.telegram.org`
+// — адреса вне scope манифеста. Установленное приложение обязано отдать такую
+// навигацию внешнему браузеру, и refresh-кука ложилась ТУДА: человек оказывался
+// залогинен в Chrome, а приложение, из которого он вышел, оставалось на экране
+// входа навсегда (разбор 2026-08-28).
+//
+// Теперь приложение никуда не уходит. Ссылки открываются СНАРУЖИ
+// (`target="_blank"`), а страница остаётся жить и забирает сессию опросом.
 
-/** Кладём «куда вернуться» ДО ухода на редирект — иначе после входа человека
- * выкинет на сайт и он не найдёт дорогу обратно в приложение. */
-function goToProvider(path: string): void {
-  sessionStorage.setItem(RETURN_TO_KEY, APP_PATH);
-  window.location.href = path;
-}
+const api = createLoginTicketApi(BASE);
 
 const BTN_BASE: CSSProperties = {
   width: '100%',
@@ -26,6 +38,7 @@ const BTN_BASE: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 'var(--space-8)',
+  textDecoration: 'none',
 };
 
 const PRIMARY: CSSProperties = {
@@ -40,9 +53,51 @@ const SECONDARY: CSSProperties = {
   color: 'var(--text)',
 };
 
-/** Кнопки входа: переход на редирект-эндпоинт бэкенда (правило CLAUDE.md
- * «одна механика — один компонент» — единственное место со списком провайдеров). */
+/**
+ * Билет выписывается ОДИН на весь экран, ещё до нажатия. Иначе на ссылку
+ * пришлось бы жать дважды: первый раз — чтобы выписать билет, второй — чтобы
+ * уйти по готовому адресу (открыть окно после `await` браузеры блокируют).
+ * `provider` при этом — ожидаемый путь; фактический определяется тем, кто
+ * билет подтвердил.
+ */
 export function LoginProviderButtons() {
+  const started = useRef(false);
+  const { state, begin, reset } = useLoginTicket({
+    api,
+    hostId: getHost().id,
+    botUsername,
+    apiBase: BASE,
+    onSession: (token, expiresIn) => {
+      adoptSession(token, expiresIn);
+      // refresh-кука теперь стоит в ЭТОМ контейнере — перезагрузка поднимет
+      // сессию обычным путём и вернёт человека в приложение.
+      window.location.reload();
+    },
+  });
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void begin('telegram');
+  }, [begin]);
+
+  if (state.kind !== 'waiting' && state.kind !== 'starting') {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <LoginTicketWait
+          state={state}
+          onRetry={() => {
+            reset();
+            void begin('telegram');
+          }}
+        />
+      </div>
+    );
+  }
+
+  const code = state.kind === 'waiting' ? state.code : null;
+  const deps = { botUsername, apiBase: BASE };
+
   return (
     <div
       style={{
@@ -52,21 +107,34 @@ export function LoginProviderButtons() {
         marginTop: 16,
       }}
     >
-      <button
+      <a
         style={PRIMARY}
-        onClick={() => goToProvider('/api/auth/telegram/redirect')}
+        href={code ? loginUrl('telegram', code, deps) : undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-disabled={!code}
       >
         Войти через Telegram
-      </button>
-      <button
+      </a>
+      <a
         style={SECONDARY}
-        onClick={() => goToProvider('/api/auth/google')}
+        href={code ? loginUrl('google', code, deps) : undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-disabled={!code}
       >
         Войти через Google
-      </button>
-      <button style={SECONDARY} onClick={() => goToProvider('/api/auth/vk')}>
+      </a>
+      <a
+        style={SECONDARY}
+        href={code ? loginUrl('vk', code, deps) : undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-disabled={!code}
+      >
         Войти через ВКонтакте
-      </button>
+      </a>
+      {code ? <LoginTicketWait state={state} onRetry={reset} /> : null}
     </div>
   );
 }

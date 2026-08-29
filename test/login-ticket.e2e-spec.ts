@@ -1,4 +1,5 @@
-// e2e SMOKE — привязка аккаунта мессенджера к уже существующему (RFC 8628)
+// e2e SMOKE — билет входа (RFC 8628): вход в контейнер без сессии и привязка
+// аккаунта мессенджера к уже существующему
 // через РЕАЛЬНЫЙ AppModule/HTTP-стек. Правило проекта: новый контроллер
 // приезжает со смоуком на ownership.
 //
@@ -21,12 +22,13 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 
 // Перенос данных проверяется только там, где merge реально исполняется.
 const REAL_DB = process.env.E2E_REAL_DB === '1';
 const describeOnRealDb = REAL_DB ? describe : describe.skip;
 
-describe('e2e smoke: привязка аккаунта из мессенджера (device-link)', () => {
+describe('e2e smoke: билет входа и привязка аккаунта из мессенджера', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
 
@@ -54,7 +56,7 @@ describe('e2e smoke: привязка аккаунта из мессенджер
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
     // upsert, а не push в _rows: на живом Postgres строка User обязана
-    // существовать — у DeviceLinkRequest на неё внешний ключ.
+    // существовать — у LoginTicket на неё внешний ключ.
     await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
     for (const id of ALL_USER_IDS) {
       await prisma.user.upsert({
@@ -74,10 +76,8 @@ describe('e2e smoke: привязка аккаунта из мессенджер
   });
 
   async function startFor(token: string) {
-    const res = await call(
-      srv().post('/api/auth/device-link/start'),
-      token,
-    ).send({
+    const res = await call(srv().post('/api/auth/ticket/start'), token).send({
+      intent: 'link',
       provider: 'max',
     });
     expect(res.status).toBe(200);
@@ -91,7 +91,7 @@ describe('e2e smoke: привязка аккаунта из мессенджер
     expect(userCode).toHaveLength(8);
     // findMany, а не приватные _rows фейка: тот же тест обязан работать и на
     // живом Postgres (E2E_REAL_DB=1), где никаких _rows нет.
-    const rows = await prisma.deviceLinkRequest.findMany({});
+    const rows = await prisma.loginTicket.findMany({});
     const dump = JSON.stringify(rows, (_k, v) =>
       typeof v === 'bigint' ? String(v) : (v as unknown),
     );
@@ -102,29 +102,27 @@ describe('e2e smoke: привязка аккаунта из мессенджер
   it('без токена подтвердить нельзя — иначе хватило бы угадать код', async () => {
     const { userCode } = await startFor(tokenA);
 
-    const res = await call(srv().post('/api/auth/device-link/approve')).send({
+    const res = await call(srv().post('/api/auth/ticket/approve')).send({
       code: userCode,
     });
     expect(res.status).toBe(401);
   });
 
   it('чужой код не подсматривается: preview на выдуманный код — отказ', async () => {
-    const res = await call(
-      srv().post('/api/auth/device-link/preview'),
-      tokenB,
-    ).send({
-      code: 'ZZZZ9999',
-    });
+    const res = await call(srv().post('/api/auth/ticket/preview'), tokenB).send(
+      {
+        code: 'ZZZZ9999',
+      },
+    );
     expect(res.status).toBe(400);
   });
 
   it('мусорный код не доходит до базы — DTO отсекает по форме', async () => {
-    const res = await call(
-      srv().post('/api/auth/device-link/preview'),
-      tokenB,
-    ).send({
-      code: 'нет',
-    });
+    const res = await call(srv().post('/api/auth/ticket/preview'), tokenB).send(
+      {
+        code: 'нет',
+      },
+    );
     expect(res.status).toBe(400);
   });
 
@@ -133,7 +131,7 @@ describe('e2e smoke: привязка аккаунта из мессенджер
 
     // Длина не та — DTO отсекает раньше базы, но проверяем именно результат:
     // сессии по короткому коду не бывает ни при каком раскладе.
-    const res = await call(srv().post('/api/auth/device-link/poll')).send({
+    const res = await call(srv().post('/api/auth/ticket/poll')).send({
       deviceCode: userCode.repeat(8),
     });
     expect(res.body.accessToken).toBeUndefined();
@@ -143,7 +141,7 @@ describe('e2e smoke: привязка аккаунта из мессенджер
     const { userCode } = await startFor(tokenA);
 
     const preview = await call(
-      srv().post('/api/auth/device-link/preview'),
+      srv().post('/api/auth/ticket/preview'),
       tokenC,
     ).send({
       code: userCode,
@@ -156,13 +154,13 @@ describe('e2e smoke: привязка аккаунта из мессенджер
   it('связка целиком: начал → подтвердил → забрал сессию, и ровно один раз', async () => {
     const { deviceCode, userCode } = await startFor(tokenA);
 
-    const pending = await call(srv().post('/api/auth/device-link/poll')).send({
+    const pending = await call(srv().post('/api/auth/ticket/poll')).send({
       deviceCode,
     });
     expect(pending.body).toEqual({ status: 'pending' });
 
     const approve = await call(
-      srv().post('/api/auth/device-link/approve'),
+      srv().post('/api/auth/ticket/approve'),
       tokenA,
     ).send({
       code: userCode,
@@ -170,7 +168,7 @@ describe('e2e smoke: привязка аккаунта из мессенджер
     expect(approve.status).toBe(200);
     expect(approve.body).toEqual({ merged: false });
 
-    const linked = await call(srv().post('/api/auth/device-link/poll')).send({
+    const linked = await call(srv().post('/api/auth/ticket/poll')).send({
       deviceCode,
     });
     expect(linked.status).toBe(200);
@@ -178,10 +176,102 @@ describe('e2e smoke: привязка аккаунта из мессенджер
     expect(linked.body.accessToken).toBeTruthy();
 
     // Повторный опрос по тому же коду второй сессии не даёт.
-    const again = await call(srv().post('/api/auth/device-link/poll')).send({
+    const again = await call(srv().post('/api/auth/ticket/poll')).send({
       deviceCode,
     });
     expect(again.body).toEqual({ status: 'expired' });
+  });
+
+  // ─── Вход в контейнер без сессии ──────────────────────────────────────────
+  //
+  // Ради этого механизм и обобщён. Установленное приложение живёт в отдельной
+  // банке кук: вход, случившийся во внешнем браузере, ему не виден, и до
+  // билета войти с ярлыка было нельзя вовсе (разбор 2026-08-28).
+  describe('билет входа (intent: login)', () => {
+    // Троттлинг `start` — 5 запросов в минуту, и это защита от перебора, а не
+    // помеха тесту: по HTTP дёргаем его ровно там, где проверяется САМ роут, а
+    // билеты для проверки опроса выписываем сервисом.
+    const issue = () =>
+      app.get(LoginTicketService).start({
+        intent: 'login',
+        provider: 'telegram',
+        requesterUserId: null,
+        hostId: 'web',
+        deviceLabel: 'iPhone · Safari',
+      });
+
+    it('роут выписывает билет БЕЗ авторизации — у просящего сессии ещё нет', async () => {
+      const res = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'login',
+        provider: 'telegram',
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.deviceCode).toHaveLength(64);
+      expect(res.body.userCode).toHaveLength(8);
+    });
+
+    it('привязка без авторизации отбивается — привязывать не к чему', async () => {
+      const res = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'link',
+        provider: 'max',
+      });
+      expect(res.status).toBe(401);
+    });
+
+    it('связка целиком: выписал контейнер → подтвердил мессенджер → сессию получил КОНТЕЙНЕР', async () => {
+      const { deviceCode, userCode } = await issue();
+
+      // Подтверждает бот — публичного HTTP-роута «одобрить вход» нет намеренно.
+      await app.get(LoginTicketService).approveLogin(userCode, USER_A);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('linked');
+      expect(res.body.accessToken).toBeTruthy();
+      // Кука ложится ИМЕННО в этот контейнер — иначе весь механизм бессмыслен.
+      expect(String(res.headers['set-cookie'])).toContain('refresh_token=');
+
+      // Билет одноразовый: повторный опрос второй сессии не даёт.
+      const again = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(again.body.status).toBe('expired');
+      expect(again.body.accessToken).toBeUndefined();
+    });
+
+    it('чужой длинный секрет сессии не даёт', async () => {
+      const { userCode } = await issue();
+      await app.get(LoginTicketService).approveLogin(userCode, USER_A);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode: 'f'.repeat(64),
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('expired');
+      expect(res.body.accessToken).toBeUndefined();
+    });
+
+    it('отказ «это не я» отличим от истечения — экран обязан сказать разное', async () => {
+      const { deviceCode, userCode } = await issue();
+      await app.get(LoginTicketService).deny(userCode);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(res.body.status).toBe('denied');
+      expect(res.body.accessToken).toBeUndefined();
+    });
+
+    it('билетом входа привязку не подтвердить — намерения не подменяются', async () => {
+      const { userCode } = await issue();
+      const res = await call(
+        srv().post('/api/auth/ticket/approve'),
+        tokenC,
+      ).send({ code: userCode });
+      expect(res.status).toBe(400);
+    });
   });
 });
 
@@ -232,9 +322,9 @@ describeOnRealDb('перенос данных при подтверждении 
     });
 
     const started = await call(
-      srv().post('/api/auth/device-link/start'),
+      srv().post('/api/auth/ticket/start'),
       signAccessToken(FROM, secret()),
-    ).send({ provider: 'max' });
+    ).send({ intent: 'link', provider: 'max' });
     expect(started.status).toBe(200);
     const { deviceCode, userCode } = started.body as {
       deviceCode: string;
@@ -243,7 +333,7 @@ describeOnRealDb('перенос данных при подтверждении 
 
     // Экран подтверждения показывает, что именно переедет.
     const preview = await call(
-      srv().post('/api/auth/device-link/preview'),
+      srv().post('/api/auth/ticket/preview'),
       signAccessToken(TO, secret()),
     ).send({ code: userCode });
     expect(preview.status).toBe(200);
@@ -251,7 +341,7 @@ describeOnRealDb('перенос данных при подтверждении 
     expect(preview.body.summary.Rating).toBe(1);
 
     const approve = await call(
-      srv().post('/api/auth/device-link/approve'),
+      srv().post('/api/auth/ticket/approve'),
       signAccessToken(TO, secret()),
     ).send({ code: userCode });
     expect(approve.status).toBe(200);
@@ -273,7 +363,7 @@ describeOnRealDb('перенос данных при подтверждении 
 
     // И мини-апп, вернувшись за сессией, её получает — несмотря на то, что
     // аккаунт, под которым он начинал, уже не существует.
-    const linked = await call(srv().post('/api/auth/device-link/poll')).send({
+    const linked = await call(srv().post('/api/auth/ticket/poll')).send({
       deviceCode,
     });
     expect(linked.status).toBe(200);

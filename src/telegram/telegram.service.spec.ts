@@ -171,7 +171,7 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
     // /start pair_ABC123 без согласия — код кладётся в pendingPairCodes, ждём согласия
     const startCtx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc123',
+      payload: 'pair_abc123',
     });
     expect(startCtx.reply).toHaveBeenCalledWith(
       expect.stringContaining('Соглашение'),

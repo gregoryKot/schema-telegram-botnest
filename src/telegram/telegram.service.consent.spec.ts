@@ -100,7 +100,7 @@ describe('TelegramService — accept_consent (легаси-кнопка)', () =>
     service.onModuleInit();
     await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc',
+      payload: 'pair_abc',
     });
     const ctx = await runAction(fakeBot, 'accept_consent', { from: { id: 1 } });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'ABC');

@@ -86,11 +86,17 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     email: p('дублирует providerId/OAuth-профиль — см. providerId'),
     displayName: p('имя из OAuth-профиля, показывается в /account'),
   },
-  DeviceLinkRequest: {
+  LoginTicket: {
     id: ID,
     deviceCodeHash: TOKEN,
     userCodeHash: TOKEN,
     provider: ID,
+    intent: ID,
+    hostId: ID,
+    // Класс устройства и браузер («iPhone · Safari»), собранные из User-Agent
+    // без версий и сборок (device-label.ts). Живут пять минут и показываются
+    // самому человеку при сверке — шифровать нечего, свободного текста нет.
+    deviceLabel: p('класс устройства для сверки входа, без версий и сборок'),
   },
   WebSession: {
     id: ID,

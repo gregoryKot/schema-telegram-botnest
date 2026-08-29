@@ -8,14 +8,23 @@ import { TelegramSettingsService } from './telegram.settings.service';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
 import { TelegramQuizService } from './telegram.quiz.service';
+import { TelegramLoginService } from './telegram.login.service';
 import { TELEGRAM_PROVIDERS } from './telegram.providers';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
 import { TherapyModule } from '../therapy/therapy.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [BotModule, NotificationModule, TherapyModule, AnalyticsModule],
+  imports: [
+    BotModule,
+    NotificationModule,
+    TherapyModule,
+    AnalyticsModule,
+    // Билет входа: карточку сверки показывает бот (telegram.login.service).
+    AuthModule,
+  ],
   controllers: [HealthyAdultAdminController],
   providers: [
     TelegramService,
@@ -25,6 +34,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     TelegramNotifyActionsService,
     TelegramNotifySettingsService,
     TelegramQuizService,
+    TelegramLoginService,
     ...TELEGRAM_PROVIDERS,
     ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
   ],

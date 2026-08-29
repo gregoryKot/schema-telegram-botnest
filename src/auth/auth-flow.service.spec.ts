@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { TotpService } from './totp.service';
+import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 
 type AuthServiceMock = Pick<
@@ -87,18 +88,23 @@ function makeService(opts: {
   registry?: AuthProviderRegistry;
   merge?: MergeService;
   totp?: TotpService;
+  tickets?: { approveLoginIfPossible: jest.Mock };
 }): AuthFlowService {
   const auth = opts.auth ?? makeAuth();
   const config = opts.config ?? makeConfig();
   const registry = opts.registry ?? makeRegistry().registry;
   const merge = opts.merge ?? makeMerge();
   const totp = opts.totp ?? makeTotp();
+  const tickets = opts.tickets ?? {
+    approveLoginIfPossible: jest.fn().mockResolvedValue(true),
+  };
   return new AuthFlowService(
     auth as unknown as AuthService,
     config,
     registry,
     merge,
     totp,
+    tickets as unknown as LoginTicketService,
   );
 }
 
@@ -276,7 +282,7 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
 describe('AuthFlowService.finishOAuthRedirect', () => {
   const FRONTEND = 'https://schemehappens.ru';
 
-  it('исход "merge" → редирект на /account/merge с токеном/summary/provider/name', () => {
+  it('исход "merge" → редирект на /account/merge с токеном/summary/provider/name', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -285,7 +291,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       summary: { Note: 2 },
       otherDisplay: 'Грег',
     };
-    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    await svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
     expect(res.cookie).not.toHaveBeenCalled();
     const url = res.redirect.mock.calls[0][0] as string;
     expect(url).toMatch(`${FRONTEND}/account/merge?`);
@@ -294,7 +300,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     expect(url).toContain(encodeURIComponent('Грег'));
   });
 
-  it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', () => {
+  it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -303,13 +309,13 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       summary: { Note: 2 },
       otherDisplay: null,
     };
-    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    await svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
     const url = res.redirect.mock.calls[0][0] as string;
     expect(url).toContain('name=');
     expect(url).not.toContain('null');
   });
 
-  it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', () => {
+  it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -317,13 +323,13 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       userId: 1n,
       challengeToken: 'ch tok/weird',
     };
-    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    await svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
     expect(res.redirect).toHaveBeenCalledWith(
       `${FRONTEND}/auth/2fa?token=${encodeURIComponent('ch tok/weird')}`,
     );
   });
 
-  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback с access_token в хэше', () => {
+  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback с access_token в хэше', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -331,7 +337,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       userId: 1n,
       tokens: FAKE_TOKENS,
     };
-    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    await svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
     expect(res.cookie).toHaveBeenCalledWith(
       'refresh_token',
       FAKE_TOKENS.refreshToken,
@@ -579,6 +585,117 @@ describe('AuthFlowService.oauthCallback', () => {
     await svc.oauthCallback('google', 'code-1', state, '', req, res);
     expect(res.redirect).toHaveBeenCalledWith(
       `${FRONTEND}/auth/error?reason=google_failed`,
+    );
+  });
+});
+
+// Билет входа: вход начат в установленном приложении, Google требует
+// системный браузер — без этого куска сессия оставалась бы в браузере, а
+// приложение стояло бы на экране входа (разбор 2026-08-28).
+describe('finishOAuthRedirect — возврат сессии в контейнер, начавший вход', () => {
+  function makeRes() {
+    return {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as Response & { redirect: jest.Mock; cookie: jest.Mock };
+  }
+
+  const tokensOutcome = {
+    kind: 'tokens' as const,
+    userId: 999n,
+    tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 900 },
+  };
+
+  it('подтверждает билет тем пользователем, который только что вошёл', async () => {
+    const tickets = {
+      approveLoginIfPossible: jest.fn().mockResolvedValue(true),
+    };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(tickets.approveLoginIfPossible).toHaveBeenCalledWith(
+      'K7M2QX94',
+      999n,
+    );
+    // Флаг говорит странице «скажи человеку вернуться в приложение».
+    expect(res.redirect.mock.calls[0][0]).toContain('&ticket=1');
+  });
+
+  it('без билета — прежний редирект, без лишнего флага', async () => {
+    const tickets = { approveLoginIfPossible: jest.fn() };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
+    expect(res.redirect.mock.calls[0][0]).not.toContain('ticket=1');
+  });
+
+  it('билет протух — вход в БРАУЗЕРЕ всё равно состоялся, флага нет', async () => {
+    // approveLoginIfPossible сама логирует и возвращает false — вход в
+    // браузере от этого не страдает.
+    const tickets = {
+      approveLoginIfPossible: jest.fn().mockResolvedValue(false),
+    };
+    const service = makeService({ tickets });
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('access_token=a');
+    expect(res.redirect.mock.calls[0][0]).not.toContain('ticket=1');
+  });
+
+  it('второй фактор: билет доезжает до страницы 2FA, а не теряется', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('/auth/2fa?token=chal');
+    expect(res.redirect.mock.calls[0][0]).toContain('ticket=K7M2QX94');
+  });
+
+  it('второй фактор без билета — прежний адрес без хвоста', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    await service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toBe(
+      'https://schemehappens.ru/auth/2fa?token=chal',
     );
   });
 });

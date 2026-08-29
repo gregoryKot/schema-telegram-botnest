@@ -5,8 +5,9 @@ import { AuthOauthController } from './auth-oauth.controller';
 import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
-import { AuthDeviceLinkController } from './auth-device-link.controller';
-import { DeviceLinkService } from './device-link.service';
+import { AuthTicketController } from './auth-ticket.controller';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
+import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
 import { EmailTokenService } from './email-token.service';
@@ -33,7 +34,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,
-    DeviceLinkService,
+    LoginTicketService,
+    TicketLinkService,
     SecurityLogService,
     TelegramDomainWatchdogService,
     TotpService,
@@ -51,7 +53,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AuthTelegramController,
     AuthAccountController,
     AuthMaxController,
-    AuthDeviceLinkController,
+    AuthTicketController,
     Auth2faController,
   ],
   // MaxProvider экспортируется отдельно от реестра: его напрямую использует
@@ -62,6 +64,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     SecurityLogService,
     EmailService,
     MaxProvider,
+    // Карточку сверки при входе через бота показывает TelegramModule.
+    LoginTicketService,
   ],
 })
 export class AuthModule {}
