@@ -320,6 +320,13 @@ describeOnRealDb('перенос данных при подтверждении 
     await prisma.authProvider.create({
       data: { userId: FROM, provider: 'max', providerId: 'e2e-max-777' },
     });
+    // «Мои схемы» и настройка времени напоминаний — то, что слияние молча
+    // теряло до 2026-08-29: человек сливал аккаунты ради синхронизации и
+    // терял ровно то, ради чего сливал.
+    await prisma.user.update({
+      where: { id: FROM },
+      data: { mySchemaIds: ['abandonment'], notifyLocalHour: 8 },
+    });
 
     const started = await call(
       srv().post('/api/auth/ticket/start'),
@@ -354,6 +361,12 @@ describeOnRealDb('перенос данных при подтверждении 
       [],
     );
     expect(await prisma.user.findUnique({ where: { id: FROM } })).toBeNull();
+
+    // Скаляры доехали вместе с таблицами — через настоящий SQL, а не только
+    // в юнит-тесте применителя.
+    const merged = await prisma.user.findUnique({ where: { id: TO } });
+    expect(merged?.mySchemaIds).toEqual(['abandonment']);
+    expect(merged?.notifyLocalHour).toBe(8);
 
     // Провайдер мессенджера теперь принадлежит принявшему аккаунту.
     const provider = await prisma.authProvider.findFirst({
