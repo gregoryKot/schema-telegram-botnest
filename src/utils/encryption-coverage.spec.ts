@@ -101,6 +101,9 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   WebSession: {
     id: ID,
     tokenHash: TOKEN,
+    // Хеш токена-наследника: по нему видно, пользовался ли им кто-нибудь.
+    // Такой же непрозрачный хеш, как tokenHash, — шифровать нечего.
+    replacedByHash: TOKEN,
     family: TOKEN,
     ipAddress: p('security-телеметрия сессий («активные устройства»)'),
     userAgent: p('security-телеметрия сессий («активные устройства»)'),

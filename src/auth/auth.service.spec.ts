@@ -88,7 +88,7 @@ function makeFakePrisma() {
     defaults: { usedAt: null },
   });
   const webSession = createFakeTable(webSessions, {
-    defaults: { revokedAt: null },
+    defaults: { revokedAt: null, replacedByHash: null },
   });
   const authProvider = createFakeTable(authProviders);
   const user = createFakeTable(users);
@@ -183,7 +183,10 @@ describe('AuthService — refresh-token rotation', () => {
     const { svc, webSessions } = makeService();
     await svc.issueTokens(99n); // посторонний пользователь, своя family
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    // Цепочку надо ПРОДВИНУТЬ: кражей считается повтор, когда наследником уже
+    // воспользовались. Одна ротация делает наследника, вторая — использует его.
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     ); // reuse → theft-detection всей family
@@ -218,20 +221,19 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
-  // Регрессия на инцидент 2026-08-21 «постоянно нужно логиниться заново»:
-  // ДО grace-окна любой повтор убивал всю family, включая обычный дребезг
-  // (две вкладки, оборванный Set-Cookie). Ниже — оба исхода по отдельности.
-  it('повторное использование СПУСТЯ grace-окно палит всю family (настоящая кража)', async () => {
+  // Регрессия на разбор 2026-08-28 «постоянно выкидывает». Кражу от
+  // потерянного ответа отличает НАСЛЕДНИК, а не время: пользовался ли токеном,
+  // выданным взамен, кто-нибудь ещё.
+  it('наследником воспользовались → повтор старого токена палит всю family (настоящая кража)', async () => {
     const { svc, webSessions, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
-    // Атакующий использует украденный токен позже — за пределами grace-окна
-    // (REFRESH_REUSE_GRACE_MS=30с), не сразу вслед за легитимной ротацией.
-    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 31_000));
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    // Легитимный клиент продолжил цепочку — значит наследник дошёл до него.
+    await svc.rotateRefreshToken(second.refreshToken);
+
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     );
-    // вся family отозвана, включая токен, честно выданный на шаге выше
     expect(webSessions.every((s) => s.revokedAt !== null)).toBe(true);
     expect(securityLog.log).toHaveBeenCalledWith(
       'refresh_token_reuse',
@@ -239,24 +241,51 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
-  it('повторное использование СРАЗУ после ротации (дребезг: две вкладки, оборванный Set-Cookie) НЕ палит family', async () => {
-    const { svc, webSessions, securityLog } = makeService();
+  it('ответ ротации не доехал — СПУСТЯ СУТКИ старый токен всё ещё впускает', async () => {
+    const { svc, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
-    const rotated = await svc.rotateRefreshToken(issued.refreshToken);
-    // Реюз старого токена практически сразу — внутри REFRESH_REUSE_GRACE_MS.
-    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
-      UnauthorizedException,
-    );
-    // family жива — токен-наследник, выданный легитимной ротацией, работает.
-    const rotatedHash = createHash('sha256')
-      .update(rotated.refreshToken)
-      .digest('hex');
-    const survivor = webSessions.find((s) => s.tokenHash === rotatedHash);
-    expect(survivor?.revokedAt).toBeNull();
+    // Ротация прошла на сервере, но Set-Cookie не доехал: ОС усыпила
+    // приложение. У клиента остался ПРЕЖНИЙ токен.
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Человек возвращается на следующий день — раньше здесь его выкидывало и
+    // отзывало все его сессии разом.
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 24 * 3600 * 1000));
+    const recovered = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(recovered.accessToken).toBeTruthy();
+    expect(recovered.rotated).toBe(true);
     expect(securityLog.log).not.toHaveBeenCalledWith(
       'refresh_token_reuse',
       expect.anything(),
     );
+  });
+
+  it('ответ не доехал ДВАЖДЫ подряд — вход всё равно не теряется', async () => {
+    const { svc } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 7200_000));
+
+    // Без перенацеливания replacedByHash второй повтор выглядел бы кражей:
+    // прежний наследник к этому моменту уже отозван восстановлением.
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).resolves.toEqual(
+      expect.objectContaining({ rotated: true }),
+    );
+  });
+
+  it('восстановление оставляет в семье ровно один живой токен', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Иначе детекция перестала бы что-либо значить: два живых токена в одной
+    // цепочке — это ровно то состояние, которое она обязана ловить.
+    expect(webSessions.filter((s) => s.revokedAt === null)).toHaveLength(1);
   });
 
   it.each<[string, (svc: AuthService) => Promise<string>]>([

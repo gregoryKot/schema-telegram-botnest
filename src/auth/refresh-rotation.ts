@@ -16,6 +16,21 @@
 //     чем чаще ротация, тем шире окно для гонки №1. Если предыдущая ротация
 //     этой же сессии была недавно, новый refresh-токен не нужен: access
 //     переиздаём, а куку оставляем прежней.
+//
+// Разбор 2026-08-28 показал, что окна в 30 секунд не хватает, и хватить не
+// может. Мобильная ОС усыпляет приложение вместе с недоехавшим ответом, и
+// человек возвращается через час или через сутки — то есть ВСЕГДА позже
+// окна. Время вообще плохой признак: оно не отвечает на вопрос, пользуется ли
+// этой сессией кто-то ещё.
+//
+// Признак, который отвечает: НАСЛЕДНИК. При ротации мы запоминаем в старой
+// строке хеш выданного взамен токена. Если наследник существует и сам ни разу
+// не ротировался — цепочка не продвигалась, второго участника нет, и повтор
+// старого токена это потерянный ответ. Если наследник уже отозван — токеном
+// пользовался кто-то ещё, и это ровно тот случай, ради которого детекция
+// заведена. Гарантия RFC 6819 сохраняется: как только ДВОЕ используют
+// цепочку, отзыв семьи срабатывает; исчезает только ложное срабатывание,
+// когда участник один.
 
 /** Повтор уже отозванного refresh-токена в пределах этого окна считается
  * дребезгом (гонка), а не кражей — family не отзывается. */
@@ -29,35 +44,87 @@ export const REFRESH_ROTATE_MIN_INTERVAL_MS = 5 * 60_000;
  * true — похоже на настоящую кражу (отозвать всю family), false — дребезг
  * в пределах grace-окна (просто отклонить эту попытку, семью не трогать).
  *
- * `revokedAt: null` — сессия истекла, но не была отозвана ротацией (например,
- * TTL вышел естественно) — это не сценарий гонки ротации, старое поведение
- * (family отзывается, если она есть) сохраняется.
+ * Запасной признак: применяется только к строкам БЕЗ `replacedByHash` — то
+ * есть выданным до появления наследника (одна ротация после деплоя). Дальше
+ * решает {@link classifyReuse} по наследнику, а не по времени.
  */
 export function isTheftReuse(revokedAt: Date | null, now: Date): boolean {
-  if (!revokedAt) return true;
+  if (!revokedAt) return false;
   return now.getTime() - revokedAt.getTime() >= REFRESH_REUSE_GRACE_MS;
 }
 
-/** Что делать с повтором отозванного/истёкшего токена — считает всё, что не
- * требует Prisma, чтобы auth.service.ts (уже на потолке размера, правило
- * №10) только исполнял вердикт: отзывал family и логировал. */
+/**
+ * Что делать с повтором отозванного/истёкшего токена.
+ *
+ * `recover` — ответ ротации не доехал: выдать новую пару в той же семье и
+ * ответить 200. Отказ здесь бессмыслен: клиент по контракту считает 401
+ * окончательной смертью сессии (shared/src/auth/sessionRefresh.ts) и уводит
+ * человека на экран входа — при живой тридцатидневной куке.
+ *
+ * `reject` — восстанавливать нечего (токен истёк естественно, или это
+ * дребезг двух параллельных запросов, и второй уже получил свою пару), но и
+ * кражей это не является: семью не трогаем и админа не будим.
+ *
+ * `theft` — цепочкой пользуется кто-то ещё. Отзыв семьи и аудит.
+ */
+export type ReuseOutcome = 'recover' | 'reject' | 'theft';
+
 export interface ReuseVerdict {
-  theft: boolean;
+  outcome: ReuseOutcome;
   logMessage: string;
 }
+
+/** Наследник в том виде, в каком он нужен вердикту (Prisma сюда не заходит). */
+export interface SuccessorState {
+  revokedAt: Date | null;
+  expiresAt: Date;
+}
+
 export function classifyReuse(
-  revokedAt: Date | null,
+  session: { revokedAt: Date | null; replacedByHash: string | null },
+  successor: SuccessorState | null,
   now: Date,
   userId: bigint,
 ): ReuseVerdict {
-  const theft = isTheftReuse(revokedAt, now);
   const who = String(userId);
-  return {
-    theft,
-    logMessage: theft
-      ? `Refresh token reuse detected — revoking family (userId ${who})`
-      : `Refresh token reuse within grace window — race, not theft (userId ${who})`,
-  };
+
+  // Не отзывали — значит просто вышел TTL. Человек не заходил месяц; это не
+  // кража, а повод спокойно попросить войти заново. Раньше такая строка
+  // считалась кражей и будила админа на каждого вернувшегося.
+  if (!session.revokedAt) {
+    return {
+      outcome: 'reject',
+      logMessage: `Refresh token expired naturally — no theft (userId ${who})`,
+    };
+  }
+
+  if (session.replacedByHash) {
+    // `!revokedAt`, а не `=== null`: смысл здесь «наследником не пользовались»,
+    // и он не должен зависеть от того, пришла ли пустая колонка как null или
+    // как отсутствующее поле.
+    const successorUnused =
+      successor !== null && !successor.revokedAt && successor.expiresAt > now;
+    return successorUnused
+      ? {
+          outcome: 'recover',
+          logMessage: `Refresh rotation response was lost — re-issuing (userId ${who})`,
+        }
+      : {
+          outcome: 'theft',
+          logMessage: `Refresh token reuse detected — revoking family (userId ${who})`,
+        };
+  }
+
+  // Строка выдана до появления наследника — судим по времени, как раньше.
+  return isTheftReuse(session.revokedAt, now)
+    ? {
+        outcome: 'theft',
+        logMessage: `Refresh token reuse detected — revoking family (userId ${who})`,
+      }
+    : {
+        outcome: 'reject',
+        logMessage: `Refresh token reuse within grace window — race, not theft (userId ${who})`,
+      };
 }
 
 /**
