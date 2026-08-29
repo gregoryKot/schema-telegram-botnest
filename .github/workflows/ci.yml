@@ -81,7 +81,7 @@ jobs:
           npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
-          test/scheduler-teardown test/login-ticket
+          test/scheduler-teardown test/login-ticket test/refresh-rotation
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -324,6 +324,7 @@ jobs:
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
           test/login-ticket.e2e-spec.ts
+          test/refresh-rotation.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —

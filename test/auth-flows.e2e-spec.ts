@@ -156,24 +156,36 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(rotated).not.toBe(raw);
     });
 
-    // 2026-08-21 «постоянно нужно логиниться заново»: reuse-детекция без
-    // grace-окна убивала всю family на дребезг (две вкладки, оборванный
-    // Set-Cookie), не только на кражу — исходы разведены по времени отзыва.
-    it('reuse AFTER the grace window is theft — revokes the whole family', async () => {
+    // Разбор 2026-08-28 «постоянно выкидывает»: кражу от потерянного ответа
+    // отличает НАСЛЕДНИК, а не время. Оба исхода — по отдельности, через
+    // настоящий HTTP-стек с куками.
+    it('наследником воспользовались → повтор старого токена палит всю family', async () => {
       const raw = 'seed-refresh-rotate-theft';
       seedSession(910_102n, raw);
       const rotated = extractCookieValue(await refresh(raw), 'refresh_token');
-      sessionFor(raw).revokedAt = new Date(Date.now() - 60_000); // за grace-окном
+      // Легитимный клиент продолжил цепочку — наследник до него дошёл.
+      const third = extractCookieValue(await refresh(rotated), 'refresh_token');
+
       expect((await refresh(raw)).status).toBe(401);
-      expect((await refresh(rotated)).status).toBe(401); // family-wide
+      expect((await refresh(third)).status).toBe(401); // family-wide
     });
 
-    it('reuse WITHIN the grace window is a race, not theft — family survives', async () => {
-      const raw = 'seed-refresh-rotate-race';
+    it('ответ ротации не доехал → старый токен впускает, а не выкидывает', async () => {
+      const raw = 'seed-refresh-rotate-lost';
       seedSession(910_103n, raw);
-      const rotated = extractCookieValue(await refresh(raw), 'refresh_token');
-      expect((await refresh(raw)).status).toBe(401); // сам повтор отклонён
-      expect((await refresh(rotated)).status).toBe(200); // но семья жива
+      // Ротация прошла на сервере, но Set-Cookie не доехал до клиента.
+      await refresh(raw);
+
+      // Клиент возвращается с ПРЕЖНЕЙ кукой. Раньше здесь было 401 и отзыв
+      // всех сессий человека разом.
+      const recovered = await refresh(raw);
+      expect(recovered.status).toBe(200);
+      expect(recovered.body.accessToken).toEqual(expect.any(String));
+      const reissued = extractCookieValue(recovered, 'refresh_token');
+      expect(reissued).toBeDefined();
+      expect(reissued).not.toBe(raw);
+      // И выданная взамен кука сразу рабочая.
+      expect((await refresh(reissued)).status).toBe(200);
     });
   });
 

@@ -11,9 +11,14 @@ import {
 
 const NOW = new Date('2026-08-21T12:00:00.000Z');
 
+// isTheftReuse остался запасным признаком: он применяется ТОЛЬКО к строкам без
+// наследника (выданным до появления replacedByHash). Основной признак — сам
+// наследник, см. classifyReuse ниже.
 describe('isTheftReuse', () => {
-  it('revokedAt отсутствует (истёк, не отозван ротацией) → всегда кража (старое поведение)', () => {
-    expect(isTheftReuse(null, NOW)).toBe(true);
+  it('revokedAt отсутствует (истёк по TTL, не отзывали) → НЕ кража', () => {
+    // Раньше здесь было true: вернувшийся через месяц человек считался вором,
+    // терял все свои сессии и будил админа (разбор 2026-08-28).
+    expect(isTheftReuse(null, NOW)).toBe(false);
   });
 
   it('отозван только что (дребезг: две вкладки/оборванный Set-Cookie) → не кража', () => {
@@ -36,18 +41,66 @@ describe('isTheftReuse', () => {
   });
 });
 
-describe('classifyReuse', () => {
-  it('кража → theft:true, сообщение упоминает family/userId', () => {
-    const v = classifyReuse(new Date(NOW.getTime() - 60_000), NOW, 42n);
-    expect(v.theft).toBe(true);
+describe('classifyReuse — вердикт по наследнику, а не по времени', () => {
+  const revoked = { revokedAt: NOW, replacedByHash: 'succ-hash' };
+  const live = {
+    revokedAt: null,
+    expiresAt: new Date(NOW.getTime() + 86_400_000),
+  };
+
+  it('наследник цел и не тронут → восстановить, даже если прошли СУТКИ', () => {
+    // Ровно тот случай, из-за которого выкидывало: мобильная ОС усыпила
+    // приложение вместе с недоехавшим ответом, человек вернулся назавтра.
+    const later = new Date(NOW.getTime() + 86_400_000 - 1);
+    const v = classifyReuse(revoked, live, later, 42n);
+    expect(v.outcome).toBe('recover');
+    expect(v.logMessage).toMatch(/lost/i);
+  });
+
+  it('наследник уже отозван → цепочкой пользуется кто-то ещё → кража', () => {
+    const used = {
+      revokedAt: NOW,
+      expiresAt: new Date(NOW.getTime() + 86_400_000),
+    };
+    const v = classifyReuse(revoked, used, NOW, 42n);
+    expect(v.outcome).toBe('theft');
     expect(v.logMessage).toMatch(/reuse detected/i);
     expect(v.logMessage).toContain('42');
   });
 
-  it('дребезг → theft:false, сообщение отличает race от theft', () => {
-    const v = classifyReuse(NOW, NOW, 42n);
-    expect(v.theft).toBe(false);
-    expect(v.logMessage).toMatch(/race, not theft/i);
+  it('наследник пропал из базы → кража, а не молчаливое восстановление', () => {
+    expect(classifyReuse(revoked, null, NOW, 42n).outcome).toBe('theft');
+  });
+
+  it('наследник сам истёк → восстанавливать нечего, это кража', () => {
+    const stale = { revokedAt: null, expiresAt: new Date(NOW.getTime() - 1) };
+    expect(classifyReuse(revoked, stale, NOW, 42n).outcome).toBe('theft');
+  });
+
+  it('истёк по TTL, никто не отзывал → отказ БЕЗ отзыва семьи и без алерта', () => {
+    const v = classifyReuse(
+      { revokedAt: null, replacedByHash: null },
+      null,
+      NOW,
+      42n,
+    );
+    expect(v.outcome).toBe('reject');
+    expect(v.logMessage).toMatch(/expired naturally/i);
+  });
+
+  describe('строки, выданные до появления наследника — запасной признак', () => {
+    const legacy = (revokedAt: Date) => ({ revokedAt, replacedByHash: null });
+
+    it('дребезг в пределах окна → отказ, семью не трогаем', () => {
+      const v = classifyReuse(legacy(NOW), null, NOW, 42n);
+      expect(v.outcome).toBe('reject');
+      expect(v.logMessage).toMatch(/race, not theft/i);
+    });
+
+    it('повтор за пределами окна → кража (прежнее поведение)', () => {
+      const old = new Date(NOW.getTime() - REFRESH_REUSE_GRACE_MS - 1);
+      expect(classifyReuse(legacy(old), null, NOW, 42n).outcome).toBe('theft');
+    });
   });
 });
 

@@ -14,6 +14,7 @@ import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
 import { sendMagicLink } from './magic-link';
+import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
 
@@ -498,12 +499,21 @@ export class AuthService {
 
     if (!session) throw new UnauthorizedException('Unknown refresh token');
 
-    // Дребезг vs кража (2026-08-21) — classifyReuse, refresh-rotation.ts.
+    // Потерянный ответ vs кража — classifyReuse, refresh-rotation.ts.
     const now = new Date();
     if (session.revokedAt || session.expiresAt < now) {
-      const verdict = classifyReuse(session.revokedAt, now, session.userId);
+      const successor = session.replacedByHash
+        ? await this.prisma.webSession.findUnique({
+            where: { tokenHash: session.replacedByHash },
+          })
+        : null;
+      const verdict = classifyReuse(session, successor, now, session.userId);
       this.logger.warn(verdict.logMessage);
-      if (verdict.theft && session.family) {
+      // recover — наследник цел и не тронут: второго участника нет, выкидывать
+      // человека не за что.
+      if (verdict.outcome === 'recover')
+        return this.issueRotated(session, ip, userAgent);
+      if (verdict.outcome === 'theft' && session.family) {
         await this.revokeFamilyExcept(session.family, null);
         this.securityLog.log('refresh_token_reuse', {
           userId: session.userId,
@@ -513,40 +523,32 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token already used or expired');
     }
 
-    const accessToken = this.signAccessToken(session.userId);
-
-    const base = { accessToken, expiresIn: ACCESS_TOKEN_TTL_S };
     // Ротировали недавно — только access, кука прежняя (rotated:false).
     if (shouldSkipRotation(session.createdAt, now)) {
-      return { ...base, refreshToken: rawRefresh, rotated: false };
+      return {
+        accessToken: this.signAccessToken(session.userId),
+        expiresIn: ACCESS_TOKEN_TTL_S,
+        refreshToken: rawRefresh,
+        rotated: false,
+      };
     }
+    return this.issueRotated(session, ip, userAgent);
+  }
 
-    // Issue new token in the same family. The mark-old-as-used + create-new
-    // pair MUST be atomic — otherwise a crash between them leaves the user
-    // with no valid session at all.
-    const newRaw = crypto.randomBytes(40).toString('hex');
-    const newHash = this.hashToken(newRaw);
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
-
-    await this.prisma.$transaction([
-      this.prisma.webSession.update({
-        where: { tokenHash },
-        data: { revokedAt: new Date() },
-      }),
-      this.prisma.webSession.create({
-        data: {
-          id: crypto.randomUUID(),
-          userId: session.userId,
-          tokenHash: newHash,
-          family: session.family,
-          expiresAt,
-          ipAddress: ip,
-          userAgent,
-        },
-      }),
-    ]);
-
-    return { ...base, refreshToken: newRaw, rotated: true };
+  /** Тонкая обёртка над refresh-issue.ts: сервис собирает зависимости. */
+  private issueRotated(
+    session: RotatingSession,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TokenPair> {
+    const deps = {
+      prisma: this.prisma,
+      hashToken: (raw: string) => this.hashToken(raw),
+      signAccessToken: (id: bigint) => this.signAccessToken(id),
+      accessTtlS: ACCESS_TOKEN_TTL_S,
+      refreshTtlS: REFRESH_TOKEN_TTL_S,
+    };
+    return issueRotatedPair(deps, session, ip, userAgent);
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────

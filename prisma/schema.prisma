@@ -248,6 +248,11 @@ model WebSession {
   lastUsedAt   DateTime @default(now())
   expiresAt    DateTime
   revokedAt    DateTime?
+  // Хеш токена, выданного взамен этого при ротации. По нему видно, ПОЛЬЗОВАЛСЯ
+  // ли кто-нибудь наследником: если нет — значит ответ ротации не доехал до
+  // клиента, и предъявление старого токена это потерянный ответ, а не кража
+  // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
+  replacedByHash String?
   ipAddress    String?
   userAgent    String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
