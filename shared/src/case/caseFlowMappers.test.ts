@@ -106,4 +106,15 @@ describe('toCardBody', () => {
     const skipped = toCardBody('vulnerable_child', '   ', recognition.traits);
     expect(skipped.alias).toBeUndefined();
   });
+
+  it('пустые traits дают undefined для triggers/feelings/behavior, не пустую строку', () => {
+    const body = toCardBody('vulnerable_child', 'Стена', {
+      body: '',
+      trigger: '',
+      impulse: '',
+    });
+    expect(body.triggers).toBeUndefined();
+    expect(body.feelings).toBeUndefined();
+    expect(body.behavior).toBeUndefined();
+  });
 });

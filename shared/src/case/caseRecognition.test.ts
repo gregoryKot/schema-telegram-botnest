@@ -139,6 +139,25 @@ describe('buildRecognition — приметы из слов человека, н
     );
     expect(view.traits.trigger).toBe('Коллега перебил');
   });
+
+  it('длинное слово без пробелов внутри лимита режется посреди слова (нет границы, по которой отступить)', () => {
+    // truncateAtWord: lastIndexOf(' ') === -1 внутри среза → boundary = сам
+    // срез, а не откат к предыдущему пробелу (ветка "нет пробела в пределах
+    // лимита", которую короткая/длинная-с-пробелами сцена выше не задевает).
+    const longWord = 'а'.repeat(80);
+    const view = buildRecognition(baseAnswers({ scene: longWord }), ctx());
+    expect(view.traits.trigger).toBe(`${'а'.repeat(60)}…`);
+  });
+
+  it('пробел-плейсхолдер («   ») среди подписей даёт пустую строку, не «своё…» и не мусор', () => {
+    // label = raw.trim() === '' — joinTraitLabels отсеивает такую запись
+    // ДО lowerFirst/isOwnPlaceholder, а не пропускает её дальше как есть.
+    const view = buildRecognition(
+      baseAnswers(),
+      ctx({ bodyLabels: ['   ', 'Ком в горле'] }),
+    );
+    expect(view.traits.body).toBe('ком в горле');
+  });
 });
 
 describe('buildRecognition — clinicalName', () => {

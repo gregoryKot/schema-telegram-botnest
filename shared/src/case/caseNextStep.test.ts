@@ -166,6 +166,65 @@ describe('caseNextStep — девять веток', () => {
   });
 });
 
+describe('caseNextStep — защитные ветки (маловероятные, но валидные входы)', () => {
+  it('pickTop: равный count у двух режимов разрешается по более свежей дате', () => {
+    // Тай-брейк сортировки (b.lastAt.localeCompare(a.lastAt)) — без него
+    // порядок при равных count не определён явно.
+    const v = caseNextStep(
+      input({
+        caseCount: 4,
+        modeStats: [
+          mode({
+            modeId: 'a',
+            alias: 'Старый',
+            count: 2,
+            hasCard: false,
+            lastAt: '2026-08-01',
+          }),
+          mode({
+            modeId: 'b',
+            alias: 'Новый',
+            count: 2,
+            hasCard: false,
+            lastAt: '2026-08-20',
+          }),
+        ],
+      }),
+      tyTr,
+    );
+    expect(v.label).toBe('Собрать приметы: Новый');
+  });
+
+  it('4. hasCopingMode=true, но на карте нет ни одного режима копинг-семьи — пункт 4 пропускается', () => {
+    const v = caseNextStep(
+      input({
+        caseCount: 4,
+        modeStats: [
+          mode({ modeId: 'not_a_real_mode', count: 1, hasCard: true }),
+        ],
+        hasCopingMode: true,
+        hasChildMode: false,
+        healthyResponseCount: 1, // не даём провалиться в пункт 5 по пути
+      }),
+      tyTr,
+    );
+    expect(v.id).not.toBe('coping_child');
+    expect(v.id).toBe('first_case'); // фолбэк — дальше подходящих пунктов нет
+  });
+
+  it('5. caseCount>=3 и healthyResponseCount=0, но карта пуста (modeStats=[]) — пункт 5 пропускается', () => {
+    // Формально противоречивый вход (caseCount не согласован с modeStats),
+    // но функция чистая и обязана остаться железной на любом входе —
+    // тот же принцип, что и в тестах веток 1+3 ниже.
+    const v = caseNextStep(
+      input({ caseCount: 3, modeStats: [], healthyResponseCount: 0 }),
+      tyTr,
+    );
+    expect(v.id).not.toBe('healthy_response');
+    expect(v.id).toBe('first_case');
+  });
+});
+
 describe('caseNextStep — порядок веток', () => {
   it('условия веток 1 и 3 разом — побеждает более ранняя (1)', () => {
     // caseCount 0 формально не может нести modeStats с count>=2 в реальном
@@ -352,5 +411,32 @@ describe('buildWhereIAm', () => {
       vyTr,
     );
     expect(hasTyForms(text)).toBe(false);
+  });
+
+  it('без повторов (top.count < 2) — «пока без повторов», без частого гостя', () => {
+    // top.count===1 — единственный случай, когда «частый гость» был бы
+    // враньём (правило CLAUDE.md про хардкод/заглушки): здесь и заодно
+    // caseWord(2) — согласование «случая» (mod10 2-4).
+    const text = buildWhereIAm(
+      input({
+        caseCount: 2,
+        modeStats: [
+          mode({ modeId: 'a', count: 1 }),
+          mode({ modeId: 'b', count: 1 }),
+        ],
+      }),
+      tyTr,
+    );
+    expect(text).toBe(
+      '2 случая. Пока без повторов — каждый случай на своей метке.',
+    );
+  });
+
+  it('caseWord: 11 разборов — «случаев» (11-14 — особый диапазон согласования)', () => {
+    const text = buildWhereIAm(
+      input({ caseCount: 11, modeStats: [mode({ count: 1 })] }),
+      tyTr,
+    );
+    expect(text).toContain('11 случаев.');
   });
 });
