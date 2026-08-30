@@ -1,12 +1,11 @@
 // Покрываем: все восемь ворот заполнены непустыми label/id без дублей
-// внутри ворот; у каждых ворот последний чип — «Своё…»; ворота 'unknown'
-// собраны из MODE_UNKNOWN_GROUP.leaves, а не переписаны вручную (правило
-// №11 CLAUDE.md — третья копия формулировок запрещена); buildBodyPayoff —
-// смоук.
+// внутри ворот; у каждых ворот последний чип — «Своё…»; ни на одних воротах
+// чипы не повторяют подписи листьев выбора части; buildBodyPayoff — смоук.
 import { describe, it, expect } from 'vitest';
+import { FEEL_GATES } from '../mode/modeFeelGates';
+import type { CaseGateId } from './caseTypes';
 import { CASE_BODY_CHIPS, buildBodyPayoff } from './caseBodyChips';
-import { MODE_UNKNOWN_GROUP } from '../mode/modeBodyCues';
-import type { CaseGateId, Tr } from './caseTypes';
+import type { Tr } from './caseTypes';
 
 const GATE_IDS: CaseGateId[] = [
   'fear',
@@ -41,17 +40,8 @@ describe('CASE_BODY_CHIPS — восемь ворот', () => {
     expect(chips[chips.length - 1].label).toBe('Своё…');
   });
 
-  it("ворота 'unknown' собраны из MODE_UNKNOWN_GROUP, а не переписаны руками", () => {
-    const unknownContentChips = CASE_BODY_CHIPS.unknown.slice(0, -1);
-    expect(unknownContentChips.map((c) => c.label)).toEqual(
-      MODE_UNKNOWN_GROUP.leaves.map((l) => l.label),
-    );
-    expect(unknownContentChips.length).toBe(MODE_UNKNOWN_GROUP.leaves.length);
-  });
-
-  it('семь небазовых ворот не содержат имён эмоций дословно из соседних ворот (нет копипасты)', () => {
-    const nonUnknown = GATE_IDS.filter((g) => g !== 'unknown');
-    const allContentLabels = nonUnknown.flatMap((g) =>
+  it('подписи чипов не повторяются между воротами', () => {
+    const allContentLabels = GATE_IDS.flatMap((g) =>
       CASE_BODY_CHIPS[g].slice(0, -1).map((c) => c.label),
     );
     expect(new Set(allContentLabels).size).toBe(allContentLabels.length);
@@ -62,4 +52,24 @@ describe('buildBodyPayoff', () => {
   it('непустая строка', () => {
     expect(buildBodyPayoff(tyTr).length).toBeGreaterThan(0);
   });
+});
+
+describe('чипы не повторяют выбор части', () => {
+  // Реальный баг: у ворот «пусто или не пойму» телесные чипы собирались из
+  // тех же листьев MODE_UNKNOWN_GROUP, которые человек только что видел на
+  // шаге выбора части. Один и тот же список подряд читается как сбой
+  // приложения, а не как второй вопрос. Проверяем все восемь ворот сразу —
+  // класс, а не единственный случай.
+  it.each(FEEL_GATES.map((g) => [g.id, g] as const))(
+    'ворота «%s»: ни один чип не дублирует подпись листа',
+    (_id, gate) => {
+      const leafLabels = new Set(
+        gate.leaves.map((l) => l.label.trim().toLowerCase()),
+      );
+      const clashing = CASE_BODY_CHIPS[gate.id as CaseGateId]
+        .map((c) => c.label.trim().toLowerCase())
+        .filter((label) => leafLabels.has(label));
+      expect(clashing).toEqual([]);
+    },
+  );
 });

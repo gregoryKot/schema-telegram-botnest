@@ -528,7 +528,7 @@
   "shared/src/auth/crossTabLock.ts": 34,
   "shared/src/auth/sessionRefresh.ts": 79,
   "shared/src/case/caseAliasChips.ts": 21,
-  "shared/src/case/caseBodyChips.ts": 105,
+  "shared/src/case/caseBodyChips.ts": 117,
   "shared/src/case/caseCriterion.ts": 57,
   "shared/src/case/caseDraft.ts": 64,
   "shared/src/case/caseFlowMappers.ts": 84,
