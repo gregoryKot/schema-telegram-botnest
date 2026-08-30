@@ -109,8 +109,8 @@ export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
 export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
 export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
 
-/** Мессенджер, из которого переносят: meta.host. */
-export type AccountLinkHost = 'max' | 'telegram';
+/** Откуда переносят: meta.host. 'web' — карточка объединения на сайте. */
+export type AccountLinkHost = 'max' | 'telegram' | 'web';
 /** Почему не вышло: meta.reason. */
 export type AccountLinkFailReason = 'expired' | 'error';
 

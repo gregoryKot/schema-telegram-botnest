@@ -779,3 +779,27 @@ describe('sanitizeMeta', () => {
     ).toBeUndefined();
   });
 });
+
+// Карточка объединения на сайте шлёт host: 'web'. До неё в allow-list были
+// только мессенджеры, и meta целиком возвращалась бы undefined — событие
+// записано, а веб-половина воронки в отчёте невидима.
+describe('account_link_* — площадка «сайт»', () => {
+  it('host: web проходит и meta сохраняется', () => {
+    expect(sanitizeMeta('account_link_started', { host: 'web' })).toEqual({
+      host: 'web',
+    });
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'web', merged: true }),
+    ).toEqual({ host: 'web', merged: true });
+  });
+
+  // Контрольный случай: список не стал «любой строкой».
+  it('незнакомая площадка по-прежнему отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('account_link_started', { host: 'vk' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_started', { host: 'что угодно' }),
+    ).toBeUndefined();
+  });
+});

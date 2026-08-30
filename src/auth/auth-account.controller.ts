@@ -20,6 +20,10 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import {
+  emailCallbackErrorUrl,
+  emailCallbackSuccessUrl,
+} from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import {
@@ -88,14 +92,10 @@ export class AuthAccountController {
       setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
       // Билет — ПОСЛЕ выдачи сессии: ждущий опросом контейнер получает именно вошедшего.
       if (ticket) await this.tickets.approveLoginIfPossible(ticket, r.userId);
-      res.redirect(
-        r.purpose === 'link_email_auth'
-          ? `${frontendBase}/account?linked=email`
-          : `${frontendBase}/auth/callback#access_token=${r.tokens.accessToken}&expires_in=${r.tokens.expiresIn}`,
-      );
+      res.redirect(emailCallbackSuccessUrl(r.purpose, frontendBase, r.tokens));
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
+      res.redirect(emailCallbackErrorUrl(err, frontendBase));
     }
   }
 

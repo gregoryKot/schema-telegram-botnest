@@ -44,6 +44,12 @@ export const api = {
   updateSettings: (body: Partial<UserSettings> & { uiPrefs?: UiPrefsPatch }) =>
     post('/api/settings', body),
 
+  // Способы входа аккаунта — по ним решается, предлагать ли объединение
+  // (missingLinkTarget, shared/src/account/linkTarget.ts). Роут общий с сайтом.
+  getAuthProviders: () =>
+    get<{ providers: { provider: string }[] }>('/api/auth/me').then((r) =>
+      r.providers.map((p) => p.provider),
+    ),
   // Случайная фраза Здорового взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   // ─── Case Conceptualization ──────────────────────────────────────────────────

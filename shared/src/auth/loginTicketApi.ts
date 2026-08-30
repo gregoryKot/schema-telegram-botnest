@@ -28,16 +28,26 @@ export interface LoginTicketApi {
   poll(deviceCode: string): Promise<PolledTicket>;
 }
 
-export function createLoginTicketApi(base: string): LoginTicketApi {
+/**
+ * `authedFetch` нужен только привязке (`intent: 'link'`): к ЧЕМУ привязывать —
+ * знает сессия, и сервер такой запрос без неё отбивает. Вход остаётся
+ * анонимным, поэтому параметр необязательный, а второй сетевой модуль рядом
+ * заводить незачем (правило «одна механика — один компонент»).
+ */
+export function createLoginTicketApi(
+  base: string,
+  authedFetch?: (path: string, init: RequestInit) => Promise<Response>,
+): LoginTicketApi {
+  const headers = {
+    'Content-Type': 'application/json',
+    // CSRF-заголовок, как у остальных запросов обоих фронтендов.
+    'x-requested-with': 'ticket',
+  };
   const call = async <T>(path: string, body: unknown): Promise<T> => {
     const res = await fetch(`${base}${path}`, {
       method: 'POST',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        // CSRF-заголовок, как у остальных запросов обоих фронтендов.
-        'x-requested-with': 'ticket',
-      },
+      headers,
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -45,7 +55,21 @@ export function createLoginTicketApi(base: string): LoginTicketApi {
   };
 
   return {
-    start: (input) => call<StartedTicket>('/api/auth/ticket/start', input),
+    start: async (input) => {
+      if (!authedFetch) {
+        return call<StartedTicket>('/api/auth/ticket/start', input);
+      }
+      const res = await authedFetch('/api/auth/ticket/start', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as StartedTicket;
+    },
+    // Опрос идёт БЕЗ авторизации намеренно: к моменту подтверждения аккаунт
+    // источника уже слит с целевым, и его токен ничего не доказывает.
+    // Доказательством служит сам длинный код (RFC 8628).
     poll: (deviceCode) =>
       call<PolledTicket>('/api/auth/ticket/poll', { deviceCode }),
   };

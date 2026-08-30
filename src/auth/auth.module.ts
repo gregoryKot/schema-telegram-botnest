@@ -66,6 +66,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     MaxProvider,
     // Карточку сверки при входе через бота показывает TelegramModule.
     LoginTicketService,
+    // Он же подтверждает объединение аккаунтов (telegram.link.service).
+    TicketLinkService,
   ],
 })
 export class AuthModule {}

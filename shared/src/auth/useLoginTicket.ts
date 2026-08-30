@@ -20,6 +20,20 @@ export interface LoginTicketDeps {
   apiBase: string;
   /** Сессия получена — фронт кладёт её к себе (setAccessToken / adoptSession). */
   onSession: (accessToken: string, expiresIn: number) => void;
+  /**
+   * 'login' (по умолчанию) — впустить в пустой контейнер. 'link' — объединить
+   * с уже существующим аккаунтом: механика та же (выписали код, подтвердили
+   * снаружи, забрали сессию опросом), меняются намерение и адрес ссылки.
+   */
+  intent?: 'login' | 'link';
+  /** Чем открывать подтверждение. По умолчанию — ссылка входа. */
+  urlFor?: (
+    provider: LoginProvider,
+    code: string,
+    deps: { botUsername: string; apiBase: string },
+  ) => string;
+  /** Куда уводит контейнер, у которого обычных ссылок нет (мини-апп). */
+  openExternally?: (url: string) => void;
 }
 
 export type LoginTicketState =
@@ -80,7 +94,7 @@ export function useLoginTicket(deps: LoginTicketDeps) {
       const d = depsRef.current;
       try {
         ticket = await d.api.start({
-          intent: 'login',
+          intent: d.intent ?? 'login',
           provider,
           hostId: d.hostId,
         });
@@ -90,8 +104,12 @@ export function useLoginTicket(deps: LoginTicketDeps) {
       }
       if (!alive.current) return null;
 
-      const url = loginUrl(provider, ticket.userCode, d);
+      const url = (d.urlFor ?? loginUrl)(provider, ticket.userCode, d);
       setState({ kind: 'waiting', provider, code: ticket.userCode, url });
+      // Контейнер без обычных ссылок (мини-апп) уводит наружу сам — но ТОЛЬКО
+      // после setState: иначе при отказе открыть окно человек остался бы на
+      // экране без кода, то есть без запасного пути.
+      d.openExternally?.(url);
 
       const intervalMs = Math.max(ticket.interval || 0, MIN_INTERVAL_S) * 1000;
       const deadline = Date.now() + ticket.expiresIn * 1000;
