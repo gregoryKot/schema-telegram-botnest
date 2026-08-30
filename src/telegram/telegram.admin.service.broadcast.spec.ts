@@ -17,6 +17,12 @@ function makeDeps(overrides: Record<string, any> = {}) {
   const accountService = {
     getBroadcastUserIds: jest.fn().mockResolvedValue([]),
     markUserBlocked: jest.fn().mockResolvedValue(undefined),
+    // Адрес в Telegram по умолчанию равен userId — так выглядит пользователь
+    // бота без отдельного веб-входа. Спек, которому нужен другой расклад
+    // (слитый аккаунт, веб-only), переопределяет это через overrides.
+    telegramIdsFor: jest.fn((ids: bigint[]) =>
+      Promise.resolve(new Map(ids.map((id) => [String(id), id]))),
+    ),
     ...overrides.accountService,
   };
   const therapistRequestService = {

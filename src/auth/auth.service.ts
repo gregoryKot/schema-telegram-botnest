@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { WEB_USER_ID_MIN, WEB_USER_ID_MAX } from './user-id-range';
 import { SecurityLogService } from './security-log.service';
 import { EmailService } from './email.service';
 import * as jwt from 'jsonwebtoken';
@@ -31,11 +32,6 @@ const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 // /api/auth/refresh which is DB-backed and continues to work.
 const JWT_ISSUER = 'schemehappens.ru';
 const JWT_AUDIENCE = 'schemehappens.ru';
-
-// Telegram user IDs are at most ~10 digits. Web-only users get IDs
-// starting from 10^15 to avoid any collision.
-const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
-const WEB_USER_ID_MAX = 9_000_000_000_000_000n;
 
 export interface TokenPair {
   accessToken: string;

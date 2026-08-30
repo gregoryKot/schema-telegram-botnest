@@ -73,10 +73,12 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
   it('therapist-side модели упомянуты и в deleteAllUserData, и в merge()', () => {
     // Трипваер: у этих моделей нет userId, реестры их не ловят — проверяем,
     // что имя модели фигурирует в исходнике обоих сервисов.
-    const botSrc = readFileSync(
-      join(ROOT, 'src/bot/account.service.ts'),
-      'utf8',
-    );
+    // Транзакция удаления живёт отдельным файлом (правило №10), реестр —
+    // третьим: трипваер читает оба, иначе после выноса он молча позеленел бы
+    // на пустом месте.
+    const botSrc =
+      readFileSync(join(ROOT, 'src/bot/account.delete.ts'), 'utf8') +
+      readFileSync(join(ROOT, 'src/bot/account.service.ts'), 'utf8');
     const mergeSrc = readFileSync(
       join(ROOT, 'src/auth/merge.service.ts'),
       'utf8',

@@ -14,25 +14,16 @@ import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
 import { PairsService } from '../bot/pairs.service';
-import {
-  NotificationService,
-  QUIET_EXEMPT_TYPES,
-  NotificationType,
-} from '../notification/notification.service';
+import { NotificationService } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
 import { NotificationPlannerService } from '../notification/notification.planner.service';
-import { renderTemplate } from '../notification/notification.templates';
-import {
-  isQuietHours,
-  localDateString,
-  nextQuietEnd,
-} from '../notification/notification.time';
-import { normalizeAddressForm } from '../notification/address-form';
+import { localDateString } from '../notification/notification.time';
 import {
   runDiaryComplete,
   maybeNotifyPairPartners,
   type DiaryCompleteDeps,
 } from './telegram.diary-complete';
+import { runProcessQueue } from './telegram.schedule-queue';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
@@ -140,95 +131,12 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async runProcessQueue() {
-    const due = await this.notificationService.getDue();
-    if (due.length === 0) return;
-    this.logger.log(`Processing ${due.length} due notifications`);
-
-    const sendSettings = await this.accountService.getSendSettingsFor(
-      [...new Set(due.map((n) => n.userId))].map((id) => BigInt(id)),
-    );
-
-    for (const notif of due) {
-      try {
-        const s = sendSettings.get(String(notif.userId));
-        // Тихие часы: проактивные придерживаем до утра. Покрывает и catch-up после
-        // даунтайма — уведомление за 21:00 не улетит в 3 ночи.
-        if (!QUIET_EXEMPT_TYPES.includes(notif.type as NotificationType)) {
-          if (s && isQuietHours(s.tz, s.start, s.end)) {
-            await this.notificationService.defer(
-              notif.id,
-              nextQuietEnd(s.tz, s.end),
-            );
-            continue;
-          }
-        }
-        const payload = notif.payload as Record<string, unknown> | null;
-        let template: ReturnType<typeof renderTemplate>;
-        try {
-          template = renderTemplate(
-            notif.type as NotificationType,
-            payload ?? undefined,
-            normalizeAddressForm(s?.form),
-          );
-        } catch (renderErr) {
-          this.logger.error(
-            `renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`,
-            renderErr,
-          );
-          await this.notificationService.markSent(notif.id);
-          continue;
-        }
-        if (!template) {
-          this.logger.warn(
-            `No template for type=${notif.type} id=${notif.id} — skipping`,
-          );
-          await this.notificationService.markSent(notif.id);
-          continue;
-        }
-        const silent = notif.type === 'summary';
-        const opts = {
-          ...(template.keyboard
-            ? { reply_markup: template.keyboard.reply_markup }
-            : {}),
-          ...(silent ? { disable_notification: true } : {}),
-        };
-        await Promise.race([
-          this.bot!.telegram.sendMessage(notif.userId, template.text, opts),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('sendMessage timeout')), 15_000),
-          ),
-        ]);
-        await this.notificationService.markSent(notif.id);
-      } catch (err: unknown) {
-        const e = err as {
-          response?: { error_code?: number; description?: string };
-          message?: string;
-        };
-        const code = e.response?.error_code;
-        const desc = String(e.response?.description ?? e.message ?? '');
-        // Treat as permanently blocked only on explicit signals.
-        // 400 + "chat not found" / 403 + "blocked"/"deactivated" / "kicked".
-        // Other 400s (markdown parse error, message too long, etc) are bugs
-        // on OUR side — don't mark legitimate users as blocked for those.
-        const isPermanent =
-          code === 403 ||
-          (code === 400 &&
-            /chat not found|user is deactivated|bot was blocked/i.test(desc));
-        if (isPermanent) {
-          this.logger.warn(
-            `Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`,
-          );
-          await this.notificationService.markSent(notif.id);
-          await this.accountService.markUserBlocked(BigInt(notif.userId));
-        } else {
-          // Transient — log + don't markSent so we retry next tick.
-          this.logger.error(
-            `Failed to send notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`,
-            err,
-          );
-        }
-      }
-    }
+    return runProcessQueue({
+      bot: this.bot!,
+      accountService: this.accountService,
+      notificationService: this.notificationService,
+      logger: this.logger,
+    });
   }
 
   // Midnight UTC: единый дневной планировщик — приоритеты (пауза, перерывы,

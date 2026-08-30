@@ -115,7 +115,11 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   totpEnabledAt: skip('идёт вместе с totpSecret'),
   totpRecoveryCodes: skip('идёт вместе с totpSecret'),
   totpLastStep: skip('анти-replay счётчик конкретного секрета'),
-  botBlockedAt: skip('состояние бота у конкретного telegramId'),
+  botBlockedAt: skip(
+    'флаг про конкретный чат, а не про аккаунт: после слияния адрес переезжает ' +
+      'вместе с AuthProvider, и целевой аккаунт начинает писаться заново — ' +
+      'перенос старого флага выключил бы ему уведомления без причины',
+  ),
   deletedAt: skip('состояние удаления конкретной строки'),
 };
 

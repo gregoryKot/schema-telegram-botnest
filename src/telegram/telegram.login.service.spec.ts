@@ -34,13 +34,25 @@ function makeDeps(over: { addressForm?: string; card?: unknown } = {}) {
       .mockResolvedValue({ addressForm: over.addressForm ?? 'ty' }),
   } as unknown as BotService;
   const securityLog = { log: jest.fn() } as unknown as SecurityLogService;
+  const accountService: any = {
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
+    registerUser: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new TelegramLoginService(
     fakeBot.bot,
     ticketService,
     botService,
+    accountService,
     securityLog,
   );
-  return { fakeBot, ticketService, botService, securityLog, service };
+  return {
+    fakeBot,
+    ticketService,
+    botService,
+    accountService,
+    securityLog,
+    service,
+  };
 }
 
 beforeEach(() => {
@@ -209,17 +221,25 @@ describe('устойчивость', () => {
     expect(ctx.editMessageText).not.toHaveBeenCalled();
   });
 
-  it('карта промахов не растёт бесконечно', async () => {
-    const { service } = makeDeps({ card: null });
-    // Каждый «человек» промахивается один раз — записей больше, чем порог
-    // выметания, и старые обязаны уйти, а не копиться до перезапуска.
-    for (let id = 1; id <= 1100; id++) {
-      await service.handleStart(makeCtx(), 'login_ZZZZZZZZ', id);
+  it('после серии промахов бот замолкает', async () => {
+    // Сама механика счёта и выметание карты живут в BadCodeCounter и покрыты
+    // bad-code-counter.spec.ts. Здесь проверяем, что сервис ею пользуется:
+    // на шестой негодный код ответа человеку уже нет.
+    const { service, securityLog } = makeDeps({ card: null });
+    const answers = [];
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const ctx = makeCtx();
+      await service.handleStart(ctx, 'login_ZZZZZZZZ', 42);
+      answers.push((ctx.reply as jest.Mock).mock.calls.length);
     }
-    const size = (service as unknown as { badCodes: Map<number, unknown> })
-      .badCodes.size;
-    expect(size).toBeLessThanOrEqual(1100);
-    expect(size).toBeGreaterThan(0);
+    // Промах засчитывается ДО проверки лимита, поэтому пятый ответ уже не
+    // приходит: четыре подсказки — предел, дальше молчание.
+    expect(answers.slice(0, 4)).toEqual([1, 1, 1, 1]);
+    expect(answers.slice(4)).toEqual([0, 0]);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'login_ticket_denied',
+      expect.objectContaining({ telegramId: 42, reason: 'too_many_bad_codes' }),
+    );
   });
 
   it('сообщение об истёкшем коде не падает, если его не удалось отправить', async () => {
@@ -237,5 +257,42 @@ describe('устойчивость', () => {
     ctx.match = (entry.matcher as RegExp).exec('tglogin:yes:K7M2QX94');
 
     await expect(entry.handler(ctx)).resolves.toBeUndefined();
+  });
+});
+
+// Разбор 2026-08-29: вход по диплинку идёт мимо обычного /start, поэтому у
+// новичка строки User ещё нет вовсе — выдача сессии падала бы на внешнем
+// ключе WebSession → User. А у слитого аккаунта сырой telegramId указывает на
+// удалённую строку, и сессия открывала бы пустой аккаунт.
+describe('tglogin:yes — чей аккаунт впускаем', () => {
+  it('подтверждает вход ЦЕЛЕВЫМ номером, а не сырым telegramId', async () => {
+    const WEB = 1_000_000_000_000_777n;
+    const { service, fakeBot, ticketService, accountService } = makeDeps();
+    accountService.canonicalUserId.mockResolvedValue(WEB);
+    service.onModuleInit();
+
+    await runAction(fakeBot, 'tglogin:yes:K7M2QX94', { from: { id: 42 } });
+
+    expect(ticketService.approveLogin).toHaveBeenCalledWith('K7M2QX94', WEB);
+    expect(ticketService.approveLogin).not.toHaveBeenCalledWith(
+      'K7M2QX94',
+      42n,
+    );
+  });
+
+  it('заводит аккаунт до подтверждения — иначе сессии не на что сослаться', async () => {
+    const { service, fakeBot, ticketService, accountService } = makeDeps();
+    service.onModuleInit();
+
+    await runAction(fakeBot, 'tglogin:yes:K7M2QX94', {
+      from: { id: 42, first_name: 'Ася' },
+    });
+
+    expect(accountService.registerUser).toHaveBeenCalledWith(42n, 'Ася');
+    // Порядок важен: сначала строка User, потом подтверждение билета.
+    const regOrder = accountService.registerUser.mock.invocationCallOrder[0];
+    const appOrder = (ticketService.approveLogin as jest.Mock).mock
+      .invocationCallOrder[0];
+    expect(regOrder).toBeLessThan(appOrder);
   });
 });

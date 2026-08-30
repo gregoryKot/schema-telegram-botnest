@@ -121,6 +121,26 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
     expect(violations).toEqual([]);
   });
 
+  // Разбор 2026-08-29: userId == telegramId верно только для телеграм-входа.
+  // У Google/почты/MAX номер лежит в веб-диапазоне, а после слияния аккаунтов
+  // строка User источника удаляется — и хендлер, взявший ctx.from.id как
+  // userId, пишет в несуществующий или заново созданный пустой аккаунт.
+  // Резолвер AccountService.canonicalUserId закрывает все нынешние места;
+  // трипваер нужен, чтобы СЛЕДУЮЩИЙ хендлер не завёл двадцать седьмое.
+  const RAW_ID_RE = /BigInt\(\s*(rawId|ctx\.from[?!]?\.id)\s*\)/;
+
+  it('ни один хендлер не берёт сырой telegramId за userId', () => {
+    const violations = Object.entries(sources)
+      .filter(([, src]) => RAW_ID_RE.test(src))
+      .map(
+        ([file]) =>
+          `${file}: BigInt(rawId) — сырой telegramId вместо ` +
+          `await this.accountService.canonicalUserId(rawId); ` +
+          `у слитого аккаунта это чужой (пустой) userId`,
+      );
+    expect(violations).toEqual([]);
+  });
+
   it('в src/telegram/ нет console.log (ошибки — только через this.logger)', () => {
     const violations = Object.entries(sources)
       .filter(([file]) => !CONSOLE_LOG_ALLOWLIST.includes(file))

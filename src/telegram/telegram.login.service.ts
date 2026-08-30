@@ -24,15 +24,13 @@ import {
 import { Markup, Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 import { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { resolveForm } from './telegram.reply-helpers';
 import { formatUserCode, parseLoginCode } from './login-payload';
 import { t, type AddressForm } from '../notification/address-form';
-
-/** Сколько негодных кодов подряд терпим от одного человека до молчания. */
-const MAX_BAD_CODES = 5;
-const BAD_CODE_WINDOW_MS = 10 * 60_000;
+import { BadCodeCounter } from './bad-code-counter';
 
 export function confirmText(
   form: AddressForm,
@@ -63,12 +61,12 @@ export function confirmKeyboard(code: string) {
 @Injectable()
 export class TelegramLoginService implements OnModuleInit {
   private readonly logger = new Logger(TelegramLoginService.name);
-  // Перебор короткого кода через чат маловероятен, но бесплатным быть не
-  // должен: считаем промахи и замолкаем, а не отвечаем «не найден» бесконечно.
-  private readonly badCodes = new Map<
-    number,
-    { count: number; until: number }
-  >();
+  private readonly badCodes = new BadCodeCounter((telegramId) =>
+    this.securityLog.log('login_ticket_denied', {
+      telegramId,
+      reason: 'too_many_bad_codes',
+    }),
+  );
 
   constructor(
     @Inject(TELEGRAF_BOT)
@@ -76,8 +74,14 @@ export class TelegramLoginService implements OnModuleInit {
     private readonly bot: Telegraf<Context> | null,
     private readonly ticketService: LoginTicketService,
     private readonly botService: BotService,
+    private readonly accountService: AccountService,
     private readonly securityLog: SecurityLogService,
   ) {}
+
+  /** Форма обращения по сырому telegramId — привязка общего помощника. */
+  private form(rawId: number | undefined) {
+    return resolveForm(this.accountService, this.botService, rawId);
+  }
 
   onModuleInit(): void {
     if (!this.bot) return;
@@ -88,8 +92,15 @@ export class TelegramLoginService implements OnModuleInit {
         const code = ctx.match[1];
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const form = await resolveForm(this.botService, rawId);
-        await this.ticketService.approveLogin(code, BigInt(rawId));
+        const form = await this.form(rawId);
+        // Канонический номер: после слияния аккаунтов данные человека лежат
+        // под веб-номером, и сессия по сырому telegramId открыла бы пустой
+        // аккаунт. registerUser рядом — потому что вход по диплинку идёт мимо
+        // обычного /start, и у новичка строки User ещё нет вовсе: без неё
+        // выдача сессии падает на внешнем ключе WebSession → User.
+        const userId = await this.accountService.canonicalUserId(rawId);
+        await this.accountService.registerUser(userId, ctx.from?.first_name);
+        await this.ticketService.approveLogin(code, userId);
         await ctx
           .editMessageText(
             t(
@@ -141,32 +152,6 @@ export class TelegramLoginService implements OnModuleInit {
     });
   }
 
-  private tooManyBadCodes(rawId: number): boolean {
-    const now = Date.now();
-    const seen = this.badCodes.get(rawId);
-    if (!seen || seen.until < now) return false;
-    return seen.count >= MAX_BAD_CODES;
-  }
-
-  private noteBadCode(rawId: number): void {
-    const now = Date.now();
-    const seen = this.badCodes.get(rawId);
-    const count = seen && seen.until >= now ? seen.count + 1 : 1;
-    this.badCodes.set(rawId, { count, until: now + BAD_CODE_WINDOW_MS });
-    if (count === MAX_BAD_CODES) {
-      this.securityLog.log('login_ticket_denied', {
-        telegramId: rawId,
-        reason: 'too_many_bad_codes',
-      });
-    }
-    // Карта не растёт бесконечно: протухшие записи выметаем на входе.
-    if (this.badCodes.size > 1000) {
-      for (const [id, v] of this.badCodes) {
-        if (v.until < now) this.badCodes.delete(id);
-      }
-    }
-  }
-
   /**
    * Ветка `/start login_<КОД>`. Вызывается из TelegramService — второго
    * обработчика той же команды у telegraf быть не может.
@@ -176,13 +161,13 @@ export class TelegramLoginService implements OnModuleInit {
     payload: string,
     rawId: number,
   ): Promise<void> {
-    const form = await resolveForm(this.botService, rawId);
+    const form = await this.form(rawId);
     const code = parseLoginCode(payload);
     const card = code ? await this.ticketService.forConfirm(code) : null;
 
     if (!card || !code) {
-      this.noteBadCode(rawId);
-      if (this.tooManyBadCodes(rawId)) return;
+      this.badCodes.note(rawId);
+      if (this.badCodes.tooMany(rawId)) return;
       await ctx.reply(
         t(
           form,
