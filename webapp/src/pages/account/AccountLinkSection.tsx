@@ -16,7 +16,7 @@ import {
 import { AccountLinkCard } from '../../../../shared/src/components/AccountLinkCard';
 import { missingLinkTarget } from '../../../../shared/src/account/linkTarget';
 import { ACCOUNT_LINK_STARTED_EVENT } from '../../../../shared/src/share/analytics';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { API_BASE } from '../../utils/apiBase';
 import { botUsername } from '../../utils/botConfig';
@@ -86,6 +86,7 @@ export function AccountLinkSection({
       setAccessToken(token, expiresIn);
       onLinked();
     },
+    reportError: reportClientError,
   });
 
   // Билет выписывается при показе карточки, а не по нажатию: открыть окно

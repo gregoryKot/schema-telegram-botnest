@@ -245,3 +245,86 @@ describe('forConfirm — сбой чтения', () => {
     await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
   });
 });
+
+// Воронка входа (правило №8: фича без события непроверяема). Тесты держат две
+// вещи, на которых отчёт легко начал бы врать: считается только ВХОД — шаги
+// привязки в ту же воронку не попадают; и «не успел» считается там, где он
+// реально случается, — на открытии мёртвой ссылки, а не только на нажатии.
+describe('события пути входа', () => {
+  it('выписка билета входа — шаг «просили код» с площадкой контейнера', async () => {
+    const { tickets, report } = makeDeps();
+    await startLogin(tickets);
+    expect(report.step).toHaveBeenCalledWith('issued', 'web');
+  });
+
+  it('привязка аккаунтов в воронку входа не попадает', async () => {
+    // Иначе «просили код» считало бы два разных действия, и доля успеха
+    // проваливалась бы ровно тогда, когда привязкой пользуются активнее.
+    const { tickets, report, rows } = makeDeps();
+    const ticket = await startLink(tickets);
+
+    expect(ticket.userCode).toHaveLength(8);
+    expect(rows[0].intent).toBe('link');
+    expect((report.step as jest.Mock).mock.calls).toEqual([]);
+  });
+
+  it('связка целиком: открыли в боте → подтвердили → приложение впустило', async () => {
+    const { tickets, report } = makeDeps();
+    const { deviceCode, userCode } = await startLogin(tickets);
+
+    await tickets.forConfirm(userCode);
+    await tickets.approveLogin(userCode, TG_USER);
+    await tickets.poll(deviceCode);
+
+    const steps = (report.step as jest.Mock).mock.calls.map(([s]) => s);
+    expect(steps).toEqual(['issued', 'bot_opened', 'confirmed', 'taken']);
+  });
+
+  it('«это не я» пишется отказом, а не молчанием', async () => {
+    const { tickets, report } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    await tickets.deny(userCode);
+    expect(report.step).toHaveBeenCalledWith('denied', 'web');
+  });
+
+  it('мёртвый код, открытый в боте, считается «не успели»', async () => {
+    // Главный случай «не успел»: до approve такой код вообще не доходит, и
+    // считать его больше негде.
+    const { tickets, rows, report } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    rows[0].expiresAt = new Date(Date.now() - 1000);
+
+    await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
+    expect(report.step).toHaveBeenCalledWith('too_late', 'web');
+  });
+
+  it('несуществующий код не считается вовсе — перебор не рисует статистику', async () => {
+    const { tickets, report } = makeDeps();
+
+    await expect(tickets.forConfirm('ZZZZZZZZ')).resolves.toBeNull();
+    expect((report.step as jest.Mock).mock.calls).toEqual([]);
+  });
+
+  it('повторный опрос не задваивает «впустило»', async () => {
+    const { tickets, report } = makeDeps();
+    const { deviceCode, userCode } = await startLogin(tickets);
+    await tickets.approveLogin(userCode, TG_USER);
+
+    await tickets.poll(deviceCode);
+    await tickets.poll(deviceCode);
+
+    const taken = (report.step as jest.Mock).mock.calls.filter(
+      ([s]) => s === 'taken',
+    );
+    expect(taken).toHaveLength(1);
+  });
+
+  it('ожидание сессии само по себе ничего не пишет', async () => {
+    const { tickets, report } = makeDeps();
+    const { deviceCode } = await startLogin(tickets);
+    (report.step as jest.Mock).mockClear();
+
+    expect((await tickets.poll(deviceCode)).status).toBe('pending');
+    expect((report.step as jest.Mock).mock.calls).toEqual([]);
+  });
+});

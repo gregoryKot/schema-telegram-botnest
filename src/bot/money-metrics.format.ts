@@ -10,6 +10,7 @@
 //
 // Язык простой: «поддержали проект», а не «donations: count=3 sum=1500».
 
+import { plural } from './plural';
 export interface MoneySourceStats {
   /** Сколько раз реально заплатили. */
   paidCount: number;
@@ -34,13 +35,6 @@ export interface MoneyMetrics {
   /** За всё время. */
   allTime: MoneyWindow;
 }
-
-const plural = (n: number, one: string, few: string, many: string): string =>
-  n % 10 === 1 && n % 100 !== 11
-    ? one
-    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
-      ? few
-      : many;
 
 const times = (n: number): string => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 

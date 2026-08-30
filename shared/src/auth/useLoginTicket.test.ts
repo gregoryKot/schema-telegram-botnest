@@ -6,7 +6,11 @@
 // отказ и истечение — разные исходы, потому что экран обязан сказать разное.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useLoginTicket, loginUrl } from './useLoginTicket';
+import {
+  useLoginTicket,
+  loginUrl,
+  LOGIN_TICKET_SECTION,
+} from './useLoginTicket';
 import type { LoginTicketApi } from './loginTicketApi';
 
 const DEPS = { botUsername: 'SchemeHappensBot', apiBase: '' };
@@ -27,9 +31,13 @@ function makeApi(over: Partial<LoginTicketApi> = {}) {
   };
 }
 
-function setup(api: ReturnType<typeof makeApi>, onSession = vi.fn()) {
-  const deps = { api, hostId: 'web', ...DEPS, onSession };
-  return { ...renderHook(() => useLoginTicket(deps)), onSession };
+function setup(
+  api: ReturnType<typeof makeApi>,
+  onSession = vi.fn(),
+  reportError = vi.fn(),
+) {
+  const deps = { api, hostId: 'web', ...DEPS, onSession, reportError };
+  return { ...renderHook(() => useLoginTicket(deps)), onSession, reportError };
 }
 
 beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
@@ -88,6 +96,54 @@ describe('begin — выписка билета', () => {
     });
 
     expect(result.current.state).toEqual({ kind: 'failed' });
+  });
+
+  it('о сорванной выписке сообщает наверх — сервер её не видит', async () => {
+    // Запрос мог не дойти вовсе (сеть, прокси), и экран при этом не крашится,
+    // а аккуратно показывает «не получилось». Без отчёта такая авария
+    // невидима — правило №14: обработанная авария невидимее необработанной.
+    const api = makeApi({
+      start: vi.fn().mockRejectedValue(new Error('нет сети')),
+    });
+    const { result, reportError } = setup(api);
+
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+
+    expect(reportError).toHaveBeenCalledWith({
+      message: 'login ticket start failed',
+      section: LOGIN_TICKET_SECTION,
+    });
+  });
+
+  it('в отчёт не уезжает ни текст ошибки, ни адрес', async () => {
+    // Текст приходит от браузера и может нести адрес с секретом во фрагменте
+    // (разбор H0): у вебаппа это `#access_token=…`, у мини-аппа — initData.
+    const api = makeApi({
+      start: vi
+        .fn()
+        .mockRejectedValue(
+          new Error('fetch failed: /auth#access_token=СЕКРЕТ'),
+        ),
+    });
+    const { result, reportError } = setup(api);
+
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+
+    const sent = JSON.stringify(reportError.mock.calls);
+    expect(sent).not.toContain('СЕКРЕТ');
+    expect(sent).not.toContain('access_token');
+  });
+
+  it('удачная выписка ничего не сообщает', async () => {
+    const { result, reportError } = setup(makeApi());
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+    expect(reportError).not.toHaveBeenCalled();
   });
 });
 

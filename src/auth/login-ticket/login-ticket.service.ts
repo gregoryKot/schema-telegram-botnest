@@ -19,6 +19,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes, randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth.service';
+import { LoginTicketReport } from './login-ticket.report';
 import type {
   TicketForConfirm,
   TicketIntent,
@@ -47,6 +48,7 @@ export class LoginTicketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
+    private readonly report: LoginTicketReport,
   ) {}
 
   hash(value: string): string {
@@ -97,6 +99,9 @@ export class LoginTicketService {
         expiresAt: new Date(Date.now() + TTL_S * 1000),
       },
     });
+    // Только вход: привязка аккаунтов считается своими событиями
+    // (account_link_*), и мешать их в одну воронку значило бы считать разное.
+    if (input.intent === 'login') this.report.step('issued', input.hostId);
     return {
       deviceCode,
       userCode,
@@ -131,8 +136,15 @@ export class LoginTicketService {
         return null;
       });
     if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
+      // Строку нашли, но она мертва — человек открыл ссылку поздно. Это самый
+      // частый «не успел», и считать его надо здесь: до liveByUserCode такой
+      // код не доходит. Несуществующий код не считаем вовсе — иначе перебор
+      // сам себе рисовал бы статистику.
+      if (row && row.intent === 'login')
+        this.report.step('too_late', row.hostId);
       return null;
     }
+    if (row.intent === 'login') this.report.step('bot_opened', row.hostId);
     return {
       userCode: userCode.trim().toUpperCase(),
       intent: row.intent as TicketIntent,
@@ -157,6 +169,7 @@ export class LoginTicketService {
       where: { id: row.id },
       data: { approvedUserId, approvedAt: new Date() },
     });
+    this.report.step('confirmed', row.hostId);
   }
 
   /**
@@ -189,6 +202,7 @@ export class LoginTicketService {
       where: { id: row.id },
       data: { deniedAt: new Date() },
     });
+    if (row.intent === 'login') this.report.step('denied', row.hostId);
   }
 
   /** Шаг 4: контейнер опрашивает по длинному коду и забирает сессию. */
@@ -219,6 +233,9 @@ export class LoginTicketService {
       ip,
       userAgent,
     );
+    // Единственный шаг, означающий «человек внутри». Пишется после claim,
+    // поэтому повторный опрос его не задваивает.
+    if (row.intent === 'login') this.report.step('taken', row.hostId);
     return { status: 'linked', tokens };
   }
 }

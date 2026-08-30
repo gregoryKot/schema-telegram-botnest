@@ -8,6 +8,7 @@ import {
 } from '../../../../shared/src/auth/useLoginTicket';
 import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWait';
 import { BASE } from '../../utils/apiBase';
+import { reportClientError } from '../../api';
 import { botUsername } from '../../utils/botConfig';
 import { adoptSession } from '../../session';
 
@@ -73,6 +74,7 @@ export function LoginProviderButtons() {
       // сессию обычным путём и вернёт человека в приложение.
       window.location.reload();
     },
+    reportError: reportClientError,
   });
 
   useEffect(() => {

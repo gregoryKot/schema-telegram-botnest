@@ -17,7 +17,7 @@ import {
   ACCOUNT_LINK_STARTED_EVENT,
   type AccountLinkFailReason,
 } from '../../../../shared/src/share/analytics';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { BASE } from '../../utils/apiBase';
 import { adoptSession } from '../../session';
@@ -59,6 +59,7 @@ export function LinkAccountSection() {
       // исчезнуть. Это и есть видимый человеку «готово».
       loadProviders();
     },
+    reportError: reportClientError,
   });
 
   const loadProviders = useCallback(() => {

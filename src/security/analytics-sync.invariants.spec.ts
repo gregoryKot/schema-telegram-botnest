@@ -136,6 +136,13 @@ const BACKEND_ONLY: Record<string, string> = {
     'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
     'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
     'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  login_ticket_step:
+    'серверное событие: пишет единственный шов LoginTicketReport ' +
+    '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
+    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'должен: шаги воронки входа известны только серверу (подтверждение ' +
+    'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
+    'просил билет), и отчёт /stats считает строки с userId IS NULL',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -175,6 +182,12 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
     // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
     // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(25);
+    // 26 — login_ticket_step (путь входа по билету, 2026-08): четвёртое
+    // серверное событие подряд, к фронту не относится по устройству механизма.
+    // Билет подтверждают ВНЕ контейнера, который его просил (бот или внешний
+    // браузер), поэтому шаги воронки видит только сервер; отправить их с
+    // фронта было бы не «удобнее», а неверно — и открыло бы отчёт о здоровье
+    // входа для накрутки через POST /api/event.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(26);
   });
 });

@@ -9,6 +9,7 @@ import { TicketLinkService } from './ticket-link.service';
 import type { AuthService } from '../auth.service';
 import type { MergeService } from '../merge.service';
 import type { SecurityLogService } from '../security-log.service';
+import type { LoginTicketReport } from './login-ticket.report';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 export interface Row {
@@ -134,7 +135,10 @@ export function makeDeps() {
   } as unknown as MergeService;
 
   const securityLog = { log: jest.fn() } as unknown as SecurityLogService;
-  const tickets = new LoginTicketService(prisma, auth);
+  // Отчёт о пути входа — заглушка со счётчиком: спекам нужно проверять, какие
+  // шаги воронки эмитятся, а настоящий LoginTicketReport ходит в аналитику.
+  const report = { step: jest.fn() } as unknown as LoginTicketReport;
+  const tickets = new LoginTicketService(prisma, auth, report);
   const links = new TicketLinkService(
     prisma,
     auth,
@@ -143,7 +147,7 @@ export function makeDeps() {
     tickets,
   );
 
-  return { rows, prisma, auth, merge, securityLog, tickets, links };
+  return { rows, prisma, auth, merge, securityLog, report, tickets, links };
 }
 
 /** Билет входа «как из ярлыка»: хозяина нет, подтверждать будет бот. */
@@ -175,6 +179,12 @@ describe('оснастка тестов билета', () => {
     await startLogin(a.tickets);
     expect(a.rows).toHaveLength(1);
     expect(b.rows).toHaveLength(0);
+  });
+
+  it('заглушка отчёта считает шаги — иначе спеки воронки проходили бы вакуумно', async () => {
+    const { tickets, report } = makeDeps();
+    await startLogin(tickets);
+    expect(report.step).toHaveBeenCalledWith('issued', 'web');
   });
 
   it('findUnique отдаёт копию строки, а не ссылку на неё', async () => {

@@ -7,6 +7,7 @@ import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
+import { LoginTicketReport } from './login-ticket/login-ticket.report';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
@@ -24,9 +25,10 @@ import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AnalyticsModule],
   providers: [
     AuthService,
     AuthFlowService,
@@ -35,6 +37,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     OptionalJwtGuard,
     MergeService,
     LoginTicketService,
+    LoginTicketReport,
     TicketLinkService,
     SecurityLogService,
     TelegramDomainWatchdogService,

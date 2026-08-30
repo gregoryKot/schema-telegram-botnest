@@ -28,6 +28,7 @@ const host = { id: 'max', openLink: vi.fn(), insets: () => ({}) };
 vi.mock('../../../../shared/src/host', () => ({ getHost: () => host }));
 vi.mock('../../api', () => ({
   api: { getAuthProviders: vi.fn(), trackEvent: vi.fn() },
+  reportClientError: vi.fn(),
 }));
 vi.mock('../../apiClient', () => ({ authedFetch: vi.fn() }));
 vi.mock('../../session', () => ({ adoptSession: vi.fn() }));

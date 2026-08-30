@@ -6,6 +6,7 @@ import {
 } from '../../../../shared/src/auth/useLoginTicket';
 import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWait';
 import { botUsername } from '../../utils/botConfig';
+import { reportClientError } from '../../api';
 
 // Вход по билету — та же механика, что у мини-аппа (правило №3 и «одна
 // механика — один компонент»: общий хук в shared/src/auth/useLoginTicket).
@@ -63,6 +64,7 @@ export function LoginProviderButtons({
     botUsername,
     apiBase: API_BASE,
     onSession,
+    reportError: reportClientError,
   });
 
   // Билет выписывается при открытии экрана, а не по нажатию: иначе на ссылку
