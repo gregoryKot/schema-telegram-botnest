@@ -800,7 +800,7 @@
   "src/auth/login-ticket/ticket-link.service.ts": 125,
   "src/auth/magic-link.ts": 58,
   "src/auth/max-init-data.ts": 162,
-  "src/auth/merge-user-fields.ts": 112,
+  "src/auth/merge-user-fields.ts": 100,
   "src/auth/merge.service.ts": 306,
   "src/auth/oauth-state.ts": 99,
   "src/auth/providers/google-id-token.ts": 129,
