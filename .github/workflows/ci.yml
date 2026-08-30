@@ -325,6 +325,7 @@ jobs:
           test/phrase-check-ownership.e2e-spec.ts
           test/login-ticket.e2e-spec.ts
           test/refresh-rotation.e2e-spec.ts
+          test/notify-address.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —

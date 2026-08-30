@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { classifySendFailure } from './telegram-error';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
@@ -218,34 +219,35 @@ export class TelegramAdminService implements OnModuleInit {
           return;
         }
         const userIds = await this.accountService.getBroadcastUserIds();
+        // Адрес в Telegram — не то же самое, что userId: у входа через Google,
+        // почту и MAX он лежит в веб-диапазоне, и после слияния аккаунтов тоже.
+        // Раньше рассылка слала прямо по userId и каждый её прогон молча метил
+        // таких людей botBlockedAt.
+        const chatIds = await this.accountService.telegramIdsFor(
+          userIds.map((id) => BigInt(id)),
+        );
         await ctx.reply(
           `Начинаю рассылку для ${userIds.length} пользователей...`,
         );
         let sent = 0,
-          failed = 0;
+          failed = 0,
+          skipped = 0;
         for (const uid of userIds) {
+          const chatId = chatIds.get(String(uid));
+          if (chatId === undefined) {
+            skipped++;
+            continue;
+          }
           try {
             // Plain text — no parse_mode. Avoids stray markdown chars from
             // breaking the broadcast for half the users.
-            await this.bot!.telegram.sendMessage(uid, text, {
+            await this.bot!.telegram.sendMessage(Number(chatId), text, {
               parse_mode: undefined,
             });
             sent++;
           } catch (err: unknown) {
             failed++;
-            const e = err as {
-              response?: { error_code?: number; description?: string };
-              message?: string;
-            };
-            const code = e.response?.error_code;
-            const desc = String(e.response?.description ?? e.message ?? '');
-            const isPermanent =
-              code === 403 ||
-              (code === 400 &&
-                /chat not found|user is deactivated|bot was blocked/i.test(
-                  desc,
-                ));
-            if (isPermanent) {
+            if (classifySendFailure(err) !== 'transient') {
               await this.accountService
                 .markUserBlocked(BigInt(uid))
                 .catch((e) => this.logger.warn('markUserBlocked failed', e));
@@ -253,7 +255,10 @@ export class TelegramAdminService implements OnModuleInit {
           }
           await new Promise((r) => setTimeout(r, 50));
         }
-        await ctx.reply(`✅ Готово: ${sent} доставлено, ${failed} ошибок`);
+        await ctx.reply(
+          `✅ Готово: ${sent} доставлено, ${failed} ошибок` +
+            (skipped > 0 ? `, ${skipped} без чата в Telegram` : ''),
+        );
       } catch (err) {
         this.logger.error('broadcast command failed', err);
         await ctx.reply('❌ Ошибка рассылки').catch(() => null);
