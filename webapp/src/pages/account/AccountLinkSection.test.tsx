@@ -22,7 +22,10 @@ import { useAuth } from '../../auth/authContext';
 import type { AccountProvider } from './ProviderRows';
 
 vi.mock('../../apiClient', () => ({ authedFetch: vi.fn() }));
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../../api', () => ({
+  api: { trackEvent: vi.fn() },
+  reportClientError: vi.fn(),
+}));
 vi.mock('../../auth/authContext', () => ({ useAuth: vi.fn() }));
 
 const mockedFetch = authedFetch as unknown as ReturnType<typeof vi.fn>;

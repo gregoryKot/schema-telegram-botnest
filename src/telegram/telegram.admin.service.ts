@@ -11,6 +11,7 @@ import {
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { classifySendFailure } from './telegram-error';
+import { replyLong } from './send-long-text';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
@@ -73,8 +74,10 @@ export class TelegramAdminService implements OnModuleInit {
           this.statsReport.render(),
           this.healthyAdult.poolStatus(),
         ]);
-        await ctx.reply(core, { parse_mode: 'HTML' });
-        await ctx.reply(`${product}\n\n${formatPoolStatus(pool)}`, {
+        // Через replyLong: отчёт растёт с каждым новым блоком, и упереться
+        // в лимит Telegram он должен разбиением, а не падением целиком.
+        await replyLong(ctx, core, { parse_mode: 'HTML' });
+        await replyLong(ctx, `${product}\n\n${formatPoolStatus(pool)}`, {
           parse_mode: 'HTML',
         });
       } catch (err) {

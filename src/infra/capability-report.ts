@@ -109,6 +109,22 @@ export function buildCapabilityReport(
       critical: false,
     },
     {
+      // Не «фича выключена», а деградация в более строгую сторону: без
+      // секретов подпись проверить нечем, и лимит запросов считается по
+      // адресу. Обход этим не открывается — наоборот, закрывается; цену
+      // платят честные люди за общим NAT, деля один лимит на всех.
+      id: 'verifiedThrottleIdentity',
+      title: 'Лимит запросов по проверенной подписи',
+      on: has(env, 'JWT_SECRET') && has(env, 'BOT_TOKEN'),
+      envVars: ['JWT_SECRET', 'BOT_TOKEN'],
+      offReason:
+        'Лимит запросов считается только по адресу: без JWT_SECRET и ' +
+        'BOT_TOKEN подпись проверить нечем, и люди за общим NAT делят один ' +
+        'лимит на всех.',
+      files: ['src/api/throttler-identity.ts'],
+      critical: false,
+    },
+    {
       id: 'threadsTokenRefresh',
       title: 'Автообновление токена Threads',
       on: has(env, 'HEALTHY_ADULT_THREADS_TOKEN'),

@@ -34,7 +34,23 @@ export interface LoginTicketDeps {
   ) => string;
   /** Куда уводит контейнер, у которого обычных ссылок нет (мини-апп). */
   openExternally?: (url: string) => void;
+  /**
+   * Сообщить наверх, что билет не удалось даже выписать. Единственное, чего
+   * сервер про вход не знает: запрос мог не дойти вовсе — сеть, прокси,
+   * закрытая вкладка. Экран при этом не крашится, он аккуратно показывает
+   * «не получилось», и без отчёта такая авария невидима (правило №14:
+   * обработанная авария невидимее необработанной).
+   */
+  reportError?: (payload: { message: string; section: string }) => void;
 }
+
+/**
+ * Секция отчёта о поломке. Своя, а не общая `auth`: тот бакет заведён под
+ * инцидент 2026-08-08 как единственный свидетель «подпись пустая, экран-тупик»,
+ * и подмешивать к нему сбои выписки значило бы сделать ту метрику тише, а не
+ * громче.
+ */
+export const LOGIN_TICKET_SECTION = 'login.ticket';
 
 export type LoginTicketState =
   | { kind: 'idle' }
@@ -99,6 +115,13 @@ export function useLoginTicket(deps: LoginTicketDeps) {
           hostId: d.hostId,
         });
       } catch {
+        // Текст ошибки не пересылаем: он приходит от браузера и может нести
+        // адрес с секретом во фрагменте (правило №7 и разбор H0). Факта
+        // достаточно — экран и так один.
+        d.reportError?.({
+          message: 'login ticket start failed',
+          section: LOGIN_TICKET_SECTION,
+        });
         if (alive.current) setState({ kind: 'failed' });
         return null;
       }

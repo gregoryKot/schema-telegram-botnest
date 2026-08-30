@@ -12,6 +12,7 @@ import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
@@ -36,6 +37,7 @@ export class StatsReportService {
     private readonly screen: ScreenMetricsService,
     private readonly profilePattern: ProfilePatternMetricsService,
     private readonly authHealth: AuthHealthMetricsService,
+    private readonly loginTicket: LoginTicketMetricsService,
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
     private readonly signupSource: SignupSourceMetricsService,
@@ -56,6 +58,7 @@ export class StatsReportService {
       screen,
       profilePattern,
       authHealth,
+      loginTicket,
       clientErrors,
       money,
       signupSource,
@@ -72,11 +75,12 @@ export class StatsReportService {
       this.screen.render(),
       this.profilePattern.render(),
       this.authHealth.render(),
+      this.loginTicket.render(),
       this.clientErrors.render(),
       this.money.render(),
       this.signupSource.render(),
     ]);
     const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${loginTicket}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
   }
 }

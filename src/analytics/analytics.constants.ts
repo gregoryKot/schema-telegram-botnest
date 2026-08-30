@@ -165,6 +165,8 @@ export const ANALYTICS_EVENTS = [
   'signup_source',
   'profile_pattern_open',
   'desktop_app_open',
+  // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
+  'login_ticket_step',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -265,24 +267,12 @@ export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
 export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
-// Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
-// Порядок = порядок показа: по нему строится воронка «докуда доходят».
-// 'done' — нажал финальную кнопку. Парный список на фронте:
-// shared/src/share/analytics.ts (при добавлении шага синхронь оба).
-export const ONBOARDING_STEPS = [
-  'welcome',
-  'privacy',
-  'not_therapy',
-  'needs_what',
-  'needs_why',
-  'needs_result',
-  'diaries_why',
-  'today_screen',
-  'author',
-  'home_screen',
-  'done',
-] as const;
-export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+// ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts
+// (правило №10, тот же приём, что у SHARE_CARD_KINDS ниже).
+export {
+  ONBOARDING_STEPS,
+  type OnboardingStep,
+} from './onboarding-steps.constants';
 
 // SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts
 // (правило №10: файл сверх потолка обязан таять, а не расти вместе со
@@ -291,6 +281,14 @@ export {
   SHARE_CARD_KINDS,
   type ShareCardKind,
 } from './share-card-kinds.constants';
+
+// Шаги пути входа по билету — в файле-спутнике (правило №10).
+export {
+  LOGIN_TICKET_STEPS,
+  LOGIN_TICKET_HOSTS,
+  type LoginTicketStep,
+  type LoginTicketHost,
+} from './login-ticket-steps.constants';
 
 // Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
 // схемы или лист режима. Парная константа на фронте —
