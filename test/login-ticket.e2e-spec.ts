@@ -23,6 +23,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
+import { TicketLinkService } from '../src/auth/login-ticket/ticket-link.service';
 
 // Перенос данных проверяется только там, где merge реально исполняется.
 const REAL_DB = process.env.E2E_REAL_DB === '1';
@@ -382,5 +383,95 @@ describeOnRealDb('перенос данных при подтверждении 
     expect(linked.status).toBe(200);
     expect(linked.body.status).toBe('linked');
     expect(linked.body.accessToken).toBeTruthy();
+  });
+});
+
+// Направление «сайт → Telegram»: карточка на /account выписывает билет, а
+// подтверждает БОТ. Это новый путь (PR про карточку объединения), и он не
+// покрывается ни HTTP-approve выше, ни юнит-тестом сервиса: здесь важно, что
+// сайт, начавший с одного аккаунта, забирает опросом сессию ДРУГОГО — того,
+// кто подтвердил, — и что данные при этом переехали к нему.
+describeOnRealDb('объединение, подтверждённое в боте', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const SITE = 700_000_000_000_021n; // веб-аккаунт, просит объединить
+  const TG = 700_000_000_000_022n; // аккаунт в Telegram, подтверждает
+  const ALL = [SITE, TG];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+  });
+
+  beforeEach(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL);
+    for (const id of ALL) {
+      await prisma.user.upsert({
+        where: { id },
+        update: {},
+        create: { id },
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL);
+    await app.close();
+  });
+
+  it('бот подтвердил — данные у него, а сайт забрал сессию опросом', async () => {
+    await prisma.rating.create({
+      data: {
+        userId: SITE,
+        needId: 'safety',
+        value: 5,
+        date: '2026-08-30',
+      },
+    });
+
+    // Билет выписывает САЙТ: источник — его аккаунт.
+    const started = await app.get(LoginTicketService).start({
+      intent: 'link',
+      provider: 'google',
+      requesterUserId: SITE,
+      hostId: 'web',
+      deviceLabel: 'Chrome · Windows',
+    });
+
+    // Подтверждает бот — тем же методом, что зовёт telegram.link.service.
+    const { merged } = await app
+      .get(TicketLinkService)
+      .approve(started.userCode, TG);
+    expect(merged).toBe(true);
+
+    // Данные переехали к подтвердившему, веб-аккаунта больше нет.
+    expect(
+      await prisma.rating.findMany({ where: { userId: TG } }),
+    ).toHaveLength(1);
+    expect(await prisma.user.findUnique({ where: { id: SITE } })).toBeNull();
+
+    // И сайт, вернувшись за сессией, получает её — хотя аккаунт, под которым
+    // он начинал, уже не существует.
+    const linked = await request(app.getHttpServer())
+      .post('/api/auth/ticket/poll')
+      .set('x-requested-with', 'webapp')
+      .send({ deviceCode: started.deviceCode });
+    expect(linked.status).toBe(200);
+    expect(linked.body.status).toBe('linked');
+    expect(linked.body.accessToken).toBeTruthy();
+  });
+
+  it('код объединения не годится для входа — approveLogin его отвергает', async () => {
+    const started = await app.get(LoginTicketService).start({
+      intent: 'link',
+      provider: 'google',
+      requesterUserId: SITE,
+      hostId: 'web',
+      deviceLabel: '',
+    });
+
+    await expect(
+      app.get(LoginTicketService).approveLogin(started.userCode, TG),
+    ).rejects.toThrow();
   });
 });

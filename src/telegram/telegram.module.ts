@@ -9,6 +9,7 @@ import { TelegramNotifyActionsService } from './telegram.notify-actions.service'
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
 import { TelegramQuizService } from './telegram.quiz.service';
 import { TelegramLoginService } from './telegram.login.service';
+import { TelegramLinkService } from './telegram.link.service';
 import { TELEGRAM_PROVIDERS } from './telegram.providers';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -35,6 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     TelegramNotifySettingsService,
     TelegramQuizService,
     TelegramLoginService,
+    TelegramLinkService,
     ...TELEGRAM_PROVIDERS,
     ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
   ],

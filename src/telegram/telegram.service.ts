@@ -18,7 +18,8 @@ import { NotificationService } from '../notification/notification.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
 import { readStartPayload } from './start-payload';
-import { ADDRESS_PROMPT, CONSENT_TEXT } from './telegram.consent-text';
+import { sendStartWelcome } from './telegram.start-welcome';
+import { ADDRESS_PROMPT } from './telegram.consent-text';
 import {
   handlePairStart,
   PAIR_PREFIX,
@@ -26,13 +27,14 @@ import {
 } from './telegram.pair-start';
 import {
   buildAddressKeyboard,
-  buildConsentKeyboard,
   buildWelcomeKeyboard,
 } from './telegram.keyboards';
 // Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
 export { buildWelcomeKeyboard };
 import { isLoginPayload } from './login-payload';
+import { isLinkPayload } from './link-payload';
 import { TelegramLoginService } from './telegram.login.service';
+import { TelegramLinkService } from './telegram.link.service';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -69,6 +71,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly notificationService: NotificationService,
     private readonly analyticsEvents: AnalyticsService,
     private readonly loginService: TelegramLoginService,
+    private readonly linkService: TelegramLinkService,
   ) {}
 
   private stopping = false;
@@ -156,34 +159,26 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await this.loginService.handleStart(ctx, payload!, rawId);
           return;
         }
+        // Как и вход, объединение идёт ДО гейта согласия: человек ждёт
+        // подтверждения на другом экране, и упереться здесь в соглашение
+        // значит оставить тот экран висеть.
+        if (isLinkPayload(payload)) {
+          await this.linkService.handleStart(ctx, payload!, rawId);
+          return;
+        }
         if (payload?.startsWith(PAIR_PREFIX)) {
           await handlePairStart(this.pairDeps(), ctx, payload, rawId, userId);
           return;
         }
-        const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
-        if (!hasConsent2) {
-          await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
-          return;
-        }
-        // Форма обращения ещё не выбрана — спросить до приветствия
-        if (!existingSettings?.addressForm) {
-          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
-          return;
-        }
-        if (isReturning) {
-          const streak = await this.analyticsService.getConsecutiveDays(userId);
-          const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
-          const streakLine =
-            streak >= 3
-              ? `\n🔥 Серия: ${streak} ${streak < 5 ? 'дня' : 'дней'} подряд`
-              : '';
-          await ctx.reply(
-            `С возвращением${name}!${streakLine}`,
-            buildWelcomeKeyboard(),
-          );
-        } else {
-          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
-        }
+        await sendStartWelcome(
+          {
+            botService: this.botService,
+            analyticsService: this.analyticsService,
+          },
+          ctx,
+          userId,
+          existingSettings,
+        );
       } catch (err) {
         this.logger.error('start command failed', err);
         await ctx

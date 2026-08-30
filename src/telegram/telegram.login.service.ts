@@ -31,6 +31,7 @@ import { resolveForm } from './telegram.reply-helpers';
 import { formatUserCode, parseLoginCode } from './login-payload';
 import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
+import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
 
 export function confirmText(
   form: AddressForm,
@@ -89,32 +90,25 @@ export class TelegramLoginService implements OnModuleInit {
     this.bot.action(/^tglogin:yes:([A-Z0-9]{8})$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const code = ctx.match[1];
-        const rawId = ctx.from?.id;
-        if (!rawId) return;
-        const form = await this.form(rawId);
-        // Канонический номер: после слияния аккаунтов данные человека лежат
-        // под веб-номером, и сессия по сырому telegramId открыла бы пустой
-        // аккаунт. registerUser рядом — потому что вход по диплинку идёт мимо
-        // обычного /start, и у новичка строки User ещё нет вовсе: без неё
-        // выдача сессии падает на внешнем ключе WebSession → User.
-        const userId = await this.accountService.canonicalUserId(rawId);
-        await this.accountService.registerUser(userId, ctx.from?.first_name);
-        await this.ticketService.approveLogin(code, userId);
-        await ctx
-          .editMessageText(
-            t(
-              form,
-              '✅ Готово. Возвращайся в приложение — вход уже там.',
-              '✅ Готово. Возвращайтесь в приложение — вход уже там.',
-            ),
-          )
-          .catch(() => null);
-      } catch (err) {
-        this.logger.error(
-          `tglogin approve failed: ${(err as Error).message}`,
-          (err as Error).stack,
+        await withConfirmingUser(
+          { accountService: this.accountService, logger: this.logger },
+          ctx,
+          'tglogin approve',
+          async (code, userId) => {
+            const form = await this.form(ctx.from?.id);
+            await this.ticketService.approveLogin(code, userId);
+            await ctx
+              .editMessageText(
+                t(
+                  form,
+                  '✅ Готово. Возвращайся в приложение — вход уже там.',
+                  '✅ Готово. Возвращайтесь в приложение — вход уже там.',
+                ),
+              )
+              .catch(() => null);
+          },
         );
+      } catch {
         await ctx
           .editMessageText(
             // Безлично: форма обращения читается из профиля, а сюда мы
@@ -129,23 +123,21 @@ export class TelegramLoginService implements OnModuleInit {
     this.bot.action(/^tglogin:no:([A-Z0-9]{8})$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const code = ctx.match[1];
-        // Без глушителя: провал отказа обязан дойти до catch ниже — сказать
-        // «вход отклонён», когда он не отклонён, хуже, чем показать ошибку.
-        await this.ticketService.deny(code);
-        this.securityLog.log('login_ticket_denied', {
-          telegramId: ctx.from?.id,
-        });
-        await ctx
-          .editMessageText(
-            // Тоже безлично — см. выше.
-            'Вход отклонён — доступ никто не получил. Если такую ссылку ' +
-              'кто-то прислал, лучше её больше не открывать.',
-          )
-          .catch(() => null);
+        await handleTicketDeny(
+          {
+            tickets: this.ticketService,
+            securityLog: this.securityLog,
+            logger: this.logger,
+          },
+          ctx,
+          ctx.match[1],
+          'user_denied',
+          'Вход отклонён — доступ никто не получил. Если такую ссылку ' +
+            'кто-то прислал, лучше её больше не открывать.',
+        );
       } catch (err) {
         this.logger.error(
-          `tglogin deny failed: ${(err as Error).message}`,
+          `tglogin:no failed: ${(err as Error).message}`,
           (err as Error).stack,
         );
       }
@@ -163,7 +155,12 @@ export class TelegramLoginService implements OnModuleInit {
   ): Promise<void> {
     const form = await this.form(rawId);
     const code = parseLoginCode(payload);
-    const card = code ? await this.ticketService.forConfirm(code) : null;
+    const found = code ? await this.ticketService.forConfirm(code) : null;
+    // Билет привязки, подставленный в ссылку входа, обязан выглядеть как
+    // негодный код. Иначе человеку показали бы карточку ВХОДА, а нажатие
+    // упало бы в approveLogin с «этот код не для входа» — соврали дважды:
+    // сперва о смысле кода, потом о причине отказа.
+    const card = found && found.intent === 'login' ? found : null;
 
     if (!card || !code) {
       this.badCodes.note(rawId);

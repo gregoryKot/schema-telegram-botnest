@@ -229,7 +229,12 @@ export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
 // Откуда переносят данные (meta.host) и почему не вышло (meta.reason) для
 // событий account_link_*. Парная константа на фронтах —
 // shared/src/share/analytics.ts (синхронно).
-export const ACCOUNT_LINK_HOSTS = ['max', 'telegram'] as const;
+//
+// 'web' появился вместе с карточкой объединения на сайте: там перенос
+// НАЧИНАЕТ сайт, а подтверждает бот. Без этого значения санитайзер вернул бы
+// undefined и meta исчезла целиком — событие записалось бы, а веб-половина
+// воронки в отчёте осталась невидимой.
+export const ACCOUNT_LINK_HOSTS = ['max', 'telegram', 'web'] as const;
 export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
 
 export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
@@ -279,32 +284,13 @@ export const ONBOARDING_STEPS = [
 ] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
-// Тип карточки для событий share_card / share_result (meta.kind).
-export const SHARE_CARD_KINDS = [
-  'weekly',
-  'day',
-  'achievement',
-  'streak',
-  'schema',
-  'diary',
-  'ysq',
-  'mode',
-  'mode_entry',
-  'pair_invite',
-  'app_invite',
-  'therapist_invite',
-  'month',
-  'achievements',
-  'phrase',
-  'gratitude',
-  'journey',
-  'journey_item',
-  'practice',
-  'mode_entry_full',
-  'phrase_check',
-  'phrase_check_full',
-] as const;
-export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
+// SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts
+// (правило №10: файл сверх потолка обязан таять, а не расти вместе со
+// списком; тот же приём, что у CRISIS_SURFACES ниже).
+export {
+  SHARE_CARD_KINDS,
+  type ShareCardKind,
+} from './share-card-kinds.constants';
 
 // Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
 // схемы или лист режима. Парная константа на фронте —

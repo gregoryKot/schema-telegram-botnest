@@ -135,8 +135,11 @@ describe('кнопки подтверждения', () => {
 
     expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94');
     expect(ticketService.approveLogin).not.toHaveBeenCalled();
+    // Причина отказа теперь в аудите: ручное «это не я» отличается от
+    // перебора кодов, хотя событие у них одно.
     expect(securityLog.log).toHaveBeenCalledWith('login_ticket_denied', {
       telegramId: 42,
+      reason: 'user_denied',
     });
     expect(ctx.editMessageText.mock.calls[0][0]).toMatch(/отклон/i);
   });
@@ -294,5 +297,24 @@ describe('tglogin:yes — чей аккаунт впускаем', () => {
     const appOrder = (ticketService.approveLogin as jest.Mock).mock
       .invocationCallOrder[0];
     expect(regOrder).toBeLessThan(appOrder);
+  });
+});
+
+// Зеркальная дыра к ветке привязки: код ПРИВЯЗКИ, подставленный в ссылку
+// входа, показывал карточку ВХОДА, а нажатие падало с «этот код не для входа»
+// и человек видел «код истёк». Соврали дважды — сперва о смысле кода, потом
+// о причине отказа.
+describe('/start login_<КОД> — сверка намерения', () => {
+  it('билет ПРИВЯЗКИ выглядит негодным кодом, а не карточкой входа', async () => {
+    const { service } = makeDeps({
+      card: { userCode: 'K7M2QX94', intent: 'link', deviceLabel: '' },
+    });
+    const ctx = makeCtx();
+
+    await service.handleStart(ctx, 'login_K7M2QX94', 42);
+
+    const text = (ctx.reply as jest.Mock).mock.calls[0][0];
+    expect(text).toContain('не найден');
+    expect(text).not.toContain('Вход в «Всё по схеме»');
   });
 });
