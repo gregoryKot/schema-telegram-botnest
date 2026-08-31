@@ -5,7 +5,7 @@
 // изменились (регресс на дословные label — их видит и правит настройка).
 import { describe, it, expect } from 'vitest';
 import { buildToolRows } from './toolRows';
-import { QUICK_ACTION_IDS } from '../../utils/quickActions';
+import { QUICK_ACTION_IDS, getQuickAction } from '../../utils/quickActions';
 
 const BASE_PROPS = {
   tasksCount: 0,
@@ -73,6 +73,23 @@ describe('buildToolRows — динамические sub', () => {
   it('planCount=0 → «История пуста»', () => {
     const rows = buildToolRows({ ...BASE_PROPS, planCount: 0 });
     expect(rows.find((r) => r.id === 'plans')?.sub).toBe('История пуста');
+  });
+
+  // Правило №4: два места, обязанных совпадать, фиксируются тестом. Подписи
+  // этих четырёх строк считаются здесь по данным пользователя — в реестре
+  // застывшей копии быть не должно, иначе правка копии молча ни на что не
+  // влияет, а списки расходятся.
+  it('у строк с вычисляемой подписью реестр не держит второй копии текста', () => {
+    for (const id of [
+      'tasks',
+      'practices',
+      'plans',
+      'childhood_wheel',
+    ] as const) {
+      const staticSub = getQuickAction(id).sub;
+      expect(typeof staticSub).toBe('string');
+      expect(staticSub).toBe('');
+    }
   });
 
   it('childhoodDone переключает подпись «Колесо детства»', () => {

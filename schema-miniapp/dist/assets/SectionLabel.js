@@ -1,0 +1,1 @@
+import{o as e}from"./hitbox.js";var t=e();function n({children:e,purple:n=!1,mb:r=10,as:i=`h3`}){return(0,t.jsx)(i,{style:{fontSize:11,fontWeight:n?600:500,color:n?`var(--accent)`:`rgba(var(--fg-rgb),0.3)`,textTransform:`uppercase`,letterSpacing:`0.06em`,marginBottom:r,marginTop:0},children:e})}export{n as t};

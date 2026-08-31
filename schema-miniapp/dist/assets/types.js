@@ -1,0 +1,1 @@
+var e={attachment:`#f472b6`,autonomy:`#4fa3f7`,expression:`#f59e0b`,play:`#10b981`,limits:`#a78bfa`};export{e as t};

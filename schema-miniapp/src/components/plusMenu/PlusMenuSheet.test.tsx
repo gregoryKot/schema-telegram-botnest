@@ -30,16 +30,36 @@ afterEach(cleanup);
 describe('PlusMenuSheet — группы', () => {
   it('рендерит все группы и пункты по умолчанию (ничего не скрыто)', () => {
     render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText('Разобраться')).toBeTruthy();
     expect(screen.getByText('Записать момент')).toBeTruthy();
     expect(screen.getByText('Оценить день')).toBeTruthy();
     expect(screen.getByText('Успокоиться')).toBeTruthy();
-    expect(screen.getByText('Разобраться')).toBeTruthy();
-    expect(screen.getByText('Поддержать себя')).toBeTruthy();
+    expect(screen.getByText('Что это было')).toBeTruthy();
     expect(screen.getByText('Схема')).toBeTruthy();
     expect(screen.getByText('Трекер потребностей')).toBeTruthy();
     expect(screen.getByText('Дыхание 4-4-6')).toBeTruthy();
-    expect(screen.getByText('Проверка убеждений')).toBeTruthy();
-    expect(screen.getByText('Безопасное место')).toBeTruthy();
+  });
+
+  it('шесть переехавших в «Инструменты» упражнений в «плюсе» не показаны (один дом на действие)', () => {
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText('Проверка убеждений')).toBeNull();
+    expect(screen.queryByText('Критик или забота?')).toBeNull();
+    expect(screen.queryByText('Схема включилась')).toBeNull();
+    expect(screen.queryByText('Безопасное место')).toBeNull();
+    expect(screen.queryByText('Письмо себе')).toBeNull();
+    expect(screen.queryByText('Тёплые слова')).toBeNull();
+    // Группа «Поддержать себя» целиком ушла вместе со своими пунктами.
+    expect(screen.queryByText('Поддержать себя')).toBeNull();
+  });
+
+  it('«Что это было» — первый пункт первой группы', () => {
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    const html = document.body.textContent ?? '';
+    const caseIdx = html.indexOf('Что это было');
+    expect(caseIdx).toBeGreaterThan(-1);
+    expect(caseIdx).toBeLessThan(html.indexOf('Схема'));
+    expect(caseIdx).toBeLessThan(html.indexOf('Трекер потребностей'));
+    expect(caseIdx).toBeLessThan(html.indexOf('Дыхание 4-4-6'));
   });
 
   it('скрытый пункт не рендерится, остальные пункты его группы видны', () => {
@@ -75,6 +95,24 @@ describe('PlusMenuSheet — группы', () => {
       ),
     ).toBeTruthy();
   });
+
+  it('id в localStorage-скрытии/порядке, которого больше нет на поверхности «плюс» — не ломает рендер', () => {
+    // belief_check/practices — раньше могли встретиться на «плюсе»
+    // (belief_check дублировался), теперь ни один не относится к этой
+    // поверхности. Лишний id в hidden/order должен просто не найти строку.
+    localStorage.setItem(
+      PLUS_ACTIONS_HIDDEN_KEY,
+      serializeHiddenActions(['belief_check', 'practices']),
+    );
+    localStorage.setItem(
+      PLUS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['belief_check', 'stop']),
+    );
+    render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText('Что это было')).toBeTruthy();
+    expect(screen.getByText('Схема')).toBeTruthy();
+    expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
+  });
 });
 
 describe('PlusMenuSheet — выбор действия', () => {
@@ -88,6 +126,16 @@ describe('PlusMenuSheet — выбор действия', () => {
     });
     expect(onAction).toHaveBeenCalledWith('stop');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('клик по «Что это было» шлёт plus_action и зовёт onAction("case")', () => {
+    const onAction = vi.fn();
+    render(<PlusMenuSheet onAction={onAction} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('Что это было'));
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('plus_action', {
+      action: 'case',
+    });
+    expect(onAction).toHaveBeenCalledWith('case');
   });
 });
 
@@ -162,8 +210,8 @@ describe('PlusMenuSheet — порядок пунктов', () => {
 
   it('группы «плюса»: жест ручки за границу своей группы прижимается к её краю, соседняя группа не задета', () => {
     // Группа «Успокоиться» (breathing, grounding, stop) — последняя строка
-    // «Техника «Стоп»» не должна перепрыгнуть в следующую группу «Разобраться»
-    // (belief_check первая) даже при большом смещении вниз.
+    // «Техника «Стоп»» не должна перепрыгнуть в следующую группу (её нет —
+    // «Успокоиться» последняя) даже при большом смещении вниз.
     render(<PlusMenuSheet onAction={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Изменить'));
     const matches = screen.getAllByLabelText('Переставить: Техника «Стоп»');
