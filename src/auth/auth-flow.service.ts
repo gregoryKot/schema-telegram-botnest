@@ -225,7 +225,12 @@ export class AuthFlowService {
       maxAge: 10 * 60 * 1000,
       path: '/api/auth',
     });
-    res.redirect(handler.buildAuthUrl(state));
+    // Привязка (уже есть webUser) заставляет выбрать аккаунт явно; вход
+    // (webUser нет) — нет: провайдер впускает уже вошедшего одним касанием,
+    // а не гоняет через полный выбор аккаунта заново (см. buildAuthUrl).
+    res.redirect(
+      handler.buildAuthUrl(state, undefined, req.webUser?.userId != null),
+    );
   }
 
   async oauthCallback(
