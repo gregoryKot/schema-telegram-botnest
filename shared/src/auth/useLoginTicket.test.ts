@@ -315,6 +315,104 @@ describe('опрос', () => {
   });
 });
 
+// Разбор 2026-08-31. Опрос анонимный, поэтому лимит на него — по IP: за общим
+// NAT сотня контейнеров в одном ритме выбирает лимит адреса, сервер отвечает
+// 429, и фиксированный повтор упирается в 429 до самого дедлайна — человек
+// подтвердил вход, а экран говорит «истекло». Отступ разводит повторы во
+// времени; наложившиеся `begin` не должны заводить второй цикл опроса.
+describe('отступ при ошибках и наложение входов', () => {
+  it('ошибки опроса подряд — пауза растёт, а не долбит фиксированным ритмом', async () => {
+    // interval 1 → базовая пауза 1000мс. На каждую ошибку — вдвое больше.
+    const api = makeApi({
+      poll: vi.fn().mockRejectedValue(new Error('HTTP 429')),
+    });
+    const { result } = setup(api);
+
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(api.poll).toHaveBeenCalledTimes(1); // t=1000: первый опрос, ошибка
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    // t=2000: фиксированный ритм дал бы второй опрос, но отступ отодвинул его.
+    expect(api.poll).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(api.poll).toHaveBeenCalledTimes(2); // t=3000: пауза выросла до 2000
+    expect(result.current.state.kind).toBe('waiting'); // не «истекло»
+  });
+
+  it('удачный ответ гасит отступ — следующая пауза снова базовая', async () => {
+    const api = makeApi({
+      poll: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('HTTP 429'))
+        .mockResolvedValue({ status: 'pending' }),
+    });
+    const { result } = setup(api);
+
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(api.poll).toHaveBeenCalledTimes(1); // ошибка → отступ 2000
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(api.poll).toHaveBeenCalledTimes(2); // t=3000: успех сбросил отступ
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    // Без сброса пауза осталась бы 2000 и третьего опроса тут ещё не было бы.
+    expect(api.poll).toHaveBeenCalledTimes(3); // t=4000: снова базовые 1000
+  });
+
+  it('два начатых входа подряд — один цикл опроса, по свежему билету', async () => {
+    let n = 0;
+    const api = makeApi({
+      start: vi.fn().mockImplementation(async () => ({
+        deviceCode: `code${++n}`,
+        userCode: 'K7M2QX94',
+        expiresIn: 300,
+        interval: 1,
+      })),
+    });
+    const { result } = setup(api);
+
+    await act(async () => {
+      const p1 = result.current.begin('telegram');
+      const p2 = result.current.begin('google');
+      await Promise.all([p1, p2]);
+    });
+
+    expect(api.start).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(api.poll).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    // Ровно один цикл: наложение не оставило второй жить (иначе было бы 4).
+    expect(api.poll).toHaveBeenCalledTimes(2);
+    // И опрашивается ВТОРОЙ билет — первый брошен, а не гоняется параллельно.
+    expect(api.poll.mock.calls.every(([code]) => code === 'code2')).toBe(true);
+  });
+});
+
 // Защитные ветки: сюда попадают, когда сервер ответил не тем, что обещал, или
 // экран закрыли посреди ожидания. Без них хук либо падал бы на размонтированном
 // компоненте, либо считал бы вход состоявшимся по пустому ответу.

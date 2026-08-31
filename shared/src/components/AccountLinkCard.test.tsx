@@ -78,6 +78,30 @@ describe('приглашение', () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
+  it('пока билет выписывается — кнопка погашена, второй запрос не уходит', () => {
+    const onStart = vi.fn();
+    show({ onStart, state: { kind: 'starting', provider: 'telegram' } });
+    const btn = screen.getByText('Подключить Telegram');
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('пока билет выписывается — ссылка не открывает второе окно', () => {
+    // У <a> нет `disabled`: гасим через aria-disabled + preventDefault, иначе
+    // второй тап послал бы второй `start` и сбросил экран в «начинаем».
+    const onStart = vi.fn();
+    show({
+      onStart,
+      href: 'https://t.me/Bot?start=link_K7M2QX94',
+      state: { kind: 'starting', provider: 'telegram' },
+    });
+    const link = screen.getByText('Подключить Telegram');
+    expect(link.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(link);
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
   it('в мини-аппе зовёт переносить данные С САЙТА', () => {
     show({ target: 'site' });
     expect(

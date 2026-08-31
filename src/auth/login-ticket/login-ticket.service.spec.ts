@@ -127,13 +127,30 @@ describe('approveLogin — подтверждение входа', () => {
     );
   });
 
-  it('второе подтверждение того же билета — отказ', async () => {
+  it('подтверждение ЧУЖИМ после уже подтверждённого — отказ', async () => {
     const { tickets } = makeDeps();
     const { userCode } = await startLogin(tickets);
     await tickets.approveLogin(userCode, TG_USER);
     await expect(tickets.approveLogin(userCode, WEB_USER)).rejects.toThrow(
       BadRequestException,
     );
+  });
+
+  it('повторный тап «это я» тем же человеком — тихо ок, без ложного провала', async () => {
+    // Разбор 2026-08-31: до опроса билет ещё жив, второй тап падал в «Код уже
+    // подтверждён» и бот показывал карточку провала после успеха. Теперь
+    // идемпотентно: тот же хозяин подтверждает повторно без ошибки, и
+    // «confirmed» не задваивается.
+    const { tickets, report } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    await tickets.approveLogin(userCode, TG_USER);
+    await expect(
+      tickets.approveLogin(userCode, TG_USER),
+    ).resolves.toBeUndefined();
+    const confirms = (report.step as jest.Mock).mock.calls.filter(
+      ([s]) => s === 'confirmed',
+    );
+    expect(confirms).toHaveLength(1);
   });
 
   it('подтвердить отклонённый билет нельзя', async () => {
@@ -303,6 +320,21 @@ describe('события пути входа', () => {
 
     await expect(tickets.forConfirm('ZZZZZZZZ')).resolves.toBeNull();
     expect((report.step as jest.Mock).mock.calls).toEqual([]);
+  });
+
+  it('повторный тап диплинка ПОСЛЕ успеха (consumed) — не «не успели»', async () => {
+    // Разбор 2026-08-31: consumedAt — это успех (сессию уже забрали опросом).
+    // Telegram переоткрывает /start на каждый тап; такой повтор не должен
+    // капать в too_late и портить воронку.
+    const { tickets, rows, report } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    rows[0].consumedAt = new Date();
+
+    await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
+    expect((report.step as jest.Mock).mock.calls).not.toContainEqual([
+      'too_late',
+      'web',
+    ]);
   });
 
   it('повторный опрос не задваивает «впустило»', async () => {

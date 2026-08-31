@@ -63,6 +63,13 @@ export type LoginTicketState =
 
 /** Минимальная пауза опроса: сервер называет свою, но нулю верить нельзя. */
 const MIN_INTERVAL_S = 1;
+// Подряд идущие ошибки опроса разводим по времени: за общим NAT сотня
+// контейнеров, опрашивающих в одном ритме, выбирает лимит адреса (опрос
+// анонимный, бакет — IP), сервер отвечает 429, и фиксированный повтор так и
+// упирается в 429 до самого дедлайна — человек подтвердил вход, а экран
+// показывает «истекло» (разбор 2026-08-31, RFC 8628 slow_down). Пауза растёт
+// вдвое на каждую ошибку и гаснет на первом удачном ответе.
+const MAX_BACKOFF_STEPS = 5; // потолок 2^5 = 32× базовой паузы
 
 export function loginUrl(
   provider: LoginProvider,
@@ -88,10 +95,18 @@ export function useLoginTicket(deps: LoginTicketDeps) {
   // ни обрывать.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alive = useRef(true);
+  // Поколение опроса. Каждый `begin`/`stop` его сдвигает, а все асинхронные
+  // продолжения (после `await start`, каждый `tick`) сверяются с ним и молча
+  // уходят, если поколение уже не их. Иначе два наложившихся `begin` (двойной
+  // тап, перезапуск эффекта) завели бы ДВА цикла опроса: `stop` гасит один
+  // таймер, но у второго цикла свой билет и своё продолжение — оно бы
+  // пересоздавало таймер и жило параллельно (разбор 2026-08-31).
+  const gen = useRef(0);
 
   const stop = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
+    gen.current++;
   }, []);
 
   useEffect(() => {
@@ -105,6 +120,7 @@ export function useLoginTicket(deps: LoginTicketDeps) {
   const begin = useCallback(
     async (provider: LoginProvider) => {
       stop();
+      const myGen = gen.current; // это поколение опроса; чужое молча уходит
       setState({ kind: 'starting', provider });
       let ticket;
       const d = depsRef.current;
@@ -122,10 +138,12 @@ export function useLoginTicket(deps: LoginTicketDeps) {
           message: 'login ticket start failed',
           section: LOGIN_TICKET_SECTION,
         });
-        if (alive.current) setState({ kind: 'failed' });
+        if (alive.current && gen.current === myGen)
+          setState({ kind: 'failed' });
         return null;
       }
-      if (!alive.current) return null;
+      // Пока ждали билет, мог начаться новый вход — тогда этот уже не наш.
+      if (!alive.current || gen.current !== myGen) return null;
 
       const url = (d.urlFor ?? loginUrl)(provider, ticket.userCode, d);
       setState({ kind: 'waiting', provider, code: ticket.userCode, url });
@@ -134,11 +152,17 @@ export function useLoginTicket(deps: LoginTicketDeps) {
       // экране без кода, то есть без запасного пути.
       d.openExternally?.(url);
 
-      const intervalMs = Math.max(ticket.interval || 0, MIN_INTERVAL_S) * 1000;
+      const baseMs = Math.max(ticket.interval || 0, MIN_INTERVAL_S) * 1000;
       const deadline = Date.now() + ticket.expiresIn * 1000;
+      let errors = 0; // подряд идущие ошибки опроса → длиннее пауза
+
+      const schedule = () => {
+        const delay = baseMs * 2 ** Math.min(errors, MAX_BACKOFF_STEPS);
+        timer.current = setTimeout(() => void tick(), delay);
+      };
 
       const tick = async () => {
-        if (!alive.current) return;
+        if (!alive.current || gen.current !== myGen) return;
         if (Date.now() > deadline) {
           setState({ kind: 'expired' });
           return;
@@ -147,12 +171,17 @@ export function useLoginTicket(deps: LoginTicketDeps) {
         try {
           res = await depsRef.current.api.poll(ticket.deviceCode);
         } catch {
-          // Сеть моргнула — это не отказ во входе. Ждём следующего круга:
-          // человек в этот момент подтверждает вход в другом приложении.
-          timer.current = setTimeout(() => void tick(), intervalMs);
+          // Сеть моргнула или сервер притормозил (429) — это не отказ во входе.
+          // Отступаем и ждём: человек в этот момент подтверждает вход в другом
+          // приложении. Фиксированный повтор упёрся бы в 429 до дедлайна.
+          if (alive.current && gen.current === myGen) {
+            errors++;
+            schedule();
+          }
           return;
         }
-        if (!alive.current) return;
+        if (!alive.current || gen.current !== myGen) return;
+        errors = 0; // сервер ответил — сбрасываем отступ
         if (res.status === 'linked' && res.accessToken) {
           depsRef.current.onSession(res.accessToken, res.expiresIn ?? 900);
           return;
@@ -165,10 +194,10 @@ export function useLoginTicket(deps: LoginTicketDeps) {
           setState({ kind: 'expired' });
           return;
         }
-        timer.current = setTimeout(() => void tick(), intervalMs);
+        schedule();
       };
 
-      timer.current = setTimeout(() => void tick(), intervalMs);
+      schedule();
       return url;
     },
     [stop],

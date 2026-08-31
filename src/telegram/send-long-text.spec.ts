@@ -50,15 +50,42 @@ describe('splitForTelegram', () => {
   });
 
   it('неделимая строка режется по символам, но не внутри тега', () => {
-    // Граница приходится на середину `<b>` — режем перед тегом, иначе
-    // Telegram ответит 400 и человек не увидит отчёт вовсе.
+    // Граница приходится на середину `<b>`: сам ЛИТЕРАЛ тега не рвётся (равное
+    // число `<` и `>` в каждом куске), а пару `<b>…</b>`, разорванную границей,
+    // дозакрываем и переоткрываем — иначе Telegram ответит 400 и человек не
+    // увидит отчёт вовсе.
     const text = `${line(18)}<b>${line(40)}</b>`;
     const parts = splitForTelegram(text, 20);
     for (const part of parts) {
       expect(part.split('<').length).toBe(part.split('>').length);
     }
     expect(parts[0]).toBe(line(18));
-    expect(parts.join('')).toBe(text);
+    // Балансировка добавляет служебные теги, поэтому сверяем СОДЕРЖИМОЕ: сняв
+    // все теги, получаем ровно исходный текст без тегов, ничего не потеряв.
+    const strip = (s: string) => s.replace(/<[^>]+>/g, '');
+    expect(parts.map(strip).join('')).toBe(strip(text));
+  });
+
+  it('пара `<b>…</b>`, разорванная границей, дозакрыта и переоткрыта', () => {
+    // Реальный случай /stats: длинный жирный блок не влезает в один кусок.
+    // Каждый кусок обязан быть валидным HTML сам по себе, иначе Telegram
+    // отвергнет именно тот кусок, где `<b>` открылся, а `</b>` уехал дальше
+    // (разбор 2026-08-31).
+    const text = `<b>${line(120)}</b>`;
+    const parts = splitForTelegram(text, 50);
+    expect(parts.length).toBeGreaterThan(1);
+    for (const part of parts) {
+      // Внутри куска каждый открытый тег закрыт: стек схлопывается в ноль.
+      const opens = (part.match(/<b>/g) || []).length;
+      const closes = (part.match(/<\/b>/g) || []).length;
+      expect(opens).toBe(closes);
+      expect(part.length).toBeLessThanOrEqual(50);
+    }
+    // Промежуточные куски целиком в жирном: открываются `<b>` и закрываются.
+    expect(parts[1].startsWith('<b>')).toBe(true);
+    expect(parts[1].endsWith('</b>')).toBe(true);
+    const strip = (s: string) => s.replace(/<[^>]+>/g, '');
+    expect(parts.map(strip).join('')).toBe(strip(text));
   });
 
   it('одиночный «<» не считается тегом и не зацикливает резку', () => {

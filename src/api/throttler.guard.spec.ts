@@ -26,13 +26,20 @@ class TestableGuard extends UserThrottlerGuard {
   }
 }
 
-function jwtWith(sub: string, secret: string | null): string {
+function jwtWith(
+  sub: string,
+  secret: string | null,
+  over: { type?: string; exp?: number } = {},
+): string {
   const head = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString(
     'base64url',
   );
-  const body = Buffer.from(JSON.stringify({ sub, type: 'access' })).toString(
-    'base64url',
-  );
+  const claims = {
+    sub,
+    type: over.type ?? 'access',
+    exp: over.exp ?? Math.floor(Date.now() / 1000) + 900,
+  };
+  const body = Buffer.from(JSON.stringify(claims)).toString('base64url');
   const sig = secret
     ? createHmac('sha256', secret).update(`${head}.${body}`).digest('base64url')
     : 'поддельная-подпись';
@@ -111,7 +118,47 @@ describe('UserThrottlerGuard.getTracker', () => {
     ).resolves.toBe('1.2.3.4');
   });
 
+  it('честно подписанный, но ПРОСРОЧЕННЫЙ токен → бакет адреса, не uid', async () => {
+    // Разбор 2026-08-31: утёкший исторический токен не должен занимать чужой
+    // бакет. exp в прошлом — падаем на IP.
+    await expect(
+      guard.track({
+        headers: {
+          authorization: `Bearer ${jwtWith('999', JWT_SECRET, {
+            exp: Math.floor(Date.now() / 1000) - 10,
+          })}`,
+        },
+        ip: '1.2.3.4',
+      }),
+    ).resolves.toBe('1.2.3.4');
+  });
+
+  it('токен НЕ типа access (link/merge/refresh) → бакет адреса, не uid', async () => {
+    // Тем же JWT_SECRET подписаны и другие виды токенов; для бакета годится
+    // только access.
+    await expect(
+      guard.track({
+        headers: {
+          authorization: `Bearer ${jwtWith('999', JWT_SECRET, { type: 'link' })}`,
+        },
+        ip: '1.2.3.4',
+      }),
+    ).resolves.toBe('1.2.3.4');
+  });
+
   it('честная подпись initData — свой бакет', async () => {
+    await expect(
+      guard.track({
+        headers: { 'x-telegram-init-data': initDataWith(777, BOT_TOKEN) },
+        ip: '5.6.7.8',
+      }),
+    ).resolves.toBe('uid:777');
+  });
+
+  it('BOT_TOKEN с пробелом/переносом в env — initData всё равно в свой бакет', async () => {
+    // Разбор 2026-08-31: без .trim() пробел в env ронял ВСЕХ мини-апп-юзеров в
+    // общий IP-бакет. Telegram подписывает настоящим токеном (без пробела).
+    process.env.BOT_TOKEN = `${BOT_TOKEN}\n`;
     await expect(
       guard.track({
         headers: { 'x-telegram-init-data': initDataWith(777, BOT_TOKEN) },
