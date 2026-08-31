@@ -55,7 +55,6 @@ export function CaseFlowOverlay({
       }}
       onClose={close}
       onDoubt={() => {}}
-      onHardNow={close}
     />
   );
 }

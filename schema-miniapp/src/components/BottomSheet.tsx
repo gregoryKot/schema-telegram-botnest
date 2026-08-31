@@ -90,6 +90,17 @@ export function BottomSheet({
           outline: 'none',
         }}
       >
+        {/* У несворачиваемого листа ручки нет, и без неё контент начинался
+            с нулевого пикселя — первая строка (точки шагов онбординга)
+            въезжала в зону скругления и резалась краем. Фидбек владельца
+            2026-08-31, скрин визарда. */}
+        {!canDismiss && (
+          <div
+            aria-hidden="true"
+            data-testid="sheet-top-spacer"
+            style={{ height: 18, flexShrink: 0 }}
+          />
+        )}
         {canDismiss && (
           <div
             style={{

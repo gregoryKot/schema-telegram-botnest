@@ -1,46 +1,23 @@
-import { CrisisCard } from '../CrisisCard';
+import { CaseSupportBlock } from './CaseSupportFoot';
 
 /**
  * Примитивы, общие для всех экранов потока «Разбор случая» (webapp): нижняя
- * панель (Дописать потом / Дальше) + постоянная строка «Тяжело прямо сейчас»
- * и CrisisCard — на каждом экране потока (правило №7 CLAUDE.md), не только
+ * панель (Дописать потом / Дальше) + карточка поддержки со строкой «Тяжело
+ * прямо сейчас» — на каждом экране потока (правило №7 CLAUDE.md), не только
  * там, где стоит текстовое поле. Twin по смыслу с schema-miniapp
- * CaseHeader/TertiaryLink (caseFlowUi.tsx), разметка — webapp-идиома
- * (ex-btn/ex-foot вместо инлайн-стилей мини-аппа).
+ * CaseHeader/CaseSupportFoot, разметка — webapp-идиома (ex-btn/ex-foot).
+ * TertiaryLink переехала в caseLinks.tsx (иначе цикл модулей с
+ * CaseSupportFoot); реэкспорт сохраняет прежний импорт для экранов.
  */
-
-export function TertiaryLink({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="link"
-      style={{
-        display: 'block',
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        padding: '10px 0',
-        fontFamily: 'inherit',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
+export { TertiaryLink } from './caseLinks';
 
 /**
  * Нижняя панель шага: [Дописать потом] … [Дальше/Пропустить] сверху,
- * CrisisCard и «Тяжело прямо сейчас →» снизу — одинаковая структура на
- * scene/mode/body/impulse/criterion/recognition/name/done, отличается
- * только primaryLabel/primaryDisabled/onPrimary у вызывающего экрана.
- * onLater отсутствует на hook (там ещё нечего дописывать) — экран сам решает.
+ * карточка поддержки и «Тяжело прямо сейчас →» снизу (CaseSupportBlock) —
+ * одинаковая структура на scene/mode/body/impulse/criterion/recognition/
+ * name/done, отличается только primaryLabel/primaryDisabled/onPrimary у
+ * вызывающего экрана. onLater отсутствует на hook (там ещё нечего
+ * дописывать) — экран сам решает.
  */
 export function CaseFlowFoot({
   primaryLabel,
@@ -64,7 +41,11 @@ export function CaseFlowFoot({
       {(onLater || primaryLabel) && (
         <div className="ex-foot">
           {onLater && (
-            <button type="button" className="ex-btn ex-btn-ghost" onClick={onLater}>
+            <button
+              type="button"
+              className="ex-btn ex-btn-ghost"
+              onClick={onLater}
+            >
               Дописать потом
             </button>
           )}
@@ -81,12 +62,7 @@ export function CaseFlowFoot({
           )}
         </div>
       )}
-      {crisis && (
-        <div style={{ marginTop: 20 }}>
-          <CrisisCard surface="case" />
-        </div>
-      )}
-      <TertiaryLink label="Тяжело прямо сейчас →" onClick={onHardNow} />
+      <CaseSupportBlock crisis={crisis} onHardNow={onHardNow} />
     </>
   );
 }

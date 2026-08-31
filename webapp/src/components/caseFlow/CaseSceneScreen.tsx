@@ -4,6 +4,7 @@ import { CaseFlowFoot } from './caseFlowUi';
 import {
   CASE_FRAMES,
   buildFrameHint,
+  buildFramesToggle,
   buildScenePlaceholder,
   hasOwnDetail,
 } from '../../../../shared/src/case/caseFrames';
@@ -85,7 +86,7 @@ export function CaseSceneScreen({
         style={{ marginTop: 14, padding: '8px 4px' }}
         onClick={() => setShowFrames((v) => !v)}
       >
-        {showFrames ? 'Скрыть рамки ▲' : 'Не идёт — взять рамку →'}
+        {buildFramesToggle(showFrames)}
       </button>
 
       {showFrames && (

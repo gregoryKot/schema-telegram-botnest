@@ -1,6 +1,7 @@
 import { ExScreen } from '../exercises/ExScreen';
 import { CaseFlowFoot } from './caseFlowUi';
 import {
+  buildCriterionIntro,
   buildCriterionQuestions,
   buildVerdictReply,
   caseVerdict,
@@ -54,6 +55,7 @@ export function CaseCriterionScreen({
   onHardNow: () => void;
   tr: Tr;
 }) {
+  const intro = buildCriterionIntro(tr);
   const questions = buildCriterionQuestions(tr);
   const answered =
     criterion.biggerThanCause !== null && criterion.talkedDown !== null;
@@ -64,7 +66,8 @@ export function CaseCriterionScreen({
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 5 из 5"
       eyebrowColor="var(--accent-indigo)"
-      title="Это была часть или обычная досада?"
+      title={intro.title}
+      lede={intro.sub}
     >
       {questions.map((q) => (
         <div key={q.key} style={{ marginBottom: 24 }}>

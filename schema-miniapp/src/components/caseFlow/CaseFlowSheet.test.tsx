@@ -9,6 +9,21 @@ import {
 } from '@testing-library/react';
 import { CaseFlowSheet, type CaseFlowSheetProps } from './CaseFlowSheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import {
+  buildFrameHint,
+  buildFramesToggle,
+} from '../../../../shared/src/case/caseFrames';
+import {
+  buildCriterionIntro,
+  buildVerdictReply,
+} from '../../../../shared/src/case/caseCriterion';
+import type { Tr } from '../../../../shared/src/case/caseTypes';
+
+// Тексты экранов берём из тех же билдеров, что и рантайм (не хардкодим
+// копии: формулировки правятся по фидбеку владельца, и тест не должен
+// краснеть от каждой правки слова). Форма по умолчанию — «ты».
+const trTy: Tr = (ty) => ty;
+const CRITERION_TITLE = buildCriterionIntro(trTy).title;
 
 const trackEvent = vi.fn();
 vi.mock('../../api', () => ({
@@ -35,7 +50,6 @@ function baseProps(
     onOpenMap: vi.fn(),
     onClose: vi.fn(),
     onDoubt: vi.fn(),
-    onHardNow: vi.fn(),
     ...overrides,
   };
 }
@@ -118,7 +132,7 @@ describe('CaseFlowSheet — полный проход, маппинг onSave/onS
 
     fireEvent.click(screen.getByText('Сердце колотится'));
     expect(screen.getByText(/Это уже примета/)).toBeTruthy(); // отдача после первого чипа
-    fireEvent.click(screen.getByText('Своё…'));
+    // поле «своё» видно сразу — чипа «Своё…» на экране больше нет
     fireEvent.change(screen.getByPlaceholderText('Например: сжало в груди'), {
       target: { value: 'трясутся руки' },
     });
@@ -130,13 +144,11 @@ describe('CaseFlowSheet — полный проход, маппинг onSave/onS
     fireEvent.click(screen.getByText('Уйти в телефон, в ленту'));
     fireEvent.click(screen.getByText('Дальше'));
 
-    expect(screen.getByText('Это была часть или обычная досада?')).toBeTruthy(); // criterion
+    expect(screen.getByText(CRITERION_TITLE)).toBeTruthy(); // criterion
     expect(screen.getByText(hardNowText)).toBeTruthy();
     fireEvent.click(screen.getAllByText('Да')[0]); // biggerThanCause = true
     fireEvent.click(screen.getAllByText('Нет')[1]); // talkedDown = false → mode
-    expect(
-      screen.getByText('Крупнее повода и не уговорить — значит, часть.'),
-    ).toBeTruthy();
+    expect(screen.getByText(buildVerdictReply(trTy).mode)).toBeTruthy();
 
     fireEvent.click(screen.getByText('Дальше')); // criterion -> recognition (async save)
     await waitFor(() =>
@@ -288,6 +300,70 @@ describe('CaseFlowSheet — кризисная детекция (правило 
     typeScene(SCENE_TEXT);
     expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
+
+  it('карточка от детекции — постоянная, без «Вернуться к разбору»', () => {
+    render(<CaseFlowSheet {...baseProps()} />);
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene('хочу умереть');
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+    expect(screen.queryByText('Вернуться к разбору ▲')).toBeNull();
+  });
+});
+
+// Регрессия прода 2026-08-31 (фидбек владельца с телефона: «кнопка плохо
+// сейчас просто кидает на главную»): onHardNow={close} в CaseFlowOverlay
+// закрывал поток — кризисный путь (правило №7) выбрасывал человека из
+// разбора вместо помощи. Теперь строка открывает карточку с телефоном
+// доверия НА МЕСТЕ, «Вернуться к разбору ▲» её прячет, черновик цел.
+describe('CaseFlowSheet — «Тяжело прямо сейчас» открывает поддержку, а не выход', () => {
+  it('тап показывает карточку с телефоном доверия и НЕ зовёт onClose', () => {
+    const onClose = vi.fn();
+    render(<CaseFlowSheet {...baseProps({ onClose })} />);
+
+    fireEvent.click(screen.getByText(hardNowText));
+
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+    // пока карточка открыта рукой — строки-открывашки нет
+    expect(screen.queryByText(hardNowText)).toBeNull();
+    // поток остался на своём экране
+    expect(screen.getByText('Разобрать свой случай')).toBeTruthy();
+  });
+
+  it('«Вернуться к разбору» прячет карточку; шаг и черновик на месте', () => {
+    const onClose = vi.fn();
+    render(<CaseFlowSheet {...baseProps({ onClose })} />);
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+
+    fireEvent.click(screen.getByText(hardNowText));
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Вернуться к разбору ▲'));
+
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
+    expect(screen.getByText('Что случилось?')).toBeTruthy(); // тот же шаг
+    expect(screen.getByPlaceholderText(SCENE_PLACEHOLDER).value).toBe(
+      SCENE_TEXT,
+    ); // черновик не потерян
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('открытие рукой прокручивает к карточке (лист длинный, она внизу)', () => {
+    const scrollSpy = vi.fn();
+    const proto = window.HTMLElement.prototype as unknown as {
+      scrollIntoView?: () => void;
+    };
+    const original = proto.scrollIntoView;
+    proto.scrollIntoView = scrollSpy;
+    try {
+      render(<CaseFlowSheet {...baseProps()} />);
+      fireEvent.click(screen.getByText(hardNowText));
+      expect(scrollSpy).toHaveBeenCalled();
+    } finally {
+      proto.scrollIntoView = original;
+    }
+  });
 });
 
 describe('CaseFlowSheet — hook и выходы', () => {
@@ -298,13 +374,6 @@ describe('CaseFlowSheet — hook и выходы', () => {
     fireEvent.click(screen.getByText('Сегодня ровный день →'));
     expect(onSteadyDay).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('«Тяжело прямо сейчас» вызывает onHardNow на hook-экране', () => {
-    const onHardNow = vi.fn();
-    render(<CaseFlowSheet {...baseProps({ onHardNow })} />);
-    fireEvent.click(screen.getByText(hardNowText));
-    expect(onHardNow).toHaveBeenCalledTimes(1);
   });
 
   it('«У меня было иначе» на экране узнавания вызывает onDoubt и шлёт agreed:false', async () => {
@@ -336,12 +405,12 @@ describe('CaseFlowSheet — сцена: рамка не пускает даль�
     render(<CaseFlowSheet {...baseProps()} />);
     fireEvent.click(screen.getByText('Разобрать свой случай'));
 
-    fireEvent.click(screen.getByText('Не идёт — взять рамку →'));
+    fireEvent.click(screen.getByText(buildFramesToggle(false)));
     fireEvent.click(
       screen.getByText('Сообщение прочитано час назад. Ответа нет.'),
     );
 
-    expect(screen.getByText(/Рамка\. Допиши/)).toBeTruthy();
+    expect(screen.getByText(buildFrameHint(trTy))).toBeTruthy();
     expect(screen.getByText('Дальше').disabled).toBe(true);
 
     typeScene(
@@ -350,23 +419,23 @@ describe('CaseFlowSheet — сцена: рамка не пускает даль�
     expect(screen.getByText('Дальше').disabled).toBe(false);
   });
 
-  it('«Скрыть рамки» сворачивает список рамок обратно', () => {
+  it('«Скрыть примеры» сворачивает список примеров обратно', () => {
     render(<CaseFlowSheet {...baseProps()} />);
     fireEvent.click(screen.getByText('Разобрать свой случай'));
-    fireEvent.click(screen.getByText('Не идёт — взять рамку →'));
+    fireEvent.click(screen.getByText(buildFramesToggle(false)));
     expect(
       screen.getByText('Сообщение прочитано час назад. Ответа нет.'),
     ).toBeTruthy();
 
-    fireEvent.click(screen.getByText('Скрыть рамки ▲'));
+    fireEvent.click(screen.getByText(buildFramesToggle(true)));
     expect(
       screen.queryByText('Сообщение прочитано час назад. Ответа нет.'),
     ).toBeNull();
   });
 });
 
-describe('CaseFlowSheet — «Своё…» на экране порыва', () => {
-  it('открывает поле, текст уходит в actions на сохранении', async () => {
+describe('CaseFlowSheet — поле «своё» на экране порыва', () => {
+  it('видно сразу (без чипа «Своё…»), текст уходит в actions на сохранении', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<CaseFlowSheet {...baseProps({ onSave })} />);
     fireEvent.click(screen.getByText('Разобрать свой случай'));
@@ -376,7 +445,7 @@ describe('CaseFlowSheet — «Своё…» на экране порыва', () 
     fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
     fireEvent.click(screen.getByText('Дальше')); // body -> impulse
 
-    fireEvent.click(screen.getByText('Своё…'));
+    expect(screen.queryByText('Своё…')).toBeNull();
     fireEvent.change(
       screen.getByPlaceholderText('Например: хотелось всё бросить'),
       { target: { value: 'хотелось хлопнуть дверью' } },
@@ -391,6 +460,74 @@ describe('CaseFlowSheet — «Своё…» на экране порыва', () 
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ actions: 'хотелось хлопнуть дверью' }),
+    );
+  });
+});
+
+// Фидбек владельца 2026-08-31: «по умолчанию поле ввода, а снизу варианты».
+// Поле «своё» видно сразу, чипы-«Своё…» не рендерятся, лимит тапнутых чипов
+// не блокирует ввод, а стёртое «своё» не оставляет следа в приметах
+// (read-after-write: сохранил → нашёл ровно то, что видел на экране).
+describe('CaseFlowSheet — «своё» тела: поле по умолчанию, лимит и стирание', () => {
+  it('два чипа + своё → все три приметы в записи; лимит не мешает вводу', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<CaseFlowSheet {...baseProps({ onSave })} />);
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText('Страшно, тревожно'));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+
+    // поле видно сразу, чипа «Своё…» нет
+    const ownField = screen.getByPlaceholderText('Например: сжало в груди');
+    expect(screen.queryByText('Своё…')).toBeNull();
+
+    fireEvent.click(screen.getByText('Сердце колотится'));
+    fireEvent.click(screen.getByText('Дышу поверхностно'));
+    // лимит 2 тапнутых исчерпан — ввод «своего» всё равно работает
+    fireEvent.change(ownField, { target: { value: 'трясутся руки' } });
+    // а третий чип по-прежнему блокируется
+    fireEvent.click(screen.getByText('Руки холодные'));
+
+    fireEvent.click(screen.getByText('Дальше')); // body -> impulse
+    fireEvent.click(screen.getByText('Дальше')); // impulse -> criterion
+    answerCriterion(true, false);
+    fireEvent.click(screen.getByText('Дальше'));
+    await waitFor(() =>
+      expect(screen.getByText('Вот что произошло')).toBeTruthy(),
+    );
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bodyFeelings: 'сердце колотится, дышу поверхностно, трясутся руки',
+      }),
+    );
+  });
+
+  it('стёртое «своё» уходит из примет', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<CaseFlowSheet {...baseProps({ onSave })} />);
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText('Страшно, тревожно'));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+
+    const ownField = screen.getByPlaceholderText('Например: сжало в груди');
+    fireEvent.click(screen.getByText('Сердце колотится'));
+    fireEvent.change(ownField, { target: { value: 'трясутся руки' } });
+    fireEvent.change(ownField, { target: { value: '' } }); // передумал
+
+    fireEvent.click(screen.getByText('Дальше')); // body -> impulse
+    fireEvent.click(screen.getByText('Дальше')); // impulse -> criterion
+    answerCriterion(true, false);
+    fireEvent.click(screen.getByText('Дальше'));
+    await waitFor(() =>
+      expect(screen.getByText('Вот что произошло')).toBeTruthy(),
+    );
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ bodyFeelings: 'сердце колотится' }),
     );
   });
 });
@@ -468,7 +605,7 @@ describe('CaseFlowSheet — «Назад» проводит по шагам в �
 
     fireEvent.click(screen.getByText('Дальше')); // тело -> порыв
     fireEvent.click(screen.getByText('Дальше')); // порыв -> критерий
-    expect(screen.getByText('Это была часть или обычная досада?')).toBeTruthy();
+    expect(screen.getByText(CRITERION_TITLE)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(screen.getByText('Что потянуло сделать?')).toBeTruthy(); // снова порыв

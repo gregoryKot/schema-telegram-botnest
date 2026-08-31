@@ -11,6 +11,8 @@ import {
   type CaseFlowStep,
 } from './caseFlowTypes';
 import { suggestSecondDoor } from './caseImpulses';
+import { toggleTappedChip, useCaseOwnSync } from './useCaseOwnSync';
+import { useHardNowSupport } from './useCaseSupport';
 import type { CaseCriterionAnswers } from './caseTypes';
 
 /** Единственное, чем платформы платят за общий хук — событие аналитики.
@@ -47,10 +49,10 @@ function initialState(): { step: CaseFlowStep; fields: CaseFlowFields } {
 export function useCaseFlowState(
   onClose: () => void,
   onSteadyDay: () => void,
-  onHardNow: () => void,
   deps: CaseFlowStateDeps,
 ) {
   const tr = useTr();
+  const support = useHardNowSupport();
   const init = useState(initialState)[0];
   const [step, setStep] = useState<CaseFlowStep>(init.step);
   const [fields, setFields] = useState<CaseFlowFields>(init.fields);
@@ -73,10 +75,6 @@ export function useCaseFlowState(
     haptic.tap();
     if (!savedRef.current) saveCaseDraft({ step, ...fields });
     onClose();
-  };
-  const handleHardNow = () => {
-    haptic.tap();
-    onHardNow();
   };
   const goToScene = () => {
     if (!startedRef.current) {
@@ -108,33 +106,32 @@ export function useCaseFlowState(
   };
 
   const toggleBodyChip = (id: string) => {
-    const has = fields.bodyChipIds.includes(id);
-    if (!has && fields.bodyChipIds.length >= 2) {
+    const next = toggleTappedChip(fields.bodyChipIds, id, 2);
+    if (next === null) {
       haptic.warning();
       return;
     }
     haptic.tap();
-    patch({
-      bodyChipIds: has
-        ? fields.bodyChipIds.filter((x) => x !== id)
-        : [...fields.bodyChipIds, id],
-    });
+    patch({ bodyChipIds: next });
   };
-  const toggleImpulseChip = (id: string) => {
-    const has = fields.impulseChipIds.includes(id);
-    if (!has && fields.impulseChipIds.length >= 3) {
-      haptic.warning();
-      return;
-    }
-    haptic.tap();
-    const nextIds = has
-      ? fields.impulseChipIds.filter((x) => x !== id)
-      : [...fields.impulseChipIds, id];
-    patch({ impulseChipIds: nextIds });
+  const applyImpulseIds = (ids: string[]) => {
+    patch({ impulseChipIds: ids });
     setSecondDoorModeId(
-      suggestSecondDoor(fields.gateId ?? 'unknown', nextIds, fields.modeId),
+      suggestSecondDoor(fields.gateId ?? 'unknown', ids, fields.modeId),
     );
   };
+  const toggleImpulseChip = (id: string) => {
+    const next = toggleTappedChip(fields.impulseChipIds, id, 3);
+    if (next === null) {
+      haptic.warning();
+      return;
+    }
+    haptic.tap();
+    applyImpulseIds(next);
+  };
+
+  // Непустой bodyOwn/impulseOwn = «своё выбрано» (см. useCaseOwnSync).
+  useCaseOwnSync(fields, patch, applyImpulseIds);
 
   const handleCriterionAnswer = (
     key: keyof CaseCriterionAnswers,
@@ -163,8 +160,8 @@ export function useCaseFlowState(
     secondDoorModeId,
     progress: PROGRESS_META[step],
     crisis,
+    ...support,
     handleLater,
-    handleHardNow,
     goToScene,
     handleSteadyDay,
     handleSceneNext,
