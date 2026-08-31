@@ -137,6 +137,13 @@ export function AccountLinkCard({
     );
   }
 
+  // Билет уже выписывается — гасим кнопку: второй тап послал бы второй запрос
+  // и заново сбросил бы экран в «начинаем». Хук такое наложение переживёт
+  // (сверка поколения опроса), но лишний поход в сеть незачем.
+  const starting = state.kind === 'starting';
+  const actionStyle = starting
+    ? { ...ACTION, opacity: 0.6, cursor: 'default', pointerEvents: 'none' }
+    : ACTION;
   return (
     <div>
       <div style={TITLE}>{copy$.title}</div>
@@ -147,13 +154,25 @@ export function AccountLinkCard({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={onStart}
-          style={ACTION}
+          onClick={(e) => {
+            if (starting) {
+              e.preventDefault();
+              return;
+            }
+            onStart();
+          }}
+          aria-disabled={starting}
+          style={actionStyle}
         >
           {copy$.action}
         </a>
       ) : (
-        <button type="button" onClick={onStart} style={ACTION}>
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={starting}
+          style={actionStyle}
+        >
           {copy$.action}
         </button>
       )}

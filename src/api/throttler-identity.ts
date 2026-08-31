@@ -22,10 +22,15 @@ function sameDigest(a: string, b: string): boolean {
 }
 
 /**
- * Подпись HS256 сходится? Ключ берётся тем же, чем подписывали (JWT_SECRET).
- * Срок жизни НЕ проверяем: просроченный, но честно подписанный токен всё ещё
- * принадлежит своему хозяину — для бакета этого достаточно, а вход по нему
- * всё равно даёт настоящий auth-гард, а не этот код.
+ * Подпись HS256 сходится И это именно ACCESS-токен, ещё живой? Ключ — тот же,
+ * чем подписывали (JWT_SECRET).
+ *
+ * Почему мало одной подписи (разбор 2026-08-31). Тем же JWT_SECRET подписаны
+ * не только access-токены: link, merge, totp-challenge, refresh. Утёкший
+ * ИСТОРИЧЕСКИЙ токен любого из этих видов сходится по подписи и — раз бакет
+ * больше не скован с IP — позволил бы кросс-IP занять и «отравить» чужой
+ * бакет лимита. Поэтому требуем `type === 'access'` и непросроченный `exp`:
+ * протухший или чужого вида токен падает в IP-бакет, как подделка.
  */
 export function verifiedJwtSubject(
   token: string,
@@ -42,7 +47,13 @@ export function verifiedJwtSubject(
   try {
     const body = JSON.parse(Buffer.from(payload, 'base64url').toString()) as {
       sub?: string | number;
+      type?: string;
+      exp?: number;
     };
+    if (body.type !== 'access') return null;
+    // exp в секундах (стандарт JWT); нет exp или уже прошёл — не наш случай.
+    if (typeof body.exp !== 'number' || body.exp * 1000 <= Date.now())
+      return null;
     return body.sub == null ? null : String(body.sub);
   } catch {
     return null;

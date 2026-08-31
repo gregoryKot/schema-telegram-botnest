@@ -140,7 +140,11 @@ export class LoginTicketService {
       // частый «не успел», и считать его надо здесь: до liveByUserCode такой
       // код не доходит. Несуществующий код не считаем вовсе — иначе перебор
       // сам себе рисовал бы статистику.
-      if (row && row.intent === 'login')
+      //
+      // НО consumedAt — это УСПЕХ (приложение уже забрало сессию опросом), а
+      // не «не успел»: повторный тап диплинка после удачного входа не должен
+      // капать в too_late и портить воронку (разбор 2026-08-31).
+      if (row && row.intent === 'login' && !row.consumedAt)
         this.report.step('too_late', row.hostId);
       return null;
     }
@@ -163,8 +167,15 @@ export class LoginTicketService {
     if (row.intent !== 'login') {
       throw new BadRequestException('Этот код не для входа');
     }
-    if (row.approvedUserId)
+    if (row.approvedUserId) {
+      // Идемпотентность (разбор 2026-08-31): повторный тап «это я» тем же
+      // человеком до того, как опрос заберёт сессию, — это НЕ ошибка. Раньше
+      // второй тап падал в «Код уже подтверждён» и бот показывал ложную
+      // карточку провала после успеха. Тот же хозяин — тихо подтверждаем ещё
+      // раз; ЧУЖОЙ уже занятый код — по-прежнему отказ.
+      if (row.approvedUserId === approvedUserId) return;
       throw new BadRequestException('Код уже подтверждён');
+    }
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { approvedUserId, approvedAt: new Date() },
