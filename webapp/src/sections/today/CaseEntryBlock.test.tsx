@@ -57,6 +57,11 @@ function renderBlock(overrides: Partial<ReturnType<typeof noopProps>> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // Карта себя (useSelfMapData) читает getModeNotes/getProfile тоже — оба
+  // должны резолвиться, даже когда тест открывает только карточку разбора и
+  // карту не трогает, иначе Promise.all повиснет на undefined.ysq.
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { completedAt: null } });
 });
 afterEach(() => cleanup());
 
@@ -103,5 +108,114 @@ describe('CaseEntryBlock — кнопки', () => {
     fireEvent.click(screen.getByText('Ровный день'));
     expect(onOpenTracker).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Что сегодня зацепило?')).toBeNull();
+  });
+});
+
+const SCENE_TEXT = 'Мама позвонила и стала расспрашивать про работу';
+const SCENE_PLACEHOLDER = /сообщение прочитано час назад/i;
+
+describe('CaseEntryBlock — карта себя открывается лениво из «Карта себя»', () => {
+  it('«Карта себя» открывает карту, «что дальше» с карты уводит обратно в разбор', async () => {
+    // Один случай — CaseEntryCard уже показывает «Карта себя», а карта
+    // (useSelfMapData) видит один разбор одного режима: модель «что дальше»
+    // предложит «ещё один случай», не «первый разбор».
+    mockApi.getModeDiary.mockResolvedValue([
+      { modeId: 'detached_protector', createdAt: new Date().toISOString() },
+    ]);
+    renderBlock();
+    await screen.findByText(/Карта себя · 1 разбор/);
+
+    fireEvent.click(screen.getByText(/Карта себя · 1 разбор/));
+    await screen.findByText(/Черновик/);
+
+    fireEvent.click(screen.getByText('Разобрать ещё один случай'));
+    // карта закрылась, поток разбора открылся с самого начала (hook)
+    await screen.findByText('Разобрать свой случай');
+    expect(screen.queryByText(/Черновик/)).toBeNull();
+  });
+
+  it('«Закрыть» на карте возвращает на /today без открытия потока', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      { modeId: 'detached_protector', createdAt: new Date().toISOString() },
+    ]);
+    renderBlock();
+    await screen.findByText(/Карта себя · 1 разбор/);
+
+    fireEvent.click(screen.getByText(/Карта себя · 1 разбор/));
+    await screen.findByText(/Черновик/);
+
+    fireEvent.click(screen.getByText('Закрыть'));
+    expect(screen.queryByText(/Черновик/)).toBeNull();
+    expect(screen.queryByText('Разобрать свой случай')).toBeNull();
+  });
+});
+
+describe('CaseEntryBlock — полный проход доезжает до реального API', () => {
+  it('onSave/onSaveCard зовут api.createModeDiary/saveModeNote, «Открыть карту» открывает карту', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    renderBlock();
+    await screen.findByText('Что это было');
+
+    fireEvent.click(screen.getByText('Разобрать · ≈ 3 мин'));
+    await screen.findByText('Разобрать свой случай');
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+
+    fireEvent.change(screen.getByPlaceholderText(SCENE_PLACEHOLDER), {
+      target: { value: SCENE_TEXT },
+    });
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText(/Страшно, тревожно/));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+    fireEvent.click(screen.getByText('Сердце колотится'));
+    fireEvent.click(screen.getByText('Дальше')); // тело -> порыв
+    fireEvent.click(screen.getByText('Свернуть разговор'));
+    fireEvent.click(screen.getByText('Дальше')); // порыв -> критерий
+
+    fireEvent.click(screen.getAllByText('Да')[0]);
+    fireEvent.click(screen.getAllByText('Нет')[1]); // вердикт «часть»
+    fireEvent.click(screen.getByText('Дальше'));
+
+    await waitFor(() => expect(mockApi.createModeDiary).toHaveBeenCalledTimes(1));
+    expect(mockApi.createModeDiary).toHaveBeenCalledWith(
+      expect.objectContaining({ modeId: 'vulnerable_child', situation: SCENE_TEXT }),
+    );
+
+    await screen.findByText('Вот что произошло');
+    fireEvent.click(screen.getByText('Дальше')); // recognition -> name
+    fireEvent.click(screen.getByText('Стена'));
+
+    await waitFor(() => expect(mockApi.saveModeNote).toHaveBeenCalledTimes(1));
+    expect(mockApi.saveModeNote).toHaveBeenCalledWith(
+      expect.objectContaining({ modeId: 'vulnerable_child', alias: 'Стена' }),
+    );
+
+    await screen.findByText('Открыть карту');
+    fireEvent.click(screen.getByText('Открыть карту'));
+    // поток закрылся, открылась карта с только что сохранённым разбором
+    await screen.findByText(/Черновик/);
+    expect(screen.queryByText('Открыть карту')).toBeNull();
+  });
+
+  it('«Дописать потом» закрывает поток и перечитывает счётчик разборов', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    renderBlock();
+    await screen.findByText('Что это было');
+
+    fireEvent.click(screen.getByText('Разобрать · ≈ 3 мин'));
+    await screen.findByText('Разобрать свой случай');
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    fireEvent.change(screen.getByPlaceholderText(SCENE_PLACEHOLDER), {
+      target: { value: SCENE_TEXT },
+    });
+
+    mockApi.getModeDiary.mockResolvedValue([
+      { modeId: 'detached_protector', createdAt: new Date().toISOString() },
+    ]);
+    fireEvent.click(screen.getByText('Дописать потом'));
+
+    // поток закрылся; load() перечитал count — карточка теперь «после разбора»
+    await screen.findByText('Что сегодня зацепило?');
+    expect(screen.queryByText('Что случилось?')).toBeNull();
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(2); // при монтаже + после close
   });
 });

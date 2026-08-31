@@ -233,3 +233,142 @@ describe('CaseFlowScreen — hook и выходы', () => {
     });
   });
 });
+
+// Несущее правило потока: рамка — старт для тех, у кого свой текст с чистого
+// листа не идёт, но карточка режима не может держаться на наших словах.
+// «Дальше» обязана оставаться заблокированной, пока к рамке не добавлена
+// собственная деталь (hasOwnDetail, shared/src/case/caseFrames.ts).
+describe('CaseFlowScreen — рамка сцены: «Дальше» ждёт своей детали', () => {
+  it('рамка без правки блокирует «Дальше», дописанная деталь снимает блок', () => {
+    renderFlow();
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+
+    fireEvent.click(screen.getByText('Не идёт — взять рамку →'));
+    fireEvent.click(screen.getByText('Сообщение прочитано час назад. Ответа нет.'));
+
+    expect(screen.getByText(/Рамка\. Допиши/)).toBeTruthy();
+    expect((screen.getByText('Дальше') as HTMLButtonElement).disabled).toBe(true);
+
+    typeScene('Сообщение прочитано час назад. Ответа нет. Мама позвонила следом');
+    expect((screen.getByText('Дальше') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('«Скрыть рамки» сворачивает список рамок обратно', () => {
+    renderFlow();
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    fireEvent.click(screen.getByText('Не идёт — взять рамку →'));
+    expect(screen.getByText('Сообщение прочитано час назад. Ответа нет.')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Скрыть рамки ▲'));
+    expect(screen.queryByText('Сообщение прочитано час назад. Ответа нет.')).toBeNull();
+  });
+});
+
+describe('CaseFlowScreen — «Своё…» на экране порыва', () => {
+  it('текст уходит в actions на сохранении', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    renderFlow({ onSave });
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText(/Страшно, тревожно/));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+    fireEvent.click(screen.getByText('Дальше')); // тело -> порыв
+
+    fireEvent.click(screen.getByText('Своё…'));
+    fireEvent.change(screen.getByPlaceholderText('Например: хотелось всё бросить'), {
+      target: { value: 'хотелось хлопнуть дверью' },
+    });
+    fireEvent.click(screen.getByText('Дальше')); // порыв -> критерий
+
+    answerCriterion(true, false);
+    fireEvent.click(screen.getByText('Дальше'));
+    await waitFor(() => expect(screen.getByText('Вот что произошло')).toBeTruthy());
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ actions: 'хотелось хлопнуть дверью' }),
+    );
+  });
+});
+
+describe('CaseFlowScreen — своё имя части', () => {
+  it('печатает своё слово, «Назвать» разблокируется только с текстом, source own', async () => {
+    const onSaveCard = vi.fn().mockResolvedValue(undefined);
+    renderFlow({ onSaveCard });
+    driveToCriterion();
+    answerCriterion(true, false);
+    fireEvent.click(screen.getByText('Дальше'));
+    await waitFor(() => expect(screen.getByText('Вот что произошло')).toBeTruthy());
+    fireEvent.click(screen.getByText('Дальше')); // recognition -> name
+
+    const nameButton = () => screen.getByText('Назвать') as HTMLButtonElement;
+    expect(nameButton().disabled).toBe(true);
+    fireEvent.change(screen.getByPlaceholderText('Своё слово'), { target: { value: 'Ёжик' } });
+    expect(nameButton().disabled).toBe(false);
+    fireEvent.click(nameButton());
+
+    await waitFor(() => expect(screen.getByText('Открыть карту')).toBeTruthy());
+    expect(onSaveCard).toHaveBeenCalledWith(expect.objectContaining({ alias: 'Ёжик' }));
+  });
+});
+
+// Навигация назад — отдельный от handleLater путь: «Назад» возвращает на
+// предыдущий шаг с сохранёнными полями, «Дописать потом»/«Закрыть» выходят
+// из потока целиком. До этого теста goBack() ни разу не вызывался.
+describe('CaseFlowScreen — «Назад» проводит по шагам в обратном порядке', () => {
+  it('со сцены на hook и дальше по всем шагам вплоть до критерия — назад и снова вперёд', () => {
+    renderFlow();
+
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    expect(screen.getByText('Что случилось?')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к упражнениям'));
+    expect(screen.getByText('Разобрать свой случай')).toBeTruthy(); // снова hook
+
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+    fireEvent.click(screen.getByText('Дальше'));
+    expect(screen.getByText(/Кто сейчас/)).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к упражнениям'));
+    expect(screen.getByText('Что случилось?')).toBeTruthy(); // снова сцена
+    expect((screen.getByText('Дальше') as HTMLButtonElement).disabled).toBe(false); // текст не потерян
+
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText(/Страшно, тревожно/));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+    expect(screen.getByText('Где это отозвалось в теле?')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к упражнениям'));
+    expect(screen.getByText(/Кто сейчас/)).toBeTruthy(); // снова ворота
+
+    fireEvent.click(screen.getByText(/Страшно, тревожно/));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+    fireEvent.click(screen.getByText('Дальше')); // тело -> порыв
+    expect(screen.getByText('Что потянуло сделать?')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к упражнениям'));
+    expect(screen.getByText('Где это отозвалось в теле?')).toBeTruthy(); // снова тело
+
+    fireEvent.click(screen.getByText('Дальше')); // тело -> порыв снова
+    fireEvent.click(screen.getByText('Дальше')); // порыв -> критерий
+    expect(screen.getByText('Это была часть или обычная досада?')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к упражнениям'));
+    expect(screen.getByText('Что потянуло сделать?')).toBeTruthy(); // снова порыв
+  });
+});
+
+describe('CaseFlowScreen — «Знаю режим – выбрать из списка» на экране «кто взял управление»', () => {
+  it('разворачивает список режимов, прямой выбор ведёт сразу в тело', () => {
+    renderFlow();
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    typeScene(SCENE_TEXT);
+    fireEvent.click(screen.getByText('Дальше'));
+
+    fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+
+    expect(screen.getByText('Где это отозвалось в теле?')).toBeTruthy();
+  });
+});

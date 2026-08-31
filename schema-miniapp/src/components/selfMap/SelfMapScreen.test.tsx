@@ -144,6 +144,22 @@ describe('SelfMapScreen', () => {
     expect(props.onPickMode).toHaveBeenCalledWith('detached_protector');
   });
 
+  it('карточка примет без единого случая показывает «Приметы собраны, случаев пока нет»', () => {
+    // Карточка режима могла быть собрана раньше, чем поймался случай
+    // (collectModeItems, shared/src/map/mapVm.ts) — count===0 не должен
+    // читаться как «0 случаев», это другой текст с другим смыслом.
+    renderMap(
+      {
+        ...emptyMap,
+        notes: [
+          { modeId: 'detached_protector', alias: 'Стена', hasCard: true },
+        ],
+      },
+      emptyNext,
+    );
+    expect(screen.getByText('Приметы собраны, случаев пока нет')).toBeTruthy();
+  });
+
   it('полоса «откуда тянется» заперта до пяти разборов и объясняет почему', () => {
     renderMap(
       {
