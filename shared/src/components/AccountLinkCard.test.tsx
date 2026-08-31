@@ -81,7 +81,7 @@ describe('приглашение', () => {
   it('пока билет выписывается — кнопка погашена, второй запрос не уходит', () => {
     const onStart = vi.fn();
     show({ onStart, state: { kind: 'starting', provider: 'telegram' } });
-    const btn = screen.getByText('Подключить Telegram') as HTMLButtonElement;
+    const btn = screen.getByText('Подключить Telegram');
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(onStart).not.toHaveBeenCalled();

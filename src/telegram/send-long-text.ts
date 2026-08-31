@@ -28,9 +28,9 @@ function tokenize(text: string): string[] {
   const out: string[] = [];
   let last = 0;
   for (const m of text.matchAll(TAG_G)) {
-    if (m.index! > last) out.push(text.slice(last, m.index));
+    if (m.index > last) out.push(text.slice(last, m.index));
     out.push(m[0]);
-    last = m.index! + m[0].length;
+    last = m.index + m[0].length;
   }
   if (last < text.length) out.push(text.slice(last));
   return out;
@@ -43,7 +43,11 @@ export function splitForTelegram(
   if (text.length <= limit) return [text];
   const out: string[] = [];
   const open: string[] = []; // открытые теги на текущем курсоре
-  const closers = () => open.map((t) => `</${nameOf(t)}>`).reverse().join('');
+  const closers = () =>
+    open
+      .map((t) => `</${nameOf(t)}>`)
+      .reverse()
+      .join('');
   const reopen = () => open.join('');
   let chunk = reopen();
   let dirty = false; // добавляли ли содержимое после последнего сброса

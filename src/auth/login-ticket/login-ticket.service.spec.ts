@@ -144,7 +144,9 @@ describe('approveLogin — подтверждение входа', () => {
     const { tickets, report } = makeDeps();
     const { userCode } = await startLogin(tickets);
     await tickets.approveLogin(userCode, TG_USER);
-    await expect(tickets.approveLogin(userCode, TG_USER)).resolves.toBeUndefined();
+    await expect(
+      tickets.approveLogin(userCode, TG_USER),
+    ).resolves.toBeUndefined();
     const confirms = (report.step as jest.Mock).mock.calls.filter(
       ([s]) => s === 'confirmed',
     );

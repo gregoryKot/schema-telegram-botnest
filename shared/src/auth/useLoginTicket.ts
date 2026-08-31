@@ -138,7 +138,8 @@ export function useLoginTicket(deps: LoginTicketDeps) {
           message: 'login ticket start failed',
           section: LOGIN_TICKET_SECTION,
         });
-        if (alive.current && gen.current === myGen) setState({ kind: 'failed' });
+        if (alive.current && gen.current === myGen)
+          setState({ kind: 'failed' });
         return null;
       }
       // Пока ждали билет, мог начаться новый вход — тогда этот уже не наш.
