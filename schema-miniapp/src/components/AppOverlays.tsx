@@ -61,6 +61,9 @@ interface Props {
 // Оверлеи/шиты App.tsx, не относящиеся к главным экранам или истории
 // потребностей (те — в AppSections/TrackerHistoryOverlay). Перенесено из
 // App.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
+import { CaseFlowOverlay } from './caseFlow/CaseFlowOverlay';
+import { SelfMapOverlay } from './selfMap/SelfMapOverlay';
+
 export function AppOverlays({
   sheets,
   needs,
@@ -179,6 +182,10 @@ export function AppOverlays({
           onClose={() => sheets.close('trackerGoal')}
         />
       )}
+
+      {sheets.caseFlow && <CaseFlowOverlay sheets={sheets} />}
+
+      {sheets.selfMap && <SelfMapOverlay sheets={sheets} />}
 
       {sheets.childhoodWheel && (
         <ChildhoodWheelSheet

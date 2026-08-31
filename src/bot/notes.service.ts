@@ -28,7 +28,16 @@ export const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
   strings: [...COMMON_NOTE_FIELDS, 'reality'],
 };
 export const MODE_NOTE_SCHEMA: EncryptSchema = {
-  strings: [...COMMON_NOTE_FIELDS, 'needs', 'modeFunction', 'needsMet'],
+  strings: [
+    ...COMMON_NOTE_FIELDS,
+    'needs',
+    'modeFunction',
+    'needsMet',
+    // Имя режима своими словами и «чего боишься, если он перестанет» —
+    // свободный текст человека, шифруется наравне с остальной карточкой.
+    'alias',
+    'fear',
+  ],
 };
 
 // Карточки схем/режимов (UserSchemaNote / UserModeNote) + доступ терапевта
@@ -116,6 +125,8 @@ export class NotesService {
       needs?: string;
       modeFunction?: string;
       needsMet?: string;
+      alias?: string;
+      fear?: string;
     },
   ) {
     const enc = encryptRecord(data, MODE_NOTE_SCHEMA);

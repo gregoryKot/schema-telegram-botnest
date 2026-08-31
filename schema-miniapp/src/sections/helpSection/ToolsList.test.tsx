@@ -147,6 +147,23 @@ describe('ToolsList — скрытие строк (лист настройки �
     expect(screen.getByText('Проверка убеждений')).toBeTruthy();
   });
 
+  it('id в localStorage-скрытии/порядке, которого больше нет на поверхности «Инструменты» — не ломает рендер', () => {
+    // diary_gratitude/tracker — только «плюс» после сведения дублей; лишний
+    // id в hidden/order «Инструментов» просто не находит строку.
+    localStorage.setItem(
+      TOOLS_ACTIONS_HIDDEN_KEY,
+      serializeHiddenActions(['diary_gratitude', 'tracker']),
+    );
+    localStorage.setItem(
+      TOOLS_ACTIONS_ORDER_KEY,
+      serializeActionOrder(['tracker', 'warm_words']),
+    );
+    renderList();
+    expect(screen.getByText('Проверка убеждений')).toBeTruthy();
+    expect(screen.getByText('Тёплые слова')).toBeTruthy();
+    expect(screen.getByText('Критик или забота?')).toBeTruthy();
+  });
+
   it('пилюли «Настроить» рядом с заголовком больше нет — единственный вход (Ж2)', () => {
     renderList();
     expect(screen.queryByText('Настроить')).toBeNull();

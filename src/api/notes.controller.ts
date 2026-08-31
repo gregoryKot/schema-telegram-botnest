@@ -68,6 +68,8 @@ export class NotesController {
       needs: body.needs?.trim(),
       modeFunction: body.modeFunction?.trim(),
       needsMet: body.needsMet?.trim(),
+      alias: body.alias?.trim(),
+      fear: body.fear?.trim(),
     });
   }
 }

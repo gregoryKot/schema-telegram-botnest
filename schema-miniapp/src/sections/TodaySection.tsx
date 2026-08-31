@@ -21,6 +21,7 @@ import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
 import { Props } from './today/types';
+import { CaseEntryCard } from './today/CaseEntryCard';
 import { formatGreetingDate, readLocalIds } from './today/helpers';
 import { OnboardingWidget } from './today/OnboardingWidget';
 import { isOnboardingWidgetVisible } from './today/onboardingSteps';
@@ -45,6 +46,9 @@ export function TodaySection({
   userRole,
   onOpenTherapistCabinet,
   onNewDiaryEntry,
+  onStartCase,
+  onOpenMap,
+  onSteadyDay,
 }: Props) {
   const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -57,6 +61,9 @@ export function TodaySection({
   const [diariesLoaded, setDiariesLoaded] = useState(false);
   const [showDiaryTask, setShowDiaryTask] = useState(false);
   const today = useTodayCustomization();
+  // Разборов всего — берём из уже загружаемого дневника режимов: разбор
+  // сохраняется обычной записью, отдельного хранилища у него нет.
+  const [caseCount, setCaseCount] = useState(0);
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
@@ -121,6 +128,7 @@ export function TodaySection({
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
+        setCaseCount(mode.length);
         setTodayDone({
           schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
           mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
@@ -204,16 +212,28 @@ export function TodaySection({
           gap: 'var(--space-12)',
         }}
       >
-        {/* ── Onboarding widget — закреплён над band: воронка новичка ── */}
-        <OnboardingWidget
-          profile={profile}
-          hasSchemas={hasSchemas}
-          onOpenSchema={onOpenSchema}
-          onOpenAdvanced={onOpenAdvanced}
-          onOpenTracker={onOpenTracker}
-          onOpenDiaries={onOpenDiaries}
-          onOpenChildhoodWheel={onOpenChildhoodWheel}
+        {/* ── Точка входа: одно главное действие экрана ── */}
+        <CaseEntryCard
+          caseCount={caseCount}
+          onStart={onStartCase}
+          onSteadyDay={onSteadyDay}
+          onOpenMap={onOpenMap}
         />
+
+        {/* Воронка новичка появляется ПОСЛЕ первого разбора: два «начни
+            отсюда» рядом возвращают ровно ту растерянность, из-за которой
+            затевался редизайн входа. */}
+        {caseCount > 0 && (
+          <OnboardingWidget
+            profile={profile}
+            hasSchemas={hasSchemas}
+            onOpenSchema={onOpenSchema}
+            onOpenAdvanced={onOpenAdvanced}
+            onOpenTracker={onOpenTracker}
+            onOpenDiaries={onOpenDiaries}
+            onOpenChildhoodWheel={onOpenChildhoodWheel}
+          />
+        )}
 
         {/* ── Band переставляемых блоков (screen_order_today) ── */}
         <TodayBlocks

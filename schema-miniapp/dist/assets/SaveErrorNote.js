@@ -1,1 +1,0 @@
-import{a as e,d as t}from"./hitbox.js";var n=t();function r({ty:t,vy:r}){return(0,n.jsx)(`div`,{style:{fontSize:12,color:`rgba(255,100,100,0.8)`,marginBottom:10},children:e()(t,r)})}export{r as t};

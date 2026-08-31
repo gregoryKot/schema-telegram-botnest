@@ -1,6 +1,7 @@
-// Порядок первого входа фиксируем тестом: правило CLAUDE.md требует, чтобы
-// новичок узнал «что это и зачем» СРАЗУ после согласий, а не в конце. Раньше
-// объяснение стояло вторым шагом (до согласий) и терялось.
+// Порядок первого входа фиксируем тестом. Свод 2026-08-31 сократил визард до
+// welcome/privacy/not_therapy/home_screen — содержательные шаги (потребности,
+// дневники, экран «Сегодня», автор) переехали на путь пользователя (см.
+// комментарий в steps.ts), и тест больше не проверяет их порядок здесь.
 import { describe, it, expect } from 'vitest';
 import {
   ONBOARDING_ORDER,
@@ -11,21 +12,25 @@ import {
 } from './steps';
 
 describe('порядок шагов онбординга', () => {
-  it('содержательная часть идёт сразу после согласий', () => {
+  it('согласия идут подряд сразу после приветствия', () => {
     const i = (id: string) => ONBOARDING_ORDER.indexOf(id as never);
-    expect(i('privacy')).toBeLessThan(i('not_therapy'));
-    // «что за потребности» — первый шаг после последнего согласия
-    expect(i('needs_what')).toBe(i(CONSENT_STEP) + 1);
-    // три коротких шага знакомства идут подряд
-    expect(i('needs_why')).toBe(i('needs_what') + 1);
-    expect(i('needs_result')).toBe(i('needs_why') + 1);
-    // за потребностями — «что такое схемы/режимы и зачем их записывать»:
-    // без этого названия дневников для новичка остаются пустым звуком
-    expect(i('diaries_why')).toBe(i('needs_result') + 1);
-    // и только потом — экран «Сегодня», автор и значок на телефон
-    expect(i('today_screen')).toBeGreaterThan(i('diaries_why'));
-    expect(i('author')).toBeGreaterThan(i('today_screen'));
-    expect(i('home_screen')).toBeGreaterThan(i('author'));
+    expect(i('welcome')).toBe(0);
+    expect(i('privacy')).toBe(i('welcome') + 1);
+    expect(i('not_therapy')).toBe(i('privacy') + 1);
+    expect(i('not_therapy')).toBe(i(CONSENT_STEP));
+  });
+
+  it('шесть содержательных шагов сняты — их больше нет в визарде', () => {
+    for (const removed of [
+      'needs_what',
+      'needs_why',
+      'needs_result',
+      'diaries_why',
+      'today_screen',
+      'author',
+    ]) {
+      expect(ONBOARDING_ORDER).not.toContain(removed);
+    }
   });
 
   it('шаг «значок на экран» есть только там, где он работает', () => {
@@ -39,14 +44,22 @@ describe('порядок шагов онбординга', () => {
     expect(canAdvance('not_therapy', false)).toBe(false);
     expect(canAdvance('not_therapy', true)).toBe(true);
     expect(canAdvance('welcome', false)).toBe(true);
-    expect(canAdvance('needs_what', false)).toBe(true);
+    expect(canAdvance('privacy', false)).toBe(true);
   });
 
   // Ничего не показывается дважды: согласие, данное в боте или на сайте,
   // не заставляет проходить юридические экраны заново.
-  it('согласие уже дано → открываемся на содержательной части', () => {
-    const steps = buildSteps(false);
-    expect(steps[initialStepIndex(steps, true)]).toBe('needs_what');
+  describe('согласие уже дано → открываемся на последнем содержательном шаге', () => {
+    it('home_screen доступен → открываемся сразу на нём', () => {
+      const steps = buildSteps(true);
+      expect(steps[initialStepIndex(steps, true)]).toBe('home_screen');
+    });
+
+    it('home_screen недоступен (не Telegram/уже есть на экране) → открываемся на последнем доступном шаге', () => {
+      const steps = buildSteps(false);
+      expect(initialStepIndex(steps, true)).toBe(steps.length - 1);
+      expect(steps[initialStepIndex(steps, true)]).toBe('not_therapy');
+    });
   });
 
   it('новичок начинает с самого начала', () => {
