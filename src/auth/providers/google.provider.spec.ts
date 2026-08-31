@@ -62,6 +62,23 @@ describe('GoogleProvider.buildAuthUrl', () => {
     expect(p.get('scope')).toBe('openid email profile');
     expect(p.get('state')).toBe('state-xyz');
     expect(p.get('access_type')).toBe('online');
+  });
+
+  it('ВХОД (forceChooser не задан): prompt НЕ ставится — вошедшего впускаем одним касанием', () => {
+    // Разбор 2026-08-31: хардкод prompt=select_account заставлял выбирать
+    // аккаунт заново на каждый вход — «авторизация с нуля». Без prompt Google
+    // сам вернёт уже вошедшего («Continue as X»).
+    const provider = makeProvider();
+    const p = new URL(provider.buildAuthUrl('state-login')).searchParams;
+    expect(p.get('prompt')).toBeNull();
+  });
+
+  it('ПРИВЯЗКА (forceChooser=true): prompt=select_account — выбор аккаунта принудительно', () => {
+    // При привязке второго аккаунта выбор оставляем явным, чтобы человек не
+    // прицепил случайно уже открытый в браузере Google вместо нужного.
+    const provider = makeProvider();
+    const p = new URL(provider.buildAuthUrl('state-link', undefined, true))
+      .searchParams;
     expect(p.get('prompt')).toBe('select_account');
   });
 });
