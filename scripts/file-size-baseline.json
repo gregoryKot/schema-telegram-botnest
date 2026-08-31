@@ -855,7 +855,7 @@
   "src/auth/providers/telegram.provider.ts": 65,
   "src/auth/providers/types.ts": 24,
   "src/auth/providers/vk.provider.ts": 175,
-  "src/auth/refresh-issue.ts": 85,
+  "src/auth/refresh-issue.ts": 138,
   "src/auth/refresh-rotation.ts": 165,
   "src/auth/security-log.service.ts": 146,
   "src/auth/telegram-domain-watchdog.service.ts": 110,

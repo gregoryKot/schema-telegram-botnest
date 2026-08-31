@@ -505,10 +505,9 @@ export class AuthService {
         : null;
       const verdict = classifyReuse(session, successor, now, session.userId);
       this.logger.warn(verdict.logMessage);
-      // recover — наследник цел и не тронут: второго участника нет, выкидывать
-      // человека не за что.
+      // recover — наследник цел и не тронут: второго участника нет.
       if (verdict.outcome === 'recover')
-        return this.issueRotated(session, ip, userAgent);
+        return this.issueRotated(session, rawRefresh, ip, userAgent);
       if (verdict.outcome === 'theft' && session.family) {
         await this.revokeFamilyExcept(session.family, null);
         this.securityLog.log('refresh_token_reuse', {
@@ -528,12 +527,13 @@ export class AuthService {
         rotated: false,
       };
     }
-    return this.issueRotated(session, ip, userAgent);
+    return this.issueRotated(session, rawRefresh, ip, userAgent);
   }
 
   /** Тонкая обёртка над refresh-issue.ts: сервис собирает зависимости. */
   private issueRotated(
     session: RotatingSession,
+    rawRefresh: string,
     ip?: string,
     userAgent?: string,
   ): Promise<TokenPair> {
@@ -544,7 +544,7 @@ export class AuthService {
       accessTtlS: ACCESS_TOKEN_TTL_S,
       refreshTtlS: REFRESH_TOKEN_TTL_S,
     };
-    return issueRotatedPair(deps, session, ip, userAgent);
+    return issueRotatedPair(deps, session, rawRefresh, ip, userAgent);
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────

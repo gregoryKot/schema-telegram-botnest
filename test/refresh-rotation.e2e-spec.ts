@@ -151,4 +151,36 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
     // детекция обязана ловить; восстановление не имеет права его создавать.
     expect(live).toHaveLength(1);
   });
+
+  it('гонка: два рефреша одной живой куки → один наследник, а не два', async () => {
+    // Две вкладки (или сайт + установленное PWA на одной куке) рефрешат
+    // ОДНОВРЕМЕННО. Раньше безусловный update гасил родителя в обеих
+    // транзакциях, и обе создавали наследника — два живых токена в семье.
+    // Теперь claim идёт через updateMany с `revokedAt: null`: на живом
+    // Postgres READ COMMITTED сериализует их, проигравший получает count 0 и
+    // наследника не плодит (разбор 2026-08-31).
+    const { cookie: first, family } = await login();
+    await agePast(family);
+
+    const [a, b] = await Promise.all([refresh(first), refresh(first)]);
+
+    // Никого не выкинули: проигравший гонку получил свежий access, а не 401.
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    // ГЛАВНЫЙ инвариант, на обоих движках: в семье РОВНО ОДИН живой токен.
+    // На живом Postgres его держит atomic-claim (проигравший видит count 0 и
+    // наследника не плодит); фейк ту же гонку изобразить не может (общий объект
+    // строки, однопоточность) и сходится к одному живому иначе — через recover,
+    // — но инвариант обязан выполняться и там.
+    const live = await prisma.webSession.findMany({
+      where: { userId: USER, family, revokedAt: null },
+    });
+    expect(live).toHaveLength(1);
+    // Живая кука рабочая — связка «выдали → приняли» не порвалась гонкой.
+    const newest = [cookieFrom(a), cookieFrom(b)]
+      .filter((c) => c && c !== first)
+      .pop();
+    expect(newest).toBeTruthy();
+    expect((await refresh(newest as string)).status).toBe(200);
+  });
 });
