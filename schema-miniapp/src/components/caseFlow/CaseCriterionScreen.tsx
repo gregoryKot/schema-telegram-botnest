@@ -1,5 +1,6 @@
 import { PrimaryAction } from '../diary/diaryFlowUi';
 import {
+  buildCriterionIntro,
   buildCriterionQuestions,
   buildVerdictReply,
   caseVerdict,
@@ -55,6 +56,7 @@ export function CaseCriterionScreen({
   saving: boolean;
   tr: Tr;
 }) {
+  const intro = buildCriterionIntro(tr);
   const questions = buildCriterionQuestions(tr);
   const answered =
     criterion.biggerThanCause !== null && criterion.talkedDown !== null;
@@ -62,8 +64,18 @@ export function CaseCriterionScreen({
 
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 20 }}>
-        Это была часть или обычная досада?
+      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+        {intro.title}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          color: 'var(--muted)',
+          lineHeight: 1.5,
+          marginBottom: 20,
+        }}
+      >
+        {intro.sub}
       </div>
 
       {questions.map((q) => (

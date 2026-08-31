@@ -6,6 +6,7 @@ import { TertiaryLink } from './caseFlowUi';
 import {
   CASE_FRAMES,
   buildFrameHint,
+  buildFramesToggle,
   buildScenePlaceholder,
   hasOwnDetail,
 } from '../../../../shared/src/case/caseFrames';
@@ -78,7 +79,7 @@ export function CaseSceneScreen({
       />
 
       <TertiaryLink
-        label={showFrames ? 'Скрыть рамки ▲' : 'Не идёт — взять рамку →'}
+        label={buildFramesToggle(showFrames)}
         onClick={() => setShowFrames((v) => !v)}
       />
 

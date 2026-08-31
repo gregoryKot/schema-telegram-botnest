@@ -25,12 +25,7 @@ const DEPS: CaseFlowStateDeps = { trackEvent: api.trackEvent };
  * двухшаговый выбор, поэтому таблица переходов у площадок разная.
  */
 export function useCaseFlow(props: CaseFlowSheetProps) {
-  const state = useCaseFlowState(
-    props.onClose,
-    props.onSteadyDay,
-    props.onHardNow,
-    DEPS,
-  );
+  const state = useCaseFlowState(props.onClose, props.onSteadyDay, DEPS);
   const save = useCaseFlowSave(state, props, DEPS);
   const { step, setStep, fields, patch } = state;
 

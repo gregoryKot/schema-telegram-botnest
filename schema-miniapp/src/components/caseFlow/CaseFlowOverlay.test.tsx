@@ -15,6 +15,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { CaseFlowOverlay } from './CaseFlowOverlay';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -64,16 +65,24 @@ describe('CaseFlowOverlay — «Сегодня ровный день»', () => {
   });
 });
 
+// Регрессия прода 2026-08-31: здесь стоял onHardNow={close} — «Тяжело прямо
+// сейчас» выбрасывала человека из разбора на главную (фидбек владельца с
+// телефона). Кризисный путь (правило №7) обязан помогать на месте.
 describe('CaseFlowOverlay — «Тяжело прямо сейчас» на входе', () => {
-  it('закрывает разбор без открытия других листов', async () => {
+  it('показывает карточку с телефоном доверия и НЕ закрывает разбор', async () => {
     mockApi.getModeDiary.mockResolvedValue([]);
     const sheets = makeSheets();
     render(<CaseFlowOverlay sheets={sheets} />);
     await screen.findByText('Тяжело прямо сейчас →');
 
     fireEvent.click(screen.getByText('Тяжело прямо сейчас →'));
-    expect(sheets.close).toHaveBeenCalledWith('caseFlow');
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+    expect(sheets.close).not.toHaveBeenCalled();
     expect(sheets.open).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('Вернуться к разбору ▲'));
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
+    expect(screen.getByText('Разобрать свой случай')).toBeTruthy();
   });
 });
 

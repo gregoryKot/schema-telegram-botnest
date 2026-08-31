@@ -1,9 +1,9 @@
 import { BottomSheet } from '../BottomSheet';
-import { CrisisCard } from '../CrisisCard';
 import { ModeStateStep } from '../diary/ModeStateStep';
 import { ModeCandidateStep } from '../diary/ModeCandidateStep';
 import { StepProgress } from '../diary/diaryFlowUi';
-import { CaseHeader, TertiaryLink } from './caseFlowUi';
+import { CaseHeader } from './caseFlowUi';
+import { CaseSupportFoot } from './CaseSupportFoot';
 import { CaseHookScreen } from './CaseHookScreen';
 import { CaseSceneScreen } from './CaseSceneScreen';
 import { CaseBodyScreen } from './CaseBodyScreen';
@@ -69,6 +69,7 @@ export function CaseFlowSheet(props: CaseFlowSheetProps) {
           <ModeStateStep
             onPickGroup={f.pickGroup}
             onPickMode={f.pickModeFromGate}
+            showDiaryExplainer={false}
           />
         )}
 
@@ -145,13 +146,12 @@ export function CaseFlowSheet(props: CaseFlowSheetProps) {
           />
         )}
 
-        <TertiaryLink
-          label="Тяжело прямо сейчас →"
-          onClick={f.handleHardNow}
-          muted
+        <CaseSupportFoot
+          crisis={f.crisis}
+          hardNow={f.hardNow}
+          onHardNow={f.handleHardNow}
+          onCloseSupport={f.closeSupport}
         />
-
-        {f.crisis && <CrisisCard surface="case" />}
       </div>
     </BottomSheet>
   );

@@ -36,7 +36,6 @@ export interface CaseFlowSheetProps {
   onOpenMap: () => void;
   onClose: () => void;
   onDoubt: () => void;
-  onHardNow: () => void;
 }
 
 /** Экраны потока, в порядке прохождения. */

@@ -2,15 +2,21 @@
 // рамка без правок, рамка + своя деталь, отредактированная рамка — правки
 // самой рамки не должны ошибочно засчитываться за деталь, если длина не
 // выросла); CASE_FRAMES дословно; buildFrameHint/buildScenePlaceholder —
-// смоук и проверка, что «вы»-выдача не содержит «ты»-текста и наоборот.
+// смоук и проверка, что «вы»-выдача не содержит «ты»-текста и наоборот;
+// buildFramesToggle/buildFrameHint — внутренний термин «рамка» не выносится
+// в интерфейс (фидбек владельца 2026-08: «что за рамку??»), только «пример».
 import { describe, it, expect } from 'vitest';
 import {
   CASE_FRAMES,
   buildFrameHint,
+  buildFramesToggle,
   buildScenePlaceholder,
   hasOwnDetail,
 } from './caseFrames';
 import type { Tr } from './caseTypes';
+
+/** Внутренний жаргон, которому нельзя утекать в user-facing строки шага. */
+const FRAME_JARGON = /[Рр]амк/;
 
 const tyTr: Tr = (ty) => ty;
 const vyTr: Tr = (_ty, vy) => vy;
@@ -31,18 +37,41 @@ describe('CASE_FRAMES', () => {
   });
 });
 
+describe('buildFramesToggle', () => {
+  it('обе подписи дословно — без жаргона «рамка», словом «пример»', () => {
+    expect(buildFramesToggle(false)).toBe('Не идёт — начать с примера →');
+    expect(buildFramesToggle(true)).toBe('Скрыть примеры ▲');
+    for (const label of [buildFramesToggle(false), buildFramesToggle(true)]) {
+      expect(FRAME_JARGON.test(label)).toBe(false);
+      expect(label).toMatch(/пример/);
+    }
+  });
+});
+
 describe('buildFrameHint', () => {
   it('ты-вариант не содержит "вы"-обращения', () => {
     const text = buildFrameHint(tyTr);
     expect(VY_LEAK.test(text)).toBe(false);
     expect(TY_LEAK.test(text)).toBe(true);
+    expect(text).toBe(
+      'Это пример. Допиши, что было конкретно у тебя: кто, когда.',
+    );
   });
 
   it('вы-вариант не содержит "ты"-обращения и согласован во множественном числе', () => {
     const text = buildFrameHint(vyTr);
     expect(TY_LEAK.test(text)).toBe(false);
     expect(VY_LEAK.test(text)).toBe(true);
-    expect(text).toBe('Рамка. Допишите, что было конкретно у вас: кто, когда.');
+    expect(text).toBe(
+      'Это пример. Допишите, что было конкретно у вас: кто, когда.',
+    );
+  });
+
+  it('обе формы — без жаргона «рамка», со словом «пример»', () => {
+    for (const text of [buildFrameHint(tyTr), buildFrameHint(vyTr)]) {
+      expect(FRAME_JARGON.test(text)).toBe(false);
+      expect(text).toMatch(/пример/);
+    }
   });
 });
 

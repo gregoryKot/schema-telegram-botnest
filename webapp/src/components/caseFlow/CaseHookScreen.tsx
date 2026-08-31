@@ -1,10 +1,10 @@
 import { ExScreen } from '../exercises/ExScreen';
-import { TertiaryLink } from './caseFlowUi';
+import { TertiaryLink } from './caseLinks';
+import { CaseSupportBlock } from './CaseSupportFoot';
 
 /**
- * Точка входа потока (шаг 0) — twin schema-miniapp CaseHookScreen.tsx.
- * goBack здесь закрывает весь экран целиком (единственный шаг без «Назад
- * внутри потока» — до сцены ещё нечего откатывать).
+ * Точка входа потока (шаг 0) — twin schema-miniapp CaseHookScreen.tsx. goBack
+ * здесь закрывает весь экран целиком: до сцены ещё нечего откатывать.
  */
 export function CaseHookScreen({
   onBack,
@@ -49,7 +49,7 @@ export function CaseHookScreen({
       </div>
       <div style={{ marginTop: 8 }}>
         <TertiaryLink label="Сегодня ровный день →" onClick={onSteadyDay} />
-        <TertiaryLink label="Тяжело прямо сейчас →" onClick={onHardNow} />
+        <CaseSupportBlock crisis={false} onHardNow={onHardNow} />
       </div>
     </ExScreen>
   );

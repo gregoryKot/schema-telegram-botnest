@@ -22,11 +22,8 @@ const deps = (): CaseFlowStateDeps => ({ trackEvent: vi.fn() });
 function setup(d: CaseFlowStateDeps = deps()) {
   const onClose = vi.fn();
   const onSteadyDay = vi.fn();
-  const onHardNow = vi.fn();
-  const view = renderHook(() =>
-    useCaseFlowState(onClose, onSteadyDay, onHardNow, d),
-  );
-  return { ...view, onClose, onSteadyDay, onHardNow, deps: d };
+  const view = renderHook(() => useCaseFlowState(onClose, onSteadyDay, d));
+  return { ...view, onClose, onSteadyDay, deps: d };
 }
 
 describe('useCaseFlowState — восстановление из черновика при старте', () => {
@@ -195,17 +192,143 @@ describe('useCaseFlowState — выходы из потока', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('handleHardNow зовёт onHardNow, поток не закрывается сам', () => {
-    const { result, onHardNow, onClose } = setup();
-    act(() => result.current.handleHardNow());
-    expect(onHardNow).toHaveBeenCalledTimes(1);
-    expect(onClose).not.toHaveBeenCalled();
-  });
-
   it('handleSteadyDay зовёт onSteadyDay и закрывает поток', () => {
     const { result, onSteadyDay, onClose } = setup();
     act(() => result.current.handleSteadyDay());
     expect(onSteadyDay).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Регрессия прода 2026-08-31 (фидбек владельца с телефона: «кнопка плохо
+// сейчас просто кидает на главную»): «Тяжело прямо сейчас →» звала onHardNow,
+// которым обе площадки ЗАКРЫВАЛИ поток — кризисный путь (правило №7)
+// выбрасывал человека из разбора вместо помощи. Теперь тап открывает карточку
+// поддержки на месте (hardNow), «Вернуться к разбору ▲» её прячет, а шаг и
+// поля не трогаются.
+describe('useCaseFlowState — «Тяжело прямо сейчас» больше не выход из потока', () => {
+  it('handleHardNow ставит hardNow и НЕ закрывает поток', () => {
+    const { result, onClose } = setup();
+    act(() => result.current.goToScene());
+    act(() => result.current.patch({ scene: 'текст не должен пропасть' }));
+
+    act(() => result.current.handleHardNow());
+
+    expect(result.current.hardNow).toBe(true);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(result.current.step).toBe('scene'); // разбор на том же шаге
+    expect(result.current.fields.scene).toBe('текст не должен пропасть');
+  });
+
+  it('closeSupport снимает hardNow, шаг и поля на месте', () => {
+    const { result, onClose } = setup();
+    act(() => result.current.goToScene());
+    act(() => result.current.patch({ scene: 'черновик' }));
+    act(() => result.current.handleHardNow());
+
+    act(() => result.current.closeSupport());
+
+    expect(result.current.hardNow).toBe(false);
+    expect(result.current.step).toBe('scene');
+    expect(result.current.fields.scene).toBe('черновик');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+// «Своё» — поле видно всегда (фидбек владельца 2026-08-31), признак выбора —
+// непустой текст: id `*_own` обязан сам появляться/исчезать в selectedIds,
+// иначе набранный текст не доедет до примет (chipLabels ищет чип по id).
+describe('useCaseFlowState — автосинхронизация «своего» с selectedIds', () => {
+  it('непустой bodyOwn добавляет own-id текущих ворот, пустой — убирает', () => {
+    const { result } = setup();
+    act(() => result.current.patch({ gateId: 'fear' }));
+
+    act(() => result.current.patch({ bodyOwn: 'трясутся руки' }));
+    expect(result.current.fields.bodyChipIds).toContain('fear_own');
+
+    act(() => result.current.patch({ bodyOwn: '   ' }));
+    expect(result.current.fields.bodyChipIds).not.toContain('fear_own');
+  });
+
+  it('свой текст + 2 тапнутых чипа: все три приметы в selectedIds, own — последним', () => {
+    const { result } = setup();
+    act(() => result.current.patch({ gateId: 'fear' }));
+    act(() => result.current.toggleBodyChip('fear_heartbeat'));
+    act(() => result.current.patch({ bodyOwn: 'трясутся руки' }));
+    act(() => result.current.toggleBodyChip('fear_stomach'));
+
+    expect(result.current.fields.bodyChipIds).toEqual([
+      'fear_heartbeat',
+      'fear_stomach',
+      'fear_own',
+    ]);
+  });
+
+  it('лимит 2 относится к тапнутым: свой текст слот не занимает и не блокируется', () => {
+    const { result } = setup();
+    act(() => result.current.patch({ gateId: 'fear' }));
+    act(() => result.current.toggleBodyChip('fear_heartbeat'));
+    act(() => result.current.toggleBodyChip('fear_stomach'));
+
+    // лимит тапнутых исчерпан, но «своё» всё равно добавляется
+    act(() => result.current.patch({ bodyOwn: 'трясутся руки' }));
+    expect(result.current.fields.bodyChipIds).toHaveLength(3);
+
+    // а третий тапнутый чип по-прежнему блокируется
+    act(() => result.current.toggleBodyChip('fear_cold_hands'));
+    expect(result.current.fields.bodyChipIds).not.toContain('fear_cold_hands');
+  });
+
+  it('смена ворот переносит own-id: fear_own → sad_own, текст не пропадает', () => {
+    const { result } = setup();
+    act(() => result.current.patch({ gateId: 'fear' }));
+    act(() => result.current.patch({ bodyOwn: 'трясутся руки' }));
+    expect(result.current.fields.bodyChipIds).toContain('fear_own');
+
+    act(() => result.current.patch({ gateId: 'sad' }));
+    expect(result.current.fields.bodyChipIds).not.toContain('fear_own');
+    expect(result.current.fields.bodyChipIds).toContain('sad_own');
+    expect(result.current.fields.bodyOwn).toBe('трясутся руки');
+  });
+
+  it('черновик со «своим», но без own-id (старый формат) — id доставляется при старте', () => {
+    saveCaseDraft({
+      ...INITIAL_CASE_FIELDS,
+      step: 'body',
+      gateId: 'fear',
+      bodyOwn: 'трясутся руки',
+    });
+    const { result } = setup();
+    expect(result.current.fields.bodyChipIds).toContain('fear_own');
+  });
+
+  it('порыв: own-id идёт тем же путём, что тап — с пересчётом второй двери', () => {
+    const { result } = setup();
+    act(() => result.current.patch({ modeId: 'vulnerable_child' }));
+    act(() => result.current.toggleImpulseChip('impulse_close'));
+    expect(result.current.secondDoorModeId).toBe('avoidant_protector');
+
+    act(() => result.current.patch({ impulseOwn: 'хлопнуть дверью' }));
+    expect(result.current.fields.impulseChipIds).toEqual([
+      'impulse_close',
+      'impulse_own',
+    ]);
+    // пересчёт не потерял уже найденную дверь (impulse_own двери не даёт)
+    expect(result.current.secondDoorModeId).toBe('avoidant_protector');
+
+    act(() => result.current.patch({ impulseOwn: '' }));
+    expect(result.current.fields.impulseChipIds).toEqual(['impulse_close']);
+  });
+
+  it('порыв: лимит 3 не мешает «своему» и не считает его', () => {
+    const { result } = setup();
+    act(() => result.current.toggleImpulseChip('impulse_close'));
+    act(() => result.current.toggleImpulseChip('impulse_phone'));
+    act(() => result.current.toggleImpulseChip('impulse_silence'));
+    act(() => result.current.patch({ impulseOwn: 'своё' }));
+    expect(result.current.fields.impulseChipIds).toHaveLength(4);
+
+    act(() => result.current.toggleImpulseChip('impulse_sharp'));
+    expect(result.current.fields.impulseChipIds).not.toContain('impulse_sharp');
   });
 });

@@ -103,12 +103,6 @@ export function CaseEntryBlock({
               load();
             }}
             onDoubt={() => {}}
-            // CaseFlowScreen сам подменяет onHardNow на goBack из useHistorySheet
-            // (CLAUDE.md: закрытие fixed-оверлея — только через goBack, не через
-            // onClose напрямую) — этот проп по факту не вызывается, но нужен по
-            // общей форме CaseFlowSheetProps (shared, тот же контракт у miniapp,
-            // где onHardNow вызывается напрямую).
-            onHardNow={() => {}}
           />
         </Suspense>
       )}
