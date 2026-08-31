@@ -90,8 +90,8 @@ export function AuthConfirmPage() {
   };
 
   const wrap: React.CSSProperties = {
-    paddingTop: 80,
-    paddingBottom: 80,
+    paddingTop: 'var(--space-48)',
+    paddingBottom: 'var(--space-48)',
     maxWidth: 420,
     margin: '0 auto',
   };
