@@ -7,6 +7,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import {
   emailCallbackErrorUrl,
   emailCallbackSuccessUrl,
+  emailCallbackNextUrl,
 } from './email-callback-redirect';
 
 const BASE = 'https://schemehappens.ru';
@@ -51,5 +52,38 @@ describe('emailCallbackSuccessUrl', () => {
     // Токен во фрагменте, а не в query: фрагмент не уезжает на сервер и не
     // попадает в логи прокси.
     expect(url.split('#')[0]).not.toContain('AT');
+  });
+});
+
+describe('emailCallbackNextUrl', () => {
+  const tokens = { accessToken: 'AT', expiresIn: 900 };
+
+  it('вход с билетом ведёт на сверку, а не одобряет молча', () => {
+    // Фикс device-code phishing (разбор 2026-08-31): код мог подставить кто
+    // угодно, поэтому подтверждает человек на /auth/confirm.
+    const url = emailCallbackNextUrl('login', BASE, tokens, 'K7M2QX94');
+    expect(url).toBe(
+      `${BASE}/auth/confirm?code=K7M2QX94#access_token=AT&expires_in=900`,
+    );
+    // Код — в query (его надо сверить), токен — во фрагменте (в логи не уедет).
+    expect(url.split('#')[0]).not.toContain('AT');
+  });
+
+  it('вход без билета — обычный приём сессии', () => {
+    expect(emailCallbackNextUrl('login', BASE, tokens, null)).toBe(
+      `${BASE}/auth/callback#access_token=AT&expires_in=900`,
+    );
+  });
+
+  it('привязка адреса игнорирует билет и ведёт на аккаунт', () => {
+    // link_email_auth — это не вход в контейнер, билету тут делать нечего.
+    expect(
+      emailCallbackNextUrl('link_email_auth', BASE, tokens, 'K7M2QX94'),
+    ).toBe(`${BASE}/account?linked=email`);
+  });
+
+  it('код билета экранируется в адресе', () => {
+    const url = emailCallbackNextUrl('login', BASE, tokens, 'a b&c');
+    expect(url).toContain('code=a%20b%26c');
   });
 });

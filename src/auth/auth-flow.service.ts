@@ -13,7 +13,6 @@ import { ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
 import { getCookie, setRefreshCookie } from './auth-http.util';
 import { signOAuthState, readOAuthState, readOAuthTicket } from './oauth-state';
-import { LoginTicketService } from './login-ticket/login-ticket.service';
 
 export type SignInOutcome =
   | {
@@ -42,7 +41,6 @@ export class AuthFlowService {
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
     private readonly totp: TotpService,
-    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -122,15 +120,18 @@ export class AuthFlowService {
 
   // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
   // Routes the user to the right next page based on the outcome.
-  async finishOAuthRedirect(
+  // Синхронный: молчаливого одобрения билета здесь больше нет (device-code
+  // phishing, разбор 2026-08-31), а редиректы синхронны. Одобрение уехало на
+  // экран сверки /auth/confirm.
+  finishOAuthRedirect(
     outcome: SignInOutcome,
     provider: string,
     res: Response,
     frontendBase: string,
     // Билет входа: вход начат в контейнере, который сессию из браузера не
-    // увидит. Код подтверждаем ЗДЕСЬ, а браузеру говорим вернуться в приложение.
+    // увидит. Код подтверждаем на /auth/confirm, а браузеру говорим вернуться.
     ticketCode: string | null = null,
-  ): Promise<void> {
+  ): void {
     if (outcome.kind === 'merge') {
       const params = new URLSearchParams({
         token: outcome.mergeToken,
@@ -157,14 +158,16 @@ export class AuthFlowService {
     // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
     // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
     setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
-    // Билет подтверждаем ПОСЛЕ выдачи сессии: контейнер, который ждёт опросом,
-    // должен получить именно того пользователя, который сейчас вошёл. Ошибка
-    // здесь не должна ронять вход в самом браузере — он уже состоялся.
-    const claimed = ticketCode
-      ? await this.tickets.approveLoginIfPossible(ticketCode, outcome.userId)
-      : false;
+    // Билет НЕ одобряем молча (device-code phishing, разбор 2026-08-31): код в
+    // `?ticket=` мог подставить кто угодно, а выписка билета анонимна. Уже
+    // вошедшего человека уводим на экран сверки `/auth/confirm`, где он ЯВНО
+    // подтвердит код своей сессией — так же, как это делает бот. Без билета —
+    // обычный приём сессии.
+    const hash = `#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`;
     res.redirect(
-      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}${claimed ? '&ticket=1' : ''}`,
+      ticketCode
+        ? `${frontendBase}/auth/confirm?code=${encodeURIComponent(ticketCode)}${hash}`
+        : `${frontendBase}/auth/callback${hash}`,
     );
   }
 
@@ -257,7 +260,7 @@ export class AuthFlowService {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      await this.finishOAuthRedirect(
+      this.finishOAuthRedirect(
         outcome,
         provider,
         res,

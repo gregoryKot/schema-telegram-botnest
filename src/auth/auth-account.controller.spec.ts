@@ -23,7 +23,6 @@ import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
-import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
@@ -173,7 +172,6 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
   const emailTokens = makeEmailTokens();
-  const tickets = { approveLoginIfPossible: jest.fn().mockResolvedValue(true) };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
@@ -181,7 +179,6 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
     emailTokens as unknown as EmailTokenService,
-    tickets as unknown as LoginTicketService,
   );
   return {
     controller,
@@ -191,7 +188,6 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
     merge,
     securityLog,
     emailTokens,
-    tickets,
   };
 }
 
@@ -559,34 +555,24 @@ describe('AuthAccountController — билет входа в email-флоу', ()
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
   });
 
-  it('переход по ссылке подтверждает билет тем, кто вошёл', async () => {
-    const { controller, tickets } = makeController();
-    await controller.emailLoginCallback(
-      'tok-1',
-      'K7M2QX94',
-      makeReq(),
-      makeRes(),
-    );
-    expect(tickets.approveLoginIfPossible).toHaveBeenCalledWith('K7M2QX94', 1n);
-  });
-
-  it('без билета прежнее поведение — ничего не подтверждаем', async () => {
-    const { controller, tickets } = makeController();
-    const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
-    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
-  });
-
-  it('билет протух — вход в этом браузере всё равно состоялся', async () => {
-    const { controller, tickets } = makeController();
-    tickets.approveLoginIfPossible.mockResolvedValue(false);
+  it('переход по ссылке с билетом уводит на сверку, а НЕ одобряет молча', async () => {
+    // Фикс device-code phishing (разбор 2026-08-31): код в письме мог
+    // подставить кто угодно, поэтому билет подтверждает человек на
+    // /auth/confirm, а не сервер в callback.
+    const { controller } = makeController();
     const res = makeRes();
     await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
-    // Провал билета не отменяет вход по ссылке из письма: и кука, и токен
-    // выданы, человек в этом браузере вошёл.
+    const url = (res.redirect as jest.Mock).mock.calls[0][0];
+    expect(url).toContain('/auth/confirm?code=K7M2QX94');
+    // Сессия для браузера всё равно выдана — вход по ссылке состоялся.
+    expect(url).toContain(`access_token=${FAKE_TOKENS.accessToken}`);
+    expect(url).not.toContain('/auth/callback');
+  });
+
+  it('без билета — обычный приём сессии на /auth/callback', async () => {
+    const { controller } = makeController();
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       FAKE_TOKENS.refreshToken,
