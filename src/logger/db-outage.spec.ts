@@ -152,6 +152,49 @@ describe('DbOutageTracker — машина состояний одной ава�
     expect(tracker.isOpen).toBe(true);
   });
 
+  // Дыру нашёл гейт check-alert-throttle на первом же прогоне CI: DM о
+  // восстановлении шёл в обход всякого бюджета. Мигающая БД (легла — встала —
+  // легла) давала бы два DM в минуту — тот же замьюченный чат, ради которого
+  // всё и затевалось, только с другой стороны.
+  it('мигающая БД: двадцать циклов «легла — встала» упираются в потолок канала', () => {
+    const tracker = new DbOutageTracker(15 * 60_000, 60 * 60_000, 6);
+    const texts: string[] = [];
+    let t = 1_000_000;
+    for (let i = 0; i < 20; i++) {
+      const { text } = tracker.note('Can’t reach database server', t);
+      if (text) texts.push(text);
+      const recovered = tracker.resolve(t + 30_000);
+      if (recovered) texts.push(recovered);
+      t += 120_000; // цикл каждые две минуты — все внутри часового окна
+    }
+    expect(texts).toHaveLength(6);
+    // Проглоченное не пропадает молча: следующее допущенное сообщение несёт
+    // счётчик. Здесь окно за 40 сообщений так и не закрылось, поэтому счётчик
+    // приедет уже в следующем окне — проверяем это отдельно ниже.
+    expect(texts[0]).toContain('База данных не отвечает');
+  });
+
+  it('после закрытия окна бюджета сообщение приходит и несёт число проглоченных', () => {
+    const tracker = new DbOutageTracker(15 * 60_000, 60 * 60_000, 2);
+    const start = 1_000_000;
+    tracker.note('err', start); // 1-е — прошло
+    tracker.resolve(start + 30_000); // 2-е — прошло, бюджет исчерпан
+    tracker.note('err', start + 60_000); // проглочено
+    tracker.resolve(start + 90_000); // проглочено
+
+    const { text } = tracker.note('err', start + 60 * 60_000 + 1);
+    expect(text).toContain('База данных не отвечает');
+    expect(text).toContain('подавлено ещё 2');
+  });
+
+  it('бюджет проглотил сообщение о восстановлении — авария всё равно закрыта', () => {
+    const tracker = new DbOutageTracker(15 * 60_000, 60 * 60_000, 1);
+    tracker.note('err', 1_000_000); // единственный слот окна
+    expect(tracker.resolve(1_060_000)).toBeNull();
+    // Иначе сторожок ходил бы в БД каждую минуту до перезапуска процесса.
+    expect(tracker.isOpen).toBe(false);
+  });
+
   it('reset() сбрасывает состояние без сообщения о восстановлении', () => {
     const tracker = new DbOutageTracker();
     tracker.note('err', 1_000_000);

@@ -25,11 +25,16 @@ beforeEach(() => {
 
 describe('DbOutageMonitorService.probe', () => {
   it('без открытой аварии не делает запрос к БД и не шлёт DM', async () => {
-    const queryRaw = jest.fn();
+    // Сторожок висит на кроне каждую минуту: в спокойное время он обязан
+    // выходить ДО обращения к базе, иначе сам станет постоянной нагрузкой.
+    const queryRaw = jest.fn(() => {
+      throw new Error('probe не должен ходить в БД без открытой аварии');
+    });
     const service = new DbOutageMonitorService(makePrisma(queryRaw));
-    await service.probe();
+    await expect(service.probe()).resolves.toBeUndefined();
     expect(queryRaw).not.toHaveBeenCalled();
     expect(mockedNotify).not.toHaveBeenCalled();
+    expect(dbOutage.isOpen).toBe(false);
   });
 
   it('авария открыта, $queryRaw падает — DM о восстановлении не уходит', async () => {

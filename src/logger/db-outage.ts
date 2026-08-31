@@ -13,9 +13,15 @@
 // не по каждому вызывающему — и держит состояние аварии, чтобы весь шторм
 // схлопнулся в один DM плюс одно сообщение о восстановлении.
 
+import { AlertBudget } from '../utils/alert-throttle';
+
 // Тема письма-фолбэка (Telegram недоступен → e-mail). Одна на оба сообщения
 // об аварии — и на первое, и на «база снова отвечает».
 export const DB_ALERT_SUBJECT = 'База данных SchemeHappens';
+
+// Ключ бюджета: у канала он один — все сообщения про доступность базы делят
+// общий потолок.
+const BUDGET_KEY = 'db';
 
 // Сильные признаки — сами по себе достаточны, независимо от контекста.
 const STRONG_SIGNALS = [
@@ -105,13 +111,39 @@ function formatDuration(ms: number): string {
   return minutes < 1 ? 'меньше минуты' : `${minutes} мин`;
 }
 
-/** Состояние одной аварии БД. Время приходит параметром — без таймеров. */
+/**
+ * Состояние одной аварии БД. Время приходит параметром — без таймеров.
+ *
+ * Поверх машины состояний — бюджет на ВСЕ сообщения канала, включая «база
+ * снова отвечает». Без него мигающая БД (легла — встала — легла) давала бы
+ * пару DM в минуту: тот же флуд, что и до этой правки, только с другой
+ * стороны. Потолок общий на первый алерт, напоминания и восстановление;
+ * проглоченное считается и приезжает числом в следующем допущенном
+ * сообщении, а не пропадает молча.
+ */
 export class DbOutageTracker {
   private openedAt: number | null = null;
   private lastNotifiedAt = 0;
   private errorCount = 0;
 
-  constructor(private readonly reminderMs = 15 * 60_000) {}
+  private budget: AlertBudget;
+
+  constructor(
+    private readonly reminderMs = 15 * 60_000,
+    private readonly budgetWindowMs = 60 * 60_000,
+    private readonly budgetPerWindow = 6,
+  ) {
+    this.budget = new AlertBudget(budgetWindowMs, budgetPerWindow);
+  }
+
+  /** Пропускает текст через бюджет канала; null — сообщение проглочено. */
+  private emit(text: string, now: number): string | null {
+    const decision = this.budget.take(BUDGET_KEY, now);
+    if (!decision.allow) return null;
+    return decision.suppressed
+      ? `${text}\n(подавлено ещё ${decision.suppressed} — потолок сообщений про базу)`
+      : text;
+  }
 
   get isOpen(): boolean {
     return this.openedAt !== null;
@@ -124,18 +156,22 @@ export class DbOutageTracker {
       this.openedAt = now;
       this.lastNotifiedAt = now;
       return {
-        text:
+        text: this.emit(
           `🚨 База данных не отвечает\n${formatError(message)}\n` +
-          'Остальные ошибки этой аварии не шлю — сообщу, когда база вернётся.',
+            'Остальные ошибки этой аварии не шлю — сообщу, когда база вернётся.',
+          now,
+        ),
       };
     }
 
     if (now - this.lastNotifiedAt >= this.reminderMs) {
       this.lastNotifiedAt = now;
       return {
-        text:
+        text: this.emit(
           `🚨 База данных не отвечает уже ${formatDuration(now - this.openedAt)}\n` +
-          `Ошибок за это время: ${this.errorCount}\n${formatError(message)}`,
+            `Ошибок за это время: ${this.errorCount}\n${formatError(message)}`,
+          now,
+        ),
       };
     }
 
@@ -146,14 +182,30 @@ export class DbOutageTracker {
     if (this.openedAt === null) return null;
     const duration = formatDuration(now - this.openedAt);
     const count = this.errorCount;
-    this.reset();
-    return `✅ База данных снова отвечает\nАвария длилась ${duration}, ошибок за это время: ${count}`;
+    // Авария закрывается в любом случае — даже когда бюджет проглотил само
+    // сообщение. Иначе состояние осталось бы открытым навсегда, и сторожок
+    // ходил бы в БД каждую минуту до перезапуска.
+    this.clearOutage();
+    return this.emit(
+      `✅ База данных снова отвечает\nАвария длилась ${duration}, ошибок за это время: ${count}`,
+      now,
+    );
   }
 
-  reset(): void {
+  private clearOutage(): void {
     this.openedAt = null;
     this.lastNotifiedAt = 0;
     this.errorCount = 0;
+  }
+
+  /**
+   * Полный сброс, включая бюджет, — чистый лист для тестов. Бюджет
+   * переживает конец аварии НАМЕРЕННО (иначе мигающая БД обнуляла бы потолок
+   * каждым восстановлением), поэтому обычный путь зовёт clearOutage().
+   */
+  reset(): void {
+    this.clearOutage();
+    this.budget = new AlertBudget(this.budgetWindowMs, this.budgetPerWindow);
   }
 }
 
