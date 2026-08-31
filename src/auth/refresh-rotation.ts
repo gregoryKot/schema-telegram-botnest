@@ -99,20 +99,41 @@ export function classifyReuse(
   }
 
   if (session.replacedByHash) {
-    // `!revokedAt`, а не `=== null`: смысл здесь «наследником не пользовались»,
-    // и он не должен зависеть от того, пришла ли пустая колонка как null или
-    // как отсутствующее поле.
-    const successorUnused =
-      successor !== null && !successor.revokedAt && successor.expiresAt > now;
-    return successorUnused
-      ? {
-          outcome: 'recover',
-          logMessage: `Refresh rotation response was lost — re-issuing (userId ${who})`,
-        }
-      : {
-          outcome: 'theft',
-          logMessage: `Refresh token reuse detected — revoking family (userId ${who})`,
-        };
+    // Наследник пропал из базы — восстанавливать нечего, и подтвердить «участник
+    // один» нельзя. Осторожно считаем кражей.
+    if (successor === null) {
+      return {
+        outcome: 'theft',
+        logMessage: `Refresh token reuse detected — revoking family (userId ${who})`,
+      };
+    }
+    // Наследника уже ОТОЗВАЛИ — значит цепочку продвинул кто-то ещё, второй
+    // участник есть. Это ровно тот случай, ради которого детекция заведена.
+    // `!revokedAt`, а не `=== null`: смысл «наследником не пользовались», и он
+    // не должен зависеть от того, пришла ли пустая колонка как null или как
+    // отсутствующее поле.
+    if (successor.revokedAt) {
+      return {
+        outcome: 'theft',
+        logMessage: `Refresh token reuse detected — revoking family (userId ${who})`,
+      };
+    }
+    // Наследник не тронут, но истёк по TTL: второго участника НЕТ (никто его не
+    // отзывал), восстанавливать нечего. Это вернувшийся после долгого отсутствия
+    // человек, а не вор — раньше здесь была кража, и она будила админа на
+    // каждого, кто вернулся позже TTL наследника (разбор 2026-08-31). Просто
+    // просим войти заново: семью не трогаем, алерт не шлём.
+    if (successor.expiresAt <= now) {
+      return {
+        outcome: 'reject',
+        logMessage: `Successor expired unused — no theft, re-login (userId ${who})`,
+      };
+    }
+    // Наследник цел, не тронут и жив — потерянный ответ ротации.
+    return {
+      outcome: 'recover',
+      logMessage: `Refresh rotation response was lost — re-issuing (userId ${who})`,
+    };
   }
 
   // Строка выдана до появления наследника — судим по времени, как раньше.

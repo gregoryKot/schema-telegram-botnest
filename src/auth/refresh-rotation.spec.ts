@@ -72,9 +72,26 @@ describe('classifyReuse — вердикт по наследнику, а не п
     expect(classifyReuse(revoked, null, NOW, 42n).outcome).toBe('theft');
   });
 
-  it('наследник сам истёк → восстанавливать нечего, это кража', () => {
+  it('наследник не тронут, но истёк по TTL → отказ, а НЕ кража (вернулся поздно)', () => {
+    // Наследник ни разу не отозван (revokedAt=null) — второго участника нет,
+    // просто прошло больше TTL. Раньше это была «кража»: админа будило на
+    // каждого вернувшегося после истечения наследника (разбор 2026-08-31).
     const stale = { revokedAt: null, expiresAt: new Date(NOW.getTime() - 1) };
-    expect(classifyReuse(revoked, stale, NOW, 42n).outcome).toBe('theft');
+    const v = classifyReuse(revoked, stale, NOW, 42n);
+    expect(v.outcome).toBe('reject');
+    expect(v.logMessage).toMatch(/expired unused/i);
+  });
+
+  it('наследник истёк, НО был отозван → кража (им кто-то воспользовался)', () => {
+    // Отличие от кейса выше — revokedAt проставлен: цепочку продвинул второй
+    // участник до того, как наследник истёк. Это настоящая кража.
+    const usedThenExpired = {
+      revokedAt: new Date(NOW.getTime() - 2),
+      expiresAt: new Date(NOW.getTime() - 1),
+    };
+    expect(classifyReuse(revoked, usedThenExpired, NOW, 42n).outcome).toBe(
+      'theft',
+    );
   });
 
   it('истёк по TTL, никто не отзывал → отказ БЕЗ отзыва семьи и без алерта', () => {

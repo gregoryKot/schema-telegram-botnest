@@ -62,7 +62,12 @@ function makeGuard(
   const config = {
     get: (k: string) => ({ BOT_TOKEN, ...env })[k],
   } as any;
-  const prisma = { user: { upsert: jest.fn().mockResolvedValue({}) } } as any;
+  const prisma = {
+    user: {
+      // по умолчанию аккаунт жив — тесты про удаление/слияние переопределяют
+      findUnique: jest.fn().mockResolvedValue({ id: 0n, deletedAt: null }),
+    },
+  } as any;
   const authService = {
     verifyAccessToken: jest.fn(),
     findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
@@ -99,20 +104,47 @@ afterEach(() => {
 });
 
 describe('путь 1: JWT Bearer (сайт)', () => {
-  it('валидный токен → telegramUserId/webUser + upsert строки User', async () => {
+  it('валидный токен, аккаунт жив → telegramUserId/webUser, строку НЕ воскрешаем', async () => {
     const { guard, prisma, authService } = makeGuard();
     authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue({ id: 555n, deletedAt: null });
     const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
 
     await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
     expect(req.telegramUserId).toBe(555);
     expect(req.webUser).toEqual({ userId: 555n });
-    // web-only юзер мог никогда не трогать бота — строка обязана появиться
-    expect(prisma.user.upsert).toHaveBeenCalledWith({
+    // Только сверка существования — никакого upsert (он воскрешал бы удалённых).
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 555n },
-      update: {},
-      create: { id: 555n },
+      select: { id: true, deletedAt: true },
     });
+    expect(prisma.user.upsert).toBeUndefined();
+  });
+
+  // Разбор 2026-08-31: токен живёт 15 минут — дольше удаления/слияния аккаунта.
+  it('аккаунт удалён (строки нет) → 401, зомби-строка НЕ создаётся', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('аккаунт помечен deletedAt → 401, не впускаем по старому токену', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 555n,
+      deletedAt: new Date(),
+    });
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('битый Bearer → исключение от verifyAccessToken пробрасывается', async () => {
