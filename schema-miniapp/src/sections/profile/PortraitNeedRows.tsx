@@ -19,7 +19,7 @@ interface Props {
 }
 
 // NEEDS_EXPLAINER — плоский массив без id, порядок совпадает с NEED_ORDER
-// (тот же приём зиппинга по индексу, что в AboutSheet/DisclaimerNeedsWhatStep).
+// (тот же приём зиппинга по индексу, что в AboutSheet).
 const EXPLAINER_TEXT: Record<string, string | undefined> = Object.fromEntries(
   NEED_ORDER.map((id, i) => [id, NEEDS_EXPLAINER[i]?.text]),
 );

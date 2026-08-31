@@ -5,12 +5,6 @@ import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
 import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
 import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep';
-import { DisclaimerNeedsWhatStep } from './disclaimer/DisclaimerNeedsWhatStep';
-import { DisclaimerNeedsWhyStep } from './disclaimer/DisclaimerNeedsWhyStep';
-import { DisclaimerNeedsResultStep } from './disclaimer/DisclaimerNeedsResultStep';
-import { DisclaimerDiariesWhyStep } from './disclaimer/DisclaimerDiariesWhyStep';
-import { DisclaimerTodayScreenStep } from './disclaimer/DisclaimerTodayScreenStep';
-import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 import { canOfferHomeScreenNow } from '../utils/homeScreen';
 import { buildSteps, canAdvance, initialStepIndex } from './disclaimer/steps';
@@ -30,7 +24,8 @@ export function Disclaimer({
   // заходе с ярлыка онбординг начинался заново.
   onConsent: () => void;
   // Согласие уже дано раньше (бот, сайт, другое устройство) — юридические шаги
-  // не показываем повторно, открываемся сразу на содержательной части.
+  // не показываем повторно, открываемся сразу на «добавить на экран» (или на
+  // последнем доступном шаге, если он недоступен — см. initialStepIndex).
   consentGiven?: boolean;
 }) {
   const canAddToHome = canOfferHomeScreenNow();
@@ -50,12 +45,6 @@ export function Disclaimer({
     not_therapy: (
       <DisclaimerNotTherapyStep c1={c1} setC1={setC1} ready={ready} c2={c2} />
     ),
-    needs_what: <DisclaimerNeedsWhatStep />,
-    needs_why: <DisclaimerNeedsWhyStep />,
-    needs_result: <DisclaimerNeedsResultStep />,
-    diaries_why: <DisclaimerDiariesWhyStep />,
-    today_screen: <DisclaimerTodayScreenStep />,
-    author: <DisclaimerAuthorStep />,
     home_screen: <DisclaimerHomeScreenStep onBeforeAdd={onConsent} />,
     done: null,
   }[stepId];
@@ -141,11 +130,17 @@ export function Disclaimer({
         ) : (
           <button
             onClick={() => {
+              // Свод 2026-08-31 сократил визард до 4 шагов: без home_screen
+              // (canAddToHome=false) not_therapy — теперь последний шаг, и
+              // финальная кнопка обязана держать тот же гейт согласий, что
+              // раньше проверяла только «Далее →» — иначе обе галочки можно
+              // было не ставить вовсе.
+              if (blocked) return;
               trackOnboardingDone();
               onAccept();
             }}
             className="btn-primary"
-            style={{ flex: 2 }}
+            style={{ flex: 2, opacity: blocked ? 0.35 : 1 }}
           >
             {canAddToHome ? 'Пропустить и начать' : 'Начать'}
           </button>
