@@ -7,8 +7,13 @@ import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
 import { NeedRatingBar } from './NeedRatingBar';
 import { NeedSheetHeader } from './NeedSheetHeader';
-import { NeedDisclaimerSheet } from './NeedDisclaimerSheet';
 import { pressable } from '../utils/a11y';
+import { CollapsibleSection } from './needToday/CollapsibleSection';
+import {
+  ExamplesBody,
+  ReflectionBody,
+  RangesBody,
+} from './needToday/SectionBodies';
 
 interface Props {
   need: Need;
@@ -30,7 +35,6 @@ export function NeedTodaySheet({
   onOpenHelp,
 }: Props) {
   const tr = useTr();
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
@@ -41,7 +45,6 @@ export function NeedTodaySheet({
   const color = COLORS[need.id] ?? '#888';
 
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
-  const RANGE_VALUES = [1, 4, 7];
 
   return (
     <BottomSheet onClose={onClose}>
@@ -112,201 +115,38 @@ export function NeedTodaySheet({
         </div>
       </div>
 
-      {/* Section 1b: Examples — collapsible */}
-      <div style={{ marginBottom: 24 }}>
-        <div
-          {...pressable(() => setShowExamples((v) => !v))}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            marginBottom: showExamples ? 10 : 0,
-          }}
-        >
-          <SectionLabel mb={0}>Как это выглядит в жизни</SectionLabel>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            {showExamples ? '▴' : '▾'}
-          </span>
-        </div>
-        {showExamples && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {data.examples.map((ex, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 'var(--space-10)',
-                  padding: '8px 0',
-                  borderBottom:
-                    i < data.examples.length - 1
-                      ? '1px solid rgba(var(--fg-rgb),0.05)'
-                      : 'none',
-                }}
-              >
-                <span
-                  style={{
-                    color,
-                    fontSize: 14,
-                    flexShrink: 0,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  ›
-                </span>
-                <span
-                  style={{
-                    fontSize: 14,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {ex}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Как это выглядит в жизни */}
+      <CollapsibleSection
+        label="Как это выглядит в жизни"
+        open={showExamples}
+        onToggle={() => setShowExamples((v) => !v)}
+      >
+        <ExamplesBody data={data} color={color} />
+      </CollapsibleSection>
 
-      {/* Section 1c: Reflection questions — collapsible */}
       {data.reflection?.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div
-            {...pressable(() => setShowReflection((v) => !v))}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              marginBottom: showReflection ? 10 : 0,
-            }}
-          >
-            <SectionLabel mb={0}>Вопросы для рефлексии</SectionLabel>
-            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-              {showReflection ? '▴' : '▾'}
-            </span>
-          </div>
-          {showReflection && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {data.reflection.map((q, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 'var(--space-10)',
-                    padding: '8px 0',
-                    borderBottom:
-                      i < data.reflection.length - 1
-                        ? '1px solid rgba(var(--fg-rgb),0.05)'
-                        : 'none',
-                  }}
-                >
-                  <span
-                    style={{
-                      color,
-                      fontSize: 14,
-                      flexShrink: 0,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    ?
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      color: 'var(--text-sub)',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {q}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <CollapsibleSection
+          label="Вопросы для рефлексии"
+          open={showReflection}
+          onToggle={() => setShowReflection((v) => !v)}
+        >
+          <ReflectionBody data={data} color={color} />
+        </CollapsibleSection>
       )}
 
-      {/* Section 2: Range pills — collapsible */}
-      <div style={{ marginBottom: 24 }}>
-        <div
-          {...pressable(() => setShowRanges((v) => !v))}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            marginBottom: showRanges ? 10 : 0,
-          }}
-        >
-          <SectionLabel mb={0}>Как понять оценку</SectionLabel>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            {showRanges ? '▴' : '▾'}
-          </span>
-        </div>
-        {showRanges && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {data.ranges.map((range, i) => {
-              const active = i === rangeIdx;
-              return (
-                <div
-                  key={range.label}
-                  {...pressable(() => onChange(RANGE_VALUES[i]))}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 'var(--space-10)',
-                    background: active
-                      ? color + '33'
-                      : 'rgba(var(--fg-rgb),0.04)',
-                    border: `1px solid ${active ? color + '55' : 'rgba(var(--fg-rgb),0.08)'}`,
-                    borderRadius: 'var(--r-12)',
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: '50%',
-                      background: active ? color : 'rgba(var(--fg-rgb),0.2)',
-                      flexShrink: 0,
-                      marginTop: 4,
-                    }}
-                  />
-                  <div>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: active ? color : 'rgba(var(--fg-rgb),0.35)',
-                        marginRight: 6,
-                      }}
-                    >
-                      {range.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        color: active
-                          ? 'rgba(var(--fg-rgb),0.85)'
-                          : 'rgba(var(--fg-rgb),0.4)',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {range.description}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {/* Как понять оценку */}
+      <CollapsibleSection
+        label="Как понять оценку"
+        open={showRanges}
+        onToggle={() => setShowRanges((v) => !v)}
+      >
+        <RangesBody
+          data={data}
+          color={color}
+          rangeIdx={rangeIdx}
+          onChange={onChange}
+        />
+      </CollapsibleSection>
 
       {/* Plan button + Help link (low score only) */}
       {value <= 3 && (
@@ -410,10 +250,6 @@ export function NeedTodaySheet({
             onClose();
           }}
         />
-      )}
-
-      {showDisclaimer && (
-        <NeedDisclaimerSheet onClose={() => setShowDisclaimer(false)} />
       )}
     </BottomSheet>
   );

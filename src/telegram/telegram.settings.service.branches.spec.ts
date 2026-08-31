@@ -35,9 +35,13 @@ function makeService(botService: any) {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),
   };
   const fakeBot = makeFakeBot();
+  const accountService: any = {
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
+  };
   const service = new TelegramSettingsService(
     fakeBot.bot,
     botService,
+    accountService,
     notificationService as any,
     scheduleService as any,
   );
@@ -112,6 +116,7 @@ describe('TelegramSettingsService.onModuleInit — bot === null', () => {
     const service = new TelegramSettingsService(
       null,
       botService as any,
+      { canonicalUserId: async (id: number) => BigInt(id) } as any,
       notificationService as any,
       scheduleService as any,
     );

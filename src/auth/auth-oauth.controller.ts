@@ -89,7 +89,13 @@ export class AuthOauthController {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      this.flow.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
+      await this.flow.finishOAuthRedirect(
+        outcome,
+        'vk',
+        res,
+        frontendBase,
+        this.flow.ticketFromState(state),
+      );
     } catch (err) {
       this.logger.error(`vk callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
@@ -166,11 +172,12 @@ export class AuthOauthController {
           userAgent: req.headers['user-agent'],
         },
       );
-      this.flow.finishOAuthRedirect(
+      await this.flow.finishOAuthRedirect(
         outcome,
         'telegram-oidc',
         res,
         frontendBase,
+        this.flow.ticketFromState(state),
       );
     } catch (err) {
       this.logger.error(

@@ -8,6 +8,7 @@ import {
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 import {
   NotificationCadenceService,
   CADENCE_LABELS,
@@ -74,6 +75,11 @@ function pauseConfirmText(
 /**
  * Кнопки саморегуляции на напоминаниях: пауза / реже / сегодня не могу —
  * управление частотой в один тап, не заходя в настройки. Плюс выбор «ты/вы».
+ *
+ * Пишем только по каноничному userId: после слияния аккаунтов `ctx.from.id`
+ * указывает на удалённую строку, и запись по нему ушла бы мимо человека.
+ * Резолвер ходит в базу, поэтому во всех хендлерах он стоит после
+ * `answerCbQuery` (инвариант telegram.invariants.spec.ts).
  */
 @Injectable()
 export class TelegramNotifyActionsService implements OnModuleInit {
@@ -85,6 +91,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly cadenceService: NotificationCadenceService,
+    private readonly accountService: AccountService,
   ) {}
 
   private async userForm(userId: bigint): Promise<AddressForm> {
@@ -102,7 +109,8 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
-        await this.botService.updateUserSettings(BigInt(rawId), {
+        const userId = await this.accountService.canonicalUserId(rawId);
+        await this.botService.updateUserSettings(userId, {
           addressForm: form,
         });
         const ack = t(
@@ -144,7 +152,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         await ctx.answerCbQuery('⏸ Пауза включена');
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const days = Number((ctx.match as RegExpMatchArray)[1]);
         const until = await this.cadenceService.pause(userId, days);
         const s = await this.botService.getUserSettings(userId);
@@ -176,7 +184,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const newLevel = await this.cadenceService.slower(userId);
         const form = await this.userForm(userId);
         const label = CADENCE_LABELS[newLevel];
@@ -201,7 +209,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         await this.cadenceService.skipToday(userId);
         // Текст безличный (одинаков в обеих формах) — форму запрашивать не нужно.
         await ctx

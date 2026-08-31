@@ -8,6 +8,7 @@
 // в Telegram при сборке AppModule.
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
@@ -33,6 +34,12 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
     .compile();
 
   const app = moduleRef.createNestApplication();
+  // cookieParser — то же зеркало src/main.ts, что и в build-test-app.ts. Без
+  // него `req.cookies` пуст, и ЛЮБОЙ сценарий с refresh-кукой на живой базе
+  // молча отвечал бы 401: не потому что сессия плоха, а потому что куку никто
+  // не разобрал (найдено при переносе ротации на реальный Postgres,
+  // 2026-08-28).
+  app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
   return { app, prisma: app.get(PrismaService) };

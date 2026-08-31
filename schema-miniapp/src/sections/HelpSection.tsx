@@ -1,28 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+import { useHelpOverlays } from './helpSection/useHelpOverlays';
+import { HelpOverlays } from './helpSection/HelpOverlays';
+import { HereAndNow } from './helpSection/HereAndNow';
 import { useSafeTop } from '../utils/safezone';
-import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { LetterToSelf } from '../components/LetterToSelf';
-import { BeliefCheck } from '../components/BeliefCheck';
-import { PhraseCheck } from '../components/PhraseCheck';
-import { CrisisSheet } from './helpSection/CrisisSheet';
-import { SafePlace } from '../components/SafePlace';
-import { WarmWords } from '../components/WarmWords';
 import { TherapyNote } from '../components/TherapyNote';
 // Из общего реестра ключей, не из ChildhoodWheelSheet.tsx (компонент теперь
 // ленивый, LazyOverlays.tsx) — иначе открытие «Помощи» тянуло бы за собой и
 // код колеса детства ещё до того, как его реально открыли.
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
-import { ToolRow } from '../components/ToolRow';
-import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
-import { BreathingCard } from '../components/BreathingCard';
-import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
-import { practiceCountLabel } from '../components/PracticeDoneFooter';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { HelpHeader } from './helpSection/HelpHeader';
@@ -59,18 +48,7 @@ export function HelpSection({
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
   const customizeOpenRef = useRef<() => void>(() => {});
 
-  const [showFlashcard, setShowFlashcard] = useState(false);
-  const [showGrounding, setShowGrounding] = useState(false);
-  const [showStop, setShowStop] = useState(false);
-  const [showCrisis, setShowCrisis] = useState(false);
-  const [showSelfHelp, setShowSelfHelp] = useState(false);
-  const [showBeliefCheck, setShowBeliefCheck] = useState(false);
-  const [showPhraseCheck, setShowPhraseCheck] = useState(false);
-  const [showLetterToSelf, setShowLetterToSelf] = useState(false);
-  const [showSafePlace, setShowSafePlace] = useState(false);
-  const [showWarmWords, setShowWarmWords] = useState(false);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
-  const [introModeId, setIntroModeId] = useState<string | null>(null);
+  const overlays = useHelpOverlays();
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
@@ -140,31 +118,31 @@ export function HelpSection({
         onOpenTracker();
         break;
       case 'belief_check':
-        setShowBeliefCheck(true);
+        overlays.show('beliefCheck');
         break;
       case 'letter_to_self':
-        setShowLetterToSelf(true);
+        overlays.show('letterToSelf');
         break;
       case 'safe_place':
-        setShowSafePlace(true);
+        overlays.show('safePlace');
         break;
       case 'childhood_wheel':
         onOpenChildhoodWheel();
         break;
       case 'flashcard':
-        setShowFlashcard(true);
+        overlays.show('flashcard');
         break;
       case 'schema_intro':
-        if (task.text) setIntroSchemaId(task.text);
+        if (task.text) overlays.setIntroSchemaId(task.text);
         break;
       case 'mode_intro':
-        if (task.text) setIntroModeId(task.text);
+        if (task.text) overlays.setIntroModeId(task.text);
         break;
       default: {
         // Fallback: raw schema/mode ID stored as text (old task format)
         const legacy = findLegacyTaskTarget(task.text);
-        if (legacy?.type === 'schema') setIntroSchemaId(legacy.id);
-        else if (legacy?.type === 'mode') setIntroModeId(legacy.id);
+        if (legacy?.type === 'schema') overlays.setIntroSchemaId(legacy.id);
+        else if (legacy?.type === 'mode') overlays.setIntroModeId(legacy.id);
         break;
       }
     }
@@ -203,7 +181,7 @@ export function HelpSection({
     >
       <HelpHeader
         relation={relation}
-        onOpenSelfHelp={() => setShowSelfHelp(true)}
+        onOpenSelfHelp={() => overlays.show('selfHelp')}
         onOpenCustomize={() => customizeOpenRef.current()}
       />
 
@@ -215,37 +193,7 @@ export function HelpSection({
           gap: 'var(--space-12)',
         }}
       >
-        {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
-        <BreathingCard />
-
-        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
-          Если нужно больше
-        </div>
-        <ToolRow
-          label="Заземление 5-4-3-2-1"
-          sub={
-            practiceCountLabel(practiceCounts?.grounding ?? null) ??
-            'вернуться в тело и в комнату'
-          }
-          index={0}
-          onClick={() => setShowGrounding(true)}
-        />
-        <ToolRow
-          label="Техника «Стоп»"
-          sub={
-            practiceCountLabel(practiceCounts?.stop ?? null) ??
-            'пауза между импульсом и действием'
-          }
-          index={1}
-          onClick={() => setShowStop(true)}
-        />
-        <ToolRow
-          label="Мне очень плохо"
-          sub="контакты помощи прямо сейчас"
-          danger
-          index={2}
-          onClick={() => setShowCrisis(true)}
-        />
+        <HereAndNow overlays={overlays} practiceCounts={practiceCounts} />
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
@@ -291,13 +239,13 @@ export function HelpSection({
           onOpenTasks={() => setShowAllTasks(true)}
           onOpenPractices={onOpenPractices}
           onOpenPlans={onOpenPlans}
-          onOpenBeliefCheck={() => setShowBeliefCheck(true)}
-          onOpenPhraseCheck={() => setShowPhraseCheck(true)}
-          onOpenSafePlace={() => setShowSafePlace(true)}
-          onOpenLetterToSelf={() => setShowLetterToSelf(true)}
-          onOpenFlashcard={() => setShowFlashcard(true)}
+          onOpenBeliefCheck={() => overlays.show('beliefCheck')}
+          onOpenPhraseCheck={() => overlays.show('phraseCheck')}
+          onOpenSafePlace={() => overlays.show('safePlace')}
+          onOpenLetterToSelf={() => overlays.show('letterToSelf')}
+          onOpenFlashcard={() => overlays.show('flashcard')}
           onOpenChildhoodWheel={onOpenChildhoodWheel}
-          onOpenWarmWords={() => setShowWarmWords(true)}
+          onOpenWarmWords={() => overlays.show('warmWords')}
           customizeOpenRef={customizeOpenRef}
         />
 
@@ -306,77 +254,11 @@ export function HelpSection({
         </div>
       </div>
 
-      {showFlashcard && (
-        <SchemaFlashcard
-          onClose={() => setShowFlashcard(false)}
-          onOpenTracker={onOpenTracker}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showBeliefCheck && (
-        <BeliefCheck
-          onClose={() => setShowBeliefCheck(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showPhraseCheck && (
-        <PhraseCheck
-          onClose={() => setShowPhraseCheck(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showLetterToSelf && (
-        <LetterToSelf
-          onClose={() => setShowLetterToSelf(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showSafePlace && (
-        <SafePlace
-          onClose={() => setShowSafePlace(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showWarmWords && <WarmWords onClose={() => setShowWarmWords(false)} />}
-      {introSchemaId && (
-        <SchemaIntroSheet
-          schemaId={introSchemaId}
-          onClose={() => setIntroSchemaId(null)}
-          onComplete={() => {
-            setIntroSchemaId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-      {introModeId && (
-        <ModeIntroSheet
-          modeId={introModeId}
-          onClose={() => setIntroModeId(null)}
-          onComplete={() => {
-            setIntroModeId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-      {showSelfHelp && (
-        <SelfHelpSheet
-          onClose={() => setShowSelfHelp(false)}
-          onOpenCrisis={() => {
-            setShowSelfHelp(false);
-            setShowCrisis(true);
-          }}
-        />
-      )}
-      {showGrounding && (
-        <QuickPracticeSheet
-          id="grounding"
-          onClose={() => setShowGrounding(false)}
-        />
-      )}
-      {showStop && (
-        <QuickPracticeSheet id="stop" onClose={() => setShowStop(false)} />
-      )}
-      {showCrisis && <CrisisSheet onClose={() => setShowCrisis(false)} />}
+      <HelpOverlays
+        overlays={overlays}
+        onTaskComplete={handleTaskComplete}
+        onOpenTracker={onOpenTracker}
+      />
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {

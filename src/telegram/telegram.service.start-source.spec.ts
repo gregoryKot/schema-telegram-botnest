@@ -21,6 +21,9 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -61,7 +64,7 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     service.onModuleInit();
     await runCommand(fakeBot, 'start', {
       from: { id: 42 },
-      startPayload: 'src_seed1',
+      payload: 'src_seed1',
     });
     expect(analyticsEvents.track).toHaveBeenCalledTimes(1);
     expect(analyticsEvents.track).toHaveBeenCalledWith(42n, 'signup_source', {
@@ -74,7 +77,7 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     service.onModuleInit();
     await runCommand(fakeBot, 'start', {
       from: { id: 42 },
-      startPayload: 'src_черный_нал',
+      payload: 'src_черный_нал',
     });
     expect(analyticsEvents.track).toHaveBeenCalledWith(42n, 'signup_source', {
       src: 'other',
@@ -91,7 +94,7 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 42 },
-      startPayload: 'src_seed1',
+      payload: 'src_seed1',
     });
     // Голого not.toHaveBeenCalled() недостаточно: он же прошёл бы, если бы
     // isReturning вообще не считался и track() не вызывался никогда — тест
@@ -112,7 +115,7 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 42 },
-      startPayload: 'src_channel',
+      payload: 'src_channel',
     });
     expect(analyticsEvents.track).toHaveBeenCalledWith(42n, 'signup_source', {
       src: 'channel',
@@ -132,7 +135,7 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 42 },
-      startPayload: 'pair_abc123',
+      payload: 'pair_abc123',
     });
     expect(analyticsEvents.track).not.toHaveBeenCalled();
     expect(pairsService.joinPair).toHaveBeenCalledWith(42n, 'ABC123');

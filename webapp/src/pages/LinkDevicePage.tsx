@@ -64,7 +64,7 @@ function LinkDeviceContent({ code }: { code: string }) {
   const [done, setDone] = useState(false);
 
   const call = useCallback(async (path: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/device-link/${path}`, {
+    const res = await fetch(`${API_BASE}/api/auth/ticket/${path}`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },

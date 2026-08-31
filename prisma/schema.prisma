@@ -128,7 +128,7 @@ model User {
   ysqHistory             YsqResultHistory[]
   authProviders          AuthProvider[]
   webSessions            WebSession[]
-  deviceLinks            DeviceLinkRequest[]
+  loginTickets           LoginTicket[]
   drafts                 DiaryDraft[]
   therapistRequest       TherapistRequest?
   // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
@@ -248,6 +248,11 @@ model WebSession {
   lastUsedAt   DateTime @default(now())
   expiresAt    DateTime
   revokedAt    DateTime?
+  // Хеш токена, выданного взамен этого при ротации. По нему видно, ПОЛЬЗОВАЛСЯ
+  // ли кто-нибудь наследником: если нет — значит ответ ротации не доехал до
+  // клиента, и предъявление старого токена это потерянный ответ, а не кража
+  // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
+  replacedByHash String?
   ipAddress    String?
   userAgent    String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -268,24 +273,42 @@ model WebSession {
 // Кодов два, как в самой RFC. Длинный (device_code) знает только мини-апп —
 // им он опрашивает сервер. Короткий (user_code) видит человек, он же едет в
 // ссылке на браузер. Хранятся хэшами: подсмотренная строка в БД не даёт войти.
-model DeviceLinkRequest {
+// Билет входа. Контейнер (ярлык, вкладка браузера, мини-апп) создаёт билет у
+// себя, уводит человека подтверждать вход куда угодно — в бота, во внешний
+// браузер — и потом ЗАБИРАЕТ сессию опросом. Так вход возвращается ровно
+// туда, где начался: установленное приложение живёт в отдельной банке кук, и
+// сессия, выданная внешнему браузеру, ему не видна (разбор 2026-08-28).
+//
+// Выросло из device-link (RFC 8628, привязка аккаунта мессенджера к
+// существующему). Механизм тот же, поэтому второй таблицы рядом не заводим —
+// добавлен `intent`, а `userId` стал необязательным: у входа хозяина ещё нет.
+model LoginTicket {
   id             String    @id @default(cuid())
   deviceCodeHash String    @unique
   userCodeHash   String    @unique
-  // Хозяин строки. Сначала это аккаунт мессенджера, попросивший привязку; при
-  // подтверждении хозяин меняется на целевой аккаунт. Иначе строку унесло бы
-  // каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и мини-аппу
-  // нечего было бы забрать.
-  userId         BigInt
-  provider       String    // 'max' | 'telegram' — откуда пришёл запрос
+  // Кто ПОПРОСИЛ билет. У привязки (intent='link') это аккаунт мессенджера, и
+  // при подтверждении хозяин меняется на целевой аккаунт — иначе строку унесло
+  // бы каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и
+  // забирать сессию было бы неоткуда. У входа (intent='login') хозяина нет.
+  userId         BigInt?
+  // 'login' — вход в пустой контейнер; 'link' — привязка к существующему.
+  intent         String    @default("link")
+  provider       String    // 'max' | 'telegram' | 'google' | 'vk' | 'email'
+  // Где билет создан ('web' | 'telegram' | 'max') и на чём — строка вида
+  // «iPhone · Safari». Показывается человеку при сверке, чтобы подтверждение
+  // не было слепым.
+  hostId         String    @default("web")
+  deviceLabel    String    @default("")
   createdAt      DateTime  @default(now())
   expiresAt      DateTime
-  // Кто подтвердил в браузере. Он же становится хозяином данных.
+  // Кто подтвердил. Он же становится хозяином данных.
   approvedUserId BigInt?
   approvedAt     DateTime?
-  // Мини-апп забрал сессию — код больше не действует (одноразовость).
+  // Человек нажал «это не я» — билет мёртв, и это видно опросу.
+  deniedAt       DateTime?
+  // Сессия забрана — код больше не действует (одноразовость).
   consumedAt     DateTime?
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])

@@ -143,7 +143,7 @@ export function ProductLandingPage() {
               <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
             </div>
             <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 340, width: '100%', justifySelf: 'center' }}>
-              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, backdropFilter: 'blur(8px)' }}>
+              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ width: 22, height: 22, borderRadius: 7, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🧠</span>
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>Всё по схеме</span>

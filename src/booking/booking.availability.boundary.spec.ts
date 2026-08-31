@@ -2,22 +2,14 @@
 // rules.some→every, арифметика минут (startHour*60±startMinute), границы
 // >=/<= на старте/конце окна. Дополняет booking.availability.spec.ts,
 // который проверял поведение, но не эти конкретные операторы/границы.
-import { BookingService } from './booking.service';
+import { assertWithinAvailability } from './booking.availability';
 
 function makeService(rules: any[]) {
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => rules) },
   };
-  const service = new BookingService(
-    prisma,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    { get: () => undefined } as any,
-  );
   const assert = (startsAt: Date, durationMin: number) =>
-    (service as any).assertWithinAvailability(startsAt, durationMin);
+    assertWithinAvailability(prisma, startsAt, durationMin);
   return { assert };
 }
 

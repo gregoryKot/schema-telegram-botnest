@@ -15,6 +15,7 @@ const ALL_CONFIGURED = {
   ZOOM_CLIENT_SECRET: 'z3',
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
+  JWT_SECRET: 'jwt-secret',
 };
 
 describe('formatCapabilityReport', () => {

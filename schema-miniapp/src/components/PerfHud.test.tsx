@@ -31,7 +31,11 @@ describe('PerfHud', () => {
     tapDone('help', true);
     spy.mockRestore();
     render(<PerfHud />);
-    expect(screen.getByText(/Помощь на 8\.0с: 1240мс \(сборка\)/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Помощь на 8\.0с: 1240мс \(очередь 0 \+ экран 1240, сборка\)/,
+      ),
+    ).toBeTruthy();
     expect(screen.getByText(/блоки >100мс/)).toBeTruthy();
   });
 

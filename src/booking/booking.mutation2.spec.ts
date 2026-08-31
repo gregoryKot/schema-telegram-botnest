@@ -10,6 +10,7 @@
 //     assertWithinAvailability, которые раньше проверялись только по классу
 //     исключения или вообще не проверялись.
 import { BookingStatus, SessionType } from '@prisma/client';
+import { assertWithinAvailability } from './booking.availability';
 import { BookingService, PaymentAmountMismatchError } from './booking.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z');
@@ -241,15 +242,7 @@ describe('BookingService.assertWithinAvailability — точный where:{isActi
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
     };
-    const service = new BookingService(
-      prisma,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      { get: () => undefined } as any,
-    );
-    await (service as any).assertWithinAvailability(new Date(), 50);
+    await assertWithinAvailability(prisma, new Date(), 50);
     expect(prisma.availabilityRule.findMany).toHaveBeenCalledWith({
       where: { isActive: true },
     });

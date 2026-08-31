@@ -32,6 +32,24 @@ function baseRow(overrides: Record<string, unknown> = {}) {
     modeIntrosShown: [],
     defaultSection: null,
     addressForm: null,
+    // Поля, которые прежний перенос терял (разбор 2026-08-29). Значения —
+    // схемные дефолты, как у только что созданного User.
+    firstName: null,
+    mySchemaIds: [],
+    myModeIds: [],
+    uiPrefs: null,
+    pairCardDismissed: false,
+    practicesOnboardingDone: false,
+    therapistShareCards: true,
+    therapistShareProfile: true,
+    notifyEnabled: true,
+    notifyLocalHour: 21,
+    notifyTimezone: 'Europe/Moscow',
+    notifyReminderEnabled: true,
+    notifyFrequency: 0,
+    notifyQuietStart: 22,
+    notifyQuietEnd: 8,
+    notifyGamified: false,
     ...overrides,
   };
 }
@@ -139,5 +157,92 @@ describe('mergeUserScalarFields — флаги первого входа и addr
     tx.user.findUnique.mockResolvedValue(null);
     await expect(mergeUserScalarFields(tx, SRC, TGT)).resolves.toBeUndefined();
     expect(update.mock.calls).toEqual([]);
+  });
+});
+
+// Разбор 2026-08-29: слияние теряло ровно то, ради чего его затевают.
+describe('mergeUserScalarFields — то, что терялось раньше', () => {
+  it('«мои схемы» и «мои режимы» объединяются, а не пропадают', async () => {
+    const { tx, update } = makeTx(
+      baseRow({
+        mySchemaIds: ['abandonment'],
+        myModeIds: ['vulnerable-child'],
+      }),
+      baseRow({ mySchemaIds: ['mistrust'], myModeIds: [] }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          mySchemaIds: ['mistrust', 'abandonment'],
+          myModeIds: ['vulnerable-child'],
+        }),
+      }),
+    );
+  });
+
+  it('настройка времени напоминаний переезжает, если target на дефолте', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ notifyLocalHour: 8, notifyTimezone: 'Asia/Almaty' }),
+      baseRow(),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          notifyLocalHour: 8,
+          notifyTimezone: 'Asia/Almaty',
+        }),
+      }),
+    );
+  });
+
+  it('свой выбор времени у target не затирается временем source', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ notifyLocalHour: 8 }),
+      baseRow({ notifyLocalHour: 9 }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    const data = update.mock.calls[0]?.[0]?.data ?? {};
+    expect(data).not.toHaveProperty('notifyLocalHour');
+  });
+
+  it('приватность: закрытый доступ у source закрывает его и у target', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ therapistShareCards: false }),
+      baseRow({ therapistShareCards: true }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ therapistShareCards: false }),
+      }),
+    );
+  });
+
+  it('приватность НЕ открывается обратно: открытый source не отменяет закрытый target', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ therapistShareProfile: true }),
+      baseRow({ therapistShareProfile: false }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    const data = update.mock.calls[0]?.[0]?.data ?? {};
+    expect(data).not.toHaveProperty('therapistShareProfile');
+  });
+
+  it('кастомизация мини-аппа и имя переезжают в пустой аккаунт', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ uiPrefs: { accent: 'teal' }, firstName: 'Гриша' }),
+      baseRow(),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          uiPrefs: { accent: 'teal' },
+          firstName: 'Гриша',
+        }),
+      }),
+    );
   });
 });

@@ -188,6 +188,34 @@ describe('TelegramAdminService — /stats (только админ)', () => {
       { parse_mode: 'HTML' },
     );
   });
+
+  it('отчёт перерос лимит Telegram — уезжает частями, а не падает целиком', async () => {
+    // Шов, ради которого появился replyLong: блоки в отчёт добавляются
+    // регулярно, и раньше семнадцатый мог уронить ВЕСЬ /stats одним 400 от
+    // Telegram — админ увидел бы «❌», а не цифры.
+    process.env.ADMIN_ID = '999';
+    const long = Array.from(
+      { length: 60 },
+      (_, i) => `<b>Блок ${i}</b>\n${'ц'.repeat(200)}`,
+    ).join('\n\n');
+    const { service, fakeBot } = makeDeps({
+      adminStatsService: { getAdminStats: jest.fn().mockResolvedValue('core') },
+      statsReport: { render: jest.fn().mockResolvedValue(long) },
+    });
+    service.onModuleInit();
+
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+
+    const calls = (ctx.reply as jest.Mock).mock.calls;
+    expect(calls.length).toBeGreaterThan(2);
+    for (const [text] of calls) {
+      expect(text.length).toBeLessThanOrEqual(4096);
+      // Оборванный тег Telegram отвергает целиком — тогда часть отчёта
+      // пропала бы молча.
+      expect(text.split('<').length).toBe(text.split('>').length);
+    }
+    expect(calls.map(([t]) => t).join('')).toContain('Блок 59');
+  });
 });
 
 describe('TelegramAdminService — /testdonate (только админ)', () => {

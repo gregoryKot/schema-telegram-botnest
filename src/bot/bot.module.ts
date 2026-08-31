@@ -29,6 +29,7 @@ import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { NotesService } from './notes.service';
@@ -79,6 +80,7 @@ const INTERNAL_PROVIDERS = [
   ScreenMetricsService,
   ProfilePatternMetricsService,
   AuthHealthMetricsService,
+  LoginTicketMetricsService,
   ClientErrorMetricsService,
   MoneyMetricsService,
 ];

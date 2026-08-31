@@ -129,9 +129,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
         bottom: 0,
         left: 0,
         right: 0,
+        // Размытия нет и быть не должно: стоило ~1.4с на кадр в PWA
+        // (CLAUDE.md «Никакого размытия»). --nav-bg непрозрачен.
         background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--border-color)',
         zIndex: 50,
         paddingBottom: 'var(--safe-bottom)',
@@ -145,7 +145,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
               key={tab.id}
               // Точка отсчёта замера тапа (perfLog): pointerdown — момент
               // касания пальцем, click на телефоне приходит позже.
-              onPointerDown={() => tapStart(tab.id)}
+              // e.timeStamp — время САМОГО касания: если главный поток был
+              // занят, обработчик запустится позже, и разница = очередь.
+              onPointerDown={(e) => tapStart(tab.id, e.timeStamp)}
               onClick={() => onSelect(tab.id)}
               style={{
                 flex: 1,

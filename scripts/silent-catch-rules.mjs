@@ -95,4 +95,14 @@ export const ENCLOSING_ALLOW = [
 //    функции, поэтому оконный ENCLOSING их не достаёт. Границу держит
 //    silent-catch.spec.ts: другой новый файл с теми же catch — по-прежнему
 //    ошибка.
-export const FILE_ALLOW = new Set(['shared/src/api/clientErrorReport.ts']);
+export const FILE_ALLOW = new Set([
+  'shared/src/api/clientErrorReport.ts',
+  // Единственный в проекте доступ к localStorage. Отказ хранилища роняет даже
+  // ЧТЕНИЕ (приватный режим Safari, забитая квота, «блокировать данные
+  // сайтов»), а хранятся тут подсказки интерфейса, не данные человека —
+  // худшее следствие отказа в том, что экран покажет вариант для новичка.
+  // Собран из трёх копий одного try/catch (правило «одна механика — один
+  // компонент»). Границу держит silent-catch.spec.ts: тот же код в другом
+  // файле по-прежнему считается долгом.
+  'shared/src/utils/safeLocalStorage.ts',
+]);

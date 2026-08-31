@@ -83,11 +83,22 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  it('показывает три способа входа', () => {
+  // Провайдеры теперь ССЫЛКИ: подтверждение открывается снаружи, а страница
+  // остаётся жить и забирает сессию опросом — иначе из установленного
+  // приложения войти нельзя вовсе (разбор 2026-08-28).
+  it('показывает три способа входа', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, {
+        deviceCode: 'd'.repeat(64),
+        userCode: 'K7M2QX94',
+        expiresIn: 300,
+        interval: 3,
+      }),
+    );
     renderPage();
-    expect(screen.getByRole('button', { name: /Войти через Google/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Войти через ВКонтакте/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Войти через Telegram/ })).toBeTruthy();
+    expect(await screen.findByRole('link', { name: /Войти через Google/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Войти через Telegram/ })).toBeTruthy();
   });
 });
 
@@ -117,6 +128,13 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
   });
 });
 
+/** Запросы письма среди прочих: экран сам выписывает билет входа при открытии. */
+function emailCalls() {
+  return fetchMock.mock.calls.filter(([url]) =>
+    String(url).includes('/api/auth/email/link'),
+  );
+}
+
 describe('LoginPage — email magic-link', () => {
   it('невалидный email — ошибка видна, запрос не уходит', () => {
     const { container } = renderPage();
@@ -127,7 +145,9 @@ describe('LoginPage — email magic-link', () => {
     // сабмитим форму напрямую, как реальный браузер по Enter/клику.
     fireEvent.submit(container.querySelector('form')!);
     expect(screen.getByText('Введи корректный email')).toBeTruthy();
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Билет входа экран выписывает сам при открытии — считаем только запросы
+    // письма, иначе тест ловил бы чужой вызов.
+    expect(emailCalls()).toHaveLength(0);
   });
 
   it('валидный email → письмо отправлено, показан экран подтверждения (read-after-write)', async () => {
@@ -138,8 +158,7 @@ describe('LoginPage — email magic-link', () => {
     fireEvent.submit(container.querySelector('form')!);
 
     await screen.findByText('Письмо отправлено');
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain('/api/auth/email/link');
+    const [, init] = emailCalls()[0];
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ email: 'me@example.com' });
   });
 

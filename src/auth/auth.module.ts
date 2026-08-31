@@ -5,8 +5,10 @@ import { AuthOauthController } from './auth-oauth.controller';
 import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
-import { AuthDeviceLinkController } from './auth-device-link.controller';
-import { DeviceLinkService } from './device-link.service';
+import { AuthTicketController } from './auth-ticket.controller';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
+import { LoginTicketReport } from './login-ticket/login-ticket.report';
+import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
 import { EmailTokenService } from './email-token.service';
@@ -23,9 +25,10 @@ import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AnalyticsModule],
   providers: [
     AuthService,
     AuthFlowService,
@@ -33,7 +36,9 @@ import { PrismaModule } from '../prisma/prisma.module';
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,
-    DeviceLinkService,
+    LoginTicketService,
+    LoginTicketReport,
+    TicketLinkService,
     SecurityLogService,
     TelegramDomainWatchdogService,
     TotpService,
@@ -51,7 +56,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     AuthTelegramController,
     AuthAccountController,
     AuthMaxController,
-    AuthDeviceLinkController,
+    AuthTicketController,
     Auth2faController,
   ],
   // MaxProvider экспортируется отдельно от реестра: его напрямую использует
@@ -62,6 +67,10 @@ import { PrismaModule } from '../prisma/prisma.module';
     SecurityLogService,
     EmailService,
     MaxProvider,
+    // Карточку сверки при входе через бота показывает TelegramModule.
+    LoginTicketService,
+    // Он же подтверждает объединение аккаунтов (telegram.link.service).
+    TicketLinkService,
   ],
 })
 export class AuthModule {}

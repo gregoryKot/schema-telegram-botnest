@@ -20,6 +20,15 @@ describe('classifyClientErrorSection', () => {
     expect(classifyClientErrorSection('therapist.clients')).toBe('cabinet');
     expect(classifyClientErrorSection('addressForm')).toBe('profile');
     expect(classifyClientErrorSection('tracker')).toBe('today');
+    expect(classifyClientErrorSection('login.ticket')).toBe('login');
+  });
+
+  it('сбой выписки билета не сливается с отказом входа', () => {
+    // Контроль: бакет 'auth' заведён под инцидент 2026-08-08 и остаётся
+    // единственным свидетелем «подпись пустая, экран-тупик». Смешать их
+    // значило бы сделать ту метрику тише, а не громче.
+    expect(classifyClientErrorSection('login.ticket')).not.toBe('auth');
+    expect(classifyClientErrorSection('auth')).toBe('auth');
   });
 
   it('незнакомая секция — other, а не отброшена/не падает', () => {

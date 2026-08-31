@@ -1,0 +1,477 @@
+// e2e SMOKE — билет входа (RFC 8628): вход в контейнер без сессии и привязка
+// аккаунта мессенджера к уже существующему
+// через РЕАЛЬНЫЙ AppModule/HTTP-стек. Правило проекта: новый контроллер
+// приезжает со смоуком на ownership.
+//
+// Что проверяется и почему юнит-тестами не закрывается:
+//   1. четыре маршрута реально примонтированы (юнит-тест контроллера не ловит
+//      «роут не зарегистрирован») и работают в связке;
+//   2. ownership: код, выданный пользователю А, невозможно ни подсмотреть, ни
+//      подтвердить, ни опросить чужим — а это и есть цена ошибки здесь, потому
+//      что подтверждение отдаёт ВСЕ данные одного аккаунта другому;
+//   3. подтверждать может только залогиненный: без токена approve обязан
+//      отвечать 401, иначе достаточно угадать короткий код.
+//
+// Про подтверждение ЧУЖИМ аккаунтом. Оно запускает merge, а тот написан на
+// сыром SQL ($executeRaw), которого fake-prisma не эмулирует. Поэтому блок
+// «перенос между разными аккаунтами» гоняется ТОЛЬКО на живом Postgres
+// (E2E_REAL_DB=1, джоба `migrations`) — на фейке он честно помечен skipped,
+// а не тихо отсутствует. Остальное работает в обоих режимах.
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
+import { TicketLinkService } from '../src/auth/login-ticket/ticket-link.service';
+
+// Перенос данных проверяется только там, где merge реально исполняется.
+const REAL_DB = process.env.E2E_REAL_DB === '1';
+const describeOnRealDb = REAL_DB ? describe : describe.skip;
+
+describe('e2e smoke: билет входа и привязка аккаунта из мессенджера', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const USER_A = 700_000_000_000_001n; // «аккаунт в мессенджере», источник
+  const USER_B = 700_000_000_000_002n; // посторонний
+  const USER_C = 700_000_000_000_003n; // хозяин целевого аккаунта
+
+  let tokenA = '';
+  let tokenB = '';
+  let tokenC = '';
+  const secret = () => process.env.JWT_SECRET as string;
+
+  // Адрес пишется литералом прямо у `.post(` — трипваер покрытия маршрутов
+  // (src/security/e2e-route-coverage.invariants.spec.ts) ищет вызовы грепом
+  // по исходникам e2e и собранный из кусков путь не увидит.
+  const srv = () => request(app.getHttpServer());
+  const call = (req: request.Test, token?: string) =>
+    (token ? req.set('Authorization', `Bearer ${token}`) : req).set(
+      'x-requested-with',
+      'webapp',
+    );
+
+  const ALL_USER_IDS = [USER_A, USER_B, USER_C];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // upsert, а не push в _rows: на живом Postgres строка User обязана
+    // существовать — у LoginTicket на неё внешний ключ.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    for (const id of ALL_USER_IDS) {
+      await prisma.user.upsert({
+        where: { id },
+        update: {},
+        create: { id, firstName: 'E2E' },
+      });
+    }
+    tokenA = signAccessToken(USER_A, secret());
+    tokenB = signAccessToken(USER_B, secret());
+    tokenC = signAccessToken(USER_C, secret());
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
+
+  async function startFor(token: string) {
+    const res = await call(srv().post('/api/auth/ticket/start'), token).send({
+      intent: 'link',
+      provider: 'max',
+    });
+    expect(res.status).toBe(200);
+    return res.body as { deviceCode: string; userCode: string };
+  }
+
+  it('start отдаёт два разных кода и не кладёт их в базу открытым текстом', async () => {
+    const { deviceCode, userCode } = await startFor(tokenA);
+
+    expect(deviceCode).toHaveLength(64);
+    expect(userCode).toHaveLength(8);
+    // findMany, а не приватные _rows фейка: тот же тест обязан работать и на
+    // живом Postgres (E2E_REAL_DB=1), где никаких _rows нет.
+    const rows = await prisma.loginTicket.findMany({});
+    const dump = JSON.stringify(rows, (_k, v) =>
+      typeof v === 'bigint' ? String(v) : (v as unknown),
+    );
+    expect(dump).not.toContain(deviceCode);
+    expect(dump).not.toContain(userCode);
+  });
+
+  it('без токена подтвердить нельзя — иначе хватило бы угадать код', async () => {
+    const { userCode } = await startFor(tokenA);
+
+    const res = await call(srv().post('/api/auth/ticket/approve')).send({
+      code: userCode,
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('чужой код не подсматривается: preview на выдуманный код — отказ', async () => {
+    const res = await call(srv().post('/api/auth/ticket/preview'), tokenB).send(
+      {
+        code: 'ZZZZ9999',
+      },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('мусорный код не доходит до базы — DTO отсекает по форме', async () => {
+    const res = await call(srv().post('/api/auth/ticket/preview'), tokenB).send(
+      {
+        code: 'нет',
+      },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('опрос чужим (коротким) кодом сессии не выдаёт', async () => {
+    const { userCode } = await startFor(tokenA);
+
+    // Длина не та — DTO отсекает раньше базы, но проверяем именно результат:
+    // сессии по короткому коду не бывает ни при каком раскладе.
+    const res = await call(srv().post('/api/auth/ticket/poll')).send({
+      deviceCode: userCode.repeat(8),
+    });
+    expect(res.body.accessToken).toBeUndefined();
+  });
+
+  it('посторонний видит по коду, ЧТО подтверждает, — иначе флоу открыт для уговоров', async () => {
+    const { userCode } = await startFor(tokenA);
+
+    const preview = await call(
+      srv().post('/api/auth/ticket/preview'),
+      tokenC,
+    ).send({
+      code: userCode,
+    });
+    expect(preview.status).toBe(200);
+    expect(preview.body.sameAccount).toBe(false);
+    expect(preview.body).toHaveProperty('summary');
+  });
+
+  it('связка целиком: начал → подтвердил → забрал сессию, и ровно один раз', async () => {
+    const { deviceCode, userCode } = await startFor(tokenA);
+
+    const pending = await call(srv().post('/api/auth/ticket/poll')).send({
+      deviceCode,
+    });
+    expect(pending.body).toEqual({ status: 'pending' });
+
+    const approve = await call(
+      srv().post('/api/auth/ticket/approve'),
+      tokenA,
+    ).send({
+      code: userCode,
+    });
+    expect(approve.status).toBe(200);
+    expect(approve.body).toEqual({ merged: false });
+
+    const linked = await call(srv().post('/api/auth/ticket/poll')).send({
+      deviceCode,
+    });
+    expect(linked.status).toBe(200);
+    expect(linked.body.status).toBe('linked');
+    expect(linked.body.accessToken).toBeTruthy();
+
+    // Повторный опрос по тому же коду второй сессии не даёт.
+    const again = await call(srv().post('/api/auth/ticket/poll')).send({
+      deviceCode,
+    });
+    expect(again.body).toEqual({ status: 'expired' });
+  });
+
+  // ─── Вход в контейнер без сессии ──────────────────────────────────────────
+  //
+  // Ради этого механизм и обобщён. Установленное приложение живёт в отдельной
+  // банке кук: вход, случившийся во внешнем браузере, ему не виден, и до
+  // билета войти с ярлыка было нельзя вовсе (разбор 2026-08-28).
+  describe('билет входа (intent: login)', () => {
+    // Троттлинг `start` — 5 запросов в минуту, и это защита от перебора, а не
+    // помеха тесту: по HTTP дёргаем его ровно там, где проверяется САМ роут, а
+    // билеты для проверки опроса выписываем сервисом.
+    const issue = () =>
+      app.get(LoginTicketService).start({
+        intent: 'login',
+        provider: 'telegram',
+        requesterUserId: null,
+        hostId: 'web',
+        deviceLabel: 'iPhone · Safari',
+      });
+
+    it('роут выписывает билет БЕЗ авторизации — у просящего сессии ещё нет', async () => {
+      const res = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'login',
+        provider: 'telegram',
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.deviceCode).toHaveLength(64);
+      expect(res.body.userCode).toHaveLength(8);
+    });
+
+    it('привязка без авторизации отбивается — привязывать не к чему', async () => {
+      const res = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'link',
+        provider: 'max',
+      });
+      expect(res.status).toBe(401);
+    });
+
+    it('связка целиком: выписал контейнер → подтвердил мессенджер → сессию получил КОНТЕЙНЕР', async () => {
+      const { deviceCode, userCode } = await issue();
+
+      // Подтверждает бот — публичного HTTP-роута «одобрить вход» нет намеренно.
+      await app.get(LoginTicketService).approveLogin(userCode, USER_A);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('linked');
+      expect(res.body.accessToken).toBeTruthy();
+      // Кука ложится ИМЕННО в этот контейнер — иначе весь механизм бессмыслен.
+      expect(String(res.headers['set-cookie'])).toContain('refresh_token=');
+
+      // Билет одноразовый: повторный опрос второй сессии не даёт.
+      const again = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(again.body.status).toBe('expired');
+      expect(again.body.accessToken).toBeUndefined();
+    });
+
+    it('чужой длинный секрет сессии не даёт', async () => {
+      const { userCode } = await issue();
+      await app.get(LoginTicketService).approveLogin(userCode, USER_A);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode: 'f'.repeat(64),
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('expired');
+      expect(res.body.accessToken).toBeUndefined();
+    });
+
+    it('отказ «это не я» отличим от истечения — экран обязан сказать разное', async () => {
+      const { deviceCode, userCode } = await issue();
+      await app.get(LoginTicketService).deny(userCode);
+
+      const res = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(res.body.status).toBe('denied');
+      expect(res.body.accessToken).toBeUndefined();
+    });
+
+    it('билетом входа привязку не подтвердить — намерения не подменяются', async () => {
+      const { userCode } = await issue();
+      const res = await call(
+        srv().post('/api/auth/ticket/approve'),
+        tokenC,
+      ).send({ code: userCode });
+      expect(res.status).toBe(400);
+    });
+  });
+});
+
+// ── Перенос между РАЗНЫМИ аккаунтами (только живой Postgres) ────────────────
+describeOnRealDb('перенос данных при подтверждении чужим аккаунтом', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  // Свои идентификаторы: спек выше гоняется в том же процессе и чистит свои.
+  const FROM = 700_000_000_000_011n; // аккаунт мессенджера, отдаёт данные
+  const TO = 700_000_000_000_012n; // аккаунт с сайта, принимает
+  const ALL = [FROM, TO];
+  const secret = () => process.env.JWT_SECRET as string;
+
+  const srv = () => request(app.getHttpServer());
+  const call = (req: request.Test, token?: string) =>
+    (token ? req.set('Authorization', `Bearer ${token}`) : req).set(
+      'x-requested-with',
+      'webapp',
+    );
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    await cleanupOwnershipFixtures(prisma, ALL);
+    for (const id of ALL) {
+      await prisma.user.upsert({
+        where: { id },
+        update: {},
+        create: { id, firstName: 'E2E' },
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL);
+    await app.close();
+  });
+
+  it('данные уезжают к подтвердившему, исходный аккаунт исчезает, сессия — на нового хозяина', async () => {
+    // В аккаунте мессенджера есть что переносить.
+    await prisma.rating.create({
+      data: { userId: FROM, date: '2026-08-01', needId: 'safety', value: 7 },
+    });
+    // И запись о самом мессенджере — её привязка обязана переехать тоже,
+    // иначе следующий вход из MAX заведёт третий аккаунт заново.
+    await prisma.authProvider.create({
+      data: { userId: FROM, provider: 'max', providerId: 'e2e-max-777' },
+    });
+    // «Мои схемы» и настройка времени напоминаний — то, что слияние молча
+    // теряло до 2026-08-29: человек сливал аккаунты ради синхронизации и
+    // терял ровно то, ради чего сливал.
+    await prisma.user.update({
+      where: { id: FROM },
+      data: { mySchemaIds: ['abandonment'], notifyLocalHour: 8 },
+    });
+
+    const started = await call(
+      srv().post('/api/auth/ticket/start'),
+      signAccessToken(FROM, secret()),
+    ).send({ intent: 'link', provider: 'max' });
+    expect(started.status).toBe(200);
+    const { deviceCode, userCode } = started.body as {
+      deviceCode: string;
+      userCode: string;
+    };
+
+    // Экран подтверждения показывает, что именно переедет.
+    const preview = await call(
+      srv().post('/api/auth/ticket/preview'),
+      signAccessToken(TO, secret()),
+    ).send({ code: userCode });
+    expect(preview.status).toBe(200);
+    expect(preview.body.sameAccount).toBe(false);
+    expect(preview.body.summary.Rating).toBe(1);
+
+    const approve = await call(
+      srv().post('/api/auth/ticket/approve'),
+      signAccessToken(TO, secret()),
+    ).send({ code: userCode });
+    expect(approve.status).toBe(200);
+    expect(approve.body).toEqual({ merged: true });
+
+    // Оценка переехала, исходный аккаунт удалён.
+    const moved = await prisma.rating.findMany({ where: { userId: TO } });
+    expect(moved).toHaveLength(1);
+    expect(await prisma.rating.findMany({ where: { userId: FROM } })).toEqual(
+      [],
+    );
+    expect(await prisma.user.findUnique({ where: { id: FROM } })).toBeNull();
+
+    // Скаляры доехали вместе с таблицами — через настоящий SQL, а не только
+    // в юнит-тесте применителя.
+    const merged = await prisma.user.findUnique({ where: { id: TO } });
+    expect(merged?.mySchemaIds).toEqual(['abandonment']);
+    expect(merged?.notifyLocalHour).toBe(8);
+
+    // Провайдер мессенджера теперь принадлежит принявшему аккаунту.
+    const provider = await prisma.authProvider.findFirst({
+      where: { provider: 'max', providerId: 'e2e-max-777' },
+    });
+    expect(String(provider?.userId)).toBe(String(TO));
+
+    // И мини-апп, вернувшись за сессией, её получает — несмотря на то, что
+    // аккаунт, под которым он начинал, уже не существует.
+    const linked = await call(srv().post('/api/auth/ticket/poll')).send({
+      deviceCode,
+    });
+    expect(linked.status).toBe(200);
+    expect(linked.body.status).toBe('linked');
+    expect(linked.body.accessToken).toBeTruthy();
+  });
+});
+
+// Направление «сайт → Telegram»: карточка на /account выписывает билет, а
+// подтверждает БОТ. Это новый путь (PR про карточку объединения), и он не
+// покрывается ни HTTP-approve выше, ни юнит-тестом сервиса: здесь важно, что
+// сайт, начавший с одного аккаунта, забирает опросом сессию ДРУГОГО — того,
+// кто подтвердил, — и что данные при этом переехали к нему.
+describeOnRealDb('объединение, подтверждённое в боте', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const SITE = 700_000_000_000_021n; // веб-аккаунт, просит объединить
+  const TG = 700_000_000_000_022n; // аккаунт в Telegram, подтверждает
+  const ALL = [SITE, TG];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+  });
+
+  beforeEach(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL);
+    for (const id of ALL) {
+      await prisma.user.upsert({
+        where: { id },
+        update: {},
+        create: { id },
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL);
+    await app.close();
+  });
+
+  it('бот подтвердил — данные у него, а сайт забрал сессию опросом', async () => {
+    await prisma.rating.create({
+      data: {
+        userId: SITE,
+        needId: 'safety',
+        value: 5,
+        date: '2026-08-30',
+      },
+    });
+
+    // Билет выписывает САЙТ: источник — его аккаунт.
+    const started = await app.get(LoginTicketService).start({
+      intent: 'link',
+      provider: 'google',
+      requesterUserId: SITE,
+      hostId: 'web',
+      deviceLabel: 'Chrome · Windows',
+    });
+
+    // Подтверждает бот — тем же методом, что зовёт telegram.link.service.
+    const { merged } = await app
+      .get(TicketLinkService)
+      .approve(started.userCode, TG);
+    expect(merged).toBe(true);
+
+    // Данные переехали к подтвердившему, веб-аккаунта больше нет.
+    expect(
+      await prisma.rating.findMany({ where: { userId: TG } }),
+    ).toHaveLength(1);
+    expect(await prisma.user.findUnique({ where: { id: SITE } })).toBeNull();
+
+    // И сайт, вернувшись за сессией, получает её — хотя аккаунт, под которым
+    // он начинал, уже не существует.
+    const linked = await request(app.getHttpServer())
+      .post('/api/auth/ticket/poll')
+      .set('x-requested-with', 'webapp')
+      .send({ deviceCode: started.deviceCode });
+    expect(linked.status).toBe(200);
+    expect(linked.body.status).toBe('linked');
+    expect(linked.body.accessToken).toBeTruthy();
+  });
+
+  it('код объединения не годится для входа — approveLogin его отвергает', async () => {
+    const started = await app.get(LoginTicketService).start({
+      intent: 'link',
+      provider: 'google',
+      requesterUserId: SITE,
+      hostId: 'web',
+      deviceLabel: '',
+    });
+
+    await expect(
+      app.get(LoginTicketService).approveLogin(started.userCode, TG),
+    ).rejects.toThrow();
+  });
+});

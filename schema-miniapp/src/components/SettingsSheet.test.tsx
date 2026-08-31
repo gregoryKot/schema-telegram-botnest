@@ -20,10 +20,14 @@ import { SettingsSheet } from './SettingsSheet';
 vi.mock('../api', () => ({
   api: {
     getSettings: vi.fn(),
+    // Секция «данные из другого аккаунта» спрашивает способы входа —
+    // по ним решается, предлагать ли объединение (LinkAccountSection).
+    getAuthProviders: vi.fn(),
     getTherapyRelation: vi.fn(),
     getTherapistRequest: vi.fn(),
     updateSettings: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -201,6 +205,7 @@ const SETTINGS = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getSettings.mockResolvedValue(SETTINGS);
+  mockApi.getAuthProviders.mockResolvedValue(['telegram']);
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });

@@ -17,6 +17,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         total_week: 40n,
         auth_day: 5n,
         auth_week: 9n,
+        login_week: 2n,
         today_week: 3n,
         diary_week: 8n,
         schemas_week: 0n,
@@ -35,6 +36,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
       authDay: 5,
       authWeek: 9,
       bySection: {
+        login: 2,
         today: 3,
         diary: 8,
         schemas: 0,
@@ -56,6 +58,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
       authDay: 0,
       authWeek: 0,
       bySection: {
+        login: 0,
         today: 0,
         diary: 0,
         schemas: 0,

@@ -27,6 +27,9 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -57,7 +60,14 @@ function makeDeps(overrides: Record<string, any> = {}) {
     notificationService,
     analyticsEvents,
   );
-  return { service, fakeBot, botService, pairsService, analyticsEvents };
+  return {
+    service,
+    fakeBot,
+    botService,
+    accountService,
+    pairsService,
+    analyticsEvents,
+  };
 }
 
 beforeEach(() => {
@@ -100,7 +110,7 @@ describe('TelegramService — accept_consent (легаси-кнопка)', () =>
     service.onModuleInit();
     await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc',
+      payload: 'pair_abc',
     });
     const ctx = await runAction(fakeBot, 'accept_consent', { from: { id: 1 } });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'ABC');
@@ -197,5 +207,64 @@ describe('TelegramService — cancel/back:welcome ошибки', () => {
       expect.anything(),
     );
     expect(reply).toHaveBeenCalledWith(WELCOME_TEXT, expect.anything());
+  });
+});
+
+// Разбор 2026-08-29. Слияние аккаунтов физически удаляет строку User
+// источника, а привязка Telegram переезжает на цель. /start после этого шёл
+// по сырому ctx.from.id и upsert'ом заводил рядом ВТОРОЙ, пустой аккаунт —
+// раздвоение, которое человек только что вручную вылечил, возвращалось само.
+describe('/start у слитого аккаунта', () => {
+  const TG = 42;
+  const WEB = 1_000_000_000_000_777n;
+
+  function mergedDeps() {
+    return makeDeps({
+      accountService: {
+        canonicalUserId: jest.fn(async () => WEB),
+      },
+      botService: {
+        hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
+        getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'vy' }),
+      },
+    });
+  }
+
+  it('регистрирует ЦЕЛЕВОЙ аккаунт, а не заводит новый по telegramId', async () => {
+    const { service, fakeBot, accountService } = mergedDeps();
+    service.onModuleInit();
+
+    await runCommand(fakeBot, 'start', { from: { id: TG, first_name: 'Ася' } });
+
+    expect(accountService.registerUser).toHaveBeenCalledWith(WEB, 'Ася');
+    expect(accountService.registerUser).not.toHaveBeenCalledWith(
+      BigInt(TG),
+      expect.anything(),
+    );
+  });
+
+  it('настройки читаются по целевому номеру — иначе новичковый онбординг покажется повторно', async () => {
+    const { service, fakeBot, botService } = mergedDeps();
+    service.onModuleInit();
+
+    await runCommand(fakeBot, 'start', { from: { id: TG } });
+
+    expect(botService.getUserSettings).toHaveBeenCalledWith(WEB);
+  });
+
+  it('человек без слияния по-прежнему живёт под своим telegramId', async () => {
+    // Контрольный случай: сужение пути не должно сломать «обычного»
+    // пользователя бота, которому привязку никогда не заводили.
+    const { service, fakeBot, accountService } = makeDeps({
+      botService: {
+        hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
+        getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'ty' }),
+      },
+    });
+    service.onModuleInit();
+
+    await runCommand(fakeBot, 'start', { from: { id: TG, first_name: 'Ася' } });
+
+    expect(accountService.registerUser).toHaveBeenCalledWith(BigInt(TG), 'Ася');
   });
 });

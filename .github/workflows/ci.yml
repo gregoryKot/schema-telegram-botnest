@@ -81,7 +81,7 @@ jobs:
           npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
-          test/scheduler-teardown
+          test/scheduler-teardown test/login-ticket test/refresh-rotation
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -323,7 +323,9 @@ jobs:
           test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
-          test/device-link.e2e-spec.ts
+          test/login-ticket.e2e-spec.ts
+          test/refresh-rotation.e2e-spec.ts
+          test/notify-address.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
@@ -397,6 +399,11 @@ jobs:
       # комментарий, который следующий PR не обязан соблюдать. fs-only,
       # тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-scale-drift.mjs
+      # Храповик размытия (расследование скорости 2026-08-26): backdrop-filter
+      # и filter: blur считаются программно в установленном на телефон PWA —
+      # ~1.4с на кадр, приложение вязнет. fs-only, тот же принцип, что у
+      # check-tiny-fonts.mjs выше.
+      - run: node scripts/check-render-poison.mjs
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно

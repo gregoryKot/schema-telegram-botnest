@@ -47,7 +47,21 @@ async function loadApp() {
 beforeEach(() => {
   // По умолчанию — «не залогинен»: /api/auth/refresh отвечает 401, RequireAuth
   // не блокируется навсегда. Тесты, которым нужен вход, переопределяют это.
-  fetchMock = vi.fn().mockResolvedValue(jsonResponse(401, {}));
+  // По умолчанию 401 на всё, КРОМЕ выписки билета входа: экран /login сам
+  // просит билет при открытии, и без него провайдеры не рисуются (ссылки
+  // строятся из кода билета — webapp/src/pages/login/LoginProviderButtons).
+  fetchMock = vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(
+      String(url).includes('/api/auth/ticket/start')
+        ? jsonResponse(200, {
+            deviceCode: 'd'.repeat(64),
+            userCode: 'K7M2QX94',
+            expiresIn: 300,
+            interval: 3,
+          })
+        : jsonResponse(401, {}),
+    ),
+  );
   vi.stubGlobal('fetch', fetchMock);
   vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
   localStorage.clear();
@@ -64,7 +78,7 @@ describe('App — публичные маршруты app-домена', () => {
     stubLocation({ pathname: '/login', href: 'http://localhost/login' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByRole('button', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через Google/ });
   });
 
   it('/ на app-домене — продуктовый лендинг (document.title)', async () => {
@@ -120,7 +134,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     stubLocation({ pathname: '/account', href: 'http://localhost/account' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByRole('button', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через Google/ });
   });
 
   it('авторизованный пользователь реально попадает на защищённую страницу (не редиректится на /login)', async () => {
@@ -136,19 +150,35 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     render(<App />);
 
     await screen.findByText('Аккаунт');
-    expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
   });
 
   it('пока идёт проверка сессии — виден лоадер, а не пустой экран или чужая страница', async () => {
     let resolveRefresh!: (v: unknown) => void;
-    fetchMock.mockReturnValue(new Promise((r) => { resolveRefresh = r; }));
+    // Промис создаём заранее: `resolveRefresh` нужен ДО того, как до refresh
+    // дойдёт очередь — иначе к моменту проверки лоадера его ещё не было бы.
+    const pendingRefresh = new Promise((r) => {
+      resolveRefresh = r;
+    });
+    fetchMock.mockImplementation((url: string) =>
+      String(url).includes('/api/auth/ticket/start')
+        ? Promise.resolve(
+            jsonResponse(200, {
+              deviceCode: 'd'.repeat(64),
+              userCode: 'K7M2QX94',
+              expiresIn: 300,
+              interval: 3,
+            }),
+          )
+        : pendingRefresh,
+    );
     stubLocation({ pathname: '/account', href: 'http://localhost/account' });
     const App = await loadApp();
     const { container } = render(<App />);
 
     expect(container.querySelector('.loader-center')).toBeTruthy();
     resolveRefresh(jsonResponse(401, {}));
-    await screen.findByRole('button', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через Google/ });
   });
 
   // Диагностика «постоянно нужно логиниться заново» (2026-08-21): 5xx на
@@ -161,7 +191,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     render(<App />);
 
     await screen.findByText('Нет связи с сервером', {}, { timeout: 3000 });
-    expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
   });
 });
 

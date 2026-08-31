@@ -21,6 +21,9 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -90,7 +93,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_xyz789',
+      payload: 'pair_xyz789',
     });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'XYZ789');
     expect(ctx.reply).toHaveBeenCalledWith(
@@ -107,7 +110,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_bad',
+      payload: 'pair_bad',
     });
     expect(ctx.reply).toHaveBeenCalledWith(
       expect.stringContaining('недействительна'),

@@ -20,7 +20,12 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import {
+  emailCallbackErrorUrl,
+  emailCallbackSuccessUrl,
+} from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
 import {
   EmailBodyDto,
   TokenBodyDto,
@@ -44,6 +49,7 @@ export class AuthAccountController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
+    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -59,12 +65,13 @@ export class AuthAccountController {
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(dto.email);
+    return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
+    @Query('ticket') ticket: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
@@ -83,14 +90,12 @@ export class AuthAccountController {
         return;
       }
       setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
-      res.redirect(
-        r.purpose === 'link_email_auth'
-          ? `${frontendBase}/account?linked=email`
-          : `${frontendBase}/auth/callback#access_token=${r.tokens.accessToken}&expires_in=${r.tokens.expiresIn}`,
-      );
+      // Билет — ПОСЛЕ выдачи сессии: ждущий опросом контейнер получает именно вошедшего.
+      if (ticket) await this.tickets.approveLoginIfPossible(ticket, r.userId);
+      res.redirect(emailCallbackSuccessUrl(r.purpose, frontendBase, r.tokens));
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
+      res.redirect(emailCallbackErrorUrl(err, frontendBase));
     }
   }
 

@@ -48,9 +48,13 @@ function makeService(botService: any) {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),
   };
   const fakeBot = makeFakeBot();
+  const accountService: any = {
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
+  };
   const service = new TelegramSettingsService(
     fakeBot.bot,
     botService,
+    accountService,
     notificationService as any,
     scheduleService as any,
   );

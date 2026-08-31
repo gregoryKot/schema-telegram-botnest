@@ -7,16 +7,17 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { WEB_USER_ID_MIN, WEB_USER_ID_MAX } from './user-id-range';
 import { SecurityLogService } from './security-log.service';
 import { EmailService } from './email.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
+import { sendMagicLink } from './magic-link';
+import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
-
-const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -31,11 +32,6 @@ const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 // /api/auth/refresh which is DB-backed and continues to work.
 const JWT_ISSUER = 'schemehappens.ru';
 const JWT_AUDIENCE = 'schemehappens.ru';
-
-// Telegram user IDs are at most ~10 digits. Web-only users get IDs
-// starting from 10^15 to avoid any collision.
-const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
-const WEB_USER_ID_MAX = 9_000_000_000_000_000n;
 
 export interface TokenPair {
   accessToken: string;
@@ -120,7 +116,10 @@ export class AuthService {
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
-  async requestEmailLogin(email: string): Promise<{ ok: true }> {
+  async requestEmailLogin(
+    email: string,
+    ticket?: string,
+  ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
@@ -132,7 +131,7 @@ export class AuthService {
     );
 
     // userId только что найден/создан выше — форма обращения уже выбрана.
-    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink');
+    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink', ticket);
     return { ok: true };
   }
 
@@ -496,12 +495,21 @@ export class AuthService {
 
     if (!session) throw new UnauthorizedException('Unknown refresh token');
 
-    // Дребезг vs кража (2026-08-21) — classifyReuse, refresh-rotation.ts.
+    // Потерянный ответ vs кража — classifyReuse, refresh-rotation.ts.
     const now = new Date();
     if (session.revokedAt || session.expiresAt < now) {
-      const verdict = classifyReuse(session.revokedAt, now, session.userId);
+      const successor = session.replacedByHash
+        ? await this.prisma.webSession.findUnique({
+            where: { tokenHash: session.replacedByHash },
+          })
+        : null;
+      const verdict = classifyReuse(session, successor, now, session.userId);
       this.logger.warn(verdict.logMessage);
-      if (verdict.theft && session.family) {
+      // recover — наследник цел и не тронут: второго участника нет, выкидывать
+      // человека не за что.
+      if (verdict.outcome === 'recover')
+        return this.issueRotated(session, ip, userAgent);
+      if (verdict.outcome === 'theft' && session.family) {
         await this.revokeFamilyExcept(session.family, null);
         this.securityLog.log('refresh_token_reuse', {
           userId: session.userId,
@@ -511,40 +519,32 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token already used or expired');
     }
 
-    const accessToken = this.signAccessToken(session.userId);
-
-    const base = { accessToken, expiresIn: ACCESS_TOKEN_TTL_S };
     // Ротировали недавно — только access, кука прежняя (rotated:false).
     if (shouldSkipRotation(session.createdAt, now)) {
-      return { ...base, refreshToken: rawRefresh, rotated: false };
+      return {
+        accessToken: this.signAccessToken(session.userId),
+        expiresIn: ACCESS_TOKEN_TTL_S,
+        refreshToken: rawRefresh,
+        rotated: false,
+      };
     }
+    return this.issueRotated(session, ip, userAgent);
+  }
 
-    // Issue new token in the same family. The mark-old-as-used + create-new
-    // pair MUST be atomic — otherwise a crash between them leaves the user
-    // with no valid session at all.
-    const newRaw = crypto.randomBytes(40).toString('hex');
-    const newHash = this.hashToken(newRaw);
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
-
-    await this.prisma.$transaction([
-      this.prisma.webSession.update({
-        where: { tokenHash },
-        data: { revokedAt: new Date() },
-      }),
-      this.prisma.webSession.create({
-        data: {
-          id: crypto.randomUUID(),
-          userId: session.userId,
-          tokenHash: newHash,
-          family: session.family,
-          expiresAt,
-          ipAddress: ip,
-          userAgent,
-        },
-      }),
-    ]);
-
-    return { ...base, refreshToken: newRaw, rotated: true };
+  /** Тонкая обёртка над refresh-issue.ts: сервис собирает зависимости. */
+  private issueRotated(
+    session: RotatingSession,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TokenPair> {
+    const deps = {
+      prisma: this.prisma,
+      hashToken: (raw: string) => this.hashToken(raw),
+      signAccessToken: (id: bigint) => this.signAccessToken(id),
+      accessTtlS: ACCESS_TOKEN_TTL_S,
+      refreshTtlS: REFRESH_TOKEN_TTL_S,
+    };
+    return issueRotatedPair(deps, session, ip, userAgent);
   }
 
   // ─── Logout ────────────────────────────────────────────────────────────────
@@ -597,35 +597,28 @@ export class AuthService {
     });
     return normalizeAddressForm(owner?.addressForm);
   }
-  // Общий хвост email-логина и привязки email: токен + ссылка + письмо
-  // (fire-and-forget — ответ мгновенный даже при медленной доставке).
-  private async sendMagicLink(
+  // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
+  private sendMagicLink(
     userId: bigint,
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,
+    ticket?: string,
   ): Promise<void> {
-    const raw = crypto.randomBytes(32).toString('base64url');
-    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await this.prisma.emailToken.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId,
-        tokenHash,
-        email: encField(lower) ?? lower,
-        purpose,
-        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
+    return sendMagicLink(
+      {
+        prisma: this.prisma,
+        webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
+        encryptEmail: (e) => encField(e) ?? e,
+        addressForm: (id) => this.userAddressForm(id),
+        send: (email, link, form) =>
+          this.emailSvc.sendLoginLink(email, link, form),
+        onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
       },
-    });
-    const base = this.config
-      .getOrThrow<string>('WEBAPP_URL')
-      .replace(/\/$/, '');
-    const link = `${base}/api/auth/email/callback?token=${raw}`;
-    const form = await this.userAddressForm(userId);
-    void this.emailSvc
-      .sendLoginLink(lower, link, form)
-      .catch((err) =>
-        this.logger.error(`${logLabel} failed: ${(err as Error).message}`),
-      );
+      userId,
+      lower,
+      purpose,
+      ticket,
+    );
   }
 }

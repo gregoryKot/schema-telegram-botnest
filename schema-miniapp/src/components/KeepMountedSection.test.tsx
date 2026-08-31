@@ -49,4 +49,24 @@ describe('KeepMountedSection', () => {
     // Главное: возврат — БЕЗ повторного маунта (нет второго вызова эффекта).
     expect(onMount).toHaveBeenCalledTimes(1);
   });
+
+  it('скрытая вкладка заморожена: новые пропсы не перерисовывают её до показа', () => {
+    // Замер на телефоне владельца 2026-08-26: без заморозки каждый setState
+    // в App перерисовывал все смонтированные вкладки, тап по готовой вкладке
+    // стоил секунды («экран 2989мс, показ»).
+    const ui = (active: boolean, label: string) => (
+      <KeepMountedSection active={active}>
+        <div>{label}</div>
+      </KeepMountedSection>
+    );
+    const { rerender } = render(ui(true, 'старый текст'));
+    rerender(ui(false, 'новый текст'));
+    // Пропсы поменялись, но скрытое поддерево не перерисовано.
+    expect(screen.queryByText('новый текст')).toBeNull();
+    expect(screen.getByText('старый текст')).toBeTruthy();
+    // Показ — один свежий рендер с актуальными пропсами.
+    rerender(ui(true, 'новый текст'));
+    expect(screen.getByText('новый текст')).toBeTruthy();
+    expect(screen.queryByText('старый текст')).toBeNull();
+  });
 });

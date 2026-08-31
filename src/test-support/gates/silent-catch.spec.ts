@@ -238,6 +238,51 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
+  // FILE_ALLOW: единственный доступ к localStorage. Отказ хранилища роняет
+  // даже чтение (приватный режим, забитая квота), а хранятся там подсказки
+  // интерфейса, не данные человека.
+  it('shared/src/utils/safeLocalStorage.ts — не считается целиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/utils/safeLocalStorage.ts': [
+        'export function readLocal(key) {',
+        '  try {',
+        '    return localStorage.getItem(key);',
+        '  } catch {',
+        '    return null;',
+        '  }',
+        '}',
+        'export function writeLocal(key, value) {',
+        '  try {',
+        '    localStorage.setItem(key, value);',
+        '    return true;',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  // Граница: тот же приём с localStorage в ЛЮБОМ другом новом файле — долг.
+  // Иначе исключение расползлось бы на все обёртки хранилища подряд.
+  it('такой же доступ к localStorage в другом файле — считается', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/utils/otherStorage.ts': [
+        'export function writeLocal(key, value) {',
+        '  try {',
+        '    localStorage.setItem(key, value);',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('новый файл с 1 тихими catch');
+  });
+
   // Граница FILE_ALLOW: те же catch в ЛЮБОМ другом новом файле — ошибка.
   it('такой же код в другом файле — считается', () => {
     const res = runGate('check-silent-catch.mjs', {
@@ -436,9 +481,16 @@ describe('правила гейта: каждый паттерн со своим
   });
 
   // FILE_ALLOW — третий способ (файл целиком best-effort примитив). Список
-  // короткий: единственный образец на 2026-08 — телеметрия крашей.
+  // держим коротким и перечисляем поимённо: молча выросший список исключений
+  // — это и есть замалчивание гейта (правило №15 CLAUDE.md).
   it('у каждой записи FILE_ALLOW реальный файл гасится целиком', () => {
-    expect(FILE_ALLOW).toEqual(['shared/src/api/clientErrorReport.ts']);
+    expect(FILE_ALLOW).toEqual([
+      // Телеметрия крашей: отчёт о поломке не имеет права ломать UI сам.
+      'shared/src/api/clientErrorReport.ts',
+      // Доступ к localStorage: отказ хранилища роняет даже чтение, а хранятся
+      // там подсказки интерфейса, не данные человека (2026-08-28).
+      'shared/src/utils/safeLocalStorage.ts',
+    ]);
   });
 
   it.each(FILE_ALLOW)(

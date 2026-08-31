@@ -72,7 +72,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const level = Number((ctx.match as RegExpMatchArray)[1]);
         await this.botService.updateUserSettings(userId, {
           notifyFrequency: level,
@@ -109,7 +109,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const start = Number((ctx.match as RegExpMatchArray)[1]);
         const end = Number((ctx.match as RegExpMatchArray)[2]);
         if (start > 23 || end > 23) return;
@@ -131,7 +131,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const form = (ctx.match as RegExpMatchArray)[1];
         await this.botService.updateUserSettings(userId, { addressForm: form });
         await this.backToSettings(ctx, userId);

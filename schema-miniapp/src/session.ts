@@ -14,6 +14,7 @@ import { getHost } from '../../shared/src/host';
 import { renewWithRetries } from '../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../shared/src/auth/crossTabLock';
 import { clearApiCache } from '../../shared/src/api/apiCache';
+import { markAuthSeen } from '../../shared/src/auth/authSeen';
 import { attemptRenewOnce } from './sessionRenew';
 import { registerSessionRetryListeners } from './sessionRetryListeners';
 
@@ -42,6 +43,9 @@ function tokenIsFresh(now = Date.now()): boolean {
 }
 
 function remember(token: string, expiresIn: number): void {
+  // Отметка «в этом контейнере вход удавался» — по ней экран входа отличит
+  // новичка от человека, у которого истекла сессия (shared/auth/authSeen).
+  markAuthSeen();
   accessToken = token;
   accessExpiresAt = Date.now() + expiresIn * 1000;
   deadUntil = 0;

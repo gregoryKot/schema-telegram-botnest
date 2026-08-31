@@ -6,10 +6,13 @@ import {
   setPerfHudEnabled,
   getTaps,
   getMarks,
+  getJanks,
   getJankSummary,
+  getTimerJankSummary,
   formatReport,
   SECTION_LABELS,
 } from '../utils/perfLog';
+import { isExperimentOn, toggleExperiment } from '../utils/perfExperiments';
 
 // Панель замеров скорости поверх приложения (см. perfLog.ts — зачем и что
 // меряется). Включение/выключение — пять тапов по строке версии в
@@ -34,6 +37,12 @@ export function PerfHud() {
   const taps = getTaps().slice(-8);
   const marks = getMarks();
   const jank = getJankSummary();
+  // Пять самых длинных блоков с моментами — по ним видно, КОГДА поток
+  // вязнет; полный список уезжает в отчёт кнопкой «Скопировать».
+  const topJanks = getJanks()
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 5)
+    .sort((a, b) => a.atMs - b.atMs);
   const sec = (ms: number) => `${(ms / 1000).toFixed(1)}с`;
   return (
     <div
@@ -58,7 +67,15 @@ export function PerfHud() {
         метки: {marks.map((m) => `${m.name} ${sec(m.atMs)}`).join(' · ') || '—'}
       </div>
       <div>
+        таймер-паузы &gt;300мс: {getTimerJankSummary().count} шт ·{' '}
+        {sec(getTimerJankSummary().totalMs)} всего
+      </div>
+      <div>
         блоки &gt;100мс: {jank.count} шт · {sec(jank.totalMs)} всего
+        {topJanks.length > 0 &&
+          ` · топ: ${topJanks
+            .map((b) => `${Math.round(b.ms)}мс@${sec(b.atMs)}`)
+            .join(' ')}`}
       </div>
       {taps.length === 0 ? (
         <div>тапов по вкладкам ещё не было</div>
@@ -66,11 +83,12 @@ export function PerfHud() {
         taps.map((t, i) => (
           <div key={i}>
             {SECTION_LABELS[t.target]} на {sec(t.atMs)}: {Math.round(t.ms)}
-            мс ({t.cold ? 'сборка' : 'показ'})
+            мс (очередь {Math.round(t.delayMs)} + экран{' '}
+            {Math.round(t.ms - t.delayMs)}, {t.cold ? 'сборка' : 'показ'})
           </div>
         ))
       )}
-      <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
         <button
           style={btnStyle}
           onClick={() => {
@@ -83,6 +101,14 @@ export function PerfHud() {
         </button>
         <button style={btnStyle} onClick={() => setPerfHudEnabled(false)}>
           Выключить
+        </button>
+        {/* Эксперименты (см. perfLog.ts): тап переключает и перезагружает
+            страницу — прогон идёт с чистого старта в новых условиях. */}
+        <button style={btnStyle} onClick={() => toggleExperiment('noanim')}>
+          анимации: {isExperimentOn('noanim') ? 'ВЫКЛ' : 'вкл'}
+        </button>
+        <button style={btnStyle} onClick={() => toggleExperiment('noblur')}>
+          блюр: {isExperimentOn('noblur') ? 'ВЫКЛ' : 'вкл'}
         </button>
       </div>
     </div>

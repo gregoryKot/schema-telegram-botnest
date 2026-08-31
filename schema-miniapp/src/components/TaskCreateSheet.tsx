@@ -2,22 +2,24 @@ import { useState, useRef, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { api } from '../api';
-import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
+import { ALL_MODES } from '../schemaTherapyData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
-type TaskType =
-  | 'diary_streak'
-  | 'tracker_streak'
-  | 'belief_check'
-  | 'letter_to_self'
-  | 'safe_place'
-  | 'flashcard'
-  | 'schema_intro'
-  | 'mode_intro'
-  | 'custom';
+import {
+  STREAK_OPTIONS,
+  TASK_OPTIONS,
+  ALL_SCHEMAS_FLAT,
+  type TaskType,
+} from './taskCreate/options';
+import { TaskEntityPicker } from './taskCreate/TaskEntityPicker';
+import { TaskTypeSelector } from './taskCreate/TaskTypeSelector';
+
+// Тип задания переехал в taskCreate/options вместе с каталогом —
+// ре-экспорт держит прежний путь импорта у потребителей.
+export type { TaskType };
 
 interface Props {
   clientId?: number;
@@ -26,75 +28,6 @@ interface Props {
   onCreated: () => void;
   onClose: () => void;
 }
-const STREAK_OPTIONS = [3, 7, 14, 30];
-
-const TASK_OPTIONS: {
-  type: TaskType;
-  emoji: string;
-  label: string;
-  sub: string;
-  hasStreak?: boolean;
-}[] = [
-  {
-    type: 'diary_streak',
-    emoji: '📔',
-    label: 'Дневник',
-    sub: 'Заполнять N дней подряд',
-    hasStreak: true,
-  },
-  {
-    type: 'tracker_streak',
-    emoji: '📊',
-    label: 'Трекер потребностей',
-    sub: 'Отмечать N дней подряд',
-    hasStreak: true,
-  },
-  {
-    type: 'schema_intro',
-    emoji: '🧩',
-    label: 'Карточка схемы',
-    sub: 'Познакомиться со своей схемой — 7 вопросов',
-  },
-  {
-    type: 'mode_intro',
-    emoji: '🔄',
-    label: 'Карточка режима',
-    sub: 'Познакомиться со своим режимом',
-  },
-  {
-    type: 'belief_check',
-    emoji: '🔍',
-    label: 'Проверить убеждение',
-    sub: 'Собрать доказательства за и против',
-  },
-  {
-    type: 'letter_to_self',
-    emoji: '✉️',
-    label: 'Письмо себе',
-    sub: 'Написать Уязвимому Ребёнку',
-  },
-  {
-    type: 'safe_place',
-    emoji: '🏡',
-    label: 'Безопасное место',
-    sub: 'Описать и перечитывать',
-  },
-  {
-    type: 'flashcard',
-    emoji: '🆘',
-    label: 'Мне сейчас плохо',
-    sub: 'Разобрать ситуацию — 5 шагов',
-  },
-  { type: 'custom', emoji: '✏️', label: 'Своё задание', sub: 'Любой текст' },
-];
-
-const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap((d) =>
-  d.schemas.map((s) => ({
-    id: s.id,
-    name: s.name,
-    domainColor: d.color,
-  })),
-);
 
 export function getTaskDisplayText(type: string, text: string): string {
   if (type === 'schema_intro') {
@@ -202,55 +135,8 @@ export function TaskCreateSheet({
       </SectionLabel>
 
       {/* Type selector */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          marginBottom: 20,
-        }}
-      >
-        {TASK_OPTIONS.map((opt) => (
-          <div
-            key={opt.type}
-            {...pressable(() => setType(opt.type))}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--r-12)',
-              cursor: 'pointer',
-              background:
-                type === opt.type
-                  ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.03)',
-              border: `1px solid ${type === opt.type ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-10)',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color:
-                    type === opt.type
-                      ? 'var(--accent)'
-                      : 'rgba(var(--fg-rgb),0.8)',
-                }}
-              >
-                {opt.label}
-              </div>
-              <div
-                style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}
-              >
-                {opt.sub}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
+      {/* Выбор типа задания */}
+      <TaskTypeSelector type={type} onPick={setType} />
       {/* Streak day picker */}
       {selected.hasStreak && (
         <div style={{ marginBottom: 20 }}>
@@ -286,106 +172,25 @@ export function TaskCreateSheet({
         </div>
       )}
 
-      {/* Schema picker */}
+      {/* Выбор схемы/режима — один контрол на оба случая */}
       {type === 'schema_intro' && (
-        <div ref={configRef} style={{ marginBottom: 20 }}>
-          <SectionLabel mb={10}>Какую схему изучить?</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ALL_SCHEMAS_FLAT.map((s) => (
-              <div
-                key={s.id}
-                {...pressable(() => setSelectedSchemaId(s.id))}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--r-12)',
-                  cursor: 'pointer',
-                  background:
-                    selectedSchemaId === s.id
-                      ? 'color-mix(in srgb, var(--accent) 12%, transparent)'
-                      : 'rgba(var(--fg-rgb),0.03)',
-                  border: `1px solid ${selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-10)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color:
-                      selectedSchemaId === s.id
-                        ? 'var(--accent)'
-                        : 'var(--text)',
-                  }}
-                >
-                  {s.name}
-                </div>
-                {selectedSchemaId === s.id && (
-                  <span
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: 14,
-                      color: 'var(--accent)',
-                    }}
-                  >
-                    ✓
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <TaskEntityPicker
+          containerRef={configRef}
+          label="Какую схему изучить?"
+          items={ALL_SCHEMAS_FLAT}
+          selectedId={selectedSchemaId}
+          onSelect={setSelectedSchemaId}
+        />
       )}
 
-      {/* Mode picker */}
       {type === 'mode_intro' && (
-        <div ref={configRef} style={{ marginBottom: 20 }}>
-          <SectionLabel mb={10}>Какой режим изучить?</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ALL_MODES.map((m) => (
-              <div
-                key={m.id}
-                {...pressable(() => setSelectedModeId(m.id))}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--r-12)',
-                  cursor: 'pointer',
-                  background:
-                    selectedModeId === m.id
-                      ? 'color-mix(in srgb, var(--accent) 12%, transparent)'
-                      : 'rgba(var(--fg-rgb),0.03)',
-                  border: `1px solid ${selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-10)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color:
-                      selectedModeId === m.id ? 'var(--accent)' : 'var(--text)',
-                  }}
-                >
-                  {m.name}
-                </div>
-                {selectedModeId === m.id && (
-                  <span
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: 14,
-                      color: 'var(--accent)',
-                    }}
-                  >
-                    ✓
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <TaskEntityPicker
+          containerRef={configRef}
+          label="Какой режим изучить?"
+          items={ALL_MODES}
+          selectedId={selectedModeId}
+          onSelect={setSelectedModeId}
+        />
       )}
 
       {/* Custom text */}
