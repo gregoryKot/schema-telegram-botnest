@@ -103,6 +103,20 @@ export async function cleanupOwnershipFixtures(
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
+/**
+ * Заводит строки User для переданных id — фикстуры, на которые ссылаются данные
+ * ownership-спеков через FK userId. Раньше строку лениво создавал upsert в
+ * TelegramAuthGuard при первом Bearer-запросе. С 2026-08-31 guard этого больше
+ * НЕ делает: устаревший 15-минутный токен не должен воскрешать удалённый или
+ * слитый аккаунт (telegram-auth.guard.ts). Поэтому пользователей спеки заводят
+ * явно — вызывать в beforeAll ПОСЛЕ cleanupOwnershipFixtures. Идемпотентно.
+ */
+export async function seedUsers(prisma: any, userIds: bigint[]): Promise<void> {
+  for (const id of userIds) {
+    await prisma.user.upsert({ where: { id }, update: {}, create: { id } });
+  }
+}
+
 // ─── Платёжный контур (test/payment-webhooks.e2e-spec.ts) ─────────────────
 //
 // Booking/Donation/Subscription/SubscriptionCharge не имеют userId — вне
