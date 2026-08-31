@@ -27,6 +27,26 @@ export function emailCallbackSuccessUrl(
   );
 }
 
+/**
+ * Куда вести браузер, когда вход по письму нёс билет (`?ticket=`). Билет
+ * больше НЕ одобряется молча (device-code phishing, разбор 2026-08-31): уже
+ * вошедшего человека уводим на экран сверки, где он сам подтвердит код своей
+ * сессией. Нет билета — обычный приём сессии.
+ */
+export function emailCallbackNextUrl(
+  purpose: string,
+  frontendBase: string,
+  tokens: { accessToken: string; expiresIn: number },
+  ticket: string | null,
+): string {
+  if (purpose === 'link_email_auth' || !ticket)
+    return emailCallbackSuccessUrl(purpose, frontendBase, tokens);
+  return (
+    `${frontendBase}/auth/confirm?code=${encodeURIComponent(ticket)}` +
+    `#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`
+  );
+}
+
 export function emailCallbackErrorUrl(err: unknown, frontendBase: string) {
   if (err instanceof ConflictException) {
     return `${frontendBase}/account?error=email_taken`;

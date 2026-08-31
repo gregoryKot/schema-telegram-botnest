@@ -89,7 +89,7 @@ export class AuthOauthController {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      await this.flow.finishOAuthRedirect(
+      this.flow.finishOAuthRedirect(
         outcome,
         'vk',
         res,
@@ -172,7 +172,7 @@ export class AuthOauthController {
           userAgent: req.headers['user-agent'],
         },
       );
-      await this.flow.finishOAuthRedirect(
+      this.flow.finishOAuthRedirect(
         outcome,
         'telegram-oidc',
         res,

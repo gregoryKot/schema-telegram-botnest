@@ -11,7 +11,6 @@ import { Auth2faController } from './auth-2fa.controller';
 import { AuthService, TokenPair } from './auth.service';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
-import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import { EmailService } from './email.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 import { TwoFaChallengeDto, TwoFaCodeDto } from './dto/twofa.dto';
@@ -145,16 +144,14 @@ function makeController() {
   const securityLog = makeSecurityLog();
   const totp = makeTotp();
   const emailSvc = makeEmail();
-  const tickets = { approveLoginIfPossible: jest.fn().mockResolvedValue(true) };
   const controller = new Auth2faController(
     auth as unknown as AuthService,
     config,
     securityLog as unknown as SecurityLogService,
     totp as unknown as TotpService,
     emailSvc as unknown as EmailService,
-    tickets as unknown as LoginTicketService,
   );
-  return { controller, auth, config, securityLog, totp, emailSvc, tickets };
+  return { controller, auth, config, securityLog, totp, emailSvc };
 }
 
 const CODE_DTO: TwoFaCodeDto = { code: '123456' };
@@ -427,26 +424,27 @@ describe('Auth2faController.totpChallenge', () => {
   });
 });
 
-// Вход из установленного приложения у человека с двухфакторкой: без этого
-// куска он вошёл бы в браузере, а приложение ждало бы опросом до истечения
-// билета — тупик, который видно только пользователю.
-describe('Auth2faController.totpChallenge — билет входа', () => {
+// Второй фактор больше НЕ одобряет билет на сервере (device-code phishing,
+// разбор 2026-08-31): код в теле мог подставить кто угодно. Билет теперь
+// подтверждает человек на /auth/confirm; здесь проверяем лишь, что сам вход в
+// браузере работает и на билет не завязан.
+describe('Auth2faController.totpChallenge', () => {
   const challenge = { code: '123456', challengeToken: 'chal' };
 
-  it('код верный и билет передан — билет подтверждается тем же пользователем', async () => {
-    const { controller, tickets, totp } = makeController();
+  it('код верный — выдаёт сессию, даже если в теле приехал билет', async () => {
+    const { controller, totp } = makeController();
     totp.verifyCode.mockResolvedValue(true);
 
-    await controller.totpChallenge(makeReq({}), makeRes(), {
+    const out = await controller.totpChallenge(makeReq({}), makeRes(), {
       ...challenge,
       ticket: 'K7M2QX94',
     });
 
-    expect(tickets.approveLoginIfPossible).toHaveBeenCalledWith('K7M2QX94', 7n);
+    expect(out.accessToken).toBeTruthy();
   });
 
-  it('код неверный — билет НЕ подтверждается', async () => {
-    const { controller, tickets, totp } = makeController();
+  it('код неверный — вход не выдаётся', async () => {
+    const { controller, totp, auth } = makeController();
     totp.verifyCode.mockResolvedValue(false);
 
     await expect(
@@ -455,11 +453,11 @@ describe('Auth2faController.totpChallenge — билет входа', () => {
         ticket: 'K7M2QX94',
       }),
     ).rejects.toThrow(UnauthorizedException);
-    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
   });
 
-  it('обычный вход без билета — прежнее поведение', async () => {
-    const { controller, tickets, totp } = makeController();
+  it('обычный вход без билета — выдаёт сессию', async () => {
+    const { controller, totp } = makeController();
     totp.verifyCode.mockResolvedValue(true);
 
     const out = await controller.totpChallenge(
@@ -467,20 +465,6 @@ describe('Auth2faController.totpChallenge — билет входа', () => {
       makeRes(),
       challenge,
     );
-
-    expect(tickets.approveLoginIfPossible).not.toHaveBeenCalled();
-    expect(out.accessToken).toBeTruthy();
-  });
-
-  it('билет протух — второй фактор всё равно впускает в браузере', async () => {
-    const { controller, tickets, totp } = makeController();
-    totp.verifyCode.mockResolvedValue(true);
-    tickets.approveLoginIfPossible.mockResolvedValue(false);
-
-    const out = await controller.totpChallenge(makeReq({}), makeRes(), {
-      ...challenge,
-      ticket: 'K7M2QX94',
-    });
 
     expect(out.accessToken).toBeTruthy();
   });

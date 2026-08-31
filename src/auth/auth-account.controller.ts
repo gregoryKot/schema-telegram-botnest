@@ -22,10 +22,9 @@ import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import {
   emailCallbackErrorUrl,
-  emailCallbackSuccessUrl,
+  emailCallbackNextUrl,
 } from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
-import { LoginTicketService } from './login-ticket/login-ticket.service';
 import {
   EmailBodyDto,
   TokenBodyDto,
@@ -49,7 +48,6 @@ export class AuthAccountController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
-    private readonly tickets: LoginTicketService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -90,9 +88,11 @@ export class AuthAccountController {
         return;
       }
       setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
-      // Билет — ПОСЛЕ выдачи сессии: ждущий опросом контейнер получает именно вошедшего.
-      if (ticket) await this.tickets.approveLoginIfPossible(ticket, r.userId);
-      res.redirect(emailCallbackSuccessUrl(r.purpose, frontendBase, r.tokens));
+      // Билет НЕ одобряем молча (device-code phishing): с билетом уводим на
+      // экран сверки, где вошедший человек подтвердит код сам.
+      res.redirect(
+        emailCallbackNextUrl(r.purpose, frontendBase, r.tokens, ticket),
+      );
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
       res.redirect(emailCallbackErrorUrl(err, frontendBase));

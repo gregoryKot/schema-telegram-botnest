@@ -273,6 +273,55 @@ describe('e2e smoke: билет входа и привязка аккаунта 
       ).send({ code: userCode });
       expect(res.status).toBe(400);
     });
+
+    // Фикс device-code phishing (разбор 2026-08-31). Раньше вход по билету на
+    // путях OAuth/письма сервер одобрял молча, за того, кто прошёл вход, — а
+    // код мог подставить кто угодно. Теперь одобрить вход в браузере можно
+    // ТОЛЬКО этим авторизованным действием, и хозяином становится тот, кто
+    // жмёт кнопку.
+    it('подтвердить вход в браузере без сессии нельзя — иначе хватило бы кода', async () => {
+      const { userCode } = await issue();
+      const res = await call(srv().post('/api/auth/ticket/confirm-login')).send(
+        { code: userCode },
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it('confirm-login одобряет билет подтвердившим, и контейнер забирает ЕГО сессию', async () => {
+      const { deviceCode, userCode } = await issue();
+
+      const approved = await call(
+        srv().post('/api/auth/ticket/confirm-login'),
+        tokenB,
+      ).send({ code: userCode });
+      expect(approved.status).toBe(200);
+      expect(approved.body.ok).toBe(true);
+
+      const linked = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(linked.body.status).toBe('linked');
+      expect(linked.body.accessToken).toBeTruthy();
+    });
+
+    it('deny-login («это не я») требует сессии и гасит билет', async () => {
+      const noAuth = await call(srv().post('/api/auth/ticket/deny-login')).send(
+        { code: 'ABCD2345' },
+      );
+      expect(noAuth.status).toBe(401);
+
+      const { deviceCode, userCode } = await issue();
+      const denied = await call(
+        srv().post('/api/auth/ticket/deny-login'),
+        tokenB,
+      ).send({ code: userCode });
+      expect(denied.status).toBe(200);
+
+      const polled = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(polled.body.status).toBe('denied');
+    });
   });
 });
 

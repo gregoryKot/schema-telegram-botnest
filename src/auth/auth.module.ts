@@ -6,6 +6,7 @@ import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
+import { AuthLoginConfirmController } from './auth-login-confirm.controller';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { LoginTicketReport } from './login-ticket/login-ticket.report';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
@@ -57,6 +58,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthAccountController,
     AuthMaxController,
     AuthTicketController,
+    AuthLoginConfirmController,
     Auth2faController,
   ],
   // MaxProvider экспортируется отдельно от реестра: его напрямую использует
