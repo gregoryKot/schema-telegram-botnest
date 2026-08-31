@@ -71,11 +71,15 @@ async function bootstrap() {
             'https://telegram.org',
             'https://mc.yandex.ru',
             'https://st.max.ru',
+            // Google Identity Services (One Tap) грузит свой клиент отсюда.
+            'https://accounts.google.com',
           ],
           connectSrc: [
             "'self'",
             'https://mc.yandex.ru',
             'https://oauth.telegram.org',
+            // One Tap ходит на accounts.google.com за конфигом/статусом сессии.
+            'https://accounts.google.com',
           ],
           imgSrc: [
             "'self'",
@@ -84,8 +88,12 @@ async function bootstrap() {
             'https://t.me',
             'https://cdn.jsdelivr.net',
           ],
-          // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
-          frameSrc: ['https://oauth.telegram.org'],
+          // oauth.telegram.org — iframe кнопки Telegram Login Widget;
+          // accounts.google.com — iframe всплывашки Google One Tap.
+          frameSrc: [
+            'https://oauth.telegram.org',
+            'https://accounts.google.com',
+          ],
           // Кто имеет право встроить нас в свой iframe. MAX открывает
           // мини-приложение именно так, поэтому одного 'self' мало: без его
           // домена вебвью показывает «refused to connect». Telegram сюда не

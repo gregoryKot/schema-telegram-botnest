@@ -1,6 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
+  HttpCode,
   Req,
   Res,
   Query,
@@ -9,6 +12,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
@@ -16,7 +20,13 @@ import type { Request, Response } from 'express';
 import { VkProvider } from './providers/vk.provider';
 import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { AuthFlowService } from './auth-flow.service';
-import { getCookie } from './auth-http.util';
+import {
+  GoogleOneTapService,
+  type OneTapLoginResult,
+} from './google-one-tap.service';
+import { GoogleOneTapDto } from './dto/google-one-tap.dto';
+import { getCookie, requireCsrf } from './auth-http.util';
+import { SecurityLogService } from './security-log.service';
 
 @Controller('api/auth')
 export class AuthOauthController {
@@ -26,6 +36,8 @@ export class AuthOauthController {
     private readonly config: ConfigService,
     private readonly providers: AuthProviderRegistry,
     private readonly flow: AuthFlowService,
+    private readonly oneTap: GoogleOneTapService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   // ─── Google OAuth ─────────────────────────────────────────────────────────
@@ -47,6 +59,32 @@ export class AuthOauthController {
     @Res() res: Response,
   ): Promise<void> {
     return this.flow.oauthCallback('google', code, state, error, req, res);
+  }
+
+  // Google One Tap: нативная всплывашка Google отдаёт id_token прямо в браузер
+  // (без редиректа). Фронт постит его сюда, мы проверяем токен тем же
+  // верификатором, что и обмен кода, и выдаём свою сессию. Анонимный роут (у
+  // человека сессии ещё нет), но с CSRF-заголовком — токен присылает JS нашего
+  // origin, а не сторонний сайт, — и с троттлингом. Только сайт (host 'web'):
+  // внутри мессенджеров One Tap не работает, там вход по initData.
+  @Post('google/one-tap')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 40, ttl: 3_600_000 },
+  })
+  @HttpCode(200)
+  async googleOneTap(
+    @Body() body: GoogleOneTapDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<OneTapLoginResult> {
+    requireCsrf(req, 'google/one-tap', this.securityLog);
+    return this.oneTap.login(
+      body.credential,
+      res,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   // ─── VK OAuth ─────────────────────────────────────────────────────────────
