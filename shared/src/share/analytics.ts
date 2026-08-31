@@ -86,6 +86,13 @@ export function modeEntrySavedMeta(
   };
 }
 
+// 2026-08-31: needs_what/needs_why/needs_result/diaries_why/today_screen/author
+// сняты с визарда (schema-miniapp/src/components/disclaimer/steps.ts) — визард
+// дублировал онбординг трекера и пустые состояния фичей, контент переехал
+// туда же. Тип НЕ сокращён — старые события с этими шагами лежат в БД, и
+// воронка /stats за прошлый период должна по-прежнему читаться (парный список
+// на бэке — src/analytics/onboarding-steps.constants.ts, синхронь оба). Новые
+// события с этими шагами больше не приходят.
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

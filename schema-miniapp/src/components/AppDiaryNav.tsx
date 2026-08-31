@@ -58,20 +58,23 @@ export function AppDiaryNav({
       case 'tracker':
         sheets.open('trackerOverlay', { trackerNeedId: null });
         return;
+      case 'case':
+        // Разбор случая — главное действие продукта, поэтому не через
+        // локальный activeOverlay (тот закрывается вместе с пилюлей/навом),
+        // а через общий реестр листов sheets (как onStartCase в App.tsx) —
+        // AppOverlays уже рендерит CaseFlowOverlay по sheets.caseFlow.
+        sheets.open('caseFlow');
+        return;
       case 'breathing':
       case 'grounding':
       case 'stop':
-      case 'belief_check':
-      case 'phrase_check':
-      case 'flashcard':
-      case 'safe_place':
-      case 'letter_to_self':
-      case 'warm_words':
         setActiveOverlay(id);
         return;
       default:
-        // childhood_wheel/tasks/practices/plans — поверхность «Инструменты»,
-        // из «плюса» недостижимы (см. utils/quickActions.ts).
+        // belief_check/phrase_check/flashcard/safe_place/letter_to_self/
+        // warm_words/childhood_wheel/tasks/practices/plans — поверхность
+        // «Инструменты», из «плюса» недостижимы (один дом на действие, см.
+        // utils/quickActionsRegistry.ts).
         return;
     }
   }
@@ -106,14 +109,10 @@ export function AppDiaryNav({
         />
       )}
 
-      {/* ── Действие из «плюса», не относящееся к дневникам/трекеру ── */}
+      {/* ── Экстренная практика из «плюса» (дыхание/заземление/«Стоп») ── */}
       <QuickActionOverlays
         active={activeOverlay}
         onClose={() => setActiveOverlay(null)}
-        onOpenTracker={() => {
-          setActiveOverlay(null);
-          sheets.open('trackerOverlay', { trackerNeedId: null });
-        }}
       />
 
       {/* ── Floating pill (above bottom bar, на всех экранах) ──

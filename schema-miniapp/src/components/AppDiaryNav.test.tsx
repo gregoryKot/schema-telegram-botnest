@@ -78,17 +78,14 @@ vi.mock('./plusMenu/QuickActionOverlays', () => ({
   QuickActionOverlays: ({
     active,
     onClose,
-    onOpenTracker,
   }: {
     active: string | null;
     onClose: () => void;
-    onOpenTracker: () => void;
   }) =>
     active ? (
       <div>
         <span>QuickActionOverlays:{active}</span>
         <button onClick={onClose}>close-overlay</button>
-        <button onClick={onOpenTracker}>overlay-open-tracker</button>
       </div>
     ) : null,
 }));
@@ -270,15 +267,17 @@ describe('AppDiaryNav — открытие пилюлей', () => {
     expect(screen.getByLabelText('Быстрое действие')).toBeTruthy();
   });
 
-  it('onOpenTracker из оверлея (flashcard) открывает trackerOverlay и закрывает оверлей', () => {
+  it('«Схема включилась» больше не в «плюсе» (переехала в «Инструменты», один дом на действие)', () => {
+    render(<AppDiaryNav {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText('Быстрое действие'));
+    expect(screen.queryByText('Схема включилась')).toBeNull();
+  });
+
+  it('пункт «Что это было» открывает разбор случая через sheets.open("caseFlow")', () => {
     const open = vi.fn();
     render(<AppDiaryNav {...baseProps({ open })} />);
     fireEvent.click(screen.getByLabelText('Быстрое действие'));
-    fireEvent.click(screen.getByText('Схема включилась'));
-    fireEvent.click(screen.getByText('overlay-open-tracker'));
-    expect(open).toHaveBeenCalledWith('trackerOverlay', {
-      trackerNeedId: null,
-    });
-    expect(screen.queryByText('QuickActionOverlays:flashcard')).toBeNull();
+    fireEvent.click(screen.getByText('Что это было'));
+    expect(open).toHaveBeenCalledWith('caseFlow');
   });
 });
