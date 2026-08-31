@@ -121,3 +121,27 @@ export type AccountLinkFailReason = 'expired' | 'error';
 // же приём, что у MODE_CARD_SAVED_EVENT: контракт заводится раньше UI.
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
+
+// ── Разбор случая («Что это было») ─────────────────────────────────────────
+// Новая точка входа: человек за три минуты разбирает один случай и получает
+// первую запись дневника, приметы для карточки и метку на карте себя.
+// Имена событий шлются строковыми литералами из компонентов потока — так их
+// видит спека синхронизации (src/security/analytics-sync.invariants.spec.ts);
+// здесь живут типы меты. Парный allow-list и санитайзер —
+// src/analytics/case-steps.constants.ts и src/api/analytics-meta.sanitize-case.ts.
+//
+// Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
+// остаются на клиенте и в зашифрованных полях карточки (правило №7).
+
+/** Вердикт критерия Jacob: meta.verdict у case_criterion. */
+export type CaseVerdictMeta = 'mode' | 'ordinary' | 'borderline';
+
+/** Откуда взялась сцена: meta.source у case_scene. */
+export type CaseSceneSource = 'own' | 'frame';
+
+/**
+ * Откуда взялось имя режима: meta.source у mode_renamed. Доля `own` и `chip`
+ * против `skipped` показывает, присваивает ли человек часть себе, — ради
+ * этого шаг и существует.
+ */
+export type ModeRenameSource = 'chip' | 'own' | 'skipped';

@@ -29,6 +29,10 @@ export interface UserModeNote {
   /** Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно». */
   modeFunction: string;
   needsMet: string;
+  /** Имя, которым человек называет режим своими словами («Стена»). */
+  alias: string;
+  /** «Чего боишься, если этот режим перестанет так делать». */
+  fear: string;
   updatedAt: string;
 }
 

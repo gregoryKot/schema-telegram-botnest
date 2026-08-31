@@ -21,6 +21,8 @@ import type { PlansScreen as PlansScreenT } from './PlansScreen';
 import type { SchemaInfoSheet as SchemaInfoSheetT } from './SchemaInfoSheet';
 import type { ChildhoodWheelSheet as ChildhoodWheelSheetT } from './ChildhoodWheelSheet';
 import type { TaskCreateSheet as TaskCreateSheetT } from './TaskCreateSheet';
+import type { CaseFlowSheet as CaseFlowSheetT } from './caseFlow/CaseFlowSheet';
+import type { SelfMapScreen as SelfMapScreenT } from './selfMap/SelfMapScreen';
 import { BottomSheet } from './BottomSheet';
 import { ScreenSkeleton } from './Skeleton';
 
@@ -117,6 +119,53 @@ export function LazyTaskCreateSheet(
       }
     >
       <RealTaskCreateSheet {...props} />
+    </Suspense>
+  );
+}
+
+// Разбор случая и карта себя — самые тяжёлые новые экраны (десять шагов
+// потока и вся сборка карты). В стартовый чанк им попадать незачем: разбор
+// открывается по явному нажатию, карта — ещё позже.
+const RealCaseFlowSheet = lazy(() =>
+  import('./caseFlow/CaseFlowSheet').then((m) => ({
+    default: m.CaseFlowSheet,
+  })),
+);
+
+const RealSelfMapScreen = lazy(() =>
+  import('./selfMap/SelfMapScreen').then((m) => ({
+    default: m.SelfMapScreen,
+  })),
+);
+
+export function LazyCaseFlowSheet(
+  props: ComponentProps<typeof CaseFlowSheetT>,
+) {
+  return (
+    <Suspense
+      fallback={
+        <BottomSheet onClose={props.onClose}>
+          <ScreenSkeleton cards={2} />
+        </BottomSheet>
+      }
+    >
+      <RealCaseFlowSheet {...props} />
+    </Suspense>
+  );
+}
+
+export function LazySelfMapScreen(
+  props: ComponentProps<typeof SelfMapScreenT>,
+) {
+  return (
+    <Suspense
+      fallback={
+        <BottomSheet onClose={props.onClose}>
+          <ScreenSkeleton cards={3} />
+        </BottomSheet>
+      }
+    >
+      <RealSelfMapScreen {...props} />
     </Suspense>
   );
 }

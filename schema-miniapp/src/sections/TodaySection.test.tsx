@@ -125,15 +125,30 @@ function baseProps() {
     onOpenTracker: vi.fn(),
     onOpenDiaries: vi.fn(),
     onOpenChildhoodWheel: vi.fn(),
+    onStartCase: vi.fn(),
+    onOpenMap: vi.fn(),
+    onSteadyDay: vi.fn(),
   };
 }
+
+// Один разбор в истории — состояние «человек уже начал». Воронка новичка
+// показывается только после первого разбора, поэтому дефолтом для тестов,
+// которые её проверяют, идёт именно оно.
+const ONE_CASE = [
+  {
+    id: 1,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    modeId: 'detached_protector',
+    situation: 'не ответили на сообщение',
+  },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mockApi.getProfile.mockResolvedValue(BASE_PROFILE);
   mockApi.getSchemaDiary.mockResolvedValue([]);
-  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue(ONE_CASE);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
   // Хост по умолчанию (web) с заданным именем — читаем через getHost().user().
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
@@ -148,7 +163,9 @@ async function renderReady(
   props: Partial<Parameters<typeof TodaySection>[0]> = {},
 ) {
   const utils = render(<TodaySection {...baseProps()} {...props} />);
-  await screen.findByTestId('onboarding');
+  // Ждём карточку входа, а не воронку новичка: воронка теперь появляется
+  // только после первого разбора, а точка входа на экране есть всегда.
+  await screen.findByText(/Разобрать · ≈ 3 мин/);
   await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
   return utils;
 }
@@ -205,6 +222,9 @@ describe('TodaySection — загрузка дневников', () => {
         createdAt: isoDaysAgo(1),
       },
     ]);
+    // Ровно одна запись на весь экран: дефолтный разбор из ONE_CASE тут
+    // мешал бы считать, сколько записей доехало до карточек.
+    mockApi.getModeDiary.mockResolvedValue([]);
     await renderReady();
     fireEvent.click(screen.getByText('Что ещё можно сегодня'));
     await waitFor(() =>
@@ -367,5 +387,32 @@ describe('TodaySection — значок на экран откладываетс
     localStorage.setItem(ONBOARDING_DONE_KEY, '1');
     await renderReady();
     expect(screen.getByTestId('home-screen-offer')).toBeTruthy();
+  });
+});
+
+describe('TodaySection — одно главное действие у новичка', () => {
+  // Главное правило нового входа: на чистом аккаунте на экране РОВНО одна
+  // точка старта. Два «начни отсюда» рядом — карточка разбора и воронка
+  // новичка — возвращают ту самую растерянность, из-за которой затевался
+  // редизайн.
+  it('без единого разбора воронка новичка не показывается', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    await renderReady();
+    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    expect(screen.queryByTestId('onboarding')).toBeNull();
+    expect(screen.getByText(/Разобрать · ≈ 3 мин/)).toBeTruthy();
+  });
+
+  it('после первого разбора воронка новичка появляется', async () => {
+    mockApi.getModeDiary.mockResolvedValue(ONE_CASE);
+    await renderReady();
+    await screen.findByTestId('onboarding');
+  });
+
+  it('запуск разбора уходит наверх', async () => {
+    const onStartCase = vi.fn();
+    await renderReady({ onStartCase });
+    fireEvent.click(screen.getByText(/Разобрать · ≈ 3 мин/));
+    expect(onStartCase).toHaveBeenCalledTimes(1);
   });
 });

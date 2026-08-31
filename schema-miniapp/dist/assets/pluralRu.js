@@ -1,0 +1,1 @@
+function e(e,t,n,r){let i=e%10,a=e%100;return a>=11&&a<=14?r:i===1?t:i>=2&&i<=4?n:r}export{e as t};

@@ -17,7 +17,7 @@ import { greeting, formatHeaderDate, readLocalIds, resolveTaskText } from './tod
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { Sparkline } from './today/Sparkline';
 import { SkeletonLines } from './today/SkeletonLines';
-import { OnboardingWidget } from './today/OnboardingWidget';
+import { CaseEntryBlock } from './today/CaseEntryBlock';
 import { useTaskActions } from './today/useTaskActions';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 
@@ -224,8 +224,8 @@ export function TodaySection({
             </div>
           )}
 
-          {/* Onboarding */}
-          <OnboardingWidget
+          {/* Точка входа «Что это было» + онбординг после первого разбора */}
+          <CaseEntryBlock
             profile={profile}
             hasSchemas={hasSchemas}
             onOpenSchema={onOpenSchema}

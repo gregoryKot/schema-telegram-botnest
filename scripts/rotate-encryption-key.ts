@@ -60,6 +60,8 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
       'behavior',
       'modeFunction',
       'needsMet',
+      'alias',
+      'fear',
     ],
   },
   {

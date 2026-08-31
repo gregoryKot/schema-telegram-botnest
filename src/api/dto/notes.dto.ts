@@ -93,4 +93,15 @@ export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
   @MaxLength(NOTE_MAX)
   needsMet?: string;
+
+  /** Имя режима своими словами — короткое, это подпись, а не текст. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  alias?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  fear?: string;
 }

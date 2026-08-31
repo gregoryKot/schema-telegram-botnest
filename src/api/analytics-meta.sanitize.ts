@@ -15,6 +15,7 @@ import {
   PROFILE_PATTERN_KIND_SET,
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
+import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
 
@@ -271,6 +272,9 @@ export function sanitizeMeta(
       return { kind };
     }
     return undefined;
+  }
+  if (name.startsWith('case_') || name === 'mode_renamed') {
+    return sanitizeCaseMeta(name, meta);
   }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open —
   // без meta; поля отбрасываются.
