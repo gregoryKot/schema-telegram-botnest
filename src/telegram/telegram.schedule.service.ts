@@ -24,6 +24,7 @@ import {
   type DiaryCompleteDeps,
 } from './telegram.diary-complete';
 import { runProcessQueue } from './telegram.schedule-queue';
+import { isConnectionError } from '../logger/db-outage';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
@@ -110,14 +111,13 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       // P1017 "Server has closed the connection" and other transient connection
       // errors should not page the admin on every cron tick — they resolve on
       // the next tick once the DB comes back.  Log as warn so AlertLogger
-      // doesn't send a DM.
+      // doesn't send a DM. Признаки — общие с AlertLogger (src/logger/db-outage.ts),
+      // здесь берём мягкую проверку: важно не куда оборвалось соединение, а что
+      // ошибка временная. Раньше guard искал "P1001" в ТЕКСТЕ сообщения, а
+      // Prisma кладёт код в err.code — guard молчал (инцидент 2026-08-31).
       const e = err instanceof Error ? err : undefined;
       const msg = e?.message ?? String(err);
-      const isConnError =
-        /server has closed the connection|connection.*refused|ECONNREFUSED|connect ETIMEDOUT|P1001|P1017/i.test(
-          msg,
-        );
-      if (isConnError) {
+      if (isConnectionError(err)) {
         this.logger.warn(
           `processQueue DB connection error (will retry): ${msg.slice(0, 120)}`,
         );
