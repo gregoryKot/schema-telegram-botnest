@@ -141,7 +141,7 @@ export function AccountLinkCard({
   // и заново сбросил бы экран в «начинаем». Хук такое наложение переживёт
   // (сверка поколения опроса), но лишний поход в сеть незачем.
   const starting = state.kind === 'starting';
-  const actionStyle = starting
+  const actionStyle: React.CSSProperties = starting
     ? { ...ACTION, opacity: 0.6, cursor: 'default', pointerEvents: 'none' }
     : ACTION;
   return (
