@@ -101,7 +101,7 @@ export class GoogleProvider implements AuthProviderHandler {
         );
         throw new UnauthorizedException('Google token exchange failed');
       }
-      return this.decodeIdentity(data.id_token);
+      return this.verifyIdToken(data.id_token);
     }
 
     this.logger.error(
@@ -111,8 +111,11 @@ export class GoogleProvider implements AuthProviderHandler {
   }
 
   // Проверка id_token (подпись по JWKS + issuer/audience) живёт в
-  // google-id-token.ts — там же ветка на случай недостижимого JWKS.
-  private async decodeIdentity(idToken: string): Promise<ProviderIdentity> {
+  // google-id-token.ts — там же ветка на случай недостижимого JWKS. Публичный:
+  // тем же путём проверяется id_token, пришедший от Google One Tap напрямую в
+  // браузер (POST /api/auth/google/one-tap) — те же издатель/получатель/срок и
+  // тот же отказ на подделке, что и у обмена кода.
+  async verifyIdToken(idToken: string): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
 
     let claims: Awaited<ReturnType<typeof verifyGoogleIdToken>>;
