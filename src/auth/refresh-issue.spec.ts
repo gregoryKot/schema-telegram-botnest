@@ -115,6 +115,33 @@ describe('issueRotatedPair — восстановление (есть прежн
     expect(rows.filter((r) => !r.revokedAt)).toHaveLength(1);
   });
 
+  // Разбор 2026-09-03: claim прежнего наследника раньше писал только
+  // `revokedAt`, БЕЗ `replacedByHash` — поздний, но живой ответ старой
+  // ротации находил его отозванным и без исходящей связи, и по этому
+  // признаку улетал в `theft`. Claim обязан сразу репойнтить его на нового
+  // наследника, тогда такой поздний ответ уходит в `recover`.
+  it('прежний наследник погашен → его replacedByHash указывает на НОВОГО наследника (сирота не образуется)', async () => {
+    const parent = live({ revokedAt: new Date(), replacedByHash: 'h:succ' });
+    const succ = live({ id: 'sess-2', tokenHash: 'h:succ' });
+    const { deps, rows } = makeDeps([parent, succ]);
+    const res = await issueRotatedPair(
+      deps,
+      {
+        tokenHash: 'h:parent',
+        userId: 7n,
+        family: 'fam-1',
+        replacedByHash: 'h:succ',
+      },
+      RAW,
+    );
+
+    expect(res.rotated).toBe(true);
+    if (!res.rotated) throw new Error('unreachable');
+    const claimed = rows.find((r) => r.tokenHash === 'h:succ')!;
+    expect(claimed.revokedAt).toBeInstanceOf(Date);
+    expect(claimed.replacedByHash).toBe(`h:${res.refreshToken}`);
+  });
+
   it('прежний наследник уже отозван (гонку проиграли) → access-only, без нового', async () => {
     const parent = live({ revokedAt: new Date(), replacedByHash: 'h:succ' });
     const succ = live({

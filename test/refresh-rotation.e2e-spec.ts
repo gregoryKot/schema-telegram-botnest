@@ -11,11 +11,13 @@
 // вердикт, но не про то, доедет ли выданная взамен кука до клиента и примет
 // ли её сервер следующим запросом.
 import { INestApplication } from '@nestjs/common';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
+import { SecurityLogService } from '../src/auth/security-log.service';
 
 describe('e2e smoke: ротация refresh — потерянный ответ против кражи', () => {
   let app: INestApplication;
@@ -87,6 +89,48 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
       create: { id: USER, firstName: 'E2E' },
     });
   });
+
+  /** Стёрта ли refresh-кука в ответе (Set-Cookie с пустым значением). */
+  function refreshCookieCleared(res: request.Response): boolean {
+    const raw = res.headers['set-cookie'] as unknown as string[] | undefined;
+    return (raw ?? []).some((c) => /^refresh_token=;/.test(c));
+  }
+
+  /**
+   * Сессия в обход `/api/auth/ticket/start` — тот троттлится 5/60с
+   * (auth-ticket.controller.ts), а сценариям ниже нужно несколько свежих
+   * family без траты этого бюджета на каждый тест (см. auth-flows.e2e-spec.ts
+   * `seedSession` — тот же приём).
+   */
+  async function seedSession(family: string): Promise<string> {
+    const raw = randomUUID();
+    await prisma.webSession.create({
+      data: {
+        id: randomUUID(),
+        userId: USER,
+        tokenHash: createHash('sha256').update(raw).digest('hex'),
+        family,
+        expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+        revokedAt: null,
+        ipAddress: '127.0.0.1',
+        userAgent: 'jest',
+      },
+    });
+    return raw;
+  }
+
+  /**
+   * `/api/auth/refresh` троттлится 20/1000мс (тот же IP-трекер на весь
+   * файл), а фейковая Prisma отвечает мгновенно — предыдущие тесты этого
+   * файла уже могли исчерпать окно к моменту, когда доходит очередь до
+   * сценария ниже. Сброс общего in-memory стораджа троттлера не трогает
+   * прод-код — только тестовую изоляцию одного сценария от соседних.
+   */
+  function resetRefreshThrottle(): void {
+    const storage: { storage: Map<string, unknown> } =
+      app.get(ThrottlerStorage);
+    storage.storage.clear();
+  }
 
   afterAll(async () => {
     await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
@@ -182,5 +226,76 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
       .pop();
     expect(newest).toBeTruthy();
     expect((await refresh(newest as string)).status).toBe(200);
+  });
+
+  // Разбор 2026-09-03, Д3: claim прежнего наследника при восстановлении
+  // раньше не репойнтил его replacedByHash — поздний ответ старой ротации
+  // находил сироту без исходящей связи и по возрасту улетал в «кражу».
+  it('поздний ответ старой ротации после recover находит наследника наследника — recover, не кража', async () => {
+    resetRefreshThrottle();
+    const family = randomUUID();
+    const first = await seedSession(family);
+    const securityLog = app.get(SecurityLogService);
+    const logSpy = jest.spyOn(securityLog, 'log');
+
+    await agePast(family);
+    const second = cookieFrom(await refresh(first)); // A → B
+
+    // Ответ ротации A→B «потерян»: клиент повторяет A. Сервер восстанавливает
+    // (claim B → создаёт C, репойнтит A.replacedByHash на C).
+    await agePast(family);
+    const recovered = await refresh(first);
+    expect(recovered.status).toBe(200);
+
+    // Клиент наконец получает и второй, «опоздавший» ответ ротации A→B —
+    // предъявляет B. Раньше B был сиротой без исходящей связи и считался
+    // кражей по возрасту; теперь B.replacedByHash указывает на C (живой) →
+    // recover, а не theft.
+    const orphanRetry = await refresh(second);
+    expect(orphanRetry.status).toBe(200);
+    expect(logSpy).not.toHaveBeenCalledWith(
+      'refresh_token_reuse',
+      expect.anything(),
+    );
+
+    const live = await prisma.webSession.findMany({
+      where: { userId: USER, family, revokedAt: null },
+    });
+    expect(live).toHaveLength(1); // семья жива, ровно один активный токен
+    logSpy.mockRestore();
+  });
+
+  // Разбор 2026-09-03, Д1/Д2: вердикт «кража» обязан быть идемпотентен, а
+  // 401 обязан стирать мёртвую куку — иначе она предъявляется снова и снова.
+  it('мёртвая семья: повторное предъявление той же куки после кражи — 401 без повторного алерта, кука стирается', async () => {
+    resetRefreshThrottle();
+    const family = randomUUID();
+    const first = await seedSession(family);
+    const securityLog = app.get(SecurityLogService);
+    const logSpy = jest.spyOn(securityLog, 'log');
+
+    await agePast(family);
+    const second = cookieFrom(await refresh(first));
+    // Наследником воспользовался легитимный клиент — цепочка продвинута.
+    await agePast(family);
+    await refresh(second);
+
+    const theftRes = await refresh(first); // первая кража
+    expect(theftRes.status).toBe(401);
+    const theftCalls = logSpy.mock.calls.filter(
+      ([event]) => event === 'refresh_token_reuse',
+    );
+    expect(theftCalls).toHaveLength(1);
+    expect(theftCalls[0][1]).toEqual(expect.objectContaining({ family }));
+
+    // Та же мёртвая кука предъявлена ПОВТОРНО (телефон открыли снова).
+    const echoRes = await refresh(first);
+    expect(echoRes.status).toBe(401);
+    const stillOne = logSpy.mock.calls.filter(
+      ([event]) => event === 'refresh_token_reuse',
+    );
+    expect(stillOne).toHaveLength(1); // не выросло — эхо, не новое событие
+    expect(refreshCookieCleared(echoRes)).toBe(true);
+    logSpy.mockRestore();
   });
 });

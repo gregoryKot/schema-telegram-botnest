@@ -18,6 +18,7 @@ import { sendMagicLink } from './magic-link';
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
+import { revokeFamilyAndAlert } from './refresh-theft';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -509,11 +510,16 @@ export class AuthService {
       if (verdict.outcome === 'recover')
         return this.issueRotated(session, rawRefresh, ip, userAgent);
       if (verdict.outcome === 'theft' && session.family) {
-        await this.revokeFamilyExcept(session.family, null);
-        this.securityLog.log('refresh_token_reuse', {
-          userId: session.userId,
-          family: session.family,
-        });
+        await revokeFamilyAndAlert(
+          {
+            prisma: this.prisma,
+            onAlert: (userId, family) =>
+              this.securityLog.log('refresh_token_reuse', { userId, family }),
+            onEcho: (msg) => this.logger.warn(msg),
+          },
+          session.family,
+          session.userId,
+        );
       }
       throw new UnauthorizedException('Refresh token already used or expired');
     }
@@ -568,20 +574,6 @@ export class AuthService {
 
   private hashToken(raw: string): string {
     return crypto.createHash('sha256').update(raw).digest('hex');
-  }
-
-  private async revokeFamilyExcept(
-    family: string,
-    exceptHash: string | null,
-  ): Promise<void> {
-    await this.prisma.webSession.updateMany({
-      where: {
-        family,
-        revokedAt: null,
-        ...(exceptHash ? { tokenHash: { not: exceptHash } } : {}),
-      },
-      data: { revokedAt: new Date() },
-    });
   }
 
   private generateWebUserId(): bigint {

@@ -241,6 +241,44 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
+  // Разбор 2026-09-03: владелец получал DM refresh_token_reuse десятки раз с
+  // одной и той же family — вердикт «кража» не был идемпотентен. Мёртвая
+  // кука в телефоне живёт до 30 дней и предъявляется снова при каждом
+  // открытии приложения; после первого revokeFamilyExcept семья уже мертва,
+  // и повтор не должен слать второй DM.
+  it('первая кража → securityLog.log вызван РОВНО ОДИН раз с userId/family', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(securityLog.log).toHaveBeenCalledWith('refresh_token_reuse', {
+      userId: 1n,
+      family: expect.any(String),
+    });
+  });
+
+  it('повтор той же мёртвой куки после кражи → 401, но securityLog.log НЕ вызывается снова (эхо, не новое событие)', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+
+    // Та же мёртвая кука предъявлена ПОВТОРНО (телефон открыли снова).
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1); // не выросло
+  });
+
   it('ответ ротации не доехал — СПУСТЯ СУТКИ старый токен всё ещё впускает', async () => {
     const { svc, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
