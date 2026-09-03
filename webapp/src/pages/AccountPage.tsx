@@ -105,6 +105,9 @@ export function AccountPage() {
   // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
   // unlinkProvider хранит, какой провайдер подтверждаем (null = диалог закрыт).
   const [unlinkProvider, setUnlinkProvider] = useState<Provider['provider'] | null>(null);
+  // «Выйти со всех устройств» отзывает ВСЕ сессии (?all=true) — ощутимее
+  // обычного выхода, поэтому через подтверждение.
+  const [logoutAllOpen, setLogoutAllOpen] = useState(false);
 
   const performUnlink = async (provider: Provider['provider']) => {
     setUnlinkProvider(null);
@@ -206,6 +209,20 @@ export function AccountPage() {
       <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 'var(--r-12)', padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
         Выйти
       </button>
+
+      <button onClick={() => setLogoutAllOpen(true)} style={{ marginTop: 10, width: '100%', background: 'transparent', border: 'none', color: 'var(--text-faint)', padding: '4px 0', fontSize: 13, cursor: 'pointer' }}>
+        Выйти со всех устройств
+      </button>
+
+      {logoutAllOpen && (
+        <ConfirmDialog
+          title="Выйти со всех устройств?"
+          message="Сессии на всех устройствах завершатся. Данные останутся на месте — войти можно будет снова."
+          confirmLabel="Выйти везде"
+          onConfirm={() => { setLogoutAllOpen(false); void logout(true); }}
+          onCancel={() => setLogoutAllOpen(false)}
+        />
+      )}
 
       {unlinkProvider && (
         <ConfirmDialog

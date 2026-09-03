@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { markAuthSeen, clearAuthSeen } from '../../../shared/src/auth/authSeen';
+import { postLogout } from '../../../shared/src/auth/logout';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
 import { refreshSession } from './refreshSession';
@@ -100,13 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setAccessToken = applyToken;
 
   const logout = useCallback(async (all = false) => {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout${all ? '?all=true' : ''}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'x-requested-with': 'webapp', 'Content-Type': 'application/json' },
-      });
-    } catch { /* ignore */ }
+    // Сетевой шаг — общий с мини-аппом (shared/auth/logout, правило №3).
+    await postLogout(API_BASE, { all, requestedWith: 'webapp' });
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     hasToken.current = false;
     setTokenState(null);
