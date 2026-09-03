@@ -4,8 +4,13 @@
 // Здесь проверяем связку «401 → перевыпуск сессии → повтор», включая случай,
 // когда чинить нечем: тогда экран обязан узнать об этом событием.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { get, post } from './apiClient';
-import { clearSession, SESSION_EXPIRED_EVENT } from './session';
+import { authedFetch, get, post } from './apiClient';
+import {
+  authHeaders,
+  clearSession,
+  ensureSession,
+  SESSION_EXPIRED_EVENT,
+} from './session';
 import { REFRESH_RETRY_DELAYS_MS } from '../../shared/src/auth/sessionRefresh';
 import { clearApiCache } from '../../shared/src/api/apiCache';
 
@@ -16,6 +21,9 @@ function jsonRes(status: number, body: unknown = {}) {
     json: vi.fn().mockResolvedValue(body),
   };
 }
+
+const okAccessToken = (token: string) =>
+  jsonRes(200, { accessToken: token, expiresIn: 900 });
 
 function fetchMock() {
   return global.fetch as unknown as ReturnType<typeof vi.fn>;
@@ -213,5 +221,54 @@ describe('веб-хост (PWA): обмен куки ДО первого зап�
     expect(urls()).toContain('/api/needs');
     expect(listener).toHaveBeenCalled();
     window.removeEventListener(SESSION_EXPIRED_EVENT, listener);
+  });
+
+  // Инцидент 31.08.2026 (авария БД) заодно проявил дыру в покрытии: у сайта
+  // тест «токен истёк посреди работы» есть (webapp/src/auth/AuthContext.test.tsx),
+  // у мини-аппа — только «протухшая initData на старте» (см. describe выше) и
+  // «нет токена вовсе». Здесь — тот же access-токен ПОСЛЕ выдачи доживает до
+  // истечения (реальное продвижение времени, не прямой мок 401 с нуля):
+  // тихий одиночный refresh, повтор с новым Bearer, без единого события
+  // «сессия истекла».
+  it('access-токен истёк посреди работы: один тихий refresh, повтор с новым Bearer, markSessionExpired молчит', async () => {
+    vi.useFakeTimers();
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+
+    // Bootstrap: веб-хост без куки/подписи — первый обмен идёт через ensureSession.
+    fetchMock().mockResolvedValueOnce(okAccessToken('tok-1'));
+    await ensureSession();
+    expect(authHeaders().Authorization).toBe('Bearer tok-1');
+
+    // Токен ещё свежий — запрос уходит с Bearer, сессию никто не трогает.
+    fetchMock().mockClear();
+    fetchMock().mockResolvedValueOnce(jsonRes(200, { ok: true }));
+    const freshRes = await authedFetch('/api/needs');
+    expect(freshRes.status).toBe(200);
+    expect(urls()).toEqual(['/api/needs']);
+
+    // Время уходит за expiresIn (900с) — токен считается протухшим.
+    fetchMock().mockClear();
+    await vi.advanceTimersByTimeAsync(900_000);
+
+    // Следующий запрос: без свежего Bearer (веб-хост не шлёт подпись) → 401 →
+    // ровно один refresh → повтор исходного запроса с НОВЫМ Bearer.
+    fetchMock()
+      .mockResolvedValueOnce(jsonRes(401, {}))
+      .mockResolvedValueOnce(okAccessToken('tok-2'))
+      .mockResolvedValueOnce(jsonRes(200, { fresh: true }));
+
+    const res = await authedFetch('/api/needs');
+    expect(await res.json()).toEqual({ fresh: true });
+    expect(urls()).toEqual(['/api/needs', '/api/auth/refresh', '/api/needs']);
+    expect(urls().filter((u) => u === '/api/auth/refresh')).toHaveLength(1);
+    const [, retryInit] = fetchMock().mock.calls[2] as [string, RequestInit];
+    expect((retryInit.headers as Record<string, string>).Authorization).toBe(
+      'Bearer tok-2',
+    );
+    expect(onExpired).not.toHaveBeenCalled();
+
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    vi.useRealTimers();
   });
 });

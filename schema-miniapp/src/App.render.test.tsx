@@ -19,6 +19,7 @@ import {
 } from './test-support/App.test-helpers';
 import { defaultFlags } from './test-support/App.test-fixtures';
 import { api } from './api';
+import { isSessionDead, lastRenewFailure } from './session';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -32,6 +33,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  // vi.clearAllMocks() (beforeEach) не откатывает mockReturnValue — тесты
+  // pickErrorScreen ниже переопределяют дефолт из App.test-fixtures.ts явно,
+  // возвращаем его, чтобы не утекало в соседние describe.
+  vi.mocked(isSessionDead).mockReturnValue(false);
+  vi.mocked(lastRenewFailure).mockReturnValue(null);
 });
 
 describe('App — состояние загрузки: скелетон по форме экрана, не спиннер', () => {
@@ -62,6 +68,34 @@ describe('App — ошибка начальной загрузки видна п
     );
     expect(screen.getByText('Повторить')).toBeTruthy();
     expect(screen.queryByTestId('app-sections')).toBeNull();
+  });
+});
+
+// Инцидент 31.08.2026: авария БД (каждый запрос отвечал 500, включая
+// refresh) показала владельцу ярлычного приложения «Не удалось войти» с
+// подсказкой про Telegram — хотя вход был ни при чём, сломан сервер.
+describe('App — 401 без Bearer, но refresh только что кончился transient — «нет связи», не «не удалось войти»', () => {
+  it('показывает ConnectionTrouble с кнопкой «Повторить», а не AppErrorScreen', async () => {
+    vi.mocked(isSessionDead).mockReturnValue(false);
+    vi.mocked(lastRenewFailure).mockReturnValue('transient');
+    mockApi.needs.mockRejectedValueOnce(new Error('API error: 401'));
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByText('Сервер не отвечает')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Не удалось войти')).toBeNull();
+    expect(screen.queryByText('Не удалось загрузить')).toBeNull();
+  });
+
+  it('контрольный: тот же 401, но lastFailure=null (реально не удалось войти) — auth-help, не connection', async () => {
+    vi.mocked(isSessionDead).mockReturnValue(false);
+    vi.mocked(lastRenewFailure).mockReturnValue(null);
+    mockApi.needs.mockRejectedValueOnce(new Error('API error: 401'));
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByText('Не удалось войти')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Сервер не отвечает')).toBeNull();
   });
 });
 

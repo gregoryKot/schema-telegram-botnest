@@ -19,7 +19,7 @@ function MetrikaTracker() {
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/authContext';
 import { setTokenProvider, setRefreshHandler } from './api';
-import { ConnectionTrouble } from './components/ConnectionTrouble';
+import { ConnectionTrouble } from '../../shared/src/components/ConnectionTrouble';
 import { LoginPage } from './pages/LoginPage';
 import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
@@ -61,9 +61,9 @@ function TokenBridge() {
 }
 // ── Auth guard as a layout route ───────────────────────────────────────────────
 function RequireAuth() {
-  const { isAuthenticated, isLoading, authError } = useAuth();
+  const { isAuthenticated, isLoading, authError, refreshToken } = useAuth();
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble /> : <Navigate to="/login" replace />;
+  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={() => void refreshToken()} /> : <Navigate to="/login" replace />;
   return (
     <AddressFormProvider>
       <AddressFormPicker />

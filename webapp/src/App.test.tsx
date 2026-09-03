@@ -190,7 +190,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     const App = await loadApp();
     render(<App />);
 
-    await screen.findByText('Нет связи с сервером', {}, { timeout: 3000 });
+    await screen.findByText('Сервер не отвечает', {}, { timeout: 3000 });
     expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
   });
 });
