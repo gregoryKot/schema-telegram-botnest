@@ -142,6 +142,40 @@ describe('AuthController.refresh', () => {
   // гонки (см. refresh-rotation.ts). rotated:false → сервис отдаёт тот же
   // refreshToken, что пришёл, и контроллер обязан НЕ трогать Set-Cookie —
   // иначе TTL куки продлевался бы на каждой загрузке страницы почём зря.
+  // Разбор 2026-09-03: 401 на refresh раньше не чистил куку — клиент считает
+  // 401 окончательной смертью сессии (уходит на экран входа), а мёртвая кука
+  // оставалась в jar и предъявлялась снова при каждом открытии приложения.
+  it('rotateRefreshToken бросил 401 → куки стираются, ошибка пробрасывается', async () => {
+    const { auth, mocks } = makeAuth();
+    mocks.rotateRefreshToken.mockRejectedValue(
+      new UnauthorizedException('Refresh token already used or expired'),
+    );
+    const controller = makeController(auth);
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'dead-cookie' } });
+    const { res, mocks: resMocks } = makeRes();
+
+    await expect(controller.refresh(req, res)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(resMocks.clearCookie).toHaveBeenCalledWith(REFRESH_COOKIE, {
+      path: '/api/auth',
+    });
+    expect(resMocks.clearCookie).toHaveBeenCalledWith(CROSS_SITE_COOKIE, {
+      path: '/api/auth',
+    });
+  });
+
+  it('rotateRefreshToken упал НЕ-Unauthorized ошибкой (500) → куки НЕ трогает, сессия жива', async () => {
+    const { auth, mocks } = makeAuth();
+    mocks.rotateRefreshToken.mockRejectedValue(new Error('DB down'));
+    const controller = makeController(auth);
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'ref-1' } });
+    const { res, mocks: resMocks } = makeRes();
+
+    await expect(controller.refresh(req, res)).rejects.toThrow('DB down');
+    expect(resMocks.clearCookie).not.toHaveBeenCalled();
+  });
+
   it('rotated:false (частая ротация подавлена) → access новый, Set-Cookie не выставляется', async () => {
     const { auth, mocks } = makeAuth();
     mocks.rotateRefreshToken.mockResolvedValue({

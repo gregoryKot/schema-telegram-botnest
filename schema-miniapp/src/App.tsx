@@ -46,14 +46,12 @@ import { prefetchOtherSectionsData } from './utils/prefetchSectionData';
 import { usePrerenderSections } from './utils/usePrerenderSections';
 import { usePerfTapTracking } from './utils/usePerfTapTracking';
 import { preloadDiarySheets } from './components/LazyDiarySheets';
-import { AppErrorScreen } from './components/AppErrorScreen';
-import { LoginScreen } from './components/LoginScreen';
+import { AppErrorRouter } from './components/AppErrorRouter';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
-import { shouldShowLoginScreen } from './utils/loginScreenGate';
-import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
+import { ensureSession } from './session';
 import { syncFromServer } from './utils/uiPrefsSync';
 import { logErr } from './utils/logErr';
 
@@ -565,14 +563,9 @@ export default function App() {
     );
   }
 
+  // Экран входа / «нет связи» / ошибка — разбор в components/AppErrorRouter.
   if (error || sessionExpired) {
-    // В браузере отсутствие сессии значит «не входил», а не «истекла» —
-    // рисуем экран входа. В Telegram/MAX поведение прежнее (см.
-    // utils/loginScreenGate.ts).
-    if (sessionExpired && shouldShowLoginScreen()) return <LoginScreen />;
-    return (
-      <AppErrorScreen error={sessionExpired ? SESSION_EXPIRED_ERROR : error!} />
-    );
+    return <AppErrorRouter error={error} sessionExpired={sessionExpired} />;
   }
 
   return (

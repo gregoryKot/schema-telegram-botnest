@@ -17,6 +17,9 @@ vi.mock('../session', () => ({
   clearSession: vi.fn(),
   markSessionExpired: vi.fn(),
   authHeaders: vi.fn(() => ({})),
+  // pickErrorScreen: голый 401 в тестах → «не удалось войти», не «нет связи».
+  isSessionDead: vi.fn(() => false),
+  lastRenewFailure: vi.fn(() => null),
 }));
 
 const DEFAULT_FLAGS: UserFlags = {

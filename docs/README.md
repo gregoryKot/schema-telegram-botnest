@@ -16,6 +16,8 @@
 | [BOOKING_SETUP.md](BOOKING_SETUP.md) | Настройка записи на консультации: env-переменные Zoom, CalDAV, Robokassa. |
 | [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md) | Активный план по тестам (v2, 2026-07-20). Продолжение закрытого `archive/TEST_COVERAGE_PLAN.md`. |
 | [PWA_PLAN.md](PWA_PLAN.md) | План устанавливаемой PWA на базе webapp + web-push. Статус: не начат. |
+| [GAME_ANALYSIS.md](GAME_ANALYSIS.md) | Анализ игры `game/` (2026-09-03) по четырём срезам: сюжет, интерес, вовлечение в терапию, качество, плюс воронка. Реестр находок с `file:line`. |
+| [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md) | План улучшений игры по находкам анализа: Этап 0 до плейтеста, выбор в механике, терапевтический мост, полировка. Вопросы владельцу — там же. |
 | [security/](security/) | Реестр security-находок (`AUDIT_FINDINGS.md`), модель угроз, покрытие. |
 
 ## Архив

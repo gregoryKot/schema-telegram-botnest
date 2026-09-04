@@ -25,6 +25,16 @@ describe('clearLocalData', () => {
     expect(sessionStorage.getItem('temp')).toBeNull();
   });
 
+  it('keep-ключа нет в хранилище → не восстанавливает его (ветка v === null)', () => {
+    // Ни тема, ни cookie-баннер не заданы — цикл восстановления идёт по ветке
+    // «значения нет» и ничего не пишет обратно; хранилище остаётся пустым.
+    localStorage.setItem('ysq_progress', 'черновик');
+    clearLocalData();
+    expect(localStorage.getItem('ysq_progress')).toBeNull();
+    expect(localStorage.getItem('app_theme')).toBeNull();
+    expect(localStorage.length).toBe(0);
+  });
+
   it('недоступное хранилище (приватный режим/квота) не роняет выход', () => {
     vi.spyOn(Storage.prototype, 'clear').mockImplementation(() => {
       throw new Error('SecurityError');

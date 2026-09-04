@@ -1,6 +1,7 @@
 import { ConsoleLogger } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { AlertBudget } from '../utils/alert-throttle';
+import { isDbUnreachable, dbOutage, DB_ALERT_SUBJECT } from './db-outage';
 
 export class AlertLogger extends ConsoleLogger {
   // Simple in-memory throttle: don't send same error more than once per 60s
@@ -23,6 +24,15 @@ export class AlertLogger extends ConsoleLogger {
   }
 
   private alert(message: string) {
+    // Недоступность БД (инцидент 2026-08-31) рассыпается на десятки разных по
+    // тексту сообщений — по ключу их не свести, и шторм проходит мимо обоих
+    // троттлов ниже. Ветка ведёт всю аварию как ОДНУ (см. ./db-outage.ts).
+    if (isDbUnreachable(message)) {
+      const { text } = dbOutage.note(message);
+      if (text) void notifyAdminWithFallback(text, DB_ALERT_SUBJECT);
+      return;
+    }
+
     const now = Date.now();
     // Evict entries older than 1 hour to prevent unbounded Map growth
     for (const [k, t] of this.seen)

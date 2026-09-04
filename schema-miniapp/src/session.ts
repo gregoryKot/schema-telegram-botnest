@@ -33,10 +33,10 @@ let accessExpiresAt = 0;
 let inFlight: Promise<boolean> | null = null;
 let bootstrapped: Promise<boolean> | null = null;
 let deadUntil = 0;
-// true — только если сервер ЯВНО отказал (401/403), не при сети/5xx
-// (2026-08-21). apiClient.ts различает по флагу — временную беду не
-// показывает как «сессия истекла».
-let lastFailureDead = false;
+// 'dead' — только если сервер ЯВНО отказал (401/403), 'transient' — сеть/5xx
+// (2026-08-21), null — попытка удалась или её не было. apiClient.ts различает
+// по значению — временную беду не показывает как «сессия истекла».
+let lastRenewFailureKind: 'dead' | 'transient' | null = null;
 
 function tokenIsFresh(now = Date.now()): boolean {
   return !!accessToken && now + EXPIRY_SKEW_MS < accessExpiresAt;
@@ -49,7 +49,7 @@ function remember(token: string, expiresIn: number): void {
   accessToken = token;
   accessExpiresAt = Date.now() + expiresIn * 1000;
   deadUntil = 0;
-  lastFailureDead = false;
+  lastRenewFailureKind = null;
 }
 
 export function clearSession(): void {
@@ -58,7 +58,7 @@ export function clearSession(): void {
   inFlight = null;
   bootstrapped = null;
   deadUntil = 0;
-  lastFailureDead = false;
+  lastRenewFailureKind = null;
 }
 
 /** Заголовки запроса: Bearer, если сессия жива, иначе (первый вход) initData. */
@@ -91,8 +91,8 @@ export function renewSession(): Promise<boolean> {
         return true;
       }
       // Кулдаун общий для «сессия мертва» и «ретраи исчерпаны», а
-      // lastFailureDead хранит, ЧЕМ именно кончилось, для authedFetch.
-      lastFailureDead = result.dead;
+      // lastRenewFailureKind хранит, ЧЕМ именно кончилось, для authedFetch.
+      lastRenewFailureKind = result.dead ? 'dead' : 'transient';
       deadUntil = Date.now() + DEAD_SESSION_COOLDOWN_MS;
       return false;
     })
@@ -105,7 +105,14 @@ export function renewSession(): Promise<boolean> {
 /** true — сессию не восстановить, сервер подтвердил (401/403). Отличает
  *  «показать экран входа» от «сеть барахлит, оставить в приложении». */
 export function isSessionDead(): boolean {
-  return lastFailureDead && Date.now() < deadUntil;
+  return lastRenewFailureKind === 'dead' && Date.now() < deadUntil;
+}
+
+/** Чем кончилась ПОСЛЕДНЯЯ попытка перевыпуска. В отличие от isSessionDead
+ *  не гаснет с кулдауном: экран ошибки решает по ней, «нет связи» это или
+ *  «не удалось войти» (инцидент 31.08.2026, utils/pickErrorScreen.ts). */
+export function lastRenewFailure(): 'dead' | 'transient' | null {
+  return lastRenewFailureKind;
 }
 
 /** Может ли запрос авторизоваться прямо сейчас: живой Bearer или подпись
@@ -144,6 +151,6 @@ export function markSessionExpired(): void {
 registerSessionRetryListeners({
   renewSession,
   clearTransientCooldown: () => {
-    if (!lastFailureDead) deadUntil = 0;
+    if (lastRenewFailureKind !== 'dead') deadUntil = 0;
   },
 });
