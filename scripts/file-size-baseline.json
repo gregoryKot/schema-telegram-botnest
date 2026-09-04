@@ -530,7 +530,7 @@
   "scripts/second-person-blanking.mjs": 140,
   "scripts/second-person-patterns.mjs": 243,
   "scripts/setup-merge-drivers.mjs": 146,
-  "scripts/silent-catch-rules.mjs": 108,
+  "scripts/silent-catch-rules.mjs": 118,
   "shared/src/account/accountLinkText.ts": 72,
   "shared/src/account/linkTarget.ts": 56,
   "shared/src/analytics/useCrisisCardTracking.ts": 26,

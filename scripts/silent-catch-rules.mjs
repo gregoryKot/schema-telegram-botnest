@@ -105,4 +105,14 @@ export const FILE_ALLOW = new Set([
   // компонент»). Границу держит silent-catch.spec.ts: тот же код в другом
   // файле по-прежнему считается долгом.
   'shared/src/utils/safeLocalStorage.ts',
+  // Сетевой шаг выхода (POST /api/auth/logout): best-effort по контракту —
+  // сервер может не ответить (сеть легла), но локальный выход обязан
+  // состояться, поэтому reject глотается намеренно. Тот же «никогда не
+  // бросать», что у телеметрии выше. Граница — silent-catch.spec.ts.
+  'shared/src/auth/logout.ts',
+  // Чистка локального хранилища при выходе: localStorage.clear()/
+  // sessionStorage.clear() роняет отказ хранилища (приватный режим/квота), а
+  // выход всё равно должен состояться. Тот же best-effort, что у
+  // safeLocalStorage (её шапка называет этот файл соседним случаем).
+  'shared/src/auth/clearLocalData.ts',
 ]);
