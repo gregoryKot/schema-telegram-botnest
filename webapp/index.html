@@ -190,6 +190,11 @@
     <link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/spectral-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <script src="/telegram-web-app.js" async></script>
+    <!-- Google Identity Services: нативная всплывашка One Tap на экране входа
+         (webapp/src/hooks/useGoogleOneTap.ts). Грузится и работает, только если
+         задан VITE_GOOGLE_CLIENT_ID и origin разрешён в Google Cloud Console —
+         иначе тихо не показывается, остаются обычные кнопки входа. -->
+    <script src="https://accounts.google.com/gsi/client" async></script>
   </head>
   <body>
     <div id="root"></div>

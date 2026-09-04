@@ -178,6 +178,7 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'POST /api/auth/unlink/:param', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/google', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/google/callback', reason: REASON.AUTH_LOGIN },
+  { route: 'POST /api/auth/google/one-tap', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram-oidc', reason: REASON.AUTH_LOGIN },

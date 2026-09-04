@@ -28,7 +28,7 @@ export class GoogleProvider implements AuthProviderHandler {
   // (The legacy implicit flow — response_type=id_token + response_mode=form_post
   // — is deprecated and relied on a SameSite=None cookie that third-party-cookie
   // phase-out breaks, so we no longer use it.)
-  buildAuthUrl(state: string): string {
+  buildAuthUrl(state: string, _nonce?: string, forceChooser = false): string {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
     const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
     const params = new URLSearchParams({
@@ -38,8 +38,15 @@ export class GoogleProvider implements AuthProviderHandler {
       scope: 'openid email profile',
       state,
       access_type: 'online',
-      prompt: 'select_account',
     });
+    // ВХОД: `prompt` не ставим. Google сам вернёт уже вошедшего одним касанием
+    // («Continue as X»), а если аккаунтов несколько или сессии нет — покажет
+    // выбор. Прежний хардкод `prompt=select_account` заставлял ЗАНОВО выбирать
+    // аккаунт на каждый вход — это и читалось как «авторизация с нуля».
+    // ПРИВЯЗКА второго аккаунта (forceChooser): выбор оставляем принудительным,
+    // чтобы человек не прицепил случайно уже открытый в браузере Google вместо
+    // нужного (разбор 2026-08-31).
+    if (forceChooser) params.set('prompt', 'select_account');
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   }
 
@@ -94,7 +101,7 @@ export class GoogleProvider implements AuthProviderHandler {
         );
         throw new UnauthorizedException('Google token exchange failed');
       }
-      return this.decodeIdentity(data.id_token);
+      return this.verifyIdToken(data.id_token);
     }
 
     this.logger.error(
@@ -104,8 +111,11 @@ export class GoogleProvider implements AuthProviderHandler {
   }
 
   // Проверка id_token (подпись по JWKS + issuer/audience) живёт в
-  // google-id-token.ts — там же ветка на случай недостижимого JWKS.
-  private async decodeIdentity(idToken: string): Promise<ProviderIdentity> {
+  // google-id-token.ts — там же ветка на случай недостижимого JWKS. Публичный:
+  // тем же путём проверяется id_token, пришедший от Google One Tap напрямую в
+  // браузер (POST /api/auth/google/one-tap) — те же издатель/получатель/срок и
+  // тот же отказ на подделке, что и у обмена кода.
+  async verifyIdToken(idToken: string): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
 
     let claims: Awaited<ReturnType<typeof verifyGoogleIdToken>>;

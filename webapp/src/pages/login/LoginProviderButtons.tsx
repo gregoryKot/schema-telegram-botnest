@@ -7,6 +7,7 @@ import {
 import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWait';
 import { botUsername } from '../../utils/botConfig';
 import { reportClientError } from '../../api';
+import { useGoogleOneTap } from '../../hooks/useGoogleOneTap';
 
 // Вход по билету — та же механика, что у мини-аппа (правило №3 и «одна
 // механика — один компонент»: общий хук в shared/src/auth/useLoginTicket).
@@ -65,6 +66,17 @@ export function LoginProviderButtons({
     apiBase: API_BASE,
     onSession,
     reportError: reportClientError,
+  });
+
+  // Нативная всплывашка Google One Tap поверх кнопок: уже вошедшему в Google —
+  // «Продолжить как …» одним касанием, без ухода на страницу Google. 2FA-аккаунт
+  // уводим на ввод кода той же страницей, что и редирект-флоу.
+  useGoogleOneTap({
+    enabled: true,
+    onSession,
+    onTwofa: (token) =>
+      window.location.assign(`/auth/2fa?token=${encodeURIComponent(token)}`),
+    onError: reportClientError,
   });
 
   // Билет выписывается при открытии экрана, а не по нажатию: иначе на ссылку

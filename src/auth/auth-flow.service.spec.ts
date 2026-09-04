@@ -404,7 +404,8 @@ describe('AuthFlowService.oauthRedirect', () => {
     // Buffer/JSON.parse напрямую.
     const state = res.cookie.mock.calls[0][1] as string;
     expect(svc.linkUserIdFromState(state)).toBe(999n);
-    expect(buildAuthUrl).toHaveBeenCalledWith(state);
+    // Есть webUser → ПРИВЯЗКА → forceChooser=true (принудительный выбор аккаунта).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, true);
     expect(res.redirect).toHaveBeenCalledWith(
       'https://accounts.google.com/o/authorize?x=1',
     );
@@ -424,6 +425,9 @@ describe('AuthFlowService.oauthRedirect', () => {
     svc.oauthRedirect('google', req, res);
     const state = res.cookie.mock.calls[0][1] as string;
     expect(svc.linkUserIdFromState(state)).toBeNull();
+    // Нет webUser → ВХОД → forceChooser=false: Google впустит уже вошедшего
+    // одним касанием, а не «с нуля» (разбор 2026-08-31).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
   });
 
   it('провайдер не поддерживает OAuth (нет buildAuthUrl) → BadRequestException', () => {
