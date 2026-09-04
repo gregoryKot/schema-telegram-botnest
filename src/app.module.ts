@@ -27,6 +27,7 @@ import { ArticlesModule } from './articles/articles.module';
 import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
 import { practiceDomainMiddleware } from './practice-domain.middleware';
 import { SiteContentModule } from './site-content/site-content.module';
+import { DbOutageMonitorService } from './infra/db-outage.service';
 
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
@@ -73,7 +74,10 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
     ArticlesModule,
     SiteContentModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: UserThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
+    DbOutageMonitorService,
+  ],
 })
 export class AppModule implements NestModule {
   // configure() runs before ServeStaticModule.onModuleInit(), so this

@@ -17,7 +17,6 @@ export interface RotatingSession {
   /** Хеш прежнего наследника — есть только при восстановлении. */
   replacedByHash: string | null;
 }
-
 export interface IssueRotatedDeps {
   prisma: PrismaService;
   hashToken: (raw: string) => string;
@@ -25,14 +24,12 @@ export interface IssueRotatedDeps {
   accessTtlS: number;
   refreshTtlS: number;
 }
-
 export interface RotatedPair {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
   rotated: true;
 }
-
 /** Пара «только access, кука прежняя»: свежий доступ на том же refresh. */
 export interface AccessOnlyPair {
   accessToken: string;
@@ -69,7 +66,10 @@ export function accessOnlyPair(
  * `updateMany` с условием `revokedAt: null`, и наследника создаём ТОЛЬКО при
  * `count === 1` (мы выиграли гонку). Postgres READ COMMITTED сериализует два
  * таких updateMany на одной строке: проигравший видит `revokedAt` уже
- * непустым и получает `count === 0`.
+ * непустым и получает `count === 0`. Тот же claim при восстановлении писал
+ * НАСЛЕДНИКУ только `revokedAt`, без `replacedByHash`: поздний живой ответ
+ * старой ротации находил сироту без исходящей связи и улетал в `theft`.
+ * Теперь claim сразу репойнтит его на нового наследника — уходит в `recover`.
  */
 export async function issueRotatedPair(
   deps: IssueRotatedDeps,
@@ -91,7 +91,7 @@ export async function issueRotatedPair(
       // refresh-rotation.ts).
       const claim = await tx.webSession.updateMany({
         where: { tokenHash: session.replacedByHash, revokedAt: null },
-        data: { revokedAt: now },
+        data: { revokedAt: now, replacedByHash: newHash },
       });
       if (claim.count === 0) return false;
       await tx.webSession.update({

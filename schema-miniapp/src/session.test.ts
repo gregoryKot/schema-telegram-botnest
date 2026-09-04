@@ -17,6 +17,7 @@ import {
   ensureSession,
   hasInstantAuth,
   isSessionDead,
+  lastRenewFailure,
   renewSession,
   markSessionExpired,
   SESSION_EXPIRED_EVENT,
@@ -182,6 +183,37 @@ describe('renewSession', () => {
     await vi.advanceTimersByTimeAsync(REFRESH_RETRY_DELAYS_MS[0]);
     await expect(promise).resolves.toBe(true);
     expect(authHeaders().Authorization).toBe('Bearer recovered');
+  });
+});
+
+// lastRenewFailure() — экспорт для App.tsx/pickErrorScreen.ts (инцидент
+// 31.08.2026): в отличие от isSessionDead() не гаснет с кулдауном, различает
+// «сервер подтвердил отказ» и «просто не достучались».
+describe('lastRenewFailure', () => {
+  it('null, пока ничего не ломалось', () => {
+    expect(lastRenewFailure()).toBeNull();
+  });
+
+  it('после успешного перевыпуска — null', async () => {
+    fetchMock().mockResolvedValueOnce(okToken());
+    await renewSession();
+    expect(lastRenewFailure()).toBeNull();
+  });
+
+  it('401/403 от refresh И exchange — dead', async () => {
+    fetchMock().mockResolvedValue(jsonRes(401, {}));
+    await renewSession();
+    expect(lastRenewFailure()).toBe('dead');
+  });
+
+  it('сеть/5xx — transient, даже когда isSessionDead() уже false вне кулдауна', async () => {
+    vi.useFakeTimers();
+    fetchMock().mockResolvedValue(jsonRes(500, {}));
+    const promise = renewSession();
+    await flushRetryBackoff();
+    await promise;
+    expect(lastRenewFailure()).toBe('transient');
+    expect(isSessionDead()).toBe(false);
   });
 });
 

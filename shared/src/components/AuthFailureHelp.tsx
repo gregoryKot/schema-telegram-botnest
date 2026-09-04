@@ -10,13 +10,22 @@
 import type { HostId } from '../host/types';
 import { supportContact } from '../utils/supportContact';
 
+// Подсказка — по площадке, все три явно. Раньше «всё, что не MAX, — Telegram»,
+// и веб-хост (PWA с ярлыка, вкладка браузера) получал совет переоткрыть
+// мессенджер, которого в этом сценарии нет (инцидент 31.08.2026).
+const AUTH_FAILURE_HINTS: Record<HostId, string> = {
+  max: 'Попробовать закрыть приложение полностью и открыть заново — MAX выдаст свежий пропуск. Не помогло — дело на нашей стороне.',
+  telegram:
+    'Попробовать закрыть приложение полностью и открыть заново — Telegram выдаст свежий пропуск. Не помогло — дело на нашей стороне.',
+  web: 'Попробовать войти заново — кнопка ниже. Не помогло — дело на нашей стороне.',
+};
+
 export function AuthFailureHelp({ hostId }: { hostId: HostId | undefined }) {
   const { url, label } = supportContact(hostId);
-  const hostName = hostId === 'max' ? 'MAX' : 'Telegram';
   return (
     <>
       <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-        {`Попробовать закрыть приложение полностью и открыть заново — ${hostName} выдаст свежий пропуск. Не помогло — дело на нашей стороне.`}
+        {AUTH_FAILURE_HINTS[hostId ?? 'web']}
       </div>
       <a
         href={url}

@@ -17,13 +17,13 @@ import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import type { Request, Response } from 'express';
 import {
-  CROSS_SITE_COOKIE,
   REFRESH_COOKIE,
   getCookie,
   isCrossSiteSession,
   requireCsrf,
   setRefreshCookie,
 } from './auth-http.util';
+import { clearCookies, clearCookiesOnAuthFailure } from './refresh-cookie';
 
 @Controller('api/auth')
 export class AuthController {
@@ -51,11 +51,9 @@ export class AuthController {
     requireCsrf(req, 'refresh', this.securityLog);
     const rawRefresh = getCookie(req, REFRESH_COOKIE);
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
-    const tokens = await this.auth.rotateRefreshToken(
-      rawRefresh,
-      req.ip,
-      req.headers['user-agent'],
-    );
+    const tokens = await this.auth
+      .rotateRefreshToken(rawRefresh, req.ip, req.headers['user-agent'])
+      .catch((err) => clearCookiesOnAuthFailure(res, err));
     // rotated:false → кука не переставляется (refresh-rotation.ts).
     if (tokens.rotated) {
       setRefreshCookie(
@@ -98,8 +96,7 @@ export class AuthController {
         await this.auth.revokeSession(rawRefresh);
       }
     }
-    res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
-    res.clearCookie(CROSS_SITE_COOKIE, { path: '/api/auth' });
+    clearCookies(res);
     return { ok: true };
   }
 
