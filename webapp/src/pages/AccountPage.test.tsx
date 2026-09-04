@@ -462,4 +462,41 @@ describe('AccountPage — выход', () => {
 
     expect(logout).toHaveBeenCalledTimes(1);
   });
+
+  it('«Выйти со всех устройств» открывает подтверждение и НЕ логаутит сразу', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    renderPage(authValue({ logout }));
+    await screen.findByText('Аккаунт');
+
+    fireEvent.click(screen.getByText('Выйти со всех устройств'));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Выйти со всех устройств?')).toBeTruthy();
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('подтверждение «Выйти везде» вызывает logout(true) — все сессии', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    renderPage(authValue({ logout }));
+    await screen.findByText('Аккаунт');
+
+    fireEvent.click(screen.getByText('Выйти со всех устройств'));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByText('Выйти везде'),
+    );
+
+    expect(logout).toHaveBeenCalledWith(true);
+  });
+
+  it('отмена в диалоге не логаутит', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    renderPage(authValue({ logout }));
+    await screen.findByText('Аккаунт');
+
+    fireEvent.click(screen.getByText('Выйти со всех устройств'));
+    fireEvent.click(within(screen.getByRole('dialog')).getByText('Отмена'));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(logout).not.toHaveBeenCalled();
+  });
 });
