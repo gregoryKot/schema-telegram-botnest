@@ -226,6 +226,7 @@ export class TutorialScene extends Phaser.Scene {
     const go = () => {
       if (!this.paused) return;
       this.input.keyboard!.off('keydown', go);
+      this.input.off('pointerdown', go); // иначе висел и листал следующий кадр вслепую
       this.narrContinue = null;
       this.paused = false;
       this.physics.resume();
