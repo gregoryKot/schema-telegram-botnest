@@ -11,7 +11,7 @@ import {
   conflictAlertText,
   type ReassignOutcome,
 } from './merge-subscriptions';
-import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { SecurityLogService } from './security-log.service';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -82,7 +82,10 @@ export function ident(name: string, kind: 'table' | 'col'): string {
 export class MergeService {
   private readonly logger = new Logger(MergeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly securityLog: SecurityLogService,
+  ) {}
 
   // Returns a row-count summary so the UI can present an informed merge
   // confirmation ("you'll move 87 ratings, 14 diary entries, …").
@@ -321,17 +324,19 @@ export class MergeService {
         (state.subs.kind === 'moved' ? state.subs.count : 0),
     );
     // Живые подписки с обеих сторон — редчайший случай про деньги, который
-    // нельзя решить кодом (какую отменить — не наше решение). Алерт шлётся
-    // ПОСЛЕ транзакции: сеть внутри неё держала бы блокировки, а отказ
-    // доставки не должен откатывать уже выполненное слияние.
+    // нельзя решить кодом (какую отменить — не наше решение). Идёт через
+    // SecurityLogService, а не прямым notifyAdminWithFallback: там уже есть
+    // бюджет DM (правило №14 — сигнализация без троттлинга мьютит чат ровно
+    // во время аварии). Сообщается ПОСЛЕ транзакции: сеть внутри неё держала
+    // бы блокировки, а недоставка не должна откатывать слияние.
     if (state.subs.kind === 'conflict') {
-      const text = conflictAlertText(sourceId, targetId, state.subs);
-      this.logger.error(text.replace(/\n+/g, ' '));
-      await notifyAdminWithFallback(text, 'Слияние аккаунтов').catch((err) =>
-        this.logger.error(
-          `не удалось доставить алерт о конфликте подписок: ${(err as Error)?.message}`,
-        ),
-      );
+      this.securityLog.log('merge_subscription_conflict', {
+        sourceId: String(sourceId),
+        targetId: String(targetId),
+        sourceLive: state.subs.sourceLive,
+        targetLive: state.subs.targetLive,
+        detail: conflictAlertText(sourceId, targetId, state.subs),
+      });
     }
   }
 }

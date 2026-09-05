@@ -8,6 +8,7 @@ import {
   reassignSubscriptions,
   conflictAlertText,
 } from './merge-subscriptions';
+import { MergeService } from './merge.service';
 
 const SRC = 111n;
 const TGT = 222n;
@@ -112,3 +113,66 @@ describe('conflictAlertText — админ получает разбираемы
     expect(text).toContain('двойное списание');
   });
 });
+
+// Ветка алерта в самом MergeService: конфликт обязан уйти в
+// SecurityLogService (там бюджет DM), а не прямым notifyAdminWithFallback —
+// правило №14, это же проверяет гейт check-alert-throttle.
+describe('MergeService — конфликт подписок сообщается через бюджетированный канал', () => {
+  it('зовёт securityLog.log с событием merge_subscription_conflict и обоими номерами', async () => {
+    const rows = [
+      { telegramId: SRC, status: 'active' },
+      { telegramId: TGT, status: 'active' },
+    ];
+    const tx = makeTx(rows);
+    const prisma = {
+      $transaction: async (cb: (t: unknown) => Promise<void>) => {
+        await cb({
+          ...tx,
+          user: { findUnique: jest.fn().mockResolvedValue(null) },
+          $executeRaw: jest.fn().mockResolvedValue(0),
+        });
+      },
+    };
+    const securityLog = { log: jest.fn() };
+    const svc = new MergeService(prisma as never, securityLog as never);
+
+    await svc.merge(SRC, TGT);
+
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'merge_subscription_conflict',
+      expect.objectContaining({
+        sourceId: '111',
+        targetId: '222',
+        sourceLive: 1,
+        targetLive: 1,
+      }),
+    );
+  });
+
+  it('без конфликта сигнализация молчит', async () => {
+    const tx = makeTx([{ telegramId: SRC, status: 'active' }]);
+    const prisma = {
+      $transaction: async (cb: (t: unknown) => Promise<void>) => {
+        await cb({
+          ...tx,
+          user: { findUnique: jest.fn().mockResolvedValue(null) },
+        });
+      },
+    };
+    const securityLog = { log: jest.fn() };
+
+    await new MergeService(prisma as never, securityLog as never).merge(
+      SRC,
+      TGT,
+    );
+
+    expect(securityLog.log).not.toHaveBeenCalled();
+    // И подписка при этом реально переехала — молчание не от того, что
+    // перенос вообще не выполнялся.
+    expect(rowsOf(tx)).toEqual([{ telegramId: TGT, status: 'active' }]);
+  });
+});
+
+function rowsOf(tx: ReturnType<typeof makeTx>) {
+  return tx.rows;
+}
