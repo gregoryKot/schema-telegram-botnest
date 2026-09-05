@@ -6,6 +6,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export { USER_OWNED_TABLES } from './user-owned-tables';
 import { USER_OWNED_TABLES } from './user-owned-tables';
 import { mergeUserScalarFields } from './merge-user-fields';
+import {
+  reassignSubscriptions,
+  conflictAlertText,
+  type ReassignOutcome,
+} from './merge-subscriptions';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -112,6 +118,10 @@ export class MergeService {
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
     const startedAt = Date.now();
+    // Обёртка, а не `let`: результат забирается изнутри колбэка транзакции, а
+    // возврату значения из $transaction доверять нельзя — тестовые дублёры
+    // Prisma сплошь и рядом просто вызывают колбэк, ничего не возвращая.
+    const state: { subs: ReassignOutcome } = { subs: { kind: 'none' } };
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
@@ -295,12 +305,33 @@ export class MergeService {
       //    (правило №10 — этот файл уже на потолке baseline).
       await mergeUserScalarFields(tx, sourceId, targetId);
 
+      // 5b. Подписка привязана к telegramId, а не userId — цикл по
+      //     USER_OWNED_TABLES её не видит, и до этого шага она оставалась на
+      //     удаляемом аккаунте: списания шли, а человек их не видел.
+      state.subs = await reassignSubscriptions(tx, sourceId, targetId);
+
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(
         Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`,
       );
     });
     const ms = Date.now() - startedAt;
-    this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);
+    this.logger.log(
+      `Merged user ${sourceId} → ${targetId} (${ms}ms), подписок перенесено: ` +
+        (state.subs.kind === 'moved' ? state.subs.count : 0),
+    );
+    // Живые подписки с обеих сторон — редчайший случай про деньги, который
+    // нельзя решить кодом (какую отменить — не наше решение). Алерт шлётся
+    // ПОСЛЕ транзакции: сеть внутри неё держала бы блокировки, а отказ
+    // доставки не должен откатывать уже выполненное слияние.
+    if (state.subs.kind === 'conflict') {
+      const text = conflictAlertText(sourceId, targetId, state.subs);
+      this.logger.error(text.replace(/\n+/g, ' '));
+      await notifyAdminWithFallback(text, 'Слияние аккаунтов').catch((err) =>
+        this.logger.error(
+          `не удалось доставить алерт о конфликте подписок: ${(err as Error)?.message}`,
+        ),
+      );
+    }
   }
 }

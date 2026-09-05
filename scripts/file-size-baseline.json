@@ -854,7 +854,7 @@
   "src/auth/max-init-data.ts": 162,
   "src/auth/merge-user-fields.ts": 100,
   "src/auth/merge-user-rules.ts": 164,
-  "src/auth/merge.service.ts": 306,
+  "src/auth/merge.service.ts": 337,
   "src/auth/oauth-state.ts": 99,
   "src/auth/providers/google-id-token.ts": 129,
   "src/auth/providers/google.provider.ts": 149,
