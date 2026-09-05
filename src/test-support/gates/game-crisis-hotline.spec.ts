@@ -25,7 +25,9 @@ describe('кризисная строка игры', () => {
   });
 
   it('в текстах игры — тот же номер, что в CrisisCard (ru и en)', () => {
-    const line = /m_crisis_line: \{ ru: "([^"]+)", en: "([^"]+)" \}/.exec(messages);
+    const line = /m_crisis_line: \{ ru: "([^"]+)", en: "([^"]+)" \}/.exec(
+      messages,
+    );
     expect(line).not.toBeNull();
     expect(line?.[1]).toContain(display);
     expect(line?.[2]).toContain(display);
