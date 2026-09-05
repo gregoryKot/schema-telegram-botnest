@@ -10,6 +10,7 @@ import {
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
+import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z'); // понедельник, 00:00 UTC
 const RULE = {
@@ -81,6 +82,9 @@ function makeService(
   };
   const pricing = { getPrice: jest.fn(async () => 4000) };
   const config = { get: () => undefined };
+  const cronLeader = {
+    claimRun: jest.fn().mockResolvedValue(true),
+  } as any;
   const service = new BookingService(
     prisma,
     notify as any,
@@ -88,6 +92,7 @@ function makeService(
     robokassa as any,
     pricing as any,
     config as any,
+    cronLeader,
   );
   return {
     service,
@@ -328,6 +333,7 @@ function makeSimpleService(
   opts: {
     bookingRow?: any;
     bookingRows?: any[];
+    claimRun?: boolean;
   } = {},
 ) {
   const state = { row: opts.bookingRow ? { ...opts.bookingRow } : null };
@@ -352,6 +358,8 @@ function makeSimpleService(
     onCancelled: jest.fn(async () => undefined),
     notifyExpired: jest.fn(async () => undefined),
   };
+  const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
+  const cronLeader = { claimRun } as any;
   const service = new BookingService(
     prisma,
     notify as any,
@@ -359,8 +367,9 @@ function makeSimpleService(
     {} as any,
     {} as any,
     { get: () => undefined } as any,
+    cronLeader,
   );
-  return { service, prisma, notify, state, rows };
+  return { service, prisma, notify, state, rows, claimRun };
 }
 
 describe('BookingService.cancel', () => {
@@ -592,5 +601,18 @@ describe('BookingService.expireHolds', () => {
       expect.objectContaining({ id: 11, clientName: 'А' }),
       expect.objectContaining({ id: 12, clientName: 'Б' }),
     ]);
+  });
+
+  it('тик уже забрал другой инстанс — findMany не вызывается, брони не трогаем', async () => {
+    const { service, prisma, notify, claimRun } = makeSimpleService({
+      claimRun: false,
+    });
+    await service.expireHolds();
+    expect(claimRun).toHaveBeenCalledWith(
+      'bookingExpireHolds',
+      LEASE_WINDOW.everyMinute,
+    );
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+    expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 });

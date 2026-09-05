@@ -57,6 +57,7 @@ describe('BookingService.book — if(isFree) реально короткозам
       robokassa as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     const res = await service.book({
       clientName: 'Мария',
@@ -85,6 +86,7 @@ describe('BookingService.book — точное сообщение об отсу�
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(
       service.book({
@@ -130,6 +132,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
       { enabled: false } as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await service.book({
       clientName: 'Мария',
@@ -159,6 +162,7 @@ describe('BookingService.confirm — findUnique уходит с точным whe
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(77)).rejects.toThrow('Booking not found');
     expect(prisma.booking.findUnique).toHaveBeenCalledWith({
@@ -193,6 +197,7 @@ describe('BookingService.confirm — расхождение суммы: текс
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(42, 1)).rejects.toThrow(
       expect.objectContaining({ message: 'Amount mismatch — manual review' }),
@@ -228,6 +233,7 @@ describe('BookingService.cancel — update уходит с точным where:{c
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await service.cancel('tok-cancel-me');
     expect(prisma.booking.update).toHaveBeenCalledWith({

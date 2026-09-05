@@ -68,6 +68,7 @@ function makeService(opts: {
     registerFill: jest.fn().mockResolvedValue(undefined),
   };
   const plannerService: any = {};
+  const cronLeader: any = { claimRun: jest.fn().mockResolvedValue(true) };
   const service = new TelegramScheduleService(
     null,
     botService,
@@ -77,6 +78,7 @@ function makeService(opts: {
     notificationService,
     cadenceService,
     plannerService,
+    cronLeader,
   );
   return {
     service,

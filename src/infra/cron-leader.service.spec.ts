@@ -58,9 +58,7 @@ describe('CronLeaderService.claimRun', () => {
     expect(runAt).toEqual(now);
     // Граница окна отсчитывается назад от «сейчас»: прогон старше её —
     // законный повод забрать тик, моложе — тот же тик, который уже отработали.
-    expect(notAfter).toEqual(
-      new Date(now.getTime() - LEASE_WINDOW.hourly),
-    );
+    expect(notAfter).toEqual(new Date(now.getTime() - LEASE_WINDOW.hourly));
   });
 
   it('БД недоступна → тик пропускается, а не дублируется, и ошибка не всплывает', async () => {
@@ -83,6 +81,7 @@ describe('LEASE_WINDOW', () => {
   it('каждое окно меньше своего периода — иначе законный тик не наступит', () => {
     expect(LEASE_WINDOW.everyMinute).toBeLessThan(60_000);
     expect(LEASE_WINDOW.fiveMinutes).toBeLessThan(5 * 60_000);
+    expect(LEASE_WINDOW.fifteenMinutes).toBeLessThan(15 * 60_000);
     expect(LEASE_WINDOW.hourly).toBeLessThan(3_600_000);
     expect(LEASE_WINDOW.daily).toBeLessThan(24 * 3_600_000);
   });

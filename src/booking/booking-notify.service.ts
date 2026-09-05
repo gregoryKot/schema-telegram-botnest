@@ -10,6 +10,7 @@ import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { escapeHtml } from '../utils/escape-html';
 import { sessionLabel } from './caldav-event.util';
 import { BookingStatus, SessionType } from '@prisma/client';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 const SCHEMA: EncryptSchema = {
   strings: ['clientName', 'clientContact', 'message'],
@@ -42,6 +43,7 @@ export class BookingNotifyService {
     private readonly meeting: MeetingService,
     private readonly email: EmailService,
     config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
@@ -116,6 +118,15 @@ export class BookingNotifyService {
   /** Send confirmation/cancellation reminders. Runs every 5 minutes. */
   @Cron('*/5 * * * *')
   async sendReminders(): Promise<void> {
+    // Без аренды второй инстанс шлёт то же напоминание о сессии второй раз —
+    // клиент получает два одинаковых DM.
+    if (
+      !(await this.cronLeader.claimRun(
+        'bookingReminders',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     const now = Date.now();
     await this.remindWindow(now + 24 * 3_600_000, 'reminder24SentAt', 'завтра');
     await this.remindWindow(

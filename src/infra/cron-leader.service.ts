@@ -17,7 +17,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** Кто отработал — для разбора «почему тик пропущен» видно в самой строке. */
 const INSTANCE_ID =
-  process.env.HOSTNAME?.trim() || `pid-${process.pid}-${randomBytes(3).toString('hex')}`;
+  process.env.HOSTNAME?.trim() ||
+  `pid-${process.pid}-${randomBytes(3).toString('hex')}`;
 
 /**
  * Окно аренды: «этот крон уже отработал за последние N мс — не повторять».
@@ -26,6 +27,7 @@ const INSTANCE_ID =
 export const LEASE_WINDOW = {
   everyMinute: 45_000,
   fiveMinutes: 4 * 60_000,
+  fifteenMinutes: 13 * 60_000,
   hourly: 50 * 60_000,
   daily: 23 * 3_600_000,
 } as const;
