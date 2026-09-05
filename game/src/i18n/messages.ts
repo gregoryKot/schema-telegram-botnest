@@ -61,6 +61,8 @@ export const M = {
   m_hide_in_the_phone_they_ll: { ru: "спрячешься в телефон — они дождутся.", en: "hide in the phone — they'll wait you out." },
   m_freeze_up_twice_as_many_tomorrow: { ru: "застынешь — завтра их вдвое.", en: "freeze up — twice as many tomorrow." },
   m_the_tasks_piled_on_only_a: { ru: "дела навалились! только рывок (Z) спасает.", en: "the tasks piled on! only a dash (Z) saves you." },
+  m_the_tasks_piled_on_only_a_touch: { ru: "дела навалились! только рывок (ИЗБЕГАЙ) спасает.", en: "the tasks piled on! only a dash (AVOID) saves you." },
+  m_come_closer: { ru: "не достаю — подойти ближе.", en: "can't reach — get closer." },
   m_you_can_t_hit_anxiety_it: { ru: "тревогу не ударишь — она внутри.", en: "you can't hit anxiety — it's inside." },
   m_fight_your_own_thoughts_it_gets: { ru: "бить свои мысли? станет хуже.", en: "fight your own thoughts? it gets worse." },
   m_you_can_t_punch_out_fear: { ru: "кулаком страх не выгонишь.", en: "you can't punch out fear." },
@@ -137,7 +139,7 @@ export const M = {
   m_just_alone_for_far_too_long: { ru: "Просто слишком долго рядом никого не было.", en: "Just alone for far too long." },
   m_onward_to_where_it_began: { ru: "Дальше — туда, где это началось.", en: "Onward — to where it began." },
   m_the_whole_evening_wasted_again: { ru: "весь вечер... опять в никуда.", en: "the whole evening... wasted again." },
-  m_how_long_can_this_go_on: { ru: "сколько можно... я так больше не могу.", en: "how long can this go on... I can't anymore." },
+  m_how_long_can_this_go_on: { ru: "сколько можно... так дальше не выходит.", en: "how much longer... this isn't working." },
   m_anxiety: { ru: "ТРЕВОГА", en: "ANXIETY" },
   m_procrastination: { ru: "ПРОКРАСТИНАЦИЯ", en: "PROCRASTINATION" },
   m_the_phone: { ru: "ТЕЛЕФОН", en: "THE PHONE" },
@@ -224,10 +226,11 @@ export const M = {
   m_ow_i_can_t_do_anything: { ru: "ай! да я ничего не могу — только бежать!", en: "ow! I can't do anything — just run!" },
   m_warm_good_things_exist_too_gather: { ru: "тёплое... хорошее тоже есть. собери их.", en: "warm... good things exist too. gather them." },
   m_every_warm_thought_is_with_you: { ru: "все тёплые мысли с тобой. их тоже стоит замечать.", en: "every warm thought is with you. those are worth noticing too." },
-  m_fell_1_life: { ru: "срыв... −1 жизнь.", en: "fell... −1 life." },
-  m_this_can_t_go_on: { ru: "так больше нельзя...", en: "this can't go on..." },
+  m_fell_1_life: { ru: "упал. −1 жизнь.", en: "fell. −1 life." },
+  m_this_can_t_go_on: { ru: "сил не осталось...", en: "no strength left..." },
   m_but_it_s_only_a_try: { ru: "но это лишь попытка. вставай.", en: "but it's only a try. get up." },
   m_key_click_try_again: { ru: "клавиша / клик — ещё раз", en: "key / click — try again" },
+  m_continue_no_damage: { ru: "дальше — без урона", en: "continue — no damage" },
   m_press_any_key: { ru: "нажми любую клавишу", en: "press any key" },
   m_tap_try_again: { ru: "тапни — ещё раз", en: "tap — try again" },
   m_fought_ran_gave_in_it_s: { ru: "бить, бежать, уступать — он всё равно тут.\nостался один ход: повернуться к нему.", en: "fought, ran, gave in — it's still here.\none move left: turn to face it." },
@@ -271,8 +274,8 @@ export const M = {
   m_music: { ru: "Музыка", en: "Music" },
   m_sound: { ru: "Звуки", en: "Sound" },
   m_a_s_s_i_s_t: { ru: "П О М О Щ Ь", en: "A S S I S T" },
-  m_extra_lives: { ru: "Больше жизней", en: "Extra lives" },
-  m_invincible: { ru: "Не умирать", en: "Invincible" },
+  m_extra_lives: { ru: "Больше сил", en: "More strength" },
+  m_invincible: { ru: "Без урона", en: "No damage" },
   m_c_h_a_p_t_e: { ru: "Г Л А В Ы", en: "C H A P T E R S" },
   m_s_u_p_p_o_r: { ru: "П О Д Д Е Р Ж А Т Ь", en: "S U P P O R T" },
   m_support_the_project: { ru: "Поддержать проект 💛", en: "Support the project 💛" },
@@ -286,8 +289,8 @@ export const M = {
   m_keep_playing: { ru: "продолжить игру", en: "keep playing" },
 
   m_critic_story: {
-    ru: "тень Мистера. ходит следом, не отстаёт.\n\nрявкнешь (X) — притихнет на миг и станет громче.\nубегаешь — растёт за спиной.\nэто ты. от себя не отмахнуться.",
-    en: "Mister's shadow. follows you, never lags.\n\nsnap (X) — it quiets a moment, then grows louder.\nrun — it grows behind your back.\nit's you. you can't wave yourself away.",
+    ru: "тень Мистера. ходит следом, не отстаёт.\n\nрявкнешь — притихнет на миг и станет громче.\nубегаешь — растёт за спиной.\nэто ты. от себя не отмахнуться.",
+    en: "Mister's shadow. follows you, never lags.\n\nsnap — it quiets a moment, then grows louder.\nrun — it grows behind your back.\nit's you. you can't wave yourself away.",
   },
 
   // ── интерполяция: {placeholder} подставляется t(key, vars) ──
@@ -348,6 +351,9 @@ export const M = {
   // финальная CTA
   m_mister_reached: { ru: "Мистер дошёл за двадцать минут.\nв жизни это — один клик.", en: "Mister got here in twenty minutes.\nin real life it's one click." },
   m_share_road: { ru: "Мистер дошёл до терапевта за 20 минут. Проверь, дойдёшь ли ты:", en: "Mister reached the therapist in 20 minutes. See if you can:" },
+  // кризисная строка (правило №7 CLAUDE.md): номер — тот же, что в shared/src/utils/crisisMarkers.ts;
+  // дубль держит в согласии тест src/test-support/gates/game-crisis-hotline.spec.ts
+  m_crisis_line: { ru: "если тяжело прямо сейчас — 8-800-100-49-94, бесплатно", en: "if it's hard right now — 8-800-100-49-94, free (Russia)" },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;
