@@ -16,6 +16,10 @@ import type { PublishResult } from './channel-target';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import type { DeliveryLogService } from './delivery-log.service';
+import {
+  LEASE_WINDOW,
+  type CronLeaderService,
+} from '../infra/cron-leader.service';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
@@ -71,10 +75,18 @@ function makeJournal(rows: unknown[] = []) {
   };
 }
 
+/** Лидерство по умолчанию: этот инстанс всегда забирает тик — так тестируется
+ * вся остальная логика расписания, а «не лидер» проверяется отдельно ниже. */
+function makeCronLeader(claim = true) {
+  const claimRun = jest.fn().mockResolvedValue(claim);
+  return { cronLeader: { claimRun } as unknown as CronLeaderService, claimRun };
+}
+
 function makeService(
   result: PublishResult = okResult,
   lastPostAt: Date | null = null,
   rows: unknown[] = [],
+  cronLeader: CronLeaderService = makeCronLeader().cronLeader,
 ) {
   const publish = jest.fn().mockResolvedValue(result);
   const retry = jest.fn().mockResolvedValue(okResult);
@@ -86,6 +98,7 @@ function makeService(
     { publish, retry } as unknown as ChannelPublisherService,
     phrases,
     journal,
+    cronLeader,
   );
   return { service, publish, retry, phrases, slotRows };
 }
@@ -345,6 +358,59 @@ describe('ChannelScheduleService', () => {
 
     // now не передан из крона — обёртка не подсовывает свой момент времени.
     expect(spy.mock.calls).toEqual([[], []]);
+  });
+
+  describe('leader election — не лидер, тело крона не выполняется', () => {
+    it('tickMorning: тик уже забрал другой инстанс — maybePost не зовётся', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, publish } = makeService(okResult, null, [], cronLeader);
+      const spy = jest.spyOn(service, 'maybePost');
+
+      await service.tickMorning();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultMorning',
+        LEASE_WINDOW.fiveMinutes,
+      );
+      expect(spy).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('tickEvening: тик уже забрал другой инстанс — maybePost не зовётся', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, publish } = makeService(okResult, null, [], cronLeader);
+      const spy = jest.spyOn(service, 'maybePost');
+
+      await service.tickEvening();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultEvening',
+        LEASE_WINDOW.fiveMinutes,
+      );
+      expect(spy).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('tickCatchUp: тик уже забрал другой инстанс — досылка не запускается', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, retry } = makeService(
+        okResult,
+        msk(10, 0),
+        [row('max', false)],
+        cronLeader,
+      );
+
+      await service.tickCatchUp();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultCatchUp',
+        LEASE_WINDOW.fifteenMinutes,
+      );
+      expect(retry).not.toHaveBeenCalled();
+    });
   });
 
   it('про сбой самого Telegram пишем мимо Telegram — почтой', async () => {

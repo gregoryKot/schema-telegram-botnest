@@ -6,11 +6,13 @@
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import * as templates from '../notification/notification.templates';
+import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 function makeService(opts: {
   bot?: any;
   due?: any[];
   sendSettings?: Map<string, any>;
+  claimRun?: boolean;
 }) {
   const botService: any = {
     getUserSettings: jest.fn().mockResolvedValue(null),
@@ -47,6 +49,8 @@ function makeService(opts: {
   };
   const cadenceService: any = {};
   const plannerService: any = {};
+  const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
+  const cronLeader: any = { claimRun };
   const bot =
     opts.bot === undefined
       ? { telegram: { sendMessage: jest.fn().mockResolvedValue(undefined) } }
@@ -60,8 +64,9 @@ function makeService(opts: {
     notificationService,
     cadenceService,
     plannerService,
+    cronLeader,
   );
-  return { service, notificationService, accountService, bot };
+  return { service, notificationService, accountService, bot, claimRun };
 }
 
 beforeEach(() => {
@@ -302,6 +307,32 @@ describe('processQueue / runProcessQueue', () => {
       'x',
       expect.anything(),
     );
+  });
+
+  it('тик уже забрал другой инстанс — очередь не обрабатывается', async () => {
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => undefined);
+    const due = [
+      {
+        id: 10,
+        userId: 1,
+        type: 'summary',
+        payload: { text: 'x' },
+        sendAt: new Date(),
+      },
+    ];
+    const { service, bot, notificationService, claimRun } = makeService({
+      due,
+      claimRun: false,
+    });
+
+    await service.processQueue();
+
+    expect(claimRun).toHaveBeenCalledWith(
+      'notificationQueue',
+      LEASE_WINDOW.fiveMinutes,
+    );
+    expect(notificationService.getDue).not.toHaveBeenCalled();
+    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
   });
 });
 

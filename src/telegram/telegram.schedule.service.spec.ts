@@ -5,12 +5,14 @@
 // CLAUDE.md). Дедуп «одно pair_activity в день» — telegram.pair-notify.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
+import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 function makeService(
   opts: {
     bot?: any;
     users?: any[];
     planDay?: jest.Mock;
+    claimRun?: boolean;
   } = {},
 ) {
   const botService: any = {
@@ -30,6 +32,8 @@ function makeService(
     planDay: opts.planDay ?? jest.fn().mockResolvedValue(undefined),
     scheduleReminder: jest.fn().mockResolvedValue(undefined),
   };
+  const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
+  const cronLeader: any = { claimRun };
   const bot = opts.bot === undefined ? { telegram: {} } : opts.bot;
   const service = new TelegramScheduleService(
     bot,
@@ -40,6 +44,7 @@ function makeService(
     notificationService,
     cadenceService,
     plannerService,
+    cronLeader,
   );
   return {
     service,
@@ -47,6 +52,7 @@ function makeService(
     accountService,
     notificationService,
     plannerService,
+    claimRun,
   };
 }
 
@@ -97,6 +103,23 @@ describe('scheduleDailyReminders', () => {
     // Все три юзера обработаны, несмотря на ошибку у второго.
     expect(planDay).toHaveBeenCalledTimes(3);
     expect(planDay).toHaveBeenNthCalledWith(3, users[2]);
+  });
+
+  it('тик уже забрал другой инстанс — цикл по юзерам не стартует', async () => {
+    const users = [{ id: 1n }, { id: 2n }];
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, accountService, claimRun } = makeService({
+      users,
+      planDay,
+      claimRun: false,
+    });
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      LEASE_WINDOW.daily,
+    );
+    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+    expect(planDay).not.toHaveBeenCalled();
   });
 });
 

@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { telegramOauthLoginUrl } from './telegram-oauth-url';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 // Инцидент 2026-08-21: привязка домена к боту в BotFather слетела —
 // oauth.telegram.org/auth стал отвечать голым текстом «Bot domain invalid».
@@ -29,6 +30,7 @@ export class TelegramDomainWatchdogService {
 
   constructor(
     private readonly config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
     // Инжектируемые часы — по образцу SecurityLogService: тест суточного
     // напоминания обязан быть детерминированным, без реальных таймеров.
     @Optional() private readonly now: () => number = Date.now,
@@ -36,6 +38,16 @@ export class TelegramDomainWatchdogService {
 
   @Cron('7 * * * *', { name: 'telegramDomainWatchdog' })
   async handleCron(): Promise<void> {
+    // Без аренды второй инстанс тоже щупает oauth.telegram.org в тот же час —
+    // при переходе состояния админ получит два одинаковых DM про один и тот
+    // же сбой/починку.
+    if (
+      !(await this.cronLeader.claimRun(
+        'telegramDomainWatchdog',
+        LEASE_WINDOW.hourly,
+      ))
+    )
+      return;
     await this.check();
   }
 

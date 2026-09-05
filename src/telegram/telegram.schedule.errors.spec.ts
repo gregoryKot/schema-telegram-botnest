@@ -30,6 +30,10 @@ function makeService(
   const plannerService: any = {
     planDay: jest.fn().mockResolvedValue(undefined),
   };
+  // Тик всегда лидер — эти тесты про поведение внутри тела крона, не про
+  // сам захват (он отдельно проверен в telegram.schedule-queue.service.spec.ts
+  // и telegram.schedule.service.spec.ts).
+  const cronLeader: any = { claimRun: jest.fn().mockResolvedValue(true) };
   const bot =
     opts.bot === undefined
       ? { telegram: { sendMessage: jest.fn().mockResolvedValue(undefined) } }
@@ -43,6 +47,7 @@ function makeService(
     notificationService,
     cadenceService,
     plannerService,
+    cronLeader,
   );
   return { service, accountService, notificationService };
 }

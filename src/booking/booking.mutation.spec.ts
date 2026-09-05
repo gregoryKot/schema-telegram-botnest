@@ -59,6 +59,7 @@ function makeService(
     robokassa as any,
     pricing as any,
     config as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
   return { service, prisma, tx, notify, meeting };
 }
@@ -263,6 +264,7 @@ describe('BookingService.confirm — сообщения об ошибках и o
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     return { service, state };
   }
@@ -295,6 +297,7 @@ describe('BookingService.confirm — сообщения об ошибках и o
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(1)).rejects.toThrow(
       'Cannot confirm booking in status UNKNOWN',
@@ -329,6 +332,7 @@ describe('BookingService.list — возвращает реальные расш
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     const result = await service.list('all');
     expect(result).toHaveLength(2);
@@ -352,6 +356,7 @@ describe('BookingService.cancel/getById/getPublicByToken — точные соо
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     return { service };
   }

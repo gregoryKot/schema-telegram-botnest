@@ -6,9 +6,14 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
+import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 function makeService(
-  opts: { calDavEnabled?: boolean; dueReminders?: any[] } = {},
+  opts: {
+    calDavEnabled?: boolean;
+    dueReminders?: any[];
+    claimRun?: boolean;
+  } = {},
 ) {
   const prisma: any = {
     booking: {
@@ -31,6 +36,8 @@ function makeService(
     sendAdminNotification: jest.fn(() => Promise.resolve(undefined)),
   };
   const config = { get: () => undefined } as unknown as ConfigService;
+  const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
+  const cronLeader = { claimRun } as any;
   const service = new BookingNotifyService(
     prisma,
     telegram as any,
@@ -38,8 +45,9 @@ function makeService(
     meeting as any,
     email as any,
     config,
+    cronLeader,
   );
-  return { service, prisma, telegram, calDav, meeting, email };
+  return { service, prisma, telegram, calDav, meeting, email, claimRun };
 }
 
 function booking(overrides: Partial<any> = {}) {
@@ -258,5 +266,20 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
         data: expect.objectContaining({ reminder24SentAt: expect.any(Date) }),
       }),
     );
+  });
+
+  it('тик уже забрал другой инстанс — findMany не зовётся, DM не уходит', async () => {
+    const due = booking({ id: 5 });
+    const { service, prisma, telegram, claimRun } = makeService({
+      dueReminders: [due],
+      claimRun: false,
+    });
+    await service.sendReminders();
+    expect(claimRun).toHaveBeenCalledWith(
+      'bookingReminders',
+      LEASE_WINDOW.fiveMinutes,
+    );
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
   });
 });
