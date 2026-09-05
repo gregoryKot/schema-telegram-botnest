@@ -11,7 +11,18 @@
 // Проверяются оба исхода (правило CLAUDE.md: гейт без теста на оба исхода
 // не доказывает ничего) плюс контрольный образец (правило №15): похожий, но
 // незаконный случай обязан остаться красным.
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { runGate } from './gate-sandbox';
+
+const REAL_BASELINE = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  'scripts',
+  'cron-leader-baseline.json',
+);
 
 describe('check-cron-leader.mjs', () => {
   it('чистое дерево: leader с claimRun + exempt с нормальной причиной — exit 0', () => {
@@ -54,7 +65,7 @@ describe('check-cron-leader.mjs', () => {
     const res = runGate('check-cron-leader.mjs', {
       'src/multi.service.ts': [
         'export class MultiService {',
-        "  @Cron(EVERY_HOUR, {",
+        '  @Cron(EVERY_HOUR, {',
         "    name: 'multiTick',",
         '  })',
         '  async handleTick(): Promise<void> {',
@@ -285,8 +296,7 @@ describe('check-cron-leader.mjs', () => {
 // каждая запись валидна, ключи отсортированы (правило №13 CLAUDE.md).
 describe('scripts/cron-leader-baseline.json соответствует своим правилам', () => {
   it('каждая запись — валидный status и причина не короче 20 символов, ключи отсортированы', () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const baseline = require('../../../scripts/cron-leader-baseline.json') as Record<
+    const baseline = JSON.parse(readFileSync(REAL_BASELINE, 'utf8')) as Record<
       string,
       { status: string; reason: string }
     >;
@@ -294,7 +304,8 @@ describe('scripts/cron-leader-baseline.json соответствует свои�
     expect(keys).toEqual([...keys].sort());
     for (const [key, v] of Object.entries(baseline)) {
       expect(['leader', 'exempt']).toContain(v.status);
-      if (v.reason.trim().length < 20) throw new Error(`${key}: reason too short`);
+      if (v.reason.trim().length < 20)
+        throw new Error(`${key}: reason too short`);
     }
   });
 });
