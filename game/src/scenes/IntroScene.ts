@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
-import { setTouchControls } from '../controls';
+import { setTouchControls, IS_TOUCH } from '../controls';
 import { t, type MsgKey } from '../i18n';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
@@ -55,13 +55,15 @@ export class IntroScene extends Phaser.Scene {
     line.fillStyle(0xff7733, 0.15);
     line.fillRect(W / 2 - 200, 130, 400, 1);
 
-    // Текст — построчно с анимацией появления
-    const startY = 160;
-    const lineH = 26;
+    // Текст — построчно с анимацией появления; на таче канвас ниже (H=384) — раскладка от высоты,
+    // иначе кнопка ложилась на текст, а последняя строка уходила за кадр
+    const startY = IS_TOUCH ? 96 : 160;
+    const lineH = IS_TOUCH ? 18 : 26;
+    const btnY = Math.min(H - 40, startY + slide.lines.length * lineH + 30);
 
     slide.lines.forEach((key, i) => {
       const ln = this.add.text(W / 2, startY + i * lineH, key === '' ? '' : t(key as MsgKey), {
-        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: IS_TOUCH ? '11px' : '14px',
         color: key === '' ? '#000' : '#e8c8a0',
         letterSpacing: 0.5, align: 'center',
       }).setOrigin(0.5).setAlpha(0);
@@ -78,11 +80,11 @@ export class IntroScene extends Phaser.Scene {
     // Кнопка появляется после всего текста
     const totalDelay = 300 + slide.lines.length * 180 + 400;
 
-    const btnTxt = this.add.text(W / 2, H - 80, t('m_begin_the_journey'), {
+    const btnTxt = this.add.text(W / 2, btnY, t('m_begin_the_journey'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
       color: '#ff7733', letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);
-    const btn = this.add.rectangle(W / 2, H - 80, btnTxt.width + 40, 48, 0x3a1500)
+    const btn = this.add.rectangle(W / 2, btnY, btnTxt.width + 40, 48, 0x3a1500)
       .setStrokeStyle(1, 0xff7733)
       .setInteractive({ useHandCursor: true })
       .setAlpha(0);
@@ -92,10 +94,13 @@ export class IntroScene extends Phaser.Scene {
 
     btn.on('pointerover', () => { btn.fillColor = 0x3a2a8f; btnTxt.setColor('#fff0d8'); });
     btn.on('pointerout',  () => { btn.fillColor = 0x3a1500; btnTxt.setColor('#ff7733'); });
-    btn.on('pointerdown', () => this.scene.start('Game'));
+    let started = false;
+    const go = () => { if (started) return; started = true; this.scene.start('Game'); };
+    btn.on('pointerdown', go);
 
-    // Пропуск по пробелу/клику на фон
-    this.input.keyboard!.once('keydown-SPACE', () => this.scene.start('Game'));
-    this.input.keyboard!.once('keydown-ENTER', () => this.scene.start('Game'));
+    // Пропуск: пробел/ввод, а на таче — тап по фону (после первой строки, чтобы не проскочить случайно)
+    this.input.keyboard!.once('keydown-SPACE', go);
+    this.input.keyboard!.once('keydown-ENTER', go);
+    this.time.delayedCall(800, () => this.input.once('pointerdown', go));
   }
 }
