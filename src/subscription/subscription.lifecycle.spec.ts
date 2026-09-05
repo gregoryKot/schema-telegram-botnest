@@ -77,6 +77,23 @@ function makePrisma() {
         return row;
       }),
     },
+    // Атомарный захват подписки перед списанием: UPDATE "Subscription"
+    // SET nextChargeAt = $1 WHERE id = $2 AND nextChargeAt <= $3. Дублёр
+    // применяет его к стейту так же, как Postgres — иначе тест «строка после
+    // списания» проверял бы не то состояние, которое будет в проде.
+    // Возвращает число обновлённых строк: 0 = подписку уже забрал другой
+    // обработчик.
+    // $executeRaw — тег-функция: значения приходят отдельными аргументами
+    // после шаблона, а не полем .values.
+    $executeRaw: jest.fn(
+      async (_sql: TemplateStringsArray, ...values: unknown[]) => {
+        const [nextAt, id, notAfter] = values as [Date, number, Date];
+        const row = subs.get(id);
+        if (!row?.nextChargeAt || row.nextChargeAt > notAfter) return 0;
+        row.nextChargeAt = nextAt;
+        return 1;
+      },
+    ),
     subscriptionCharge: {
       create: jest.fn(({ data }: any) => {
         const row = { id: nextChargeId++, status: 'pending', ...data };
