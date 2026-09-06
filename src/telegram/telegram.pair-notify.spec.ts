@@ -50,6 +50,7 @@ function makeService(opts: {
     notificationService,
     {} as any, // cadenceService
     {} as any, // plannerService
+    { claimRun: jest.fn().mockResolvedValue(true) } as any, // cronLeader
   );
   return { service, scheduled, notificationService };
 }

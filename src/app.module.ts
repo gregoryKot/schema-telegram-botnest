@@ -18,6 +18,7 @@ import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { CronLeaderModule } from './infra/cron-leader.module';
 import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
@@ -64,6 +65,7 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
       },
     }),
     PrismaModule,
+    CronLeaderModule,
     NotificationModule,
     AuthModule,
     TherapyModule,

@@ -53,6 +53,7 @@ describe('booking getPublicByToken — без PII', () => {
       {} as any,
       {} as any,
       config(),
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     const res = (await svc.getPublicByToken('secret-token')) as Record<
       string,
@@ -73,6 +74,7 @@ describe('booking getPublicByToken — без PII', () => {
       {} as any,
       {} as any,
       config(),
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(svc.getPublicByToken('nope')).rejects.toThrow();
   });
