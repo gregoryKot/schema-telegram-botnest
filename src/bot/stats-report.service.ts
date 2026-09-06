@@ -15,6 +15,7 @@ import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
+import { DataExportMetricsService } from './data-export-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
 
@@ -41,6 +42,7 @@ export class StatsReportService {
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
     private readonly signupSource: SignupSourceMetricsService,
+    private readonly dataExport: DataExportMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. */
@@ -62,6 +64,7 @@ export class StatsReportService {
       clientErrors,
       money,
       signupSource,
+      dataExport,
     ] = await Promise.all([
       this.product.render(),
       this.modeCard.render(),
@@ -79,8 +82,9 @@ export class StatsReportService {
       this.clientErrors.render(),
       this.money.render(),
       this.signupSource.render(),
+      this.dataExport.render(),
     ]);
     const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${loginTicket}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${capability}`;
+    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${loginTicket}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${dataExport}\n\n${capability}`;
   }
 }

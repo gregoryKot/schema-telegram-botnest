@@ -14,6 +14,7 @@ import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
+import { DataExportMetricsService } from './data-export-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -71,6 +72,7 @@ const INTERNAL_PROVIDERS = [
   WarmWordsMetricsService,
   AccountLinkMetricsService,
   SignupSourceMetricsService,
+  DataExportMetricsService,
   PracticeMetricsService,
   CaseMetricsService,
   PhraseCheckMetricsService,

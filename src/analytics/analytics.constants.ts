@@ -117,6 +117,8 @@
 //                         согласия, чтобы видеть и конверсию в «принял
 //                         соглашение»). Возвращающийся по той же ссылке
 //                         повторно не считается.
+//   data_export          — СЕРВЕРНОЕ: выгрузка своих данных (152-ФЗ/GDPR,
+//                         GET /api/account/export); meta.tables/meta.rows.
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   desktop_app_open     — запустил установленное приложение на компьютере,
@@ -167,6 +169,7 @@ export const ANALYTICS_EVENTS = [
   'auth_success',
   'client_error',
   'signup_source',
+  'data_export',
   'profile_pattern_open',
   'desktop_app_open',
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).

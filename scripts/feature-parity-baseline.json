@@ -24,6 +24,11 @@
     "reason": "deletePhraseCheck объявлен в обоих клиентах (webapp получил упражнение в daa43d3a) и нигде не вызывается кроме тестов — та же недоделка, что у belief-checks/flashcards/letters, только для более нового упражнения «Критик или забота?».",
     "since": "daa43d3a"
   },
+  "GET /api/account/export": {
+    "status": "nobody",
+    "reason": "Право на переносимость данных (152-ФЗ/GDPR art.15,20) — бэкенд готов (src/account/data-export.service.ts + src/account/export-policy.ts), но кнопки экспорта нет ни на сайте, ни в мини-аппе. Недоделка, а не платформенное решение: UI приедет отдельным PR (фронтенды намеренно не тронуты в этом PR).",
+    "since": "pending-PR:data-export-backend"
+  },
   "GET /api/drafts": {
     "status": "nobody",
     "reason": "Пара к POST/DELETE /api/drafts — читающий конец той же незавершённой миграции с localStorage на сервер (49b0c378). Ни один фронтенд не читает черновики с бэкенда.",

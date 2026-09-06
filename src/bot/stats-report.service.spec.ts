@@ -50,6 +50,9 @@ describe('StatsReportService.render', () => {
     const signupSource = {
       render: jest.fn().mockResolvedValue('новенькие по ссылкам: 5'),
     };
+    const dataExport = {
+      render: jest.fn().mockResolvedValue('забирают свои данные: 7'),
+    };
     return {
       blocks: {
         accountLink,
@@ -63,6 +66,7 @@ describe('StatsReportService.render', () => {
         clientErrors,
         money,
         signupSource,
+        dataExport,
       },
       service: new StatsReportService(
         product as never,
@@ -81,6 +85,7 @@ describe('StatsReportService.render', () => {
         clientErrors as never,
         money as never,
         signupSource as never,
+        dataExport as never,
       ),
     };
   };
@@ -99,7 +104,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nзабирают свои данные: 7',
     );
     // Блок «Настройки» (щит, волна 8) — считается из process.env напрямую
     // (не мокается через blocks), но обязан приезжать последним куском
@@ -127,6 +132,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
     expect(blocks.money.render).toHaveBeenCalledTimes(1);
     expect(blocks.signupSource.render).toHaveBeenCalledTimes(1);
+    expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('баннеры-переходы: 6');
@@ -138,5 +144,6 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('поломки на клиенте: не было');
     expect(out).toContain('деньги: поддержали 3 раза');
     expect(out).toContain('новенькие по ссылкам: 5');
+    expect(out).toContain('забирают свои данные: 7');
   });
 });
