@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { W, H, GROUND_Y, PHYS, S } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
-import { track } from '../analytics';
+import { trackEvent } from '../analytics';
 import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
 
@@ -162,7 +162,7 @@ export class TutorialScene extends Phaser.Scene {
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#6a5f8a'));
-    skip.on('pointerdown', () => { track('tutorial_skip'); this.scene.start('Intro'); }); // манифест видят и те, кто пропустил
+    skip.on('pointerdown', () => { trackEvent('game_tutorial_skip'); this.scene.start('Intro'); }); // манифест видят и те, кто пропустил
 
     this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -614,7 +614,7 @@ export class TutorialScene extends Phaser.Scene {
 
   private finish() {
     this.step = 'done';
-    track('tutorial_done');
+    trackEvent('game_tutorial_done');
     this.setNarr('m_fight_avoid_surrender_should_be_enough');
     this.setPrompt(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next');
     this.input.once('pointerdown', () => this.goIntro());
