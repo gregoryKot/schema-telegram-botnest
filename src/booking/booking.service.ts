@@ -26,6 +26,7 @@ import {
   getBookingById,
   getPublicBookingByToken,
 } from './booking.queries';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 export interface CreateBookingDto {
   startsAt: Date;
@@ -75,6 +76,7 @@ export class BookingService {
     private readonly robokassa: RobokassaService,
     private readonly pricing: PricingService,
     config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
@@ -270,6 +272,16 @@ export class BookingService {
   /** Expire HELD bookings whose hold window has passed. Runs every minute. */
   @Cron('* * * * *')
   async expireHolds() {
+    // Без аренды второй инстанс тоже находит те же HELD-брони и рассылает
+    // notifyExpired по ним ещё раз — админ получает дублирующие DM про одну
+    // и ту же истёкшую бронь.
+    if (
+      !(await this.cronLeader.claimRun(
+        'bookingExpireHolds',
+        LEASE_WINDOW.everyMinute,
+      ))
+    )
+      return;
     const expiring = await this.prisma.booking.findMany({
       where: { status: BookingStatus.HELD, heldUntil: { lte: new Date() } },
     });

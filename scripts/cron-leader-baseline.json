@@ -1,0 +1,50 @@
+{
+  "src/analytics/analytics.service.ts::pruneOld": {
+    "status": "exempt",
+    "reason": "deleteMany идемпотентен, второй инстанс удалит 0 строк, дублирования наружу нет."
+  },
+  "src/auth/telegram-domain-watchdog.service.ts::handleCron": {
+    "status": "leader",
+    "reason": "Проверка домена бота шлёт DM админу при расхождении — на двух инстансах дубль DM."
+  },
+  "src/booking/booking-notify.service.ts::sendReminders": {
+    "status": "leader",
+    "reason": "Напоминание о записи пользователю — на двух инстансах уйдёт два одинаковых сообщения."
+  },
+  "src/booking/booking.service.ts::expireHolds": {
+    "status": "leader",
+    "reason": "Снятие истёкших холдов записи — гонка на двух инстансах может снять чужой свежий холд."
+  },
+  "src/channel/channel-schedule.service.ts::tickCatchUp": {
+    "status": "leader",
+    "reason": "Догоняющая публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."
+  },
+  "src/channel/channel-schedule.service.ts::tickEvening": {
+    "status": "leader",
+    "reason": "Вечерняя публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."
+  },
+  "src/channel/channel-schedule.service.ts::tickMorning": {
+    "status": "leader",
+    "reason": "Утренняя публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."
+  },
+  "src/channel/targets/threads-token.service.ts::refreshIfStale": {
+    "status": "leader",
+    "reason": "Обновление токена площадки Threads — параллельное обновление с двух инстансов гонка за один токен."
+  },
+  "src/infra/db-outage.service.ts::probe": {
+    "status": "exempt",
+    "reason": "Это пер-инстансовая проверка соединения, она обязана идти на каждом инстансе, лидер бы её сломал."
+  },
+  "src/subscription/subscription.service.ts::chargeDue": {
+    "status": "exempt",
+    "reason": "Сериализация построчная и более сильная: атомарный захват UPDATE Subscription SET nextChargeAt … WHERE nextChargeAt <= now() (src/subscription/subscription.charges.ts)."
+  },
+  "src/telegram/telegram.schedule.service.ts::processQueue": {
+    "status": "leader",
+    "reason": "Обработка очереди отложенных сообщений бота — без лидера очередь разбирается дважды параллельно."
+  },
+  "src/telegram/telegram.schedule.service.ts::scheduleDailyReminders": {
+    "status": "leader",
+    "reason": "Постановка ежедневных напоминаний в очередь — дубль на двух инстансах поставит каждое напоминание дважды."
+  }
+}

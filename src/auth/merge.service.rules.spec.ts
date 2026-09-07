@@ -519,7 +519,13 @@ describe('MergeService — лог длительности merge', () => {
       .mockReturnValueOnce(5_732);
     const { prisma } = makeMergePrisma({ re: null, rev: null });
     await new MergeService(prisma).merge(BigInt(1001), BigInt(2002));
-    expect(logSpy).toHaveBeenCalledWith('Merged user 1001 → 2002 (732ms)');
+    // Точную длительность по-прежнему пиним (в этом весь тест), но не весь
+    // хвост строки: к логу добавился счётчик перенесённых подписок
+    // (merge-subscriptions.ts), и привязка к полному тексту ломала бы тест
+    // при каждом расширении сводки, ничего не проверяя дополнительно.
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Merged user 1001 → 2002 (732ms)'),
+    );
   });
 });
 

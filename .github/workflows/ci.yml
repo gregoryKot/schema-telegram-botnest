@@ -161,6 +161,14 @@ jobs:
       # гейт проверяет, что каждый роут реально доступен с обеих площадок или
       # осознанно заведён в scripts/feature-parity-baseline.json с причиной.
       - run: node scripts/check-feature-parity.mjs
+      # Leader-election кронов: крон без него дублируется на втором инстансе
+      # (второй под, перекатывающийся деплой Amvera) — два процесса шлют одно и
+      # то же сообщение дважды. Гейт не ищет признак «похоже на безопасное», а
+      # требует явной классификации каждого `@Cron(` в
+      # scripts/cron-leader-baseline.json (leader — claimRun( обязателен в
+      # теле, exempt — только с внятной причиной); протухшая запись тоже красит
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-cron-leader.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -305,6 +313,11 @@ jobs:
       # требует полного env — здесь не нужен). --runInBand: одна БД, без гонок.
       - name: e2e read-after-write smoke
         run: npx jest --config ./test/jest-e2e.json --runInBand test/read-after-write.e2e-spec.ts
+      # Leader-election кронов: вся защита от дублей на втором инстансе держится
+      # на атомарности одного запроса, а атомарность — свойство Postgres, а не
+      # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
+      - name: e2e leader-election кронов на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей

@@ -44,6 +44,7 @@ function makeService(opts: { siteUrl?: string | undefined } = {}) {
     robokassa as any,
     pricing as any,
     config as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
   return { service, robokassa };
 }
