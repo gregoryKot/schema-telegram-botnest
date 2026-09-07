@@ -469,7 +469,7 @@ export class TutorialScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => this.beginFreeze());
   }
 
-  // ── Шаг 3: ЗАМРИ — переживания, которые нельзя ни убить, ни обогнать ───────
+  // ── Шаг 3: ЗАЛИПНИ — переживания, которые нельзя ни убить, ни обогнать ───────
   private beginFreeze() {
     if (this.step !== 'dash') return;
     this.step = 'freeze';
