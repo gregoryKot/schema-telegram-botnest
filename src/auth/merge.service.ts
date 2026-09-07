@@ -6,6 +6,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export { USER_OWNED_TABLES } from './user-owned-tables';
 import { USER_OWNED_TABLES } from './user-owned-tables';
 import { mergeUserScalarFields } from './merge-user-fields';
+import {
+  reassignSubscriptions,
+  conflictAlertText,
+  type ReassignOutcome,
+} from './merge-subscriptions';
+import { SecurityLogService } from './security-log.service';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -76,7 +82,10 @@ export function ident(name: string, kind: 'table' | 'col'): string {
 export class MergeService {
   private readonly logger = new Logger(MergeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly securityLog: SecurityLogService,
+  ) {}
 
   // Returns a row-count summary so the UI can present an informed merge
   // confirmation ("you'll move 87 ratings, 14 diary entries, …").
@@ -112,6 +121,10 @@ export class MergeService {
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
     const startedAt = Date.now();
+    // Обёртка, а не `let`: результат забирается изнутри колбэка транзакции, а
+    // возврату значения из $transaction доверять нельзя — тестовые дублёры
+    // Prisma сплошь и рядом просто вызывают колбэк, ничего не возвращая.
+    const state: { subs: ReassignOutcome } = { subs: { kind: 'none' } };
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
@@ -295,12 +308,35 @@ export class MergeService {
       //    (правило №10 — этот файл уже на потолке baseline).
       await mergeUserScalarFields(tx, sourceId, targetId);
 
+      // 5b. Подписка привязана к telegramId, а не userId — цикл по
+      //     USER_OWNED_TABLES её не видит, и до этого шага она оставалась на
+      //     удаляемом аккаунте: списания шли, а человек их не видел.
+      state.subs = await reassignSubscriptions(tx, sourceId, targetId);
+
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(
         Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`,
       );
     });
     const ms = Date.now() - startedAt;
-    this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);
+    this.logger.log(
+      `Merged user ${sourceId} → ${targetId} (${ms}ms), подписок перенесено: ` +
+        (state.subs.kind === 'moved' ? state.subs.count : 0),
+    );
+    // Живые подписки с обеих сторон — редчайший случай про деньги, который
+    // нельзя решить кодом (какую отменить — не наше решение). Идёт через
+    // SecurityLogService, а не прямым notifyAdminWithFallback: там уже есть
+    // бюджет DM (правило №14 — сигнализация без троттлинга мьютит чат ровно
+    // во время аварии). Сообщается ПОСЛЕ транзакции: сеть внутри неё держала
+    // бы блокировки, а недоставка не должна откатывать слияние.
+    if (state.subs.kind === 'conflict') {
+      this.securityLog.log('merge_subscription_conflict', {
+        sourceId: String(sourceId),
+        targetId: String(targetId),
+        sourceLive: state.subs.sourceLive,
+        targetLive: state.subs.targetLive,
+        detail: conflictAlertText(sourceId, targetId, state.subs),
+      });
+    }
   }
 }

@@ -9,6 +9,17 @@ import { Logger } from '@nestjs/common';
 import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import type { ConfigService } from '@nestjs/config';
+import {
+  LEASE_WINDOW,
+  type CronLeaderService,
+} from '../infra/cron-leader.service';
+
+/** Этот инстанс — лидер по умолчанию: остальные тесты проверяют машину
+ * состояний check(), не сам захват (проверен отдельно ниже, у handleCron). */
+function makeCronLeader(claim = true) {
+  const claimRun = jest.fn().mockResolvedValue(claim);
+  return { cronLeader: { claimRun } as unknown as CronLeaderService, claimRun };
+}
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
@@ -66,7 +77,10 @@ afterEach(() => {
 describe('TelegramDomainWatchdogService.check — здоровый ответ', () => {
   it('нет DM, fetch зовётся с URL от telegramOauthLoginUrl (bot_id/origin)', async () => {
     mockFetchOk(HEALTHY_HTML);
-    const service = new TelegramDomainWatchdogService(makeConfig());
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+    );
 
     await service.check();
 
@@ -80,7 +94,10 @@ describe('TelegramDomainWatchdogService.check — здоровый ответ', 
 describe('TelegramDomainWatchdogService.check — поломка', () => {
   it('тело "Bot domain invalid" → ровно один DM с текстом причины и /setdomain', async () => {
     mockFetchOk(BROKEN_TEXT);
-    const service = new TelegramDomainWatchdogService(makeConfig());
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+    );
 
     await service.check();
 
@@ -93,7 +110,11 @@ describe('TelegramDomainWatchdogService.check — поломка', () => {
   it('держится: check через 1 час — DM не добавился; через 25 часов — второй DM', async () => {
     const clock = makeClock(1_000_000);
     mockFetchOk(BROKEN_TEXT);
-    const service = new TelegramDomainWatchdogService(makeConfig(), clock.now);
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+      clock.now,
+    );
 
     await service.check();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
@@ -115,7 +136,11 @@ describe('TelegramDomainWatchdogService.check — поломка', () => {
   it('поломка → здоровый ответ → одиночный DM «снова работает»; следующий здоровый check — без DM', async () => {
     const clock = makeClock(1_000_000);
     mockFetchOk(BROKEN_TEXT);
-    const service = new TelegramDomainWatchdogService(makeConfig(), clock.now);
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+      clock.now,
+    );
     await service.check();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
 
@@ -131,7 +156,10 @@ describe('TelegramDomainWatchdogService.check — поломка', () => {
   });
 
   it('fetch кинул исключение → DM нет и состояние не сбрасывается: поломка → исключение → здоровье даёт recovery-DM', async () => {
-    const service = new TelegramDomainWatchdogService(makeConfig());
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+    );
     mockFetchOk(BROKEN_TEXT);
     await service.check();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
@@ -152,7 +180,10 @@ describe('TelegramDomainWatchdogService.check — неизвестность (н
   it('res.ok=false (500) → DM нет, но warn в лог виден (немой сбой запрещён)', async () => {
     mockFetchOk('internal error', false);
     const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
-    const service = new TelegramDomainWatchdogService(makeConfig());
+    const service = new TelegramDomainWatchdogService(
+      makeConfig(),
+      makeCronLeader().cronLeader,
+    );
 
     await service.check();
 
@@ -164,7 +195,10 @@ describe('TelegramDomainWatchdogService.check — неизвестность (н
 describe('TelegramDomainWatchdogService.check — конфиг не задан', () => {
   it('BOT_TOKEN не задан → fetch не звался вовсе', async () => {
     const config = makeConfig({ BOT_TOKEN: undefined });
-    const service = new TelegramDomainWatchdogService(config);
+    const service = new TelegramDomainWatchdogService(
+      config,
+      makeCronLeader().cronLeader,
+    );
 
     await service.check();
 
@@ -172,6 +206,33 @@ describe('TelegramDomainWatchdogService.check — конфиг не задан',
     expect(config.get).toHaveBeenCalledWith('BOT_TOKEN');
     expect(global.fetch).not.toHaveBeenCalled();
     expect(mockedNotify).not.toHaveBeenCalled();
+  });
+});
+
+describe('TelegramDomainWatchdogService.handleCron — leader election', () => {
+  it('тик уже забрал другой инстанс — check() не вызывается, fetch не звался', async () => {
+    const { cronLeader, claimRun } = makeCronLeader(false);
+    const service = new TelegramDomainWatchdogService(makeConfig(), cronLeader);
+
+    await service.handleCron();
+
+    expect(claimRun).toHaveBeenCalledWith(
+      'telegramDomainWatchdog',
+      LEASE_WINDOW.hourly,
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockedNotify).not.toHaveBeenCalled();
+  });
+
+  it('этот инстанс — лидер: handleCron доходит до check() (fetch реально уходит с URL сторожка)', async () => {
+    mockFetchOk(HEALTHY_HTML);
+    const { cronLeader } = makeCronLeader(true);
+    const service = new TelegramDomainWatchdogService(makeConfig(), cronLeader);
+
+    await service.handleCron();
+
+    const url = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+    expect(url).toContain('bot_id=12345');
   });
 });
 
