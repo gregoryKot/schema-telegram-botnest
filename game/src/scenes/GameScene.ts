@@ -19,6 +19,18 @@ import { track } from '../analytics';
 // ════════════════════════════════════════════════════════════════════════════
 
 const trackedStarts = new Set<string>(); // chapter_start один раз за загрузку страницы
+// Стоп-кадры знакомства с врагами — один раз на игрока, а не на главу: живут вне
+// сцены и в localStorage, иначе каждая глава и каждый рестарт «представляли» заново.
+const INTRO_KEY = 'rtym_intro';
+const introduced = new Set<string>();
+try { for (const k of JSON.parse(localStorage.getItem(INTRO_KEY) ?? '[]') as unknown[]) introduced.add(String(k)); } catch { /* приватный режим — без памяти */ }
+function markIntroduced(key: string) {
+  introduced.add(key);
+  try { localStorage.setItem(INTRO_KEY, JSON.stringify([...introduced])); } catch { /* ок */ }
+}
+// Телефон доверия: тот же, что в shared/src/utils/crisisMarkers.ts (сверка — тест
+// src/test-support/gates/game-crisis-hotline.spec.ts). Игра — отдельный пакет без shared/.
+const CRISIS_TEL = 'tel:88001004994';
 
 const RUN_SPEED = 250;
 const DASH_SPEED = 560;
@@ -108,13 +120,13 @@ export class GameScene extends Phaser.Scene {
 
   private bubble!: Phaser.GameObjects.Text; private bubbleT = 0;
   private said = new Set<string>();
-  private introduced = new Set<string>(); // каждого врага представляем стоп-кадром один раз
 
   // Акт II «Дорога»: дверь терапевта + отговорки-заслоны, которым отвечают
   private doors: Door[] = [];
   private voices: ExcuseVoice[] = [];
   private copingsOff = false;         // у финальной двери копинги гаснут
   private finalApproach = false;
+  private sessionLines: Phaser.GameObjects.Text[] = []; // реплики кабинета гл.4 — гасим перед CTA
 
   constructor() { super('Game'); }
 
@@ -131,14 +143,14 @@ export class GameScene extends Phaser.Scene {
       dead: false, attacking: false, attackCd: 0, dashing: false, dashCd: 0,
       frozen: false, hitstop: 0, exhaustion: 0, overwhelmed: false, wasFrozen: false,
       coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
+      bubbleT: 0, attackT: 0, dashT: 0, // иначе переживают restart: пустая плашка реплики в новой главе
     });
     this.said = new Set();
-    this.introduced = new Set();
     this.attackHit = new Set();
     this.triggers = []; this.gates = [];
     this.floorColliders = []; this.platColliders = []; this.spikeRects = []; this.heartPickups = [];
     this.memories = []; this.memGot = 0; this.memTotal = 0;
-    this.doors = []; this.voices = [];
+    this.doors = []; this.voices = []; this.sessionLines = [];
     this.copingsOff = false; this.finalApproach = false;
     this.restoreCopingButtons(); // после финальной двери прошлого захода
 
@@ -336,8 +348,8 @@ export class GameScene extends Phaser.Scene {
   }
   // «привет, это —» : представляем врага стоп-кадром при первой встрече
   private introOnce(key: string, name: MsgKey, line: MsgKey) {
-    if (this.introduced.has(key)) return;
-    this.introduced.add(key);
+    if (introduced.has(key)) return;
+    markIntroduced(key);
     this.storyFrame(name, line);
   }
 
@@ -370,7 +382,7 @@ export class GameScene extends Phaser.Scene {
   private buildDoors() {
     if (!this.chapter.doors?.length) return;
     for (const cfg of this.chapter.doors)
-      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), () => undefined));
+      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), () => undefined, this.chapter.arenaW));
     // заслоны: (x голоса, реплики, ответ) — гейт чуть дальше голоса
     const blocks: { x: number; lines: MsgKey[]; answer: MsgKey }[] = [
       { x: 880,  lines: ['m_exc_pass', 'm_exc_later'],        answer: 'm_ans_later' },
@@ -488,6 +500,7 @@ export class GameScene extends Phaser.Scene {
       const ln = this.add.text(W / 2, y * ky, t(key), { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
         .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 5).setAlpha(0);
       this.tweens.add({ targets: ln, alpha: 1, duration: 900, delay });
+      this.sessionLines.push(ln);
       return ln;
     };
     line('m_cab_1', 82, '#d8c8ec', 13, 1600);
@@ -507,7 +520,11 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: prompt, alpha: { from: 0.4, to: 1 }, duration: 700, yoyo: true, repeat: -1, delay: 1100 });
       // ВСТРЕТИТЬ — вместе: одно нажатие, и вблизи он меньше, чем казался
       this.time.delayedCall(1400, () => {
+        let met = false;
         const meet = () => {
+          if (met) return; // E, потом тап — раньше рисовало две CTA и слало demo_end дважды
+          met = true;
+          this.input.keyboard!.off('keydown-E', meet); this.input.off('pointerdown', meet);
           prompt.destroy();
           audio.gate();
           this.tweens.add({ targets: shadow, x: W * 0.72, scale: 0.9, duration: 1700, ease: 'Sine.InOut' });
@@ -529,9 +546,14 @@ export class GameScene extends Phaser.Scene {
     track('chapter_done', { chapter: this.chapter.id });
     const font = '"Press Start 2P", "Courier New", monospace';
     const ky = H / 540, deep = 160;
+    // тексты кнопок — НАД заливкой (deep + 1): при равном depth Phaser рисует по порядку
+    // добавления, и непрозрачный прямоугольник закрывал подпись «записаться в терапию»
     const mk = (y: number, text: string, size: number, color: string) =>
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(deep).setAlpha(0);
+        .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
+    // реплики кабинета гасим — иначе они просвечивают сквозь затемнение под CTA
+    const old = this.sessionLines; this.sessionLines = [];
+    this.tweens.add({ targets: old, alpha: 0, duration: 500, onComplete: () => old.forEach(l => l.destroy()) });
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.6).setScrollFactor(0).setDepth(deep - 1).setAlpha(0);
     this.tweens.add({ targets: dim, alpha: 1, duration: 700 });
 
@@ -567,6 +589,7 @@ export class GameScene extends Phaser.Scene {
     donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
     donTxt.on('pointerdown', () => { track('donate_click', { source: 'cabinet' }); window.open('https://schemehappens.ru/donate', '_blank'); });
     menu.on('pointerdown', () => this.scene.start('Start'));
+    this.addCrisisLine(486 * ky, deep + 1);
   }
 
   // ── Гейты: дальше нельзя, пока не разобрался с тем, что навалилось ─────────
@@ -630,6 +653,7 @@ export class GameScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(100, GROUND_Y - 20, 'cat_idle').setOrigin(0.5, 1).setScale(1.5).setDepth(10);
     const b = this.player.body as Phaser.Physics.Arcade.Body;
     b.setSize(22, 30); b.setOffset(13, 16);
+    this.player.setCollideWorldBounds(true); // за дверью гл.3 мир кончается — раньше кот падал с края
     this.player.play('p-idle');
     for (const r of this.floorColliders) this.physics.add.collider(this.player, r);
     for (const r of this.platColliders) this.physics.add.collider(this.player, r);
@@ -702,8 +726,8 @@ export class GameScene extends Phaser.Scene {
       color: '#ff8aa6', backgroundColor: 'rgba(18,6,18,0.72)', padding: { x: 6, y: 4 }, align: 'center',
     }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
     this.criticSayT = 2200; // первый упрёк почти сразу
-    // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
-    this.storyFrame('m_the_inner_critic', 'm_critic_story');
+    // важный новый враг — представляем стоп-кадром один раз на игрока, иначе «просто какой-то кот»
+    this.introOnce('critic', 'm_the_inner_critic', 'm_critic_story');
   }
 
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
@@ -723,7 +747,10 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 0.9, duration: 400, delay: 800 });
     this.time.delayedCall(700, () => {
-      const go = () => { this.hitstop = 0; pb.setAllowGravity(true); pb.moves = true; [dim, t1, t2, hint].forEach(o => o.destroy()); };
+      const go = () => {
+        this.input.keyboard!.off('keydown', go); this.input.off('pointerdown', go); // иначе второй висит и оживляет игру под следующим кадром
+        this.hitstop = 0; pb.setAllowGravity(true); pb.moves = true; [dim, t1, t2, hint].forEach(o => o.destroy());
+      };
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
     });
@@ -1161,7 +1188,7 @@ export class GameScene extends Phaser.Scene {
     }
     c.img.setScale(1.5 * c.size);
     c.struck -= dt;
-    if (dist < 34 && this.invuln <= 0 && c.struck <= 0) {
+    if (dist < 34 && this.invuln <= 0 && c.struck <= 0 && !this.finalApproach) {
       c.struck = 1200; this.damage(c.img.x);
       this.sayOnce('critic_catch', 'm_you_failed_again_whatever_you_do', 3000);
     }
@@ -1190,41 +1217,66 @@ export class GameScene extends Phaser.Scene {
 
     const ky = H / 540; // y развязок написаны под десктопную высоту
     const lines: Phaser.GameObjects.Text[] = [];
+    const revealed: boolean[] = [];
+    const timers: Phaser.Time.TimerEvent[] = [];
+    let lastShow = 0, finished = false;
+    const show = (i: number, fast: boolean) => {
+      if (revealed[i]) return;
+      revealed[i] = true; lastShow = this.time.now;
+      this.tweens.add({ targets: lines[i], alpha: 1, duration: fast ? 350 : 900 });
+    };
     const line = (text: MsgKey, y: number, color: string, size: number, delay: number) => {
       const ln = this.add.text(W / 2, y * ky, t(text), {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
-      this.tweens.add({ targets: ln, alpha: 1, duration: 900, delay });
-      lines.push(ln);
+      const i = lines.push(ln) - 1; revealed.push(false);
+      timers.push(this.time.delayedCall(delay, () => show(i, false)));
     };
 
     // What just happened — supplied by the chapter (cat's reckoning).
     for (const l of this.chapter.ending) line(l.text, l.y, l.color, l.size, l.delay);
     this.time.delayedCall(10600, () => audio.toll());
 
-    // После безнадёжности — сразу к выбору/продолжению. БЕЗ абстрактного
-    // «повернуться»: контакт/ВСТРЕТИТЬ принадлежит Акту III (терапевт открывает
-    // его), а на конце Акта I он только путал. Сначала ГАСИМ текст развязки.
-    this.time.delayedCall(13200, () => this.tweens.add({ targets: lines, alpha: 0, duration: 700,
-      onComplete: () => lines.forEach(t => t.destroy()) }));
-    this.time.delayedCall(14000, () => {
-      const branch = this.chapter.branch, next = this.chapter.next;
+    // Дальше — развилка или следующая глава. БЕЗ абстрактного «повернуться»:
+    // контакт/ВСТРЕТИТЬ принадлежит Акту III (терапевт открывает его), а на конце
+    // Акта I он только путал.
+    const next = () => {
+      const branch = this.chapter.branch, nxt = this.chapter.next;
       if (branch && CHAPTERS[branch]) {
         this.showBranch(branch);                 // конец Акта I — развилка: терапия ИЛИ дальше
-      } else if (next && CHAPTERS[next]) {
+      } else if (nxt && CHAPTERS[nxt]) {
         const act = IS_TOUCH ? t('m_tap') : t('m_press_any_key');
-        const title = t(CHAPTERS[next].title);
+        const title = t(CHAPTERS[nxt].title);
         const hint = this.add.text(W / 2, H - 28, t('m_next_chapter', { title, act }),
           { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
           .setOrigin(0.5).setScrollFactor(0).setDepth(160).setAlpha(0);
         this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
-        const go = () => this.scene.restart({ chapter: next });
+        const go = () => this.scene.restart({ chapter: nxt });
         this.input.keyboard!.once('keydown', go);
         this.input.once('pointerdown', go);
       } else {
         this.showCta();
       }
-    });
+    };
+    // Развязка идёт по таймеру, но её можно листать: тап/клавиша показывает следующую
+    // строку (не раньше чем через 1,5 с после предыдущей), а после последней — ведёт
+    // дальше сразу. Раньше 19 секунд текста нельзя было пропустить. Сначала ГАСИМ текст.
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      this.input.keyboard!.off('keydown', onInput); this.input.off('pointerdown', onInput);
+      timers.forEach(tm => tm.remove(false));
+      this.tweens.add({ targets: lines, alpha: 0, duration: 700, onComplete: () => lines.forEach(l => l.destroy()) });
+      this.time.delayedCall(800, next);
+    };
+    const onInput = () => {
+      if (finished) return;
+      const i = revealed.indexOf(false);
+      if (i === -1) { finish(); return; }
+      if (this.time.now - lastShow >= 1500) show(i, true);
+    };
+    this.time.delayedCall(600, () => { this.input.keyboard!.on('keydown', onInput); this.input.on('pointerdown', onInput); });
+    this.time.delayedCall(13200, finish);
   }
 
   // Развилка конца Акта I: уйти в терапию сейчас (воронка) ИЛИ идти дальше (игра).
@@ -1262,6 +1314,7 @@ export class GameScene extends Phaser.Scene {
     donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
     donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
     donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
+    this.addCrisisLine(440 * ky, 154);
   }
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
@@ -1365,9 +1418,21 @@ export class GameScene extends Phaser.Scene {
     menu.on('pointerdown', () => this.scene.start('Start'));
   }
 
+  // Кризисная строка: игра нарочно доводит до «сил не осталось» — рядом обязан быть
+  // выход (правило №7 CLAUDE.md). Тихая, но кликабельная: tel-ссылка.
+  private addCrisisLine(y: number, depth: number) {
+    const ln = this.add.text(W / 2, y, t('m_crisis_line'), {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: IS_TOUCH ? '9px' : '10px', color: '#a89fd0', align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
+    ln.on('pointerdown', () => { window.location.href = CRISIS_TEL; });
+    this.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });
+    return ln;
+  }
+
   // ── Damage / lives ─────────────────────────────────────────────────────────
   private damage(fromX: number) {
     if (this.assistInvuln) return; // ассист «не умирать»
+    if (this.finalApproach) return; // у двери терапевта кнопки погашены — и урона нет, тень только шепчет
     // копинг «сохраняет в моменте»: пока залип (зона) — урон не проходит
     if (this.frozen) { this.sayOnce('frz_safe', 'm_while_zoned_out_they_can_t', 2600); return; }
     this.hidePlay();
@@ -1398,6 +1463,7 @@ export class GameScene extends Phaser.Scene {
       const hint = this.add.text(W / 2, H - 56, t(IS_TOUCH ? 'm_tap_try_again' : 'm_key_click_try_again'), { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
       this.tweens.add({ targets: [t2, hint], alpha: 0.9, duration: 600 });
+      this.addCrisisLine(H - 28, 200);
       const go = () => this.scene.restart({ chapter: this.chapter.id });
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);

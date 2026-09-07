@@ -22,8 +22,8 @@ export class StartScene extends Phaser.Scene {
       letterSpacing: 4,
     }).setOrigin(0.5);
 
-    // Анимация котика для превью
-    this.anims.create({
+    // Анимация котика для превью — один раз: возврат на титул иначе ругался «key already exists»
+    if (!this.anims.exists('s-cat-idle')) this.anims.create({
       key: 's-cat-idle',
       frames: this.anims.generateFrameNumbers('cat_idle', { start: 0, end: 11 }),
       frameRate: 10, repeat: -1,
