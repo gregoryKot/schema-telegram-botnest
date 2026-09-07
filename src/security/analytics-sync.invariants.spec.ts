@@ -15,7 +15,16 @@ const ROOT = join(__dirname, '..', '..');
 
 // Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
-const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+// 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
+// ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
+// POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
+// как и у двух остальных фронтендов.
+const FRONTEND_DIRS = [
+  'webapp/src',
+  'schema-miniapp/src',
+  'shared/src',
+  'game/src',
+];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит

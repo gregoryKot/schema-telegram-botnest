@@ -14,6 +14,7 @@ import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
+import { GameMetricsService } from './game-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -37,9 +38,8 @@ import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
 import { PracticeSessionsService } from './practice-sessions.service';
 
-// Сервисы, нужные другим модулям (TelegramModule и т.п.) — один список,
-// который идёт и в providers, и в exports (правило №10: новый экспортируемый
-// сервис стоит 1 строку, а не 2).
+// Сервисы для других модулей — один список сразу в providers и в exports
+// (правило №10: новый экспортируемый сервис стоит 1 строку, а не 2).
 const EXPORTED_PROVIDERS = [
   BotService,
   BotAnalyticsService,
@@ -61,8 +61,7 @@ const EXPORTED_PROVIDERS = [
   PracticeSessionsService,
 ];
 
-// Используются только внутри BotModule (квиз/переходы/карточки режимов —
-// суб-агрегаты ProductMetricsService/StatsReportService), наружу не торчат.
+// Только внутри BotModule (суб-агрегаты ProductMetricsService/StatsReportService).
 const INTERNAL_PROVIDERS = [
   QuizMetricsService,
   PracticeLinkMetricsService,
@@ -83,6 +82,7 @@ const INTERNAL_PROVIDERS = [
   LoginTicketMetricsService,
   ClientErrorMetricsService,
   MoneyMetricsService,
+  GameMetricsService,
 ];
 
 @Module({
