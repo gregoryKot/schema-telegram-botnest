@@ -41,7 +41,7 @@ const ATTACK_CD = 300;
 const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
-// тень-критик выкрикивает это постоянно (голос Карающего Родителя)
+// тень-критик выкрикивает это постоянно (голос Карающего Критика)
 const CRITIC_LINES: MsgKey[] = [
   'm_you_failed_again', 'm_everyone_managed_except_you', 'm_told_you_it_won_t_work',
   'm_every_single_time', 'm_pull_yourself_together', 'm_who_needs_you_like_this',
@@ -129,6 +129,7 @@ export class GameScene extends Phaser.Scene {
   private copingsOff = false;         // у финальной двери копинги гаснут
   private finalApproach = false;
   private sessionLines: Phaser.GameObjects.Text[] = []; // реплики кабинета гл.4 — гасим перед CTA
+  private frameQueue: [MsgKey, MsgKey][] = [];      // стоп-кадры, пришедшие, пока открыт другой (два триггера подряд)
 
   constructor() { super('Game'); }
 
@@ -143,7 +144,7 @@ export class GameScene extends Phaser.Scene {
       anx: [], critic: null, criticBubble: null, criticSayT: 0, criticLine: 0,
       homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,
       dead: false, attacking: false, attackCd: 0, dashing: false, dashCd: 0,
-      frozen: false, hitstop: 0, exhaustion: 0, overwhelmed: false, wasFrozen: false, deathsInChapter: 0,
+      frozen: false, hitstop: 0, exhaustion: 0, overwhelmed: false, wasFrozen: false, deathsInChapter: 0, frameQueue: [],
       coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
       bubbleT: 0, attackT: 0, dashT: 0, // иначе переживают restart: пустая плашка реплики в новой главе
     });
@@ -734,6 +735,8 @@ export class GameScene extends Phaser.Scene {
 
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
   private storyFrame(title: MsgKey, text: MsgKey) {
+    // Кадр уже открыт (два триггера в одном рывке): не рисовать поверх, а показать следом
+    if (this.hitstop > 1e8) { this.frameQueue.push([title, text]); return; }
     this.hitstop = 9e9; // update() стоит, пока не отпустим
     // update стоит, но физика Phaser — нет: тормозим игрока, иначе он улетает
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
@@ -752,6 +755,8 @@ export class GameScene extends Phaser.Scene {
       const go = () => {
         this.input.keyboard!.off('keydown', go); this.input.off('pointerdown', go); // иначе второй висит и оживляет игру под следующим кадром
         this.hitstop = 0; pb.setAllowGravity(true); pb.moves = true; [dim, t1, t2, hint].forEach(o => o.destroy());
+        const next = this.frameQueue.shift();
+        if (next) this.storyFrame(next[0], next[1]);
       };
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
