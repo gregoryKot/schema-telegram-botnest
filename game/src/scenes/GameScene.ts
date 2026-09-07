@@ -11,7 +11,7 @@ import { ensureEnemyAnims, LEDGE } from '../props';
 import { t, type MsgKey } from '../i18n';
 import { unlockChapter } from '../progress';
 import { getAssist, setAssist } from '../assist';
-import { track } from '../analytics';
+import { track, trackEvent } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -186,7 +186,7 @@ export class GameScene extends Phaser.Scene {
     unlockChapter(this.chapter.id);
     if (!trackedStarts.has(this.chapter.id)) { // рестарты после смерти — не «старт»
       trackedStarts.add(this.chapter.id);
-      track('chapter_start', { chapter: this.chapter.id });
+      trackEvent('game_chapter_start', { chapter: this.chapter.id });
     }
 
     // start music on the first input (browsers require a gesture)
@@ -431,7 +431,7 @@ export class GameScene extends Phaser.Scene {
 
   private onDoorEnter(_d: Door) {
     // дверь терапевта → глава 4 «Первый сеанс»
-    track('chapter_done', { chapter: this.chapter.id });
+    trackEvent('game_chapter_done', { chapter: this.chapter.id });
     unlockChapter('chapter4');
     this.dead = true;
     audio.stopMusic();
@@ -463,7 +463,6 @@ export class GameScene extends Phaser.Scene {
   // ── Гл.4 «Первый сеанс»: payoff всей игры — впервые тихо, и кто-то рядом.
   //    И первый ВСТРЕТИТЬ: Критик вблизи меньше, чем казался.
   private sessionScene() {
-    track('chapter_start', { chapter: this.chapter.id });
     this.dead = true;
     audio.stopMusic();
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
@@ -545,7 +544,8 @@ export class GameScene extends Phaser.Scene {
   // Финальная CTA: запись + шаринг + донат
   private showTherapyCta() {
     track('demo_end', { chapter: this.chapter.id });
-    track('chapter_done', { chapter: this.chapter.id });
+    trackEvent('game_chapter_done', { chapter: this.chapter.id });
+    trackEvent('game_cta_shown', { from: 'cabinet' });
     const font = '"Press Start 2P", "Courier New", monospace';
     const ky = H / 540, deep = 160;
     // тексты кнопок — НАД заливкой (deep + 1): при равном depth Phaser рисует по порядку
@@ -579,12 +579,12 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click', { from: 'cabinet' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'cabinet' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
-      track('cta_share', { from: 'cabinet' });
-      const url = 'https://schemehappens.ru/game/';
+      trackEvent('game_share', { from: 'cabinet' });
+      const url = 'https://schemehappens.ru/game/?src=share';
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t('m_share_road'))}`, '_blank');
     });
     donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
@@ -1212,7 +1212,7 @@ export class GameScene extends Phaser.Scene {
 
   private showRealization() {
     this.dead = true;
-    track('chapter_done', { chapter: this.chapter.id });
+    trackEvent('game_chapter_done', { chapter: this.chapter.id });
     if (this.chapter.next) unlockChapter(this.chapter.next);
     audio.stopMusic(); audio.toll();
     this.cameras.main.resetFX();
@@ -1285,6 +1285,7 @@ export class GameScene extends Phaser.Scene {
   // Развилка конца Акта I: уйти в терапию сейчас (воронка) ИЛИ идти дальше (игра).
   private showBranch(nextChapter: string) {
     track('act1_end', { chapter: this.chapter.id });
+    trackEvent('game_cta_shown', { from: 'act1' });
     const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
     const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
@@ -1310,7 +1311,7 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
     goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
     goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); this.scene.restart({ chapter: nextChapter }); });
@@ -1381,6 +1382,7 @@ export class GameScene extends Phaser.Scene {
   // Мост в реальную терапию — карточка-результат + воронка + виральность
   private showCta() {
     track('demo_end', { chapter: this.chapter.id });
+    trackEvent('game_cta_shown', { from: 'ending' });
     const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
     const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
@@ -1409,12 +1411,12 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'ending' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
-      track('cta_share');
-      const url = 'https://schemehappens.ru/game/';
+      trackEvent('game_share', { from: 'ending' });
+      const url = 'https://schemehappens.ru/game/?src=share';
       const text = t('m_share_text', { enemy: this.modeShort() });
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
     });
@@ -1455,7 +1457,7 @@ export class GameScene extends Phaser.Scene {
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     pb.setVelocity(0, 0); pb.moves = false;
     this.deathX = this.player.x;
-    track('game_over', { chapter: this.chapter.id });
+    trackEvent('game_over', { chapter: this.chapter.id });
     audio.stopMusic();
     // сразу гасим хаос (огромные тучи и пр.) чёрной шторой — иначе он лезет в кадр
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);

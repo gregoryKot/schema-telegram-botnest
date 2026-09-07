@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { getContinueChapter } from '../progress';
-import { track } from '../analytics';
+import { track, trackEvent } from '../analytics';
 import { CHAPTERS } from '../chapters';
 import { setTouchControls, IS_TOUCH } from '../controls';
 import { t } from '../i18n';
@@ -53,7 +53,7 @@ export class StartScene extends Phaser.Scene {
       btnTxt.setColor('#ff7733');
       cat.setScale(IS_TOUCH ? 3.2 : 4);
     });
-    btn.on('pointerdown', () => { track('game_start'); this.scene.start('Tutorial'); });
+    btn.on('pointerdown', () => { trackEvent('game_start'); this.scene.start('Tutorial'); });
 
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
