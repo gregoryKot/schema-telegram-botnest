@@ -15,6 +15,8 @@ export const ID = plain('идентификатор/enum/дата — не св�
 export const DATE = plain('дата YYYY-MM-DD, не контент');
 export const TOKEN = plain('криптографический токен/хэш, PII не содержит');
 
+import { INFRA_FIELD_POLICY } from './encryption-policy.infra';
+
 export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   Rating: { date: DATE, needId: ID },
   YsqProgress: { answers: enc(`${BOT}/ysq.service.ts`) },
@@ -242,64 +244,5 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
       'числовые агрегаты/needId для шаблонов, свободного текста нет',
     ),
   },
-  AvailabilityRule: { timezone: ID },
-  Booking: {
-    clientName: enc('src/booking/booking.service.ts'),
-    clientContact: enc('src/booking/booking.service.ts'),
-    message: enc('src/booking/booking.service.ts'),
-    cancelToken: TOKEN,
-    meetingUrl: plain('ссылка на Zoom/Телемост, задаётся терапевтом'),
-    calDavUid: ID,
-    source: plain(
-      'страница + referrer при брони — структурная атрибуция лида, не PII',
-    ),
-  },
-  ClientMeeting: {
-    clientKey: plain('sha256 от контакта — уже псевдонимизирован'),
-    meetingUrl: plain('переиспользуемая ссылка на встречу'),
-    zoomMeetingId: ID,
-  },
-  BookingSetting: {
-    key: ID,
-    value: plain('настройки модуля записи (цены и т.п.)'),
-  },
-  Donation: {
-    source: ID,
-    email: enc('src/donation/donation.service.ts'),
-    comment: enc('src/donation/donation.service.ts'),
-  },
-  Subscription: {
-    period: ID,
-    email: enc('src/subscription/subscription.service.ts'),
-    cancelToken: TOKEN,
-  },
-  Article: {
-    slug: ID,
-    title: plain('публичный контент сайта'),
-    description: plain('публичный контент сайта'),
-    content: plain('публичный контент сайта'),
-    heroImage: ID,
-    diagramKey: ID,
-  },
-  HealthyAdultPhrase: { text: plain('контент проекта, не данные юзера') },
-  HealthyAdultPost: {
-    text: plain('контент проекта, не данные юзера'),
-    source: plain('контент проекта, не данные юзера'),
-  },
-  ChannelDelivery: {
-    source: plain('слот публикации: утро/вечер/вручную/проверка'),
-    platform: plain('ключ площадки: telegram/vk/max'),
-    destination: plain('id канала проекта, не пользовательские данные'),
-    reason: plain(
-      'текст ошибки площадки — техническая диагностика, не данные юзера',
-    ),
-    text: plain('фраза канала — контент проекта, не данные юзера'),
-  },
-  CronLease: {
-    name: plain('имя расписания (midnightPlanner и т.п.), не данные юзера'),
-    instanceId: plain(
-      'имя процесса-лидера из HOSTNAME — нужно, чтобы по строке было видно, ' +
-        'какой инстанс забрал прогон; пользователя в ней нет',
-    ),
-  },
+  ...INFRA_FIELD_POLICY,
 };
