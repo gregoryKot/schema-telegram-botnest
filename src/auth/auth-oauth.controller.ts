@@ -27,6 +27,13 @@ import {
 import { GoogleOneTapDto } from './dto/google-one-tap.dto';
 import { getCookie, requireCsrf } from './auth-http.util';
 import { SecurityLogService } from './security-log.service';
+import {
+  OAUTH_COOKIE_PATH,
+  OAUTH_STATE_COOKIE,
+  setOAuthCookie,
+  redirectToCallbackHost,
+  assertOAuthStateMatches,
+} from './oauth-host';
 
 @Controller('api/auth')
 export class AuthOauthController {
@@ -113,10 +120,8 @@ export class AuthOauthController {
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      assertOAuthStateMatches(req, state, vk.callbackOrigin());
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
@@ -148,24 +153,20 @@ export class AuthOauthController {
     const provider = this.providers.get(
       'telegram-oidc',
     ) as TelegramOidcProvider;
+    // Алиас-домен: кука, поставленная здесь, обязана жить на хосте колбэка —
+    // иначе колбэк её не увидит (2026-09-08). Только для анонимного входа:
+    // привязка редиректом на другой хост стала бы входом под другим аккаунтом.
+    if (
+      req.webUser?.userId == null &&
+      redirectToCallbackHost(req, res, provider.callbackOrigin())
+    )
+      return;
     // Подписанный state (C1): linkUserId нельзя подделать, иначе привязка чужого
     // провайдера к аккаунту жертвы = захват. Единая точка — flow.buildLinkState.
     const state = this.flow.buildLinkState(req.webUser?.userId ?? null);
     const { verifier, challenge } = provider.generatePkce();
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.cookie('tg_pkce_verifier', verifier, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
+    setOAuthCookie(res, OAUTH_STATE_COOKIE, state);
+    setOAuthCookie(res, 'tg_pkce_verifier', verifier);
     res.redirect(provider.buildAuthUrl(state, challenge));
   }
 
@@ -184,19 +185,17 @@ export class AuthOauthController {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      const provider = this.providers.get(
+        'telegram-oidc',
+      ) as TelegramOidcProvider;
+      assertOAuthStateMatches(req, state, provider.callbackOrigin());
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
 
       const codeVerifier = getCookie(req, 'tg_pkce_verifier');
       if (!codeVerifier)
         throw new UnauthorizedException('Missing PKCE verifier');
-      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
+      res.clearCookie('tg_pkce_verifier', { path: OAUTH_COOKIE_PATH });
 
-      const provider = this.providers.get(
-        'telegram-oidc',
-      ) as TelegramOidcProvider;
       const identity = await provider.exchangeCodePkce(code, codeVerifier);
 
       const linkUserId = this.flow.linkUserIdFromState(state);

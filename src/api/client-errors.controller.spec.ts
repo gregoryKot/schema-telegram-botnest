@@ -52,7 +52,7 @@ describe('ClientErrorsController', () => {
   const report = (dto: ClientErrorDto, ip?: string) =>
     controller.report(dto, req(ip));
 
-  it('логирует через .error() с распознаваемым префиксом источника', () => {
+  it('логирует через .error() с распознаваемым префиксом источника и секции', () => {
     const dto: ClientErrorDto = {
       message: 'Cannot read properties of undefined',
       section: 'DiaryOverlay',
@@ -63,11 +63,18 @@ describe('ClientErrorsController', () => {
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
     const [msg, detail] = call();
-    expect(msg).toContain('[client:webapp]');
+    // 'DiaryOverlay' не в allow-list classifyClientErrorSection → бакет 'other'.
+    expect(msg).toContain('[client:webapp/other]');
     // Детали (текст ошибки и стек) — во втором аргументе: только stdout.
     expect(detail).toContain('DiaryOverlay');
     expect(detail).toContain('Cannot read properties of undefined');
     expect(detail).toContain('Error: boom\n  at X');
+  });
+
+  it('известная секция попадает в первый аргумент каноническим бакетом ([client:webapp/auth])', () => {
+    report({ message: 'boom', section: 'auth', source: 'webapp' });
+    const [msg] = call();
+    expect(msg).toContain('[client:webapp/auth]');
   });
 
   it('H6: пользовательский текст НЕ попадает в первый аргумент (канал DM)', () => {

@@ -39,6 +39,13 @@ export class TelegramOidcProvider implements AuthProviderHandler {
     return new URL(this.config.getOrThrow<string>('WEBAPP_URL')).origin;
   }
 
+  // Origin редиректа Telegram (тот же WEBAPP_URL, из которого строится
+  // redirectUri) — на нём обязана жить кука oauth_state (алиас-домен,
+  // разбор 2026-09-08).
+  callbackOrigin(): string {
+    return this.webappOrigin;
+  }
+
   // ── PKCE helpers ─────────────────────────────────────────────────────────────
   generatePkce(): { verifier: string; challenge: string } {
     const verifier = randomBytes(32).toString('base64url');
