@@ -443,6 +443,66 @@ describe('AuthFlowService.oauthRedirect', () => {
     );
     expect(res.redirect).not.toHaveBeenCalled();
   });
+
+  // РЕГРЕССИЯ 2026-09-08: сайт целиком (включая /login и /api/auth/*)
+  // обслуживается и с домена-алиаса (kotlarewski.gr) — колбэк провайдера
+  // всегда приходит на канонический хост, поэтому кука oauth_state,
+  // поставленная на алиасе, там не увидится («OAuth state mismatch»).
+  it('РЕГРЕССИЯ 2026-09-08: анонимный вход с алиас-домена → 302 на хост колбэка, кука oauth_state НЕ ставится, buildAuthUrl не вызывается', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://accounts.google.com/x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      originalUrl: '/api/auth/google?ticket=K7M2QX94',
+    });
+
+    svc.oauthRedirect('google', req, res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94',
+    );
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(buildAuthUrl).not.toHaveBeenCalled();
+  });
+
+  it('привязка (webUser есть) с алиас-домена → редиректа на канонический хост нет, кука ставится как обычно', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://accounts.google.com/x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      webUser: { userId: 999n },
+    });
+
+    svc.oauthRedirect('google', req, res);
+
+    // Никакого редиректа на другой хост — привязка живёт куками текущего хоста.
+    expect(res.redirect).toHaveBeenCalledWith('https://accounts.google.com/x');
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      expect.any(String),
+      expect.objectContaining({ path: '/api/auth' }),
+    );
+    expect(buildAuthUrl).toHaveBeenCalled();
+  });
 });
 
 describe('AuthFlowService.oauthCallback', () => {

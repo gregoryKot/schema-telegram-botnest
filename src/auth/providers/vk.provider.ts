@@ -80,6 +80,12 @@ export class VkProvider implements AuthProviderHandler {
     return `https://id.vk.com/authorize?${params}`;
   }
 
+  // Origin редиректа VK (VK_REDIRECT_URI) — на нём обязана жить кука
+  // oauth_state, иначе колбэк её не увидит (алиас-домен, разбор 2026-09-08).
+  callbackOrigin(): string {
+    return new URL(this.config.getOrThrow<string>('VK_REDIRECT_URI')).origin;
+  }
+
   // VK ID returns `code`, `state`, AND `device_id` on the callback URL.
   // Our generic OAuth handler in auth.controller only forwards `code` and
   // `state` — we read `device_id` separately. To keep the handler signature
