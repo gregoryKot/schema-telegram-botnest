@@ -26,6 +26,13 @@ import {
 } from './analytics.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
+import { WEB_BANNER_IDS as WEB_BANNER_IDS_DIRECT } from './web-banner-ids.constants';
+import {
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+} from './game-events.constants';
 
 /** Все перечислимые реестры events/enum'ов этого модуля — сверяются одинаково. */
 const REGISTRIES: Record<string, readonly string[]> = {
@@ -45,6 +52,10 @@ const REGISTRIES: Record<string, readonly string[]> = {
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -112,5 +123,24 @@ describe('SIGNUP_SOURCES реэкспортирован без искажени�
 
   it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
     expect(SIGNUP_SOURCES).toContain('other');
+  });
+});
+
+describe('WEB_BANNER_IDS реэкспортирован без искажений', () => {
+  it('analytics.constants.ts отдаёт тот же массив, что и web-banner-ids.constants.ts', () => {
+    // Правило №10: WEB_BANNER_IDS вынесен в отдельный файл ради лимита строк
+    // (тот же приём, что и SIGNUP_SOURCES выше) — реэкспорт легко протухает.
+    expect(WEB_BANNER_IDS).toEqual(WEB_BANNER_IDS_DIRECT);
+  });
+});
+
+describe('GAME_EVENTS ⊆ PUBLIC_ANALYTICS_EVENTS', () => {
+  it('каждое событие игры разрешено анонимно — иначе DTO публичного эндпоинта его отвергнет', () => {
+    // Игра вообще не авторизует пользователя (правило №5/№14): если бы
+    // событие игры оказалось только в ANALYTICS_EVENTS, PublicEventDto
+    // (IsIn(PUBLIC_ANALYTICS_EVENTS)) отклонил бы его ещё до сервиса.
+    for (const name of GAME_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+    }
   });
 });

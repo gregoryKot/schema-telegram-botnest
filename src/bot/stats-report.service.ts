@@ -15,6 +15,7 @@ import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
+import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
@@ -42,49 +43,35 @@ export class StatsReportService {
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
     private readonly signupSource: SignupSourceMetricsService,
+    private readonly game: GameMetricsService,
     private readonly dataExport: DataExportMetricsService,
   ) {}
 
-  /** Готовый текстовый блок для второго сообщения /stats. */
+  /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
+   * порядок в отчёте, менять только осознанно (см. тест этого сервиса). */
   async render(): Promise<string> {
-    const [
-      product,
-      modeCard,
-      modeDiary,
-      warmWords,
-      phraseChecks,
-      accountLink,
-      plus,
-      webBanner,
-      siteInstall,
-      screen,
-      profilePattern,
-      authHealth,
-      loginTicket,
-      clientErrors,
-      money,
-      signupSource,
-      dataExport,
-    ] = await Promise.all([
-      this.product.render(),
-      this.modeCard.render(),
-      this.modeDiary.render(),
-      this.warmWords.render(),
-      this.phraseChecks.render(),
-      this.accountLink.render(),
-      this.plus.render(),
-      this.webBanner.render(),
-      this.siteInstall.render(),
-      this.screen.render(),
-      this.profilePattern.render(),
-      this.authHealth.render(),
-      this.loginTicket.render(),
-      this.clientErrors.render(),
-      this.money.render(),
-      this.signupSource.render(),
-      this.dataExport.render(),
-    ]);
-    const capability = formatCapabilityReport(buildCapabilityReport());
-    return `${product}\n\n${modeCard}\n\n${modeDiary}\n\n${warmWords}\n\n${phraseChecks}\n\n${accountLink}\n\n${plus}\n\n${webBanner}\n\n${siteInstall}\n\n${screen}\n\n${profilePattern}\n\n${authHealth}\n\n${loginTicket}\n\n${clientErrors}\n\n${money}\n\n${signupSource}\n\n${dataExport}\n\n${capability}`;
+    const blocks = [
+      this.product,
+      this.modeCard,
+      this.modeDiary,
+      this.warmWords,
+      this.phraseChecks,
+      this.accountLink,
+      this.plus,
+      this.webBanner,
+      this.siteInstall,
+      this.screen,
+      this.profilePattern,
+      this.authHealth,
+      this.loginTicket,
+      this.clientErrors,
+      this.money,
+      this.signupSource,
+      this.game,
+      this.dataExport,
+    ];
+    const parts = await Promise.all(blocks.map((b) => b.render()));
+    parts.push(formatCapabilityReport(buildCapabilityReport()));
+    return parts.join('\n\n');
   }
 }

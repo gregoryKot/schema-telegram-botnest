@@ -125,7 +125,10 @@
 //                         открылся кабинет сайта (без meta).
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
+//   game_*               — события игры (game/); реестр, meta и описания
+//                         каждого — game-events.constants.ts.
 import { CASE_EVENTS } from './case-steps.constants';
+import { GAME_EVENTS } from './game-events.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -176,17 +179,21 @@ export const ANALYTICS_EVENTS = [
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
   ...CASE_EVENTS,
+  // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
+  ...GAME_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
 // События, которые разрешено слать БЕЗ авторизации (POST /api/public-event):
-// мини-тесты «без регистрации» и клики лендинга. Только этот срез —
-// остальная аналитика по-прежнему требует верифицированной идентичности.
+// мини-тесты «без регистрации», клики лендинга и вся игра (она вообще не
+// авторизует пользователя, правило №5/№14). Только этот срез — остальная
+// аналитика по-прежнему требует верифицированной идентичности.
 export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
   'home_screen_offer',
+  ...GAME_EVENTS,
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -322,18 +329,9 @@ export const TODAY_FOCUS_PRACTICES = [
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 
-// Идентификаторы баннеров-переходов (meta.banner для событий web_banner_open
-// / web_banner_dismiss). 'cabinet_full' и 'mode_map' — баннеры «полная
-// версия на сайте» в мини-аппе (schema-miniapp/src/utils/webBanner.ts);
-// 'mobile_app' — баннер «Открыть приложение» на мобильной версии сайта
-// (webapp/src/components/MobileAppBanner.tsx). При добавлении баннера
-// синхронь список с соответствующим фронтом.
-export const WEB_BANNER_IDS = [
-  'cabinet_full',
-  'mode_map',
-  'mobile_app',
-] as const;
-export type WebBannerId = (typeof WEB_BANNER_IDS)[number];
+// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts
+// (правило №10, тот же приём, что у SIGNUP_SOURCES ниже).
+export { WEB_BANNER_IDS, type WebBannerId } from './web-banner-ids.constants';
 
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
 // вынесены в quick-actions.constants.ts (правило №10: тот файл держим

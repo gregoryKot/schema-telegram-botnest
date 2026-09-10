@@ -126,10 +126,17 @@ function makeController(
 
 interface VkProviderMocks {
   exchangeCodeWithContext: jest.Mock;
+  callbackOrigin: jest.Mock;
 }
 
 function makeVkProvider(): { vk: VkProvider; mocks: VkProviderMocks } {
-  const mocks: VkProviderMocks = { exchangeCodeWithContext: jest.fn() };
+  const mocks: VkProviderMocks = {
+    exchangeCodeWithContext: jest.fn(),
+    // callbackOrigin — origin VK_REDIRECT_URI (2026-09-08): assertOAuthStateMatches
+    // требует его для классификации отказа. Дефолт совпадает с WEBAPP_URL из
+    // makeConfig, чтобы тесты, не завязанные на алиас-домен, не различали хосты.
+    callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
+  };
   return { vk: mocks as unknown as VkProvider, mocks };
 }
 
@@ -137,6 +144,7 @@ interface TgOidcProviderMocks {
   generatePkce: jest.Mock;
   buildAuthUrl: jest.Mock;
   exchangeCodePkce: jest.Mock;
+  callbackOrigin: jest.Mock;
 }
 
 function makeTgOidcProvider(): {
@@ -152,6 +160,8 @@ function makeTgOidcProvider(): {
         `https://oauth.telegram.org/auth?state=${state}&challenge=${String(challenge)}`,
     ),
     exchangeCodePkce: jest.fn(),
+    // callbackOrigin — origin WEBAPP_URL (2026-09-08), см. комментарий в makeVkProvider.
+    callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
   };
   return { provider: mocks as unknown as TelegramOidcProvider, mocks };
 }
@@ -358,6 +368,32 @@ describe('AuthOauthController.telegramOidcRedirect', () => {
       'signed-oauth-state',
       expect.objectContaining({ httpOnly: true }),
     );
+  });
+
+  // РЕГРЕССИЯ 2026-09-08: сайт обслуживается и с домена-алиаса — колбэк
+  // всегда приходит на канонический хост, кука на алиасе там не увидится.
+  it('анонимный вход с алиас-домена → 302 на хост колбэка, ни одна cookie не ставится, PKCE не генерируется', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
+    const { provider, mocks: tgMocks } = makeTgOidcProvider();
+    const controller = makeController(
+      makeProviders({ 'telegram-oidc': provider }),
+      flow,
+    );
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      originalUrl: '/api/auth/telegram-oidc',
+    } as Partial<Request>);
+    const { res, mocks: resMocks } = makeRes();
+
+    controller.telegramOidcRedirect(req, res);
+
+    expect(resMocks.redirect).toHaveBeenCalledWith(
+      302,
+      `${WEBAPP_URL}/api/auth/telegram-oidc`,
+    );
+    expect(resMocks.cookie).not.toHaveBeenCalled();
+    expect(tgMocks.generatePkce).not.toHaveBeenCalled();
+    expect(flowMocks.buildLinkState).not.toHaveBeenCalled();
   });
 });
 
