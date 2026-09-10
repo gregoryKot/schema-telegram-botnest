@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { authedFetch } from '../../apiClient';
 import { useTr } from '../../utils/addressForm';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
 import { SHead, SRow, InfoModal } from './ui';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
+import { useDataExport } from '../../../../shared/src/account/useDataExport';
 
 // Раздел «Данные» (конфиденциальность + полное удаление аккаунта) — вынесен
 // из SettingsSheet.tsx (правило №10). Состояние обеих модалок полностью
@@ -15,11 +17,35 @@ export function DataSection() {
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
+  const dataExport = useDataExport({ authedFetch });
 
   return (
     <>
       <SHead id="s-data" label="Данные" />
       <SRow title="Конфиденциальность" sub="Что и как хранится" onClick={() => setShowPrivacy(true)} />
+      <SRow
+        title={dataExport.status === 'loading' ? 'Собираю…' : 'Скачать мои данные'}
+        sub={tr(
+          'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачай, если хочешь сохранить копию себе или показать терапевту',
+          'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачайте, если хотите сохранить копию себе или показать терапевту',
+        )}
+        onClick={dataExport.status === 'loading' ? undefined : () => void dataExport.exportData()}
+      />
+      {dataExport.status === 'done' && (
+        <div role="status" style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-6px 0 10px', lineHeight: 1.5 }}>
+          {tr('Файл ушёл в загрузки. Если его там нет — открой schemehappens.ru в браузере и попробуй оттуда', 'Файл ушёл в загрузки. Если его там нет — откройте schemehappens.ru в браузере и попробуйте оттуда')}
+        </div>
+      )}
+      {dataExport.status === 'error' && (
+        <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', margin: '-6px 0 10px' }}>
+          {tr('Не удалось скачать файл. Проверь связь и попробуй ещё раз', 'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз')}
+        </div>
+      )}
+      {dataExport.status === 'unsupported' && (
+        <div role="alert" style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-6px 0 10px', lineHeight: 1.5 }}>
+          {tr('Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там', 'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там')}
+        </div>
+      )}
       <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setDeleteError(false); setShowDeleteSheet(true); }} />
 
       {/* ── Privacy modal ── */}

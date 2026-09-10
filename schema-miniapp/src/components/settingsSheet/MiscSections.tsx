@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { authedFetch } from '../../apiClient';
 import { botShortUrl } from '../../utils/botConfig';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useDataExport } from '../../../../shared/src/account/useDataExport';
 import { useTr } from '../../utils/addressForm';
 import { Row, SettingsLabel } from './ui';
 
@@ -164,6 +166,8 @@ interface DataProps {
 }
 
 export function DataSection({ onPrivacy, onDelete }: DataProps) {
+  const tr = useTr();
+  const dataExport = useDataExport({ authedFetch });
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ДАННЫЕ</SettingsLabel>
@@ -173,12 +177,77 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
       >
         <Row label="О данных и конфиденциальности" onClick={onPrivacy} />
         <Row
+          label={
+            dataExport.status === 'loading' ? 'Собираю…' : 'Скачать мои данные'
+          }
+          sub={tr(
+            'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачай, если хочешь сохранить копию себе или показать терапевту',
+            'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачайте, если хотите сохранить копию себе или показать терапевту',
+          )}
+          divider
+          onClick={
+            dataExport.status === 'loading'
+              ? undefined
+              : () => void dataExport.exportData()
+          }
+        />
+        <Row
           label="Удалить все данные"
           divider
           color="#f87171"
           onClick={onDelete}
         />
       </div>
+      {dataExport.status === 'done' && (
+        <div
+          role="status"
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            marginTop: 6,
+            padding: '0 4px',
+            lineHeight: 1.5,
+          }}
+        >
+          {tr(
+            'Файл ушёл в загрузки. Если его там нет — открой schemehappens.ru в браузере и попробуй оттуда',
+            'Файл ушёл в загрузки. Если его там нет — откройте schemehappens.ru в браузере и попробуйте оттуда',
+          )}
+        </div>
+      )}
+      {dataExport.status === 'error' && (
+        <div
+          role="alert"
+          style={{
+            fontSize: 11,
+            color: 'var(--accent-red)',
+            marginTop: 6,
+            padding: '0 4px',
+          }}
+        >
+          {tr(
+            'Не удалось скачать файл. Проверь связь и попробуй ещё раз',
+            'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз',
+          )}
+        </div>
+      )}
+      {dataExport.status === 'unsupported' && (
+        <div
+          role="alert"
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            marginTop: 6,
+            padding: '0 4px',
+            lineHeight: 1.5,
+          }}
+        >
+          {tr(
+            'Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там',
+            'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там',
+          )}
+        </div>
+      )}
     </div>
   );
 }
