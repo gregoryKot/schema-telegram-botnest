@@ -16,6 +16,7 @@ import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
+import { DataExportMetricsService } from './data-export-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
 
@@ -43,6 +44,7 @@ export class StatsReportService {
     private readonly money: MoneyMetricsService,
     private readonly signupSource: SignupSourceMetricsService,
     private readonly game: GameMetricsService,
+    private readonly dataExport: DataExportMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
@@ -66,6 +68,7 @@ export class StatsReportService {
       this.money,
       this.signupSource,
       this.game,
+      this.dataExport,
     ];
     const parts = await Promise.all(blocks.map((b) => b.render()));
     parts.push(formatCapabilityReport(buildCapabilityReport()));

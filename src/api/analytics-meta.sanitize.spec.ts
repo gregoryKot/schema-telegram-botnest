@@ -536,6 +536,53 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('signup_source', {})).toBeUndefined();
   });
 
+  it('data_export: целые tables + rows проходят', () => {
+    expect(sanitizeMeta('data_export', { tables: 18, rows: 4200 })).toEqual({
+      tables: 18,
+      rows: 4200,
+    });
+    expect(sanitizeMeta('data_export', { tables: 0, rows: 0 })).toEqual({
+      tables: 0,
+      rows: 0,
+    });
+  });
+
+  it('data_export: значения выше потолка обрезаются, а не отбрасываются', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 9999, rows: 50_000_000 }),
+    ).toEqual({ tables: 200, rows: 1_000_000 });
+  });
+
+  it('data_export: нецелые/отрицательные/не-числа → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 1.5, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: -1, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: 5, rows: -1 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: '5', rows: 10 }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('data_export', {})).toBeUndefined();
+  });
+
+  // Проверка на утечку (правило №7): эндпоинт выгрузки шлёт только числа, но
+  // защита не должна зависеть от того, что вызывающий не ошибётся — лишнее
+  // поле (даже свободный текст) обязано отбрасываться, а не проезжать в БД.
+  it('data_export: лишние/свободнотекстовые поля не пропускаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('data_export', {
+        tables: 18,
+        rows: 4200,
+        email: 'user@example.com',
+        note: 'мой личный дневник за сегодня',
+      }),
+    ).toEqual({ tables: 18, rows: 4200 });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

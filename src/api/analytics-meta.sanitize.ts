@@ -18,6 +18,7 @@ import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -154,13 +155,6 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'mode_test_completed') {
-    const modeId = meta.modeId;
-    if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
-      return { modeId };
-    }
-    return undefined;
-  }
   if (name === 'warm_words_open') {
     const count = meta.count;
     if (
@@ -187,7 +181,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'mode_doubt_opened') {
+  if (name === 'mode_doubt_opened' || name === 'mode_test_completed') {
     const modeId = meta.modeId;
     if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
       return { modeId };
@@ -266,6 +260,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'data_export') return sanitizeDataExportMeta(meta);
   if (name === 'profile_pattern_open') {
     const kind = meta.kind;
     if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
