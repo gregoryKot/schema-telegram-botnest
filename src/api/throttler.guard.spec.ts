@@ -14,7 +14,10 @@
 // Теперь подпись проверяется по-настоящему: сошлась — свой бакет, не сошлась —
 // общий бакет адреса, где ротация не даёт ничего.
 import { createHmac } from 'crypto';
+import type { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { UserThrottlerGuard } from './throttler.guard';
+import { PersistentThrottle } from './persistent-throttle.decorator';
 
 const JWT_SECRET = 'secret-for-tests';
 const BOT_TOKEN = '123456:test-bot-token';
@@ -239,5 +242,62 @@ describe('UserThrottlerGuard.getTracker', () => {
 
   it('без кредов и адреса — unknown', async () => {
     await expect(guard.track({ headers: {} })).resolves.toBe('unknown');
+  });
+});
+
+// Инцидент 2026-09-13: денежные/заявочные ручки помечены `@PersistentThrottle()`
+// — их ключ обязан маршрутизироваться в Postgres (HybridThrottleStorage),
+// иначе лимит снова считается отдельно на каждом инстансе Amvera.
+describe('UserThrottlerGuard.generateKey — db:-префикс по @PersistentThrottle()', () => {
+  class Controller {
+    @PersistentThrottle()
+    marked() {}
+    plain() {}
+  }
+
+  function contextFor(handler: () => void): ExecutionContext {
+    return {
+      getHandler: () => handler,
+      getClass: () => Controller,
+    } as unknown as ExecutionContext;
+  }
+
+  const guard = new UserThrottlerGuard(
+    [],
+    { increment: jest.fn() },
+    new Reflector(),
+  );
+
+  it('хендлер с @PersistentThrottle() — ключ с префиксом db:', () => {
+    const key = (guard as any).generateKey(
+      contextFor(Controller.prototype.marked),
+      'uid:1',
+      'long',
+    );
+    expect(key.startsWith('db:')).toBe(true);
+  });
+
+  it('хендлер без метки — ключ как обычно, без префикса', () => {
+    const key = (guard as any).generateKey(
+      contextFor(Controller.prototype.plain),
+      'uid:1',
+      'long',
+    );
+    expect(key.startsWith('db:')).toBe(false);
+  });
+
+  it('вызов дважды для одного хендлера даёт стабильный db:-ключ (не рандом)', () => {
+    const first = (guard as any).generateKey(
+      contextFor(Controller.prototype.marked),
+      'uid:1',
+      'long',
+    );
+    const second = (guard as any).generateKey(
+      contextFor(Controller.prototype.marked),
+      'uid:1',
+      'long',
+    );
+    expect(first).toBe(second);
+    expect(first.startsWith('db:')).toBe(true);
   });
 });
