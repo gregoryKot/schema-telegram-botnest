@@ -333,6 +333,10 @@ jobs:
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+      # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
+      # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
+      - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/throttle-storage.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей

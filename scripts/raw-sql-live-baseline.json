@@ -2,6 +2,9 @@
   "src/api/health.controller.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },
+  "src/api/postgres-throttle-storage.ts": {
+    "spec": "test/throttle-storage.e2e-spec.ts"
+  },
   "src/auth/merge-subscriptions.ts": {
     "spec": "test/notify-address.e2e-spec.ts",
     "via": "src/auth/merge.service.ts"

@@ -49,6 +49,23 @@ shared, а не по образцу старого дубля.
 неверифицированное бакетируется по IP (или `uid|ip`). Иначе лимит
 обходится ротацией фейкового `sub`.
 
+Идентичность бакета — не единственное условие: штатный `@nestjs/throttler`
+считает хиты в памяти процесса, а на Amvera обычно больше одного инстанса —
+у каждого свой счётчик. Инцидент 2026-09-13: на `POST /api/booking/book`
+стоял `@Throttle({ long: { limit: 6, ttl: 3_600_000 } })`, семь запросов за
+3 минуты — и ни один не получил 429, потому что запросы разошлись по разным
+инстансам. Счётчик денежных/заявочных ручек (booking/donation/subscription)
+переехал в Postgres — модель `ThrottleHit`, `HybridThrottleStorage` маршрутизирует
+по ключу (`src/api/hybrid-throttle-storage.ts` + `postgres-throttle-storage.ts`):
+маршрут, помеченный `@PersistentThrottle()` (`src/api/persistent-throttle.decorator.ts`),
+получает `db:`-префикс ключа в `UserThrottlerGuard.generateKey` и считается в
+Postgres общим на все инстансы счётчиком; остальные маршруты остаются в
+памяти, как раньше (не грузить БД записью на каждый запрос сайта). Атомарность
+— один `INSERT … ON CONFLICT DO UPDATE`, доказана на живом Postgres
+(`test/throttle-storage.e2e-spec.ts`, правило №18), мок `$queryRaw` её не
+проверяет. При недоступной БД — деградация в память на этот один вызов
+(`warn`, не `error`: авария БД алертится отдельно).
+
 ### 6. Новый эндпоинт = DTO с class-validator
 Inline-интерфейсы в `@Body()` дают только compile-time иллюзию. Рантайм
 валидируется декораторами DTO + глобальным `ValidationPipe({ whitelist: true })`.
