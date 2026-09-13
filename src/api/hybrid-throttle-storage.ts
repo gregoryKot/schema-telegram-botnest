@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, type OnApplicationShutdown } from '@nestjs/common';
 import type { ThrottlerStorage } from '@nestjs/throttler';
 import { ThrottlerStorageService } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,8 +20,15 @@ const DB_PREFIX = 'db:';
  * 500 пользователю). `warn`, не `error`: `error` ушёл бы в AlertLogger и
  * будил админа DM на каждый запрос, пока авария БД не починится — сама
  * авария уже алертится отдельно (DbOutageMonitorService).
+ *
+ * Остановка: штатное хранилище чистит таймеры истечения (до часа на
+ * маршрутах с ttl 3_600_000) в onApplicationShutdown. Обёртка обязана
+ * пробросить хук — иначе после app.close() таймеры живут дальше, и jest в
+ * джобе migrations ждал их час (первый прогон CI PR #492 повис на 47 минут).
  */
-export class HybridThrottleStorage implements ThrottlerStorage {
+export class HybridThrottleStorage
+  implements ThrottlerStorage, OnApplicationShutdown
+{
   private readonly logger = new Logger(HybridThrottleStorage.name);
   private readonly memory = new ThrottlerStorageService();
   private readonly postgres: PostgresThrottleStorage;
@@ -61,5 +68,9 @@ export class HybridThrottleStorage implements ThrottlerStorage {
         throttlerName,
       );
     }
+  }
+
+  onApplicationShutdown(): void {
+    this.memory.onApplicationShutdown();
   }
 }
