@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { buildVcalendar, CalEvent } from './caldav-event.util';
 import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
-import { busyQueryXml, parseBusy, Interval } from './caldav-busy';
+import { busyQueryXml, Interval } from './caldav-busy';
+import { readBusy } from './caldav-busy-read';
+import { calDavHealth } from './caldav-health';
 
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
@@ -149,32 +151,21 @@ export class CalDavService {
     const body = busyQueryXml(from, to);
     const all: Interval[] = [];
     const results = await Promise.all(
-      urls.map(async (url) => {
-        try {
-          const res = await fetch(url, {
-            method: 'REPORT',
-            headers: {
-              Authorization: this.auth,
-              'Content-Type': 'application/xml; charset=utf-8',
-              Depth: '1',
-            },
-            body,
-            signal: AbortSignal.timeout(7_000),
-          });
-          if (res.status !== 207 && !res.ok) {
-            this.logger.warn(`CalDAV busy REPORT ${res.status} for ${url}`);
-            return [] as Interval[];
-          }
-          return parseBusy(await res.text());
-        } catch (e) {
-          this.logger.warn(
-            `CalDAV busy read failed for ${url}: ${(e as Error).message}`,
-          );
-          return [] as Interval[];
-        }
-      }),
+      urls.map((url) => readBusy(url, this.auth, body)),
     );
-    for (const r of results) all.push(...r);
+    // Сбой хотя бы одного календаря = чтение неполное: слоты покажутся
+    // поверх личных встреч. Алерт — по смене состояния (caldav-health.ts),
+    // а не на каждый запрос; warn остаётся для лога.
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      this.logger.warn(`CalDAV busy read failed: ${failed.detail}`);
+      const alert = calDavHealth.noteFailure(failed.kind, failed.detail);
+      if (alert) this.logger.error(alert);
+    } else {
+      const recovered = calDavHealth.noteSuccess();
+      if (recovered) this.logger.error(recovered);
+    }
+    for (const r of results) if (r.ok) all.push(...r.intervals);
     this.busyCache = { key, val: all, exp: Date.now() + 60_000 };
     return all;
   }

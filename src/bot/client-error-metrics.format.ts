@@ -27,6 +27,7 @@ export interface ClientErrorMetrics {
     profile: number;
     help: number;
     cabinet: number;
+    booking: number;
     other: number;
   };
   bySource: { webapp: number; miniapp: number };
@@ -41,6 +42,7 @@ const SECTION_LABELS: Record<keyof ClientErrorMetrics['bySection'], string> = {
   profile: 'Профиль',
   help: 'Помощь',
   cabinet: 'Кабинет',
+  booking: 'Запись на консультацию',
   other: 'другое',
 };
 

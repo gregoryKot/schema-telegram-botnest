@@ -125,6 +125,20 @@ export function buildCapabilityReport(
       critical: false,
     },
     {
+      // Найдено 2026-09-13 по логам: iCloud отвечал 403, warn без алерта,
+      // слоты шли поверх личных встреч. Здесь — «настроен ли»; «читается
+      // ли» — блок «Личный календарь» в /stats (caldav-health.ts).
+      id: 'appleCalendar',
+      title: 'Личный календарь (iCloud) в слотах записи',
+      on: has(env, 'APPLE_ID') && has(env, 'APPLE_APP_PASSWORD'),
+      envVars: ['APPLE_ID', 'APPLE_APP_PASSWORD'],
+      offReason:
+        'Личный календарь не подключён: слоты записи не учитывают встречи ' +
+        'владельца (не заданы APPLE_ID/APPLE_APP_PASSWORD).',
+      files: ['src/booking/caldav.service.ts'],
+      critical: false,
+    },
+    {
       id: 'threadsTokenRefresh',
       title: 'Автообновление токена Threads',
       on: has(env, 'HEALTHY_ADULT_THREADS_TOKEN'),

@@ -16,12 +16,9 @@ import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import {
-  assertWithinAvailability,
-  assertSlotFree,
-} from './booking.availability';
+import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
-import { lockBookingSlots } from './booking-slot-lock';
+import { createBookingGuarded } from './booking.create';
 import {
   listBookings,
   getBookingById,
@@ -138,15 +135,13 @@ export class BookingService {
       SCHEMA,
     );
 
-    // P-1 (аудит 2026-07): проверка занятости и создание — в одной транзакции
-    // под advisory-lock, иначе два клиента, кликнувшие одновременно, оба
-    // проходили findMany-проверку и бронировали один слот (TOCTOU).
-    // Lock — xact-scoped: снимается автоматически на commit/rollback.
-    const booking = await this.prisma.$transaction(async (tx) => {
-      await lockBookingSlots(tx);
-      await assertSlotFree(tx, dto.startsAt, dto.durationMin);
-      return tx.booking.create({ data });
-    });
+    // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
+    // случай падения (лид уходит админу) — см. booking.create.ts.
+    const booking = await createBookingGuarded(
+      { prisma: this.prisma, notify: this.notify, logger: this.logger },
+      data,
+      dto,
+    );
     this.logger.log(
       `Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`,
     );

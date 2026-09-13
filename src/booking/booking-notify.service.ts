@@ -7,8 +7,8 @@ import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
-import { escapeHtml } from '../utils/escape-html';
 import { sessionLabel } from './caldav-event.util';
+import { bookingCardText, formatTime } from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
@@ -160,19 +160,23 @@ export class BookingNotifyService {
   }
 
   private async sendAdmin(title: string, b: PlainBooking): Promise<void> {
-    const text = [
-      title,
-      '',
-      `👤 ${b.clientName}`,
-      `📬 ${b.clientContact}`,
-      `🗓 ${formatTime(b.startsAt)}`,
-      b.message ? `💬 ${b.message}` : null,
-      b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
-      b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n');
-    await this.notifyAdminText(text);
+    await this.notifyAdminText(bookingCardText(title, b));
+  }
+
+  /**
+   * Критичный алерт — в ОБА канала сразу, независимо от исхода Telegram
+   * (в notifyAdminText почта — только запасной ход, когда Telegram не ответил).
+   * Инцидент 2026-09-13: потерянная заявка ушла одним DM, который владелец
+   * увидел через 40 минут; для денег и заявок нужен и второй канал.
+   */
+  async alertAdminCritical(html: string, subject: string): Promise<void> {
+    const plain = html.replace(/<[^>]+>/g, '');
+    await Promise.all([
+      this.telegram.notifyAdmin(html),
+      this.email
+        .sendAdminNotification(subject, plain)
+        .catch((e) => this.logger.error('Critical admin e-mail failed', e)),
+    ]);
   }
 
   /** Send to admin via Telegram; if that fails, fall back to e-mail so alerts are never lost. */
@@ -185,17 +189,4 @@ export class BookingNotifyService {
       .sendAdminNotification('Уведомление о записи', plain)
       .catch((e) => this.logger.error('Admin e-mail alert also failed', e));
   }
-}
-
-function formatTime(date: Date): string {
-  return (
-    new Intl.DateTimeFormat('ru-RU', {
-      timeZone: 'Europe/Moscow',
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date) + ' МСК'
-  );
 }

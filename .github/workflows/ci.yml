@@ -169,6 +169,7 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      - run: node scripts/check-raw-sql-live.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -324,6 +325,14 @@ jobs:
       # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
       - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
+      # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
+      # удаления аккаунта, захват списания подписки. Состав держит гейт
+      # check-raw-sql-live.mjs (джоба checks).
+      - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей
