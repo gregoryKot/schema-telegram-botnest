@@ -18,6 +18,7 @@ const empty: ClientErrorMetrics = {
     profile: 0,
     help: 0,
     cabinet: 0,
+    booking: 0,
     other: 0,
   },
   bySource: { webapp: 0, miniapp: 0 },

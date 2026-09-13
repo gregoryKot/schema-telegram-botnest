@@ -11,6 +11,8 @@ const ALL_CONFIGURED = {
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
   ZOOM_CLIENT_SECRET: 'z3',
+  APPLE_ID: 'me@icloud.com',
+  APPLE_APP_PASSWORD: 'app-pass',
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',

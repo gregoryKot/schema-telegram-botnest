@@ -164,6 +164,10 @@ export const EXCLUDE = [
   // физически негде взять (нет залогиненного пользователя).
   /webapp\/src\/pages\/landing\//,
   /webapp\/src\/components\/BookingPicker\.tsx$/,
+  // Текст исхода той же формы записи, вынесенный из BookingPicker (инцидент
+  // 2026-09-13: честное «заявка не сохранилась» вместо «время заняли»). Та
+  // же зона: гость до входа, формы негде взять.
+  /webapp\/src\/components\/BookingErrorNote\.tsx$/,
   // Статьи сайта — единая форма «вы» (docs/ARTICLES.md), addressForm не
   // читают, как и лендинг.
   /^src\/articles\/articles\.seed\.ts$/,

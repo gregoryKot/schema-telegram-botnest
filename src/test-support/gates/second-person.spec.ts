@@ -142,6 +142,24 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('исход формы записи (BookingErrorNote — та же зона, что BookingPicker) исключён', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingErrorNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('КОНТРОЛЬ: соседний компонент с тем же императивом — по-прежнему exit 1', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingSummaryNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
   // ── Калибровка 2026-08: зоны вне addressForm ──────────────────────────
   it('статьи сайта (единая форма «вы», не привязаны к addressForm) исключены', () => {
     const res = runGate('check-second-person.mjs', {
@@ -379,6 +397,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // Публичный лендинг психолога / виджет записи до входа.
       'webapp/src/pages/landing/BookingForm.tsx',
       'webapp/src/components/BookingPicker.tsx',
+      'webapp/src/components/BookingErrorNote.tsx',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',

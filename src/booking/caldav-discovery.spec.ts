@@ -19,6 +19,19 @@ const HOME_XML = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:c="ur
     <c:calendar-home-set><d:href>/123/calendars/</d:href></c:calendar-home-set>
   </d:prop></d:propstat></d:response></d:multistatus>`;
 
+// Как настоящий iCloud: PROPFIND Depth 1 по корню отдаёт ПЕРВЫМ <response>
+// сам корень (calendar-home-set) — тоже с VEVENT в component-set, но
+// resourcetype без <c:calendar/> и без displayname. Старый фильтр «VEVENT
+// где угодно в блоке» принимал корень за календарь → REPORT в корень → 403
+// от iCloud (инцидент 2026-09-13). Хелпер воспроизводит это на каждый вызов.
+const ROOT_RESPONSE = `<d:response>
+  <d:href>/123/calendars/</d:href>
+  <d:propstat><d:prop>
+    <d:resourcetype><d:collection/></d:resourcetype>
+    <c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>
+  </d:prop></d:propstat>
+</d:response>`;
+
 function listXml(
   entries: { href: string; name: string; vevent: boolean }[],
 ): string {
@@ -28,12 +41,13 @@ function listXml(
         <d:href>${e.href}</d:href>
         <d:propstat><d:prop>
           <d:displayname>${e.name}</d:displayname>
+          <d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
           ${e.vevent ? '<c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>' : ''}
         </d:prop></d:propstat>
       </d:response>`,
     )
     .join('');
-  return `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${responses}</d:multistatus>`;
+  return `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${ROOT_RESPONSE}${responses}</d:multistatus>`;
 }
 
 function mockSequence(
@@ -51,7 +65,7 @@ function mockSequence(
 }
 
 describe('listCalendars — счастливый путь (3 шага PROPFIND)', () => {
-  it('возвращает только VEVENT-календари, исключая inbox/outbox/notification', async () => {
+  it('возвращает только VEVENT-календари, исключая корень, inbox/outbox/notification', async () => {
     mockSequence(
       { body: PRINCIPAL_XML },
       { body: HOME_XML },
@@ -67,6 +81,11 @@ describe('listCalendars — счастливый путь (3 шага PROPFIND)'
     expect(cals).toHaveLength(1);
     expect(cals[0].name).toBe('Home');
     expect(cals[0].url).toContain('/123/calendars/home/');
+    // Порядок ответов PROPFIND прежний (корень первым) — важна не сортировка,
+    // а то, что корень отфильтрован, а Home дошёл до результата.
+    expect(cals.map((c) => c.url)).not.toContain(
+      'https://caldav.icloud.com/123/calendars/',
+    );
   });
 
   it('href без протокола достраивается до абсолютного URL от origin', async () => {
@@ -81,6 +100,54 @@ describe('listCalendars — счастливый путь (3 шага PROPFIND)'
     );
     const cals = await listCalendars('Basic xyz');
     expect(cals[0].url.startsWith('https://')).toBe(true);
+  });
+});
+
+describe('listCalendars — фильтр корня (регресс инцидента 2026-09-13)', () => {
+  it('корень с VEVENT в component-set, но без <c:calendar/> в resourcetype — не попадает в список', async () => {
+    mockSequence(
+      { body: PRINCIPAL_XML },
+      { body: HOME_XML },
+      {
+        body: listXml([
+          { href: '/123/calendars/home/', name: 'Home', vevent: true },
+        ]),
+      },
+    );
+    const cals = await listCalendars('Basic xyz');
+    expect(cals).toHaveLength(1);
+    expect(cals.map((c) => c.url)).not.toContain(
+      'https://caldav.icloud.com/123/calendars/',
+    );
+  });
+
+  // Контроль: и НЕ-корневой блок с VEVENT, но без <c:calendar/> в
+  // resourcetype (например, недо-настроенная общая коллекция) обязан
+  // исключаться — фильтр смотрит на resourcetype, а не просто на href !== homeUrl.
+  it('не-корневой блок с VEVENT, но без <c:calendar/> в resourcetype — тоже исключён', async () => {
+    const body = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+      ${ROOT_RESPONSE}
+      <d:response>
+        <d:href>/123/calendars/shared/</d:href>
+        <d:propstat><d:prop>
+          <d:displayname>Shared</d:displayname>
+          <d:resourcetype><d:collection/></d:resourcetype>
+          <c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>
+        </d:prop></d:propstat>
+      </d:response>
+      <d:response>
+        <d:href>/123/calendars/home/</d:href>
+        <d:propstat><d:prop>
+          <d:displayname>Home</d:displayname>
+          <d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
+          <c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>
+        </d:prop></d:propstat>
+      </d:response>
+    </d:multistatus>`;
+    mockSequence({ body: PRINCIPAL_XML }, { body: HOME_XML }, { body });
+    const cals = await listCalendars('Basic xyz');
+    expect(cals).toHaveLength(1);
+    expect(cals[0].name).toBe('Home');
   });
 });
 
