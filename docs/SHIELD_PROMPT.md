@@ -98,6 +98,7 @@
 | Раздувание файлов | `scripts/check-file-size-ratchet.mjs` |
 | Просадка покрытия (бэк и три фронт-пакета) | `check-coverage-ratchet.mjs`, `check-frontend-coverage-ratchet.mjs` |
 | Битый SQL миграций | джоба `migrations` на реальном Postgres |
+| Сырой запрос, который драйвер БД не может прочитать (инцидент 2026-09-13: `pg_advisory_xact_lock` возвращает `void`, Prisma 7 с driver-adapter падает в `$queryRaw`; 12 юнит-спеков мокали `$queryRaw` и были зелёными, запись на консультацию отвечала 500 каждому) | `src/booking/booking-slot-lock.ts` (`$executeRaw`) + `test/booking-slot-lock.e2e-spec.ts` на живом Postgres — лок в настоящей транзакции, контрольный тест «через `$queryRaw` падает», весь `POST /api/booking/book` по HTTP с read-after-write |
 | Расхождение фейковой Prisma с настоящей | второй прогон ключевых e2e с `E2E_REAL_DB=1` |
 | Дубли маршрутов | `scripts/check-route-collisions.mjs` |
 | Тихий отказ входа | `src/api/auth-failure.report.ts` + блок «Вход в мессенджере» в `/stats` |

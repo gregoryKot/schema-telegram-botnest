@@ -318,6 +318,12 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
+      # advisory-lock через $queryRaw, а Prisma 7 не читает колонку типа `void`.
+      # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
+      # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
+      - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей

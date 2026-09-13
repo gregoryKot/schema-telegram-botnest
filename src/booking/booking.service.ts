@@ -21,6 +21,7 @@ import {
   assertSlotFree,
 } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
+import { lockBookingSlots } from './booking-slot-lock';
 import {
   listBookings,
   getBookingById,
@@ -49,10 +50,6 @@ const SCHEMA: EncryptSchema = {
 };
 
 const HOLD_MINUTES = 15;
-// Ключ pg_advisory_xact_lock для сериализации «проверить слот → создать бронь».
-// Один глобальный лок на все брони: трафик записи низкий, сериализация дешевле,
-// чем exclusion constraint по времени (P-1, аудит 2026-07).
-const BOOKING_SLOT_LOCK_KEY = 911_001;
 
 /**
  * Thrown by confirm() specifically when the webhook-reported paid amount
@@ -146,7 +143,7 @@ export class BookingService {
     // проходили findMany-проверку и бронировали один слот (TOCTOU).
     // Lock — xact-scoped: снимается автоматически на commit/rollback.
     const booking = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${BOOKING_SLOT_LOCK_KEY})`;
+      await lockBookingSlots(tx);
       await assertSlotFree(tx, dto.startsAt, dto.durationMin);
       return tx.booking.create({ data });
     });

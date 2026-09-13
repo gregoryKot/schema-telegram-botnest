@@ -37,7 +37,7 @@ function makeService(
     : [];
   let nextId = 100;
   const tx = {
-    $queryRaw: jest.fn(async () => undefined),
+    $executeRaw: jest.fn(async () => undefined),
     booking: {
       findMany: jest.fn(async ({ where }: any) => {
         const endsAt: Date = where.startsAt.lt;
@@ -227,9 +227,9 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
       durationMin: 50,
       type: SessionType.SESSION_50,
     });
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(1); // advisory lock взят
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1); // advisory lock взят
     // Именно тот advisory-lock ключ, что защищает слот бронирований (не случайный).
-    const lockCall = (tx.$queryRaw as jest.Mock).mock.calls[0];
+    const lockCall = (tx.$executeRaw as jest.Mock).mock.calls[0];
     expect(lockCall[0].join('?')).toContain('pg_advisory_xact_lock');
 
     expect(tx.booking.create).toHaveBeenCalledTimes(1);
