@@ -8,10 +8,8 @@ export type BusyRead =
   | { ok: true; intervals: Interval[] }
   | { ok: false; kind: CalDavFailureKind; detail: string };
 
-/**
- * 401/403 — учётные данные, таймаут, сеть, прочий HTTP. Сам не логирует и
- * не алертит — решение о тревоге принимает caldav-health.ts по смене состояния.
- */
+// 401/403 — учётные данные, таймаут, сеть, прочий HTTP. Сам не логирует и
+// не алертит — решение о тревоге принимает caldav-health.ts по смене состояния.
 export async function readBusy(
   url: string,
   auth: string,
@@ -26,7 +24,8 @@ export async function readBusy(
         Depth: '1',
       },
       body,
-      signal: AbortSignal.timeout(7_000),
+      // Было 7с — не хватало на большой календарь (инцидент 2026-09-13).
+      signal: AbortSignal.timeout(15_000),
     });
     if (res.status !== 207 && !res.ok) {
       const kind = res.status === 401 || res.status === 403 ? 'auth' : 'http';

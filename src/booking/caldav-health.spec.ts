@@ -80,7 +80,10 @@ describe('formatCalendarHealth', () => {
       T0 + 90 * 60_000,
     );
     expect(text).toContain('НЕ читается (2 ч назад)');
-    expect(text).toContain('пароль приложения Apple');
+    // 403 честно объясняется двумя причинами (инцидент 2026-09-13: 403
+    // бывает и от запроса в корень календарей, не только от пароля).
+    expect(text).toContain('не подходит пароль приложения');
+    expect(text).toContain('запрос ушёл не в календарь');
     expect(text).toContain('НЕ скрываются');
     expect(text).toContain('Сбоев чтения с запуска: 1');
   });

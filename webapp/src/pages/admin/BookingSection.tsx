@@ -34,11 +34,11 @@ export function BookingSection({ adminKey }: { adminKey: string }) {
 const StatusDot = ({ on }: { on: boolean }) => (
   <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? '#4a6335' : '#b8860b' }} />
 );
-const StatusRow = ({ label, on, note }: { label: string; on: boolean; note?: string }) => (
+const StatusRow = ({ label, on, note, error }: { label: string; on: boolean; note?: string; error?: string }) => ( // error красной пометкой перекрывает note (2026-09-13)
   <div style={{ display: 'flex', alignItems: 'center', fontSize: 14, padding: '5px 0' }}>
     <StatusDot on={on} /><span style={{ color: 'var(--text)' }}>{label}</span>
     <span style={{ flex: 1 }} />
-    <span style={{ color: on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{on ? (note ?? 'вкл') : 'выкл'}</span>
+    <span style={{ color: error ? 'var(--accent-red)' : on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{error ? `чтение не работает: ${error}` : on ? (note ?? 'вкл') : 'выкл'}</span>
   </div>
 );
 
@@ -57,7 +57,7 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
         </div>
       )}
       <StatusRow label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
-      <StatusRow label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
+      <StatusRow label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} error={s.calendarReadError ?? undefined} />
       {s.appleCalendar && (
         <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
           {Array.isArray(s.calendarNames) && s.calendarNames.length > 0

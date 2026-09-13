@@ -1,14 +1,6 @@
-// iCloud CalDAV auto-discovery: given just Apple ID + app-specific password,
-// find the URL of a writable calendar collection. Saves the user from hunting
-// down the cryptic https://pXX-caldav.icloud.com/<id>/calendars/<name>/ URL.
-//
-// Flow (RFC 6764 / 4791):
-//   1. PROPFIND bootstrap → current-user-principal
-//   2. PROPFIND principal → calendar-home-set (absolute, on the pXX host)
-//   3. PROPFIND home (Depth 1) → pick a calendar that supports VEVENT
-//
-// Best-effort and namespace-agnostic. Returns null if anything fails; the
-// caller then falls back to the manual APPLE_CALDAV_URL.
+// iCloud CalDAV auto-discovery (RFC 6764/4791): principal → calendar-home-set
+// → calendars at Depth 1 that support VEVENT. Best-effort; [] on any gap —
+// caller falls back to the manual APPLE_CALDAV_URL.
 
 const BOOTSTRAP = 'https://caldav.icloud.com';
 
@@ -35,19 +27,20 @@ async function propfind(
   return res.text();
 }
 
-/** href found *inside* a named property element (not the outer response href). */
-function innerHref(xml: string, prop: string): string | null {
-  const block = xml.match(
+/** Contents between <prop>...</prop> in xml, any namespace prefix. */
+const block = (xml: string, prop: string): string =>
+  xml.match(
     new RegExp(`<[^>]*${prop}[^>]*>([\\s\\S]*?)</[^>]*${prop}\\s*>`, 'i'),
-  );
-  if (!block) return null;
-  const href = block[1].match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i);
-  return href ? href[1].trim() : null;
-}
+  )?.[1] ?? '';
 
-function abs(origin: string, pathOrUrl: string): string {
-  return /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : origin + pathOrUrl;
-}
+/** href *inside* a named property element (not the outer response href). */
+const innerHref = (xml: string, prop: string): string | null =>
+  block(xml, prop)
+    .match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1]
+    ?.trim() ?? null;
+
+const abs = (origin: string, pathOrUrl: string): string =>
+  /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : origin + pathOrUrl;
 
 export interface CalendarRef {
   url: string;
@@ -94,9 +87,16 @@ export async function listCalendars(auth: string): Promise<CalendarRef[]> {
     const href = (
       r.match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? ''
     ).trim();
-    if (!href || !/VEVENT/i.test(r)) continue;
-    if (/inbox|outbox|notification/i.test(href)) continue;
+    if (!href) continue;
     const url = abs(homeOrigin, href).replace(/\/?$/, '/');
+    // Инцидент 2026-09-13: корень тоже отвечает VEVENT в component-set —
+    // старый фильтр пропускал его в список → REPORT в корень → 403 iCloud.
+    if (url === homeUrl || /inbox|outbox|notification/i.test(href)) continue;
+    if (
+      !/<[^>:]*:?calendar\s*\/?>/i.test(block(r, 'resourcetype')) ||
+      !/VEVENT/i.test(block(r, 'supported-calendar-component-set'))
+    )
+      continue;
     const name = (
       r.match(/<[^>]*displayname[^>]*>\s*([^<]*?)\s*</i)?.[1] ?? ''
     ).trim();

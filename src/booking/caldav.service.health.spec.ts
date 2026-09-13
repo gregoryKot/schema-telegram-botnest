@@ -65,8 +65,21 @@ describe('CalDavService — здоровье чтения календаря', (
     }) as any;
     await s.getBusyTimes(...range(17));
     expect(error).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('aborted due to timeout'),
+    );
+    expect(calDavHealth.snapshot()).toMatchObject({
+      open: false,
+      failCount: 1,
+      consecutiveFails: 1,
+      lastFailKind: 'timeout',
+    });
+
     global.fetch = jest.fn(async () => ok()) as any;
     await s.getBusyTimes(...range(18));
     expect(error).not.toHaveBeenCalled();
+    const snap = calDavHealth.snapshot();
+    expect(snap).toMatchObject({ open: false, consecutiveFails: 0 });
+    expect(snap.lastOkAt).not.toBeNull();
   });
 });
