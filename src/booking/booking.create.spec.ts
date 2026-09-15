@@ -31,7 +31,7 @@ function makeDeps(opts: { lockError?: Error; taken?: boolean } = {}) {
     },
   };
   const prisma: any = { $transaction: jest.fn(async (fn: any) => fn(tx)) };
-  const notify = { alertAdminCritical: jest.fn(async () => undefined) };
+  const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
   const logger = new Logger('test');
   jest.spyOn(logger, 'error').mockImplementation(() => undefined);
   return { deps: { prisma, notify, logger }, tx, notify, logger };
@@ -50,8 +50,8 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     ).rejects.toThrow(/void/);
 
     expect(tx.booking.create).not.toHaveBeenCalled();
-    expect(notify.alertAdminCritical).toHaveBeenCalledTimes(1);
-    const [html, subject] = notify.alertAdminCritical.mock.calls[0];
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    const [html, subject] = notify.notifyAdminBoth.mock.calls[0];
     expect(html).toContain('НЕ сохранилась');
     expect(html).toContain('Мария');
     expect(html).toContain('@maria');
@@ -69,8 +69,8 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     await expect(createBookingGuarded(deps, {} as any, LEAD)).rejects.toThrow(
       'connection terminated',
     );
-    expect(notify.alertAdminCritical).toHaveBeenCalledTimes(1);
-    expect(notify.alertAdminCritical.mock.calls[0][0]).toContain(
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(notify.notifyAdminBoth.mock.calls[0][0]).toContain(
       'connection terminated',
     );
   });
@@ -80,7 +80,7 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     await expect(
       createBookingGuarded(deps, {} as any, LEAD),
     ).rejects.toBeInstanceOf(ConflictException);
-    expect(notify.alertAdminCritical).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 
   it('успех — бронь создана внутри транзакции после лока, алерта нет', async () => {
@@ -93,12 +93,12 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     expect(row.id).toBe(7);
     expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(tx.booking.create).toHaveBeenCalledTimes(1);
-    expect(notify.alertAdminCritical).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 
   it('падение самого алерта не глотает исходную ошибку и не подменяет её', async () => {
     const { deps, notify } = makeDeps({ lockError: new Error('driver boom') });
-    notify.alertAdminCritical.mockRejectedValueOnce(new Error('tg down'));
+    notify.notifyAdminBoth.mockRejectedValueOnce(new Error('tg down'));
     await expect(createBookingGuarded(deps, {} as any, LEAD)).rejects.toThrow(
       /driver boom|tg down/,
     );

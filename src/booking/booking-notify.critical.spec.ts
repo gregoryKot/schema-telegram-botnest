@@ -1,4 +1,4 @@
-// alertAdminCritical: оба канала СРАЗУ, независимо друг от друга. Обычный
+// notifyAdminBoth: оба канала СРАЗУ, независимо друг от друга. Обычный
 // notifyAdminText шлёт почту только когда Telegram не ответил — для потерянной
 // заявки (инцидент 2026-09-13) владелец потребовал письмо всегда.
 import { BookingNotifyService } from './booking-notify.service';
@@ -24,10 +24,10 @@ function makeService(opts: { tgOk: boolean; emailFails?: boolean }) {
   return { service, telegram, email };
 }
 
-describe('BookingNotifyService.alertAdminCritical', () => {
+describe('BookingNotifyService.notifyAdminBoth', () => {
   it('Telegram ответил ok — письмо всё равно уходит (это не фолбэк, а второй канал)', async () => {
     const { service, telegram, email } = makeService({ tgOk: true });
-    await service.alertAdminCritical('<b>лид</b> @maria', 'Тема');
+    await service.notifyAdminBoth('<b>лид</b> @maria', 'Тема');
     expect(telegram.notifyAdmin).toHaveBeenCalledWith('<b>лид</b> @maria');
     expect(email.sendAdminNotification).toHaveBeenCalledWith(
       'Тема',
@@ -37,17 +37,13 @@ describe('BookingNotifyService.alertAdminCritical', () => {
 
   it('Telegram не ответил — письмо уходит, вызов не бросает', async () => {
     const { service, email } = makeService({ tgOk: false });
-    await expect(
-      service.alertAdminCritical('x', 'Тема'),
-    ).resolves.toBeUndefined();
+    await expect(service.notifyAdminBoth('x', 'Тема')).resolves.toBeUndefined();
     expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
   });
 
   it('почта упала — Telegram всё равно отправлен, вызов не бросает', async () => {
     const { service, telegram } = makeService({ tgOk: true, emailFails: true });
-    await expect(
-      service.alertAdminCritical('x', 'Тема'),
-    ).resolves.toBeUndefined();
+    await expect(service.notifyAdminBoth('x', 'Тема')).resolves.toBeUndefined();
     expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
   });
 });

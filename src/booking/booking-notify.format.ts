@@ -2,9 +2,8 @@ import { escapeHtml } from '../utils/escape-html';
 import { SessionType } from '@prisma/client';
 import { sessionLabel } from './caldav-event.util';
 
-// Чистые форматтеры уведомлений админу о бронировании. Вынесены из
-// booking-notify.service.ts (правило №10: сервис на потолке размера), чтобы
-// тексты можно было проверять без сервиса и его семи зависимостей.
+// Чистые форматтеры уведомлений админу о бронировании — вынесены из
+// booking-notify.service.ts (правило №10), проверяются без сервиса и его зависимостей.
 
 /** Карточка брони — общие поля для всех уведомлений админу. */
 export interface BookingCard {
@@ -16,10 +15,7 @@ export interface BookingCard {
   source?: string | null;
 }
 
-/**
- * Заявка, которую не удалось сохранить. Это НЕ бронь (строки в БД нет) — те
- * же поля, что человек ввёл в форму, плюс формат встречи.
- */
+/** Заявка, которую не удалось сохранить (НЕ бронь — строки в БД нет). */
 export interface LostLead {
   clientName: string;
   clientContact: string;
@@ -27,6 +23,14 @@ export interface LostLead {
   durationMin: number;
   type: SessionType;
   message?: string | null;
+}
+
+/** Тема письма из title уведомления: без HTML-тегов и эмодзи (иконки — для Telegram, не для строки темы). */
+export function subjectFromTitle(title: string): string {
+  return title
+    .replace(/<[^>]+>|\p{Extended_Pictographic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function formatTime(date: Date): string {
@@ -57,12 +61,8 @@ export function bookingCardText(title: string, b: BookingCard): string {
     .join('\n');
 }
 
-/**
- * Текст «заявка потеряна» (инцидент 2026-09-13: человек семь раз жал
- * «Записаться», сервер каждый раз падал, имя и контакт не сохранялись
- * нигде, а админ получал троттлённый DM «Ошибка на сервере» без контакта).
- * Здесь всё, что нужно, чтобы связаться с человеком руками.
- */
+// Текст «заявка потеряна» (инцидент 2026-09-13: контакт терялся при сбое
+// сервера) — всё нужное, чтобы связаться с человеком руками.
 export function lostLeadAlertText(lead: LostLead, reason: string): string {
   return [
     '🚨 <b>Заявка на запись НЕ сохранилась — сбой сервера</b>',

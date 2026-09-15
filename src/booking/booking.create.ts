@@ -8,7 +8,7 @@ import { LostLead, lostLeadAlertText } from './booking-notify.format';
 
 export interface CreateDeps {
   prisma: PrismaService;
-  notify: Pick<BookingNotifyService, 'alertAdminCritical'>;
+  notify: Pick<BookingNotifyService, 'notifyAdminBoth'>;
   logger: Logger;
 }
 
@@ -41,7 +41,7 @@ export async function createBookingGuarded(
     const reason = e instanceof Error ? e.message : String(e);
     // Стабильный текст без цифр в начале — троттлинг AlertLogger по ключу.
     deps.logger.error(`Booking create failed, lead alerted: ${reason}`);
-    await deps.notify.alertAdminCritical(
+    await deps.notify.notifyAdminBoth(
       lostLeadAlertText(lead, reason),
       '🚨 Заявка на запись не сохранилась',
     );
