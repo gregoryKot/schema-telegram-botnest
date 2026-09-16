@@ -11,9 +11,22 @@ function fakePrisma(queryRaw: jest.Mock) {
 }
 
 describe('HybridThrottleStorage — маршрутизация по префиксу ключа', () => {
+  // Штатное in-memory хранилище (`this.memory`) ставит реальный setTimeout на
+  // истечение ключа (тут — до 60_000мс). Без вызова onApplicationShutdown()
+  // таймер переживает тест и держит event loop открытым — обычный `npx jest`
+  // это маскирует принудительным выходом воркера, а `--detectOpenHandles
+  // --forceExit=false` (nightly.yml, джоба backend-flaky) висит на нём вечно.
+  // Та же причина, что у инцидента в hybrid-throttle-storage.shutdown.spec.ts,
+  // только тут таймер настоящий, а не фейковый — чистим за каждым тестом.
+  let storage: HybridThrottleStorage;
+
+  afterEach(() => {
+    storage.onApplicationShutdown();
+  });
+
   it('ключ без db: — считается в памяти, Postgres не трогаем', async () => {
     const queryRaw = jest.fn();
-    const storage = new HybridThrottleStorage(fakePrisma(queryRaw));
+    storage = new HybridThrottleStorage(fakePrisma(queryRaw));
 
     const first = await storage.increment('plain-key', 1000, 5, 1000, 'short');
     const second = await storage.increment('plain-key', 1000, 5, 1000, 'short');
@@ -32,7 +45,7 @@ describe('HybridThrottleStorage — маршрутизация по префик
         blockedUntil: null,
       },
     ]);
-    const storage = new HybridThrottleStorage(fakePrisma(queryRaw));
+    storage = new HybridThrottleStorage(fakePrisma(queryRaw));
 
     const rec = await storage.increment(
       'db:some-key',
@@ -57,7 +70,7 @@ describe('HybridThrottleStorage — маршрутизация по префик
     const queryRaw = jest
       .fn()
       .mockRejectedValue(new Error('connection terminated'));
-    const storage = new HybridThrottleStorage(fakePrisma(queryRaw));
+    storage = new HybridThrottleStorage(fakePrisma(queryRaw));
 
     const rec = await storage.increment(
       'db:booking:1',
@@ -80,7 +93,7 @@ describe('HybridThrottleStorage — маршрутизация по префик
       .spyOn(Logger.prototype, 'warn')
       .mockImplementation(() => undefined);
     const queryRaw = jest.fn().mockRejectedValue(new Error('down'));
-    const storage = new HybridThrottleStorage(fakePrisma(queryRaw));
+    storage = new HybridThrottleStorage(fakePrisma(queryRaw));
 
     await storage.increment('db:x', 60_000, 6, 60_000, 'long');
     const second = await storage.increment('db:x', 60_000, 6, 60_000, 'long');

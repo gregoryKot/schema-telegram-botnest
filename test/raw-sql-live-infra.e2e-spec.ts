@@ -42,6 +42,9 @@ describe('сырой SQL инфраструктуры на реальном Post
       status: 'ok',
       db: 'up',
       builtAt: null,
+      // Самопроверка (src/infra/self-check) в этом спеке не запускалась —
+      // снимок пустой, упавших проб нет.
+      selfCheck: { ranAt: null, failed: [] },
     });
   });
 

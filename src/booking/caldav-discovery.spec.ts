@@ -2,28 +2,35 @@
 // Сеть мокаем через global.fetch (как в robokassa.service.spec.ts); фокус —
 // на путях фолбэка (когда что-то не нашлось) и на фильтрации служебных
 // коллекций (inbox/outbox/notification), а не на самом PROPFIND-протоколе.
+//
+// PRINCIPAL_XML/HOME_XML/RECORDED_CALENDARS_XML грузятся из
+// test/fixtures/recorded/ (не хардкожены инлайн) — правило №14 CLAUDE.md:
+// PR #491/#494 дважды ловили баг ровно потому, что фикстура была авторской
+// выдумкой, а не тем, что реально шлёт iCloud. См.
+// test/fixtures/recorded/README.md и scripts/check-recorded-fixtures.mjs.
 import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
 
 const originalFetch = global.fetch;
 afterEach(() => {
   global.fetch = originalFetch;
 });
 
-const PRINCIPAL_XML = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
-  <d:response><d:propstat><d:prop>
-    <d:current-user-principal><d:href>/123/principal/</d:href></d:current-user-principal>
-  </d:prop></d:propstat></d:response></d:multistatus>`;
+const PRINCIPAL_XML = loadRecordedFixture('icloud-propfind-principal.xml');
+const HOME_XML = loadRecordedFixture('icloud-propfind-home.xml');
+// Корень (без <calendar/> в resourcetype) первым + один календарь тегом
+// `<C:calendar xmlns:C="…"/>` С АТРИБУТАМИ — ровно та форма, на которой
+// сломались PR #491 (корень принят за календарь) и PR #494 (регэксп не
+// матчил атрибуты).
+const RECORDED_CALENDARS_XML = loadRecordedFixture(
+  'icloud-propfind-calendars.xml',
+);
 
-const HOME_XML = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
-  <d:response><d:propstat><d:prop>
-    <c:calendar-home-set><d:href>/123/calendars/</d:href></c:calendar-home-set>
-  </d:prop></d:propstat></d:response></d:multistatus>`;
-
-// Как настоящий iCloud: PROPFIND Depth 1 по корню отдаёт ПЕРВЫМ <response>
-// сам корень (calendar-home-set) — тоже с VEVENT в component-set, но
-// resourcetype без <c:calendar/> и без displayname. Старый фильтр «VEVENT
-// где угодно в блоке» принимал корень за календарь → REPORT в корень → 403
-// от iCloud (инцидент 2026-09-13). Хелпер воспроизводит это на каждый вызов.
+// Тот же корневой блок, что в RECORDED_CALENDARS_XML (см. выше) — держим
+// его отдельно здесь только чтобы комбинировать с ДОПОЛНИТЕЛЬНЫМИ синтетическими
+// записями ниже (inbox/tasks — комбинации, которых в одной записанной
+// фикстуре не бывает, но которые обязана отсеивать та же фильтрация).
+// Канонический «как шлёт настоящий iCloud» случай — RECORDED_CALENDARS_XML.
 const ROOT_RESPONSE = `<d:response>
   <d:href>/123/calendars/</d:href>
   <d:propstat><d:prop>
@@ -32,10 +39,10 @@ const ROOT_RESPONSE = `<d:response>
   </d:prop></d:propstat>
 </d:response>`;
 
-// Инцидент 2026-09-16: реальный iCloud отдаёт <calendar/> С АТРИБУТАМИ
-// (`<C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>`), а не голым
-// тегом — старый регэксп такое не матчил, список календарей был пуст. Фикстура
-// нарочно воспроизводит форму С атрибутами, чтобы регресс не проскочил снова.
+// Комбинаторный билдер для синтетических вариантов фильтрации (несколько
+// записей сразу, разные vevent-флаги) — форма тега calendar с атрибутами
+// (та же, что в RECORDED_CALENDARS_XML) сохранена нарочно, чтобы регресс
+// PR #494 не проскочил ни в одном из этих сценариев тоже.
 function listXml(
   entries: { href: string; name: string; vevent: boolean }[],
 ): string {
@@ -107,19 +114,16 @@ describe('listCalendars — счастливый путь (3 шага PROPFIND)'
   });
 });
 
-describe('listCalendars — фильтр корня (регресс инцидента 2026-09-13)', () => {
-  it('корень с VEVENT в component-set, но без <c:calendar/> в resourcetype — не попадает в список', async () => {
+describe('listCalendars — фильтр корня (регресс инцидента 2026-09-13/2026-09-16)', () => {
+  it('корень + календарь тегом с атрибутами, как в РЕАЛЬНОМ ответе iCloud (test/fixtures/recorded) — корень отфильтрован, Home найден', async () => {
     mockSequence(
       { body: PRINCIPAL_XML },
       { body: HOME_XML },
-      {
-        body: listXml([
-          { href: '/123/calendars/home/', name: 'Home', vevent: true },
-        ]),
-      },
+      { body: RECORDED_CALENDARS_XML },
     );
     const cals = await listCalendars('Basic xyz');
     expect(cals).toHaveLength(1);
+    expect(cals[0].name).toBe('Home');
     expect(cals.map((c) => c.url)).not.toContain(
       'https://caldav.icloud.com/123/calendars/',
     );

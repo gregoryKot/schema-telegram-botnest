@@ -1,0 +1,6 @@
+{
+  "source": "iCloud CalDAV — PROPFIND по principal-URL (шаг 2, calendar-home-set)",
+  "recordedAt": "2026-09-16",
+  "how": "Восстановлено из PR #494 (caldav-discovery.spec.ts, HOME_XML) — форма ответа, на которую опирается src/booking/caldav-discovery.ts; сама XML-структура задана RFC 4791.",
+  "redacted": "href заменён на плейсхолдер /123/calendars/ (реальный содержит Apple ID/DSID)"
+}
