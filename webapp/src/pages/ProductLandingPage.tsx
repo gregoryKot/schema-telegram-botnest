@@ -216,7 +216,7 @@ export function ProductLandingPage() {
               <span style={{ fontSize: 12.5, color: FAINT }}>© {new Date().getFullYear()}</span>
             </div>
             <nav style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Григорий Котляревский — автор, схема-терапевт ↗', AUTHOR_SITE]].map(([label, href]) => (
+              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Григорий Котляревский — автор, психолог ↗', AUTHOR_SITE]].map(([label, href]) => (
                 <a key={href} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
                   onClick={href === AUTHOR_SITE ? () => trackPracticeClick('footer') : undefined}
                   style={{ fontSize: 13, color: SUB, textDecoration: 'none', transition: 'color .15s' }}

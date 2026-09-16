@@ -413,7 +413,7 @@ export function TodaySection({
             <>
               <div className="eyebrow" style={{ marginBottom: 8 }}>Терапевт</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{therapyRelation.partnerName}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Схема-терапевт</div>
+              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Психолог</div>
               {nextSessionLabel && (
                 <>
                   <div className="eyebrow" style={{ marginBottom: 6 }}>Следующая встреча</div>

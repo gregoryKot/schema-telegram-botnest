@@ -426,7 +426,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           <div className="section">
             <div className="section-head"><h3>Терапевт</h3></div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{relation.partnerName}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16 }}>Схема-терапевт</div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16 }}>Психолог</div>
             {[
               relation.nextSession ? ['Следующая сессия', (() => {
                 const [datePart, timePart] = relation.nextSession!.includes('T') ? relation.nextSession!.split('T') : [relation.nextSession!, null];

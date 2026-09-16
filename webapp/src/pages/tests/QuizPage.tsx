@@ -157,7 +157,7 @@ export function QuizPage() {
             <span aria-hidden style={{ fontSize: 20 }}>👤</span>
             <p style={{ fontSize: 13.5, lineHeight: 1.65, color: SUB, margin: 0 }}>
               Хочется разобрать результат с живым специалистом? Автор проекта —
-              схема-терапевт, работает онлайн. Первая встреча — 15 минут,
+              психолог, работает в подходе схема-терапия, онлайн. Первая встреча — 15 минут,
               бесплатно.{' '}
               <a href={AUTHOR_SITE} target="_blank" rel="noopener noreferrer" onClick={() => trackPracticeClick('quiz')} style={{ color: VIOLET, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 Познакомиться ↗

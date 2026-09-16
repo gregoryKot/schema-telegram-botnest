@@ -311,7 +311,7 @@ export const M = {
   m_door_home: { ru: "ДОМОЙ", en: "HOME" },
   m_door_guru: { ru: "ГУРУ-ЭКСПРЕСС", en: "GURU EXPRESS" },
   m_door_guru_sub: { ru: "исцеление за 1 сеанс! скидка!", en: "healed in 1 session! discount!" },
-  m_door_therapist: { ru: "схема-терапевт · по записи", en: "schema therapist · by appointment" },
+  m_door_therapist: { ru: "психолог · по записи", en: "psychologist · by appointment" },
   m_e_door_enter: { ru: "E — войти", en: "E — enter" },
   m_tap_door_enter: { ru: "тапни дверь — войти", en: "tap the door — enter" },
   m_door_tried_short: { ru: "уже пробовал", en: "already tried" },
