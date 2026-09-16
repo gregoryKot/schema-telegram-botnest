@@ -1,0 +1,120 @@
+{
+  "src/api/throttler-identity.ts": {
+    "status": "exempt",
+    "reason": "Троттлинг-идентичность по Telegram/MAX WebAppData — HMAC пересчитывается с фейковым BOT_TOKEN и синтетическим initData в спеке; настоящей строки initData от клиента мессенджера в логах не сохранялось."
+  },
+  "src/auth/auth.service.ts": {
+    "status": "exempt",
+    "reason": "Верификация Telegram WebAppData (WebApp initData) — тот же класс, что throttler-identity.ts: HMAC в тесте самоподписан фейковым токеном, реальной строки initData от Telegram-клиента не записано."
+  },
+  "src/auth/max-init-data.ts": {
+    "status": "exempt",
+    "reason": "MAX initData проверяется тем же HMAC-алгоритмом, что и Telegram, но с токеном бота MAX — тест подписывает данные сам, реального initData от MAX-клиента в логах прода не сохранялось."
+  },
+  "src/auth/providers/google-id-token.ts": {
+    "status": "exempt",
+    "reason": "id_token JWT — синтетический payload через jose-мок (google-id-token.spec.ts); реальный Google id_token содержит email/sub живого пользователя и не может лежать в репозитории как фикстура без риска PII."
+  },
+  "src/auth/providers/google.provider.ts": {
+    "status": "exempt",
+    "reason": "Ответы Google OAuth token/userinfo endpoint в спеке — авторская форма по документации Google, не захваченный с прода вызов; учётные данные тестового аккаунта Google для записи недоступны."
+  },
+  "src/auth/providers/max.provider.ts": {
+    "status": "exempt",
+    "reason": "Тонкая обёртка над verifyMaxInitData (max-init-data.ts) — сам разбор формата не делает, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь providers/*.ts."
+  },
+  "src/auth/providers/telegram-oidc.provider.ts": {
+    "status": "exempt",
+    "reason": "Ответы oauth.telegram.org/token и /userinfo в спеке — форма по официальной документации Telegram Login (OIDC), не захваченный с прода вызов площадки."
+  },
+  "src/auth/providers/telegram.provider.ts": {
+    "status": "exempt",
+    "reason": "Старый Telegram Login Widget hash — тест сам подписывает data-check-string фейковым BOT_TOKEN; реальных данных от виджета на живом домене не записывалось."
+  },
+  "src/auth/providers/vk.provider.ts": {
+    "status": "exempt",
+    "reason": "Ответы VK ID OAuth (token/userинфо) в спеке — авторская форма по документации VK ID, не захваченный с прода вызов; тестового VK-приложения с логами нет."
+  },
+  "src/booking/caldav-busy-read.ts": {
+    "status": "exempt",
+    "reason": "Только шлёт REPORT и передаёт текст ответа в parseBusy (caldav-busy.ts) — сам не разбирает XML, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
+  "src/booking/caldav-busy.ts": {
+    "status": "exempt",
+    "reason": "REPORT calendar-query (занятость) с прода не записывался — parseBusy покрыт исчерпывающей ТАБЛИЦЕЙ синтетических VEVENT по RFC 5545 (TZID, VALUE=DATE, RRULE, unfolding), но ни один кейс не сверен с живым ответом iCloud."
+  },
+  "src/booking/caldav-discovery.ts": {
+    "status": "recorded",
+    "fixtures": [
+      "icloud-propfind-principal.xml",
+      "icloud-propfind-home.xml",
+      "icloud-propfind-calendars.xml"
+    ],
+    "spec": "src/booking/caldav-discovery.spec.ts"
+  },
+  "src/booking/caldav-empty-guard.ts": {
+    "status": "exempt",
+    "reason": "Не парсит XML — реагирует на уже посчитанный пустой список календарей (guard/алерт поверх caldav-discovery.ts). Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
+  "src/booking/caldav-event.util.ts": {
+    "status": "exempt",
+    "reason": "Строит ИСХОДЯЩИЙ VCALENDAR/VEVENT (PUT в iCloud), не разбирает ответ площадки — риск другого класса (валидность собственного формата), а не «угадал чужой формат»."
+  },
+  "src/booking/caldav-health.ts": {
+    "status": "exempt",
+    "reason": "Трекер состояния (счётчики сбоев, пороги алерта) поверх уже классифицированных kind/detail — сам XML/HTTP-ответ площадки не разбирает. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
+  "src/booking/caldav-resourcetype.ts": {
+    "status": "recorded",
+    "fixtures": ["icloud-propfind-calendars.xml"],
+    "spec": "src/booking/caldav-resourcetype.spec.ts"
+  },
+  "src/booking/meeting.service.ts": {
+    "status": "exempt",
+    "reason": "Ответы Zoom S2S OAuth (access_token) и Create Meeting (join_url/id) в спеке — авторская форма по документации Zoom API, не захваченный с прода вызов; боевых Zoom-учётных данных для записи нет."
+  },
+  "src/booking/robokassa.service.ts": {
+    "status": "exempt",
+    "reason": "Подпись Robokassa (md5 outSum:invId:pass) проверена по официальной документации площадки, но ни один настоящий ResultURL-вебхук с прода в фикстуру не сохранён — payment-webhooks.e2e-spec.ts строит подпись сам тем же алгоритмом, что и код."
+  },
+  "src/channel/channel-http.ts": {
+    "status": "exempt",
+    "reason": "Общий JSON-клиент для адаптеров канала (VK/MAX/Threads/Pinterest) — тела ответов и ошибок в тестах синтетические на каждую площадку отдельно, ни один настоящий ответ площадки не записан."
+  },
+  "src/channel/targets/max-ca.ts": {
+    "status": "exempt",
+    "reason": "Не разбирает ответ площадки — строит TLS-диспетчер с корневым сертификатом для запросов к platform-api2.max.ru, содержимого ответа не читает."
+  },
+  "src/channel/targets/max.target.ts": {
+    "status": "exempt",
+    "reason": "Ошибка Bot API MAX разбирается общим channel-http.ts (см. отдельную запись); собственных тел ответов площадки в спеке нет — только успешный/неуспешный статус."
+  },
+  "src/channel/targets/pinterest.target.ts": {
+    "status": "exempt",
+    "reason": "Ответ Pinterest API в спеке — авторская форма по официальной документации площадки, не захваченный с прода вызов; тестового Pinterest-приложения с логами нет."
+  },
+  "src/channel/targets/threads-api.ts": {
+    "status": "exempt",
+    "reason": "Строит путь/транспорт запроса к Threads (прямой или через ретранслятор), сам тело ответа не читает — разбор в threads.target.ts/threads-token.service.ts."
+  },
+  "src/channel/targets/threads-token.service.ts": {
+    "status": "exempt",
+    "reason": "Ответ Threads OAuth refresh (access_token/expires_in) в спеке — авторская форма по документации Meta Threads API, не захваченный с прода вызов."
+  },
+  "src/channel/targets/threads.target.ts": {
+    "status": "exempt",
+    "reason": "Ответ Threads Publishing API (container id, ошибки публикации) в спеке — авторская форма по документации площадки, не захваченный с прода вызов."
+  },
+  "src/channel/targets/vk.target.ts": {
+    "status": "exempt",
+    "reason": "Форма ошибки VK («200 OK, error в теле», error_code/error_msg) в спеке — авторская, по документации VK API wall.post, не захваченный с прода ответ."
+  },
+  "src/infra/self-check/probe-telegram.ts": {
+    "status": "exempt",
+    "reason": "Ответ Telegram Bot API getMe (ok/result.username) — синтетическое тело по документации Bot API в спеке, не захваченный с прода ответ площадки."
+  },
+  "src/therapy/therapist-request.notify.ts": {
+    "status": "exempt",
+    "reason": "Ошибка Telegram Bot API sendMessage (description) в спеке — синтетическое тело по документации Bot API, не захваченный с прода ответ площадки."
+  }
+}
