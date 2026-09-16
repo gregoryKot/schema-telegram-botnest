@@ -6,7 +6,7 @@
 // ERR_TOO_MANY_REDIRECTS у Google и VK разом. main.ts и oauth-host.ts
 // обязаны сверяться с ОДНИМ списком, а не с двумя копиями.
 
-const CANONICAL_HOST = 'schemehappens.ru';
+export const CANONICAL_HOST = 'schemehappens.ru';
 const WWW_CANONICAL_HOST = `www.${CANONICAL_HOST}`;
 // Прежние домены проекта («СхемаЛаб») — 301 на текущий бренд, чтобы старые
 // ссылки и SEO не потерялись.
