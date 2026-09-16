@@ -469,7 +469,7 @@ describe('AuthFlowService.oauthRedirect', () => {
 
     expect(res.redirect).toHaveBeenCalledWith(
       302,
-      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94',
+      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94&_oh=1',
     );
     expect(res.cookie).not.toHaveBeenCalled();
     expect(buildAuthUrl).not.toHaveBeenCalled();
