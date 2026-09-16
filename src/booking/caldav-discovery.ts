@@ -1,7 +1,9 @@
 // iCloud CalDAV auto-discovery (RFC 6764/4791): principal → calendar-home-set
 // → calendars at Depth 1 that support VEVENT. Best-effort; [] on any gap —
 // caller falls back to the manual APPLE_CALDAV_URL.
-
+import { Logger } from '@nestjs/common';
+import { classifyResponse } from './caldav-resourcetype';
+const logger = new Logger('CalDavDiscovery');
 const BOOTSTRAP = 'https://caldav.icloud.com';
 
 async function propfind(
@@ -83,25 +85,23 @@ export async function listCalendars(auth: string): Promise<CalendarRef[]> {
 
   const responses = listXml.split(/<[^>]*response[\s>]/i).slice(1);
   const out: CalendarRef[] = [];
+  // Счётчики для диагностики (инцидент 2026-09-16: пустой список молчал —
+  // не было видно, сколько ответов пришло и на каком шаге фильтра всё ушло).
+  let notCalendar = 0;
+  let noVevent = 0;
+  let skipped = 0;
   for (const r of responses) {
-    const href = (
-      r.match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? ''
-    ).trim();
-    if (!href) continue;
-    const url = abs(homeOrigin, href).replace(/\/?$/, '/');
-    // Инцидент 2026-09-13: корень тоже отвечает VEVENT в component-set —
-    // старый фильтр пропускал его в список → REPORT в корень → 403 iCloud.
-    if (url === homeUrl || /inbox|outbox|notification/i.test(href)) continue;
-    if (
-      !/<[^>:]*:?calendar\s*\/?>/i.test(block(r, 'resourcetype')) ||
-      !/VEVENT/i.test(block(r, 'supported-calendar-component-set'))
-    )
-      continue;
-    const name = (
-      r.match(/<[^>]*displayname[^>]*>\s*([^<]*?)\s*</i)?.[1] ?? ''
-    ).trim();
-    out.push({ url, name });
+    const c = classifyResponse(r, homeUrl, homeOrigin);
+    if (c.calendar) out.push(c.calendar);
+    else if (c.skip === 'not-calendar') notCalendar++;
+    else if (c.skip === 'no-vevent') noVevent++;
+    else skipped++;
   }
+  logger.log(
+    `discovery: ${responses.length} response(s), ${skipped} root/system, ` +
+      `${notCalendar} without <calendar/>, ${noVevent} without VEVENT, ` +
+      `${out.length} accepted`,
+  );
   return out;
 }
 

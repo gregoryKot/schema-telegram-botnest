@@ -915,7 +915,7 @@
   "src/booking/caldav-busy.ts": 87,
   "src/booking/caldav-discovery.ts": 122,
   "src/booking/caldav-event.util.ts": 74,
-  "src/booking/caldav-health.ts": 161,
+  "src/booking/caldav-health.ts": 164,
   "src/booking/caldav.service.ts": 206,
   "src/booking/meeting.service.ts": 200,
   "src/booking/payment.controller.ts": 192,
