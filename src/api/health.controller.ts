@@ -18,6 +18,12 @@ export interface HealthReport {
   builtAt: string | null;
   selfCheck: { ranAt: string | null; failed: string[] };
 }
+// `builtAt` — время сборки образа (метка BUILD_INFO, смысл — в
+// src/utils/build-info.ts). Инцидент 2026-09-16: два мержа сутки не были
+// собраны хостингом, а /health и смок отвечали «ок» — проверяли «жив», не
+// «свеж». Теперь смок прода сверяет эту метку с последним коммитом main
+// (scripts/check-deploy-lag.mjs). Метки нет → null, а не 503: отсутствие
+// метки — не сбой процесса, HEALTHCHECK не должен перезапускать контейнер.
 
 @Controller('health')
 export class HealthController {
