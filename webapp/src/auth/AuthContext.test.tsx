@@ -10,7 +10,7 @@
 // Контекст не хранит отдельный "user" — только accessToken/isAuthenticated,
 // поэтому пункт «login stores token+user state» проверяется как токен+флаг.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react';
 import { useEffect, type ReactNode } from 'react';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './authContext';
@@ -47,6 +47,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // vite.config.ts не включает test.globals — RTL проверяет afterEach через
+  // globalThis и не находит его, поэтому не регистрирует автоочистку сама:
+  // без явного cleanup() смонтированные тут AuthProvider не размонтируются,
+  // их online/visibilitychange-листенеры переживают тест и ловят события
+  // следующих кейсов (обнаружено при добавлении bootstrapSession=false ниже).
+  cleanup();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -477,6 +483,40 @@ describe('бутстрап при уже выданном токене (OAuth-р
     );
     expect(seen!.accessToken).toBe('cookie-tok');
   });
+});
+
+// ── bootstrapSession=false (визитка kotlarewski.gr) ──────────────────────────
+// #497 сузил visitka до allow-list статики: фоновый refresh на mount 301-ился
+// бы на schemehappens.ru (CORS) и ретраился бы вечным бэкоффом. На визитке
+// логина нет вовсе — AuthProvider обязан не бутстрапить сессию.
+describe('bootstrapSession=false (визитка kotlarewski.gr)', () => {
+  function noBootstrapWrapper({ children }: { children: ReactNode }) {
+    return <AuthProvider bootstrapSession={false}>{children}</AuthProvider>;
+  }
+
+  it('не дёргает fetch на mount — isLoading снимается, isAuthenticated остаётся false', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: noBootstrapWrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.accessToken).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
+  });
+
+  it('visibilitychange (вкладка видима) тоже не дёргает fetch — useAuthRetryOnFocus.isStale всегда false', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: noBootstrapWrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    fetchMock.mockClear();
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Контроль: с дефолтным bootstrapSession (true) mount-рефреш ВЫЗЫВАЕТСЯ —
+  // уже покрыто первым тестом в «монтирование — бутстрап существующей сессии»
+  // выше («без Telegram initData шлёт POST /api/auth/refresh…»), не дублируем.
 });
 
 // ── useAuth() вне AuthProvider ───────────────────────────────────────────────

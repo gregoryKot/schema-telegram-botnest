@@ -63,10 +63,10 @@ export const PRACTICE_API_PREFIXES: readonly string[] = [
   '/api/site-content', // фото/бегущая строка лендинга + admin/*
   '/api/articles', // статьи и их админка
   '/api/healthy-adult', // админка фраз канала (AdminPage)
+  '/api/client-errors', // отчёт о сбое формы брони (bookingFailure.ts), правило №14
 ];
 
-// Хвостовой слэш не различает маршрут ('/donate/' === '/donate'), корень
-// не трогаем.
+// Хвостовой слэш не различает маршрут ('/donate/' === '/donate'); корень не трогаем.
 const stripTrailingSlash = (path: string): string =>
   path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 

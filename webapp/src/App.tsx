@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { telemetryUrl } from './utils/telemetryUrl';
-import { applyPersonalSiteChrome } from './utils/domainChrome';
+import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -75,7 +75,7 @@ function RequireAuth() {
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (
-    <AuthProvider>
+    <AuthProvider bootstrapSession={!isPersonalSite}>
       <TokenBridge />
       <MetrikaTracker />
       <Outlet />
@@ -85,7 +85,7 @@ function Root() {
 }
 
 // ── Domain detection ──────────────────────────────────────────────────────────
-const isPersonalSite = window.location.hostname.includes('kotlarewski')
+const isPersonalSite = isPracticeHost(window.location.hostname)
   || new URLSearchParams(window.location.search).get('site') === 'personal';
 
 if (isPersonalSite) applyPersonalSiteChrome();
