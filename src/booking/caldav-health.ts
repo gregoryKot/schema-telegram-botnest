@@ -1,13 +1,11 @@
-// Здоровье чтения личного календаря (CalDAV/iCloud) — трекер состояния и
-// блок для /stats. Найдено 2026-09-13 по логам, случайно: iCloud отвечал 403
-// на чтение занятости, код писал `logger.warn` и возвращал «занятости нет» —
-// слоты показывались поверх личных встреч, и ни DM, ни письма, ни строки в
-// /stats об этом не было (правило №14). Тот же приём, что у dbOutage
-// (src/logger/db-outage.ts): авария — ОДНО состояние, алерт на смену
-// состояния, не на каждый запрос (слоты читаются часто, чат стал бы шумом).
-
-export type CalDavFailureKind = 'auth' | 'timeout' | 'http' | 'network';
-
+// Здоровье чтения личного календаря (CalDAV/iCloud) — трекер состояния и блок для /stats.
+// Найдено 2026-09-13 по логам, случайно: iCloud отвечал 403 на чтение занятости, код писал
+// `logger.warn` и возвращал «занятости нет» — слоты показывались поверх личных встреч, и ни
+// DM, ни письма, ни строки в /stats об этом не было (правило №14). Тот же приём, что у
+// dbOutage (src/logger/db-outage.ts): авария — ОДНО состояние, алерт на смену состояния, не
+// на каждый запрос (слоты читаются часто, чат стал бы шумом).
+export type CalDavFailureKind =
+  'auth' | 'timeout' | 'http' | 'network' | 'empty';
 export interface CalDavHealthSnapshot {
   lastOkAt: number | null;
   lastFailAt: number | null;
@@ -28,6 +26,8 @@ export const KIND_TEXT: Record<CalDavFailureKind, string> = {
   timeout: 'iCloud не отвечает вовремя',
   http: 'iCloud отвечает ошибкой',
   network: 'до iCloud не достучаться',
+  empty:
+    'iCloud отвечает, но ни один календарь не найден (проверьте APPLE_CALENDAR_NAME/APPLE_CALDAV_URL или права пароля приложения)',
 };
 
 export class CalDavHealthTracker {
@@ -66,8 +66,11 @@ export class CalDavHealthTracker {
     this.s.lastFailAt = now;
     this.s.lastFailKind = kind;
     this.s.lastFailDetail = detail.slice(0, 200);
+    // 'empty' детерминирован как 'auth' — открываем сразу, без порога.
     const shouldOpen =
-      kind === 'auth' || this.s.consecutiveFails >= OPEN_AFTER_TRANSIENT;
+      kind === 'auth' ||
+      kind === 'empty' ||
+      this.s.consecutiveFails >= OPEN_AFTER_TRANSIENT;
     if (!shouldOpen) return null;
     const remind =
       this.s.open &&

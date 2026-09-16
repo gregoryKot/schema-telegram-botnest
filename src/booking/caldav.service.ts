@@ -5,10 +5,10 @@ import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
 import { busyQueryXml, Interval } from './caldav-busy';
 import { readBusy } from './caldav-busy-read';
 import { calDavHealth } from './caldav-health';
+import { onEmptyCalendars } from './caldav-empty-guard';
 
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
- *
  * Config (env):
  *   APPLE_ID            — Apple ID e-mail            (required)
  *   APPLE_APP_PASSWORD  — app-specific password      (required)
@@ -147,7 +147,7 @@ export class CalDavService {
       return this.busyCache.val;
     }
     const urls = await this.getBusyUrls();
-    if (!urls.length) return [];
+    if (!urls.length) return onEmptyCalendars();
     const body = busyQueryXml(from, to);
     const all: Interval[] = [];
     const results = await Promise.all(

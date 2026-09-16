@@ -32,6 +32,10 @@ const ROOT_RESPONSE = `<d:response>
   </d:prop></d:propstat>
 </d:response>`;
 
+// Инцидент 2026-09-16: реальный iCloud отдаёт <calendar/> С АТРИБУТАМИ
+// (`<C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>`), а не голым
+// тегом — старый регэксп такое не матчил, список календарей был пуст. Фикстура
+// нарочно воспроизводит форму С атрибутами, чтобы регресс не проскочил снова.
 function listXml(
   entries: { href: string; name: string; vevent: boolean }[],
 ): string {
@@ -41,7 +45,7 @@ function listXml(
         <d:href>${e.href}</d:href>
         <d:propstat><d:prop>
           <d:displayname>${e.name}</d:displayname>
-          <d:resourcetype><d:collection/><c:calendar/></d:resourcetype>
+          <d:resourcetype><d:collection/><c:calendar xmlns:c="urn:ietf:params:xml:ns:caldav"/></d:resourcetype>
           ${e.vevent ? '<c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>' : ''}
         </d:prop></d:propstat>
       </d:response>`,

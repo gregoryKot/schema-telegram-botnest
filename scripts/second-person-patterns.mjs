@@ -195,14 +195,14 @@ export const EXCLUDE = [
   // публикации поста; это операционный, а не продуктовый текст.
   /^src\/channel\/targets\/.*\.target\.ts$/,
   /^src\/telegram\/telegram-channel\.target\.ts$/,
-  // /stats и DM-алерт об иссякающем пуле фраз — тоже владелец-only отчёты
-  // (ADMIN_ID), не текст для подписчика.
+  // /stats и DM-алерты (иссякающий пул фраз, здоровье входа, здоровье
+  // CalDAV) — тоже владелец-only отчёты (ADMIN_ID), не текст для подписчика.
   /^src\/bot\/healthy-adult\.pool-alert\.ts$/,
   /^src\/bot\/auth-health-metrics\.format\.ts$/,
+  /^src\/booking\/caldav-health\.ts$/,
   // Мета-код: детектор остаточных «ты»-форм для тестов «вы»-режима — его
-  // регэксп обязан содержать реальные «ты»-слова буквально, это не
-  // UI-строка (тот же случай, что address-form-baseline.json у
-  // check-address-form.mjs).
+  // регэксп обязан содержать реальные «ты»-слова буквально, это не UI-строка
+  // (тот же случай, что address-form-baseline.json у check-address-form.mjs).
   /^shared\/src\/utils\/tyFormsSweep\.ts$/,
   // 'вам' здесь — нейтральная дательный-падежная подпись CTA к ТРЕТЬЕМУ
   // лицу («написать [терапевту] → написать вам»), не выбор формы обращения

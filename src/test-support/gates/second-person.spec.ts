@@ -187,6 +187,21 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('владелец-only здоровье CalDAV (KIND_TEXT/DM-алерт) исключено', () => {
+    // src/booking/caldav-health.ts — текст сбоя чтения календаря уходит DM
+    // владельцу (calDavHealth.noteFailure → logger.error) и в /stats, не
+    // пользователю с addressForm (2026-09-16, kind 'empty').
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/caldav-health.ts':
+        "export const msg = 'Проверьте APPLE_CALENDAR_NAME/APPLE_CALDAV_URL или права пароля приложения';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
   it('КОНТРОЛЬ: тот же императив в обычном компоненте — по-прежнему exit 1', () => {
     // Доказывает, что exclude узкий (по конкретным путям), а не случайно
     // погасил паттерн imperative-ty целиком.
@@ -419,6 +434,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'src/telegram/telegram-channel.target.ts',
       'src/bot/healthy-adult.pool-alert.ts',
       'src/bot/auth-health-metrics.format.ts',
+      'src/booking/caldav-health.ts',
       // Мета-код детектора и нейтральная CTA-подпись к третьему лицу.
       'shared/src/utils/tyFormsSweep.ts',
       'shared/src/utils/therapistContact.ts',
