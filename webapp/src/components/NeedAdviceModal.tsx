@@ -40,7 +40,7 @@ export function NeedAdviceModal({ onClose }: { onClose: () => void }) {
         {/* Терапевту не предлагаем ссылку на самого себя. */}
         {!contact.isTherapist && (
           <a href={contact.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-            → Поговорить с психологом
+            → Записаться на консультацию
           </a>
         )}
       </div>

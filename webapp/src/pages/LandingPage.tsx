@@ -215,7 +215,7 @@ export function LandingPage() {
 
           {/* ── Eyebrow ── */}
           <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)', margin: '20px 0 20px', animation: 'hero-in .6s .15s both' }}>
-            Схема-терапевт · Онлайн
+            Схема-терапия · Онлайн
           </p>
 
           {/* ── Full-width headline – the centrepiece ── */}
@@ -269,7 +269,7 @@ export function LandingPage() {
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский – схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -294,7 +294,7 @@ export function LandingPage() {
               Работаю с тем,<br /><span style={{ fontStyle: 'italic' }}>что важно для вас</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
-              Я Григорий Котляревский – схема-терапевт. Ко мне приходят, когда привычные сценарии в отношениях, самооценке или тревоге повторяются годами, а справиться с ними в одиночку не выходит.
+              Я Григорий Котляревский, работаю в подходе схема-терапия. Ко мне приходят, когда привычные сценарии в отношениях, самооценке или тревоге повторяются годами, а справиться с ними в одиночку не выходит.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
               Меня интересует «что» происходит с человеком и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.

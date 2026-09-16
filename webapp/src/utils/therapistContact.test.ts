@@ -176,7 +176,7 @@ describe('contactCta', () => {
   it('без привязанного терапевта: фолбэк на автора с отдельным текстом кнопки', () => {
     const cta = contactCta();
     expect(cta.isSelf).toBe(false);
-    expect(cta.label).toBe('Поговорить с психологом →');
+    expect(cta.label).toBe('Записаться на консультацию →');
     expect(cta.url).toBe('https://t.me/kotlarewski');
   });
 });
