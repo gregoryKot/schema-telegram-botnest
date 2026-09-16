@@ -42,6 +42,9 @@ describe('logEnvCheck', () => {
     const logger = makeLogger();
     logEnvCheck(logger, EMPTY, 'production');
     expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith(
+      'Реестр env-переменных: всё задано и в порядке.',
+    );
     expect(logger.error).not.toHaveBeenCalled();
     expect(logger.warn).not.toHaveBeenCalled();
   });
@@ -62,6 +65,9 @@ describe('logEnvCheck', () => {
     const logger = makeLogger();
     expect(() => logEnvCheck(logger, WITH_ISSUES, 'development')).not.toThrow();
     expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('BOT_TOKEN'),
+    );
     expect(logger.error).not.toHaveBeenCalled();
   });
 });

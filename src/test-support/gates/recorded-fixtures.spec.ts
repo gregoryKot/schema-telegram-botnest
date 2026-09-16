@@ -13,6 +13,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
+import { loadRegexList } from './pattern-loader';
 
 const REAL_BASELINE = join(
   __dirname,
@@ -285,5 +286,42 @@ describe('scripts/recorded-fixtures-baseline.json соответствует с�
         expect(typeof v.spec).toBe('string');
       }
     }
+  });
+});
+
+// Правило №10: движок check-recorded-fixtures.mjs раздроблен на движок +
+// модуль правил recorded-fixtures-patterns.mjs. check-unwatched-code.mjs
+// требует, чтобы у каждого исполняемого файла в scripts/ был тест, упоминающий
+// его по имени (не в комментарии) — движок упомянут через runGate() выше, эта
+// проверка закрывает вторую половину дробления и пинит сами правила образцом
+// и контрольным образцом (правило №15: исключение не шире, чем нужно).
+describe('дробление движок + модуль правил', () => {
+  const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
+
+  it('check-recorded-fixtures.mjs импортирует recorded-fixtures-patterns.mjs', () => {
+    const engineSrc = readFileSync(
+      join(REAL_SCRIPTS_DIR, 'check-recorded-fixtures.mjs'),
+      'utf8',
+    );
+    expect(engineSrc).toContain("from './recorded-fixtures-patterns.mjs'");
+  });
+
+  it('явные пути ловят парсеры площадок и не ловят реестр/типы провайдеров', () => {
+    const patterns = loadRegexList(
+      'recorded-fixtures-patterns.mjs',
+      'PARSER_PATH_PATTERNS',
+    ).map((r) => new RegExp(r.source, r.flags));
+    const matches = (p: string) => patterns.some((re) => re.test(p));
+    // Образцы: то, что гейт обязан видеть.
+    expect(matches('src/booking/caldav-discovery.ts')).toBe(true);
+    expect(matches('src/auth/max-init-data.ts')).toBe(true);
+    expect(matches('src/auth/providers/google.provider.ts')).toBe(true);
+    expect(matches('src/channel/targets/vk.target.ts')).toBe(true);
+    expect(matches('src/booking/robokassa.service.ts')).toBe(true);
+    // Контроль: реестр и типы провайдеров — не парсеры; соседний сервис без
+    // внешнего формата гейт по пути не трогает.
+    expect(matches('src/auth/providers/registry.ts')).toBe(false);
+    expect(matches('src/auth/providers/types.ts')).toBe(false);
+    expect(matches('src/booking/pricing.service.ts')).toBe(false);
   });
 });

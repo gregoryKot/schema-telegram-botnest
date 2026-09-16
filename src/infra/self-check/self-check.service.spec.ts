@@ -79,6 +79,8 @@ describe('SelfCheckService.run', () => {
     await service.run('test');
     await service.run('test');
     expect(mockedNotify).toHaveBeenCalledTimes(1);
+    expect(mockedNotify.mock.calls[0][0]).toContain('Проба caldav: сломано');
+    expect(selfCheckState.get().results.map((r) => r.ok)).toEqual([false]);
   });
 });
 
@@ -101,6 +103,9 @@ describe('SelfCheckService.hourly', () => {
     const { service } = makeService(jest.fn().mockResolvedValue(true));
     await service.hourly();
     expect(mockedBuildProbes).toHaveBeenCalledTimes(1);
+    expect(selfCheckState.get().results).toEqual([
+      expect.objectContaining({ id: 'db', ok: true }),
+    ]);
   });
 });
 
