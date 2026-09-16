@@ -528,7 +528,7 @@
   "scripts/gendered-forms-patterns.mjs": 149,
   "scripts/generate-pwa-icons.mjs": 82,
   "scripts/list-survived-mutants.mjs": 66,
-  "scripts/merge-json-ratchet.mjs": 138,
+  "scripts/merge-json-ratchet.mjs": 154,
   "scripts/merge-miniapp-dist.mjs": 97,
   "scripts/recorded-fixtures-patterns.mjs": 26,
   "scripts/render-poison-patterns.mjs": 53,
