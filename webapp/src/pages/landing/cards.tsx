@@ -1,18 +1,6 @@
 import { useState } from 'react';
 import { useTilt } from '../../components/landing-kit-hooks';
-import { APP_FEATURES, FAQ_ITEMS } from './constants';
-
-// ─── App feature card (needs own component for useTilt hook) ─────────────────
-export function AppFeatureCard({ f, accent }: { f: typeof APP_FEATURES[0]; accent: boolean }) {
-  const ref = useTilt();
-  return (
-    <div ref={ref} style={{ background: accent ? 'var(--accent)' : 'var(--bg-elev)', border: accent ? 'none' : '1px solid var(--line)', borderRadius: 16, padding: '22px 18px', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default', transition: 'transform .25s, box-shadow .25s' }}>
-      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', color: accent ? 'rgba(255,255,255,.6)' : 'var(--accent)' }}>{f.num}</span>
-      <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: accent ? 'white' : 'var(--text)' }}>{f.title}</p>
-      <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: accent ? 'rgba(255,255,255,.78)' : 'var(--text-sub)' }}>{f.text}</p>
-    </div>
-  );
-}
+import { FAQ_ITEMS } from './constants';
 
 // ─── Approach cards ───────────────────────────────────────────────────────────
 export function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {

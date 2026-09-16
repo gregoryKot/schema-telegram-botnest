@@ -144,6 +144,37 @@ describe('LandingPage — «Записаться» ведёт на правил�
   });
 });
 
+// Регрессия (задача 2026-09-16): визитка практики крутит рекламу уже сейчас,
+// а продукт «Всё по схеме» / schemehappens.ru ещё не готов — до перезапуска
+// ссылок на продукт на визитке быть не должно (история сохранена в git,
+// правило про удаление, а не комментирование).
+describe('LandingPage — визитка без отсылок к приложению', () => {
+  it('не упоминает «Всё по схеме» и не показывает ссылку «Войти»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(screen.queryByText(/Всё по схеме/)).toBeNull();
+    expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('нет ссылок на schemehappens.ru и нет бот-ссылок кроме t.me/kotlarewski', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(document.querySelectorAll('a[href*="schemehappens.ru"]').length).toBe(0);
+    const tgLinks = Array.from(document.querySelectorAll('a[href*="t.me/"]'));
+    expect(tgLinks.length).toBeGreaterThan(0);
+    for (const a of tgLinks) {
+      expect(a.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    }
+  });
+
+  it('мобильное меню не показывает пункт «Всё по схеме»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByLabelText('Открыть меню')[0]);
+    expect(screen.queryByText('Всё по схеме')).toBeNull();
+  });
+});
+
 describe('LandingPage — хэш-переход при первой загрузке (/#prices)', () => {
   const originalLocation = window.location;
 
