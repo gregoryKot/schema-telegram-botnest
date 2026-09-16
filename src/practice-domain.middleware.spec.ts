@@ -176,6 +176,15 @@ describe('practiceDomainMiddleware', () => {
       expect(nextCalled).toBe(false);
     });
 
+    it('/api/client-errorsx → 301 (похожий, но незаконный префикс — не подстрока)', () => {
+      const { sent, nextCalled } = run('kotlarewski.gr', '/api/client-errorsx');
+      expect(sent.redirect).toEqual([
+        301,
+        'https://schemehappens.ru/api/client-errorsx',
+      ]);
+      expect(nextCalled).toBe(false);
+    });
+
     it('/api/articles-admin-x → 301 (похожий, но незаконный префикс)', () => {
       const { sent, nextCalled } = run(
         'kotlarewski.gr',

@@ -55,7 +55,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
   };
   return (
     <div role="dialog" aria-modal="true" aria-label="Меню" style={{
-      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)',
+      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto',
       display: 'flex', flexDirection: 'column', padding: '20px 24px calc(28px + var(--safe-bottom))',
       animation: 'menu-in .28s cubic-bezier(.16,1,.3,1) both',
     }}>
