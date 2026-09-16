@@ -19,7 +19,11 @@ import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
+import { formatEnvCheckReport } from './env-check.format';
+import { checkEnv } from '../infra/env-check';
 import { renderCalendarHealthBlock } from '../booking/caldav-health';
+import { formatSelfCheck } from '../infra/self-check/format';
+import { selfCheckState } from '../infra/self-check/state';
 
 // Единая склейка второго сообщения /stats (продуктовые метрики + карточки
 // режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
@@ -74,6 +78,8 @@ export class StatsReportService {
     const parts = await Promise.all(blocks.map((b) => b.render()));
     parts.push(renderCalendarHealthBlock());
     parts.push(formatCapabilityReport(buildCapabilityReport()));
+    parts.push(formatEnvCheckReport(checkEnv()));
+    parts.push(formatSelfCheck(selfCheckState.get()));
     return parts.join('\n\n');
   }
 }

@@ -39,6 +39,10 @@
     "status": "exempt",
     "reason": "Это пер-инстансовая проверка соединения, она обязана идти на каждом инстансе, лидер бы её сломал."
   },
+  "src/infra/self-check/self-check.service.ts::hourly": {
+    "status": "leader",
+    "reason": "Часовая самопроверка прода шлёт DM владельцу при сбоях — на двух инстансах дубль DM и двойная нагрузка на живые проверки (getMe, CalDAV discovery, запись в ThrottleHit)."
+  },
   "src/subscription/subscription.service.ts::chargeDue": {
     "status": "exempt",
     "reason": "Сериализация построчная и более сильная: атомарный захват UPDATE Subscription SET nextChargeAt … WHERE nextChargeAt <= now() (src/subscription/subscription.charges.ts)."
