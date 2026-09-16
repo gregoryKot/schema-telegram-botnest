@@ -10,6 +10,8 @@ import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
 import { logCapabilityReport } from './infra/capability-boot-log';
+import { checkEnv } from './infra/env-check';
+import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
 import {
   PrismaExceptionFilter,
@@ -163,6 +165,13 @@ async function bootstrap() {
   // старте видно, что выключено и почему — мёртвая сигнализация (оба канала
   // admin-alert.ts) отдельной ERROR-строкой, остальное — info.
   logCapabilityReport(new Logger('CapabilityReport'));
+
+  // Реестр env-переменных (щит, инциденты 2026-09-15/16): переменная
+  // ПРИСУТСТВУЕТ, но неверна (чужой хост, опечатка, пустая ADMIN_EMAIL) — не
+  // валит процесс (падение — крашлуп, хуже деградации), кроме уже
+  // существующих исключений ENCRYPTION_KEY/DATABASE_URL, которые падают
+  // раньше и отдельно (src/utils/crypto.ts, PrismaService).
+  logEnvCheck(new Logger('EnvCheck'), checkEnv());
 
   // Run after listen so PrismaService.onModuleInit has already connected.
   // Idempotent — skips rows already encrypted. Doesn't block startup.

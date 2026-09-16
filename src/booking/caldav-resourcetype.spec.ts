@@ -2,15 +2,32 @@
 // не матчил тег calendar С АТРИБУТАМИ — реальный iCloud отдаёт именно такую
 // форму, фильтр пропускал ВСЕ календари, занятость всегда была «0» без
 // единой ошибки. Табличный тест закрывает класс форм тега, а не одну строку.
+//
+// REAL_ICLOUD_CALENDAR_TAG вырезан из test/fixtures/recorded/ (не
+// перепечатан руками) — правило №14 CLAUDE.md: фикстура, которую можно тихо
+// подправить вместе с регэкспом, ничего не доказывает.
 import { isCalendarResource, classifyResponse } from './caldav-resourcetype';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
+
+const RECORDED_CALENDARS_XML = loadRecordedFixture(
+  'icloud-propfind-calendars.xml',
+);
+const REAL_ICLOUD_CALENDAR_TAG =
+  RECORDED_CALENDARS_XML.match(/<C:calendar[^>]*\/>/)?.[0] ?? '';
+if (!REAL_ICLOUD_CALENDAR_TAG) {
+  throw new Error(
+    'test/fixtures/recorded/icloud-propfind-calendars.xml: не найден тег ' +
+      '<C:calendar .../> — фикстура изменилась несовместимо с этим спеком.',
+  );
+}
 
 describe('isCalendarResource', () => {
   const cases: [string, string, boolean][] = [
     ['<C:calendar/>', 'префикс, без атрибутов', true],
     ['<calendar/>', 'без префикса, без атрибутов', true],
     [
-      '<C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>',
-      'префикс + атрибуты (реальный iCloud)',
+      REAL_ICLOUD_CALENDAR_TAG,
+      'префикс + атрибуты — форма из test/fixtures/recorded (реальный iCloud)',
       true,
     ],
     ['<cs:calendar />', 'префикс, пробел перед />', true],
@@ -78,18 +95,16 @@ describe('classifyResponse', () => {
   it('calendar с атрибутами есть, но нет VEVENT — no-vevent', () => {
     const r = respBlock({
       href: '/123/calendars/tasks/',
-      resourcetype:
-        '<d:collection/><c:calendar xmlns:c="urn:ietf:params:xml:ns:caldav"/>',
+      resourcetype: `<d:collection/>${REAL_ICLOUD_CALENDAR_TAG}`,
       vevent: false,
     });
     expect(classifyResponse(r, HOME_URL, ORIGIN).skip).toBe('no-vevent');
   });
 
-  it('calendar с атрибутами + VEVENT — принят, с именем и абсолютным url', () => {
+  it('calendar с атрибутами + VEVENT, форма из test/fixtures/recorded — принят, с именем и абсолютным url', () => {
     const r = respBlock({
       href: '/123/calendars/home/',
-      resourcetype:
-        '<d:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>',
+      resourcetype: `<d:collection/>${REAL_ICLOUD_CALENDAR_TAG}`,
       vevent: true,
       name: 'Home',
     });
@@ -133,11 +148,10 @@ describe('classifyResponse', () => {
       }), // ok
       respBlock({
         href: '/123/calendars/work/',
-        resourcetype:
-          '<d:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>',
+        resourcetype: `<d:collection/>${REAL_ICLOUD_CALENDAR_TAG}`,
         vevent: true,
         name: 'Work',
-      }), // ok, с атрибутами
+      }), // ok, с атрибутами (форма из test/fixtures/recorded)
     ];
     const classified = responses.map((r) =>
       classifyResponse(r, HOME_URL, ORIGIN),
