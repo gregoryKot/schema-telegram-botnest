@@ -389,7 +389,7 @@ describe('AuthOauthController.telegramOidcRedirect', () => {
 
     expect(resMocks.redirect).toHaveBeenCalledWith(
       302,
-      `${WEBAPP_URL}/api/auth/telegram-oidc`,
+      `${WEBAPP_URL}/api/auth/telegram-oidc?_oh=1`,
     );
     expect(resMocks.cookie).not.toHaveBeenCalled();
     expect(tgMocks.generatePkce).not.toHaveBeenCalled();
