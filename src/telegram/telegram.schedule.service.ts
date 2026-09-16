@@ -25,6 +25,7 @@ import {
 } from './telegram.diary-complete';
 import { runProcessQueue } from './telegram.schedule-queue';
 import { isConnectionError } from '../logger/db-outage';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
@@ -41,6 +42,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     private readonly notificationService: NotificationService,
     private readonly cadenceService: NotificationCadenceService,
     private readonly plannerService: NotificationPlannerService,
+    private readonly cronLeader: CronLeaderService,
   ) {}
 
   private isProcessing = false;
@@ -99,7 +101,23 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn('processQueue already running — skipping tick');
       return;
     }
+    // Флаг ставится ДО claimRun (а не после): claimRun асинхронный, и без
+    // этого второй параллельный вызов processQueue() успел бы проскочить
+    // проверку isProcessing выше, пока первый ещё ждёт ответ от БД — лок
+    // ловил бы гонку с чужим инстансом, но не с самим собой.
     this.isProcessing = true;
+    // Без аренды второй инстанс рассылает те же уведомления из очереди ещё
+    // раз — пользователь получает напоминание дважды.
+    if (
+      !(await this.cronLeader.claimRun(
+        'notificationQueue',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    ) {
+      this.logger.debug('processQueue: тик уже забрал другой инстанс');
+      this.isProcessing = false;
+      return;
+    }
     // Kill-switch: release lock if runProcessQueue hangs past the next cron tick.
     const killTimer = setTimeout(() => {
       this.logger.error('processQueue timed out after 4 min — releasing lock');
@@ -144,6 +162,12 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
+    // Без аренды второй инстанс планирует тот же день второй раз — пользователь
+    // получает два одинаковых напоминания/инсайта за сутки.
+    if (
+      !(await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.daily))
+    )
+      return;
     const users = await this.accountService.getAllUsersWithSettings();
     this.logger.log(`Midnight planner: ${users.length} users`);
 

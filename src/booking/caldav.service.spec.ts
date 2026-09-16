@@ -15,6 +15,7 @@ jest.mock('./caldav-busy', () => ({
 
 import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
 import { parseBusy } from './caldav-busy';
+import { calDavHealth } from './caldav-health';
 
 const originalFetch = global.fetch;
 afterEach(() => {
@@ -207,6 +208,19 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
       Promise.resolve({ status: 403, ok: false }),
     ) as any;
     expect(await svc.getBusyTimes(new Date(), new Date())).toEqual([]);
+  });
+
+  it('listCalendars вернул [] — сбой ("empty"), а не молчаливое "занято 0" (регресс 2026-09-16)', async () => {
+    calDavHealth.reset();
+    (listCalendars as jest.Mock).mockResolvedValue([]);
+    const svc = makeService();
+    global.fetch = jest.fn() as any; // REPORT вообще не должен уйти
+    expect(await svc.getBusyTimes(new Date(), new Date())).toEqual([]);
+    expect(global.fetch).not.toHaveBeenCalled();
+    const snap = calDavHealth.snapshot();
+    expect(snap.open).toBe(true);
+    expect(snap.lastFailKind).toBe('empty');
+    calDavHealth.reset();
   });
 
   it('повторный запрос с тем же диапазоном в течение 60с — берётся из кэша, fetch не вызывается снова', async () => {

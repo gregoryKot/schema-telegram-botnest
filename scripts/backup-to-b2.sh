@@ -51,8 +51,14 @@ echo "[backup] compressing + encrypting (AES-256-CBC via openssl)..."
 # when -salt and -pbkdf2 are used with a passphrase. For pure-key mode we
 # generate IV ourselves and prepend it to the ciphertext.
 IV=$(openssl rand -hex 16)
+# hex → сырые байты. Раньше тут стоял `xxd -r -p`, но xxd не входит в
+# coreutils и отсутствует в минимальных образах Debian — бэкап падал бы с
+# «command not found» ровно там, где этого меньше всего ждёшь. sed + printf
+# '%b' обходятся тем, что есть везде. Подстановка команд переносит ТЕКСТ
+# вида \x00, а не сами байты, поэтому нулевой байт в IV не теряется —
+# проверено на IV с 00, 0a, 0d и ff.
 gzip -c "$DUMP_FILE" | openssl enc -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \
-  | (echo -n "$IV" | xxd -r -p; cat) \
+  | (printf '%b' "$(echo -n "$IV" | sed 's/../\\x&/g')"; cat) \
   > "$ENC_FILE"
 
 if [ "$SKIP_UPLOAD" = "1" ]; then
@@ -86,7 +92,7 @@ echo "[backup] done — schemehappens-$DATE.sql.gz.enc"
 #
 # (Аудит тестовых практик 2026-08, «репетиция restore»: старая версия этого
 # комментария была НЕВЕРНА — она читала `head -c 32` как «32 hex chars»,
-# хотя выше IV префиксуется как 16 СЫРЫХ байт (`xxd -r -p`), а не как hex-
+# хотя выше IV префиксуется как 16 СЫРЫХ байт, а не как hex-
 # текст. По той инструкции восстановление отдавало мусор — воспроизведено и
 # зафиксировано в src/infra/backup-restore.spec.ts и nightly.yml, джоба
 # backup-restore.)

@@ -90,6 +90,11 @@ describe('TelegramOidcProvider.buildAuthUrl', () => {
       'https://schemehappens.ru/api/auth/telegram-oidc/callback',
     );
   });
+
+  it('callbackOrigin() = origin WEBAPP_URL (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
+    const provider = makeProvider();
+    expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
+  });
 });
 
 describe('TelegramOidcProvider.exchangeCodePkce — happy path и displayName fallback', () => {

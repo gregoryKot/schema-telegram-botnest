@@ -38,14 +38,24 @@ describe('EmailService.sendAdminNotification', () => {
     else process.env.ADMIN_EMAIL = origAdmin;
   });
 
-  it('ADMIN_EMAIL не настроен — молча ничего не отправляет', async () => {
+  it('ADMIN_EMAIL не настроен — письмо не уходит, но авария видна в логе (правило №14)', async () => {
     delete process.env.ADMIN_EMAIL;
     const service = new EmailService(makePrisma(), makeConfig());
     const spy = jest.spyOn(service as any, 'send').mockResolvedValue(undefined);
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
 
-    const result = await service.sendAdminNotification('Тема', 'Текст');
+    const result = await service.sendAdminNotification(
+      'Бронь ждёт оплаты',
+      'Текст',
+    );
     expect(result).toBeUndefined();
     expect(spy).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Бронь ждёт оплаты'),
+    );
+    warn.mockRestore();
   });
 
   it('ADMIN_EMAIL настроен — отправляет на этот адрес', async () => {

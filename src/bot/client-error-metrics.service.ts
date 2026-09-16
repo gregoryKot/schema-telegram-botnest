@@ -43,6 +43,7 @@ export class ClientErrorMetricsService {
         profile_week: bigint;
         help_week: bigint;
         cabinet_week: bigint;
+        booking_week: bigint;
         other_week: bigint;
         webapp_week: bigint;
         miniapp_week: bigint;
@@ -62,6 +63,7 @@ export class ClientErrorMetricsService {
         count(*) FILTER (WHERE meta->>'section' = 'profile')::bigint AS profile_week,
         count(*) FILTER (WHERE meta->>'section' = 'help')::bigint AS help_week,
         count(*) FILTER (WHERE meta->>'section' = 'cabinet')::bigint AS cabinet_week,
+        count(*) FILTER (WHERE meta->>'section' = 'booking')::bigint AS booking_week,
         count(*) FILTER (WHERE meta->>'section' = 'other')::bigint AS other_week,
         count(*) FILTER (WHERE meta->>'source' = 'webapp')::bigint AS webapp_week,
         count(*) FILTER (WHERE meta->>'source' = 'miniapp')::bigint AS miniapp_week
@@ -84,6 +86,7 @@ export class ClientErrorMetricsService {
         profile: n(row?.profile_week),
         help: n(row?.help_week),
         cabinet: n(row?.cabinet_week),
+        booking: n(row?.booking_week),
         other: n(row?.other_week),
       },
       bySource: {

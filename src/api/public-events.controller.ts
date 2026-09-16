@@ -3,28 +3,27 @@ import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { PublicAnalyticsEventName } from '../analytics/analytics.constants';
 import { PRACTICE_LINK_PLACES } from '../analytics/analytics.constants';
+import {
+  isGameEvent,
+  sanitizeGameMeta,
+} from '../analytics/game-events.constants';
 import { PublicEventDto } from './dto/public-event.dto';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 
-// Анонимному лендингу (userId = null, правило №5/№14) разрешаем ТОЛЬКО эти
-// два действия воронки установки — ровно то, что реально шлёт
-// AppInstallSection.tsx: 'add' (нажал нативную кнопку установки) и 'added'
-// (браузер подтвердил appinstalled). 'shown'/'later'/'never' — состояния
-// воронки, которые неверифицированный источник не должен уметь писать
-// (аноним не обязан быть честным, а later/never в мини-аппе несут действие
-// пользователя внутри приложения). Расширять список — сознательное решение,
-// не копия HOME_SCREEN_ACTION_SET авторизованного пути.
+// Анонимному лендингу (userId = null, правило №5/№14) разрешаем ТОЛЬКО
+// 'add'/'added' — то, что реально шлёт AppInstallSection.tsx.
+// 'shown'/'later'/'never' — состояния воронки, аноним их писать не должен
+// (не обязан быть честным, а later/never несут действие внутри мини-аппа).
+// Расширять список — сознательное решение, не копия авторизованного пути.
 const PUBLIC_HOME_SCREEN_ACTIONS: ReadonlySet<string> = new Set([
   'add',
   'added',
 ]);
 
-// Анонимная аналитика публичного сайта (правило №8): гость без регистрации
-// проходит мини-тест, кликает ссылку на сайт практики с лендинга или видит
-// блок установки на экран (site_landing) — событие пишется с userId = null.
-// Идентичность не верифицирована, поэтому троттлинг-бакет — по IP (правило
-// №5: глобальный UserThrottlerGuard для запросов без кредов возвращает
-// именно IP), и лимит заметно жёстче обычного.
+// Анонимная аналитика (правило №8): мини-тест, клик по ссылке на сайт
+// практики, блок установки на лендинге и вся игра (game/, правило №5/№14 —
+// она вообще не авторизует) — событие пишется с userId = null. Идентичность
+// не верифицирована, троттлинг-бакет по IP (UserThrottlerGuard), лимит жёстче.
 @Controller('api')
 export class PublicEventsController {
   private readonly validResults = quizResultIdSet();
@@ -57,15 +56,14 @@ export class PublicEventsController {
   }
 
   /**
-   * Пропускает ТОЛЬКО известные поля по реестрам (тесты, места клика,
-   * предложение значка на экран с лендинга); src клиенту не доверяем —
-   * публичный эндпоинт всегда пишет 'web' (бот шлёт 'bot' сам, через
-   * AnalyticsService напрямую).
+   * Пропускает ТОЛЬКО известные поля по реестрам (игра — своим санитайзером;
+   * тесты/клики/значок — src клиенту не доверяем, эндпоинт пишет 'web' сам).
    */
   private sanitize(
     name: PublicAnalyticsEventName,
     meta: Record<string, unknown> | undefined,
   ): Record<string, unknown> | null {
+    if (isGameEvent(name)) return sanitizeGameMeta(name, meta);
     if (name === 'practice_link_click') {
       const place = meta?.place;
       return typeof place === 'string' && this.validPlaces.has(place)

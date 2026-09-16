@@ -64,6 +64,11 @@ describe('GoogleProvider.buildAuthUrl', () => {
     expect(p.get('access_type')).toBe('online');
   });
 
+  it('callbackOrigin() = origin GOOGLE_REDIRECT_URI (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
+    const provider = makeProvider();
+    expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
+  });
+
   it('ВХОД (forceChooser не задан): prompt НЕ ставится — вошедшего впускаем одним касанием', () => {
     // Разбор 2026-08-31: хардкод prompt=select_account заставлял выбирать
     // аккаунт заново на каждый вход — «авторизация с нуля». Без prompt Google

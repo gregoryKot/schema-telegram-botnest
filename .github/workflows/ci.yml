@@ -161,6 +161,15 @@ jobs:
       # гейт проверяет, что каждый роут реально доступен с обеих площадок или
       # осознанно заведён в scripts/feature-parity-baseline.json с причиной.
       - run: node scripts/check-feature-parity.mjs
+      # Leader-election кронов: крон без него дублируется на втором инстансе
+      # (второй под, перекатывающийся деплой Amvera) — два процесса шлют одно и
+      # то же сообщение дважды. Гейт не ищет признак «похоже на безопасное», а
+      # требует явной классификации каждого `@Cron(` в
+      # scripts/cron-leader-baseline.json (leader — claimRun( обязателен в
+      # теле, exempt — только с внятной причиной); протухшая запись тоже красит
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-cron-leader.mjs
+      - run: node scripts/check-raw-sql-live.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -305,6 +314,29 @@ jobs:
       # требует полного env — здесь не нужен). --runInBand: одна БД, без гонок.
       - name: e2e read-after-write smoke
         run: npx jest --config ./test/jest-e2e.json --runInBand test/read-after-write.e2e-spec.ts
+      # Leader-election кронов: вся защита от дублей на втором инстансе держится
+      # на атомарности одного запроса, а атомарность — свойство Postgres, а не
+      # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
+      - name: e2e leader-election кронов на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
+      # advisory-lock через $queryRaw, а Prisma 7 не читает колонку типа `void`.
+      # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
+      # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
+      - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
+      # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
+      # удаления аккаунта, захват списания подписки. Состав держит гейт
+      # check-raw-sql-live.mjs (джоба checks).
+      - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+      # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
+      # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
+      - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/throttle-storage.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей
@@ -326,6 +358,7 @@ jobs:
           test/login-ticket.e2e-spec.ts
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
+          test/account-export-ownership.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —

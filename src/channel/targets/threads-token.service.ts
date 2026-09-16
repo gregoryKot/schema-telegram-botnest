@@ -4,6 +4,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { encrypt, decrypt } from '../../utils/crypto';
 import { getJson } from '../channel-http';
 import { threadsApi } from './threads-api';
+import {
+  CronLeaderService,
+  LEASE_WINDOW,
+} from '../../infra/cron-leader.service';
 
 /**
  * Долгоживущий токен Threads живёт 60 дней и обновляется только запросом с
@@ -26,7 +30,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export class ThreadsTokenService {
   private readonly logger = new Logger(ThreadsTokenService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cronLeader: CronLeaderService,
+  ) {}
 
   /** Токен для отправки: сохранённый, иначе стартовый из env. */
   async current(): Promise<string | null> {
@@ -72,6 +79,16 @@ export class ThreadsTokenService {
     try {
       const token = await this.current();
       if (!token) return;
+      // Без аренды второй инстанс тоже сочтёт токен устаревшим и обновит его
+      // ещё раз — двойной refresh инвалидирует первый токен раньше времени.
+      if (
+        !(await this.cronLeader.claimRun(
+          'threadsTokenRefresh',
+          LEASE_WINDOW.daily,
+          now,
+        ))
+      )
+        return;
       const stored = await this.stored();
       // Токена в БД ещё нет — сохраняем стартовый, дальше считаем возраст от него.
       if (!stored) return void (await this.save(token));

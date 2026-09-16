@@ -50,6 +50,13 @@ export class GoogleProvider implements AuthProviderHandler {
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   }
 
+  // Origin редиректа Google (GOOGLE_REDIRECT_URI) — на нём обязана жить кука
+  // oauth_state, иначе колбэк её не увидит (алиас-домен, разбор 2026-09-08).
+  callbackOrigin(): string {
+    return new URL(this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'))
+      .origin;
+  }
+
   // ── Step 2: exchange the code for tokens, then verify the id_token ────────
   async exchangeCode(code: string): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');

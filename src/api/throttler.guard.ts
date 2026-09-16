@@ -1,20 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, type ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { resolveTracker, type TrackerRequest } from './throttler-identity';
+import { trackerSecrets } from './throttler-tracker-secrets';
+import { withPersistentPrefix } from './persistent-throttle.decorator';
 
 @Injectable()
 export class UserThrottlerGuard extends ThrottlerGuard {
   protected getTracker(req: TrackerRequest): Promise<string> {
-    return Promise.resolve(
-      resolveTracker(req, {
-        // JWT_SECRET — как есть: access-токены подписаны сырым значением
-        // (auth.service getOrThrow), проверять надо тем же. BOT_TOKEN —
-        // .trim(): initData Telegram подписывает НАСТОЯЩИМ токеном бота, а
-        // auth.service его тоже тримит; пробел/перенос в env иначе ронял бы
-        // сверку и ронял ВСЕХ мини-апп-юзеров в общий IP-бакет (разбор 2026-08-31).
-        jwtSecret: process.env.JWT_SECRET,
-        botToken: process.env.BOT_TOKEN?.trim(),
-      }),
-    );
+    return Promise.resolve(resolveTracker(req, trackerSecrets()));
+  }
+
+  // `db:`-префикс — денежные/заявочные ручки считает Postgres, не память.
+  protected generateKey(c: ExecutionContext, s: string, n: string): string {
+    return withPersistentPrefix(super.generateKey(c, s, n), this.reflector, c);
   }
 }

@@ -61,6 +61,11 @@ describe('VkProvider.buildAuthUrl', () => {
     expect(p.get('scope')).toBe('email phone');
   });
 
+  it('callbackOrigin() = origin VK_REDIRECT_URI (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
+    const provider = new VkProvider(makeConfig());
+    expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
+  });
+
   it('аварийный потолок стора верификаторов (L9): поток buildAuthUrl не растит его без предела', () => {
     const provider = new VkProvider(makeConfig());
     const CAP = 5000;

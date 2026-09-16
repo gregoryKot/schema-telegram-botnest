@@ -110,6 +110,27 @@ export async function chargeDue(deps: ChargeDeps) {
       );
       continue;
     }
+    // Атомарный захват подписки ДО обращения в Robokassa. Проверка
+    // pending-charge выше защищает от потерянного вебхука, но не от второго
+    // инстанса: два процесса читают findMany одновременно, оба видят «pending
+    // нет» и оба списывают — окно между проверкой и созданием charge. UPDATE
+    // с условием `nextChargeAt <= now()` атомарен в Postgres: строку заберёт
+    // ровно один, второй получит 0 обновлённых и уйдёт дальше по списку.
+    //
+    // Цена — компромисс в пользу клиента: если процесс упадёт между захватом
+    // и списанием, платёж пропустится (nextChargeAt уже сдвинут), а не
+    // спишется дважды. Ровно ту же сторону выбирает защита P-3 выше.
+    const claimed = await deps.prisma.$executeRaw`
+      UPDATE "Subscription"
+      SET "nextChargeAt" = ${addPeriod(new Date(), sub.period as SubPeriod)}
+      WHERE id = ${sub.id} AND "nextChargeAt" <= ${new Date()}
+    `;
+    if (claimed === 0) {
+      deps.logger.log(
+        `Subscription ${sub.id}: списание уже забрал другой обработчик — пропуск`,
+      );
+      continue;
+    }
     const charge = await deps.prisma.subscriptionCharge.create({
       data: { subscriptionId: sub.id, amount: sub.amount },
     });
@@ -120,16 +141,11 @@ export async function chargeDue(deps: ChargeDeps) {
       desc: `Подписка SchemeHappens (${sub.period === 'year' ? 'год' : 'месяц'})`,
     });
     if (res.ok) {
-      // Advance nextChargeAt NOW (not only on the webhook): the queue runs
-      // hourly, so if the success webhook is delayed or lost we'd otherwise
-      // re-pick this subscription and charge it again. The webhook still
-      // confirms the charge (marks it paid, resets fails) idempotently.
-      await deps.prisma.subscription.update({
-        where: { id: sub.id },
-        data: {
-          nextChargeAt: addPeriod(new Date(), sub.period as SubPeriod),
-        },
-      });
+      // nextChargeAt уже сдвинут захватом выше — отдельный UPDATE не нужен.
+      // Смысл прежний (queue ходит раз в час: потерянный вебхук не должен
+      // приводить к повторному списанию), просто сдвиг переехал на шаг раньше
+      // и заодно стал точкой сериализации между инстансами. Вебхук
+      // по-прежнему идемпотентно подтверждает списание.
       deps.logger.log(
         `Subscription ${sub.id} recurring charge sent (InvId=${SUBSCRIPTION_INVID_BASE + charge.id})`,
       );

@@ -16,6 +16,7 @@ function makeService(row: any) {
     {} as any,
     {} as any,
     { get: () => undefined } as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
   return { service, prisma };
 }

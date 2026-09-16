@@ -59,16 +59,20 @@ export class ClientErrorsController {
       .filter(Boolean)
       .join('\n');
 
-    // body.source валидируется DTO как enum ('webapp' | 'miniapp') —
-    // единственное влияние клиента на первый аргумент, и оно из белого списка.
+    // body.source (enum DTO) и section (канонический бакет из allow-list
+    // classifyClientErrorSection, НЕ свободный текст body.section) —
+    // единственное влияние клиента на первый аргумент, и оба из белого
+    // списка (инвариант H0/H6 выше не нарушен). Бакет поднят сюда, чтобы
+    // DM админу сразу отличал «упал экран входа» от «упал дневник», не
+    // заставляя лезть в лог за деталями ради этого.
     // Лог НЕ троттлится здесь — это отдельный, уже существующий канал
     // (AlertLogger троттлит DM сам, по нормализованному тексту).
+    const section = classifyClientErrorSection(body.section);
     this.logger.error(
-      `[client:${body.source}] ошибка фронтенда (детали в логах)`,
+      `[client:${body.source}/${section}] ошибка фронтенда (детали в логах)`,
       detail,
     );
 
-    const section = classifyClientErrorSection(body.section);
     const key = `${body.source}|${section}|${req.ip ?? 'no-ip'}`;
     if (REPORT_THROTTLE.take(key).allow) {
       void this.analytics.track(null, 'client_error', {

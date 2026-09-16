@@ -31,6 +31,7 @@ export type SecurityEvent =
   | 'login_failed'
   | 'merge_initiated'
   | 'merge_confirmed'
+  | 'merge_subscription_conflict'
   | 'provider_linked'
   | 'provider_unlinked'
   | 'role_changed'
@@ -55,6 +56,10 @@ export type SecurityEvent =
 // go to server logs.
 const ALERT_EVENTS = new Set<SecurityEvent>([
   'merge_confirmed',
+  // Живые подписки с обеих сторон слияния: деньги, разбирается руками.
+  // Порождается живым подтверждением человека, но бюджет всё равно нужен —
+  // правило №14: сигнализация без троттлинга мьютит чат в аварии.
+  'merge_subscription_conflict',
   'role_changed',
   'therapist_request_submitted',
   'csrf_blocked',

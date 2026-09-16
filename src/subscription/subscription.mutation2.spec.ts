@@ -48,6 +48,9 @@ function makePrisma() {
         return row;
       }),
     },
+    // 1 = подписку захватил этот обработчик (атомарный UPDATE
+    // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
+    $executeRaw: jest.fn(async () => 1),
     subscriptionCharge: {
       create: jest.fn(({ data }: any) => {
         const row = { id: nextChargeId++, status: 'pending', ...data };

@@ -906,3 +906,29 @@ model ChannelDelivery {
 
   @@index([createdAt])
 }
+
+/// Кто из инстансов уже отработал крон в текущем окне. Без строки-аренды
+/// второй инстанс (масштабирование, перекатывающийся деплой) отрабатывает то
+/// же расписание второй раз: подписчики канала получают два одинаковых поста,
+/// пользователь — два одинаковых напоминания. См. src/infra/cron-leader.service.ts.
+/// Пользовательских данных нет: имя крона, время прогона и имя процесса.
+model CronLease {
+  name       String   @id
+  runAt      DateTime
+  instanceId String
+}
+
+/// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
+/// счётчик @nestjs/throttler по умолчанию живёт в памяти процесса, и на двух
+/// инстансах Amvera лимит на POST /api/booking/book обходился ротацией
+/// инстанса. `key` — sha256 маршрута+бакета из ThrottlerGuard.generateKey
+/// (правило №5: бакет уже верифицирован), PII в нём нет. См.
+/// src/api/postgres-throttle-storage.ts.
+model ThrottleHit {
+  key          String    @id
+  hits         Int
+  expiresAt    DateTime
+  blockedUntil DateTime?
+
+  @@index([expiresAt])
+}

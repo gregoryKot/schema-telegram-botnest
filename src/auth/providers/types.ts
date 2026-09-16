@@ -24,6 +24,10 @@ export interface AuthProviderHandler {
 
   // Direct client-data verification (no redirect)
   verifyClientData?(data: Record<string, unknown>): ProviderIdentity;
+
+  // Origin, на который провайдер возвращает пользователя (redirect_uri). Кука
+  // oauth_state обязана жить на ЭТОМ хосте — иначе колбэк её не увидит.
+  callbackOrigin?(): string;
 }
 
 export type ProviderRegistry = Map<string, AuthProviderHandler>;

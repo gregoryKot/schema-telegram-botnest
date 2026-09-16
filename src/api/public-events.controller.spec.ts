@@ -30,6 +30,15 @@ describe('PublicEventDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it('события игры проходят — она вообще не авторизует пользователя', async () => {
+    await expect(
+      errorsFor({ name: 'game_open', meta: { src: 'site' } }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ name: 'game_chapter_start', meta: { chapter: 'chapter1' } }),
+    ).resolves.toEqual([]);
+  });
+
   it("НЕ-публичные события allow-list'а отклоняются (только срез тестов)", async () => {
     await expect(errorsFor({ name: 'share_card' })).resolves.toContain('name');
     await expect(errorsFor({ name: 'journey_open' })).resolves.toContain(
@@ -193,5 +202,61 @@ describe('PublicEventsController', () => {
       }),
     ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_open пишется анонимно с известным src', async () => {
+    await controller.track({ name: 'game_open', meta: { src: 'site' } });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'site' });
+  });
+
+  it('game_open с незнакомым src сворачивается в other, а не дропается', async () => {
+    await controller.track({ name: 'game_open', meta: { src: 'вк' } });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'other' });
+  });
+
+  it('game_open без meta тоже пишется с src=other', async () => {
+    await controller.track({ name: 'game_open' });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'other' });
+  });
+
+  it('game_chapter_done: PII и чужой userId отрезаются, остаётся только chapter', async () => {
+    await controller.track({
+      name: 'game_chapter_done',
+      meta: { chapter: 'chapter2', userId: 7, note: 'PII' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_chapter_done', {
+      chapter: 'chapter2',
+    });
+  });
+
+  it('game_over с неизвестной главой не пишется, но ответ ok', async () => {
+    await expect(
+      controller.track({ name: 'game_over', meta: { chapter: 'chapter9' } }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_cta_click: известное место пишется, незнакомое — нет', async () => {
+    await controller.track({
+      name: 'game_cta_click',
+      meta: { from: 'act1' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_cta_click', {
+      from: 'act1',
+    });
+
+    track.mockClear();
+    await expect(
+      controller.track({ name: 'game_cta_click', meta: { from: 'menu' } }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_start пишется с пустой meta вне зависимости от присланных полей', async () => {
+    await controller.track({
+      name: 'game_start',
+      meta: { anything: 'x' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_start', {});
   });
 });
