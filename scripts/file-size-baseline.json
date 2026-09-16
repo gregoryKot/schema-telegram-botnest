@@ -1052,7 +1052,7 @@
   "src/notification/notification.templates.soft.ts": 168,
   "src/notification/notification.templates.ts": 296,
   "src/notification/notification.time.ts": 99,
-  "src/practice-domain.middleware.ts": 153,
+  "src/practice-domain.middleware.ts": 65,
   "src/prisma/encryption-wave2.service.ts": 152,
   "src/prisma/prisma-exception.filter.ts": 99,
   "src/prisma/prisma.module.ts": 10,
