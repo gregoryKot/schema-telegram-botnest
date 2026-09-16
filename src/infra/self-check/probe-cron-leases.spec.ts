@@ -1,11 +1,8 @@
 import { cronLeasesProbe } from './probe-cron-leases';
-import {
-  CRON_LEASE_WINDOW_KEY,
-  NOMINAL_PERIOD_MS,
-} from './cron-lease-registry';
+import { CRON_LEASE_REGISTRY, NOMINAL_PERIOD_MS } from './cron-lease-registry';
 import type { PrismaService } from '../../prisma/prisma.service';
 
-const NAMES = Object.keys(CRON_LEASE_WINDOW_KEY);
+const NAMES = Object.keys(CRON_LEASE_REGISTRY);
 const NOW = 1_700_000_000_000;
 
 function fakePrisma(rows: Array<{ name: string; runAt: Date }>): PrismaService {
@@ -73,5 +70,43 @@ describe('cronLeasesProbe', () => {
     ).run();
     expect(res.ok).toBe(false);
     expect(res.detail).toContain('bookingExpireHolds: ни разу не отработал');
+  });
+
+  // Регрессия 2026-09-16 (issue #501, docs/INCIDENTS.md): порог свежести
+  // брался из категории окна (LEASE_WINDOW.fiveMinutes → 2×5мин), а не из
+  // расписания крона. healthyAdultMorning законно тикает только 09:00–10:55
+  // МСК, поэтому по старой логике порог сгорал уже в 11:05 МСК — prod-smoke
+  // был красным (`selfCheck.failed: ["cronLeases"]`) почти круглосуточно.
+  describe('healthyAdultMorning — оконный крон, молчание между окнами не авария', () => {
+    it('аренда с последнего тика утреннего окна (10:55 МСК) свежа вечером (20:43 МСК)', async () => {
+      const now = new Date('2026-09-16T17:43:00Z').getTime(); // 20:43 МСК
+      Date.now = () => now;
+      const rows = NAMES.map((name) =>
+        name === 'healthyAdultMorning'
+          ? { name, runAt: new Date('2026-09-16T07:55:00Z') } // 10:55 МСК
+          : { name, runAt: new Date(now - 30_000) },
+      );
+      const res = await cronLeasesProbe(
+        fakePrisma(rows),
+        now - 24 * 3_600_000,
+      ).run();
+      expect(res.ok).toBe(true);
+    });
+
+    it('контроль: та же аренда, не обновлявшаяся двое суток, — по-прежнему авария', async () => {
+      const now = new Date('2026-09-16T17:43:00Z').getTime();
+      Date.now = () => now;
+      const rows = NAMES.map((name) =>
+        name === 'healthyAdultMorning'
+          ? { name, runAt: new Date(now - 2 * 24 * 3_600_000) }
+          : { name, runAt: new Date(now - 30_000) },
+      );
+      const res = await cronLeasesProbe(
+        fakePrisma(rows),
+        now - 24 * 3_600_000,
+      ).run();
+      expect(res.ok).toBe(false);
+      expect(res.detail).toContain('healthyAdultMorning');
+    });
   });
 });

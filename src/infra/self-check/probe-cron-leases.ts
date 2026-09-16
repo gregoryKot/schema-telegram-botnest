@@ -1,14 +1,16 @@
 import type { PrismaService } from '../../prisma/prisma.service';
-import { CRON_LEASE_WINDOW_KEY, maxLeaseAgeMs } from './cron-lease-registry';
+import { CRON_LEASE_REGISTRY, maxLeaseAgeMs } from './cron-lease-registry';
 import { Probe } from './types';
 
 const PROCESS_STARTED_AT = Date.now();
 
 /**
- * Каждая leader-аренда из cron-lease-registry.ts обязана была тикнуть за
- * последние 2 периода своего крона (класс «крон молча не тикает», правило
- * №17 CLAUDE.md). Аренды, которых ещё вообще не может быть (например,
- * суточный крон в первый час жизни процесса), не считаются сбоем.
+ * Каждая leader-аренда из cron-lease-registry.ts обязана была тикнуть не
+ * позже `maxLeaseAgeMs(name)` — порог считается из расписания крона
+ * (cron-gap.ts), не из категории окна: иначе оконный `healthyAdultMorning`
+ * (тикает только 09:00–10:55 МСК) сбоил бы почти круглосуточно (issue #501,
+ * 2026-09-16, docs/INCIDENTS.md). Аренды, которых ещё вообще не может быть
+ * (суточный крон в первый час жизни процесса), не считаются сбоем.
  */
 export function cronLeasesProbe(
   prisma: PrismaService,
@@ -19,7 +21,7 @@ export function cronLeasesProbe(
     title: 'Крон-аренды',
     critical: false,
     async run() {
-      const names = Object.keys(CRON_LEASE_WINDOW_KEY);
+      const names = Object.keys(CRON_LEASE_REGISTRY);
       const now = Date.now();
       const rows = await prisma.cronLease.findMany({
         where: { name: { in: names } },

@@ -1,31 +1,34 @@
 import { LEASE_WINDOW } from '../cron-leader.service';
+import { cronGapsMs } from './cron-gap';
 
 /**
- * Имя аренды (первый аргумент `claimRun`) → категория `LEASE_WINDOW` её
- * крона. Ручной реестр по правилу №4 CLAUDE.md («денормализация — только с
- * тестом-сверкой»): сверяется с `claimRun(...)` в исходниках и с
- * `scripts/cron-leader-baseline.json` тестом cron-lease-registry.spec.ts —
- * новый leader-крон без строки здесь красит тест, а не молча остаётся
- * невидимым для probe-cron-leases.ts.
+ * Имя аренды (первый аргумент `claimRun`) → окно `LEASE_WINDOW` и cron-строка
+ * её крона. Ручной реестр по правилу №4 CLAUDE.md («денормализация — только
+ * с тестом-сверкой»): оба поля сверяются с исходниками через общий сканер
+ * `cron-source-scan.ts` тестом cron-lease-registry.spec.ts — новый
+ * leader-крон или разъехавшаяся cron-строка красят тест, а не молча остаются
+ * невидимыми для probe-cron-leases.ts.
  */
-export const CRON_LEASE_WINDOW_KEY: Record<string, keyof typeof LEASE_WINDOW> =
-  {
-    threadsTokenRefresh: 'daily',
-    healthyAdultMorning: 'fiveMinutes',
-    healthyAdultEvening: 'fiveMinutes',
-    healthyAdultCatchUp: 'fifteenMinutes',
-    telegramDomainWatchdog: 'hourly',
-    bookingReminders: 'fiveMinutes',
-    bookingExpireHolds: 'everyMinute',
-    notificationQueue: 'fiveMinutes',
-    midnightPlanner: 'daily',
-  };
+export const CRON_LEASE_REGISTRY: Record<
+  string,
+  { window: keyof typeof LEASE_WINDOW; cron: string }
+> = {
+  threadsTokenRefresh: { window: 'daily', cron: '17 3 * * *' },
+  healthyAdultMorning: { window: 'fiveMinutes', cron: '*/5 9,10 * * *' },
+  healthyAdultEvening: { window: 'fiveMinutes', cron: '*/5 18,19 * * *' },
+  healthyAdultCatchUp: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
+  telegramDomainWatchdog: { window: 'hourly', cron: '7 * * * *' },
+  bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
+  notificationQueue: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  midnightPlanner: { window: 'daily', cron: '0 0 * * *' },
+};
 
 /**
- * Номинальный период тика по имени категории. Не берём период из
- * `LEASE_WINDOW` напрямую: окно аренды всегда чуть МЕНЬШЕ периода (иначе
- * законный тик пропускался бы, см. cron-leader.service.ts) — «не старше двух
- * периодов» на самом окне было бы чуть строже, чем просили.
+ * Номинальный период тика по категории — нужен только тесту «окно меньше
+ * номинального периода категории» (свойство самого `LEASE_WINDOW`). Порог
+ * свежести аренды (`maxLeaseAgeMs`) период отсюда больше не берёт — считает
+ * его из расписания через `cronGapsMs`.
  */
 export const NOMINAL_PERIOD_MS: Record<keyof typeof LEASE_WINDOW, number> = {
   everyMinute: 60_000,
@@ -35,9 +38,12 @@ export const NOMINAL_PERIOD_MS: Record<keyof typeof LEASE_WINDOW, number> = {
   daily: 24 * 3_600_000,
 };
 
-/** Сколько мс аренда может не обновляться, прежде чем считать крон сбойным
- * («не старше двух периодов»). null — имя не зарегистрировано. */
+/** Сколько мс аренда может не обновляться, прежде чем считать крон сбойным —
+ * из расписания (`cronGapsMs`), не «ровно 2 периода» категории окна. null —
+ * имя не зарегистрировано. */
 export function maxLeaseAgeMs(name: string): number | null {
-  const key = CRON_LEASE_WINDOW_KEY[name];
-  return key ? 2 * NOMINAL_PERIOD_MS[key] : null;
+  const entry = CRON_LEASE_REGISTRY[name];
+  if (!entry) return null;
+  const { minGapMs, maxGapMs } = cronGapsMs(entry.cron);
+  return maxGapMs + minGapMs;
 }
