@@ -801,7 +801,7 @@
   "src/api/dto/user-flags.dto.ts": 113,
   "src/api/exercises.controller.ts": 133,
   "src/api/flag-fields.ts": 29,
-  "src/api/health.controller.ts": 20,
+  "src/api/health.controller.ts": 32,
   "src/api/hybrid-throttle-storage.ts": 76,
   "src/api/init-data-paths.ts": 120,
   "src/api/initdata-alert.ts": 60,

@@ -13,7 +13,8 @@
 # и docs/archive/INCIDENT_2026-08-08_TELEGRAM_LOGIN.md (тот сбой был именно
 # в мосте мессенджера и держится отдельным клиентским отчётом об ошибке
 # входа, не этим смоком). Здесь проверяется только то, что сервер жив,
-# отдаёт сайт и раздаёт актуальный бандл мини-аппа статикой.
+# отдаёт сайт и раздаёт актуальный бандл мини-аппа статикой, и что образ
+# собран не раньше последнего коммита main.
 name: Смок живого прода
 
 on:
@@ -40,12 +41,29 @@ jobs:
       # ошибку и шаг красный — настоящий даунтайм не тонет в повторах.
       CURL: curl --fail --silent --show-error --max-time 10 --retry 2 --retry-delay 3
     steps:
+      # На schedule-запуске чекаут = HEAD main (workflow_dispatch — тоже,
+      # ветка выбирается на странице запуска, по умолчанию main). `git log -1
+      # --format=%cI` даёт время коммита слияния — момент, с которого Amvera
+      # была обязана пересобрать образ (правило №14 CLAUDE.md, инцидент
+      # 2026-09-16). fetch-depth: 1 достаточно — нужен только последний коммит.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
       - name: /health — 200 и db":"up"
         run: |
           body=$($CURL https://schemehappens.ru/health)
           echo "$body"
+          printf '%s' "$body" > health.json
           echo "$body" | grep -q '"status":"ok"'
           echo "$body" | grep -q '"db":"up"'
+      # Инцидент 2026-09-16: #494/#495 смержены в main, а прод сутки отдавал
+      # старый образ — CI и /health-выше были зелёными оба дня, потому что
+      # проверяли «жив», не «свеж». Грейс — в scripts/check-deploy-lag.mjs.
+      - name: /health — образ на проде не старее последнего коммита main
+        run: |
+          built=$(jq -r '.builtAt // empty' health.json)
+          commit=$(git log -1 --format=%cI)
+          node scripts/check-deploy-lag.mjs --built-at="$built" --commit-at="$commit"
       - name: / — 200 и похоже на сайт (стабильный маркер, не весь HTML)
         run: |
           body=$($CURL https://schemehappens.ru/)
