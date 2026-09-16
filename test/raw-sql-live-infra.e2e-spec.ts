@@ -36,9 +36,12 @@ describe('сырой SQL инфраструктуры на реальном Post
   });
 
   it('GET /health: SELECT 1 через драйвер → { status: ok, db: up }', async () => {
+    // builtAt: null — ни в CI, ни локально файла BUILD_INFO нет (его пишет
+    // только Dockerfile при сборке образа, см. src/utils/build-info.ts).
     await expect(new HealthController(prisma).check()).resolves.toEqual({
       status: 'ok',
       db: 'up',
+      builtAt: null,
     });
   });
 
