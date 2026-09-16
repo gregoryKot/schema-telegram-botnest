@@ -3,7 +3,7 @@ import { Cta } from './BrandKit';
 import { EYEBROW, H2 } from './productContent';
 import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 
-// Блок «Кто это делает»: автор проекта — психолог с частной практикой.
+// Блок «Кто это делает»: автор проекта работает в подходе схема-терапия, частная практика.
 // Клик по CTA — продуктовое событие practice_link_click (place: 'author'),
 // видно в /stats. Композиция своя, не копия Telegram-ленты (jscpd).
 
@@ -18,7 +18,7 @@ export function AuthorSection() {
       }}>
         <img
           src="/gregory.jpg"
-          alt="Григорий Котляревский — психолог"
+          alt="Григорий Котляревский"
           loading="lazy"
           decoding="async"
           width={300}
@@ -35,10 +35,10 @@ export function AuthorSection() {
           <span style={EYEBROW}>Кто это делает</span>
           <h2 style={{ ...H2, margin: '14px 0 10px' }}>Григорий Котляревский</h2>
           <p style={{ fontSize: 14, fontWeight: 700, color: VIOLET, margin: '0 0 16px' }}>
-            Психолог · схема-терапия · частная практика онлайн
+            Работаю в подходе схема-терапия · частная практика онлайн
           </p>
           <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 560, margin: '0 0 28px' }}>
-            Я психолог, работаю в подходе схема-терапия, и сделал «Всё по схеме»
+            Я работаю в подходе схема-терапия и сделал «Всё по схеме»
             бесплатным — чтобы у метода был доступный инструмент самонаблюдения.
             Приложение выросло из моей практики: это те же дневники и упражнения,
             которые помогают клиентам между сессиями. А если захочется разбирать

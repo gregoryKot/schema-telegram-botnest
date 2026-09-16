@@ -57,7 +57,7 @@ export function contactCta(
   }
   const label =
     contact.name === AUTHOR_NAME
-      ? 'Поговорить с психологом →'
+      ? 'Записаться на консультацию →'
       : `Написать ${contact.name} →`;
   return { isSelf: false, label, url: contact.url };
 }

@@ -96,6 +96,31 @@ describe('check-robot-phrases.mjs', () => {
     expect(res.stderr).toContain('[metatext] Важно отметить');
   });
 
+  // Кнопка заявки специалиста («Я психолог — подать заявку») — чужая реплика
+  // о своей квалификации, ALLOW её гасит. Контроль ниже: самоназвание автора
+  // той же формой по-прежнему краснеет.
+  it('«Я психолог — подать заявку» — заявка специалиста, гейт молчит', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/account/TherapistRequestSection.tsx':
+        "export const label = 'Я психолог — подать заявку';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: «Я психолог» о себе в другом контексте — по-прежнему exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/landing/AuthorSection.tsx':
+        "export const bio = 'Я психолог, работаю в подходе схема-терапия';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[samonazvanie-avtora] Я психолог');
+  });
+
   // Похожая, но НЕзаконная «это не X, это Y» — вторая часть пересказывает
   // первую, ALLOW не должен ловить произвольные вариации «это не каприз».
   it('похожая, но пустая «это не X, это Y» по-прежнему ловится', () => {
@@ -112,7 +137,12 @@ describe('ALLOW-исключения check-robot-phrases.mjs', () => {
   const ALLOW = loadRegexList('check-robot-phrases.mjs', 'ALLOW');
 
   it('у каждого ALLOW-исключения есть образец, который оно распознаёт', () => {
-    const CORPUS = ['Это не каприз, это счётчик', 'но это не факт, это схема'];
+    const CORPUS = [
+      'Это не каприз, это счётчик',
+      'но это не факт, это схема',
+      'Я психолог — подать заявку',
+      'Настройки → «Я психолог» → заполни форму',
+    ];
     const unmatched = ALLOW.filter(
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
@@ -171,6 +201,7 @@ describe('каждый паттерн пойман своим образцом',
     bridges: 'Таким образом, ты справишься',
     symmetry: 'С одной стороны это страшно',
     'samonazvanie-terapevt': 'Автор проекта — схема-терапевт, работает онлайн',
+    'samonazvanie-avtora': 'Я психолог, работаю в подходе схема-терапия',
   };
 
   it('в PATTERNS нет имени без образца в POSITIVE', () => {
@@ -211,9 +242,14 @@ describe('каждый паттерн пойман своим образцом',
       'запрещено самоназвание, а не метод: «схема-терапия» остаётся',
     ],
     [
-      'samonazvanie-terapevt',
-      'Я психолог, работаю в подходе схема-терапия',
-      'правильная формулировка о себе гейт не задевает',
+      'samonazvanie-avtora',
+      'Работаете с психологом? Поделитесь динамикой',
+      '«психолог» о других людях законен — правило только про автора',
+    ],
+    [
+      'samonazvanie-avtora',
+      'Я работаю в подходе схема-терапия и сделал приложение бесплатным',
+      'правильная формулировка о себе — без существительного-квалификации',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;
