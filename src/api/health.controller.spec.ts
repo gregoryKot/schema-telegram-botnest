@@ -67,6 +67,7 @@ describe('HealthController', () => {
           critical: true,
           ok: true,
           detail: 'отвечает',
+          reportInHealth: true,
         },
         {
           id: 'caldav',
@@ -74,6 +75,7 @@ describe('HealthController', () => {
           critical: false,
           ok: false,
           detail: 'секретная подробность, которой не место наружу',
+          reportInHealth: true,
         },
       ],
       1_700_000_000_000,
@@ -83,6 +85,39 @@ describe('HealthController', () => {
     expect(res.selfCheck.failed).toEqual(['caldav']);
     expect(res.selfCheck.ranAt).toBe(new Date(1_700_000_000_000).toISOString());
     expect(JSON.stringify(res)).not.toContain('секретная подробность');
+  });
+
+  // ciRuns (правило №21/№24): падение этой пробы не обязано красить /health —
+  // иначе prod-smoke.yml, который сверяет /health.selfCheck.failed, падал бы
+  // ПОТОМУ ЧТО проба сообщает, что он красный (петля).
+  it('проба с reportInHealth: false — не попадает в failed, даже когда упала', async () => {
+    const prisma = {
+      $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+    };
+    selfCheckState.set(
+      [
+        {
+          id: 'db',
+          title: 'База данных',
+          critical: true,
+          ok: true,
+          detail: 'отвечает',
+          reportInHealth: true,
+        },
+        {
+          id: 'ciRuns',
+          title: 'Ночная проверка и смок прода на GitHub',
+          critical: false,
+          ok: false,
+          detail: 'смок прода красный: https://…',
+          reportInHealth: false,
+        },
+      ],
+      1_700_000_000_000,
+    );
+    const controller = new HealthController(prisma as unknown as PrismaService);
+    const res = await controller.check();
+    expect(res.selfCheck.failed).toEqual([]);
   });
 
   it('БД недоступна → 503, а не 200 и не голый throw соединения', async () => {
