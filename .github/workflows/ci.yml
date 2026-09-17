@@ -42,7 +42,7 @@ jobs:
       # не менялись, кэш переиспользуется; иначе restore-keys подхватывают
       # ближайший старый кэш вместо холодного старта.
       - name: Кэш ts-jest
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.JEST_CACHE_DIR }}
           key: jest-ts-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
