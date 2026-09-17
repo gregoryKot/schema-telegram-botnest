@@ -2,7 +2,11 @@ import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { api } from '../../api';
 import type { TherapyClientSummary, UserTask } from '../../api';
-import { fmtDate, todayStr } from '../../utils/format';
+import { fmtDate } from '../../utils/format';
+// Не todayStr(): дни клиентов приезжают из API календарными (полночь UTC),
+// и локальная дата машины с ними не совпадает в половине зон — см. шапку
+// shared/src/utils/calendarDate.ts.
+import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { RosterSparkline } from './Sparklines';
 import { KanbanView } from './KanbanView';
@@ -62,7 +66,7 @@ export function ClientListView({
             <div className="eyebrow u-mb6">Все клиенты</div>
             <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {clients.length} <span style={{ fontSize: 15, fontWeight: 400, color: 'var(--text-sub)' }}>
-                {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
+                {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayCalendarDate()).length} активны сегодня
               </span>
             </div>
           </div>
@@ -103,7 +107,7 @@ export function ClientListView({
 
         {/* Today dashboard – только если есть РЕАЛЬНЫЕ сегодняшние данные */}
         {!loading && clients.length > 0 && (() => {
-          const today = todayStr();
+          const today = todayCalendarDate();
           const sessionsToday = clients
             .filter(c => c.nextSession && c.nextSession.slice(0, 10) === today)
             .sort((a, b) => (a.nextSession ?? '').localeCompare(b.nextSession ?? ''));
@@ -190,7 +194,7 @@ export function ClientListView({
               {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
             </div>
           ) : (() => {
-            const today = todayStr();
+            const today = todayCalendarDate();
             const q = searchQuery.toLowerCase().trim();
             let filtered = q ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q)) : clients.slice();
             if (filterStatus === 'active') filtered = filtered.filter(c => c.lastActiveDate === today);
