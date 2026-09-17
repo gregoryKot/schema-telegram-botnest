@@ -195,7 +195,8 @@ export function PartnerCard({
               padding: '9px',
               border: 'none',
               borderRadius: 'var(--r-10)',
-              background: 'color-mix(in srgb, var(--accent-red) 20%, transparent)',
+              background:
+                'color-mix(in srgb, var(--accent-red) 20%, transparent)',
               color: 'var(--accent-red)',
               fontSize: 13,
               fontWeight: 600,

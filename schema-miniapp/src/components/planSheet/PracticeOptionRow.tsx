@@ -82,7 +82,8 @@ export function PracticeOptionRow({
             height: 32,
             borderRadius: 'var(--r-8)',
             flexShrink: 0,
-            background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)',
+            background:
+              'color-mix(in srgb, var(--accent-red) 10%, transparent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

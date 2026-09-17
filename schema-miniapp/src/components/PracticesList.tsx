@@ -83,7 +83,8 @@ export function PracticesList({
                 padding: '0 14px',
                 borderRadius: 9,
                 border: 'none',
-                background: 'color-mix(in srgb, var(--accent-red) 16%, transparent)',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 16%, transparent)',
                 color: 'var(--accent-red)',
                 fontSize: 12,
                 fontWeight: 600,
@@ -102,12 +103,14 @@ export function PracticesList({
                 style={{
                   ...hitboxStyle(30, 30).inner,
                   borderRadius: 9,
-                  background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)',
+                  background:
+                    'color-mix(in srgb, var(--accent-red) 10%, transparent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 16,
-                  color: 'color-mix(in srgb, var(--accent-red) 50%, transparent)',
+                  color:
+                    'color-mix(in srgb, var(--accent-red) 50%, transparent)',
                 }}
               >
                 ×

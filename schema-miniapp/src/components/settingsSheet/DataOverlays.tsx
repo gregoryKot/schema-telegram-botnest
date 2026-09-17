@@ -159,8 +159,10 @@ export function PrivacyOverlay({
                 width: '100%',
                 padding: '13px 0',
                 borderRadius: 'var(--r-12)',
-                border: '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
-                background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)',
+                border:
+                  '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 8%, transparent)',
                 color: 'var(--accent-red)',
                 fontSize: 14,
                 fontWeight: 500,
@@ -252,7 +254,8 @@ export function DeleteOverlay({
                 padding: '14px 0',
                 borderRadius: 'var(--r-14)',
                 border: 'none',
-                background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 15%, transparent)',
                 color: 'var(--accent-red)',
                 fontSize: 14,
                 fontWeight: 600,
