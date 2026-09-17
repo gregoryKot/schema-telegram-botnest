@@ -30,9 +30,9 @@ describe('NeedAdviceModal', () => {
     expect(screen.getByText(/Советы внутри — это приглашение к размышлению/)).toBeTruthy();
   });
 
-  it('обычный клиент видит CTA «Поговорить с психологом»', () => {
+  it('обычный клиент видит CTA «Записаться на консультацию»', () => {
     render(<NeedAdviceModal onClose={vi.fn()} />);
-    expect(screen.getByText('→ Поговорить с психологом')).toBeTruthy();
+    expect(screen.getByText('→ Записаться на консультацию')).toBeTruthy();
   });
 
   it('сам терапевт не видит CTA на самого себя', () => {
@@ -40,7 +40,7 @@ describe('NeedAdviceModal', () => {
     localStorage.setItem('therapy_contact_name', 'вам');
     localStorage.setItem('therapy_is_therapist', '1');
     render(<NeedAdviceModal onClose={vi.fn()} />);
-    expect(screen.queryByText('→ Поговорить с психологом')).toBeNull();
+    expect(screen.queryByText('→ Записаться на консультацию')).toBeNull();
   });
 
   it('клик по фону закрывает оверлей', () => {

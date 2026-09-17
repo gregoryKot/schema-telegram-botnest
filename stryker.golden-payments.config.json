@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "jest",
+  "jest": {
+    "projectType": "custom",
+    "configFile": "package.json"
+  },
+  "mutate": [
+    "src/utils/tz.ts",
+    "src/booking/robokassa.service.ts",
+    "src/booking/booking.service.ts",
+    "src/subscription/subscription.service.ts",
+    "src/booking/slot.service.ts",
+    "src/booking/pricing.service.ts",
+    "src/booking/payment.controller.ts",
+    "src/donation/donation.service.ts",
+    "src/notification/notification.planner.service.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html",
+    "json"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/golden-payments.html"
+  },
+  "concurrency": 2,
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  },
+  "timeoutMS": 60000,
+  "jsonReporter": {
+    "fileName": "reports/mutation/golden-payments.json"
+  }
+}

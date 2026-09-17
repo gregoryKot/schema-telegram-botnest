@@ -4,7 +4,10 @@
 // покрывает три чистые функции, которые решают проблему: редирект на хост
 // колбэка ДО выставления куки (redirectToCallbackHost) и классификацию
 // причины mismatch (assertOAuthStateMatches), плюс единые опции куки.
-import { UnauthorizedException } from '@nestjs/common';
+// РЕГРЕССИЯ 2026-09-16: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI, настроенные на
+// legacy/www-хост, зацикливали редирект с хостовым мидлваром main.ts
+// (ERR_TOO_MANY_REDIRECTS) — redirectToCallbackHost теперь это ловит.
+import { UnauthorizedException, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import {
   OAUTH_STATE_COOKIE,
@@ -59,14 +62,14 @@ describe('requestHost', () => {
 describe('redirectToCallbackHost', () => {
   const ORIGIN = 'https://schemehappens.ru';
 
-  it('запрос с домена-алиаса → 302 на тот же путь+query на каноническом origin, вернул true', () => {
+  it('запрос с домена-алиаса → 302 на тот же путь+query (+маркер) на каноническом origin, вернул true', () => {
     const req = makeReq({ headers: { host: 'kotlarewski.gr' } });
     const res = makeRes();
     const result = redirectToCallbackHost(req, res, ORIGIN);
     expect(result).toBe(true);
     expect(res.redirect).toHaveBeenCalledWith(
       302,
-      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94',
+      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94&_oh=1',
     );
   });
 
@@ -89,6 +92,45 @@ describe('redirectToCallbackHost', () => {
     const res = makeRes();
     expect(redirectToCallbackHost(req, res, ORIGIN)).toBe(false);
     expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  it('маркер уже есть в originalUrl → false, второй раз не редиректит (общий предохранитель от петель)', () => {
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      originalUrl: '/api/auth/google?ticket=K7M2QX94&_oh=1',
+    });
+    const res = makeRes();
+    expect(redirectToCallbackHost(req, res, ORIGIN)).toBe(false);
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  it('адрес колбэка ведёт на legacy-хост → false, error-лог (была бы петля с main.ts)', () => {
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const req = makeReq({ headers: { host: 'kotlarewski.gr' } });
+    const res = makeRes();
+    expect(redirectToCallbackHost(req, res, 'https://schemalab.ru')).toBe(
+      false,
+    );
+    expect(res.redirect).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('schemalab.ru'),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it('адрес колбэка ведёт на www-канонический хост → тоже петля, false', () => {
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const req = makeReq({ headers: { host: 'kotlarewski.gr' } });
+    const res = makeRes();
+    expect(
+      redirectToCallbackHost(req, res, 'https://www.schemehappens.ru'),
+    ).toBe(false);
+    expect(res.redirect).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });
 

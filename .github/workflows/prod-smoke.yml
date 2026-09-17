@@ -13,7 +13,8 @@
 # и docs/archive/INCIDENT_2026-08-08_TELEGRAM_LOGIN.md (тот сбой был именно
 # в мосте мессенджера и держится отдельным клиентским отчётом об ошибке
 # входа, не этим смоком). Здесь проверяется только то, что сервер жив,
-# отдаёт сайт и раздаёт актуальный бандл мини-аппа статикой.
+# отдаёт сайт и раздаёт актуальный бандл мини-аппа статикой, и что образ
+# собран не раньше последнего коммита main.
 name: Смок живого прода
 
 on:
@@ -40,12 +41,42 @@ jobs:
       # ошибку и шаг красный — настоящий даунтайм не тонет в повторах.
       CURL: curl --fail --silent --show-error --max-time 10 --retry 2 --retry-delay 3
     steps:
+      # На schedule-запуске чекаут = HEAD main (workflow_dispatch — тоже,
+      # ветка выбирается на странице запуска, по умолчанию main). `git log -1
+      # --format=%cI` даёт время коммита слияния — момент, с которого Amvera
+      # была обязана пересобрать образ (правило №14 CLAUDE.md, инцидент
+      # 2026-09-16). fetch-depth: 1 достаточно — нужен только последний коммит.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
       - name: /health — 200 и db":"up"
         run: |
           body=$($CURL https://schemehappens.ru/health)
           echo "$body"
+          printf '%s' "$body" > health.json
           echo "$body" | grep -q '"status":"ok"'
           echo "$body" | grep -q '"db":"up"'
+      # Самопроверка прода (CLAUDE.md, правило №21): приложение само гоняет
+      # пробы интеграций (БД, бот, календарь iCloud, адреса OAuth, почта,
+      # сигнализация, троттлер, аренды кронов) через минуту после старта и раз
+      # в час, а в /health отдаёт только id упавших проб. Регресс чтения
+      # календарей (#494) жил три дня при зелёном смоке — потому что смок
+      # спрашивал «сайт отдаёт HTML?», а не «интеграции живые?». Детали
+      # упавшей пробы — владельцу в DM и в блоке «Самопроверка» /stats.
+      - name: /health — самопроверка без упавших проб
+        run: |
+          body=$($CURL https://schemehappens.ru/health)
+          echo "$body"
+          echo "$body" | grep -q '"selfCheck":'
+          echo "$body" | grep -q '"failed":\[\]'
+      # Инцидент 2026-09-16: #494/#495 смержены в main, а прод сутки отдавал
+      # старый образ — CI и /health-выше были зелёными оба дня, потому что
+      # проверяли «жив», не «свеж». Грейс — в scripts/check-deploy-lag.mjs.
+      - name: /health — образ на проде не старее последнего коммита main
+        run: |
+          built=$(jq -r '.builtAt // empty' health.json)
+          commit=$(git log -1 --format=%cI)
+          node scripts/check-deploy-lag.mjs --built-at="$built" --commit-at="$commit"
       - name: / — 200 и похоже на сайт (стабильный маркер, не весь HTML)
         run: |
           body=$($CURL https://schemehappens.ru/)
@@ -66,3 +97,105 @@ jobs:
           # различает только маркер тела: заголовок игры, не сайта.
           body=$($CURL https://schemehappens.ru/game/)
           echo "$body" | grep -q 'Schema Runner'
+
+  # Сигнализация (щит): смок крутится раз в 15 минут — без этой джобы красный
+  # прогон виден только тому, кто сам зашёл во вкладку Actions. Issue одна
+  # открытая на воркфлоу (не плодит по одной на каждый 15-минутный тик) — при
+  # повторных падениях просто копится комментариями.
+  alarm:
+    needs: [prod-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на воркфлоу)
+        id: issue
+        uses: actions/github-script@v7
+        env:
+          # needs['prod-smoke'] — дефис в имени джобы не даёт писать needs.prod-smoke
+          # напрямую ни в YAML-выражении, ни здесь: тянем результат через env.
+          PROD_SMOKE_RESULT: ${{ needs['prod-smoke'].result }}
+        with:
+          script: |
+            const title = 'Смок прода — красный прогон';
+            const label = 'ci-alarm';
+            const failed = ['failure', 'cancelled'].includes(process.env.PROD_SMOKE_RESULT);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const existing = openIssues.find((i) => i.title === title);
+            // Троттлинг (CLAUDE.md, правило №14: «новая сигнализация приезжает с
+            // троттлингом»): смок тикает каждые 15 минут, и пока прод красный,
+            // без этого было бы 96 комментариев и 96 DM в сутки — замьюченный
+            // чат, то есть ноль алертов. Голос подаём при смене состояния
+            // (issue только что создана) и напоминанием раз в 6 часов.
+            const REMIND_MS = 6 * 3600 * 1000;
+            let notify = 'none';
+            if (failed) {
+              const body = `Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: ${runUrl}`;
+              if (existing) {
+                const quietFor = Date.now() - Date.parse(existing.updated_at);
+                if (quietFor >= REMIND_MS) {
+                  notify = 'reminder';
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: existing.number,
+                    body: `Всё ещё красный (напоминание раз в 6 часов). ${body}`,
+                  });
+                }
+              } else {
+                notify = 'created';
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels: [label],
+                });
+              }
+            } else if (existing) {
+              notify = 'recovered';
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Снова отвечает: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+            }
+            core.setOutput('notify', notify);
+      - name: DM владельцу в Telegram (смена состояния или напоминание раз в 6 часов; нужны секреты)
+        if: steps.issue.outputs.notify != 'none'
+        env:
+          NOTIFY: ${{ steps.issue.outputs.notify }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+        run: |
+          if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
+            echo "DM не отправлен: нет секретов BOT_TOKEN/ADMIN_ID"
+            exit 0
+          fi
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          case "$NOTIFY" in
+            created)   HEAD="Прод не отвечает как надо (смок раз в 15 минут)." ;;
+            reminder)  HEAD="Прод всё ещё не отвечает как надо (напоминание раз в 6 часов)." ;;
+            recovered) HEAD="Прод снова отвечает." ;;
+            *)         HEAD="Смок прода: $NOTIFY." ;;
+          esac
+          TEXT=$(printf '%s\nСмотреть: %s' "$HEAD" "$RUN_URL")
+          curl -sS --max-time 10 \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${ADMIN_ID}" \
+            --data-urlencode "text=${TEXT}" > /dev/null

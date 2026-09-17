@@ -12,7 +12,7 @@ import { useAuthRetryOnFocus } from './useAuthRetryOnFocus';
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 const EXPIRY_SKEW_MS = 60_000; // не дёргаем refresh, если токен ещё жив с запасом
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, bootstrapSession = true }: { children: ReactNode; bootstrapSession?: boolean }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<'transient' | null>(null);
@@ -84,21 +84,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ротировал бы куку раньше, чем страница уйдёт на /app/, новая кука
       // не доедет, сервер сочтёт это повторным использованием старой и
       // отзовёт всю семью токенов у только что вошедшего.
-      if (hasToken.current) { setIsLoading(false); return; }
+      // bootstrapSession=false: визитка (kotlarewski.gr) — логина там нет, фоновый
+      // refresh только 301-ился бы на schemehappens.ru (CORS) и ретраился бы вечным бэкоффом (#497).
+      if (!bootstrapSession || hasToken.current) { setIsLoading(false); return; }
       const tgOk = await doTelegramWebAppAuth();
       if (!tgOk) await doRefresh(false);
       setIsLoading(false);
     };
     void init();
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); };
-  }, [doRefresh, doTelegramWebAppAuth]);
+  }, [bootstrapSession, doRefresh, doTelegramWebAppAuth]);
 
   useAuthRetryOnFocus(
-    useCallback(() => Date.now() + EXPIRY_SKEW_MS >= expiresAtRef.current, []),
+    useCallback(() => bootstrapSession && Date.now() + EXPIRY_SKEW_MS >= expiresAtRef.current, [bootstrapSession]),
     useCallback(() => void doRefresh(), [doRefresh]),
   );
-
-  const setAccessToken = applyToken;
 
   const logout = useCallback(async (all = false) => {
     // Сетевой шаг — общий с мини-аппом (shared/auth/logout, правило №3).
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAuthenticated: !!accessToken,
       authError,
-      setAccessToken,
+      setAccessToken: applyToken,
       logout,
       refreshToken: doRefresh,
     }}>

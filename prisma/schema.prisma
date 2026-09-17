@@ -917,3 +917,18 @@ model CronLease {
   runAt      DateTime
   instanceId String
 }
+
+/// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
+/// счётчик @nestjs/throttler по умолчанию живёт в памяти процесса, и на двух
+/// инстансах Amvera лимит на POST /api/booking/book обходился ротацией
+/// инстанса. `key` — sha256 маршрута+бакета из ThrottlerGuard.generateKey
+/// (правило №5: бакет уже верифицирован), PII в нём нет. См.
+/// src/api/postgres-throttle-storage.ts.
+model ThrottleHit {
+  key          String    @id
+  hits         Int
+  expiresAt    DateTime
+  blockedUntil DateTime?
+
+  @@index([expiresAt])
+}

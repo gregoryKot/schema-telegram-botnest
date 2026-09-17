@@ -16,6 +16,7 @@ export const CLIENT_ERROR_SECTIONS = [
   'profile',
   'help',
   'cabinet',
+  'booking',
   'other',
 ] as const;
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
@@ -45,6 +46,9 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   'therapist.clients': 'cabinet', // оба TherapistClientSheet.tsx — сбой загрузки ростера
   addressForm: 'profile', // shared/src/settings/useAddressFormChoice.ts, оба AddressFormPicker.tsx
   tracker: 'today', // webapp/src/components/TrackerOverlay.tsx — сбой сохранения оценки (не-сетевой)
+  // Сбой отправки заявки на запись (инцидент 2026-09-13): сервер видит только
+  // те заявки, что до него дошли; сетевой отказ виден лишь отсюда.
+  booking: 'booking', // webapp/src/components/bookingFailure.ts
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

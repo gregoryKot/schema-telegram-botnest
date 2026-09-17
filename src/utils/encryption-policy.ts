@@ -16,6 +16,7 @@ export const DATE = plain('дата YYYY-MM-DD, не контент');
 export const TOKEN = plain('криптографический токен/хэш, PII не содержит');
 
 import { INFRA_FIELD_POLICY } from './encryption-policy.infra';
+import { THROTTLE_FIELD_POLICY } from './encryption-policy.throttle';
 
 export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   Rating: { date: DATE, needId: ID },
@@ -238,11 +239,6 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     reflection: enc(`${BOT}/exercises.service.ts`),
     action: enc(`${BOT}/exercises.service.ts`),
   },
-  ScheduledNotification: {
-    type: ID,
-    payload: plain(
-      'числовые агрегаты/needId для шаблонов, свободного текста нет',
-    ),
-  },
   ...INFRA_FIELD_POLICY,
+  ...THROTTLE_FIELD_POLICY,
 };

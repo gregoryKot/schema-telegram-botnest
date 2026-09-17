@@ -89,6 +89,67 @@ describe('merge-json-ratchet: слияние бейслайнов по сема�
     expect(merged).toEqual({ 'a.ts': 70 });
   });
 
+  // Инцидент 2026-09-16 (PR #496): ветка отведена от старого main, за это время
+  // main принял через `--update` законный рост чужих файлов. Ветка их не
+  // трогала — и «всегда min» брал её старые значения, то есть размеры, которых
+  // на слитом дереве уже нет. `check-file-size-ratchet.mjs` после такого
+  // слияния краснел на файлы, к которым ветка не прикасалась.
+  it('min: main поднял ключ через --update, ветка не трогала — остаётся значение main', () => {
+    const base = {
+      'src/api/api.module.ts': 59,
+      'src/auth/merge.service.ts': 306,
+      'src/channel/channel-schedule.service.ts': 185,
+      'src/own.ts': 200,
+    };
+    const { status, merged } = mergeJson(
+      'min',
+      base,
+      // ветка: тронула только свой файл, чужие — как были у предка
+      { ...base, 'src/own.ts': 180 },
+      // main: рост трёх чужих файлов, принятый осознанно через --update
+      {
+        ...base,
+        'src/api/api.module.ts': 62,
+        'src/auth/merge.service.ts': 342,
+        'src/channel/channel-schedule.service.ts': 213,
+      },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({
+      'src/api/api.module.ts': 62,
+      'src/auth/merge.service.ts': 342,
+      'src/channel/channel-schedule.service.ts': 213,
+      'src/own.ts': 180,
+    });
+  });
+
+  // Контроль к предыдущему: «сторона не трогала — берём вторую» не должно
+  // превратиться в «берём ту, что больше». Когда ключ двинули ОБЕ стороны,
+  // храповик работает как прежде — прогресс обеих сохраняется.
+  it('контроль: обе стороны опустили один ключ — берётся минимум из двух', () => {
+    const { status, merged } = mergeJson(
+      'min',
+      { 'src/api/api.module.ts': 59 },
+      { 'src/api/api.module.ts': 55 },
+      { 'src/api/api.module.ts': 51 },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ 'src/api/api.module.ts': 51 });
+  });
+
+  // Зеркало того же для max: сторона, не трогавшая пол покрытия, не тянет его
+  // вниз, а две поднявшие по-прежнему сводятся по лучшему.
+  it('max: одна сторона опустила пол осознанно — её значение и остаётся', () => {
+    const { status, merged } = mergeJson(
+      'max',
+      { floors: { 'src/api': 78 } },
+      { floors: { 'src/api': 78 } },
+      { floors: { 'src/api': 71 } },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ floors: { 'src/api': 71 } });
+  });
+
   it('max: покрытие сводится по лучшему, включая вложенные полы', () => {
     const { status, merged } = mergeJson(
       'max',
@@ -237,6 +298,58 @@ describe('merge-json-ratchet: настоящее слияние git', () => {
     const { status, baseline } = twoAgentsMerge(false);
     expect(status).not.toBe(0);
     expect(baseline).toContain('<<<<<<<');
+  });
+
+  // Сквозная проверка инцидента 2026-09-16: важно не только, что функция
+  // считает верно, но и что git отдаёт драйверу настоящую базу слияния (%O) —
+  // ту точку, от которой ветка отведена, а не текущий main. Возьми драйвер
+  // предка неверно, и «ветка не трогала» превратится в «трогали обе».
+  it('ветка от старого main: рост, принятый в main, переживает слияние', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'stale-branch-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      git(
+        'config',
+        'merge.ratchet-min.driver',
+        'node scripts/merge-json-ratchet.mjs min %O %A %B %P',
+      );
+      mkdirSync(join(tmp, 'scripts'), { recursive: true });
+      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        'scripts/sizes.json merge=ratchet-min\n',
+      );
+      const sizes = join(tmp, 'scripts', 'sizes.json');
+      const write = (value: Record<string, number>) =>
+        writeFileSync(sizes, JSON.stringify(value, null, 2) + '\n');
+
+      write({ 'api.module.ts': 59, 'merge.service.ts': 306, 'own.ts': 200 });
+      git('add', '-A');
+      git('commit', '-qm', 'база: точка, от которой отведена ветка');
+      const main = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'feature');
+      write({ 'api.module.ts': 59, 'merge.service.ts': 306, 'own.ts': 180 });
+      git('commit', '-qam', 'ветка: ужала свой файл');
+
+      git('checkout', '-q', main);
+      write({ 'api.module.ts': 62, 'merge.service.ts': 342, 'own.ts': 200 });
+      git('commit', '-qam', 'main: --update после законного роста двух файлов');
+
+      const merge = git('merge', 'feature', '-m', 'merge');
+      expect(merge.status).toBe(0);
+      expect(JSON.parse(readFileSync(sizes, 'utf8'))).toEqual({
+        'api.module.ts': 62,
+        'merge.service.ts': 342,
+        'own.ts': 180,
+      });
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 

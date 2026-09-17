@@ -1,0 +1,6 @@
+{
+  "source": "iCloud CalDAV — PROPFIND https://caldav.icloud.com/ (шаг 1, current-user-principal)",
+  "recordedAt": "2026-09-16",
+  "how": "Восстановлено из PR #494 (caldav-discovery.spec.ts, PRINCIPAL_XML) — форма ответа, на которую опирается src/booking/caldav-discovery.ts; сама XML-структура задана RFC 6764/4791.",
+  "redacted": "путь принципала заменён на плейсхолдер /123/principal/ (реальный содержит Apple ID/DSID)"
+}

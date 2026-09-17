@@ -37,7 +37,7 @@ const NOTIFY_REQ = {
   id: 42,
   userId: 123n,
   fullName: 'Мария Иванова',
-  qualification: 'Схема-терапевт',
+  qualification: 'Психолог',
   contacts: '@maria',
   message: null,
 };

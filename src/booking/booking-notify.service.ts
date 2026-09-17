@@ -7,8 +7,12 @@ import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
-import { escapeHtml } from '../utils/escape-html';
 import { sessionLabel } from './caldav-event.util';
+import {
+  bookingCardText,
+  formatTime,
+  subjectFromTitle,
+} from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
@@ -50,10 +54,7 @@ export class BookingNotifyService {
     ).replace(/\/$/, '');
   }
 
-  /**
-   * On confirmation: ensure a meeting link, push to Apple Calendar, notify admin.
-   * Mutates b.meetingUrl so callers can return it to the client.
-   */
+  /** On confirmation: meeting link + Apple Calendar + admin notify. Mutates b.meetingUrl. */
   async onConfirmed(b: PlainBooking): Promise<void> {
     if (!b.meetingUrl) {
       b.meetingUrl = await this.meeting.createMeeting(b);
@@ -79,12 +80,12 @@ export class BookingNotifyService {
       });
     }
     await this.sendAdmin('✅ <b>Запись подтверждена</b>', b);
-    // CalDAV is configured but the write failed — the session won't appear in
-    // the calendar, so surface it explicitly instead of hiding it in logs.
+    // CalDAV настроен, но запись не удалась — тоже событие брони: оба канала.
     if (this.calDav.enabled && !uid) {
-      await this.notifyAdminText(
-        `⚠️ <b>Бронь подтверждена, но НЕ попала в Apple Calendar</b>\n` +
-          `${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
+      const title = '⚠ <b>Подтверждена, но НЕ попала в Apple Calendar</b>';
+      await this.notifyAdminBoth(
+        `${title}\n${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
+        subjectFromTitle(title),
       );
     }
   }
@@ -159,20 +160,22 @@ export class BookingNotifyService {
     if (due.length) this.logger.log(`Sent ${due.length} ${field} reminder(s)`);
   }
 
+  // Разделение (2026-09-15): события брони — оба канала всегда (деньги/
+  // заявки); alertAdmin — Telegram-first, почта как запасной ход.
   private async sendAdmin(title: string, b: PlainBooking): Promise<void> {
-    const text = [
-      title,
-      '',
-      `👤 ${b.clientName}`,
-      `📬 ${b.clientContact}`,
-      `🗓 ${formatTime(b.startsAt)}`,
-      b.message ? `💬 ${b.message}` : null,
-      b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
-      b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n');
-    await this.notifyAdminText(text);
+    const subject = subjectFromTitle(title);
+    await this.notifyAdminBoth(bookingCardText(title, b), subject);
+  }
+
+  /** Событие брони или потерянный лид — оба канала сразу, независимо от исхода Telegram. */
+  async notifyAdminBoth(html: string, subject: string): Promise<void> {
+    const plain = html.replace(/<[^>]+>/g, '');
+    await Promise.all([
+      this.telegram.notifyAdmin(html),
+      this.email
+        .sendAdminNotification(subject, plain)
+        .catch((e) => this.logger.error('Critical admin e-mail failed', e)),
+    ]);
   }
 
   /** Send to admin via Telegram; if that fails, fall back to e-mail so alerts are never lost. */
@@ -185,17 +188,4 @@ export class BookingNotifyService {
       .sendAdminNotification('Уведомление о записи', plain)
       .catch((e) => this.logger.error('Admin e-mail alert also failed', e));
   }
-}
-
-function formatTime(date: Date): string {
-  return (
-    new Intl.DateTimeFormat('ru-RU', {
-      timeZone: 'Europe/Moscow',
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date) + ' МСК'
-  );
 }

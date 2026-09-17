@@ -96,7 +96,7 @@ export function ClientListView({
                   letterSpacing: '0.03em',
                 }}
               >
-                психолог
+                терапевт
               </div>
             </div>
             <div
