@@ -48,13 +48,7 @@ export function DraftCard({
           marginBottom: 6,
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-8)',
-          }}
-        >
+        <div className="u-ac8">
           <span
             style={{
               fontSize: 9,
@@ -86,7 +80,7 @@ export function DraftCard({
           {preview.length > 80 ? preview.slice(0, 80) + '…' : preview}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+      <div className="u-row8">
         <button
           onClick={onContinue}
           style={{

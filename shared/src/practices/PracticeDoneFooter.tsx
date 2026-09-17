@@ -43,7 +43,7 @@ export function PracticeDoneFooter({ count, onShare, onShown }: Props) {
         // Безличная формулировка (правило CLAUDE.md об обращении): вилки по
         // роду в проекте нет («проходил»/«проходила» пришлось бы разводить),
         // поэтому фраза не зависит ни от формы обращения, ни от рода.
-        <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+        <div className="u-sub12">
           Пройдено уже {count} {pluralRu(count, 'раз', 'раза', 'раз')}
         </div>
       )}

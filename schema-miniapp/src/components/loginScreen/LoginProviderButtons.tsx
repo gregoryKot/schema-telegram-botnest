@@ -85,7 +85,7 @@ export function LoginProviderButtons() {
 
   if (state.kind !== 'waiting' && state.kind !== 'starting') {
     return (
-      <div style={{ marginTop: 16 }}>
+      <div className="u-mt16">
         <LoginTicketWait
           state={state}
           onRetry={() => {

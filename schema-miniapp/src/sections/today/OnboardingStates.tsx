@@ -88,7 +88,7 @@ export function OnboardingResumeCard({
         gap: 'var(--space-12)',
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{
             fontSize: 13,
@@ -100,7 +100,7 @@ export function OnboardingResumeCard({
           {postponedCount}{' '}
           {postponedCount === 1 ? 'шаг отложен' : 'шага отложено'}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+        <div className="u-sub12">
           {doneCount} из {STEPS.length} выполнено
         </div>
       </div>

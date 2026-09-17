@@ -40,7 +40,7 @@ export function WizardNav({
       : accentColor;
 
   return (
-    <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+    <div className="u-row8">
       <button
         onClick={onBack}
         disabled={backDisabled}

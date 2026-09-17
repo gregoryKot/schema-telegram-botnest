@@ -87,13 +87,7 @@ export function DiaryListView({
           borderBottom: '1px solid var(--line)',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-10)',
-          }}
-        >
+        <div className="u-ac10">
           <button
             onClick={onBack}
             aria-label="Назад"

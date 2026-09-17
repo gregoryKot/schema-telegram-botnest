@@ -58,15 +58,13 @@ export function InsightCard({
       >
         <IdentityDot id={lowest.id} size={14} />
       </div>
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 2 }}
         >
           Стоит уделить внимание
         </div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-          {lowest.chartLabel}
-        </div>
+        <div className="u-h14">{lowest.chartLabel}</div>
         <div style={{ fontSize: 12, color, fontWeight: 600, marginTop: 1 }}>
           оценка {value} из 10
         </div>

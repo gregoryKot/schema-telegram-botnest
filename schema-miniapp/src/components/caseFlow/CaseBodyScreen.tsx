@@ -27,9 +27,7 @@ export function CaseBodyScreen({
 }) {
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        Где это отозвалось в теле?
-      </div>
+      <div className="d-display u-e21">Где это отозвалось в теле?</div>
       <div
         style={{
           fontSize: 14,
@@ -66,7 +64,7 @@ export function CaseBodyScreen({
         ownPlaceholder="Например: сжало в груди"
       />
 
-      <div style={{ marginTop: 20 }}>
+      <div className="u-mt20">
         <PrimaryAction label="Дальше" onClick={onNext} />
       </div>
     </div>

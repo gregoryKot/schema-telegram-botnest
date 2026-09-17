@@ -43,7 +43,7 @@ export function ModeFeelingBrowse({
       </div>
 
       {group && (
-        <div style={{ marginBottom: 8 }}>
+        <div className="u-mb8">
           <div className="mode-test-group-question">{group.question}</div>
           <div className="mode-test-group-hint">{group.hint}</div>
           {group.leaves.map((leaf) => {

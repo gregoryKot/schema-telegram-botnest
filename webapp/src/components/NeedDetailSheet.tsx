@@ -77,14 +77,14 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       {relatedSchemas.length > 0 && (
         <div className="prompt">
           <div className="prompt-num">·</div>
-          <div style={{ width: '100%' }}>
+          <div className="u-w100">
             <div className="prompt-label">Связанные схемы</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginTop: 8 }}>
               {relatedSchemas.map(s => (
                 <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
                   <span className="mode-card-stripe" />
                   <div>
-                    <div className="mode-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
+                    <div className="mode-card-name u-ac6"><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
                     <div className="mode-card-short">{s.desc}</div>
                   </div>
                 </div>

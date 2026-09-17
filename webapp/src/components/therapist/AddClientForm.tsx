@@ -26,7 +26,7 @@ export function AddClientForm({ addClient }: Props) {
           </h2>
           {addCreated.inviteUrl ? (
             <div style={{ marginBottom: 24, maxWidth: 520 }}>
-              <div className="eyebrow" style={{ marginBottom: 10 }}>Ссылка-приглашение</div>
+              <div className="eyebrow u-mb10">Ссылка-приглашение</div>
               <div style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'center', flexWrap: 'wrap' }}>
                 <code style={{ flex: 1, minWidth: 200, fontSize: 12.5, color: 'var(--text-sub)', background: 'rgba(var(--fg-rgb),0.05)', padding: '9px 13px', borderRadius: 'var(--r-8)', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                   {addCreated.inviteUrl}
@@ -67,9 +67,9 @@ export function AddClientForm({ addClient }: Props) {
       ) : (
         /* Form state */
         <div>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Новый клиент</div>
-          <h1 className="hub-title" style={{ marginBottom: 8 }}>Добавить клиента</h1>
-          <p className="hub-sub" style={{ marginBottom: 28 }}>
+          <div className="eyebrow u-mb16">Новый клиент</div>
+          <h1 className="hub-title u-mb8">Добавить клиента</h1>
+          <p className="hub-sub u-mb28">
             {tr('Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.', 'Введите имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.')}
           </p>
 

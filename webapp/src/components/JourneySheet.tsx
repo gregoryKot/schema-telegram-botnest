@@ -73,7 +73,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               ← Назад
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
+            <div className="u-ac12">
               <h1
                 style={{
                   fontSize: 24,

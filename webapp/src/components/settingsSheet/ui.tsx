@@ -25,7 +25,7 @@ export function SRow({ title, sub, right, onClick, danger }: {
       borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
       cursor: onClick ? 'pointer' : 'default',
     }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div style={{ fontSize: 14, color: danger ? 'var(--accent-red)' : 'var(--text)' }}>{title}</div>
         {sub && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
       </div>
@@ -56,7 +56,7 @@ export function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void 
 
 export function ChevronVal({ text, small }: { text: string; small?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="u-ac6">
       <span style={{ fontSize: small ? 12 : 14, color: 'var(--text-sub)', textAlign: 'right', maxWidth: 200 }}>{text}</span>
       <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
     </div>

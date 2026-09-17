@@ -51,7 +51,7 @@ export function TwoFactorChallengePage() {
 
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 420, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Двухфакторная проверка</div>
+      <div className="eyebrow u-mb14">Двухфакторная проверка</div>
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 14 }}>
         Код из приложения-аутентификатора
       </h1>
@@ -60,7 +60,7 @@ export function TwoFactorChallengePage() {
         Подойдёт и один из recovery-кодов, если доступ к телефону потерян.
       </div>
 
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+      <form onSubmit={submit} className="u-col12">
         <input
           ref={inputRef}
           type="text"
@@ -86,7 +86,7 @@ export function TwoFactorChallengePage() {
         {error && (
           <div className="text-sm" style={{ color: 'var(--c-rose)', padding: '8px 0' }}>{error}</div>
         )}
-        <button type="submit" disabled={busy || !code.trim()} className="btn btn-primary" style={{ marginTop: 8 }}>
+        <button type="submit" disabled={busy || !code.trim()} className="btn btn-primary u-mt8">
           {busy ? 'Проверяю…' : 'Войти'}
         </button>
       </form>

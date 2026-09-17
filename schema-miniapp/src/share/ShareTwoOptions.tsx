@@ -52,7 +52,7 @@ export function ShareTwoOptions({
   return (
     <>
       {shortProps && (
-        <div style={{ marginTop: 8 }}>
+        <div className="u-mt8">
           <SharePill
             label={shortLabel ?? 'Поделиться карточкой'}
             onClick={() => setShare('short')}

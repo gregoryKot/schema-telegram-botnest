@@ -49,7 +49,7 @@ export function CrisisCardView({
         )}
       </div>
       {CRISIS_HOTLINES.map((hotline) => (
-        <div key={hotline.tel} style={{ marginBottom: 4 }}>
+        <div key={hotline.tel} className="u-mb4">
           <a
             href={hotline.tel}
             onClick={onHotlineTap}

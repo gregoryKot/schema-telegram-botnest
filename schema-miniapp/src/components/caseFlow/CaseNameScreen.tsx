@@ -33,7 +33,7 @@ export function CaseNameScreen({
 
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+      <div className="d-display u-e21">
         {tr('Как назовёшь эту часть?', 'Как назовёте эту часть?')}
       </div>
       <div

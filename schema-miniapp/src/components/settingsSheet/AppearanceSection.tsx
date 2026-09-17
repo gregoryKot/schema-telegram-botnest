@@ -32,12 +32,9 @@ export function AppearanceSection({
 }: Props) {
   const tr = useTr();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ОФОРМЛЕНИЕ</SettingsLabel>
-      <div
-        className="card"
-        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-      >
+      <div className="card u-r16-clip">
         <div
           style={{
             padding: '14px 16px',
@@ -46,13 +43,7 @@ export function AppearanceSection({
             justifyContent: 'space-between',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-10)',
-            }}
-          >
+          <div className="u-ac10">
             <ThemeIcon theme={theme} />
             <div>
               <div
@@ -152,13 +143,7 @@ export function AppearanceSection({
               >
                 Режим специалиста
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'var(--text-sub)',
-                  marginTop: 1,
-                }}
-              >
+              <div className="u-sub11-mt1">
                 {therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
               </div>
             </div>
@@ -240,7 +225,7 @@ export function AppearanceSection({
                   {tr('Свои данные не теряешь.', 'Свои данные не теряете.')}{' '}
                   Заявку можно подать заново.
                 </div>
-                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                <div className="u-row8">
                   <button
                     disabled={resignBusy}
                     onClick={() => setResignConfirm(false)}

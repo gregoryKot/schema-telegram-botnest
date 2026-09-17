@@ -28,16 +28,10 @@ export function ActionStep({
   const needInfo = NEEDS.find((n) => n.id === selectedNeed);
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Один маленький шаг
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 4 из 4
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Один маленький шаг</div>
+          <div className="u-faint12-mt2">Шаг 4 из 4</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         {needInfo && (
@@ -107,7 +101,7 @@ export function ActionStep({
           }}
         />
         <CrisisGate texts={[action]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={onBack}
             style={{
@@ -154,7 +148,7 @@ export function ActionStep({
             Сохранить
           </button>
         </div>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

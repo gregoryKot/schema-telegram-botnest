@@ -52,11 +52,7 @@ export function DisclaimerCheckbox({
           </span>
         )}
       </div>
-      <span
-        role="presentation"
-        onClick={onToggle}
-        style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
-      >
+      <span role="presentation" onClick={onToggle} className="u-sub13-lh15">
         {label}
       </span>
     </label>

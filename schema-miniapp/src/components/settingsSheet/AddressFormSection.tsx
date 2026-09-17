@@ -9,7 +9,7 @@ interface Props {
 
 export function AddressFormSection({ settings, patch, setAddressForm }: Props) {
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ОБРАЩЕНИЕ</SettingsLabel>
       <div
         className="card"

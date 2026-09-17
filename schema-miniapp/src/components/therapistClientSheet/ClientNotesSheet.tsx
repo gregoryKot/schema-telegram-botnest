@@ -19,7 +19,7 @@ function NoteFieldList({
       {fields
         .filter((f) => f.val?.trim())
         .map((f) => (
-          <div key={f.label} style={{ marginBottom: 6 }}>
+          <div key={f.label} className="u-mb6">
             <div
               style={{
                 fontSize: 10,
@@ -57,7 +57,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowClientNotesSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -84,7 +84,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
         ) : (
           <>
             {clientSchemaNotesData.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
+              <div className="u-mb20">
                 <div
                   style={{
                     fontSize: 10,
@@ -142,14 +142,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                         ]}
                       />
                       {filled.length === 0 && (
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-faint)',
-                          }}
-                        >
-                          Не заполнено
-                        </div>
+                        <div className="u-faint12">Не заполнено</div>
                       )}
                     </div>
                   );

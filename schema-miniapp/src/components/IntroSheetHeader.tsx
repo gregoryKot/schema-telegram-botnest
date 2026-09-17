@@ -56,7 +56,7 @@ export function IntroSheetHeader({
         >
           {emoji}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="u-fill">
           <h2
             style={{
               fontSize: 18,
@@ -92,11 +92,7 @@ export function IntroSheetHeader({
             marginBottom: 16,
           }}
         >
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-          >
-            {description}
-          </div>
+          <div className="u-sub13-lh16">{description}</div>
         </div>
       )}
 

@@ -278,8 +278,8 @@ export function TrackerOverlay({
             </svg>
           </span>
         </button>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+        <div className="u-tc">
+          <div className="u-h13">
             {isBackfill ? 'Оценки за день' : 'Трекер потребностей'}
           </div>
           <div
@@ -290,7 +290,7 @@ export function TrackerOverlay({
         </div>
         {/* Карандаш + история */}
         {!isBackfill ? (
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             {onOpenNote && (
               <button
                 onClick={onOpenNote}
@@ -404,7 +404,7 @@ export function TrackerOverlay({
           >
             {need.chartLabel}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>ⓘ</span>
+          <span className="u-faint11">ⓘ</span>
           {delta !== null && delta !== 0 && (
             <span
               style={{
@@ -452,7 +452,7 @@ export function TrackerOverlay({
         )}
 
         {/* Большая цифра + уровень (раньше жили в центре круга) */}
-        <div style={{ textAlign: 'center' }}>
+        <div className="u-tc">
           <div
             style={{
               fontSize: 76,
@@ -574,7 +574,7 @@ export function TrackerOverlay({
         )}
 
         {/* Nav */}
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={() => idx > 0 && setIdx(idx - 1)}
             style={{

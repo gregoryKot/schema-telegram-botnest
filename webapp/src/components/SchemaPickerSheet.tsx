@@ -48,12 +48,12 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои. Выбор сохраняется сразу.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои. Выбор сохраняется сразу.')}
     >
       {SCHEMA_DOMAINS.map(domain => (
-        <div key={domain.id} style={{ marginBottom: 28 }}>
+        <div key={domain.id} className="u-mb28">
           <div className="chip-section-eyebrow" style={{ color: domain.color }}>
             <span className="dot" style={{ background: domain.color }} />
             {domain.domain}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="u-col6">
             {domain.schemas.map(s => {
               const active = ids.includes(s.id);
               return (
@@ -66,7 +66,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                   style={{ '--mode-color': domain.color } as React.CSSProperties}
                 >
                   <span className="mode-card-stripe" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="u-fill">
                     <div className="mode-card-name">{s.name}</div>
                     {SCHEMA_DESC[s.id] && (
                       <div className="mode-card-short">{SCHEMA_DESC[s.id]}</div>

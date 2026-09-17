@@ -47,7 +47,7 @@ export function WarmWordsCard({ items }: Props) {
           }}
         >
           <div className="d-caps">Мои тёплые слова</div>
-          <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+          <div className="u-faint12">
             {items.length} {pluralRu(items.length, 'фраза', 'фразы', 'фраз')}
           </div>
         </div>

@@ -86,7 +86,7 @@ function FullTaskRow({
         </div>
       )}
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         {isAssigned && !task.doneToday && (
           <div
             style={{
@@ -200,7 +200,7 @@ function CompactTaskRow({
       >
         {mark}
       </span>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         {task.assignedBy !== null && (
           <div
             style={{

@@ -70,11 +70,11 @@ export function CaseCriterionScreen({
       lede={intro.sub}
     >
       {questions.map((q) => (
-        <div key={q.key} style={{ marginBottom: 24 }}>
+        <div key={q.key} className="u-mb24">
           <div style={{ fontSize: 15, color: 'var(--text)', marginBottom: 10 }}>
             {q.text}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <YesNoChip
               active={criterion[q.key] === true}
               label="Да"

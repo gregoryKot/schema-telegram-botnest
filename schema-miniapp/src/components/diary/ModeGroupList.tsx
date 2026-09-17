@@ -15,15 +15,11 @@ export function ModeGroupList({
   return (
     <>
       {MODE_GROUPS.map((group) => (
-        <div key={group.id} style={{ marginBottom: 16 }}>
+        <div key={group.id} className="u-mb16">
           {/* Цвет группы больше не красит подпись: различие несут порядок и
               группировка, а не палитра (макет «тёплая бумага»). */}
-          <div className="d-caps" style={{ marginBottom: 8 }}>
-            {group.group}
-          </div>
-          <div
-            style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}
-          >
+          <div className="d-caps u-mb8">{group.group}</div>
+          <div className="u-wrap8">
             {group.items.map((m) => (
               <button
                 key={m.id}

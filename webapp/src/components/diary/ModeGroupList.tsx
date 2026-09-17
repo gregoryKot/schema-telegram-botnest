@@ -17,7 +17,7 @@ export function ModeGroupList({
   return (
     <>
       {MODE_GROUPS.map((g) => (
-        <div key={g.id} style={{ marginBottom: 28 }}>
+        <div key={g.id} className="u-mb28">
           <div className="chip-section-eyebrow" style={{ color: g.color }}>
             <span className="dot" style={{ background: g.color }} />
             {g.group}

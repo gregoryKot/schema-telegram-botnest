@@ -28,7 +28,7 @@ export function NeedFillRow({
   const showLow = value <= 5;
   const showHigh = value >= 5;
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div className="u-mb28">
       <div
         style={{
           display: 'flex',
@@ -51,7 +51,7 @@ export function NeedFillRow({
         >
           <IdentityDot id={id} size={12} />
         </div>
-        <div style={{ flex: 1 }}>
+        <div className="u-flex1">
           <div
             style={{
               fontSize: 14,
@@ -202,13 +202,7 @@ export function NeedFillRow({
                     : 'rgba(var(--fg-rgb),0.02)',
                 }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-8)',
-                  }}
-                >
+                <div className="u-ac8">
                   <span
                     style={{
                       fontSize: 10,

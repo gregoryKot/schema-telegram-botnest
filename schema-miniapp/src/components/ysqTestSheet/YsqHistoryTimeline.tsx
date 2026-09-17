@@ -9,7 +9,7 @@ interface Props {
 // history.length >= 2.
 export function YsqHistoryTimeline({ history }: Props) {
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div className="u-mb20">
       <div
         style={{
           fontSize: 11,
@@ -22,13 +22,7 @@ export function YsqHistoryTimeline({ history }: Props) {
       >
         История прохождений
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-        }}
-      >
+      <div className="u-col8">
         {history.map((entry, idx) => {
           const entryActive = countActiveInHistory(entry);
           const prevEntryItem = history[idx + 1];
@@ -65,7 +59,7 @@ export function YsqHistoryTimeline({ history }: Props) {
                   flexShrink: 0,
                 }}
               />
-              <div style={{ flex: 1 }}>
+              <div className="u-flex1">
                 <div
                   style={{
                     fontSize: 13,
@@ -107,14 +101,7 @@ export function YsqHistoryTimeline({ history }: Props) {
                   {entryDelta}
                 </span>
               )}
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-faint)',
-                }}
-              >
-                {entryDate}
-              </div>
+              <div className="u-faint12">{entryDate}</div>
             </div>
           );
         })}

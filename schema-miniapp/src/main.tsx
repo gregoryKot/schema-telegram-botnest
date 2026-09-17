@@ -4,6 +4,8 @@ import { getHost } from '../../shared/src/host';
 import { isStandalone } from '../../shared/src/host/web';
 import { shouldOpenCabinet, CABINET_PATH } from './utils/desktopLaunch';
 import './index.css';
+// Классы-утилиты — строго ПОСЛЕ index.css (почему — в самом файле).
+import '../../shared/src/theme/utilities.css';
 import App from './App';
 import { AddressFormProvider } from './utils/AddressFormProvider';
 import { UpdateToast } from './components/UpdateToast';

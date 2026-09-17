@@ -51,7 +51,7 @@ export function CaseChipGrid({
           outline: 'none',
         }}
       />
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
+      <div className="u-wrap8">
         {chips
           .filter((chip) => !isOwnChipId(chip.id))
           .map((chip) => {

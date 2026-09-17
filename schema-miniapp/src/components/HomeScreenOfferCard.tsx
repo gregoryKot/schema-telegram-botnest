@@ -34,7 +34,7 @@ export function HomeScreenOfferCard() {
         <span style={{ fontSize: 24, lineHeight: '28px', flexShrink: 0 }}>
           📲
         </span>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="u-fill">
           <div
             style={{
               fontSize: 15,
@@ -45,9 +45,7 @@ export function HomeScreenOfferCard() {
           >
             {tr('Держи под рукой', 'Держите под рукой')}
           </div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-          >
+          <div className="u-sub13-lh16">
             {/* Строка безличная — вилка обращения не нужна. */}
             Значок на экране телефона — заходить не через Telegram, а в одно
             касание.
@@ -69,7 +67,7 @@ export function HomeScreenOfferCard() {
         Добавить значок
       </AddHomeScreenButton>
 
-      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+      <div className="u-row8">
         <button
           onClick={offer.later}
           style={{

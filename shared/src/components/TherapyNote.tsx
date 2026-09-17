@@ -42,7 +42,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
               href={contact.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--accent)', textDecoration: 'none' }}
+              className="u-link"
             >
               {contact.name === 'автору'
                 ? 'Записаться →'

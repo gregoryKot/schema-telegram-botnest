@@ -132,7 +132,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         Перейти к оплате →
       </a>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
-        Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)' }}>@kotlarewski</a>.
+        Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
       </p>
     </div>
   );
@@ -219,7 +219,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
                   background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                   border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                  <div className="u-h15">
                     {o.label} {o.price > 0 ? `· ${o.price.toLocaleString('ru-RU')} ₽` : '· бесплатно'}
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>{o.note}</div>
@@ -242,7 +242,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
       <div>
         <div style={labelSt}>Время · МСК</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
+        <div className="u-wrap8">
           {(days.get(day) ?? []).map((s) => (
             <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => setSlot(s)}>
               {timeLabel(s.startsAt)}
@@ -278,7 +278,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Я принимаю условия <a href="/offer" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политики конфиденциальности</a>, даю согласие на обработку данных
+              Я принимаю условия <a href="/offer" target="_blank" className="u-link">Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" className="u-link">Политики конфиденциальности</a>, даю согласие на обработку данных
             </span>
           </label>
           {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}

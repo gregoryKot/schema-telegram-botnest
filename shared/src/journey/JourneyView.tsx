@@ -76,7 +76,7 @@ export function JourneyView({
 
   return (
     <>
-      {loading && <div style={{ marginTop: 12 }}>{skeleton}</div>}
+      {loading && <div className="u-mt12">{skeleton}</div>}
 
       {failed && (
         <div

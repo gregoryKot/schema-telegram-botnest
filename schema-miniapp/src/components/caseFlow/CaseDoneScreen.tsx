@@ -9,7 +9,7 @@ import type { CaseTraits, Tr } from '../../../../shared/src/case/caseTypes';
  *  пропустили без выбора чипа). */
 function TraitRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div className="u-mb12">
       <div
         style={{
           fontSize: 11,

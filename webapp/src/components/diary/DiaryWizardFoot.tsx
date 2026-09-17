@@ -30,39 +30,35 @@ export function DiaryWizardFoot({
   return (
     <div className="ex-foot">
       <button
-        className="ex-btn ex-btn-ghost"
+        className="ex-btn ex-btn-ghost u-ac8"
         disabled={backDisabled}
         onClick={onBack}
-        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
       >
         <GlyphArrowLeft /> {backLabel}
       </button>
       <span className="spacer" />
       {canSave && !isLast && (
         <button
-          className="ex-btn ex-btn-ghost"
+          className="ex-btn ex-btn-ghost u-ac8"
           disabled={saving}
           onClick={onSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {saving ? 'Сохраняю…' : 'Сохранить'} {!saving && <GlyphCheck />}
         </button>
       )}
       {isLast ? (
         <button
-          className="ex-btn ex-btn-primary"
+          className="ex-btn ex-btn-primary u-ac8"
           disabled={!canSave || saving}
           onClick={onSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
         </button>
       ) : (
         <button
-          className="ex-btn ex-btn-primary"
+          className="ex-btn ex-btn-primary u-ac8"
           disabled={curRequired && !curFilled}
           onClick={onNext}
-          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {curFilled || curRequired ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
         </button>

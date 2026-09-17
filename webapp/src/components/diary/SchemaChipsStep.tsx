@@ -33,7 +33,7 @@ export function SchemaChipsStep({
           : domain.schemas;
         if (schemas.length === 0) return null;
         return (
-          <div key={domain.id} style={{ marginBottom: 18 }}>
+          <div key={domain.id} className="u-mb18">
             <div
               className="chip-section-eyebrow"
               style={{ color: domain.color }}

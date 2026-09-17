@@ -59,7 +59,7 @@ export function ClientListView({
         {/* Clients section header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>Все клиенты</div>
+            <div className="eyebrow u-mb6">Все клиенты</div>
             <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {clients.length} <span style={{ fontSize: 15, fontWeight: 400, color: 'var(--text-sub)' }}>
                 {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
@@ -111,7 +111,7 @@ export function ClientListView({
 
           if (sessionsToday.length === 0 && activeToday.length === 0) return null;
           return (
-            <div style={{ marginBottom: 40 }}>
+            <div className="u-mb40">
               {sessionsToday.length > 0 && (
                 <div className="section">
                   <div className="section-head">
@@ -124,9 +124,9 @@ export function ClientListView({
                     return (
                       <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                         <span className="num text-md" style={{ width: 52, flexShrink: 0, color: 'var(--text-sub)', fontWeight: 500 }}>{timePart ?? '–'}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
-                          {client.streak > 0 && <div className="text-xs muted" style={{ marginTop: 3 }}>{client.streak} дн. подряд</div>}
+                        <div className="u-fill">
+                          <div className="text-md u-w600">{name}</div>
+                          {client.streak > 0 && <div className="text-xs muted u-mt3">{client.streak} дн. подряд</div>}
                         </div>
                         <span className="link">открыть →</span>
                       </div>
@@ -140,7 +140,7 @@ export function ClientListView({
                     <h3>Активны сегодня</h3>
                     <span className="hint">{activeToday.length} из {clients.length}</span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
+                  <div className="u-wrap8">
                     {activeToday.map(client => (
                       <button
                         key={client.telegramId}
@@ -213,13 +213,13 @@ export function ClientListView({
                     {filtered.filter(c => !!c.name).map(client => (
                       <div key={client.telegramId} className="r-row" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
-                            <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name}</span>
+                          <div className="u-ac8">
+                            <span className="text-base u-w600">{client.clientAlias ?? client.name}</span>
                             {client.lastActiveDate === today && (
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
                             )}
                           </div>
-                          <div className="text-xs faint" style={{ marginTop: 3 }}>
+                          <div className="text-xs faint u-mt3">
                             {client.lastActiveDate === today ? 'активен сегодня' : client.lastActiveDate ? 'был недавно' : 'не активен'}
                             {client.streak > 0 && ` · стрик ${client.streak} дн.`}
                           </div>
@@ -251,17 +251,17 @@ export function ClientListView({
                 )}
                 {filtered.filter(c => !c.name).length > 0 && (
                   <div style={{ marginTop: hasOnline ? 32 : 0 }}>
-                    {hasOnline && <div className="eyebrow" style={{ marginBottom: 12 }}>Оффлайн-клиенты</div>}
+                    {hasOnline && <div className="eyebrow u-mb12">Оффлайн-клиенты</div>}
                     {filtered.filter(c => !c.name).map(client => {
                       const name = client.clientAlias ?? `ID ${client.telegramId}`;
                       return (
                         <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
-                              <span className="text-md" style={{ fontWeight: 600 }}>{name}</span>
+                          <div className="u-fill">
+                            <div className="u-ac8">
+                              <span className="text-md u-w600">{name}</span>
                               <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
                             </div>
-                            <div className="text-sm muted" style={{ marginTop: 3 }}>
+                            <div className="text-sm muted u-mt3">
                               {client.therapyStartDate ? `с ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
                               {client.nextSession && ` · ${nextSessionLabel(client.nextSession)}`}
                             </div>

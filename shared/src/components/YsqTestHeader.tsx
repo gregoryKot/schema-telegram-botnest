@@ -18,14 +18,7 @@ export function YsqTestHeader({
   const progressPct = ((page + 1) / TOTAL_PAGES) * 100;
   return (
     <div style={{ flexShrink: 0, padding: `${16 + topInset}px 20px 0` }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <button
           onClick={onBack}
           disabled={page === 0}

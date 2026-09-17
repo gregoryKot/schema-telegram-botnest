@@ -107,7 +107,7 @@ function LinkDeviceContent({ code }: { code: string }) {
 
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 640, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Аккаунт</div>
+      <div className="eyebrow u-mb14">Аккаунт</div>
       <h1 style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 18 }}>
         {done ? 'Готово' : 'Привязать приложение'}
       </h1>
@@ -144,11 +144,11 @@ function LinkDeviceContent({ code }: { code: string }) {
 
           {!preview.sameAccount && total > 0 && (
             <>
-              <div className="hint" style={{ marginBottom: 8 }}>Что переедет из приложения:</div>
+              <div className="hint u-mb8">Что переедет из приложения:</div>
               <div className="card" style={{ padding: 16, borderRadius: 'var(--r-14)', marginBottom: 18 }}>
                 {Object.entries(preview.summary).map(([table, n]) => (
                   <div key={table} style={{ display: 'flex', gap: 'var(--space-10)', padding: '4px 0' }}>
-                    <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
+                    <span className="text-sm u-flex1">{tableLabel(table)}</span>
                     <span className="hint">{n}</span>
                   </div>
                 ))}

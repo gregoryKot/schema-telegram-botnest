@@ -33,7 +33,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
   onChange,
 }: Props<T>) {
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className="u-mb16">
       <div
         style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 12 }}
       >

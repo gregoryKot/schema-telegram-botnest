@@ -34,15 +34,7 @@ export function TherapistPrivacyToggles({ settings, patch }: Props) {
           >
             Карточки схем и режимов
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-sub)',
-              marginTop: 1,
-            }}
-          >
-            Личные карточки и заметки
-          </div>
+          <div className="u-sub11-mt1">Личные карточки и заметки</div>
         </div>
         <div
           onClick={() =>
@@ -107,15 +99,7 @@ export function TherapistPrivacyToggles({ settings, patch }: Props) {
           >
             Профиль и схемы
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-sub)',
-              marginTop: 1,
-            }}
-          >
-            Активные схемы и результаты теста
-          </div>
+          <div className="u-sub11-mt1">Активные схемы и результаты теста</div>
         </div>
         <div
           onClick={() =>

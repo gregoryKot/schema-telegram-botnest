@@ -40,7 +40,7 @@ export function YsqStatusCard({
         >
           Тест на схемы
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+        <div className="u-faint11">
           {ysqProgressAnswered != null
             ? `Начат · отвечено ${ysqProgressAnswered} из 116`
             : ysqCompletedAt

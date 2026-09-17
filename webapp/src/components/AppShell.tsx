@@ -340,7 +340,7 @@ export function AppShell() {
         <div className="sb-foot">
           <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               <div className="sb-acc-name">{displayName || 'Профиль'}</div>
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>

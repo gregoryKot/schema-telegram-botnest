@@ -130,7 +130,7 @@ export function AuthConfirmPage() {
 
   return (
     <div className="page-inner-wide" style={wrap}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
+      <div className="eyebrow u-mb14">
         Вход по коду
       </div>
       <h1
@@ -172,13 +172,7 @@ export function AuthConfirmPage() {
           'Если это не вы открываете приложение — нажмите «Это не я»: кто-то мог прислать этот код, чтобы попасть в ваш аккаунт.',
         )}
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-col12">
         <button
           type="button"
           onClick={confirm}

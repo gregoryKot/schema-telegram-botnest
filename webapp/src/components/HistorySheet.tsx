@@ -59,7 +59,7 @@ export function HistorySheet({
   const dialogA11y = useDialogA11y();
 
   return (
-    <div {...dialogA11y} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div {...dialogA11y} className="u-sheet-grid">
       {/* ExScreen-style topbar */}
       <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
         <button className="ex-back" onClick={goBack}>
@@ -72,8 +72,8 @@ export function HistorySheet({
 
       <div className="page">
         <div className="page-inner-wide" style={{ paddingTop: 48, paddingBottom: 24 }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Трекер</div>
-          <h1 className="hub-title" style={{ marginBottom: 40 }}>История<br /><span className="it">потребностей</span></h1>
+          <div className="eyebrow u-mb10">Трекер</div>
+          <h1 className="hub-title u-mb40">История<br /><span className="it">потребностей</span></h1>
         </div>
 
         {historyLoading

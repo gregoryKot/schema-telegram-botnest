@@ -67,7 +67,7 @@ export function ClientCard({
       >
         {initials || '?'}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div
           style={{
             fontSize: 15,
@@ -78,7 +78,7 @@ export function ClientCard({
         >
           {displayName}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+        <div className="u-sub12">
           {isVirtual
             ? 'Без Telegram'
             : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Не активен'} · Стрик ${c.streak} дн`}

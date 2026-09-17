@@ -63,15 +63,7 @@ export function TrackerHistoryOverlay({
   if (!sheets.tracker) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 80,
-        background: 'var(--bg)',
-        overflowY: 'auto',
-      }}
-    >
+    <div className="u-sheet">
       {/* Sticky header */}
       <div
         style={{
@@ -84,14 +76,7 @@ export function TrackerHistoryOverlay({
           borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}
-        >
+        <div className="u-between-mb10">
           <button
             onClick={() => sheets.close('tracker', { trackerTab: 'today' })}
             style={{
@@ -108,9 +93,7 @@ export function TrackerHistoryOverlay({
           >
             ‹ Назад
           </button>
-          <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {formatHeaderDate()}
-          </span>
+          <span className="u-sub13">{formatHeaderDate()}</span>
           <button
             onClick={() => {
               sheets.close('tracker', { trackerTab: 'today' });

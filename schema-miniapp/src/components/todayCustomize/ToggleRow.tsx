@@ -42,11 +42,11 @@ export function ToggleRow({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{sub}</div>
+        <div className="u-faint11">{sub}</div>
       </div>
       {onToggle && (
         <div aria-hidden inert style={{ pointerEvents: 'none' }}>

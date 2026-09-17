@@ -238,7 +238,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
           </div>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div className="u-flex1" />
         {showHint && (
           <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>
             {trackerTapHint(tr)}
@@ -253,7 +253,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
           <div style={{ padding: '0 20px' }}>
 
             {/* Wheel – no card, just space */}
-            <div style={{ marginBottom: 8 }} key={selected.date}>
+            <div className="u-mb8" key={selected.date}>
               <NeedsWheel needs={needs} ratings={selectedRatings} prevRatings={prevRatings}
                 childhoodRatings={childhoodRatings}
                 onClickNeed={handleTapNeed} onClickCenter={() => setShowIndexInfo(true)} />
@@ -264,17 +264,17 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               {Object.keys(childhoodRatings).length > 0 ? (
                 <button onClick={onOpenChildhoodWheel} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', padding: 0 }}>
                   <svg width={16} height={6}><line x1={0} y1={3} x2={16} y2={3} stroke="rgba(var(--fg-rgb),0.3)" strokeWidth={1.5} strokeDasharray="3 3" /></svg>
-                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>детство</span>
-                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>→</span>
+                  <span className="u-faint12">детство</span>
+                  <span className="u-accent12">→</span>
                 </button>
               ) : onOpenChildhoodWheel ? (
                 <button onClick={onOpenChildhoodWheel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>Оценить детство →</span>
+                  <span className="u-accent12">Оценить детство →</span>
                 </button>
               ) : null}
               {onOpenSchemas && (
                 <button onClick={onOpenSchemas} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--accent)' }}>Что за этим стоит →</span>
+                  <span className="u-accent12">Что за этим стоит →</span>
                 </button>
               )}
             </div>
@@ -291,11 +291,11 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                   <div style={{ fontSize: 14, fontWeight: 600, color: ratedCount === 0 ? 'var(--text)' : 'var(--text-sub)' }}>
                     {ratedCount === 0 ? 'Заполнить этот день' : `Дополнить оценки`}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
+                  <div className="u-faint12-mt2">
                     {ratedCount === 0 ? 'Оценки не заполнены' : `Заполнено ${ratedCount} из ${needs.length}`}
                   </div>
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>→</span>
+                <span className="u-faint13">→</span>
               </div>
             )}
 
@@ -346,7 +346,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>Стоит уделить внимание</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{low.chartLabel}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+                      <div className="u-sub13-lh16">
                         Остаётся низкой несколько дней подряд.{!contact.isTherapist && ' Терапевт поможет разобраться.'}
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               <span style={{ fontSize: 13, color: noteText ? 'var(--text-sub)' : 'var(--text-faint)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: noteText ? 'normal' : 'italic' }}>
                 {noteText || 'Добавить заметку к этому дню'}
               </span>
-              {noteText && <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>›</span>}
+              {noteText && <span className="u-faint13">›</span>}
             </div>
             {noteTags.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingBottom: 8 }}>
@@ -405,7 +405,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             {needsLow.length > 0 && (
               <div style={{ marginTop: 20, padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 8 }}>
-                  <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!contact.isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
+                  <strong className="u-fg">{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!contact.isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
                 </div>
                 {bookingLink}
               </div>

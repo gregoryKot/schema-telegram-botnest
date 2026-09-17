@@ -93,7 +93,7 @@ export function PairPanel({
       ))}
 
       {data.pendingCode && (
-        <div style={{ marginBottom: 12 }}>
+        <div className="u-mb12">
           <InviteLinkBox
             label="⏳ Ждём партнёра"
             url={pendingUrl}
@@ -155,7 +155,7 @@ export function PairPanel({
       )}
 
       {inviteUrl && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="u-mb10">
           <InviteLinkBox
             label={copyLabel}
             url={inviteUrl}

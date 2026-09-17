@@ -19,7 +19,7 @@ export function PartnerSection({ onInfo }: { onInfo: () => void }) {
   });
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>ПАРТНЁР</SectionHeader>
       <div
         className="card"

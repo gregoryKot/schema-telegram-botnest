@@ -51,7 +51,7 @@ export function PartnerCard({
           marginBottom: 10,
         }}
       >
-        <div style={{ flex: 1 }}>
+        <div className="u-flex1">
           <div
             style={{
               fontSize: 13,
@@ -172,7 +172,7 @@ export function PartnerCard({
       </div>
 
       {confirmLeaveCode === partner.code ? (
-        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+        <div className="u-row8">
           <button
             onClick={() => setConfirmLeaveCode(null)}
             style={{

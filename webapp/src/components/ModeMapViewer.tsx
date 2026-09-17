@@ -65,7 +65,7 @@ export function ModeMapViewer() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
           <MMIcon name="map" size={26} />
         </div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Карты режимов пока нет</div>
+        <div className="u-h14">Карты режимов пока нет</div>
         <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
           Терапевт создаёт её на сессии — она появится здесь.
         </div>

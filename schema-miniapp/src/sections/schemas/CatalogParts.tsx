@@ -16,10 +16,7 @@ const ROW_NAME_WIDTHS = ['62%', '46%', '54%', '38%', '58%'];
 export function PatternListSkeleton({ rows }: { rows: number }) {
   const n = Math.max(3, rows);
   return (
-    <div
-      className="card"
-      style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-    >
+    <div className="card u-r16-clip">
       {Array.from({ length: n }).map((_, i) => (
         <div
           key={i}

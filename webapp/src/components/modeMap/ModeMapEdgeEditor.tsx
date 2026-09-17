@@ -88,7 +88,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           <button onClick={() => setSuggestions(pickPhrases(suggestType, 4))} title="Другие варианты" aria-label="Другие варианты"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>↻</button>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+        <div className="u-wrap5">
           {suggestions.map(p => {
             const active = edge.label === p;
             return (

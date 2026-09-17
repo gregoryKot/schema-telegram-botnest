@@ -51,7 +51,7 @@ export function NeedSheetHeader({
       >
         <IdentityDot id={need.id} size={16} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <h2
           style={{
             fontSize: 20,

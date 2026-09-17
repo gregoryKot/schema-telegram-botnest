@@ -39,7 +39,7 @@ export function ToolRow({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div
           style={{
             fontSize: 16,

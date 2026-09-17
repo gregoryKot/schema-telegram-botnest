@@ -10,11 +10,7 @@ import { haptic } from '../../haptic';
  */
 
 export function CapsLabel({ children }: { children: ReactNode }) {
-  return (
-    <div className="d-caps" style={{ marginBottom: 10 }}>
-      {children}
-    </div>
-  );
+  return <div className="d-caps u-mb10">{children}</div>;
 }
 
 /** Белый контейнер-группа: строки внутри разделяются hairline'ом. */
@@ -60,7 +56,7 @@ export function DiaryRow({
       }}
       style={selected ? { background: 'var(--surface-2)' } : undefined}
     >
-      <span style={{ flex: 1, minWidth: 0 }}>
+      <span className="u-fill">
         <span
           style={{
             display: 'block',

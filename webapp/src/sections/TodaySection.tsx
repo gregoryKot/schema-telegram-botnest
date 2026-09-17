@@ -197,11 +197,11 @@ export function TodaySection({
     <div className="page-inner-wide">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="eyebrow" style={{ marginBottom: 8 }}>
-        <span style={{ color: 'var(--accent)' }}>● </span>
+      <div className="eyebrow u-mb8">
+        <span className="u-accent">● </span>
         {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й стрик` : ''}
       </div>
-      <h1 className="hub-title" style={{ marginBottom: 40 }}>
+      <h1 className="hub-title u-mb40">
         {greeting().split(' ')[0]}<br />
         <span className="it">{greeting().split(' ').slice(1).join(' ')}{firstName ? `, ${firstName}` : ''}</span>
       </h1>
@@ -215,10 +215,10 @@ export function TodaySection({
           {/* Therapist cabinet – calm link block */}
           {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
             <div {...pressable(onOpenTherapistCabinet)} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>Терапевт</div>
-                <div className="text-md" style={{ fontWeight: 600 }}>Кабинет терапевта</div>
-                <div className="text-sm muted" style={{ marginTop: 3 }}>Клиенты · Задания · Концептуализация</div>
+              <div className="u-fill">
+                <div className="eyebrow u-mb4">Терапевт</div>
+                <div className="text-md u-w600">Кабинет терапевта</div>
+                <div className="text-sm muted u-mt3">Клиенты · Задания · Концептуализация</div>
               </div>
               <span className="link">открыть →</span>
             </div>
@@ -250,7 +250,7 @@ export function TodaySection({
               return (
                 <div key={n.id} style={{ borderBottom: '1px solid var(--line)' }}
                      {...pressable(() => onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker())}>
-                  <div className="need-row" style={{ cursor: 'pointer' }}>
+                  <div className="need-row u-pointer">
                     <span style={{ fontSize: 13, color: 'var(--text)' }}>
                       {NEED_DATA[n.id]?.name ?? n.chartLabel}
                     </span>
@@ -299,7 +299,7 @@ export function TodaySection({
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 9, color: 'var(--bg)',
                     }}>{isDone ? '✓' : isFail ? '×' : ''}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="u-fill">
                       <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.55 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
                         {resolveTaskText(task)}
                       </div>
@@ -329,20 +329,20 @@ export function TodaySection({
           {/* ── Draft banner ── */}
           {(['schema', 'mode', 'gratitude'] as const).some(t => hasDraft(t)) && (
             <div className="section" style={{ paddingTop: 0 }}>
-              <div className="section-head" style={{ marginBottom: 8 }}>
+              <div className="section-head u-mb8">
                 <h3>Незаконченные записи</h3>
                 <button className="link" onClick={onOpenDiaries}>открыть →</button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="u-col6">
                 {(['schema', 'mode', 'gratitude'] as const).filter(t => hasDraft(t)).map(type => {
                   const labels = { schema: 'Дневник схем', mode: 'Дневник режимов', gratitude: 'Благодарность' };
                   const colors = { schema: 'var(--c-rose)', mode: 'var(--c-slate)', gratitude: 'var(--c-moss)' };
                   return (
-                    <div key={type} {...pressable(onOpenDiaries)} className="list-line" style={{ cursor: 'pointer' }}>
+                    <div key={type} {...pressable(onOpenDiaries)} className="list-line u-pointer">
                       <div style={{ width: 3, height: 28, borderRadius: 3, background: colors[type], flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="u-fill">
                         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors[type] }}>Черновик</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{labels[type]}</div>
+                        <div className="u-sub13">{labels[type]}</div>
                       </div>
                       <span className="link">продолжить →</span>
                     </div>
@@ -365,9 +365,9 @@ export function TodaySection({
                 {recentDiaries.map((entry, i) => {
                   const color = DIARY_COLORS[entry.type] ?? '#aaa';
                   return (
-                    <div key={i} className="list-line" {...pressable(onOpenDiaries)} style={{ cursor: 'pointer' }}>
+                    <div key={i} className="list-line u-pointer" {...pressable(onOpenDiaries)}>
                       <div style={{ width: 3, height: 28, borderRadius: 3, background: color, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="u-fill">
                         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.label}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{entry.dateStr}{entry.time ? ` · ${entry.time}` : ''}</div>
                       </div>
@@ -388,7 +388,7 @@ export function TodaySection({
         <aside className="doc-aside today-aside">
 
           {/* Index */}
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Индекс сегодня</div>
+          <div className="eyebrow u-mb10">Индекс сегодня</div>
           <div {...(onOpenTrackerHistory ? pressable(onOpenTrackerHistory) : {})} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
             <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {avgScore ?? '–'}
@@ -399,7 +399,7 @@ export function TodaySection({
               </div>
             )}
             {history14.length > 1 && (
-              <div style={{ marginTop: 14 }}>
+              <div className="u-mt14">
                 <Sparkline values={history14} />
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{Math.min(history14.length, 14)} дней</div>
               </div>
@@ -411,11 +411,11 @@ export function TodaySection({
           {/* Therapist block */}
           {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
             <>
-              <div className="eyebrow" style={{ marginBottom: 8 }}>Терапевт</div>
+              <div className="eyebrow u-mb8">Терапевт</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{therapyRelation.partnerName}</div>
               {nextSessionLabel && (
                 <>
-                  <div className="eyebrow" style={{ marginBottom: 6 }}>Следующая встреча</div>
+                  <div className="eyebrow u-mb6">Следующая встреча</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{nextSessionLabel}</div>
                   {daysToSession && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>{daysToSession}</div>}
                 </>
@@ -429,7 +429,7 @@ export function TodaySection({
           )}
 
           {/* Streak */}
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Стрик</div>
+          <div className="eyebrow u-mb10">Стрик</div>
           <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: streak > 0 ? 'var(--c-clay)' : 'var(--text-ghost)' }}>
             {streak}
           </div>
@@ -451,12 +451,12 @@ export function TodaySection({
         />
       )}
       {introSchemaId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <div className="u-sheet">
           <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
         </div>
       )}
       {introModeId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <div className="u-sheet">
           <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
         </div>
       )}

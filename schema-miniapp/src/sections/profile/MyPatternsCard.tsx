@@ -65,7 +65,7 @@ function Row({
   return (
     <button key={id} {...pressable(onOpen)} style={rowStyle}>
       <IdentityDot color={meta.color} size={10} />
-      <span style={{ flex: 1, minWidth: 0 }}>
+      <span className="u-fill">
         <span
           style={{
             display: 'block',
@@ -162,9 +162,7 @@ export function MyPatternsCard({
       className="card"
       style={{ borderRadius: 'var(--r-20)', padding: '16px 16px 6px' }}
     >
-      <div className="d-caps" style={{ marginBottom: 10 }}>
-        {TITLE[kind]}
-      </div>
+      <div className="d-caps u-mb10">{TITLE[kind]}</div>
       {rows.map((r) => (
         <Row
           key={r.id}

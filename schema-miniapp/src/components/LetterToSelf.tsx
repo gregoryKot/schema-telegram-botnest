@@ -115,7 +115,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
   if (viewing) {
     return (
       <BottomSheet onClose={() => setViewing(null)} zIndex={300}>
-        <div style={{ paddingTop: 4 }}>
+        <div className="u-pt4">
           <div
             style={{ fontSize: 11, color: 'var(--text-sub)', marginBottom: 12 }}
           >
@@ -138,7 +138,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <SheetIconHeader
           title="Письмо Уязвимому Ребёнку"
           subtitle="Написать себе из прошлого"
@@ -233,7 +233,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
 
         <PastLetters letters={letters} onView={setViewing} />
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <TherapyNote compact />
         </div>
       </div>

@@ -7,7 +7,7 @@ export function DiariesOverlay({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   const dialogA11y = useDialogA11y();
   return (
-    <div {...dialogA11y} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div {...dialogA11y} className="u-sheet">
       <ErrorBoundary section="Дневник" key="diary-overlay-boundary">
         <DiarySection onClose={goBack} />
       </ErrorBoundary>

@@ -15,11 +15,7 @@ export function YsqResultActions({
 }: Props) {
   return (
     <>
-      <button
-        onClick={onClose}
-        className="btn-primary"
-        style={{ marginBottom: 10 }}
-      >
+      <button onClick={onClose} className="btn-primary u-mb10">
         Сохранить и закрыть
       </button>
 
@@ -40,7 +36,7 @@ export function YsqResultActions({
           >
             Результаты будут удалены. Точно начать заново?
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <button
               onClick={() => setRetakeConfirm(false)}
               style={{

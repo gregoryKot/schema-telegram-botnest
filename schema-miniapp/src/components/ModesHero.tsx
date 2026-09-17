@@ -34,13 +34,7 @@ export function ModesHero({
 
   if (!hasModes) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-col12">
         <HeroCta
           label="Знакомство"
           chip="≈2 мин"

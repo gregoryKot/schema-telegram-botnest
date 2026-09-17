@@ -20,7 +20,7 @@ export function ConceptModePicker({
   return (
     <>
       {MODE_GROUPS.map((group) => (
-        <div key={group.id} style={{ marginBottom: 8 }}>
+        <div key={group.id} className="u-mb8">
           <div
             style={{
               fontSize: 10,
@@ -34,7 +34,7 @@ export function ConceptModePicker({
           >
             {group.group}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          <div className="u-wrap5">
             {group.items.map((mode) => {
               const active = activeModeIds.includes(mode.id);
               return (

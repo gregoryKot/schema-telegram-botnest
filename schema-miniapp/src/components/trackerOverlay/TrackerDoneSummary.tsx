@@ -46,7 +46,7 @@ export function TrackerDoneSummary({
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
             {avg.toFixed(1)}
-            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>/10</span>
+            <span className="u-sub13">/10</span>
           </div>
         </div>
         <SummaryDonut avg={avg} />

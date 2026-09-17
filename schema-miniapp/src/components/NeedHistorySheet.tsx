@@ -90,7 +90,7 @@ export function NeedHistorySheet({
       />
 
       {/* Section 1: 7-day sparkline */}
-      <div style={{ marginBottom: 24 }}>
+      <div className="u-mb24">
         <SectionLabel>За 7 дней</SectionLabel>
         <div
           style={{
@@ -107,7 +107,7 @@ export function NeedHistorySheet({
             height={H}
             viewBox={`0 0 ${W} ${H}`}
             preserveAspectRatio="none"
-            style={{ flex: 1 }}
+            className="u-flex1"
           >
             <defs>
               <linearGradient
@@ -166,9 +166,7 @@ export function NeedHistorySheet({
             <div style={{ fontSize: 13, fontWeight: 600, color }}>
               {trendLabel}
             </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
+            <div className="u-sub12-mt2">
               {trendSign}
               {trendDiff.toFixed(1)} за неделю
             </div>
@@ -178,7 +176,7 @@ export function NeedHistorySheet({
 
       {/* Childhood context — shown if data exists */}
       {childhoodValue !== undefined && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <div
             style={{
               background:
@@ -223,13 +221,7 @@ export function NeedHistorySheet({
                   </span>
                 )}
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
+              <div className="u-sub12-lh15">
                 {childhoodValue <= 4
                   ? 'Эта потребность давно чувствительна — вероятно, дело не в плохом периоде, а в паттерне. Схема-терапия работает именно с этим.'
                   : 'В детстве эта зона была достаточно удовлетворена. Если сейчас низко — скорее всего ситуативное истощение.'}
@@ -240,7 +232,7 @@ export function NeedHistorySheet({
       )}
 
       {/* Section 2: Random tip */}
-      <div style={{ marginBottom: 24 }}>
+      <div className="u-mb24">
         <SectionLabel>
           {tr('Попробуй сегодня', 'Попробуйте сегодня')}
         </SectionLabel>
@@ -303,11 +295,7 @@ export function NeedHistorySheet({
       {/* Section 3: Explanation */}
       <div>
         <SectionLabel>Об этой потребности</SectionLabel>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-        >
-          {data.explanation}
-        </div>
+        <div className="u-sub13-lh16">{data.explanation}</div>
       </div>
     </BottomSheet>
   );

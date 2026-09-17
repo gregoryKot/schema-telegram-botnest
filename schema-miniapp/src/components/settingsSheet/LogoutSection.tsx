@@ -9,7 +9,7 @@ import { Row } from './ui';
 export function LogoutSection() {
   if (getHost().id !== 'web') return null;
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <div className="card" style={{ borderRadius: 'var(--r-16)', padding: 0 }}>
         {/* «Выйти» — инфинитив: ни рода, ни формы обращения не несёт. */}
         <Row

@@ -87,7 +87,7 @@ export function StreakCard({
         {/* Secondary stats */}
         <div style={{ display: 'flex', gap: 16, paddingBottom: 4 }}>
           {longestStreak > 0 && (
-            <div style={{ textAlign: 'center' }}>
+            <div className="u-tc">
               <div
                 style={{
                   fontSize: 20,
@@ -111,7 +111,7 @@ export function StreakCard({
               </div>
             </div>
           )}
-          <div style={{ textAlign: 'center' }}>
+          <div className="u-tc">
             <div
               style={{
                 fontSize: 20,

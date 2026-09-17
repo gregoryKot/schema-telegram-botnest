@@ -50,11 +50,7 @@ export function TaskTypeSelector({
             >
               {opt.label}
             </div>
-            <div
-              style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}
-            >
-              {opt.sub}
-            </div>
+            <div className="u-sub11-mt1">{opt.sub}</div>
           </div>
         </div>
       ))}

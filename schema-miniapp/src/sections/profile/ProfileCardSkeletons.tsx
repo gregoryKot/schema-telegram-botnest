@@ -42,22 +42,9 @@ export function PortraitCardSkeleton() {
         <Skeleton w={90} h={10} radius={4} />
         <Skeleton w={60} h={10} radius={4} />
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-10)',
-        }}
-      >
+      <div className="u-col10">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-10)',
-            }}
-          >
+          <div key={i} className="u-ac10">
             <Skeleton w={110} h={10} radius={4} />
             <Skeleton w="100%" h={8} radius={4} />
           </div>
@@ -139,13 +126,7 @@ export function InsightsCardSkeleton() {
   return (
     <CardShell testId="insights-skeleton">
       <Skeleton w={80} h={10} radius={4} style={{ marginBottom: 14 }} />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-col12">
         {[0, 1, 2].map((i) => (
           <div key={i}>
             <Skeleton w="60%" h={10} radius={4} style={{ marginBottom: 6 }} />

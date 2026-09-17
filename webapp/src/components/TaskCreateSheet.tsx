@@ -103,11 +103,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
         <div className="page-inner" style={{ paddingTop: 32, paddingBottom: 40 }}>
 
           {/* Header */}
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            <span style={{ color: 'var(--accent)' }}>● </span>
+          <div className="eyebrow u-mb8">
+            <span className="u-accent">● </span>
             {clientName ? `Задание для ${clientName}` : 'Новое задание'}
           </div>
-          <h1 className="hub-title" style={{ marginBottom: 8 }}>
+          <h1 className="hub-title u-mb8">
             {tr('Выбери', 'Выберите')}<br /><span className="it">задание</span>
           </h1>
           <p className="hub-sub" style={{ marginBottom: 32 }}>
@@ -137,7 +137,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                     transition: 'background 0.2s',
                   }} />
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="u-fill">
                     <div style={{
                       fontSize: 15, fontWeight: isSelected ? 600 : 400,
                       color: isSelected ? 'var(--text)' : 'var(--text)',
@@ -177,8 +177,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
             {/* Streak picker */}
             {selected.hasStreak && (
-              <div style={{ marginBottom: 24 }}>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>Цель в днях</div>
+              <div className="u-mb24">
+                <div className="eyebrow u-mb10">Цель в днях</div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {STREAK_OPTIONS.map(d => (
                     <button
@@ -200,7 +200,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
             {/* Schema picker */}
             {type === 'schema_intro' && (
-              <div style={{ marginBottom: 24 }}>
+              <div className="u-mb24">
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                   Какую схему изучить?
                 </div>
@@ -217,7 +217,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         gap: 'var(--space-12)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+                      <div className="u-ac10">
                         <div style={{ width: 3, height: 20, borderRadius: 'var(--r-2)', background: s.domainColor, flexShrink: 0 }} />
                         <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedSchemaId === s.id ? 600 : 400 }}>{s.name}</span>
                       </div>
@@ -234,7 +234,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
             {/* Mode picker */}
             {type === 'mode_intro' && (
-              <div style={{ marginBottom: 24 }}>
+              <div className="u-mb24">
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                   Какой режим изучить?
                 </div>
@@ -267,7 +267,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
             {/* Custom text */}
             {type === 'custom' && (
-              <div style={{ marginBottom: 24 }}>
+              <div className="u-mb24">
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                   Описание задания
                 </div>
@@ -287,7 +287,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
             {/* Due date */}
             {(type === 'custom' || clientId) && (
-              <div style={{ marginBottom: 24 }}>
+              <div className="u-mb24">
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
                   Срок (необязательно)
                 </div>

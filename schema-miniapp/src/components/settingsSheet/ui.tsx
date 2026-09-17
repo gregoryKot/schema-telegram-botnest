@@ -139,7 +139,7 @@ export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 export function RowRight({ text, small }: { text: string; small?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="u-ac6">
       <span
         style={{
           fontSize: small ? 13 : 15,
@@ -194,7 +194,7 @@ export function Row({
         borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{
             fontSize: 14,

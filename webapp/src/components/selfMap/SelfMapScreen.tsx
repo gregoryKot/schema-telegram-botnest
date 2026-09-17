@@ -79,7 +79,7 @@ export function SelfMapScreen({
         <p className="body">{whereIAm}</p>
       </div>
 
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Что дальше</div>
+      <div className="eyebrow u-mb10">Что дальше</div>
       <button
         type="button"
         className="ex-btn ex-btn-primary"

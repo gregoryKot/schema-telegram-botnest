@@ -33,7 +33,7 @@ export function ModeStateStep({
 
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+      <div className="d-display u-e21">
         {tr('Что ты сейчас чувствуешь?', 'Что вы сейчас чувствуете?')}
       </div>
       <div

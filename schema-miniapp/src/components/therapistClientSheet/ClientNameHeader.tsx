@@ -27,7 +27,7 @@ export function ClientNameHeader({
 
   if (renamingAlias) {
     return (
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{
             display: 'flex',

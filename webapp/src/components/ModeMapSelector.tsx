@@ -205,7 +205,7 @@ export function ModeMapSelector({ clientId }: Props) {
                   borderRadius: 'var(--r-6)', cursor: 'pointer', background: 'none', border: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                <div className="u-h13">
                   {KIND_META[k].label}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
@@ -234,7 +234,7 @@ export function ModeMapSelector({ clientId }: Props) {
                 <button key={k} onClick={() => createMap(k)} disabled={creating}
                   style={{ width: 200, padding: '14px 16px', borderRadius: 'var(--r-10)', cursor: 'pointer', textAlign: 'left',
                     background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{KIND_META[k].label}</div>
+                  <div className="u-h14">{KIND_META[k].label}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>
                 </button>
               ))}

@@ -164,7 +164,7 @@ export function ClientDetailView({
         <ActionButtons detail={detail} />
 
         {/* Карта режимов — только на сайте (скрываемый баннер) */}
-        <div style={{ marginTop: 12 }}>
+        <div className="u-mt12">
           <WebBanner
             id="mode_map"
             title="Карта режимов клиента — на сайте"

@@ -40,6 +40,46 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
+/** Кнопка отметки плана. Две кнопки различались только цветом и насыщенностью
+ *  текста — остальные 9 свойств совпадали дословно (правило «одна механика —
+ *  один компонент» CLAUDE.md). */
+function CheckinButton({
+  onClick,
+  bg,
+  line,
+  color,
+  weight,
+  label,
+}: {
+  onClick: () => void;
+  bg: string;
+  line: string;
+  color: string;
+  weight: number;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: '9px 0',
+        border: 'none',
+        borderRadius: 'var(--r-12)',
+        fontFamily: 'inherit',
+        background: bg,
+        outline: `1px solid ${line}`,
+        color,
+        fontSize: 13,
+        fontWeight: weight,
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 export function PlanCard({
   plan,
   onUpdate,
@@ -78,22 +118,13 @@ export function PlanCard({
       }}
     >
       {/* Top row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>·</span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            {formatDate(plan.scheduledDate)}
-          </span>
+          <span className="u-faint11">·</span>
+          <span className="u-faint11">{formatDate(plan.scheduledDate)}</span>
         </div>
         <span style={{ fontSize: 16 }}>{statusIcon(plan.done)}</span>
       </div>
@@ -112,43 +143,23 @@ export function PlanCard({
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
-          <button
+        <div className="u-row8">
+          <CheckinButton
             onClick={() => checkin(true)}
-            style={{
-              flex: 1,
-              padding: '9px 0',
-              border: 'none',
-              borderRadius: 'var(--r-12)',
-              fontFamily: 'inherit',
-              background: 'rgba(52,211,153,0.12)',
-              outline: '1px solid rgba(52,211,153,0.22)',
-              color: 'var(--accent-green)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            ✓ Выполнено
-          </button>
-          <button
+            bg="rgba(52,211,153,0.12)"
+            line="rgba(52,211,153,0.22)"
+            color="var(--accent-green)"
+            weight={600}
+            label="✓ Выполнено"
+          />
+          <CheckinButton
             onClick={() => checkin(false)}
-            style={{
-              flex: 1,
-              padding: '9px 0',
-              border: 'none',
-              borderRadius: 'var(--r-12)',
-              fontFamily: 'inherit',
-              background: 'rgba(248,113,113,0.08)',
-              outline: '1px solid rgba(248,113,113,0.18)',
-              color: 'var(--accent-red)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            Не вышло
-          </button>
+            bg="rgba(248,113,113,0.08)"
+            line="rgba(248,113,113,0.18)"
+            color="var(--accent-red)"
+            weight={500}
+            label="Не вышло"
+          />
         </div>
       )}
     </div>

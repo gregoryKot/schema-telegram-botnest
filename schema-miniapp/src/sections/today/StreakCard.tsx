@@ -35,8 +35,8 @@ export function StreakCard({ streak }: { streak: number }) {
       >
         {streak}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+      <div className="u-fill">
+        <div className="u-h15">
           {streak} {plural(streak, 'день', 'дня', 'дней')} подряд
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}>

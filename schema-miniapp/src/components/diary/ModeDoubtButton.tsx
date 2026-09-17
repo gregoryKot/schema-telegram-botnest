@@ -73,7 +73,7 @@ export function ModeDoubtButton({
 
       {open && (
         <BottomSheet onClose={() => setOpen(false)}>
-          <div style={{ paddingTop: 4 }}>
+          <div className="u-pt4">
             <button
               onClick={() => {
                 haptic.tap();
@@ -120,9 +120,7 @@ export function ModeDoubtButton({
                 )}
                 {mode?.name ?? ''}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                сейчас выбран
-              </div>
+              <div className="u-sub12">сейчас выбран</div>
             </div>
             <div
               style={{
@@ -135,13 +133,7 @@ export function ModeDoubtButton({
               Вот с чем его чаще всего путают — и как отличить.
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-12)',
-              }}
-            >
+            <div className="u-col12">
               {doubts.map((d) => {
                 const other = getModeById(d.otherId);
                 const leafLabel = getModeLeafLabel(d.otherId);

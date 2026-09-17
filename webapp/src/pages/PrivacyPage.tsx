@@ -252,7 +252,7 @@ function Chapter({ n, title, id, children }: { n: string; title: string; id?: st
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>{children}</div>
+      <div className="u-col12">{children}</div>
     </section>
   );
 }

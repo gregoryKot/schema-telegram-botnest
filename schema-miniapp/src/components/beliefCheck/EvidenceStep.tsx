@@ -48,15 +48,7 @@ export function EvidenceStep({
         >
           {title}
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
-          {hint}
-        </div>
+        <div className="u-sub12-lh15">{hint}</div>
       </div>
       <EvidenceList
         items={items}

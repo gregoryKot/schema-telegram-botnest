@@ -68,13 +68,7 @@ export function SparklineRow({
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-ac12">
         <div
           style={{
             width: 32,

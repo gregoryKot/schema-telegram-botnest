@@ -31,7 +31,7 @@ export function YsqSyncErrorNote({ variant, onRetry }: Props) {
   const tr = useTr();
   const { ty, vy, retryLabel } = TEXTS[variant];
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div className="u-mb14">
       <div
         style={{
           fontSize: 12,

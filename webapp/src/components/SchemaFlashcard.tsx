@@ -107,7 +107,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
                 padding: '20px 0',
                 borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : 'none',
               }}>
-                <div className="eyebrow" style={{ marginBottom: 8 }}>{row.label}</div>
+                <div className="eyebrow u-mb8">{row.label}</div>
                 <div style={{ fontFamily: i === 0 ? 'var(--serif)' : 'inherit', fontSize: i === 0 ? 22 : 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
                   {row.value}
                 </div>
@@ -178,7 +178,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Grounding screen (first step – breathing exercise)
   if (!grounded) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="u-sheet-grid">
         <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12, marginTop: 20 }}>
@@ -231,12 +231,12 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 1: Mode selection
   if (step === 'mode') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="u-sheet-grid">
         <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <div>
-              <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 1 из 4</div>
+              <div className="eyebrow u-mb8">Шаг 1 из 4</div>
               <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)' }}>Что сейчас активно?</h1>
             </div>
             {allCards.length > 0 && (
@@ -246,7 +246,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             )}
           </div>
           {progressBar}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+          <div className="u-col10">
             {MODES.map(m => (
               <button key={m.id} onClick={() => { setSelectedMode(m.id); setStep('response'); }} style={{
                 textAlign: 'left', padding: '18px 20px', borderRadius: 'var(--r-16)',
@@ -270,10 +270,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 2: Healthy Adult response
   if (step === 'response') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="u-sheet-grid">
         <Topbar onBack={() => setStep('mode')} label="Назад" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 2 из 4</div>
+          <div className="eyebrow u-mb8">Шаг 2 из 4</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Здоровый Взрослый</h1>
           {progressBar}
           <div style={{
@@ -288,7 +288,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             </p>
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>
-            Что отзывается? <span style={{ color: 'var(--text-faint)' }}>(необязательно)</span>
+            Что отзывается? <span className="u-faint">(необязательно)</span>
           </div>
           <textarea
             value={reflection}
@@ -302,7 +302,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <button onClick={() => setStep('need')} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
             Дальше →
           </button>
-          <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
+          <div className="u-mt24"><TherapyNote compact /></div>
         </div>
       </div>
     );
@@ -311,10 +311,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 3: Need selection
   if (step === 'need') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="u-sheet-grid">
         <Topbar onBack={() => setStep('response')} label="Назад" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 3 из 4</div>
+          <div className="eyebrow u-mb8">Шаг 3 из 4</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Что за этим стоит?</h1>
           {progressBar}
           <p style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.6 }}>
@@ -337,7 +337,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               );
             })}
           </div>
-          <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
+          <div className="u-mt24"><TherapyNote compact /></div>
         </div>
       </div>
     );
@@ -346,10 +346,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 4: Action
   const needInfo = NEEDS.find(n => n.id === selectedNeed);
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div className="u-sheet-grid">
       <Topbar onBack={() => setStep('need')} label="Назад" />
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
-        <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 4 из 4</div>
+        <div className="eyebrow u-mb8">Шаг 4 из 4</div>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Один маленький шаг</h1>
         {progressBar}
         {needInfo && (
@@ -377,10 +377,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           style={{ marginBottom: 20, borderColor: action.trim() ? 'var(--accent)' : 'var(--line)' }}
         />
         {detectCrisisAny(action) && <CrisisCard surface="flashcard" />}
-        <button onClick={save} disabled={!action.trim()} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
+        <button onClick={save} disabled={!action.trim()} className="ex-btn ex-btn-primary u-w100">
           Сохранить
         </button>
-        <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
+        <div className="u-mt24"><TherapyNote compact /></div>
       </div>
     </div>
   );

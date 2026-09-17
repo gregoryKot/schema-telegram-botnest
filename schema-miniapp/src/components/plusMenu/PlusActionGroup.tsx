@@ -14,17 +14,11 @@ export function PlusActionGroup({
   onAction: (id: QuickActionId) => void;
 }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div className="u-mb12">
       <div className="section-label" style={{ margin: '0 4px 8px' }}>
         {title}
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-        }}
-      >
+      <div className="u-col8">
         {actions.map((a) => (
           <ActionRow
             key={a.id}

@@ -418,7 +418,7 @@ export function ChildhoodWheelEx({
                   fontWeight: ratings[n.id] <= 4 ? 500 : 400,
                 }}
               >
-                <span style={{ fontWeight: 600 }}>0 – дефицит. </span>
+                <span className="u-w600">0 – дефицит. </span>
                 {n.low}
               </div>
               <div
@@ -430,7 +430,7 @@ export function ChildhoodWheelEx({
                   fontWeight: ratings[n.id] >= 8 ? 500 : 400,
                 }}
               >
-                <span style={{ fontWeight: 600 }}>10 – насыщение. </span>
+                <span className="u-w600">10 – насыщение. </span>
                 {n.high}
               </div>
             </div>

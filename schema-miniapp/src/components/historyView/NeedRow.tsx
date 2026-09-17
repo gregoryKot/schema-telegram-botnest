@@ -45,13 +45,7 @@ export function NeedRow({
         cursor: onTap ? 'pointer' : 'default',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-ac12">
         <div
           style={{
             width: 36,
@@ -66,7 +60,7 @@ export function NeedRow({
         >
           <IdentityDot id={need.id} size={12} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="u-fill">
           <div
             style={{
               display: 'flex',
@@ -80,7 +74,7 @@ export function NeedRow({
             >
               {need.chartLabel}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="u-ac6">
               <span
                 style={{ fontSize: 11, fontWeight: 600, color: levelColor }}
               >

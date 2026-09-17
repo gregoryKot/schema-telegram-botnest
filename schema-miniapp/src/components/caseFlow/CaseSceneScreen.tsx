@@ -39,11 +39,7 @@ export function CaseSceneScreen({
 
   return (
     <div>
-      <div
-        id="case-scene-question"
-        className="d-display"
-        style={{ fontSize: 21, marginBottom: 8 }}
-      >
+      <div id="case-scene-question" className="d-display u-e21">
         Что случилось?
       </div>
       <div
@@ -109,7 +105,7 @@ export function CaseSceneScreen({
         </div>
       )}
 
-      <div style={{ marginTop: 20 }}>
+      <div className="u-mt20">
         <PrimaryAction label="Дальше" disabled={!canNext} onClick={onNext} />
       </div>
     </div>

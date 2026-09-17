@@ -84,7 +84,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         </div>
       }
     >
-      <div style={{ marginTop: 8 }}>
+      <div className="u-mt8">
         {items.map((item, i) => (
           <div key={i} className={'grat-row ' + (item.trim() ? 'is-filled' : '')}>
             <span className="grat-num-big">{String(i + 1).padStart(2, '0')}</span>
@@ -108,7 +108,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       </div>
 
       <div className="ex-foot">
-        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+        <span className="u-faint12">
           {filled.length} / {items.length} заполнено
         </span>
         <span className="spacer" />

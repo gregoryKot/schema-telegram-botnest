@@ -35,7 +35,7 @@ export function PhraseMarkStep({
       <div className="ex-prompt">
         <div className="ex-prompt-num">{String(index + 1).padStart(2, '0')}</div>
         <div>
-          <div className="ex-prompt-hint" style={{ marginBottom: 4 }}>
+          <div className="ex-prompt-hint u-mb4">
             Примета {index + 1} из {total} · «{phrase}»
           </div>
           <div className="ex-prompt-label" style={{ fontSize: 26, marginBottom: 4 }}>

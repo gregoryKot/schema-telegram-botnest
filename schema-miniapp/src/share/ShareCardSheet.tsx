@@ -55,7 +55,7 @@ export function ShareCardSheet({
   return (
     <>
       <BottomSheet onClose={onClose} zIndex={zIndex}>
-        <div style={{ paddingTop: 8 }}>
+        <div className="u-pt8">
           <div
             style={{
               fontSize: 18,
@@ -134,7 +134,7 @@ export function ShareCardSheet({
             {copyLabel('✓ Текст скопирован', 'Скопировать текст')}
           </button>
           {therapyNote && (
-            <div style={{ marginTop: 12 }}>
+            <div className="u-mt12">
               <TherapyNote compact />
             </div>
           )}
@@ -143,7 +143,7 @@ export function ShareCardSheet({
 
       {s.showText && (
         <BottomSheet onClose={s.closeText} zIndex={zIndex + 100}>
-          <div style={{ paddingTop: 4 }}>
+          <div className="u-pt4">
             <div
               style={{
                 fontSize: 16,

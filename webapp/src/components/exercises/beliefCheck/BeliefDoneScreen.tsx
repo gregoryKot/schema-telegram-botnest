@@ -99,7 +99,7 @@ export function BeliefDoneScreen({
       </div>
       {reframe.trim() && (
         <>
-          <div className="dlabel" style={{ color: 'var(--accent)' }}>
+          <div className="dlabel u-accent">
             Точнее
           </div>
           <div className="reframe-line">«{reframe}»</div>

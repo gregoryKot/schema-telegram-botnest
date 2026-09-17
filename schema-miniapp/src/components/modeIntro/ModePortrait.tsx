@@ -42,7 +42,7 @@ export function ModePortrait({
   const sections = buildModePortraitSections(card);
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
@@ -67,7 +67,7 @@ export function ModePortrait({
           >
             {emoji}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <div
               style={{
                 fontSize: 18,
@@ -117,7 +117,7 @@ export function ModePortrait({
           {explainer}
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           {sections.map((s, i) => (
             <div
               key={s.key}

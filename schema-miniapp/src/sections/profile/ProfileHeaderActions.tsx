@@ -13,9 +13,7 @@ export function ProfileHeaderActions({
   onCustomize: () => void;
 }) {
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
-    >
+    <div className="u-ac8">
       <CustomizeButton
         label="Настроить"
         ariaLabel="Настроить экран профиля"

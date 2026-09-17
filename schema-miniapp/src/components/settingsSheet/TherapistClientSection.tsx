@@ -29,7 +29,7 @@ export function TherapistClientSection({
 }: Props) {
   const tr = useTr();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>МОЙ ТЕРАПЕВТ</SectionHeader>
       <div
         className="card"
@@ -119,7 +119,7 @@ export function TherapistClientSection({
               дневникам, заметкам и результатам опросников (объём настраивается
               после подключения, отключить терапевта можно в любой момент).
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+            <div className="u-row8">
               <input
                 value={therapyJoinCode}
                 onChange={(e) =>

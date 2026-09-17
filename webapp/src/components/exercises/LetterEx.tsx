@@ -159,7 +159,7 @@ export function LetterEx({
               С чего начать
             </div>
             <h3>Три вопроса перед тем как писать</h3>
-            <ul style={{ marginTop: 14 }}>
+            <ul className="u-mt14">
               <li>Какой момент из детства – самый трудный?</li>
               <li>
                 {tr(

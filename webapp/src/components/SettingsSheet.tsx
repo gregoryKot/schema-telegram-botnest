@@ -191,7 +191,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 14 }}>
                     Если напоминания будут оставаться без ответа, бот сам начнёт писать реже — а когда записи вернутся, вернётся к выбранной частоте.
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div className="u-col2">
                     {FREQ_LABELS.map((label, i) => {
                       const active = i === (settings.notifyFrequency ?? 0);
                       return (
@@ -212,7 +212,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 14 }}>
                     В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div className="u-col2">
                     {QUIET_PRESETS.map(p => {
                       const active = p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8);
                       return (
@@ -229,7 +229,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
               {/* ── TZ VIEW ── */}
               {subView === 'tz' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="u-col2">
                   {TIMEZONES.map(tz => {
                     const active = tz.iana === settings.notifyTimezone;
                     return (
@@ -283,7 +283,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
                 {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-12)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                    <span className="u-sub13">
                       ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
                     </span>
                     <button
@@ -348,7 +348,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         дневникам, заметкам и результатам опросников (объём настраивается после
                         подключения, отключить терапевта можно в любой момент).
                       </p>
-                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                      <div className="u-row8">
                         <input value={therapyJoinCode} onChange={e => setTherapyJoinCode(e.target.value.toUpperCase())}
                           placeholder="ABCDEF" maxLength={8}
                           style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, borderRadius: 7, padding: '8px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'monospace', letterSpacing: 3, outline: 'none' }}
@@ -395,7 +395,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </div>
                   ) : pairData && pairData.partners.length > 0 ? (
                     pairData.partners.map(p => (
-                      <div key={p.code} style={{ marginBottom: 16 }}>
+                      <div key={p.code} className="u-mb16">
                         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 4 }}>{p.partnerName ?? 'Друг'} сегодня</div>
                         {p.partnerTodayDone && p.partnerIndex !== null
                           ? <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span></div>
@@ -409,8 +409,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                     ))
                   ) : joinView === 'main' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
-                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                    <div className="u-col12">
+                      <div className="u-row8">
                         <button onClick={createInviteAndShare} disabled={pairLoading}
                           style={{ padding: '8px 16px', border: 'none', borderRadius: 7, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer', opacity: pairLoading ? 0.7 : 1, fontFamily: 'inherit' }}>
                           {pairLoading ? '...' : pairData?.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
@@ -434,7 +434,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div>
                       <button onClick={() => setJoinView('main')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: '0 0 12px', fontFamily: 'inherit', display: 'block' }}>← Назад</button>
-                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                      <div className="u-row8">
                         <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код"
                           style={{ flex: 1, padding: '8px 12px', borderRadius: 7, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${joinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, color: 'var(--text)', fontSize: 15, fontFamily: 'monospace', outline: 'none', letterSpacing: 4, textAlign: 'center' }}
                         />
@@ -476,16 +476,16 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 14px' }}>
                     Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="u-col6">
                     <a href="https://t.me/SchemeHappens" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Канал о схема-терапии → <span style={{ color: 'var(--accent)' }}>@SchemeHappens</span>
+                      Канал о схема-терапии → <span className="u-accent">@SchemeHappens</span>
                     </a>
                     <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Записаться на сессию → <span style={{ color: 'var(--accent)' }}>@kotlarewski</span>
+                      Записаться на сессию → <span className="u-accent">@kotlarewski</span>
                     </a>
                     {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
                     <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат</span>
+                      Поддержать проект → <span className="u-accent">разовый донат</span>
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>

@@ -18,7 +18,7 @@ export function OfferPage() {
         </p>
         <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '16px 20px', marginTop: 24 }}>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
-            <strong style={{ color: 'var(--text)' }}>Важно.</strong> Услуги, описанные в настоящей оферте, являются
+            <strong className="u-fg">Важно.</strong> Услуги, описанные в настоящей оферте, являются
             консультационными и не относятся к медицинской деятельности, психиатрической помощи
             или психотерапии в смысле Федерального закона от 21.11.2011 № 323-ФЗ
             «Об основах охраны здоровья граждан в Российской Федерации».
@@ -288,7 +288,7 @@ function Chapter({ n, title, children }: { n: string; title: string; children: R
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>{children}</div>
+      <div className="u-col12">{children}</div>
     </section>
   );
 }

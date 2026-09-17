@@ -188,13 +188,13 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
         {/* ── Hero ── */}
         <div className="diary-hero">
           <div>
-            <div className="eyebrow" style={{ marginBottom: 14 }}>
-              <span style={{ color: 'var(--accent)' }}>● </span>Дневник
+            <div className="eyebrow u-mb14">
+              <span className="u-accent">● </span>Дневник
             </div>
-            <h1 className="hub-title" style={{ marginBottom: 10 }}>
+            <h1 className="hub-title u-mb10">
               Дневник<br /><span className="it">наблюдений</span>
             </h1>
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+            <div className="u-sub14-lh15">
               {totalCount > 0
                 ? `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`
                 : 'Пара минут на запись — через 3–5 записей виден паттерн'}
@@ -226,7 +226,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
         </div>
 
         {/* ── Quick add ── */}
-        <div className="eyebrow" style={{ marginBottom: 14 }}>Что записать сегодня</div>
+        <div className="eyebrow u-mb14">Что записать сегодня</div>
         <div className="quick-add">
           {QUICK_ADD.map(card => (
             <div

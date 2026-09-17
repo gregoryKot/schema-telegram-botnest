@@ -54,14 +54,7 @@ export function SessionCard({
       }}
     >
       {/* Row 1: Start date + duration */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <div>
           {editingStartDate ? (
             <div
@@ -140,19 +133,13 @@ export function SessionCard({
                 setEditingStartDate(true);
               })}
             >
-              <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              <span className="u-sub13">
                 {effectiveStart
                   ? `С ${fmtDate(effectiveStart.slice(0, 10))}`
                   : 'Начало не указано'}
               </span>
-              {duration && (
-                <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                  · {duration}
-                </span>
-              )}
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                ✎
-              </span>
+              {duration && <span className="u-sub12">· {duration}</span>}
+              <span className="u-faint11">✎</span>
             </div>
           )}
         </div>
@@ -308,14 +295,7 @@ export function SessionCard({
                       {DAY_NAMES[d]}
                     </span>
                   ))}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                  }}
-                >
-                  ✎
-                </span>
+                <span className="u-faint11">✎</span>
               </>
             )}
           </div>
@@ -417,14 +397,7 @@ export function SessionCard({
                   >
                     {nextSessionLabel(selectedClient.nextSession)}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-faint)',
-                    }}
-                  >
-                    ✎
-                  </span>
+                  <span className="u-faint11">✎</span>
                 </>
               ) : (
                 <span
