@@ -2,26 +2,40 @@
 // SchemaPickerSheet — ручной выбор своих схем. Проверяем: toggle
 // добавляет/убирает id, initial selected предзаполняет чекбоксы, ты/вы в
 // подписи, и автосохранение (жалоба пользователя, закрытый PR #237: шит,
-// закрытый крестиком/свайпом до кнопки внизу длинного списка, терял выбор —
-// теперь сохраняется само, кнопка «Готово» только закрывает).
+// закрытый до кнопки внизу длинного списка, терял выбор — теперь
+// сохраняется само, кнопка «Готово» только закрывает).
+// useHistorySheet требует MemoryRouter (useNavigate/useLocation).
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { hasTyForms } from '../../../shared/src/utils/tyFormsSweep';
 import { SchemaPickerSheet } from './SchemaPickerSheet';
 
+function renderSheet(props: {
+  selected?: string[];
+  onSave?: (ids: string[]) => void;
+  onClose?: () => void;
+}) {
+  return render(
+    <MemoryRouter>
+      <SchemaPickerSheet
+        selected={props.selected ?? []}
+        onSave={props.onSave ?? (() => {})}
+        onClose={props.onClose ?? (() => {})}
+      />
+    </MemoryRouter>,
+  );
+}
+
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
-    <AddressFormContext.Provider value={{ form, setForm: () => {} }}>
-      {ui}
-    </AddressFormContext.Provider>,
+    <MemoryRouter>
+      <AddressFormContext.Provider value={{ form, setForm: () => {} }}>
+        {ui}
+      </AddressFormContext.Provider>
+    </MemoryRouter>,
   );
 }
 
@@ -31,53 +45,36 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('SchemaPickerSheet — выбор и счётчик', () => {
-  it('изначально ничего не отмечено — «Готово» без счётчика', () => {
-    render(
-      <SchemaPickerSheet selected={[]} onSave={() => {}} onClose={() => {}} />,
-    );
-    expect(screen.getByText('Готово')).toBeTruthy();
-  });
-
-  it('selected предзаполняет — галочка видна у нужной схемы, счётчик учитывает её', () => {
-    render(
-      <SchemaPickerSheet
-        selected={['abandonment']}
-        onSave={() => {}}
-        onClose={() => {}}
-      />,
-    );
-    expect(screen.getByText('Готово (1)')).toBeTruthy();
-  });
-
-  it('клик по схеме добавляет её — счётчик растёт', () => {
-    render(
-      <SchemaPickerSheet selected={[]} onSave={() => {}} onClose={() => {}} />,
-    );
+describe('SchemaPickerSheet — выбор', () => {
+  it('клик по схеме отмечает её галочкой (is-selected)', () => {
+    renderSheet({});
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    expect(screen.getByText('Готово (1)')).toBeTruthy();
+    const row = screen
+      .getByText('Покинутость / Нестабильность')
+      .closest('[role="button"]');
+    expect(row?.className).toContain('is-selected');
   });
 
-  it('повторный клик снимает отметку — счётчик уменьшается', () => {
-    render(
-      <SchemaPickerSheet
-        selected={['abandonment']}
-        onSave={() => {}}
-        onClose={() => {}}
-      />,
-    );
+  it('повторный клик снимает отметку', () => {
+    renderSheet({ selected: ['abandonment'] });
+    const row = screen
+      .getByText('Покинутость / Нестабильность')
+      .closest('[role="button"]');
+    expect(row?.className).toContain('is-selected');
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
+    expect(row?.className).not.toContain('is-selected');
+  });
+
+  it('«Готово» видна всегда — не завязана на счётчик', () => {
+    renderSheet({});
     expect(screen.getByText('Готово')).toBeTruthy();
-    expect(screen.queryByText(/Готово \(/)).toBeNull();
   });
 });
 
 describe('SchemaPickerSheet — автосохранение (баг PR #237)', () => {
   it('тап по карточке вызывает onSave с новым списком после дебаунса', () => {
     const onSave = vi.fn();
-    render(
-      <SchemaPickerSheet selected={[]} onSave={onSave} onClose={() => {}} />,
-    );
+    renderSheet({ onSave });
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
     expect(onSave).not.toHaveBeenCalled();
     void act(() => vi.advanceTimersByTime(600));
@@ -87,9 +84,7 @@ describe('SchemaPickerSheet — автосохранение (баг PR #237)', 
 
   it('закрытие сразу после тапа (до дебаунса) всё равно сохраняет один раз', () => {
     const onSave = vi.fn();
-    const { unmount } = render(
-      <SchemaPickerSheet selected={[]} onSave={onSave} onClose={() => {}} />,
-    );
+    const { unmount } = renderSheet({ onSave });
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
     expect(onSave).not.toHaveBeenCalled();
     unmount();
@@ -100,14 +95,10 @@ describe('SchemaPickerSheet — автосохранение (баг PR #237)', 
   it('«Готово» закрывает и не дублирует сохранение', () => {
     const onSave = vi.fn();
     const onClose = vi.fn();
-    const { unmount } = render(
-      <SchemaPickerSheet selected={[]} onSave={onSave} onClose={onClose} />,
-    );
+    const { unmount } = renderSheet({ onSave, onClose });
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    fireEvent.click(screen.getByText('Готово (1)'));
+    fireEvent.click(screen.getByText('Готово'));
     expect(onClose).toHaveBeenCalledTimes(1);
-    // BottomSheet реально размонтируется, когда родитель уберёт компонент по onClose —
-    // в тесте это делаем явно, чтобы проверить, что unmount не шлёт второй save.
     unmount();
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledWith(['abandonment']);
@@ -115,9 +106,7 @@ describe('SchemaPickerSheet — автосохранение (баг PR #237)', 
 
   it('без изменений — onSave не вызывается ни по таймеру, ни при размонтировании', () => {
     const onSave = vi.fn();
-    const { unmount } = render(
-      <SchemaPickerSheet selected={[]} onSave={onSave} onClose={() => {}} />,
-    );
+    const { unmount } = renderSheet({ onSave });
     void act(() => vi.advanceTimersByTime(600));
     unmount();
     expect(onSave).not.toHaveBeenCalled();

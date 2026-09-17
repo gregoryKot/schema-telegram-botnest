@@ -1,13 +1,14 @@
-import { useState } from 'react';
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { BottomSheet } from '../../components/BottomSheet';
+import { PickerStickyHeader } from '../../components/PickerStickyHeader';
 import { cm } from './utils';
 import {
   MODE_DESC,
   POPULAR_MODE_IDS,
 } from '../../../../shared/src/mode/modePickerDesc';
+import { useAutosavedSelection } from '../../../../shared/src/hooks/useAutosavedSelection';
 
 export function ModePickerSheet({
   selected,
@@ -19,25 +20,17 @@ export function ModePickerSheet({
   onClose: () => void;
 }) {
   const tr = useTr();
-  const [ids, setIds] = useState<string[]>(selected);
-  const toggle = (id: string) =>
-    setIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const { ids, toggle } = useAutosavedSelection(selected, onSave);
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Мои режимы
-        </div>
+        <PickerStickyHeader
+          title="Мои режимы"
+          hint="Выбор сохраняется сразу"
+          count={ids.length}
+          onDone={onClose}
+        />
         <div
           style={{
             fontSize: 13,
@@ -230,28 +223,6 @@ export function ModePickerSheet({
             </div>
           );
         })}
-
-        <button
-          onClick={() => {
-            onSave(ids);
-            onClose();
-          }}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: 'var(--r-14)',
-            border: 'none',
-            background:
-              'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-            color: '#fff',
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-            marginTop: 8,
-          }}
-        >
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
     </BottomSheet>
   );

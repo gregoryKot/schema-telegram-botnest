@@ -180,7 +180,9 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     await screen.findByText(/Выбери схемы, которые тебе близки/);
     const options = screen.getAllByText('Покинутость / Нестабильность');
     fireEvent.click(options[options.length - 1]);
-    fireEvent.click(screen.getByText(/Сохранить/));
+    // Автосохранение (useAutosavedSelection): закрытие листа размонтирует
+    // его и досылает несохранённое немедленно — ждать дебаунс не нужно.
+    fireEvent.click(screen.getByText('Готово'));
 
     await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
@@ -251,7 +253,9 @@ describe('SchemasSection — пикер режимов', () => {
     // основной странице — берём последнее вхождение (пикер рендерится позже в DOM).
     const matches = screen.getAllByText('Уязвимый Ребёнок');
     fireEvent.click(matches[matches.length - 1]);
-    fireEvent.click(screen.getByText('Сохранить · 1'));
+    // Автосохранение: закрытие «Готово» размонтирует лист и досылает
+    // несохранённое немедленно (useAutosavedSelection), ждать дебаунс не нужно.
+    fireEvent.click(screen.getByText('Готово · 1'));
 
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalledWith({ myModeIds: ['vulnerable_child'] }));
   });
@@ -268,7 +272,7 @@ describe('SchemasSection — пикер режимов', () => {
     await screen.findByText('С чего начать');
     const matches = screen.getAllByText('Уязвимый Ребёнок');
     fireEvent.click(matches[matches.length - 1]);
-    fireEvent.click(screen.getByText('Сохранить · 1'));
+    fireEvent.click(screen.getByText('Готово · 1'));
 
     await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('myModeIds') }),
