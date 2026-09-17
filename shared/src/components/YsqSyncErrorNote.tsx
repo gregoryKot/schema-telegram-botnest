@@ -35,7 +35,7 @@ export function YsqSyncErrorNote({ variant, onRetry }: Props) {
       <div
         style={{
           fontSize: 12,
-          color: 'rgba(255,100,100,0.8)',
+          color: 'var(--accent-red)',
           marginBottom: 10,
         }}
       >
@@ -48,7 +48,7 @@ export function YsqSyncErrorNote({ variant, onRetry }: Props) {
           padding: '11px 0',
           border: 'none',
           borderRadius: 12,
-          background: 'rgba(255,100,100,0.12)',
+          background: 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
           color: 'var(--accent-red)',
           fontSize: 13,
           fontWeight: 600,

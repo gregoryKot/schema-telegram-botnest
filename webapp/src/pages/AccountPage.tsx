@@ -155,7 +155,7 @@ export function AccountPage() {
       )}
 
       {(error ?? emailTaken) && (
-        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
           {error ?? emailTaken}
         </div>
       )}

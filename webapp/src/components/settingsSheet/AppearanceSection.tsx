@@ -72,7 +72,7 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
               </button>
               <button disabled={resignBusy}
                 onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
-                style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: 'var(--on-accent-red)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 {resignBusy ? '…' : 'Снять роль'}
               </button>
             </div>

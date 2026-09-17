@@ -41,6 +41,16 @@ function tokenInBlock(blockCss: string, name: string): string {
   return m[1];
 }
 
+/** То же, но разворачивает ссылки `var(--other)` внутри того же блока темы
+ *  (`--accent-red: var(--c-rose-strong)` → `var(--c-rose)` → `#d68585`).
+ *  Цепочку ограничиваем — циклическая ссылка должна падать, а не висеть. */
+function resolveToken(blockCss: string, name: string, depth = 0): string {
+  if (depth > 5) throw new Error(`циклическая ссылка токенов на ${name}`);
+  const raw = tokenInBlock(blockCss, name).trim();
+  if (!raw.startsWith('var(')) return raw;
+  return resolveToken(blockCss, raw.slice(4, -1).trim(), depth + 1);
+}
+
 function extractBlock(css: string, startMarker: string): string {
   const start = css.indexOf(startMarker);
   if (start === -1) throw new Error(`маркер блока «${startMarker}» не найден в index.css`);
@@ -70,6 +80,21 @@ function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
 
+// Мини-апп читается ТЕМ ЖЕ тестом, а не копией помощников рядом (правило №11
+// CLAUDE.md — повторённый блок выносится, а не дублируется; здесь проще
+// параметризовать один файл, чем городить общий модуль-помощник, у которого
+// не будет прод-потребителя). У мини-аппа темы разложены наоборот: голый
+// `:root` держит ТЁМНЫЕ значения, светлые — в `html[data-theme='light']`
+// (см. комментарий в его index.css).
+const MINIAPP_CSS = readFileSync(
+  join(__dirname, '..', '..', 'schema-miniapp', 'src', 'index.css'),
+  'utf8',
+);
+// Маркер — заголовок комментария перед блоком, а не `:root {`: голых `:root`
+// в файле два (первый — только --safe-bottom), и по имени блоки не отличить.
+const MINIAPP_DARK = extractBlock(MINIAPP_CSS, '── Dark theme (default)');
+const MINIAPP_LIGHT = extractBlock(MINIAPP_CSS, "html[data-theme='light']");
+
 describe('a11y: цвета токенов --kbd-text / --c-rose-strong держат ≥4.5:1', () => {
   it.each([
     ['light', LIGHT],
@@ -93,15 +118,34 @@ describe('a11y: цвета токенов --kbd-text / --c-rose-strong держ�
     ['dark', DARK],
   ] as const)('кнопка «Выйти» на --bg-rail сайдбара — тема %s', (_label, block) => {
     const bgRail = parseColor(tokenInBlock(block, '--bg-rail')).rgb;
-    const roseStrongRaw = tokenInBlock(block, '--c-rose-strong');
     // В тёмной теме --c-rose-strong объявлен как `var(--c-rose)` — резолвим
     // ссылку тем же парсером блока, а не хардкодим значение отдельно.
-    const resolved = roseStrongRaw.trim().startsWith('var(')
-      ? tokenInBlock(block, roseStrongRaw.trim().slice(4, -1))
-      : roseStrongRaw;
-    const roseStrong = parseColor(resolved);
+    const roseStrong = parseColor(resolveToken(block, '--c-rose-strong'));
     const fg = overlay(roseStrong.rgb, roseStrong.alpha, bgRail);
 
     expect(contrastRatio(fg, bgRail)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// Пара «залитый красный + текст на нём» — роль «опасность» (кнопки «Снять
+// роль», «Да, удалить всё навсегда», баннер офлайна). Белый текст здесь жил
+// захардкоженным литералом `#fff` и в тёмной теме давал 2.78:1: тёмная тема
+// осветляет красный, а литерал остаётся белым. Отсюда токен --on-accent-red
+// (белый в светлой теме, тёплые ночные чернила в тёмной) — и этот тест,
+// который считает контраст ПАРЫ из самих токенов: поменяешь --accent-red
+// (или заведёшь третью тему) — числа пересчитаются сами, а не останутся
+// в комментарии.
+describe('a11y: текст на залитом --accent-red держит ≥4.5:1 в обеих темах', () => {
+  it.each([
+    ['webapp light', LIGHT],
+    ['webapp dark', DARK],
+    ['miniapp light', MINIAPP_LIGHT],
+    ['miniapp dark', MINIAPP_DARK],
+  ] as const)('--on-accent-red на --accent-red — %s', (_label, block) => {
+    const fill = parseColor(resolveToken(block, '--accent-red'));
+    const ink = parseColor(resolveToken(block, '--on-accent-red'));
+
+    expect(fill.alpha).toBe(1); // заливка обязана быть непрозрачной
+    expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
   });
 });

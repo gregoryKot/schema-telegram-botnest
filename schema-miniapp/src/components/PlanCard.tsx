@@ -8,14 +8,14 @@ import { useNeedData } from '../needData';
 function statusColor(done: boolean | null) {
   if (done === true)
     return {
-      bg: 'rgba(52,211,153,0.08)',
-      border: 'rgba(52,211,153,0.2)',
+      bg: 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
+      border: 'color-mix(in srgb, var(--accent-green) 20%, transparent)',
       text: 'var(--accent-green)',
     };
   if (done === false)
     return {
-      bg: 'rgba(248,113,113,0.07)',
-      border: 'rgba(248,113,113,0.18)',
+      bg: 'color-mix(in srgb, var(--accent-red) 7%, transparent)',
+      border: 'color-mix(in srgb, var(--accent-red) 18%, transparent)',
       text: 'var(--accent-red)',
     };
   return {
@@ -146,16 +146,16 @@ export function PlanCard({
         <div className="u-row8">
           <CheckinButton
             onClick={() => checkin(true)}
-            bg="rgba(52,211,153,0.12)"
-            line="rgba(52,211,153,0.22)"
+            bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
+            line="color-mix(in srgb, var(--accent-green) 22%, transparent)"
             color="var(--accent-green)"
             weight={600}
             label="✓ Выполнено"
           />
           <CheckinButton
             onClick={() => checkin(false)}
-            bg="rgba(248,113,113,0.08)"
-            line="rgba(248,113,113,0.18)"
+            bg="color-mix(in srgb, var(--accent-red) 8%, transparent)"
+            line="color-mix(in srgb, var(--accent-red) 18%, transparent)"
             color="var(--accent-red)"
             weight={500}
             label="Не вышло"

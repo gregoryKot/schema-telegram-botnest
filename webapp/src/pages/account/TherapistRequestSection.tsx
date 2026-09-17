@@ -79,7 +79,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>
           {req?.status === 'rejected' && (
-            <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 'var(--r-8)' }}>
+            <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', borderRadius: 'var(--r-8)' }}>
               Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
             </div>
           )}

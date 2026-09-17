@@ -74,7 +74,7 @@ export function DataSection() {
                 setShowPrivacy(false);
               } catch { setYsqDeleteError(true); } finally { setYsqDeleting(false); }
             }}
-              style={{ width: '100%', padding: '12px 0', borderRadius: 'var(--r-8)', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: ysqDeleting ? 'default' : 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
+              style={{ width: '100%', padding: '12px 0', borderRadius: 'var(--r-8)', border: '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)', background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: ysqDeleting ? 'default' : 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
               {ysqDeleting ? 'Удаляю...' : 'Удалить результаты теста'}
             </button>
             {ysqDeleteError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: -4, marginBottom: 10 }}>{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
@@ -94,7 +94,7 @@ export function DataSection() {
           {!deleteConfirm ? (
             <div className="u-row10">
               <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
-              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'rgba(239,68,68,0.12)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
+              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'color-mix(in srgb, var(--accent-red) 12%, transparent)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
             </div>
           ) : (
             <div>
@@ -103,7 +103,7 @@ export function DataSection() {
                 setDeleting(true); setDeleteError(false);
                 try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
                 catch { setDeleting(false); setDeleteConfirm(false); setDeleteError(true); }
-              }} style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-10)', border: 'none', background: '#ef4444', color: '#fff', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+              }} style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: 'var(--on-accent-red)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
                 {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
               </button>
             </div>

@@ -31,7 +31,7 @@ export function ExportSummaryModal({
         {text}
       </pre>
       <button onClick={() => void copy.copy(text)}
-        style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 'var(--r-10)', background: copy.copied ? 'rgba(52,211,153,0.12)' : copy.failed ? 'rgba(196,107,107,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: copy.copied ? 'var(--accent-green)' : copy.failed ? 'var(--accent-red)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+        style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 'var(--r-10)', background: copy.copied ? 'color-mix(in srgb, var(--accent-green) 12%, transparent)' : copy.failed ? 'color-mix(in srgb, var(--accent-red) 12%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: copy.copied ? 'var(--accent-green)' : copy.failed ? 'var(--accent-red)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
         {label}
       </button>
     </InfoModal>

@@ -159,7 +159,7 @@ export function NoteSheet({ date, onClose }: Props) {
           <div
             style={{
               fontSize: 12,
-              color: 'rgba(255,100,100,0.8)',
+              color: 'var(--accent-red)',
               marginBottom: 10,
             }}
           >
