@@ -14,7 +14,9 @@ import { AuthService } from '../auth/auth.service';
 import { MaxNotConfiguredError } from '../auth/max-init-data';
 import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { rejectInitData } from './initdata-alert';
+import { reportAuthSuccess } from './auth-success.report';
 
 export async function applyTelegramInitData(
   req: Request,
@@ -22,6 +24,7 @@ export async function applyTelegramInitData(
   authService: AuthService,
   securityLog: SecurityLogService,
   logger: Logger,
+  analytics: AnalyticsService,
 ): Promise<void> {
   const initData = req.headers['x-telegram-init-data'] as string;
   const botToken = config.get<string>('BOT_TOKEN')?.trim();
@@ -73,6 +76,9 @@ export async function applyTelegramInitData(
   req.telegramFirstName = firstName;
   // Also expose BigInt-safe ref for controllers that need it
   req.webUser = { userId: canonicalId };
+  reportAuthSuccess(canonicalId, 'telegram', {
+    track: (meta) => void analytics.track(null, 'auth_success', meta),
+  });
 }
 
 // MAX mini-app initData path — same shape as Telegram's, but signature
@@ -84,6 +90,7 @@ export async function applyMaxInitData(
   authService: AuthService,
   securityLog: SecurityLogService,
   logger: Logger,
+  analytics: AnalyticsService,
 ): Promise<void> {
   const initData = req.headers['x-max-init-data'] as string;
   let identity: { providerId: string; displayName?: string };
@@ -107,4 +114,7 @@ export async function applyMaxInitData(
   req.telegramUserId = Number(canonicalId);
   req.telegramFirstName = identity.displayName;
   req.webUser = { userId: canonicalId };
+  reportAuthSuccess(canonicalId, 'max', {
+    track: (meta) => void analytics.track(null, 'auth_success', meta),
+  });
 }

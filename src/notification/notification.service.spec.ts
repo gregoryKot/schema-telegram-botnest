@@ -113,6 +113,17 @@ describe('NotificationService', () => {
 
       expect(result.map((r) => r.id)).toEqual([2, 1]);
     });
+
+    it('ограничивает выдачу до 500 строк (M3: дренаж бэклога батчами)', async () => {
+      const rows = Array.from({ length: 600 }, (_, i) =>
+        base({ id: i + 1, sendAt: new Date(now - (600 - i) * 1000) }),
+      );
+      const prisma = makeStatefulPrisma(rows);
+      const svc = new NotificationService(prisma);
+      const result = await svc.getDue();
+
+      expect(result).toHaveLength(500);
+    });
   });
 
   describe('markSent', () => {

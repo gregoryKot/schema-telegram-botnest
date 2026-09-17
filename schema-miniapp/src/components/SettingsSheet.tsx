@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getHost } from '../../../shared/src/host';
-import { api, UserSettings, PairsData, TherapyRelationInfo } from '../api';
+import { api, UserSettings, TherapyRelationInfo } from '../api';
 import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { getTheme, Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { Props, View } from './settingsSheet/types';
+import { usePatchSettings } from './settingsSheet/usePatchSettings';
 import { NotifySubView } from './settingsSheet/NotifyViews';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
 import { NotificationsSection } from './settingsSheet/NotificationsSection';
@@ -16,7 +18,7 @@ import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
 import { TherapistCabinetSection } from './settingsSheet/TherapistCabinetSection';
 import { PartnerSection } from './settingsSheet/PartnerSection';
 import { AboutSection } from './settingsSheet/AboutSection';
-import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
+import { DeviceSections } from './settingsSheet/DeviceSections';
 import {
   NameSection,
   ShareSection,
@@ -46,15 +48,8 @@ export function SettingsSheet({
   const safeTop = useSafeTop();
   const [view, setView] = useState<View>('main');
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [pairData, setPairData] = useState<PairsData | null>(null);
-  const [pairLoading, setPairLoading] = useState(false);
-  const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const [pairInviteCopied, setPairInviteCopied] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
-  const [joinView, setJoinView] = useState<'main' | 'join'>('main');
-  const [joinError, setJoinError] = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
-  const [exportCopied, setExportCopied] = useState(false);
+  const exportCopy = useCopyToClipboard();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [showNotifyInfo, setShowNotifyInfo] = useState(false);
@@ -110,12 +105,6 @@ export function SettingsSheet({
           therapistShareProfile: true,
         }),
       );
-    setPairLoading(true);
-    api
-      .getPair()
-      .then(setPairData)
-      .catch(() => {})
-      .finally(() => setPairLoading(false));
     api
       .getTherapyRelation()
       .then(setTherapyRelation)
@@ -126,65 +115,10 @@ export function SettingsSheet({
       .catch(() => setTherapistReq(null));
   }, []);
 
-  async function patch(update: Partial<UserSettings>) {
-    if (!settings) return;
-    setSettings((s) => (s ? { ...s, ...update } : s));
-    await api.updateSettings(update).catch(() => {});
+  const { patch, saveError } = usePatchSettings(settings, setSettings, () => {
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 1800);
-  }
-
-  async function handleCreateInvite() {
-    setPairLoading(true);
-    try {
-      const { url } = await api.createPairInvite();
-      await api.getPair().then(setPairData);
-      setPairInviteUrl(url);
-      try {
-        if (navigator.share)
-          await navigator.share({
-            text: `Давай отслеживать потребности вместе! ${url}`,
-          });
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
-    } finally {
-      setPairLoading(false);
-    }
-  }
-
-  async function handleCopyPairInvite() {
-    try {
-      await navigator.clipboard.writeText(pairInviteUrl);
-      setPairInviteCopied(true);
-      setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-  }
-
-  async function handleJoin() {
-    if (!joinCode.trim()) return;
-    setPairLoading(true);
-    setJoinError(false);
-    try {
-      await api.joinPair(joinCode.trim().toUpperCase());
-      await api.getPair().then(setPairData);
-      setJoinView('main');
-    } catch {
-      setJoinError(true);
-    } finally {
-      setPairLoading(false);
-    }
-  }
-
-  async function handleLeave(code: string) {
-    await api.leavePair(code).catch(() => {});
-    await api
-      .getPair()
-      .then(setPairData)
-      .catch(() => {});
-  }
+  });
 
   if (!settings) {
     return (
@@ -205,7 +139,7 @@ export function SettingsSheet({
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
           }}
         >
           <SkeletonList rows={5} h={64} />
@@ -233,7 +167,7 @@ export function SettingsSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             padding: '16px 20px 8px',
           }}
         >
@@ -258,12 +192,13 @@ export function SettingsSheet({
           >
             ‹
           </span>
-          <span
+          <h2
             style={{
               fontSize: 18,
               fontWeight: 600,
               color: 'var(--text)',
               flex: 1,
+              margin: 0,
             }}
           >
             {view === 'time'
@@ -275,17 +210,17 @@ export function SettingsSheet({
                   : view === 'quiet'
                     ? 'Тихие часы'
                     : 'Настройки'}
-          </span>
+          </h2>
           <span
             style={{
               fontSize: 12,
-              color: 'var(--accent-green)',
+              color: saveError ? 'var(--accent-red)' : 'var(--accent-green)',
               fontWeight: 600,
-              opacity: savedToast ? 1 : 0,
+              opacity: savedToast || saveError ? 1 : 0,
               transition: 'opacity 0.3s ease',
             }}
           >
-            Сохранено ✓
+            {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
         </div>
 
@@ -315,7 +250,7 @@ export function SettingsSheet({
                 setResignBusy={setResignBusy}
               />
 
-              <HomeScreenSection />
+              <DeviceSections />
 
               <NameSection
                 editName={editName}
@@ -384,22 +319,7 @@ export function SettingsSheet({
                 />
               )}
 
-              <PartnerSection
-                pairLoading={pairLoading}
-                pairData={pairData}
-                handleLeave={handleLeave}
-                handleCreateInvite={handleCreateInvite}
-                pairInviteUrl={pairInviteUrl}
-                pairInviteCopied={pairInviteCopied}
-                handleCopyPairInvite={handleCopyPairInvite}
-                joinView={joinView}
-                setJoinView={setJoinView}
-                joinCode={joinCode}
-                setJoinCode={setJoinCode}
-                joinError={joinError}
-                handleJoin={handleJoin}
-                onInfo={() => setShowPairInfo(true)}
-              />
+              <PartnerSection onInfo={() => setShowPairInfo(true)} />
 
               <ShareSection setExportText={setExportText} />
 
@@ -421,12 +341,10 @@ export function SettingsSheet({
       {exportText && (
         <ExportOverlay
           exportText={exportText}
-          exportCopied={exportCopied}
-          setExportCopied={setExportCopied}
-          onClose={() => {
-            setExportText(null);
-            setExportCopied(false);
-          }}
+          exportCopied={exportCopy.copied}
+          exportFailed={exportCopy.failed}
+          onCopy={() => void exportCopy.copy(exportText)}
+          onClose={() => setExportText(null)}
         />
       )}
 

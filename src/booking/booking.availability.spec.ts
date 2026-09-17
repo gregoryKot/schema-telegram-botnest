@@ -2,7 +2,7 @@
 // отображении слотов (SlotService), а прямой POST /api/booking/book принимал
 // произвольные startsAt/durationMin — бронировалось 3 часа ночи любой длины.
 import { BadRequestException } from '@nestjs/common';
-import { BookingService } from './booking.service';
+import { assertWithinAvailability } from './booking.availability';
 
 // Понедельник 2026-07-13, окно 10:00–19:00 Europe/Moscow (UTC+3).
 const RULE = {
@@ -22,17 +22,8 @@ function makeService(rules: any[]) {
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => rules) },
   };
-  const service = new BookingService(
-    prisma,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    { get: () => undefined } as any,
-  );
-  // Тестируем приватный метод напрямую — book() тянет много зависимостей.
   const assert = (startsAt: Date, durationMin: number) =>
-    (service as any).assertWithinAvailability(startsAt, durationMin);
+    assertWithinAvailability(prisma, startsAt, durationMin);
   return { assert };
 }
 

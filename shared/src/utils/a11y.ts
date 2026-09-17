@@ -20,6 +20,20 @@ export interface PressableProps {
   onKeyDown: (e: KeyboardEvent) => void;
 }
 
+// Инцидент 2026-08 (карточка режима): внутри pressable-карточки жил
+// <textarea>, и его нажатия всплывали в onKeyDown обёртки — пробел уходил в
+// preventDefault(), пользователь физически не мог поставить пробел в тексте.
+// Клавиша, набранная в поле ввода (или в своей кнопке/ссылке внутри), к
+// обёртке не относится: не перехватываем.
+const NESTED_CONTROL = /^(input|textarea|select|button|a)$/;
+
+function typedInNestedControl(e: KeyboardEvent): boolean {
+  const target = e.target as HTMLElement | null;
+  if (!target || target === e.currentTarget) return false;
+  const tag = target.tagName?.toLowerCase() ?? '';
+  return NESTED_CONTROL.test(tag) || Boolean(target.isContentEditable);
+}
+
 export function pressable(handler: () => unknown): PressableProps {
   // handler: () => unknown — принимает любой возврат: sync, async
   // (`() => openClient(c)`) и короткие `() => cond && doX()` (`false | void`).
@@ -34,6 +48,7 @@ export function pressable(handler: () => unknown): PressableProps {
     tabIndex: 0,
     onClick: run,
     onKeyDown: (e: KeyboardEvent) => {
+      if (typedInNestedControl(e)) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         run();

@@ -10,8 +10,7 @@ export function OfflineBanner({ isOffline }: { isOffline: boolean }) {
         left: 0,
         right: 0,
         zIndex: 999,
-        background: 'rgba(239,68,68,0.92)',
-        backdropFilter: 'blur(8px)',
+        background: '#ef4444', // непрозрачный: размытие снято, см. BottomNav
         padding: '10px 20px',
         textAlign: 'center',
         fontSize: 13,

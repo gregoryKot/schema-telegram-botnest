@@ -1,0 +1,13 @@
+09cffef4aeb9035b155486677f959891
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.escapeHtml = escapeHtml;
+/**
+ * Экранирование HTML для Telegram parse_mode: 'HTML' (уведомления админу).
+ * Пользовательские строки без экранирования ломают parse сообщения
+ * (и открывают инъекцию разметки) — прогоняй через эту функцию.
+ */
+function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdXRpbHMvZXNjYXBlLWh0bWwudHMiLCJtYXBwaW5ncyI6Ijs7QUFLQSxnQ0FFQztBQVBEOzs7O0dBSUc7QUFDSCxTQUFnQixVQUFVLENBQUMsQ0FBUztJQUNsQyxPQUFPLENBQUMsQ0FBQyxPQUFPLENBQUMsSUFBSSxFQUFFLE9BQU8sQ0FBQyxDQUFDLE9BQU8sQ0FBQyxJQUFJLEVBQUUsTUFBTSxDQUFDLENBQUMsT0FBTyxDQUFDLElBQUksRUFBRSxNQUFNLENBQUMsQ0FBQztBQUM5RSxDQUFDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3V0aWxzL2VzY2FwZS1odG1sLnRzIl0sInNvdXJjZXNDb250ZW50IjpbIi8qKlxuICog0K3QutGA0LDQvdC40YDQvtCy0LDQvdC40LUgSFRNTCDQtNC70Y8gVGVsZWdyYW0gcGFyc2VfbW9kZTogJ0hUTUwnICjRg9Cy0LXQtNC+0LzQu9C10L3QuNGPINCw0LTQvNC40L3RgykuXG4gKiDQn9C+0LvRjNC30L7QstCw0YLQtdC70YzRgdC60LjQtSDRgdGC0YDQvtC60Lgg0LHQtdC3INGN0LrRgNCw0L3QuNGA0L7QstCw0L3QuNGPINC70L7QvNCw0Y7RgiBwYXJzZSDRgdC+0L7QsdGJ0LXQvdC40Y9cbiAqICjQuCDQvtGC0LrRgNGL0LLQsNGO0YIg0LjQvdGK0LXQutGG0LjRjiDRgNCw0LfQvNC10YLQutC4KSDigJQg0L/RgNC+0LPQvtC90Y/QuSDRh9C10YDQtdC3INGN0YLRgyDRhNGD0L3QutGG0LjRji5cbiAqL1xuZXhwb3J0IGZ1bmN0aW9uIGVzY2FwZUh0bWwoczogc3RyaW5nKTogc3RyaW5nIHtcbiAgcmV0dXJuIHMucmVwbGFjZSgvJi9nLCAnJmFtcDsnKS5yZXBsYWNlKC88L2csICcmbHQ7JykucmVwbGFjZSgvPi9nLCAnJmd0OycpO1xufVxuIl0sInZlcnNpb24iOjN9

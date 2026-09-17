@@ -1,0 +1,111 @@
+bbec14b7acf62e0d0511c53ab9acd81c
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var ThreadsTokenService_1;
+var _a, _b;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ThreadsTokenService = void 0;
+const common_1 = require("@nestjs/common");
+const schedule_1 = require("@nestjs/schedule");
+const prisma_service_1 = require("../../prisma/prisma.service");
+const crypto_1 = require("../../utils/crypto");
+const channel_http_1 = require("../channel-http");
+const threads_api_1 = require("./threads-api");
+/**
+ * Долгоживущий токен Threads живёт 60 дней и обновляется только запросом с
+ * самим собой. Env для этого не годится: обновлённый токен некуда записать, и
+ * канал молча умер бы через два месяца. Поэтому актуальный токен лежит в БД
+ * (общий key-value BookingSetting — отдельная таблица ради одной строки не
+ * нужна), зашифрованным: это секрет площадки, а не настройка.
+ *
+ * Env `HEALTHY_ADULT_THREADS_TOKEN` — стартовое значение: его вставляют руками
+ * один раз, дальше сервис живёт своей копией.
+ */
+const KEY = 'channel:threads_token';
+const TOKEN_ENV = 'HEALTHY_ADULT_THREADS_TOKEN';
+const REFRESH_PATH = '/refresh_access_token?grant_type=th_refresh_token';
+/** Обновляем сильно заранее: 60 дней — потолок, после него токен не воскресить. */
+const REFRESH_AFTER_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+let ThreadsTokenService = ThreadsTokenService_1 = class ThreadsTokenService {
+    prisma;
+    logger = new common_1.Logger(ThreadsTokenService_1.name);
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    /** Токен для отправки: сохранённый, иначе стартовый из env. */
+    async current() {
+        const stored = await this.stored().catch(() => null);
+        return stored?.token ?? process.env[TOKEN_ENV]?.trim() ?? null;
+    }
+    async stored() {
+        const row = await this.prisma.bookingSetting.findUnique({
+            where: { key: KEY },
+            select: { value: true, updatedAt: true },
+        });
+        const token = (0, crypto_1.decrypt)(row?.value);
+        return token ? { token, at: row.updatedAt } : null;
+    }
+    async save(token) {
+        // Секрет площадки хранится шифрованным (в проде ключ обязателен, иначе
+        // процесс не стартует). Пустой шифртекст — нечего сохранять.
+        const value = (0, crypto_1.encrypt)(token);
+        if (!value)
+            return;
+        await this.prisma.bookingSetting.upsert({
+            where: { key: KEY },
+            update: { value },
+            create: { key: KEY, value },
+        });
+    }
+    /**
+     * Раз в сутки: если токену больше REFRESH_AFTER_DAYS — меняем на свежий.
+     * Ночью, чтобы не пересекаться с окнами публикации.
+     */
+    async refreshIfStale(now = new Date()) {
+        try {
+            const token = await this.current();
+            if (!token)
+                return;
+            const stored = await this.stored();
+            // Токена в БД ещё нет — сохраняем стартовый, дальше считаем возраст от него.
+            if (!stored)
+                return void (await this.save(token));
+            if (now.getTime() - stored.at.getTime() < REFRESH_AFTER_DAYS * DAY_MS)
+                return;
+            // Тем же путём, что и публикация: с российского хостинга Meta недоступна
+            // напрямую, а токен, который не обновился, через 60 дней умрёт молча.
+            const refresh = (0, threads_api_1.threadsApi)(`${REFRESH_PATH}&access_token=${token}`);
+            const res = await (0, channel_http_1.getJson)(refresh.url, refresh.transport);
+            const fresh = typeof res.access_token === 'string' ? res.access_token : '';
+            if (!fresh)
+                throw new Error('в ответе нет access_token');
+            await this.save(fresh);
+            this.logger.log('threads token refreshed');
+        }
+        catch (err) {
+            // Токен ещё жив, времени на починку — месяц, поэтому warn, а не error.
+            this.logger.warn(`threads token refresh failed: ${err?.message}`);
+        }
+    }
+};
+exports.ThreadsTokenService = ThreadsTokenService;
+__decorate([
+    (0, schedule_1.Cron)('17 3 * * *', { name: 'threadsTokenRefresh' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
+], ThreadsTokenService.prototype, "refreshIfStale", null);
+exports.ThreadsTokenService = ThreadsTokenService = ThreadsTokenService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], ThreadsTokenService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC90YXJnZXRzL3RocmVhZHMtdG9rZW4uc2VydmljZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUFvRDtBQUNwRCwrQ0FBd0M7QUFDeEMsZ0VBQTREO0FBQzVELCtDQUFzRDtBQUN0RCxrREFBMEM7QUFDMUMsK0NBQTJDO0FBRTNDOzs7Ozs7Ozs7R0FTRztBQUNILE1BQU0sR0FBRyxHQUFHLHVCQUF1QixDQUFDO0FBQ3BDLE1BQU0sU0FBUyxHQUFHLDZCQUE2QixDQUFDO0FBQ2hELE1BQU0sWUFBWSxHQUFHLG1EQUFtRCxDQUFDO0FBQ3pFLG1GQUFtRjtBQUNuRixNQUFNLGtCQUFrQixHQUFHLEVBQUUsQ0FBQztBQUM5QixNQUFNLE1BQU0sR0FBRyxFQUFFLEdBQUcsRUFBRSxHQUFHLEVBQUUsR0FBRyxJQUFJLENBQUM7QUFHNUIsSUFBTSxtQkFBbUIsMkJBQXpCLE1BQU0sbUJBQW1CO0lBR0Q7SUFGWixNQUFNLEdBQUcsSUFBSSxlQUFNLENBQUMscUJBQW1CLENBQUMsSUFBSSxDQUFDLENBQUM7SUFFL0QsWUFBNkIsTUFBcUI7UUFBckIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtJQUFHLENBQUM7SUFFdEQsK0RBQStEO0lBQy9ELEtBQUssQ0FBQyxPQUFPO1FBQ1gsTUFBTSxNQUFNLEdBQUcsTUFBTSxJQUFJLENBQUMsTUFBTSxFQUFFLENBQUMsS0FBSyxDQUFDLEdBQUcsRUFBRSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQ3JELE9BQU8sTUFBTSxFQUFFLEtBQUssSUFBSSxPQUFPLENBQUMsR0FBRyxDQUFDLFNBQVMsQ0FBQyxFQUFFLElBQUksRUFBRSxJQUFJLElBQUksQ0FBQztJQUNqRSxDQUFDO0lBRU8sS0FBSyxDQUFDLE1BQU07UUFDbEIsTUFBTSxHQUFHLEdBQUcsTUFBTSxJQUFJLENBQUMsTUFBTSxDQUFDLGNBQWMsQ0FBQyxVQUFVLENBQUM7WUFDdEQsS0FBSyxFQUFFLEVBQUUsR0FBRyxFQUFFLEdBQUcsRUFBRTtZQUNuQixNQUFNLEVBQUUsRUFBRSxLQUFLLEVBQUUsSUFBSSxFQUFFLFNBQVMsRUFBRSxJQUFJLEVBQUU7U0FDekMsQ0FBQyxDQUFDO1FBQ0gsTUFBTSxLQUFLLEdBQUcsSUFBQSxnQkFBTyxFQUFDLEdBQUcsRUFBRSxLQUFLLENBQUMsQ0FBQztRQUNsQyxPQUFPLEtBQUssQ0FBQyxDQUFDLENBQUMsRUFBRSxLQUFLLEVBQUUsRUFBRSxFQUFFLEdBQUksQ0FBQyxTQUFTLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDO0lBQ3RELENBQUM7SUFFTyxLQUFLLENBQUMsSUFBSSxDQUFDLEtBQWE7UUFDOUIsdUVBQXVFO1FBQ3ZFLDZEQUE2RDtRQUM3RCxNQUFNLEtBQUssR0FBRyxJQUFBLGdCQUFPLEVBQUMsS0FBSyxDQUFDLENBQUM7UUFDN0IsSUFBSSxDQUFDLEtBQUs7WUFBRSxPQUFPO1FBQ25CLE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxjQUFjLENBQUMsTUFBTSxDQUFDO1lBQ3RDLEtBQUssRUFBRSxFQUFFLEdBQUcsRUFBRSxHQUFHLEVBQUU7WUFDbkIsTUFBTSxFQUFFLEVBQUUsS0FBSyxFQUFFO1lBQ2pCLE1BQU0sRUFBRSxFQUFFLEdBQUcsRUFBRSxHQUFHLEVBQUUsS0FBSyxFQUFFO1NBQzVCLENBQUMsQ0FBQztJQUNMLENBQUM7SUFFRDs7O09BR0c7SUFFRyxBQUFOLEtBQUssQ0FBQyxjQUFjLENBQUMsR0FBRyxHQUFHLElBQUksSUFBSSxFQUFFO1FBQ25DLElBQUksQ0FBQztZQUNILE1BQU0sS0FBSyxHQUFHLE1BQU0sSUFBSSxDQUFDLE9BQU8sRUFBRSxDQUFDO1lBQ25DLElBQUksQ0FBQyxLQUFLO2dCQUFFLE9BQU87WUFDbkIsTUFBTSxNQUFNLEdBQUcsTUFBTSxJQUFJLENBQUMsTUFBTSxFQUFFLENBQUM7WUFDbkMsNkVBQTZFO1lBQzdFLElBQUksQ0FBQyxNQUFNO2dCQUFFLE9BQU8sS0FBSyxDQUFDLE1BQU0sSUFBSSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDO1lBQ2xELElBQUksR0FBRyxDQUFDLE9BQU8sRUFBRSxHQUFHLE1BQU0sQ0FBQyxFQUFFLENBQUMsT0FBTyxFQUFFLEdBQUcsa0JBQWtCLEdBQUcsTUFBTTtnQkFDbkUsT0FBTztZQUVULHlFQUF5RTtZQUN6RSxzRUFBc0U7WUFDdEUsTUFBTSxPQUFPLEdBQUcsSUFBQSx3QkFBVSxFQUFDLEdBQUcsWUFBWSxpQkFBaUIsS0FBSyxFQUFFLENBQUMsQ0FBQztZQUNwRSxNQUFNLEdBQUcsR0FBRyxNQUFNLElBQUEsc0JBQU8sRUFBQyxPQUFPLENBQUMsR0FBRyxFQUFFLE9BQU8sQ0FBQyxTQUFTLENBQUMsQ0FBQztZQUMxRCxNQUFNLEtBQUssR0FDVCxPQUFPLEdBQUcsQ0FBQyxZQUFZLEtBQUssUUFBUSxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsWUFBWSxDQUFDLENBQUMsQ0FBQyxFQUFFLENBQUM7WUFDL0QsSUFBSSxDQUFDLEtBQUs7Z0JBQUUsTUFBTSxJQUFJLEtBQUssQ0FBQywyQkFBMkIsQ0FBQyxDQUFDO1lBQ3pELE1BQU0sSUFBSSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQztZQUN2QixJQUFJLENBQUMsTUFBTSxDQUFDLEdBQUcsQ0FBQyx5QkFBeUIsQ0FBQyxDQUFDO1FBQzdDLENBQUM7UUFBQyxPQUFPLEdBQUcsRUFBRSxDQUFDO1lBQ2IsdUVBQXVFO1lBQ3ZFLElBQUksQ0FBQyxNQUFNLENBQUMsSUFBSSxDQUNkLGlDQUFrQyxHQUFhLEVBQUUsT0FBTyxFQUFFLENBQzNELENBQUM7UUFDSixDQUFDO0lBQ0gsQ0FBQztDQUNGLENBQUE7QUEvRFksa0RBQW1CO0FBcUN4QjtJQURMLElBQUEsZUFBSSxFQUFDLFlBQVksRUFBRSxFQUFFLElBQUksRUFBRSxxQkFBcUIsRUFBRSxDQUFDOzs7d0RBQ1osT0FBTyxvQkFBUCxPQUFPO3lEQXlCOUM7OEJBOURVLG1CQUFtQjtJQUQvQixJQUFBLG1CQUFVLEdBQUU7eURBSTBCLDhCQUFhLG9CQUFiLDhCQUFhO0dBSHZDLG1CQUFtQixDQStEL0IiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC90YXJnZXRzL3RocmVhZHMtdG9rZW4uc2VydmljZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlLCBMb2dnZXIgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDcm9uIH0gZnJvbSAnQG5lc3Rqcy9zY2hlZHVsZSc7XG5pbXBvcnQgeyBQcmlzbWFTZXJ2aWNlIH0gZnJvbSAnLi4vLi4vcHJpc21hL3ByaXNtYS5zZXJ2aWNlJztcbmltcG9ydCB7IGVuY3J5cHQsIGRlY3J5cHQgfSBmcm9tICcuLi8uLi91dGlscy9jcnlwdG8nO1xuaW1wb3J0IHsgZ2V0SnNvbiB9IGZyb20gJy4uL2NoYW5uZWwtaHR0cCc7XG5pbXBvcnQgeyB0aHJlYWRzQXBpIH0gZnJvbSAnLi90aHJlYWRzLWFwaSc7XG5cbi8qKlxuICog0JTQvtC70LPQvtC20LjQstGD0YnQuNC5INGC0L7QutC10L0gVGhyZWFkcyDQttC40LLRkdGCIDYwINC00L3QtdC5INC4INC+0LHQvdC+0LLQu9GP0LXRgtGB0Y8g0YLQvtC70YzQutC+INC30LDQv9GA0L7RgdC+0Lwg0YFcbiAqINGB0LDQvNC40Lwg0YHQvtCx0L7QuS4gRW52INC00LvRjyDRjdGC0L7Qs9C+INC90LUg0LPQvtC00LjRgtGB0Y86INC+0LHQvdC+0LLQu9GR0L3QvdGL0Lkg0YLQvtC60LXQvSDQvdC10LrRg9C00LAg0LfQsNC/0LjRgdCw0YLRjCwg0LhcbiAqINC60LDQvdCw0Lsg0LzQvtC70YfQsCDRg9C80LXRgCDQsdGLINGH0LXRgNC10Lcg0LTQstCwINC80LXRgdGP0YbQsC4g0J/QvtGN0YLQvtC80YMg0LDQutGC0YPQsNC70YzQvdGL0Lkg0YLQvtC60LXQvSDQu9C10LbQuNGCINCyINCR0JRcbiAqICjQvtCx0YnQuNC5IGtleS12YWx1ZSBCb29raW5nU2V0dGluZyDigJQg0L7RgtC00LXQu9GM0L3QsNGPINGC0LDQsdC70LjRhtCwINGA0LDQtNC4INC+0LTQvdC+0Lkg0YHRgtGA0L7QutC4INC90LVcbiAqINC90YPQttC90LApLCDQt9Cw0YjQuNGE0YDQvtCy0LDQvdC90YvQvDog0Y3RgtC+INGB0LXQutGA0LXRgiDQv9C70L7RidCw0LTQutC4LCDQsCDQvdC1INC90LDRgdGC0YDQvtC50LrQsC5cbiAqXG4gKiBFbnYgYEhFQUxUSFlfQURVTFRfVEhSRUFEU19UT0tFTmAg4oCUINGB0YLQsNGA0YLQvtCy0L7QtSDQt9C90LDRh9C10L3QuNC1OiDQtdCz0L4g0LLRgdGC0LDQstC70Y/RjtGCINGA0YPQutCw0LzQuFxuICog0L7QtNC40L0g0YDQsNC3LCDQtNCw0LvRjNGI0LUg0YHQtdGA0LLQuNGBINC20LjQstGR0YIg0YHQstC+0LXQuSDQutC+0L/QuNC10LkuXG4gKi9cbmNvbnN0IEtFWSA9ICdjaGFubmVsOnRocmVhZHNfdG9rZW4nO1xuY29uc3QgVE9LRU5fRU5WID0gJ0hFQUxUSFlfQURVTFRfVEhSRUFEU19UT0tFTic7XG5jb25zdCBSRUZSRVNIX1BBVEggPSAnL3JlZnJlc2hfYWNjZXNzX3Rva2VuP2dyYW50X3R5cGU9dGhfcmVmcmVzaF90b2tlbic7XG4vKiog0J7QsdC90L7QstC70Y/QtdC8INGB0LjQu9GM0L3QviDQt9Cw0YDQsNC90LXQtTogNjAg0LTQvdC10Lkg4oCUINC/0L7RgtC+0LvQvtC6LCDQv9C+0YHQu9C1INC90LXQs9C+INGC0L7QutC10L0g0L3QtSDQstC+0YHQutGA0LXRgdC40YLRjC4gKi9cbmNvbnN0IFJFRlJFU0hfQUZURVJfREFZUyA9IDMwO1xuY29uc3QgREFZX01TID0gMjQgKiA2MCAqIDYwICogMTAwMDtcblxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIFRocmVhZHNUb2tlblNlcnZpY2Uge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoVGhyZWFkc1Rva2VuU2VydmljZS5uYW1lKTtcblxuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHByaXNtYTogUHJpc21hU2VydmljZSkge31cblxuICAvKiog0KLQvtC60LXQvSDQtNC70Y8g0L7RgtC/0YDQsNCy0LrQuDog0YHQvtGF0YDQsNC90ZHQvdC90YvQuSwg0LjQvdCw0YfQtSDRgdGC0LDRgNGC0L7QstGL0Lkg0LjQtyBlbnYuICovXG4gIGFzeW5jIGN1cnJlbnQoKTogUHJvbWlzZTxzdHJpbmcgfCBudWxsPiB7XG4gICAgY29uc3Qgc3RvcmVkID0gYXdhaXQgdGhpcy5zdG9yZWQoKS5jYXRjaCgoKSA9PiBudWxsKTtcbiAgICByZXR1cm4gc3RvcmVkPy50b2tlbiA/PyBwcm9jZXNzLmVudltUT0tFTl9FTlZdPy50cmltKCkgPz8gbnVsbDtcbiAgfVxuXG4gIHByaXZhdGUgYXN5bmMgc3RvcmVkKCk6IFByb21pc2U8eyB0b2tlbjogc3RyaW5nOyBhdDogRGF0ZSB9IHwgbnVsbD4ge1xuICAgIGNvbnN0IHJvdyA9IGF3YWl0IHRoaXMucHJpc21hLmJvb2tpbmdTZXR0aW5nLmZpbmRVbmlxdWUoe1xuICAgICAgd2hlcmU6IHsga2V5OiBLRVkgfSxcbiAgICAgIHNlbGVjdDogeyB2YWx1ZTogdHJ1ZSwgdXBkYXRlZEF0OiB0cnVlIH0sXG4gICAgfSk7XG4gICAgY29uc3QgdG9rZW4gPSBkZWNyeXB0KHJvdz8udmFsdWUpO1xuICAgIHJldHVybiB0b2tlbiA/IHsgdG9rZW4sIGF0OiByb3chLnVwZGF0ZWRBdCB9IDogbnVsbDtcbiAgfVxuXG4gIHByaXZhdGUgYXN5bmMgc2F2ZSh0b2tlbjogc3RyaW5nKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgLy8g0KHQtdC60YDQtdGCINC/0LvQvtGJ0LDQtNC60Lgg0YXRgNCw0L3QuNGC0YHRjyDRiNC40YTRgNC+0LLQsNC90L3Ri9C8ICjQsiDQv9GA0L7QtNC1INC60LvRjtGHINC+0LHRj9C30LDRgtC10LvQtdC9LCDQuNC90LDRh9C1XG4gICAgLy8g0L/RgNC+0YbQtdGB0YEg0L3QtSDRgdGC0LDRgNGC0YPQtdGCKS4g0J/Rg9GB0YLQvtC5INGI0LjRhNGA0YLQtdC60YHRgiDigJQg0L3QtdGH0LXQs9C+INGB0L7RhdGA0LDQvdGP0YLRjC5cbiAgICBjb25zdCB2YWx1ZSA9IGVuY3J5cHQodG9rZW4pO1xuICAgIGlmICghdmFsdWUpIHJldHVybjtcbiAgICBhd2FpdCB0aGlzLnByaXNtYS5ib29raW5nU2V0dGluZy51cHNlcnQoe1xuICAgICAgd2hlcmU6IHsga2V5OiBLRVkgfSxcbiAgICAgIHVwZGF0ZTogeyB2YWx1ZSB9LFxuICAgICAgY3JlYXRlOiB7IGtleTogS0VZLCB2YWx1ZSB9LFxuICAgIH0pO1xuICB9XG5cbiAgLyoqXG4gICAqINCg0LDQtyDQsiDRgdGD0YLQutC4OiDQtdGB0LvQuCDRgtC+0LrQtdC90YMg0LHQvtC70YzRiNC1IFJFRlJFU0hfQUZURVJfREFZUyDigJQg0LzQtdC90Y/QtdC8INC90LAg0YHQstC10LbQuNC5LlxuICAgKiDQndC+0YfRjNGOLCDRh9GC0L7QsdGLINC90LUg0L/QtdGA0LXRgdC10LrQsNGC0YzRgdGPINGBINC+0LrQvdCw0LzQuCDQv9GD0LHQu9C40LrQsNGG0LjQuC5cbiAgICovXG4gIEBDcm9uKCcxNyAzICogKiAqJywgeyBuYW1lOiAndGhyZWFkc1Rva2VuUmVmcmVzaCcgfSlcbiAgYXN5bmMgcmVmcmVzaElmU3RhbGUobm93ID0gbmV3IERhdGUoKSk6IFByb21pc2U8dm9pZD4ge1xuICAgIHRyeSB7XG4gICAgICBjb25zdCB0b2tlbiA9IGF3YWl0IHRoaXMuY3VycmVudCgpO1xuICAgICAgaWYgKCF0b2tlbikgcmV0dXJuO1xuICAgICAgY29uc3Qgc3RvcmVkID0gYXdhaXQgdGhpcy5zdG9yZWQoKTtcbiAgICAgIC8vINCi0L7QutC10L3QsCDQsiDQkdCUINC10YnRkSDQvdC10YIg4oCUINGB0L7RhdGA0LDQvdGP0LXQvCDRgdGC0LDRgNGC0L7QstGL0LksINC00LDQu9GM0YjQtSDRgdGH0LjRgtCw0LXQvCDQstC+0LfRgNCw0YHRgiDQvtGCINC90LXQs9C+LlxuICAgICAgaWYgKCFzdG9yZWQpIHJldHVybiB2b2lkIChhd2FpdCB0aGlzLnNhdmUodG9rZW4pKTtcbiAgICAgIGlmIChub3cuZ2V0VGltZSgpIC0gc3RvcmVkLmF0LmdldFRpbWUoKSA8IFJFRlJFU0hfQUZURVJfREFZUyAqIERBWV9NUylcbiAgICAgICAgcmV0dXJuO1xuXG4gICAgICAvLyDQotC10Lwg0LbQtSDQv9GD0YLRkdC8LCDRh9GC0L4g0Lgg0L/Rg9Cx0LvQuNC60LDRhtC40Y86INGBINGA0L7RgdGB0LjQudGB0LrQvtCz0L4g0YXQvtGB0YLQuNC90LPQsCBNZXRhINC90LXQtNC+0YHRgtGD0L/QvdCwXG4gICAgICAvLyDQvdCw0L/RgNGP0LzRg9GOLCDQsCDRgtC+0LrQtdC9LCDQutC+0YLQvtGA0YvQuSDQvdC1INC+0LHQvdC+0LLQuNC70YHRjywg0YfQtdGA0LXQtyA2MCDQtNC90LXQuSDRg9C80YDRkdGCINC80L7Qu9GH0LAuXG4gICAgICBjb25zdCByZWZyZXNoID0gdGhyZWFkc0FwaShgJHtSRUZSRVNIX1BBVEh9JmFjY2Vzc190b2tlbj0ke3Rva2VufWApO1xuICAgICAgY29uc3QgcmVzID0gYXdhaXQgZ2V0SnNvbihyZWZyZXNoLnVybCwgcmVmcmVzaC50cmFuc3BvcnQpO1xuICAgICAgY29uc3QgZnJlc2ggPVxuICAgICAgICB0eXBlb2YgcmVzLmFjY2Vzc190b2tlbiA9PT0gJ3N0cmluZycgPyByZXMuYWNjZXNzX3Rva2VuIDogJyc7XG4gICAgICBpZiAoIWZyZXNoKSB0aHJvdyBuZXcgRXJyb3IoJ9CyINC+0YLQstC10YLQtSDQvdC10YIgYWNjZXNzX3Rva2VuJyk7XG4gICAgICBhd2FpdCB0aGlzLnNhdmUoZnJlc2gpO1xuICAgICAgdGhpcy5sb2dnZXIubG9nKCd0aHJlYWRzIHRva2VuIHJlZnJlc2hlZCcpO1xuICAgIH0gY2F0Y2ggKGVycikge1xuICAgICAgLy8g0KLQvtC60LXQvSDQtdGJ0ZEg0LbQuNCyLCDQstGA0LXQvNC10L3QuCDQvdCwINC/0L7Rh9C40L3QutGDIOKAlCDQvNC10YHRj9GGLCDQv9C+0Y3RgtC+0LzRgyB3YXJuLCDQsCDQvdC1IGVycm9yLlxuICAgICAgdGhpcy5sb2dnZXIud2FybihcbiAgICAgICAgYHRocmVhZHMgdG9rZW4gcmVmcmVzaCBmYWlsZWQ6ICR7KGVyciBhcyBFcnJvcik/Lm1lc3NhZ2V9YCxcbiAgICAgICk7XG4gICAgfVxuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

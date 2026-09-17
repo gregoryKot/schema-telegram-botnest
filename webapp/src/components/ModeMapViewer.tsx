@@ -35,7 +35,7 @@ function Canvas({ map }: { map: ModeMapFull }) {
 
 function ViewBtn({ children, onClick, active }: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} style={{ width: 32, height: 30, borderRadius: 6, border: 'none', cursor: 'pointer',
+    <button onClick={onClick} style={{ width: 32, height: 30, borderRadius: 'var(--r-6)', border: 'none', cursor: 'pointer',
       background: active ? 'var(--accent-soft)' : 'none', color: active ? 'var(--accent)' : 'var(--text-sub)',
       fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{children}</button>
   );
@@ -60,8 +60,8 @@ export function ModeMapViewer() {
 
   if (!loading && maps.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-sub)' }}>
-        <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)',
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 'var(--space-10)', color: 'var(--text-sub)' }}>
+        <div style={{ width: 52, height: 52, borderRadius: 'var(--r-12)', background: 'var(--surface-2)', border: '1px solid var(--line)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
           <MMIcon name="map" size={26} />
         </div>
@@ -85,7 +85,7 @@ export function ModeMapViewer() {
                 border: active?.id === m.id ? '1px solid var(--line)' : '1px solid transparent',
                 background: active?.id === m.id ? 'var(--surface-3)' : 'none',
                 color: active?.id === m.id ? 'var(--text)' : 'var(--text-sub)' }}>
-              {m.kind === 'personality' ? '🧭' : m.kind === 'couple' ? '💞' : '🎯'} {m.title}
+              {m.title}
             </button>
           ))}
         </div>

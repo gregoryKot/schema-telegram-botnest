@@ -52,11 +52,13 @@ export function YSQTestSheet({
     handleRetake,
     scores,
     resultView,
+    resumeCheckFailed,
+    retryResumeCheck,
+    resultSaveError,
+    retrySaveResult,
   } = useYsqTest({ api, autoResume });
-
   const [showShare, setShowShare] = useState(false);
 
-  // ── Full-screen test phase ────────────────────────────────────────────────────
   if (phase === 'test') {
     return (
       <YsqTestPhase
@@ -72,11 +74,9 @@ export function YSQTestSheet({
     );
   }
 
-  // ── Intro + Result in BottomSheet ─────────────────────────────────────────────
   return (
     <>
       <BottomSheet onClose={onClose} zIndex={300}>
-        {/* INTRO */}
         {phase === 'intro' && (
           <YsqIntro
             hasProgress={hasProgress}
@@ -84,10 +84,10 @@ export function YSQTestSheet({
             onContinue={handleContinue}
             onStartFresh={handleStartFresh}
             onClose={onClose}
+            resumeCheckFailed={resumeCheckFailed}
+            onRetryResumeCheck={retryResumeCheck}
           />
         )}
-
-        {/* RESULT */}
         {phase === 'result' && scores && resultView && (
           <YsqResultView
             scores={scores}
@@ -102,11 +102,11 @@ export function YSQTestSheet({
             onClose={onClose}
             onShare={() => setShowShare(true)}
             onRetake={handleRetake}
+            resultSaveError={resultSaveError}
+            onRetrySaveResult={retrySaveResult}
           />
         )}
       </BottomSheet>
-
-      {/* Шаринг результата — общий механизм share-карточек (kind 'ysq') */}
       {showShare && scores && resultView && (
         <ShareCardSheet
           {...ysqShareCard(scores, resultView, botShortUrl)}

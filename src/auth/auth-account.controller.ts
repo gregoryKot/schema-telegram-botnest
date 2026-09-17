@@ -20,8 +20,22 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import {
+  emailCallbackErrorUrl,
+  emailCallbackNextUrl,
+} from './email-callback-redirect';
+import { EmailTokenService } from './email-token.service';
+import {
+  EmailBodyDto,
+  TokenBodyDto,
+  InitDataBodyDto,
+} from './dto/auth-scalar.dto';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import {
+  isCrossSiteRequest,
+  requireCsrf,
+  setRefreshCookie,
+} from './auth-http.util';
 
 @Controller('api/auth')
 export class AuthAccountController {
@@ -33,6 +47,7 @@ export class AuthAccountController {
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
+    private readonly emailTokens: EmailTokenService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -44,42 +59,43 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async emailLoginLink(
-    @Body('email') email: string,
+    @Body() dto: EmailBodyDto,
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(email);
+    return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
+    @Query('ticket') ticket: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      const { tokens, purpose } = await this.auth.consumeEmailToken(
+      const r = await this.emailTokens.consumeEmailToken(
         token,
         req.ip,
         req.headers['user-agent'],
       );
-      res.cookie(
-        REFRESH_COOKIE,
-        tokens.refreshToken,
-        cookieOptions(30 * 24 * 3600),
-      );
-      if (purpose === 'link_email_auth') {
-        // Already logged in — go back to account with success banner
-        res.redirect(`${frontendBase}/account?linked=email`);
-      } else {
+      // 2FA-гейт (H1): login при включённом TOTP → экран ввода кода, не сессия.
+      if (r.kind === 'totp_challenge') {
         res.redirect(
-          `${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`,
+          `${frontendBase}/auth/2fa?token=${encodeURIComponent(r.challengeToken)}`,
         );
+        return;
       }
+      setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
+      // Билет НЕ одобряем молча (device-code phishing): с билетом уводим на
+      // экран сверки, где вошедший человек подтвердит код сам.
+      res.redirect(
+        emailCallbackNextUrl(r.purpose, frontendBase, r.tokens, ticket),
+      );
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
+      res.redirect(emailCallbackErrorUrl(err, frontendBase));
     }
   }
 
@@ -93,12 +109,12 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async emailLinkToAccount(
-    @Body('email') email: string,
+    @Body() dto: EmailBodyDto,
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link-to-account', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    return this.auth.linkEmailToAccount(webUser.userId, email);
+    return this.auth.linkEmailToAccount(webUser.userId, dto.email);
   }
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
@@ -110,10 +126,11 @@ export class AuthAccountController {
   @Post('telegram/webapp')
   @HttpCode(200)
   async telegramWebApp(
-    @Body('initData') initData: string,
+    @Body() dto: InitDataBodyDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
       this.auth.verifyTelegramWebAppData(initData);
@@ -127,11 +144,14 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
+    // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
+    // MAX — strict-кука там не продлевается (2026-08-21, «постоянно нужно
+    // логиниться заново»). Нативное вебвью Telegram остаётся на strict.
+    const crossSite = isCrossSiteRequest(
+      req,
+      this.config.getOrThrow<string>('WEBAPP_URL'),
     );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -145,10 +165,11 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async confirmMerge(
-    @Body('token') token: string,
+    @Body() dto: TokenBodyDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    const { token } = dto;
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.
     requireCsrf(req, 'merge', this.securityLog);
@@ -156,15 +177,9 @@ export class AuthAccountController {
     const { target, source, provider, providerId } =
       this.auth.verifyMergeToken(token);
 
-    // Security: the caller MUST be authenticated as either:
-    //   - the target user (started a link from an active session), OR
-    //   - via the OAuth callback flow where the token was issued moments ago
-    //     and the caller went directly from /auth/google/callback to /merge.
-    //
-    // For (1) we verify via JWT. For (2) we accept if no JWT is present
-    // because the merge token itself is the proof of intent: it was just
-    // issued to the same browser session and we trust the signed payload.
-    // We do NOT accept if someone is logged in as a DIFFERENT user.
+    // Security: caller must be the target (JWT session) OR anonymous via the
+    // OAuth callback that just minted this token (merge token = signed proof of
+    // intent). Reject only if logged in as a DIFFERENT user.
     const webUser = req.webUser;
     if (webUser && String(webUser.userId) !== String(target)) {
       throw new UnauthorizedException(
@@ -184,7 +199,7 @@ export class AuthAccountController {
       );
       // Friendly message to client — no Prisma internals leaked.
       throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.',
+        'Не удалось объединить аккаунты. Админ уведомлён — попробовать позже.',
       );
     }
 
@@ -206,11 +221,7 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('merge_confirmed', {
       target,
       source,

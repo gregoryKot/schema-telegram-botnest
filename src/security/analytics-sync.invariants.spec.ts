@@ -15,7 +15,16 @@ const ROOT = join(__dirname, '..', '..');
 
 // Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
-const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+// 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
+// ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
+// POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
+// как и у двух остальных фронтендов.
+const FRONTEND_DIRS = [
+  'webapp/src',
+  'schema-miniapp/src',
+  'shared/src',
+  'game/src',
+];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
@@ -49,6 +58,15 @@ const BACKEND_ONLY: Record<string, string> = {
     'WeeklyCardSheet.tsx/Celebration.tsx/ShareCardSheet.tsx (оба фронта)',
   share_result:
     'константа SHARE_RESULT_EVENT, та же группа файлов, что и share_card',
+  auth_rejected:
+    'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
+    'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
+    'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
+  auth_success:
+    'серверное событие: пишет только TelegramAuthGuard после подтверждённого ' +
+    'JWT/Telegram/MAX входа (src/api/auth-success.report.ts), с троттлингом ' +
+    'per userId+host. Фронт его не шлёт и не должен — та же защита userId = ' +
+    'null, что и у auth_rejected',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -81,7 +99,65 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлётся из ModeEntrySheet.tsx (оба фронта) через api.trackEvent',
   mode_test_completed:
     'константа MODE_TEST_COMPLETED_EVENT (shared/src/share/analytics.ts), ' +
-    'шлётся из ModeTestSheet.tsx (мини-апп) и ModeTestScreen.tsx (сайт)',
+    'шлётся из ModeFeelingBrowse.tsx (оба фронта) — единственный вход выбора ' +
+    'режима после удаления окна-теста (ModeTestSheet/ModeTestScreen)',
+  warm_words_open:
+    'константа WARM_WORDS_OPEN_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из WarmWords.tsx (мини-апп) и WarmWordsEx.tsx (сайт) — ' +
+    'грепом по литералу не ловится',
+  mode_chain_followup:
+    'константа MODE_CHAIN_FOLLOWUP_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeEntrySheet.tsx (оба фронта) при принятой подсказке ' +
+    '«разобрать связанный режим»',
+  mode_doubt_opened:
+    'константа MODE_DOUBT_OPENED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeDoubtButton.tsx (оба фронта) при открытии листа ' +
+    '«С чем путают режим»',
+  mode_doubt_switched:
+    'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeDoubtButton.tsx (оба фронта) при нажатии «Это ближе»',
+  account_link_started:
+    'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useAccountLink.ts (мини-апп) при нажатии «У меня уже есть ' +
+    'аккаунт»',
+  account_link_confirmed:
+    'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из LinkDevicePage.tsx (сайт) — подтверждение происходит в ' +
+    'браузере, а не в мессенджере, поэтому фронт тут только один',
+  account_link_failed:
+    'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
+    'не ответил',
+  client_error:
+    'серверное событие: пишет только ClientErrorsController при ' +
+    'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
+    'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
+    'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
+    'auth_rejected/auth_success',
+  signup_source:
+    'серверное событие: пишет только бот в /start, когда payload — ' +
+    'deep-link `src_<slug>` (parseSourceSlug, src/telegram/start-source.ts), ' +
+    'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
+    'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
+    'подделать через POST /api/event',
+  profile_pattern_open:
+    'константа PROFILE_PATTERN_OPEN_EVENT (shared/src/share/analytics.ts) — ' +
+    'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
+    'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
+    'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  login_ticket_step:
+    'серверное событие: пишет единственный шов LoginTicketReport ' +
+    '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
+    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'должен: шаги воронки входа известны только серверу (подтверждение ' +
+    'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
+    'просил билет), и отчёт /stats считает строки с userId IS NULL',
+  data_export:
+    'серверное событие: пишет только эндпоинт выгрузки данных ' +
+    '(GET /api/account/export, право на доступ по 152-ФЗ/GDPR), с реальным ' +
+    'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
+    'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
+    'том же обработчике, что формирует файл',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -106,10 +182,30 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
   });
 
   it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
-    // Потолок поднят с 11 до 13 осознанно (mode_entry_saved/mode_test_completed,
-    // 2026-07): те же кросс-фронтовые события через именованные константы —
-    // тот же легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
-    // не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(13);
+    // Потолок поднят с 11 до 13 (mode_entry_saved/mode_test_completed, 2026-07),
+    // затем до 15 (warm_words_open/mode_chain_followup, 2026-08), затем до 17
+    // (mode_doubt_opened/mode_doubt_switched, 2026-08), затем до 20
+    // (account_link_*, 2026-08) осознанно: те же кросс-фронтовые события
+    // через именованные константы — тот же легитимный паттерн, что и
+    // share_card/onboarding_step/mode_card_saved, не обход правила.
+    // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
+    // слать не может по замыслу (отказ входа фиксирует guard). 22 —
+    // auth_success: пара к нему, тот же guard, тот же приём userId = null.
+    // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
+    // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
+    // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
+    // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
+    // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
+    // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
+    // 26 — login_ticket_step (путь входа по билету, 2026-08): четвёртое
+    // серверное событие подряд, к фронту не относится по устройству механизма.
+    // Билет подтверждают ВНЕ контейнера, который его просил (бот или внешний
+    // браузер), поэтому шаги воронки видит только сервер; отправить их с
+    // фронта было бы не «удобнее», а неверно — и открыло бы отчёт о здоровье
+    // входа для накрутки через POST /api/event. 27 — data_export (право на
+    // доступ по 152-ФЗ/GDPR): пятое серверное событие подряд, тот же приём —
+    // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
+    // нечего.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(27);
   });
 });

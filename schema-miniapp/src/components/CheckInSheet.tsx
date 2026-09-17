@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { api, PracticePlan } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { useTr } from '../utils/addressForm';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 interface Props {
   plan: PracticePlan;
-  needEmoji: string;
+  needColor: string;
   needLabel: string;
   color: string;
   onDone: () => void;
@@ -13,7 +14,7 @@ interface Props {
 
 export function CheckInSheet({
   plan,
-  needEmoji,
+  needColor,
   needLabel,
   color,
   onDone,
@@ -37,7 +38,7 @@ export function CheckInSheet({
   }
 
   return (
-    <BottomSheet onClose={() => {}} zIndex={250}>
+    <BottomSheet dismissable={false} zIndex={250}>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>🎯</div>
         <div
@@ -48,10 +49,10 @@ export function CheckInSheet({
             lineHeight: 1.3,
           }}
         >
-          {tr('Вчера ты планировал', 'Вчера вы планировали')}
+          {tr('Вчера в планах было', 'Вчера вы планировали')}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-          {needEmoji} {needLabel}
+          <IdentityDot color={needColor} /> {needLabel}
         </div>
       </div>
 
@@ -59,7 +60,7 @@ export function CheckInSheet({
         style={{
           background: color + '18',
           border: `1px solid ${color}33`,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '16px 18px',
           marginBottom: 28,
           fontSize: 16,
@@ -82,14 +83,14 @@ export function CheckInSheet({
         Получилось?
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
         <button
           onClick={() => checkin(false)}
           disabled={saving}
           style={{
             flex: 1,
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
             background: 'rgba(var(--fg-rgb),0.05)',
             color: 'var(--text-sub)',
@@ -105,7 +106,7 @@ export function CheckInSheet({
           style={{
             flex: 2,
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: saving ? 'rgba(var(--fg-rgb),0.1)' : color,
             color: 'var(--text)',
@@ -114,7 +115,7 @@ export function CheckInSheet({
             cursor: saving ? 'default' : 'pointer',
           }}
         >
-          {saving ? 'Сохранение...' : 'Да, сделал ✓'}
+          {saving ? 'Сохранение...' : 'Да, получилось ✓'}
         </button>
       </div>
       {error && (
@@ -126,7 +127,10 @@ export function CheckInSheet({
             textAlign: 'center',
           }}
         >
-          Не удалось сохранить — попробуй ещё раз
+          {tr(
+            'Не удалось сохранить — попробуй ещё раз',
+            'Не удалось сохранить — попробуйте ещё раз',
+          )}
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: 14 }}>

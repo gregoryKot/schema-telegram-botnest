@@ -120,6 +120,9 @@ export class TherapyClientDataService {
   > {
     if (clientId < 0) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
+    // L1 (аудит 2026-08): дневник чтит therapistShareCards, как соседи-заметки
+    // (getClientSchemaNotes/ModeNotes); свободный клин. текст не течёт при opt-out.
+    if (!(await this.cardsShared(clientId))) return [];
     const uid = BigInt(clientId);
     const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
       this.prisma.schemaDiaryEntry.findMany({

@@ -1,0 +1,17 @@
+4dc9a164e00eceddd32e479fcdb06385
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.assertAdminKey = assertAdminKey;
+const common_1 = require("@nestjs/common");
+const crypto_1 = require("crypto");
+/** Throws unless the provided key matches the configured ADMIN_BOOKING_KEY.
+ * Constant-time compare (project invariant: never `===` on secrets). An empty
+ * configured key always rejects, so a missing env never opens the endpoint. */
+function assertAdminKey(provided, expected) {
+    const e = Buffer.from(expected ?? '', 'utf8');
+    const p = Buffer.from(provided ?? '', 'utf8');
+    if (!expected || e.length !== p.length || !(0, crypto_1.timingSafeEqual)(e, p)) {
+        throw new common_1.ForbiddenException('Invalid admin key');
+    }
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9hZG1pbi1rZXkudXRpbC50cyIsIm1hcHBpbmdzIjoiOztBQU1BLHdDQVNDO0FBZkQsMkNBQW9EO0FBQ3BELG1DQUF5QztBQUV6Qzs7K0VBRStFO0FBQy9FLFNBQWdCLGNBQWMsQ0FDNUIsUUFBNEIsRUFDNUIsUUFBZ0I7SUFFaEIsTUFBTSxDQUFDLEdBQUcsTUFBTSxDQUFDLElBQUksQ0FBQyxRQUFRLElBQUksRUFBRSxFQUFFLE1BQU0sQ0FBQyxDQUFDO0lBQzlDLE1BQU0sQ0FBQyxHQUFHLE1BQU0sQ0FBQyxJQUFJLENBQUMsUUFBUSxJQUFJLEVBQUUsRUFBRSxNQUFNLENBQUMsQ0FBQztJQUM5QyxJQUFJLENBQUMsUUFBUSxJQUFJLENBQUMsQ0FBQyxNQUFNLEtBQUssQ0FBQyxDQUFDLE1BQU0sSUFBSSxDQUFDLElBQUEsd0JBQWUsRUFBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLEVBQUUsQ0FBQztRQUNqRSxNQUFNLElBQUksMkJBQWtCLENBQUMsbUJBQW1CLENBQUMsQ0FBQztJQUNwRCxDQUFDO0FBQ0gsQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9ib29raW5nL2FkbWluLWtleS51dGlsLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEZvcmJpZGRlbkV4Y2VwdGlvbiB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IHRpbWluZ1NhZmVFcXVhbCB9IGZyb20gJ2NyeXB0byc7XG5cbi8qKiBUaHJvd3MgdW5sZXNzIHRoZSBwcm92aWRlZCBrZXkgbWF0Y2hlcyB0aGUgY29uZmlndXJlZCBBRE1JTl9CT09LSU5HX0tFWS5cbiAqIENvbnN0YW50LXRpbWUgY29tcGFyZSAocHJvamVjdCBpbnZhcmlhbnQ6IG5ldmVyIGA9PT1gIG9uIHNlY3JldHMpLiBBbiBlbXB0eVxuICogY29uZmlndXJlZCBrZXkgYWx3YXlzIHJlamVjdHMsIHNvIGEgbWlzc2luZyBlbnYgbmV2ZXIgb3BlbnMgdGhlIGVuZHBvaW50LiAqL1xuZXhwb3J0IGZ1bmN0aW9uIGFzc2VydEFkbWluS2V5KFxuICBwcm92aWRlZDogc3RyaW5nIHwgdW5kZWZpbmVkLFxuICBleHBlY3RlZDogc3RyaW5nLFxuKTogdm9pZCB7XG4gIGNvbnN0IGUgPSBCdWZmZXIuZnJvbShleHBlY3RlZCA/PyAnJywgJ3V0ZjgnKTtcbiAgY29uc3QgcCA9IEJ1ZmZlci5mcm9tKHByb3ZpZGVkID8/ICcnLCAndXRmOCcpO1xuICBpZiAoIWV4cGVjdGVkIHx8IGUubGVuZ3RoICE9PSBwLmxlbmd0aCB8fCAhdGltaW5nU2FmZUVxdWFsKGUsIHApKSB7XG4gICAgdGhyb3cgbmV3IEZvcmJpZGRlbkV4Y2VwdGlvbignSW52YWxpZCBhZG1pbiBrZXknKTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

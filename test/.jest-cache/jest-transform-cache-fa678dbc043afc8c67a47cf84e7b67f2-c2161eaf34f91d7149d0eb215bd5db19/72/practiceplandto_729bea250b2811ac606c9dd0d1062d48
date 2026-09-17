@@ -1,0 +1,56 @@
+d9a8f8d8380f0138067eb12834bd53be
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CreatePlanDto = exports.AddPracticeDto = void 0;
+const class_validator_1 = require("class-validator");
+const bot_service_1 = require("../../bot/bot.service");
+/**
+ * DTO для POST /api/practices (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+ * `text` обрезается контроллером до 200 символов (не отклоняется) — жёсткий
+ * лимит здесь не дублируем, чтобы не менять поведение.
+ */
+class AddPracticeDto {
+    needId;
+    text;
+}
+exports.AddPracticeDto = AddPracticeDto;
+__decorate([
+    (0, class_validator_1.IsIn)(bot_service_1.NEED_IDS),
+    __metadata("design:type", String)
+], AddPracticeDto.prototype, "needId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], AddPracticeDto.prototype, "text", void 0);
+/** DTO для POST /api/plan. reminderUtcHour без явных границ в коде. */
+class CreatePlanDto {
+    needId;
+    practiceText;
+    reminderUtcHour;
+}
+exports.CreatePlanDto = CreatePlanDto;
+__decorate([
+    (0, class_validator_1.IsIn)(bot_service_1.NEED_IDS),
+    __metadata("design:type", String)
+], CreatePlanDto.prototype, "needId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreatePlanDto.prototype, "practiceText", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], CreatePlanDto.prototype, "reminderUtcHour", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wcmFjdGljZS1wbGFuLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFBZ0Y7QUFDaEYsdURBQWlEO0FBRWpEOzs7O0dBSUc7QUFDSCxNQUFhLGNBQWM7SUFFekIsTUFBTSxDQUFVO0lBSWhCLElBQUksQ0FBVTtDQUNmO0FBUEQsd0NBT0M7QUFMQztJQURDLElBQUEsc0JBQUksRUFBQyxzQkFBUSxDQUFDOzs4Q0FDQztBQUloQjtJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsNEJBQVUsR0FBRTs7NENBQ0M7QUFHaEIsdUVBQXVFO0FBQ3ZFLE1BQWEsYUFBYTtJQUV4QixNQUFNLENBQVU7SUFJaEIsWUFBWSxDQUFVO0lBSXRCLGVBQWUsQ0FBVTtDQUMxQjtBQVhELHNDQVdDO0FBVEM7SUFEQyxJQUFBLHNCQUFJLEVBQUMsc0JBQVEsQ0FBQzs7NkNBQ0M7QUFJaEI7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDRCQUFVLEdBQUU7O21EQUNTO0FBSXRCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx1QkFBSyxHQUFFOztzREFDaUIiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wcmFjdGljZS1wbGFuLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc0luLCBJc0ludCwgSXNOb3RFbXB0eSwgSXNPcHRpb25hbCwgSXNTdHJpbmcgfSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuaW1wb3J0IHsgTkVFRF9JRFMgfSBmcm9tICcuLi8uLi9ib3QvYm90LnNlcnZpY2UnO1xuXG4vKipcbiAqIERUTyDQtNC70Y8gUE9TVCAvYXBpL3ByYWN0aWNlcyAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZCkuXG4gKiBgdGV4dGAg0L7QsdGA0LXQt9Cw0LXRgtGB0Y8g0LrQvtC90YLRgNC+0LvQu9C10YDQvtC8INC00L4gMjAwINGB0LjQvNCy0L7Qu9C+0LIgKNC90LUg0L7RgtC60LvQvtC90Y/QtdGC0YHRjykg4oCUINC20ZHRgdGC0LrQuNC5XG4gKiDQu9C40LzQuNGCINC30LTQtdGB0Ywg0L3QtSDQtNGD0LHQu9C40YDRg9C10LwsINGH0YLQvtCx0Ysg0L3QtSDQvNC10L3Rj9GC0Ywg0L/QvtCy0LXQtNC10L3QuNC1LlxuICovXG5leHBvcnQgY2xhc3MgQWRkUHJhY3RpY2VEdG8ge1xuICBASXNJbihORUVEX0lEUylcbiAgbmVlZElkITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIEBJc05vdEVtcHR5KClcbiAgdGV4dCE6IHN0cmluZztcbn1cblxuLyoqIERUTyDQtNC70Y8gUE9TVCAvYXBpL3BsYW4uIHJlbWluZGVyVXRjSG91ciDQsdC10Lcg0Y/QstC90YvRhSDQs9GA0LDQvdC40YYg0LIg0LrQvtC00LUuICovXG5leHBvcnQgY2xhc3MgQ3JlYXRlUGxhbkR0byB7XG4gIEBJc0luKE5FRURfSURTKVxuICBuZWVkSWQhOiBzdHJpbmc7XG5cbiAgQElzU3RyaW5nKClcbiAgQElzTm90RW1wdHkoKVxuICBwcmFjdGljZVRleHQhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbnQoKVxuICByZW1pbmRlclV0Y0hvdXI/OiBudW1iZXI7XG59XG4iXSwidmVyc2lvbiI6M30=

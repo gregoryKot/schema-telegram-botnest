@@ -53,16 +53,15 @@ export function DiaryEmptyExplainer({ filter }: { filter: 'all' | DiaryType }) {
             key={type}
             style={{
               display: 'flex',
-              gap: 14,
+              gap: 'var(--space-14)',
               alignItems: 'flex-start',
               padding: '16px 18px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: '1px solid var(--line)',
               marginBottom: 12,
               background: `color-mix(in srgb, ${TYPE_COLORS[type]} 4%, transparent)`,
             }}
           >
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{ex.emoji}</span>
             <div style={{ fontSize: 13.5, lineHeight: 1.65 }}>
               <div style={{ color: 'var(--text)' }}>{ex.what}</div>
               <div style={{ color: 'var(--text-sub)', marginTop: 8 }}>

@@ -1,10 +1,11 @@
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { NEED_COLOR_ORDER } from '../../../shared/src/needs/needColors';
 import { useAboutText, NEEDS_EXPLAINER } from '../aboutData';
 import { pressable } from '../utils/a11y';
 
-// «Зачем это всё» — содержимое sheets.about. Перенесено из App.tsx как есть
-// (этап 3 REMEDIATION_PLAN), ABOUT_TEXT берётся хуком на месте вместо пропа.
+// «Зачем это всё» — содержимое sheets.about (ABOUT_TEXT берётся хуком на месте).
 export function AboutSheet({
   onClose,
   onOpenSchemaInfo,
@@ -17,7 +18,7 @@ export function AboutSheet({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>
+        <SectionLabel purple mb={16} as="h2">
           Зачем это всё
         </SectionLabel>
         {ABOUT_TEXT.map((p, i) => (
@@ -39,17 +40,17 @@ export function AboutSheet({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 24,
           }}
         >
-          {NEEDS_EXPLAINER.map((n) => (
+          {NEEDS_EXPLAINER.map((n, i) => (
             <div
               key={n.name}
               style={{
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.07)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
               }}
             >
@@ -57,11 +58,11 @@ export function AboutSheet({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   marginBottom: 6,
                 }}
               >
-                <span style={{ fontSize: 18 }}>{n.emoji}</span>
+                <IdentityDot id={NEED_COLOR_ORDER[i]} />
                 <span
                   style={{
                     fontSize: 14,
@@ -92,7 +93,7 @@ export function AboutSheet({
             background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             cursor: 'pointer',
             display: 'flex',

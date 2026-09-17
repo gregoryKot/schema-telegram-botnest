@@ -1,0 +1,74 @@
+0f184ab89e7f9ae6925f365c7158ec04
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthModule = void 0;
+const common_1 = require("@nestjs/common");
+const auth_service_1 = require("./auth.service");
+const auth_controller_1 = require("./auth.controller");
+const auth_oauth_controller_1 = require("./auth-oauth.controller");
+const auth_telegram_controller_1 = require("./auth-telegram.controller");
+const auth_account_controller_1 = require("./auth-account.controller");
+const auth_max_controller_1 = require("./auth-max.controller");
+const auth_2fa_controller_1 = require("./auth-2fa.controller");
+const auth_flow_service_1 = require("./auth-flow.service");
+const jwt_guard_1 = require("./jwt.guard");
+const merge_service_1 = require("./merge.service");
+const security_log_service_1 = require("./security-log.service");
+const totp_service_1 = require("./totp.service");
+const email_service_1 = require("./email.service");
+const registry_1 = require("./providers/registry");
+const google_provider_1 = require("./providers/google.provider");
+const telegram_provider_1 = require("./providers/telegram.provider");
+const telegram_oidc_provider_1 = require("./providers/telegram-oidc.provider");
+const vk_provider_1 = require("./providers/vk.provider");
+const max_provider_1 = require("./providers/max.provider");
+const prisma_module_1 = require("../prisma/prisma.module");
+let AuthModule = class AuthModule {
+};
+exports.AuthModule = AuthModule;
+exports.AuthModule = AuthModule = __decorate([
+    (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule],
+        providers: [
+            auth_service_1.AuthService,
+            auth_flow_service_1.AuthFlowService,
+            jwt_guard_1.JwtAuthGuard,
+            jwt_guard_1.OptionalJwtGuard,
+            merge_service_1.MergeService,
+            security_log_service_1.SecurityLogService,
+            totp_service_1.TotpService,
+            email_service_1.EmailService,
+            google_provider_1.GoogleProvider,
+            telegram_provider_1.TelegramProvider,
+            telegram_oidc_provider_1.TelegramOidcProvider,
+            vk_provider_1.VkProvider,
+            max_provider_1.MaxProvider,
+            registry_1.AuthProviderRegistry,
+        ],
+        controllers: [
+            auth_controller_1.AuthController,
+            auth_oauth_controller_1.AuthOauthController,
+            auth_telegram_controller_1.AuthTelegramController,
+            auth_account_controller_1.AuthAccountController,
+            auth_max_controller_1.AuthMaxController,
+            auth_2fa_controller_1.Auth2faController,
+        ],
+        // MaxProvider экспортируется отдельно от AuthProviderRegistry — его
+        // напрямую использует TelegramAuthGuard (api/init-data-paths.ts), который
+        // живёт вне AuthModule (в ApiModule, но тот уже импортирует AuthModule).
+        exports: [
+            auth_service_1.AuthService,
+            jwt_guard_1.JwtAuthGuard,
+            security_log_service_1.SecurityLogService,
+            email_service_1.EmailService,
+            max_provider_1.MaxProvider,
+        ],
+    })
+], AuthModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9hdXRoLm1vZHVsZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7QUFBQSwyQ0FBd0M7QUFDeEMsaURBQTZDO0FBQzdDLHVEQUFtRDtBQUNuRCxtRUFBOEQ7QUFDOUQseUVBQW9FO0FBQ3BFLHVFQUFrRTtBQUNsRSwrREFBMEQ7QUFDMUQsK0RBQTBEO0FBQzFELDJEQUFzRDtBQUN0RCwyQ0FBNkQ7QUFDN0QsbURBQStDO0FBQy9DLGlFQUE0RDtBQUM1RCxpREFBNkM7QUFDN0MsbURBQStDO0FBQy9DLG1EQUE0RDtBQUM1RCxpRUFBNkQ7QUFDN0QscUVBQWlFO0FBQ2pFLCtFQUEwRTtBQUMxRSx5REFBcUQ7QUFDckQsMkRBQXVEO0FBQ3ZELDJEQUF1RDtBQXVDaEQsSUFBTSxVQUFVLEdBQWhCLE1BQU0sVUFBVTtDQUFHLENBQUE7QUFBYixnQ0FBVTtxQkFBVixVQUFVO0lBckN0QixJQUFBLGVBQU0sRUFBQztRQUNOLE9BQU8sRUFBRSxDQUFDLDRCQUFZLENBQUM7UUFDdkIsU0FBUyxFQUFFO1lBQ1QsMEJBQVc7WUFDWCxtQ0FBZTtZQUNmLHdCQUFZO1lBQ1osNEJBQWdCO1lBQ2hCLDRCQUFZO1lBQ1oseUNBQWtCO1lBQ2xCLDBCQUFXO1lBQ1gsNEJBQVk7WUFDWixnQ0FBYztZQUNkLG9DQUFnQjtZQUNoQiw2Q0FBb0I7WUFDcEIsd0JBQVU7WUFDViwwQkFBVztZQUNYLCtCQUFvQjtTQUNyQjtRQUNELFdBQVcsRUFBRTtZQUNYLGdDQUFjO1lBQ2QsMkNBQW1CO1lBQ25CLGlEQUFzQjtZQUN0QiwrQ0FBcUI7WUFDckIsdUNBQWlCO1lBQ2pCLHVDQUFpQjtTQUNsQjtRQUNELG9FQUFvRTtRQUNwRSwwRUFBMEU7UUFDMUUseUVBQXlFO1FBQ3pFLE9BQU8sRUFBRTtZQUNQLDBCQUFXO1lBQ1gsd0JBQVk7WUFDWix5Q0FBa0I7WUFDbEIsNEJBQVk7WUFDWiwwQkFBVztTQUNaO0tBQ0YsQ0FBQztHQUNXLFVBQVUsQ0FBRyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hdXRoL2F1dGgubW9kdWxlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IE1vZHVsZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IEF1dGhTZXJ2aWNlIH0gZnJvbSAnLi9hdXRoLnNlcnZpY2UnO1xuaW1wb3J0IHsgQXV0aENvbnRyb2xsZXIgfSBmcm9tICcuL2F1dGguY29udHJvbGxlcic7XG5pbXBvcnQgeyBBdXRoT2F1dGhDb250cm9sbGVyIH0gZnJvbSAnLi9hdXRoLW9hdXRoLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgQXV0aFRlbGVncmFtQ29udHJvbGxlciB9IGZyb20gJy4vYXV0aC10ZWxlZ3JhbS5jb250cm9sbGVyJztcbmltcG9ydCB7IEF1dGhBY2NvdW50Q29udHJvbGxlciB9IGZyb20gJy4vYXV0aC1hY2NvdW50LmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgQXV0aE1heENvbnRyb2xsZXIgfSBmcm9tICcuL2F1dGgtbWF4LmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgQXV0aDJmYUNvbnRyb2xsZXIgfSBmcm9tICcuL2F1dGgtMmZhLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgQXV0aEZsb3dTZXJ2aWNlIH0gZnJvbSAnLi9hdXRoLWZsb3cuc2VydmljZSc7XG5pbXBvcnQgeyBKd3RBdXRoR3VhcmQsIE9wdGlvbmFsSnd0R3VhcmQgfSBmcm9tICcuL2p3dC5ndWFyZCc7XG5pbXBvcnQgeyBNZXJnZVNlcnZpY2UgfSBmcm9tICcuL21lcmdlLnNlcnZpY2UnO1xuaW1wb3J0IHsgU2VjdXJpdHlMb2dTZXJ2aWNlIH0gZnJvbSAnLi9zZWN1cml0eS1sb2cuc2VydmljZSc7XG5pbXBvcnQgeyBUb3RwU2VydmljZSB9IGZyb20gJy4vdG90cC5zZXJ2aWNlJztcbmltcG9ydCB7IEVtYWlsU2VydmljZSB9IGZyb20gJy4vZW1haWwuc2VydmljZSc7XG5pbXBvcnQgeyBBdXRoUHJvdmlkZXJSZWdpc3RyeSB9IGZyb20gJy4vcHJvdmlkZXJzL3JlZ2lzdHJ5JztcbmltcG9ydCB7IEdvb2dsZVByb3ZpZGVyIH0gZnJvbSAnLi9wcm92aWRlcnMvZ29vZ2xlLnByb3ZpZGVyJztcbmltcG9ydCB7IFRlbGVncmFtUHJvdmlkZXIgfSBmcm9tICcuL3Byb3ZpZGVycy90ZWxlZ3JhbS5wcm92aWRlcic7XG5pbXBvcnQgeyBUZWxlZ3JhbU9pZGNQcm92aWRlciB9IGZyb20gJy4vcHJvdmlkZXJzL3RlbGVncmFtLW9pZGMucHJvdmlkZXInO1xuaW1wb3J0IHsgVmtQcm92aWRlciB9IGZyb20gJy4vcHJvdmlkZXJzL3ZrLnByb3ZpZGVyJztcbmltcG9ydCB7IE1heFByb3ZpZGVyIH0gZnJvbSAnLi9wcm92aWRlcnMvbWF4LnByb3ZpZGVyJztcbmltcG9ydCB7IFByaXNtYU1vZHVsZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEubW9kdWxlJztcblxuQE1vZHVsZSh7XG4gIGltcG9ydHM6IFtQcmlzbWFNb2R1bGVdLFxuICBwcm92aWRlcnM6IFtcbiAgICBBdXRoU2VydmljZSxcbiAgICBBdXRoRmxvd1NlcnZpY2UsXG4gICAgSnd0QXV0aEd1YXJkLFxuICAgIE9wdGlvbmFsSnd0R3VhcmQsXG4gICAgTWVyZ2VTZXJ2aWNlLFxuICAgIFNlY3VyaXR5TG9nU2VydmljZSxcbiAgICBUb3RwU2VydmljZSxcbiAgICBFbWFpbFNlcnZpY2UsXG4gICAgR29vZ2xlUHJvdmlkZXIsXG4gICAgVGVsZWdyYW1Qcm92aWRlcixcbiAgICBUZWxlZ3JhbU9pZGNQcm92aWRlcixcbiAgICBWa1Byb3ZpZGVyLFxuICAgIE1heFByb3ZpZGVyLFxuICAgIEF1dGhQcm92aWRlclJlZ2lzdHJ5LFxuICBdLFxuICBjb250cm9sbGVyczogW1xuICAgIEF1dGhDb250cm9sbGVyLFxuICAgIEF1dGhPYXV0aENvbnRyb2xsZXIsXG4gICAgQXV0aFRlbGVncmFtQ29udHJvbGxlcixcbiAgICBBdXRoQWNjb3VudENvbnRyb2xsZXIsXG4gICAgQXV0aE1heENvbnRyb2xsZXIsXG4gICAgQXV0aDJmYUNvbnRyb2xsZXIsXG4gIF0sXG4gIC8vIE1heFByb3ZpZGVyINGN0LrRgdC/0L7RgNGC0LjRgNGD0LXRgtGB0Y8g0L7RgtC00LXQu9GM0L3QviDQvtGCIEF1dGhQcm92aWRlclJlZ2lzdHJ5IOKAlCDQtdCz0L5cbiAgLy8g0L3QsNC/0YDRj9C80YPRjiDQuNGB0L/QvtC70YzQt9GD0LXRgiBUZWxlZ3JhbUF1dGhHdWFyZCAoYXBpL2luaXQtZGF0YS1wYXRocy50cyksINC60L7RgtC+0YDRi9C5XG4gIC8vINC20LjQstGR0YIg0LLQvdC1IEF1dGhNb2R1bGUgKNCyIEFwaU1vZHVsZSwg0L3QviDRgtC+0YIg0YPQttC1INC40LzQv9C+0YDRgtC40YDRg9C10YIgQXV0aE1vZHVsZSkuXG4gIGV4cG9ydHM6IFtcbiAgICBBdXRoU2VydmljZSxcbiAgICBKd3RBdXRoR3VhcmQsXG4gICAgU2VjdXJpdHlMb2dTZXJ2aWNlLFxuICAgIEVtYWlsU2VydmljZSxcbiAgICBNYXhQcm92aWRlcixcbiAgXSxcbn0pXG5leHBvcnQgY2xhc3MgQXV0aE1vZHVsZSB7fVxuIl0sInZlcnNpb24iOjN9

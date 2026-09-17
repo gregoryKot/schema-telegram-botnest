@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
 import { SecurityLogService } from '../auth/security-log.service';
-import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 
 const MAX_NAME = 100;
@@ -33,57 +33,8 @@ export class TherapistRequestService {
     private readonly prisma: PrismaService,
     private readonly accountService: AccountService,
     private readonly securityLog: SecurityLogService,
+    private readonly notify: TherapistRequestNotifyService,
   ) {}
-
-  // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
-  // the circular-import that would create (TelegramModule ↔ TherapyModule).
-  // Uses HTML parse_mode to avoid legacy Markdown parse errors for arbitrary
-  // user input (names, contacts, etc. may contain *, _, ., -, (, ) etc.).
-  // Returns true only when Telegram accepted the message. Callers that must
-  // reach the admin (notifyAdmin) fall back to e-mail when this returns false —
-  // e.g. after a bot migration the admin hasn't opened the new bot yet, so the
-  // DM fails and the request would otherwise vanish silently.
-  private async sendTg(
-    chatId: number,
-    text: string,
-    replyMarkup?: object,
-  ): Promise<boolean> {
-    const token = process.env.BOT_TOKEN;
-    if (!token) {
-      this.logger.warn('sendTg: BOT_TOKEN not set');
-      return false;
-    }
-    const body: {
-      chat_id: number;
-      text: string;
-      parse_mode: string;
-      reply_markup?: object;
-    } = { chat_id: chatId, text, parse_mode: 'HTML' };
-    if (replyMarkup) body.reply_markup = replyMarkup;
-    let res: Response | undefined;
-    try {
-      res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(10_000),
-      });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this.logger.warn(`sendTg network error to chat_id=${chatId}: ${msg}`);
-      return false;
-    }
-    if (!res.ok) {
-      const err = (await res.json().catch(() => ({}))) as {
-        description?: string;
-      };
-      this.logger.warn(
-        `sendTg HTTP ${res.status} for chat_id=${chatId}: ${err.description ?? '(no description)'}`,
-      );
-      return false;
-    }
-    return true;
-  }
 
   private get adminId(): number | null {
     const raw = process.env.ADMIN_ID;
@@ -157,17 +108,19 @@ export class TherapistRequestService {
       summary: qualification.slice(0, 120),
     });
     // В Telegram/e-mail админу уходит plaintext (row в БД — шифрованный).
-    this.notifyAdmin({
-      ...row,
-      fullName,
-      qualification,
-      contacts,
-      message,
-    }).catch((e: unknown) =>
-      this.logger.warn(
-        `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
-      ),
-    );
+    this.notify
+      .notifyAdmin({
+        ...row,
+        fullName,
+        qualification,
+        contacts,
+        message,
+      })
+      .catch((e: unknown) =>
+        this.logger.warn(
+          `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
+        ),
+      );
     return { id: rowId, status: rowStatus };
   }
 
@@ -239,7 +192,9 @@ export class TherapistRequestService {
       adminId,
       requestId,
     });
-    this.notifyApplicant(Number(reqUserId), 'approved').catch(() => null);
+    this.notify
+      .notifyApplicant(Number(reqUserId), 'approved')
+      .catch((e: unknown) => this.logger.error('notifyApplicant failed', e));
     this.logger.log(
       `Therapist request ${requestId} approved by admin ${adminId} → user ${reqUserId}`,
     );
@@ -263,98 +218,11 @@ export class TherapistRequestService {
         rejectReason: reason?.slice(0, 500) || null,
       },
     });
-    this.notifyApplicant(Number(req.userId), 'rejected', reason).catch(
-      () => null,
-    );
+    this.notify
+      .notifyApplicant(Number(req.userId), 'rejected', reason)
+      .catch((e: unknown) => this.logger.error('notifyApplicant failed', e));
     this.logger.log(
       `Therapist request ${requestId} rejected by admin ${adminId}`,
     );
   }
-
-  // ─── Telegram notifications ───────────────────────────────────────────────
-
-  private async notifyAdmin(req: {
-    id: number;
-    userId: bigint;
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message: string | null;
-  }) {
-    if (!this.adminId) {
-      // Без ADMIN_ID пуш невозможен — но заявку всё равно надо доставить.
-      this.logger.error(
-        'notifyAdmin: ADMIN_ID not set — falling back to email',
-      );
-      await notifyAdminWithFallback(
-        this.plainText(req),
-        `🩺 Заявка на роль терапевта #${req.id}`,
-      );
-      return;
-    }
-    // HTML mode: escape user-supplied text to avoid parse errors.
-    const text =
-      `🩺 <b>Заявка на роль терапевта</b> #${req.id}\n\n` +
-      `<b>Имя:</b> ${he(req.fullName)}\n` +
-      `<b>Квалификация:</b> ${he(req.qualification)}\n` +
-      `<b>Контакты:</b> ${he(req.contacts)}\n` +
-      (req.message ? `<b>Сообщение:</b> ${he(req.message)}\n` : '') +
-      `<b>Telegram ID:</b> <code>${req.userId}</code>\n\n` +
-      `Список заявок: /zayavki`;
-    const delivered = await this.sendTg(this.adminId, text, {
-      inline_keyboard: [
-        [
-          { text: '✅ Approve', callback_data: `treq:approve:${req.id}` },
-          { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
-        ],
-      ],
-    });
-    // Пуш не дошёл (напр. после переезда бота админ ещё не нажал Start) —
-    // гарантированная доставка через e-mail, чтобы заявка не потерялась.
-    if (!delivered) {
-      this.logger.error(
-        `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
-      );
-      await notifyAdminWithFallback(
-        this.plainText(req),
-        `🩺 Заявка на роль терапевта #${req.id}`,
-      );
-    }
-  }
-
-  private plainText(req: {
-    id: number;
-    userId: bigint;
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message: string | null;
-  }): string {
-    return (
-      `Новая заявка на роль терапевта #${req.id}\n\n` +
-      `Имя: ${req.fullName}\n` +
-      `Квалификация: ${req.qualification}\n` +
-      `Контакты: ${req.contacts}\n` +
-      (req.message ? `Сообщение: ${req.message}\n` : '') +
-      `Telegram ID: ${req.userId}\n\n` +
-      `Одобрить/отклонить: открой бот и напиши /zayavki`
-    );
-  }
-
-  private async notifyApplicant(
-    userId: number,
-    decision: 'approved' | 'rejected',
-    reason?: string,
-  ) {
-    const text =
-      decision === 'approved'
-        ? '✅ Твоя заявка на роль терапевта одобрена. Перезапусти приложение чтобы увидеть кабинет терапевта.'
-        : `❌ Твоя заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`;
-    await this.sendTg(userId, text);
-  }
-}
-
-function he(s: string): string {
-  // HTML-escape for Telegram parse_mode: 'HTML'
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

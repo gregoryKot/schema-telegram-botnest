@@ -13,24 +13,9 @@ export function TherapistBanner({ onOpen }: { onOpen: () => void }) {
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
+        gap: 'var(--space-14)',
       }}
     >
-      <div
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 13,
-          flexShrink: 0,
-          background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 20,
-        }}
-      >
-        🧑‍⚕️
-      </div>
       <div style={{ flex: 1 }}>
         <div
           style={{

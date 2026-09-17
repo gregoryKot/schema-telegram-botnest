@@ -1,11 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { verifyGoogleIdToken } from './google-id-token';
 import { AuthProviderHandler, ProviderIdentity } from './types';
-
-// Google's public keys (JWKS). jose caches internally and re-fetches on cache miss.
-// Fetched lazily on first token verification — no outbound request at startup.
-const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
 
 // Token endpoint + его легаси-алиасы на других доменах. С хостинга (Amvera)
 // oauth2.googleapis.com может быть недостижим на сетевом уровне («fetch
@@ -24,13 +20,6 @@ export class GoogleProvider implements AuthProviderHandler {
   readonly displayName = 'Google';
   private readonly logger = new Logger(GoogleProvider.name);
 
-  // Lazily created so the module initialises even if the fetch would fail.
-  private _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
-  private get jwks() {
-    if (!this._jwks) this._jwks = createRemoteJWKSet(new URL(GOOGLE_JWKS_URI));
-    return this._jwks;
-  }
-
   constructor(private readonly config: ConfigService) {}
 
   // ── Step 1: build redirect URL (OAuth 2.0 Authorization Code flow) ────────
@@ -39,7 +28,7 @@ export class GoogleProvider implements AuthProviderHandler {
   // (The legacy implicit flow — response_type=id_token + response_mode=form_post
   // — is deprecated and relied on a SameSite=None cookie that third-party-cookie
   // phase-out breaks, so we no longer use it.)
-  buildAuthUrl(state: string): string {
+  buildAuthUrl(state: string, _nonce?: string, forceChooser = false): string {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
     const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
     const params = new URLSearchParams({
@@ -49,9 +38,23 @@ export class GoogleProvider implements AuthProviderHandler {
       scope: 'openid email profile',
       state,
       access_type: 'online',
-      prompt: 'select_account',
     });
+    // ВХОД: `prompt` не ставим. Google сам вернёт уже вошедшего одним касанием
+    // («Continue as X»), а если аккаунтов несколько или сессии нет — покажет
+    // выбор. Прежний хардкод `prompt=select_account` заставлял ЗАНОВО выбирать
+    // аккаунт на каждый вход — это и читалось как «авторизация с нуля».
+    // ПРИВЯЗКА второго аккаунта (forceChooser): выбор оставляем принудительным,
+    // чтобы человек не прицепил случайно уже открытый в браузере Google вместо
+    // нужного (разбор 2026-08-31).
+    if (forceChooser) params.set('prompt', 'select_account');
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }
+
+  // Origin редиректа Google (GOOGLE_REDIRECT_URI) — на нём обязана жить кука
+  // oauth_state, иначе колбэк её не увидит (алиас-домен, разбор 2026-09-08).
+  callbackOrigin(): string {
+    return new URL(this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'))
+      .origin;
   }
 
   // ── Step 2: exchange the code for tokens, then verify the id_token ────────
@@ -105,7 +108,7 @@ export class GoogleProvider implements AuthProviderHandler {
         );
         throw new UnauthorizedException('Google token exchange failed');
       }
-      return this.decodeIdentity(data.id_token);
+      return this.verifyIdToken(data.id_token);
     }
 
     this.logger.error(
@@ -114,18 +117,17 @@ export class GoogleProvider implements AuthProviderHandler {
     throw new UnauthorizedException('Google token exchange failed');
   }
 
-  // Verify id_token signature + claims via Google's JWKS. The token comes
-  // straight from Google's token endpoint over TLS; verifying the signature is
-  // defence-in-depth and also pins issuer/audience.
-  private async decodeIdentity(idToken: string): Promise<ProviderIdentity> {
+  // Проверка id_token (подпись по JWKS + issuer/audience) живёт в
+  // google-id-token.ts — там же ветка на случай недостижимого JWKS. Публичный:
+  // тем же путём проверяется id_token, пришедший от Google One Tap напрямую в
+  // браузер (POST /api/auth/google/one-tap) — те же издатель/получатель/срок и
+  // тот же отказ на подделке, что и у обмена кода.
+  async verifyIdToken(idToken: string): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
 
-    let payload: Awaited<ReturnType<typeof jwtVerify>>['payload'];
+    let claims: Awaited<ReturnType<typeof verifyGoogleIdToken>>;
     try {
-      ({ payload } = await jwtVerify(idToken, this.jwks, {
-        issuer: ['https://accounts.google.com', 'accounts.google.com'],
-        audience: clientId,
-      }));
+      claims = await verifyGoogleIdToken(idToken, clientId);
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
       this.logger.error(
@@ -134,15 +136,21 @@ export class GoogleProvider implements AuthProviderHandler {
       throw new UnauthorizedException('Google ID token invalid');
     }
 
-    if (payload['email_verified'] !== true) {
+    if (claims.offline) {
+      // Видно в логах: вход прошёл, но ключи Google с хоста не скачались.
+      this.logger.warn(
+        'Google JWKS недостижим — id_token принят по claims (получен от Google по TLS)',
+      );
+    }
+
+    if (!claims.emailVerified) {
       throw new UnauthorizedException('Google email not verified');
     }
 
     return {
-      providerId: payload.sub!,
-      email: payload['email'] as string,
-      displayName:
-        (payload['name'] as string | undefined) ?? (payload['email'] as string),
+      providerId: claims.sub,
+      email: claims.email,
+      displayName: claims.name ?? claims.email,
     };
   }
 }

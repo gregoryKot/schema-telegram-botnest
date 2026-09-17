@@ -21,8 +21,17 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const REPORT = join(ROOT, 'reports', 'mutation', 'mutation.json');
-const BASELINE = join(ROOT, 'scripts', 'mutation-baseline.json');
+// --report=/--baseline= нужны второму, недельному замеру (семейство src/bot
+// гоняется отдельной джобой: ~950 мутантов не помещаются в ночную). У каждого
+// набора файлов свой пол, поэтому и отчёт, и бейслайн задаются парой.
+const argValue = (name) => {
+  const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return arg ? join(ROOT, arg.slice(name.length + 3)) : null;
+};
+const REPORT =
+  argValue('report') ?? join(ROOT, 'reports', 'mutation', 'mutation.json');
+const BASELINE =
+  argValue('baseline') ?? join(ROOT, 'scripts', 'mutation-baseline.json');
 const update = process.argv.includes('--update');
 
 if (!existsSync(REPORT)) {
@@ -57,11 +66,13 @@ if (Object.keys(files).length === 0) {
 }
 
 const perFile = {};
+const mutantsByFile = {};
 const allMutants = [];
 for (const [path, file] of Object.entries(files)) {
   const rel = path.replace(`${ROOT}/`, '');
   const mutants = file.mutants ?? [];
   allMutants.push(...mutants);
+  mutantsByFile[rel] = mutants;
   perFile[rel] = Number(scoreOf(mutants).pct.toFixed(2));
 }
 const total = scoreOf(allMutants);
@@ -93,9 +104,18 @@ const base = JSON.parse(readFileSync(BASELINE, 'utf8'));
 // мутанта по времени, быстрый — нет). Просадка меньше допуска — шум, не регресс.
 const TOLERANCE = 1.5;
 const problems = [];
-if (current.total < base.total - TOLERANCE) {
+// Общий счёт сравниваем ТОЛЬКО по файлам, которые есть в бейслайне. Иначе
+// расширение `mutate` новой волной роняет храповик само по себе: свежий файл
+// приходит с низким счётом и тянет общий вниз — сигнал «тесты стали хуже»,
+// хотя ни один старый тест не ослаб. Новые файлы разбираются отдельно (ниже).
+const comparableMutants = Object.keys(base.files ?? {}).flatMap(
+  (f) => mutantsByFile[f] ?? [],
+);
+const comparable = scoreOf(comparableMutants);
+const comparableTotal = Number(comparable.pct.toFixed(2));
+if (comparableTotal < base.total - TOLERANCE) {
   problems.push(
-    `общий счёт: ${base.total}% → ${current.total}% ` +
+    `общий счёт по файлам бейслайна: ${base.total}% → ${comparableTotal}% ` +
       `(допуск ${TOLERANCE} п.п. на недетерминизм таймаутов)`,
   );
 }
@@ -106,6 +126,16 @@ for (const [f, wasPct] of Object.entries(base.files ?? {})) {
   } else if (nowPct < wasPct - TOLERANCE) {
     problems.push(`${f}: ${wasPct}% → ${nowPct}%`);
   }
+}
+
+// Файл в прогоне, но не в бейслайне — новая волна замера. Не ошибка, но и не
+// молчание: без фиксации у него нет пола, и он может тихо деградировать.
+const unpinned = Object.keys(current.files).filter(
+  (f) => (base.files ?? {})[f] === undefined,
+);
+if (unpinned.length > 0) {
+  console.log('⚠ файлы в прогоне без пола в бейслайне (зафиксируй --update):');
+  for (const f of unpinned) console.log(`   ${current.files[f]}%  ${f}`);
 }
 
 if (problems.length > 0) {
@@ -122,6 +152,7 @@ if (problems.length > 0) {
 }
 
 console.log(
-  `✓ mutation-храповик: ${current.total}% ` +
-    `(бейслайн ${base.total}%, обезврежено ${total.detected}/${total.valid})`,
+  `✓ mutation-храповик: ${comparableTotal}% по файлам бейслайна ` +
+    `(пол ${base.total}%), всего в прогоне ${current.total}% — ` +
+    `обезврежено ${total.detected}/${total.valid} мутантов`,
 );

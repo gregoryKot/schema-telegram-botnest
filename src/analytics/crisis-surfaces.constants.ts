@@ -11,7 +11,9 @@
 //   safe_place   — безопасное место;
 //   weekly       — вопрос недели;
 //   belief_check — проверка убеждения;
-//   flashcard    — карточки-упражнения (schema flashcard).
+//   flashcard    — карточки-упражнения (schema flashcard);
+//   task         — своё задание/цель (TaskCreateSheet, тип custom);
+//   phrase_check — «Критик или забота?» (PhraseCheck, RewriteStep, HistoryCard).
 export const CRISIS_SURFACES = [
   'schema',
   'mode',
@@ -23,5 +25,8 @@ export const CRISIS_SURFACES = [
   'weekly',
   'belief_check',
   'flashcard',
+  'task',
+  'phrase_check',
 ] as const;
+
 export type CrisisSurface = (typeof CRISIS_SURFACES)[number];

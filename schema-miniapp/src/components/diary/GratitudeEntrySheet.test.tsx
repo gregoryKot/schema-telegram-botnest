@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { GratitudeEntrySheet } from './GratitudeEntrySheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -35,12 +36,12 @@ describe('GratitudeEntrySheet — кризисная детекция (прав�
   it('показывает карточку поддержки при кризисной фразе в одном из пунктов', () => {
     const first = renderSheet();
     fireEvent.change(first, { target: { value: 'хочу исчезнуть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', () => {
     const first = renderSheet();
     fireEvent.change(first, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 });

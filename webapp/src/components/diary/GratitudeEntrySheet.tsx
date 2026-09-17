@@ -30,6 +30,11 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const [items, setItems] = useState<string[]>(initItems);
   const [saving, setSaving] = useState(false);
+  // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
+  // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
+  // что запись сохранена. Текст уцелел бы черновиком, но об этом тоже никто
+  // не сообщал.
+  const [saveError, setSaveError] = useState(false);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { firstItemRef.current?.focus(); }, []);
@@ -46,16 +51,18 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
       await onSave(date, filled);
       clearDraft('gratitude');
+      goBack();
     } catch {
       haptic.error();
+      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
-      goBack();
     }
   };
 
@@ -73,7 +80,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         <div className="aside-card" style={{ borderColor: 'var(--c-moss)40', background: 'var(--c-moss)08', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Почему это работает</div>
           <h3>Мозг учится замечать</h3>
-          <p className="body">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – это не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>
+          <p className="body">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>
         </div>
       }
     >
@@ -86,6 +93,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
               value={item}
               onChange={e => update(i, e.target.value)}
               placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
+              aria-label={`Пункт ${i + 1}: ${PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}`}
               rows={1}
             />
           </div>
@@ -105,6 +113,19 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         </span>
         <span className="spacer" />
         <SaveEntryButton canSave={canSave} saving={saving} onSave={handleSave} />
+        {saveError && (
+          <div
+            role="status"
+            style={{
+              marginTop: 10,
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--accent-red)',
+            }}
+          >
+            Не удалось сохранить. Текст остался черновиком — можно повторить
+          </div>
+        )}
       </div>
     </ExScreen>
   );

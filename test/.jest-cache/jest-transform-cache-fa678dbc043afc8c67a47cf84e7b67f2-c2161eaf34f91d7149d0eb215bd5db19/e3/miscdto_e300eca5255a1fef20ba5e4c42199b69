@@ -1,0 +1,60 @@
+e3dafe283d80a194be58b5a11bf16b4a
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CheckinDto = exports.InitDto = exports.UpdateNameDto = exports.SaveDraftDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для мелких эндпоинтов api.controller.ts (аудит 2026-07, 2г / правило
+ * №6 CLAUDE.md). `data` — произвольный JSON черновика, помечен @Allow()
+ * (passthrough), формат `startedAt` проверяется вручную в контроллере.
+ */
+class SaveDraftDto {
+    startedAt;
+    data;
+}
+exports.SaveDraftDto = SaveDraftDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SaveDraftDto.prototype, "startedAt", void 0);
+__decorate([
+    (0, class_validator_1.Allow)(),
+    __metadata("design:type", Object)
+], SaveDraftDto.prototype, "data", void 0);
+class UpdateNameDto {
+    name;
+}
+exports.UpdateNameDto = UpdateNameDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(50),
+    __metadata("design:type", String)
+], UpdateNameDto.prototype, "name", void 0);
+class InitDto {
+    timezone;
+}
+exports.InitDto = InitDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], InitDto.prototype, "timezone", void 0);
+/** Общая форма для чекинов (план дня, задача терапевта) — одно поле done. */
+class CheckinDto {
+    done;
+}
+exports.CheckinDto = CheckinDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CheckinDto.prototype, "done", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9taXNjLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFNeUI7QUFFekI7Ozs7R0FJRztBQUNILE1BQWEsWUFBWTtJQUV2QixTQUFTLENBQVU7SUFHbkIsSUFBSSxDQUFVO0NBQ2Y7QUFORCxvQ0FNQztBQUpDO0lBREMsSUFBQSwwQkFBUSxHQUFFOzsrQ0FDUTtBQUduQjtJQURDLElBQUEsdUJBQUssR0FBRTs7MENBQ007QUFHaEIsTUFBYSxhQUFhO0lBR3hCLElBQUksQ0FBVTtDQUNmO0FBSkQsc0NBSUM7QUFEQztJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxFQUFFLENBQUM7OzJDQUNBO0FBR2hCLE1BQWEsT0FBTztJQUdsQixRQUFRLENBQVU7Q0FDbkI7QUFKRCwwQkFJQztBQURDO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFOzt5Q0FDTztBQUdwQiw2RUFBNkU7QUFDN0UsTUFBYSxVQUFVO0lBRXJCLElBQUksQ0FBVztDQUNoQjtBQUhELGdDQUdDO0FBREM7SUFEQyxJQUFBLDJCQUFTLEdBQUU7O3dDQUNHIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9kdG8vbWlzYy5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQWxsb3csXG4gIElzQm9vbGVhbixcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heExlbmd0aCxcbn0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcblxuLyoqXG4gKiBEVE8g0LTQu9GPINC80LXQu9C60LjRhSDRjdC90LTQv9C+0LjQvdGC0L7QsiBhcGkuY29udHJvbGxlci50cyAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQvlxuICog4oSWNiBDTEFVREUubWQpLiBgZGF0YWAg4oCUINC/0YDQvtC40LfQstC+0LvRjNC90YvQuSBKU09OINGH0LXRgNC90L7QstC40LrQsCwg0L/QvtC80LXRh9C10L0gQEFsbG93KClcbiAqIChwYXNzdGhyb3VnaCksINGE0L7RgNC80LDRgiBgc3RhcnRlZEF0YCDQv9GA0L7QstC10YDRj9C10YLRgdGPINCy0YDRg9GH0L3Rg9GOINCyINC60L7QvdGC0YDQvtC70LvQtdGA0LUuXG4gKi9cbmV4cG9ydCBjbGFzcyBTYXZlRHJhZnREdG8ge1xuICBASXNTdHJpbmcoKVxuICBzdGFydGVkQXQhOiBzdHJpbmc7XG5cbiAgQEFsbG93KClcbiAgZGF0YTogdW5rbm93bjtcbn1cblxuZXhwb3J0IGNsYXNzIFVwZGF0ZU5hbWVEdG8ge1xuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKDUwKVxuICBuYW1lITogc3RyaW5nO1xufVxuXG5leHBvcnQgY2xhc3MgSW5pdER0byB7XG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgdGltZXpvbmU/OiBzdHJpbmc7XG59XG5cbi8qKiDQntCx0YnQsNGPINGE0L7RgNC80LAg0LTQu9GPINGH0LXQutC40L3QvtCyICjQv9C70LDQvSDQtNC90Y8sINC30LDQtNCw0YfQsCDRgtC10YDQsNC/0LXQstGC0LApIOKAlCDQvtC00L3QviDQv9C+0LvQtSBkb25lLiAqL1xuZXhwb3J0IGNsYXNzIENoZWNraW5EdG8ge1xuICBASXNCb29sZWFuKClcbiAgZG9uZSE6IGJvb2xlYW47XG59XG4iXSwidmVyc2lvbiI6M30=

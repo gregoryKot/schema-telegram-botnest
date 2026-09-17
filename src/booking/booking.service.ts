@@ -14,8 +14,17 @@ import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
-import { BookingStatus, Prisma, SessionType } from '@prisma/client';
+import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { assertWithinAvailability } from './booking.availability';
+import { completeCheckout } from './booking.checkout';
+import { createBookingGuarded } from './booking.create';
+import {
+  listBookings,
+  getBookingById,
+  getPublicBookingByToken,
+} from './booking.queries';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 export interface CreateBookingDto {
   startsAt: Date;
@@ -38,15 +47,6 @@ const SCHEMA: EncryptSchema = {
 };
 
 const HOLD_MINUTES = 15;
-// Ключ pg_advisory_xact_lock для сериализации «проверить слот → создать бронь».
-// Один глобальный лок на все брони: трафик записи низкий, сериализация дешевле,
-// чем exclusion constraint по времени (P-1, аудит 2026-07).
-const BOOKING_SLOT_LOCK_KEY = 911_001;
-
-/** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
-function isEmail(s: string): boolean {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
-}
 
 /**
  * Thrown by confirm() specifically when the webhook-reported paid amount
@@ -70,6 +70,7 @@ export class BookingService {
     private readonly robokassa: RobokassaService,
     private readonly pricing: PricingService,
     config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
@@ -109,7 +110,7 @@ export class BookingService {
     }
     // P-5 (аудит 2026-07): расписание проверялось только при ОТОБРАЖЕНИИ
     // слотов — прямой POST мог забронировать 3 часа ночи любой длительности.
-    await this.assertWithinAvailability(dto.startsAt, dto.durationMin);
+    await assertWithinAvailability(this.prisma, dto.startsAt, dto.durationMin);
     const isFree = dto.type === SessionType.INTRO_15;
     const heldUntil = isFree
       ? null
@@ -134,77 +135,36 @@ export class BookingService {
       SCHEMA,
     );
 
-    // P-1 (аудит 2026-07): проверка занятости и создание — в одной транзакции
-    // под advisory-lock, иначе два клиента, кликнувшие одновременно, оба
-    // проходили findMany-проверку и бронировали один слот (TOCTOU).
-    // Lock — xact-scoped: снимается автоматически на commit/rollback.
-    const booking = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${BOOKING_SLOT_LOCK_KEY})`;
-      await this.assertSlotFree(dto.startsAt, dto.durationMin, tx);
-      return tx.booking.create({ data });
-    });
+    // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
+    // случай падения (лид уходит админу) — см. booking.create.ts.
+    const booking = await createBookingGuarded(
+      { prisma: this.prisma, notify: this.notify, logger: this.logger },
+      data,
+      dto,
+    );
     this.logger.log(
       `Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`,
     );
 
-    if (isFree) {
-      const plain = decryptRecord(booking, SCHEMA);
-      await this.notify.onConfirmed(plain);
-      return {
-        id: booking.id,
+    return completeCheckout(
+      {
+        prisma: this.prisma,
+        notify: this.notify,
+        robokassa: this.robokassa,
+        pricing: this.pricing,
+        siteUrl: this.siteUrl,
+        schema: SCHEMA,
+      },
+      booking,
+      {
+        isFree,
         cancelToken,
-        heldUntil: null,
-        status: BookingStatus.CONFIRMED,
-        paymentUrl: null,
-        meetingUrl: plain.meetingUrl ?? null,
-      };
-    }
-
-    // Paid session — build Robokassa payment URL if configured.
-    let paymentUrl: string | null;
-    const meetingUrl: string | null = null;
-    if (this.robokassa.enabled) {
-      const price = await this.pricing.getPrice(dto.type);
-      paymentUrl = this.robokassa.buildPaymentUrl({
-        invId: booking.id,
-        amount: price,
-        desc: `Психологическая сессия ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }).format(dto.startsAt)} МСК`,
-        // Pass the client's e-mail so Robokassa / «Мой налог» can send the cheque.
-        // Only when the contact actually is an e-mail (could be a phone / @handle).
-        email: isEmail(dto.clientContact) ? dto.clientContact : undefined,
-        successUrl: `${this.siteUrl}/api/payment/success`,
-        failUrl: `${this.siteUrl}/api/payment/fail`,
-      });
-      // Tell the admin a slot is reserved & awaiting payment — so even if the
-      // client's payment fails (or Robokassa is misconfigured), the request and
-      // contact are never lost.
-      await this.notify.onAwaitingPayment(decryptRecord(booking, SCHEMA));
-    } else {
-      // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
-      await this.prisma.booking.update({
-        where: { id: booking.id },
-        data: { status: BookingStatus.CONFIRMED, heldUntil: null },
-      });
-      const plain = decryptRecord(booking, SCHEMA);
-      await this.notify.onConfirmed(plain);
-      return {
-        id: booking.id,
-        cancelToken,
-        heldUntil: null,
-        status: BookingStatus.CONFIRMED,
-        paymentUrl: null,
-        meetingUrl: plain.meetingUrl ?? null,
-      };
-    }
-
-    return {
-      id: booking.id,
-      cancelToken,
-      heldUntil,
-      status: BookingStatus.HELD,
-      paymentUrl,
-      meetingUrl,
-    };
+        heldUntil,
+        startsAt: dto.startsAt,
+        type: dto.type,
+        clientContact: dto.clientContact,
+      },
+    );
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action).
@@ -287,64 +247,33 @@ export class BookingService {
     return { ok: true };
   }
 
-  /**
-   * List bookings for the admin panel.
-   *   upcoming  — future HELD + CONFIRMED (default)
-   *   past      — anything already started
-   *   cancelled — cancelled/expired
-   *   all       — everything, most recent first
-   */
+  /** Список броней для админки — см. listBookings. */
   async list(filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') {
-    const now = new Date();
-    const where =
-      filter === 'past'
-        ? { startsAt: { lt: now } }
-        : filter === 'cancelled'
-          ? { status: BookingStatus.CANCELLED }
-          : filter === 'all'
-            ? {}
-            : {
-                startsAt: { gte: now },
-                status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
-              };
-    const rows = await this.prisma.booking.findMany({
-      where,
-      orderBy: { startsAt: filter === 'upcoming' ? 'asc' : 'desc' },
-      take: 200,
-    });
-    return rows.map((r) => decryptRecord(r, SCHEMA));
+    return listBookings(this.prisma, SCHEMA, filter);
   }
 
   async getById(id: number) {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
-    if (!booking) throw new NotFoundException('Booking not found');
-    return decryptRecord(booking, SCHEMA);
+    return getBookingById(this.prisma, SCHEMA, id);
   }
 
-  /**
-   * Public booking view by self-cancel token (used by the post-payment page).
-   * Returns only non-PII session fields — never the client's name/contact.
-   */
+  /** Публичная проекция брони по cancel-токену (без PII). */
   async getPublicByToken(token: string) {
-    const b = await this.prisma.booking.findUnique({
-      where: { cancelToken: token },
-    });
-    if (!b) throw new NotFoundException('Booking not found');
-    return {
-      status: b.status,
-      type: b.type,
-      startsAt: b.startsAt.toISOString(),
-      endsAt: new Date(
-        b.startsAt.getTime() + b.durationMin * 60_000,
-      ).toISOString(),
-      durationMin: b.durationMin,
-      meetingUrl: b.meetingUrl,
-    };
+    return getPublicBookingByToken(this.prisma, token);
   }
 
   /** Expire HELD bookings whose hold window has passed. Runs every minute. */
   @Cron('* * * * *')
   async expireHolds() {
+    // Без аренды второй инстанс тоже находит те же HELD-брони и рассылает
+    // notifyExpired по ним ещё раз — админ получает дублирующие DM про одну
+    // и ту же истёкшую бронь.
+    if (
+      !(await this.cronLeader.claimRun(
+        'bookingExpireHolds',
+        LEASE_WINDOW.everyMinute,
+      ))
+    )
+      return;
     const expiring = await this.prisma.booking.findMany({
       where: { status: BookingStatus.HELD, heldUntil: { lte: new Date() } },
     });
@@ -357,77 +286,5 @@ export class BookingService {
     await this.notify.notifyExpired(
       expiring.map((b) => decryptRecord(b, SCHEMA)),
     );
-  }
-
-  // ── private ────────────────────────────────────────────────────────────────
-
-  // Overlap test: an existing HELD/CONFIRMED booking collides when
-  // existing.startsAt < newEnd AND existing.end > newStart. Prisma can't add
-  // durationMin to startsAt in a filter, so we narrow by startsAt then check
-  // the computed end in JS.
-  private static readonly WEEKDAYS = [
-    'Sun',
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-  ];
-
-  /**
-   * Время и длительность запрошенной сессии обязаны попадать в активное окно
-   * AvailabilityRule (в таймзоне правила). Если правил нет вообще
-   * (dev/расписание не настроено) — пропускаем, сохраняя прежнее поведение:
-   * легитимный клиент в этом случае и так не видит слотов.
-   */
-  private async assertWithinAvailability(startsAt: Date, durationMin: number) {
-    if (
-      !Number.isInteger(durationMin) ||
-      durationMin < 15 ||
-      durationMin > 180
-    ) {
-      throw new BadRequestException('Invalid duration');
-    }
-    const rules = await this.prisma.availabilityRule.findMany({
-      where: { isActive: true },
-    });
-    if (rules.length === 0) return;
-
-    const ok = rules.some((r) => {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: r.timezone,
-        hour12: false,
-        weekday: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).formatToParts(startsAt);
-      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-      const day = BookingService.WEEKDAYS.indexOf(get('weekday'));
-      if (day !== r.dayOfWeek) return false;
-      const startMin = (Number(get('hour')) % 24) * 60 + Number(get('minute'));
-      const winStart = r.startHour * 60 + r.startMinute;
-      const winEnd = r.endHour * 60 + r.endMinute;
-      return startMin >= winStart && startMin + durationMin <= winEnd;
-    });
-    if (!ok) throw new BadRequestException('OUTSIDE_AVAILABILITY');
-  }
-
-  private async assertSlotFree(
-    startsAt: Date,
-    durationMin: number,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
-    const candidates = await tx.booking.findMany({
-      where: {
-        status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
-        startsAt: { lt: endsAt },
-      },
-    });
-    for (const c of candidates) {
-      const cEnd = new Date(c.startsAt.getTime() + c.durationMin * 60_000);
-      if (cEnd > startsAt) throw new ConflictException('Slot already taken');
-    }
   }
 }

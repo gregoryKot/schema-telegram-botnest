@@ -1,0 +1,56 @@
+3581920539de0032f7856943b4fd07b8
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ToggleRuleDto = exports.SetSubPriceDto = exports.SetPriceDto = void 0;
+const class_validator_1 = require("class-validator");
+const client_1 = require("@prisma/client");
+/**
+ * DTO для админ-эндпоинтов ценообразования и правил доступности
+ * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Эндпоинты защищены
+ * `x-admin-key`, но тело всё равно проверяется рантаймом.
+ */
+class SetPriceDto {
+    type;
+    amount;
+}
+exports.SetPriceDto = SetPriceDto;
+__decorate([
+    (0, class_validator_1.IsEnum)(client_1.SessionType),
+    __metadata("design:type", typeof (_a = typeof client_1.SessionType !== "undefined" && client_1.SessionType) === "function" ? _a : Object)
+], SetPriceDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], SetPriceDto.prototype, "amount", void 0);
+class SetSubPriceDto {
+    period;
+    amount;
+}
+exports.SetSubPriceDto = SetSubPriceDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['month', 'year']),
+    __metadata("design:type", String)
+], SetSubPriceDto.prototype, "period", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], SetSubPriceDto.prototype, "amount", void 0);
+class ToggleRuleDto {
+    isActive;
+}
+exports.ToggleRuleDto = ToggleRuleDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], ToggleRuleDto.prototype, "isActive", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29raW5nLWFkbWluLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7O0FBQUEscURBQW9FO0FBQ3BFLDJDQUE2QztBQUU3Qzs7OztHQUlHO0FBQ0gsTUFBYSxXQUFXO0lBRXRCLElBQUksQ0FBZTtJQUduQixNQUFNLENBQVU7Q0FDakI7QUFORCxrQ0FNQztBQUpDO0lBREMsSUFBQSx3QkFBTSxFQUFDLG9CQUFXLENBQUM7a0RBQ2Isb0JBQVcsb0JBQVgsb0JBQVc7eUNBQUM7QUFHbkI7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OzJDQUNLO0FBR2xCLE1BQWEsY0FBYztJQUV6QixNQUFNLENBQW9CO0lBRzFCLE1BQU0sQ0FBVTtDQUNqQjtBQU5ELHdDQU1DO0FBSkM7SUFEQyxJQUFBLHNCQUFJLEVBQUMsQ0FBQyxPQUFPLEVBQUUsTUFBTSxDQUFDLENBQUM7OzhDQUNFO0FBRzFCO0lBREMsSUFBQSwwQkFBUSxHQUFFOzs4Q0FDSztBQUdsQixNQUFhLGFBQWE7SUFFeEIsUUFBUSxDQUFXO0NBQ3BCO0FBSEQsc0NBR0M7QUFEQztJQURDLElBQUEsMkJBQVMsR0FBRTs7K0NBQ08iLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29raW5nLWFkbWluLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc0Jvb2xlYW4sIElzRW51bSwgSXNJbiwgSXNOdW1iZXIgfSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuaW1wb3J0IHsgU2Vzc2lvblR5cGUgfSBmcm9tICdAcHJpc21hL2NsaWVudCc7XG5cbi8qKlxuICogRFRPINC00LvRjyDQsNC00LzQuNC9LdGN0L3QtNC/0L7QuNC90YLQvtCyINGG0LXQvdC+0L7QsdGA0LDQt9C+0LLQsNC90LjRjyDQuCDQv9GA0LDQstC40Lsg0LTQvtGB0YLRg9C/0L3QvtGB0YLQuFxuICogKNCw0YPQtNC40YIgMjAyNi0wNywgMtCzIC8g0L/RgNCw0LLQuNC70L4g4oSWNiBDTEFVREUubWQpLiDQrdC90LTQv9C+0LjQvdGC0Ysg0LfQsNGJ0LjRidC10L3Ri1xuICogYHgtYWRtaW4ta2V5YCwg0L3QviDRgtC10LvQviDQstGB0ZEg0YDQsNCy0L3QviDQv9GA0L7QstC10YDRj9C10YLRgdGPINGA0LDQvdGC0LDQudC80L7QvC5cbiAqL1xuZXhwb3J0IGNsYXNzIFNldFByaWNlRHRvIHtcbiAgQElzRW51bShTZXNzaW9uVHlwZSlcbiAgdHlwZSE6IFNlc3Npb25UeXBlO1xuXG4gIEBJc051bWJlcigpXG4gIGFtb3VudCE6IG51bWJlcjtcbn1cblxuZXhwb3J0IGNsYXNzIFNldFN1YlByaWNlRHRvIHtcbiAgQElzSW4oWydtb250aCcsICd5ZWFyJ10pXG4gIHBlcmlvZCE6ICdtb250aCcgfCAneWVhcic7XG5cbiAgQElzTnVtYmVyKClcbiAgYW1vdW50ITogbnVtYmVyO1xufVxuXG5leHBvcnQgY2xhc3MgVG9nZ2xlUnVsZUR0byB7XG4gIEBJc0Jvb2xlYW4oKVxuICBpc0FjdGl2ZSE6IGJvb2xlYW47XG59XG4iXSwidmVyc2lvbiI6M30=

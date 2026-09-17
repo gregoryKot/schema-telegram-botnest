@@ -85,8 +85,12 @@ function getBB() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // platform обязателен: их SDK создаёт window.Telegram.WebApp в любом
+  // окружении и вне мессенджера оставляет platform='unknown', поэтому детект
+  // считает настоящим Telegram только заполненную платформу (см. инцидент
+  // 2026-08-03 в shared/src/host/telegram.ts).
   window.Telegram = {
-    WebApp: { BackButton: makeBackButton() },
+    WebApp: { platform: 'ios', BackButton: makeBackButton() },
   } as unknown as Window['Telegram'];
   mockApi.getPair.mockResolvedValue({});
 });

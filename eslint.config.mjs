@@ -29,6 +29,11 @@ export default tseslint.config(
       // храповик краснеет от самого факта запуска `npm run mutation`).
       '.stryker-tmp/**',
       'reports/**',
+      // По той же причине — html-отчёт покрытия. Он приносит с собой чужие
+      // .js (prettify/sorter), которых нет в tsconfig, и линтер валится на
+      // parse-ошибке: локальный `jest --coverage` краснил храповик на ровном
+      // месте, хотя в CI отчёта просто нет.
+      '**/coverage/**',
     ],
   },
   eslint.configs.recommended,

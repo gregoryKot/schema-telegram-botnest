@@ -1,0 +1,62 @@
+fde2a760ad29498785235fcad3af565b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TherapyModule = void 0;
+const common_1 = require("@nestjs/common");
+const therapy_relations_service_1 = require("./therapy-relations.service");
+const therapy_tasks_service_1 = require("./therapy-tasks.service");
+const therapy_tasks_view_service_1 = require("./therapy-tasks-view.service");
+const therapy_notes_service_1 = require("./therapy-notes.service");
+const therapy_client_data_service_1 = require("./therapy-client-data.service");
+const mode_maps_service_1 = require("./mode-maps.service");
+const therapy_controller_1 = require("./therapy.controller");
+const therapy_connection_controller_1 = require("./therapy-connection.controller");
+const therapy_tasks_controller_1 = require("./therapy-tasks.controller");
+const therapy_notes_controller_1 = require("./therapy-notes.controller");
+const mode_maps_controller_1 = require("./mode-maps.controller");
+const therapist_request_service_1 = require("./therapist-request.service");
+const bot_module_1 = require("../bot/bot.module");
+const notification_module_1 = require("../notification/notification.module");
+const telegram_auth_guard_1 = require("../api/telegram-auth.guard");
+const auth_module_1 = require("../auth/auth.module");
+let TherapyModule = class TherapyModule {
+};
+exports.TherapyModule = TherapyModule;
+exports.TherapyModule = TherapyModule = __decorate([
+    (0, common_1.Module)({
+        imports: [bot_module_1.BotModule, notification_module_1.NotificationModule, auth_module_1.AuthModule],
+        controllers: [
+            therapy_controller_1.TherapyController,
+            therapy_connection_controller_1.TherapyConnectionController,
+            therapy_tasks_controller_1.TherapyTasksController,
+            therapy_notes_controller_1.TherapyNotesController,
+            mode_maps_controller_1.ModeMapsController,
+        ],
+        providers: [
+            therapy_relations_service_1.TherapyRelationsService,
+            therapy_tasks_service_1.TherapyTasksService,
+            therapy_tasks_view_service_1.TherapyTasksViewService,
+            therapy_notes_service_1.TherapyNotesService,
+            therapy_client_data_service_1.TherapyClientDataService,
+            mode_maps_service_1.ModeMapsService,
+            therapist_request_service_1.TherapistRequestService,
+            telegram_auth_guard_1.TelegramAuthGuard,
+        ],
+        exports: [
+            therapy_relations_service_1.TherapyRelationsService,
+            therapy_tasks_service_1.TherapyTasksService,
+            therapy_tasks_view_service_1.TherapyTasksViewService,
+            therapy_notes_service_1.TherapyNotesService,
+            therapy_client_data_service_1.TherapyClientDataService,
+            mode_maps_service_1.ModeMapsService,
+            therapist_request_service_1.TherapistRequestService,
+        ],
+    })
+], TherapyModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS90aGVyYXB5Lm1vZHVsZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7QUFBQSwyQ0FBd0M7QUFDeEMsMkVBQXNFO0FBQ3RFLG1FQUE4RDtBQUM5RCw2RUFBdUU7QUFDdkUsbUVBQThEO0FBQzlELCtFQUF5RTtBQUN6RSwyREFBc0Q7QUFDdEQsNkRBQXlEO0FBQ3pELG1GQUE4RTtBQUM5RSx5RUFBb0U7QUFDcEUseUVBQW9FO0FBQ3BFLGlFQUE0RDtBQUM1RCwyRUFBc0U7QUFDdEUsa0RBQThDO0FBQzlDLDZFQUF5RTtBQUN6RSxvRUFBK0Q7QUFDL0QscURBQWlEO0FBK0IxQyxJQUFNLGFBQWEsR0FBbkIsTUFBTSxhQUFhO0NBQUcsQ0FBQTtBQUFoQixzQ0FBYTt3QkFBYixhQUFhO0lBN0J6QixJQUFBLGVBQU0sRUFBQztRQUNOLE9BQU8sRUFBRSxDQUFDLHNCQUFTLEVBQUUsd0NBQWtCLEVBQUUsd0JBQVUsQ0FBQztRQUNwRCxXQUFXLEVBQUU7WUFDWCxzQ0FBaUI7WUFDakIsMkRBQTJCO1lBQzNCLGlEQUFzQjtZQUN0QixpREFBc0I7WUFDdEIseUNBQWtCO1NBQ25CO1FBQ0QsU0FBUyxFQUFFO1lBQ1QsbURBQXVCO1lBQ3ZCLDJDQUFtQjtZQUNuQixvREFBdUI7WUFDdkIsMkNBQW1CO1lBQ25CLHNEQUF3QjtZQUN4QixtQ0FBZTtZQUNmLG1EQUF1QjtZQUN2Qix1Q0FBaUI7U0FDbEI7UUFDRCxPQUFPLEVBQUU7WUFDUCxtREFBdUI7WUFDdkIsMkNBQW1CO1lBQ25CLG9EQUF1QjtZQUN2QiwyQ0FBbUI7WUFDbkIsc0RBQXdCO1lBQ3hCLG1DQUFlO1lBQ2YsbURBQXVCO1NBQ3hCO0tBQ0YsQ0FBQztHQUNXLGFBQWEsQ0FBRyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy90aGVyYXB5L3RoZXJhcHkubW9kdWxlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IE1vZHVsZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRoZXJhcHlSZWxhdGlvbnNTZXJ2aWNlIH0gZnJvbSAnLi90aGVyYXB5LXJlbGF0aW9ucy5zZXJ2aWNlJztcbmltcG9ydCB7IFRoZXJhcHlUYXNrc1NlcnZpY2UgfSBmcm9tICcuL3RoZXJhcHktdGFza3Muc2VydmljZSc7XG5pbXBvcnQgeyBUaGVyYXB5VGFza3NWaWV3U2VydmljZSB9IGZyb20gJy4vdGhlcmFweS10YXNrcy12aWV3LnNlcnZpY2UnO1xuaW1wb3J0IHsgVGhlcmFweU5vdGVzU2VydmljZSB9IGZyb20gJy4vdGhlcmFweS1ub3Rlcy5zZXJ2aWNlJztcbmltcG9ydCB7IFRoZXJhcHlDbGllbnREYXRhU2VydmljZSB9IGZyb20gJy4vdGhlcmFweS1jbGllbnQtZGF0YS5zZXJ2aWNlJztcbmltcG9ydCB7IE1vZGVNYXBzU2VydmljZSB9IGZyb20gJy4vbW9kZS1tYXBzLnNlcnZpY2UnO1xuaW1wb3J0IHsgVGhlcmFweUNvbnRyb2xsZXIgfSBmcm9tICcuL3RoZXJhcHkuY29udHJvbGxlcic7XG5pbXBvcnQgeyBUaGVyYXB5Q29ubmVjdGlvbkNvbnRyb2xsZXIgfSBmcm9tICcuL3RoZXJhcHktY29ubmVjdGlvbi5jb250cm9sbGVyJztcbmltcG9ydCB7IFRoZXJhcHlUYXNrc0NvbnRyb2xsZXIgfSBmcm9tICcuL3RoZXJhcHktdGFza3MuY29udHJvbGxlcic7XG5pbXBvcnQgeyBUaGVyYXB5Tm90ZXNDb250cm9sbGVyIH0gZnJvbSAnLi90aGVyYXB5LW5vdGVzLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgTW9kZU1hcHNDb250cm9sbGVyIH0gZnJvbSAnLi9tb2RlLW1hcHMuY29udHJvbGxlcic7XG5pbXBvcnQgeyBUaGVyYXBpc3RSZXF1ZXN0U2VydmljZSB9IGZyb20gJy4vdGhlcmFwaXN0LXJlcXVlc3Quc2VydmljZSc7XG5pbXBvcnQgeyBCb3RNb2R1bGUgfSBmcm9tICcuLi9ib3QvYm90Lm1vZHVsZSc7XG5pbXBvcnQgeyBOb3RpZmljYXRpb25Nb2R1bGUgfSBmcm9tICcuLi9ub3RpZmljYXRpb24vbm90aWZpY2F0aW9uLm1vZHVsZSc7XG5pbXBvcnQgeyBUZWxlZ3JhbUF1dGhHdWFyZCB9IGZyb20gJy4uL2FwaS90ZWxlZ3JhbS1hdXRoLmd1YXJkJztcbmltcG9ydCB7IEF1dGhNb2R1bGUgfSBmcm9tICcuLi9hdXRoL2F1dGgubW9kdWxlJztcblxuQE1vZHVsZSh7XG4gIGltcG9ydHM6IFtCb3RNb2R1bGUsIE5vdGlmaWNhdGlvbk1vZHVsZSwgQXV0aE1vZHVsZV0sXG4gIGNvbnRyb2xsZXJzOiBbXG4gICAgVGhlcmFweUNvbnRyb2xsZXIsXG4gICAgVGhlcmFweUNvbm5lY3Rpb25Db250cm9sbGVyLFxuICAgIFRoZXJhcHlUYXNrc0NvbnRyb2xsZXIsXG4gICAgVGhlcmFweU5vdGVzQ29udHJvbGxlcixcbiAgICBNb2RlTWFwc0NvbnRyb2xsZXIsXG4gIF0sXG4gIHByb3ZpZGVyczogW1xuICAgIFRoZXJhcHlSZWxhdGlvbnNTZXJ2aWNlLFxuICAgIFRoZXJhcHlUYXNrc1NlcnZpY2UsXG4gICAgVGhlcmFweVRhc2tzVmlld1NlcnZpY2UsXG4gICAgVGhlcmFweU5vdGVzU2VydmljZSxcbiAgICBUaGVyYXB5Q2xpZW50RGF0YVNlcnZpY2UsXG4gICAgTW9kZU1hcHNTZXJ2aWNlLFxuICAgIFRoZXJhcGlzdFJlcXVlc3RTZXJ2aWNlLFxuICAgIFRlbGVncmFtQXV0aEd1YXJkLFxuICBdLFxuICBleHBvcnRzOiBbXG4gICAgVGhlcmFweVJlbGF0aW9uc1NlcnZpY2UsXG4gICAgVGhlcmFweVRhc2tzU2VydmljZSxcbiAgICBUaGVyYXB5VGFza3NWaWV3U2VydmljZSxcbiAgICBUaGVyYXB5Tm90ZXNTZXJ2aWNlLFxuICAgIFRoZXJhcHlDbGllbnREYXRhU2VydmljZSxcbiAgICBNb2RlTWFwc1NlcnZpY2UsXG4gICAgVGhlcmFwaXN0UmVxdWVzdFNlcnZpY2UsXG4gIF0sXG59KVxuZXhwb3J0IGNsYXNzIFRoZXJhcHlNb2R1bGUge31cbiJdLCJ2ZXJzaW9uIjozfQ==

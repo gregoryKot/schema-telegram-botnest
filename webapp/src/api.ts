@@ -1,522 +1,164 @@
 // Shared API client for the web app.
 // Uses Authorization: Bearer <token> instead of x-telegram-init-data.
-import type {
-  Need,
-  UserProfile,
-  DayHistory,
-  EmotionEntry,
-  SchemaDiaryEntry,
-  ModeDiaryEntry,
-  GratitudeDiaryEntry,
-  TherapyClientSummary,
-} from '../../shared/src/types';
-// Единственная фронтовая копия типа — в shared (правило №3).
+// Единственная фронтовая копия типов — в shared (правило №3); методы, которые
+// их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { QuizDto } from '../../shared/src/quiz/quizEngine';
-import type {
-  UserSchemaNote,
-  UserModeNote,
-  SaveSchemaNoteBody,
-  SaveModeNoteBody,
-} from '../../shared/src/notes/types';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
-import { telemetryUrl } from './utils/telemetryUrl';
+import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
+import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
+import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
+import {
+  BASE,
+  ApiError,
+  fetchWithTimeout,
+  authedFetch,
+  get,
+  post,
+  postJson,
+  patchJson,
+  del,
+  setTokenProvider,
+  setRefreshHandler,
+} from './apiClient';
 
-const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
-const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
+export { ApiError, setTokenProvider, setRefreshHandler };
 
-let _getToken: (() => string | null) | null = null;
+// Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
+export const reportClientError = createClientErrorReporter(BASE, 'webapp');
 
-export function setTokenProvider(fn: () => string | null) {
-  _getToken = fn;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = _getToken?.();
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'Content-Type': 'application/json',
-  };
-}
-
-async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
+// Ошибку сервера показываем как есть — apiError() (apiClient.ts) уже вытащила
+// message из тела; глушим только попытку прочитать тело admin-ответа, не саму
+// ошибку (502 от прокси, оборванное соединение — тело может прийти не-JSON).
+async function adminApiError(res: Response): Promise<ApiError> {
+  let msg = `API error: ${res.status}`;
   try {
-    return await fetch(input, { ...init, signal: ctrl.signal, credentials: 'include' });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-async function get<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
-}
-
-async function post(path: string, body: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
-}
-
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
-  return res.json();
-}
-
-// Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
-// прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
-// если краш случился на выгрузке. Никогда не бросает: телеметрия не мешает UI.
-export function reportClientError(payload: {
-  message: string;
-  section: string;
-  stack?: string;
-  componentStack?: string;
-}): void {
-  try {
-    void fetch(`${BASE}/api/client-errors`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: payload.message.slice(0, 500),
-        section: payload.section.slice(0, 120),
-        stack: payload.stack?.slice(0, 4000),
-        componentStack: payload.componentStack?.slice(0, 4000),
-        source: 'webapp',
-        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment. После логина
-        // вебапп попадает на `/auth/callback#access_token=<JWT>` (TTL 15 мин),
-        // а хеш чистится лишь в useEffect — краш на фазе рендера успевал
-        // отправить токен в логи сервера и в DM админа.
-        url:
-          typeof location !== 'undefined'
-            ? telemetryUrl(location.href)
-            : undefined,
-      }),
-      keepalive: true,
-    }).catch(() => {});
+    const j = await res.json();
+    if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
   } catch {
-    /* best-effort */
+    /* тело не распарсилось как JSON — остаётся код статуса */
   }
-}
-
-async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
-  return res.json();
-}
-
-async function del(path: string): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return new ApiError(res.status, msg);
 }
 
 // Admin booking requests: the admin key goes in the x-admin-key header so it
-// never appears in URLs or server access logs.
+// never appears in URLs or server access logs (не через JWT-транспорт
+// apiClient.ts — свой ключ, свой заголовок, свой 401-путь не нужен).
 async function adminReq<T>(method: string, path: string, key: string, body?: unknown): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
-    throw new Error(msg);
-  }
+  if (!res.ok) throw await adminApiError(res);
   if (res.status === 204) return undefined as T;
   return res.json().catch(() => undefined as T);
 }
 
-// ─── Shared types (mirrored from miniapp, same backend) ──────────────────────
-export interface UserSettings {
-  notifyEnabled: boolean;
-  notifyLocalHour: number;
-  notifyTimezone: string;
-  notifyReminderEnabled: boolean;
-  notifyFrequency?: number;          // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
-  notifyQuietStart?: number;         // тихие часы: начало (локальный час)
-  notifyQuietEnd?: number;           // тихие часы: конец; start===end → выключены
-  notifyGamified?: boolean;          // opt-in игровой режим: серии + «ещё день до вехи»
-  notifyPausedUntil?: string | null; // ISO-дата конца паузы; POST null = возобновить
-  addressForm?: 'ty' | 'vy' | null;  // null = ещё не выбрано → показать выбор
-  pairCardDismissed: boolean;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  therapistShareCards: boolean;
-  therapistShareProfile: boolean;
-}
-export interface StreakData {
-  currentStreak: number;
-  longestStreak: number;
-  totalDays: number;
-  todayDone: boolean;
-  weekDots: boolean[];
-}
-export interface Achievement { id: string; earned: boolean; }
-export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
-export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
-export interface AvailabilityRule {
-  id: number; dayOfWeek: number; startHour: number; startMinute: number;
-  endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
-  timezone: string; isActive: boolean;
-}
-export type NewAvailabilityRule = {
-  dayOfWeek: number; startHour: number; endHour: number;
-  startMinute?: number; endMinute?: number; sessionDuration?: number; bufferMin?: number; timezone?: string;
-};
-export interface AdminBooking {
-  id: number; startsAt: string; durationMin: number; type: string; status: string;
-  clientName: string; clientContact: string; message: string | null;
-  cancelToken: string; meetingUrl: string | null;
-}
-/** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
-export interface AdminBookingStatus {
-  siteUrl: string;
-  appUrl: string;
-  robokassa: boolean;
-  robokassaTest: boolean;
-  zoom: boolean;
-  zoomVars: { accountId: boolean; clientId: boolean; clientSecret: boolean };
-  meetingStaticUrl: boolean;
-  appleCalendar: boolean;
-  calendarBusyCount: number | null;
-  calendarNames: string[];
-  calendarBlocking: boolean;
-  emailFallback: boolean;
-}
-export interface ArticleSummary {
-  id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null;
-}
-export interface Article extends ArticleSummary { content: string; }
-export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null; };
-export interface MarqueeTopic { label: string; href: string; }
-export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean; sortOrder: number; }
-/** Остаток пула канала: на сколько дней хватит ещё не звучавших фраз. */
-export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysLeft: number; }
-export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
-export interface UserPractice { id: number; needId: string; text: string; }
-export interface PartnerInfo {
-  code: string;
-  partnerIndex: number | null;
-  partnerTodayDone: boolean;
-  partnerName: string | null;
-  partnerTelegramId: number | null;
-  partnerWeekAvgs: (number | null)[];
-}
-export interface PairsData { partners: PartnerInfo[]; pendingCode: string | null; }
-export interface PracticePlan {
-  id: number;
-  needId: string;
-  practiceText: string;
-  scheduledDate: string;
-  reminderUtcHour: number | null;
-  done: boolean | null;
-}
-export interface UserTask {
-  id: number;
-  userId: number;
-  assignedBy: number | null;
-  type: string;
-  text: string;
-  targetDays: number | null;
-  needId: string | null;
-  dueDate: string | null;
-  done: boolean | null;
-  completedAt: string | null;
-  createdAt: string;
-  doneToday?: boolean;
-  progress?: number;
-}
-export interface TherapyRelationInfo {
-  role: 'therapist' | 'client';
-  status: string;
-  partnerName: string | null;
-  partnerId: number | null;
-  code: string;
-  nextSession: string | null;
-}
-export interface TherapistNote {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  date: string;
-  text: string;
-  createdAt: string;
-}
-export interface ConceptSnapshot {
-  savedAt: string;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions?: string | null;
-}
-export interface TherapistCustomMode {
-  id: number;
-  therapistId: number;
-  name: string;
-  emoji: string;
-  nodeType: string;
-  createdAt: string;
-}
-
-export interface ModeMapNode {
-  id: string;
-  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior';
-  position: { x: number; y: number };
-  data: {
-    modeId?: string;
-    label: string;
-    note?: string;
-    unmetNeed?: string;
-    customColor?: string;
-    filled?: boolean;
-    fillFull?: boolean;
-    copingSubtype?: 'over' | 'avoid' | 'surr';
-    display?: 'name' | 'note' | 'full';   // что показывать на фигуре
-    healthyResponse?: string;             // что сказал бы Здоровый Взрослый
-    strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
-    fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
-    side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
-    schemaId?: string;                     // связанная схема (из списка схем клиента)
-  };
-  width?: number;
-  height?: number;
-}
-
-export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
-
-export type LineStyle = 'solid' | 'dashed' | 'dotted';
-
-export interface ModeMapEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  label?: string;
-  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
-}
-
-export type ModeMapKind = 'personality' | 'problem' | 'couple';
-
-export interface ModeMapMeta {
-  id: number;
-  title: string;
-  kind: ModeMapKind;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ModeMapFull extends ModeMapMeta {
-  nodes: ModeMapNode[];
-  edges: ModeMapEdge[];
-}
-
-export interface ClientConceptualization {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions: string | null;
-  modeMapNodes: ModeMapNode[];
-  modeMapEdges: ModeMapEdge[];
-  history: ConceptSnapshot[];
-  updatedAt: string;
-}
-export interface YsqHistoryEntry {
-  id: number;
-  completedAt: string;
-  scores: { id: string; pct5plus: number; avg?: number }[];
-}
-export interface ClientData {
-  name: string | null;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  ysqCompletedAt: string | null;
-  ysqActiveSchemaIds: string[];
-  ysqHistory: YsqHistoryEntry[];
-}
-export interface BeliefCheckEntry {
-  id: number;
-  belief: string;
-  evidenceFor: string[];
-  evidenceAgainst: string[];
-  reframe: string | null;
-  createdAt: string;
-}
-export interface LetterEntry {
-  id: number;
-  text: string;
-  createdAt: string;
-}
-export interface FlashcardEntry {
-  id: number;
-  modeId: string;
-  needId: string;
-  reflection: string | null;
-  action: string | null;
-  createdAt: string;
-}
-export interface Insights {
-  weeklyStats: Array<{
-    needId: string;
-    avg: number | null;
-    trend: '↑' | '↓' | '→';
-  }>;
-  bestDayOfWeek: string | null;
-  worstDayOfWeek: string | null;
-  totalDays: number;
-}
-
+import type {
+  BookingSlot,
+  SessionOption,
+  AvailabilityRule,
+  NewAvailabilityRule,
+  AdminBooking,
+  AdminBookingStatus,
+  ArticleSummary,
+  Article,
+  ArticleDto,
+  MarqueeTopic,
+  AuditedPhrase,
+  HealthyAdultPhrase,
+  HealthyAdultPoolStatus,
+  PhraseIssue,
+  SiteContent,
+  UserTask,
+  TherapistCustomMode,
+  ModeMapKind,
+  ModeMapMeta,
+  ModeMapFull,
+  ClientConceptualization,
+  BeliefCheckEntry,
+  LetterEntry,
+  FlashcardEntry,
+  PhraseCheckEntry,
+} from './api.types';
+export type {
+  UserSettings,
+  StreakData,
+  Achievement,
+  BookingSlot,
+  SessionOption,
+  AvailabilityRule,
+  NewAvailabilityRule,
+  AdminBooking,
+  AdminBookingStatus,
+  ArticleSummary,
+  Article,
+  ArticleDto,
+  MarqueeTopic,
+  AuditedPhrase,
+  HealthyAdultPhrase,
+  HealthyAdultPoolStatus,
+  PhraseIssue,
+  SiteContent,
+  UserPractice,
+  PartnerInfo,
+  PairsData,
+  PracticePlan,
+  UserTask,
+  TherapyRelationInfo,
+  TherapistNote,
+  ConceptSnapshot,
+  TherapistCustomMode,
+  ModeMapNode,
+  EdgeType,
+  LineStyle,
+  ModeMapEdge,
+  ModeMapKind,
+  ModeMapMeta,
+  ModeMapFull,
+  ClientConceptualization,
+  YsqHistoryEntry,
+  ClientData,
+  BeliefCheckEntry,
+  LetterEntry,
+  FlashcardEntry,
+  PhraseCheckEntry,
+  Insights,
+} from './api.types';
 // ─── API object (identical endpoints, different auth header) ──────────────────
-export const api = {
-  init:           (tzOffset?: number) => post('/api/init', { tzOffset }),
 
-  // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
-  // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
-  trackEvent: (name: string, meta?: Record<string, unknown>): void => {
-    void post('/api/event', { name, meta }).catch(() => undefined);
-  },
+// Единый транспорт: общие методы приезжают из shared-фабрики (правило №3).
+const transport: ApiTransport = { get, post, postJson, del };
+
+// Оффлайн-надёжность оценки — shared/src/api/ratingApi.ts (единая реализация для обоих фронтендов, правило №3); `api.trackEvent` внутри — лениво (TDZ: `api` определится ниже, замыкание исполнится позже).
+// authedFetch (не голый fetchWithTimeout) — оценка теперь тоже переживает 401 (пункт 4 диагностики 2026-08-21), а не только сеть/5xx.
+const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta));
+
+export const api = {
+  // Общие с мини-аппом методы — из shared-фабрики (правило №3).
+  ...buildSharedApi(transport),
+  ...ratingApi,
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
-  trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
-    void post('/api/public-event', { name, meta }).catch(() => undefined);
-  },
-  getDisclaimer:  () => get<{ accepted: boolean }>('/api/disclaimer'),
-  acceptDisclaimer: () => post('/api/disclaimer', {}),
-  getYsqProgress: () => get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
-  saveYsqProgress: (answers: number[], page: number) => post('/api/ysq-progress', { answers, page }),
-  deleteYsqProgress: () => del('/api/ysq-progress'),
-  needs:          () => get<Need[]>('/api/needs'),
-  ratings:        (date?: string) => get<Record<string, number>>(`/api/ratings${date ? `?date=${encodeURIComponent(date)}` : ''}`),
-  saveRating:     async (needId: string, value: number, date?: string): Promise<{ ok: boolean; allDone: boolean; streak?: StreakData }> => {
-    const res = await fetch(`${BASE}/api/rating`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ needId, value, date }), credentials: 'include' });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
-  },
-  history:        (days = 7) => get<DayHistory[]>(`/api/history?days=${days}`),
-  getSettings:    () => get<UserSettings>('/api/settings'),
-  updateSettings: (body: Partial<UserSettings>) => post('/api/settings', body),
-  getAchievements: () => get<Achievement[]>('/api/achievements'),
-  getNote:         (date: string) => get<{ text: string | null; tags: string[] }>(`/api/note?date=${date}`),
-  saveNote:        (date: string, text: string, tags?: string[]) => post('/api/note', { date, text, tags }),
-  getStreak:      () => get<StreakData>('/api/streak'),
-  recordActivity: () => post('/api/activity', {}),
-  getInsights:    () => get<Insights>('/api/insights'),
-  getExport:      () => get<{ text: string }>('/api/export'),
-  getJourney:     () => get<import('../../shared/src/journey/journeyMeta').JourneyData>('/api/journey'),
-  getPractices:   (needId: string) => get<UserPractice[]>(`/api/practices?needId=${needId}`),
-  addPractice:    (needId: string, text: string) => post('/api/practices', { needId, text }),
-  deletePractice: (id: number) => del(`/api/practices/${id}`),
-  deleteAllUserData: () => del('/api/user'),
-  getPendingPlans: () => get<PracticePlan[]>('/api/plan/pending'),
-  getPlanHistory:  (days = 30) => get<PracticePlan[]>(`/api/plans/history?days=${days}`),
-  createPlan:      (needId: string, practiceText: string, reminderUtcHour?: number) => post('/api/plan', { needId, practiceText, reminderUtcHour }),
-  checkinPlan:     (id: number, done: boolean) => post(`/api/plan/${id}/checkin`, { done }),
-  getPair:         () => get<PairsData>('/api/pair'),
-  createPairInvite: async () => {
-    const res = await fetch(`${BASE}/api/pair/invite`, { method: 'POST', headers: authHeaders(), body: '{}', credentials: 'include' });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json() as Promise<{ code: string; url: string }>;
-  },
-  joinPair:        (code: string) => post('/api/pair/join', { code }),
-  leavePair:       async (code: string) => {
-    const res = await fetch(`${BASE}/api/pair`, { method: 'DELETE', headers: authHeaders(), body: JSON.stringify({ code }), credentials: 'include' });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-  },
-  getChildhoodRatings:  () => get<Record<string, number>>('/api/childhood-ratings'),
-  saveChildhoodRatings: (ratings: Record<string, number>) => post('/api/childhood-ratings', ratings),
-  getYsqResult:    () => get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
-  saveYsqResult:   (answers: number[]) => post('/api/ysq-result', { answers }),
-  deleteYsqResult: () => del('/api/ysq-result'),
-  getYsqHistory:   () => get<YsqHistoryEntry[]>('/api/ysq-history'),
-  getProfile:      () => get<UserProfile>('/api/profile'),
-  updateName:      (name: string) => postJson<{ ok: boolean }>('/api/profile/name', { name }),
-  getSchemaDiary:    () => get<SchemaDiaryEntry[]>('/api/diary/schema'),
-  createSchemaDiary: (data: { trigger: string; emotions: EmotionEntry[]; thoughts?: string; bodyFeelings?: string; actualBehavior?: string; schemaIds: string[]; schemaOrigin?: string; healthyView?: string; realProblems?: string; excessiveReactions?: string; healthyBehavior?: string }) => postJson<SchemaDiaryEntry>('/api/diary/schema', data),
-  deleteSchemaDiary: (id: number) => del(`/api/diary/schema/${id}`),
-  getModeDiary:      () => get<ModeDiaryEntry[]>('/api/diary/mode'),
-  createModeDiary:   (data: { modeId: string; situation: string; thoughts?: string; feelings?: string; bodyFeelings?: string; actions?: string; actualNeed?: string; childhoodMemories?: string; healthyResponse?: string }) => postJson<ModeDiaryEntry>('/api/diary/mode', data),
-  deleteModeDiary:   (id: number) => del(`/api/diary/mode/${id}`),
-  getGratitudeDiary:    () => get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) => postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
-  deleteGratitudeDiary: (id: number) => del(`/api/diary/gratitude/${id}`),
-  createTherapyInvite:  () => postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
-  getTherapyRelation:   () => get<TherapyRelationInfo | null>('/api/therapy/relation'),
-  joinTherapy:          (code: string) => post('/api/therapy/join', { code }),
-  leaveTherapy:         () => del('/api/therapy/relation'),
-  getTherapyClients:    () => get<TherapyClientSummary[]>('/api/therapy/clients'),
-  addClientManually:    (clientTelegramId: number) => postJson<TherapyClientSummary[]>('/api/therapy/clients/add', { clientTelegramId }),
-  addVirtualClient:     (name: string) => postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', { name }),
-  removeClient:         (clientId: number) => del(`/api/therapy/clients/${clientId}`),
-  renameClient:         (clientId: number, alias: string) => post(`/api/therapy/rename-client/${clientId}`, { alias }),
-  requestYsq:           (clientId: number) => post(`/api/therapy/request-ysq/${clientId}`, {}),
-  becomeTherapist:      (code: string) => postJson<{ ok: boolean }>('/api/therapy/become-therapist', { code }),
-  getTherapistRequest:  () => get<{ id: number; status: string; rejectReason: string | null } | null>('/api/therapy/request'),
-  submitTherapistRequest: (body: { fullName: string; qualification: string; contacts: string; message?: string }) =>
-    postJson<{ ok: boolean }>('/api/therapy/request', body),
-  setTherapistView:     (on: boolean) => postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
-  resignTherapist:      () => del('/api/therapy/therapist-role'),
-  createTask:           (body: { type: string; text: string; targetDays?: number; needId?: string; dueDate?: string; clientId?: number }) => postJson<UserTask>('/api/therapy/tasks', body),
-  getTasks:             () => get<UserTask[]>('/api/therapy/tasks'),
-  getTaskHistory:       () => get<UserTask[]>('/api/therapy/tasks/history'),
-  completeTask:         (id: number, done: boolean) => post(`/api/therapy/tasks/${id}/complete`, { done }),
-  getTherapyTasksForClient: (clientId: number) => get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getTherapistNotes:    (clientId: number) => get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
-  createTherapistNote:  (clientId: number, date: string, text: string) => postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
-  deleteTherapistNote:  (noteId: number) => del(`/api/therapy/notes/${noteId}`),
   getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
   saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
-  updateSessionInfo:    (clientId: number, body: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) => post(`/api/therapy/session-info/${clientId}`, body),
-  getTherapyClientData: (clientId: number) => get<ClientData>(`/api/therapy/client-data/${clientId}`),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
-  getSchemaNotes:       () => get<UserSchemaNote[]>('/api/schema-notes'),
-  saveSchemaNote:       (body: SaveSchemaNoteBody) => post('/api/schema-notes', body),
-  getModeNotes:         () => get<UserModeNote[]>('/api/mode-notes'),
-  saveModeNote:         (body: SaveModeNoteBody) => post('/api/mode-notes', body),
+  // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
+  // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
+  // Случайная фраза Здорового Взрослого для карточки шаринга («Фраза для
+  // себя», PhraseShareCard.tsx) — паритет с мини-аппом, правило №16.
+  getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
+  getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
+  createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
+  updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),
+  deletePhraseCheck:    (id: number) => del(`/api/phrase-checks/${id}`),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
@@ -528,8 +170,6 @@ export const api = {
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
-  getClientSchemaNotes: (clientId: number) => get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),
-  getClientModeNotes:   (clientId: number) => get<UserModeNote[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
@@ -585,6 +225,8 @@ export const api = {
   adminTestPhrasePost: (key: string) => adminReq<{ ok: boolean; message: string }>('POST', '/api/healthy-adult/admin/test-post', key, {}),
   adminImportPhrases: (key: string, text: string) => adminReq<{ created: HealthyAdultPhrase[]; message: string }>('POST', '/api/healthy-adult/admin/import', key, { text }),
   adminPhrasePoolStatus: (key: string) => adminReq<HealthyAdultPoolStatus>('GET', '/api/healthy-adult/admin/pool-status', key),
+  adminCheckPhrase:  (key: string, text: string) => adminReq<{ issues: PhraseIssue[] }>('POST', '/api/healthy-adult/admin/check', key, { text }),
+  adminAuditPhrases: (key: string) => adminReq<AuditedPhrase[]>('GET', '/api/healthy-adult/admin/audit', key),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

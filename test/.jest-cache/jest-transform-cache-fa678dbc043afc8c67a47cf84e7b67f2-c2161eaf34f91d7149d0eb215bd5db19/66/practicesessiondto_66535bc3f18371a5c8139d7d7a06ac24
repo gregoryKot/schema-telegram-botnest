@@ -1,0 +1,26 @@
+752e245e61daaab17024e0bf267a59e1
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RecordPracticeSessionDto = void 0;
+const class_validator_1 = require("class-validator");
+const practice_sessions_service_1 = require("../../bot/practice-sessions.service");
+/** DTO для POST /api/practice-session (правило №6: рантайм-валидация вместо
+ * inline-интерфейса в @Body()). tool — только из allow-list трёх практик. */
+class RecordPracticeSessionDto {
+    tool;
+}
+exports.RecordPracticeSessionDto = RecordPracticeSessionDto;
+__decorate([
+    (0, class_validator_1.IsIn)(practice_sessions_service_1.QUICK_PRACTICE_IDS),
+    __metadata("design:type", Object)
+], RecordPracticeSessionDto.prototype, "tool", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wcmFjdGljZS1zZXNzaW9uLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFBdUM7QUFDdkMsbUZBQXlFO0FBR3pFOzZFQUM2RTtBQUM3RSxNQUFhLHdCQUF3QjtJQUVuQyxJQUFJLENBQW1CO0NBQ3hCO0FBSEQsNERBR0M7QUFEQztJQURDLElBQUEsc0JBQUksRUFBQyw4Q0FBa0IsQ0FBQzs7c0RBQ0YiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wcmFjdGljZS1zZXNzaW9uLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc0luIH0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcbmltcG9ydCB7IFFVSUNLX1BSQUNUSUNFX0lEUyB9IGZyb20gJy4uLy4uL2JvdC9wcmFjdGljZS1zZXNzaW9ucy5zZXJ2aWNlJztcbmltcG9ydCB0eXBlIHsgUXVpY2tQcmFjdGljZUlkIH0gZnJvbSAnLi4vLi4vYm90L3ByYWN0aWNlLXNlc3Npb25zLnNlcnZpY2UnO1xuXG4vKiogRFRPINC00LvRjyBQT1NUIC9hcGkvcHJhY3RpY2Utc2Vzc2lvbiAo0L/RgNCw0LLQuNC70L4g4oSWNjog0YDQsNC90YLQsNC50Lwt0LLQsNC70LjQtNCw0YbQuNGPINCy0LzQtdGB0YLQvlxuICogaW5saW5lLdC40L3RgtC10YDRhNC10LnRgdCwINCyIEBCb2R5KCkpLiB0b29sIOKAlCDRgtC+0LvRjNC60L4g0LjQtyBhbGxvdy1saXN0INGC0YDRkdGFINC/0YDQsNC60YLQuNC6LiAqL1xuZXhwb3J0IGNsYXNzIFJlY29yZFByYWN0aWNlU2Vzc2lvbkR0byB7XG4gIEBJc0luKFFVSUNLX1BSQUNUSUNFX0lEUylcbiAgdG9vbCE6IFF1aWNrUHJhY3RpY2VJZDtcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

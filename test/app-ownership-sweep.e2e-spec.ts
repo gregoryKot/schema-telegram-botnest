@@ -7,23 +7,36 @@
 // not just the fake-prisma call args.
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { buildTestApp } from './e2e-support/build-test-app';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ysq)', () => {
   let app: INestApplication;
-
-  beforeAll(async () => {
-    ({ app } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  let prisma: TestApp['prisma'];
 
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 3_000_000_000_000_001n;
   const USER_B = 3_000_000_000_000_002n;
+  const ALL_USER_IDS = [USER_A, USER_B];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
+    // на фейке.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());
@@ -156,6 +169,27 @@ describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ys
 
     const asOther = await b.get(`/api/ratings?date=${date}`);
     expect(asOther.body).toEqual({});
+  });
+
+  // Контракт outbox-флаша (shared/api/ratingApi): оценка, ушедшая в очередь
+  // при обрыве сети, дошивается повторным POST с ТОЙ ЖЕ датой. Сервер обязан
+  // делать upsert, а не плодить строки — на живой БД (E2E_REAL_DB=1) это
+  // держит уникальный констрейнт, и именно такие места трижды расходились
+  // между фейковой Prisma и Postgres при зелёных тестах (CLAUDE.md).
+  it('rating: повторный POST той же даты — upsert последнего значения, не дубль', async () => {
+    const a = agentAs(USER_A);
+    const date = '2099-01-02';
+
+    await a.post('/api/rating', { needId: 'attachment', value: 4, date });
+    const again = await a.post('/api/rating', {
+      needId: 'attachment',
+      value: 9,
+      date,
+    });
+    expect(again.status).toBeLessThan(300);
+
+    const ratings = await a.get(`/api/ratings?date=${date}`);
+    expect(ratings.body).toEqual({ attachment: 9 });
   });
 
   it('practice-sessions: user B counts stay at 0 while user A racks up a practice', async () => {

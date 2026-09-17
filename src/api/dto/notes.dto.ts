@@ -1,4 +1,10 @@
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
@@ -16,7 +22,9 @@ export class SaveNoteDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(50)
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   tags?: string[];
 }
 
@@ -75,4 +83,25 @@ export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
   @MaxLength(NOTE_MAX)
   needs?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  modeFunction?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  needsMet?: string;
+
+  /** Имя режима своими словами — короткое, это подпись, а не текст. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  alias?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  fear?: string;
 }

@@ -1,0 +1,78 @@
+2da472bed3d5768267153e237b0b7c7c
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildTestApp = buildTestApp;
+// Общий бутстрап тестового приложения для e2e-смоука (TEST_COVERAGE_PLAN.md,
+// этап 1 п.7). Собирает НАСТОЯЩИЙ AppModule (все контроллеры/гарды/пайпы —
+// как в проде), подменяя только то, что не должно ходить в сеть/реальную БД:
+//   - PrismaService → стейтфулый in-memory фейк (fake-prisma.ts)
+//   - TELEGRAF_BOT   → no-op стаб (fake-bot.ts), чтобы не стучаться в Telegram
+//
+// Всё остальное — ValidationPipe, guard'ы, фильтры — то самое, что реально
+// работает в проде: это и есть смысл e2e (юнит-тесты не могут поймать
+// "guard не примонтирован" или "ValidationPipe не применён глобально").
+//
+// E2E_REAL_DB=1 (TEST_TRUST_PLAN.md, п.1) переключает PrismaService на
+// настоящий Postgres (см. buildTestApp() ниже и build-real-db-test-app.ts) —
+// для ownership-спеков, которые именно про фильтрацию по userId, там, где
+// фейк расходился с реальностью.
+const common_1 = require("@nestjs/common");
+const testing_1 = require("@nestjs/testing");
+const express_1 = require("express");
+const app_module_1 = require("../../src/app.module");
+const prisma_service_1 = require("../../src/prisma/prisma.service");
+const telegram_constants_1 = require("../../src/telegram/telegram.constants");
+const prisma_exception_filter_1 = require("../../src/prisma/prisma-exception.filter");
+const fake_prisma_1 = require("./fake-prisma");
+const fake_bot_1 = require("./fake-bot");
+const build_real_db_test_app_1 = require("./build-real-db-test-app");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cookieParser = require('cookie-parser');
+// BigInt → number в JSON-ответах — та же строка, что в src/main.ts. Без неё
+// любой ответ с полем-BigInt (userId в некоторых эндпоинтах) падает на
+// JSON.stringify (TypeError: Do not know how to serialize a BigInt).
+BigInt.prototype.toJSON = function () {
+    return Number(this);
+};
+async function buildTestApp() {
+    // Режим «реальная БД» (TEST_TRUST_PLAN.md, п.1): фейковая Prisma трижды
+    // расходилась с настоящей на ЗЕЛЁНЫХ тестах (не понимала top-level OR,
+    // не применяла @default из схемы, не поддерживала include) — ownership-
+    // спеки (те самые, что про фильтрацию по userId) гоняются вторым прогоном
+    // против реального Postgres джобы `migrations` (.github/workflows/ci.yml).
+    // Сигнатура и возвращаемый тип не меняются ради существующих вызовов:
+    // PrismaService структурно даёт те же методы (find*/create/upsert/
+    // deleteMany), которыми пользуются спеки — `._rows`-специфичные места
+    // (fake-prisma-only) переписаны на find*/deleteMany через
+    // cleanup-fixtures.ts и точечные правки в самих спеках.
+    if (process.env.E2E_REAL_DB === '1') {
+        // FakePrisma — ReturnType<typeof makeFakePrisma>, который сам typed
+        // `any` (see fake-prisma.ts) — присвоение PrismaService сюда не требует
+        // приведения типа, но остаётся структурно совместимым по вызовам,
+        // которые используют спеки.
+        return await (0, build_real_db_test_app_1.buildRealDbTestApp)();
+    }
+    const prisma = (0, fake_prisma_1.makeFakePrisma)();
+    const moduleRef = await testing_1.Test.createTestingModule({
+        imports: [app_module_1.AppModule],
+    })
+        .overrideProvider(prisma_service_1.PrismaService)
+        .useValue(prisma)
+        .overrideProvider(telegram_constants_1.TELEGRAF_BOT)
+        .useValue((0, fake_bot_1.makeFakeBot)())
+        .compile();
+    const app = moduleRef.createNestApplication();
+    // ── ЗЕРКАЛО src/main.ts — держать синхронно при правках bootstrap() ────────
+    // (helmet/CORS/redirect-middleware/ServeStatic намеренно опущены: они не
+    // участвуют в проверяемых смоуком инвариантах — guard/DTO/ownership — и не
+    // нужны для запросов supertest напрямую к handler'ам.)
+    app.use(cookieParser());
+    app.useGlobalFilters(new prisma_exception_filter_1.GenericExceptionFilter(), new prisma_exception_filter_1.PrismaExceptionFilter());
+    app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, transform: true }));
+    app.use((0, express_1.json)({ limit: '256kb' }));
+    app.use((0, express_1.urlencoded)({ limit: '256kb', extended: true }));
+    // ─────────────────────────────────────────────────────────────────────────
+    await app.init();
+    return { app, prisma };
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC90ZXN0L2UyZS1zdXBwb3J0L2J1aWxkLXRlc3QtYXBwLnRzIiwibWFwcGluZ3MiOiI7O0FBMENBLG9DQWdEQztBQTFGRCw2RUFBNkU7QUFDN0UsMkVBQTJFO0FBQzNFLDZFQUE2RTtBQUM3RSxpRUFBaUU7QUFDakUsK0VBQStFO0FBQy9FLEVBQUU7QUFDRiwyRUFBMkU7QUFDM0Usc0VBQXNFO0FBQ3RFLHdFQUF3RTtBQUN4RSxFQUFFO0FBQ0YsdUVBQXVFO0FBQ3ZFLDZFQUE2RTtBQUM3RSwwRUFBMEU7QUFDMUUsaUNBQWlDO0FBQ2pDLDJDQUFrRTtBQUNsRSw2Q0FBdUM7QUFDdkMscUNBQTJDO0FBQzNDLHFEQUFpRDtBQUNqRCxvRUFBZ0U7QUFDaEUsOEVBQXFFO0FBQ3JFLHNGQUdrRDtBQUNsRCwrQ0FBMkQ7QUFDM0QseUNBQXlDO0FBQ3pDLHFFQUE4RDtBQUM5RCxpRUFBaUU7QUFDakUsTUFBTSxZQUFZLEdBQUcsT0FBTyxDQUFDLGVBQWUsQ0FBQyxDQUFDO0FBRTlDLDRFQUE0RTtBQUM1RSx1RUFBdUU7QUFDdkUscUVBQXFFO0FBQ3BFLE1BQU0sQ0FBQyxTQUFpQixDQUFDLE1BQU0sR0FBRztJQUNqQyxPQUFPLE1BQU0sQ0FBQyxJQUFJLENBQUMsQ0FBQztBQUN0QixDQUFDLENBQUM7QUFPSyxLQUFLLFVBQVUsWUFBWTtJQUNoQyx3RUFBd0U7SUFDeEUsdUVBQXVFO0lBQ3ZFLHdFQUF3RTtJQUN4RSwwRUFBMEU7SUFDMUUsMkVBQTJFO0lBQzNFLHNFQUFzRTtJQUN0RSxtRUFBbUU7SUFDbkUsc0VBQXNFO0lBQ3RFLDBEQUEwRDtJQUMxRCx3REFBd0Q7SUFDeEQsSUFBSSxPQUFPLENBQUMsR0FBRyxDQUFDLFdBQVcsS0FBSyxHQUFHLEVBQUUsQ0FBQztRQUNwQyxvRUFBb0U7UUFDcEUsd0VBQXdFO1FBQ3hFLGtFQUFrRTtRQUNsRSw0QkFBNEI7UUFDNUIsT0FBTyxNQUFNLElBQUEsMkNBQWtCLEdBQUUsQ0FBQztJQUNwQyxDQUFDO0lBRUQsTUFBTSxNQUFNLEdBQUcsSUFBQSw0QkFBYyxHQUFFLENBQUM7SUFFaEMsTUFBTSxTQUFTLEdBQUcsTUFBTSxjQUFJLENBQUMsbUJBQW1CLENBQUM7UUFDL0MsT0FBTyxFQUFFLENBQUMsc0JBQVMsQ0FBQztLQUNyQixDQUFDO1NBQ0MsZ0JBQWdCLENBQUMsOEJBQWEsQ0FBQztTQUMvQixRQUFRLENBQUMsTUFBTSxDQUFDO1NBQ2hCLGdCQUFnQixDQUFDLGlDQUFZLENBQUM7U0FDOUIsUUFBUSxDQUFDLElBQUEsc0JBQVcsR0FBRSxDQUFDO1NBQ3ZCLE9BQU8sRUFBRSxDQUFDO0lBRWIsTUFBTSxHQUFHLEdBQUcsU0FBUyxDQUFDLHFCQUFxQixFQUFFLENBQUM7SUFFOUMsOEVBQThFO0lBQzlFLHlFQUF5RTtJQUN6RSwyRUFBMkU7SUFDM0UsdURBQXVEO0lBQ3ZELEdBQUcsQ0FBQyxHQUFHLENBQUMsWUFBWSxFQUFFLENBQUMsQ0FBQztJQUN4QixHQUFHLENBQUMsZ0JBQWdCLENBQ2xCLElBQUksZ0RBQXNCLEVBQUUsRUFDNUIsSUFBSSwrQ0FBcUIsRUFBRSxDQUM1QixDQUFDO0lBQ0YsR0FBRyxDQUFDLGNBQWMsQ0FBQyxJQUFJLHVCQUFjLENBQUMsRUFBRSxTQUFTLEVBQUUsSUFBSSxFQUFFLFNBQVMsRUFBRSxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7SUFDN0UsR0FBRyxDQUFDLEdBQUcsQ0FBQyxJQUFBLGNBQUksRUFBQyxFQUFFLEtBQUssRUFBRSxPQUFPLEVBQUUsQ0FBQyxDQUFDLENBQUM7SUFDbEMsR0FBRyxDQUFDLEdBQUcsQ0FBQyxJQUFBLG9CQUFVLEVBQUMsRUFBRSxLQUFLLEVBQUUsT0FBTyxFQUFFLFFBQVEsRUFBRSxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7SUFDeEQsNEVBQTRFO0lBRTVFLE1BQU0sR0FBRyxDQUFDLElBQUksRUFBRSxDQUFDO0lBQ2pCLE9BQU8sRUFBRSxHQUFHLEVBQUUsTUFBTSxFQUFFLENBQUM7QUFDekIsQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3Rlc3QvZTJlLXN1cHBvcnQvYnVpbGQtdGVzdC1hcHAudHMiXSwic291cmNlc0NvbnRlbnQiOlsiLy8g0J7QsdGJ0LjQuSDQsdGD0YLRgdGC0YDQsNC/INGC0LXRgdGC0L7QstC+0LPQviDQv9GA0LjQu9C+0LbQtdC90LjRjyDQtNC70Y8gZTJlLdGB0LzQvtGD0LrQsCAoVEVTVF9DT1ZFUkFHRV9QTEFOLm1kLFxuLy8g0Y3RgtCw0L8gMSDQvy43KS4g0KHQvtCx0LjRgNCw0LXRgiDQndCQ0KHQotCe0K/QqdCY0JkgQXBwTW9kdWxlICjQstGB0LUg0LrQvtC90YLRgNC+0LvQu9C10YDRiy/Qs9Cw0YDQtNGLL9C/0LDQudC/0Ysg4oCUXG4vLyDQutCw0Log0LIg0L/RgNC+0LTQtSksINC/0L7QtNC80LXQvdGP0Y8g0YLQvtC70YzQutC+INGC0L4sINGH0YLQviDQvdC1INC00L7Qu9C20L3QviDRhdC+0LTQuNGC0Ywg0LIg0YHQtdGC0Ywv0YDQtdCw0LvRjNC90YPRjiDQkdCUOlxuLy8gICAtIFByaXNtYVNlcnZpY2Ug4oaSINGB0YLQtdC50YLRhNGD0LvRi9C5IGluLW1lbW9yeSDRhNC10LnQuiAoZmFrZS1wcmlzbWEudHMpXG4vLyAgIC0gVEVMRUdSQUZfQk9UICAg4oaSIG5vLW9wINGB0YLQsNCxIChmYWtlLWJvdC50cyksINGH0YLQvtCx0Ysg0L3QtSDRgdGC0YPRh9Cw0YLRjNGB0Y8g0LIgVGVsZWdyYW1cbi8vXG4vLyDQktGB0ZEg0L7RgdGC0LDQu9GM0L3QvtC1IOKAlCBWYWxpZGF0aW9uUGlwZSwgZ3VhcmQn0YssINGE0LjQu9GM0YLRgNGLIOKAlCDRgtC+INGB0LDQvNC+0LUsINGH0YLQviDRgNC10LDQu9GM0L3QvlxuLy8g0YDQsNCx0L7RgtCw0LXRgiDQsiDQv9GA0L7QtNC1OiDRjdGC0L4g0Lgg0LXRgdGC0Ywg0YHQvNGL0YHQuyBlMmUgKNGO0L3QuNGCLdGC0LXRgdGC0Ysg0L3QtSDQvNC+0LPRg9GCINC/0L7QudC80LDRgtGMXG4vLyBcImd1YXJkINC90LUg0L/RgNC40LzQvtC90YLQuNGA0L7QstCw0L1cIiDQuNC70LggXCJWYWxpZGF0aW9uUGlwZSDQvdC1INC/0YDQuNC80LXQvdGR0L0g0LPQu9C+0LHQsNC70YzQvdC+XCIpLlxuLy9cbi8vIEUyRV9SRUFMX0RCPTEgKFRFU1RfVFJVU1RfUExBTi5tZCwg0L8uMSkg0L/QtdGA0LXQutC70Y7Rh9Cw0LXRgiBQcmlzbWFTZXJ2aWNlINC90LBcbi8vINC90LDRgdGC0L7Rj9GJ0LjQuSBQb3N0Z3JlcyAo0YHQvC4gYnVpbGRUZXN0QXBwKCkg0L3QuNC20LUg0LggYnVpbGQtcmVhbC1kYi10ZXN0LWFwcC50cykg4oCUXG4vLyDQtNC70Y8gb3duZXJzaGlwLdGB0L/QtdC60L7Qsiwg0LrQvtGC0L7RgNGL0LUg0LjQvNC10L3QvdC+INC/0YDQviDRhNC40LvRjNGC0YDQsNGG0LjRjiDQv9C+IHVzZXJJZCwg0YLQsNC8LCDQs9C00LVcbi8vINGE0LXQudC6INGA0LDRgdGF0L7QtNC40LvRgdGPINGBINGA0LXQsNC70YzQvdC+0YHRgtGM0Y4uXG5pbXBvcnQgeyBJTmVzdEFwcGxpY2F0aW9uLCBWYWxpZGF0aW9uUGlwZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRlc3QgfSBmcm9tICdAbmVzdGpzL3Rlc3RpbmcnO1xuaW1wb3J0IHsganNvbiwgdXJsZW5jb2RlZCB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgQXBwTW9kdWxlIH0gZnJvbSAnLi4vLi4vc3JjL2FwcC5tb2R1bGUnO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uLy4uL3NyYy9wcmlzbWEvcHJpc21hLnNlcnZpY2UnO1xuaW1wb3J0IHsgVEVMRUdSQUZfQk9UIH0gZnJvbSAnLi4vLi4vc3JjL3RlbGVncmFtL3RlbGVncmFtLmNvbnN0YW50cyc7XG5pbXBvcnQge1xuICBHZW5lcmljRXhjZXB0aW9uRmlsdGVyLFxuICBQcmlzbWFFeGNlcHRpb25GaWx0ZXIsXG59IGZyb20gJy4uLy4uL3NyYy9wcmlzbWEvcHJpc21hLWV4Y2VwdGlvbi5maWx0ZXInO1xuaW1wb3J0IHsgbWFrZUZha2VQcmlzbWEsIEZha2VQcmlzbWEgfSBmcm9tICcuL2Zha2UtcHJpc21hJztcbmltcG9ydCB7IG1ha2VGYWtlQm90IH0gZnJvbSAnLi9mYWtlLWJvdCc7XG5pbXBvcnQgeyBidWlsZFJlYWxEYlRlc3RBcHAgfSBmcm9tICcuL2J1aWxkLXJlYWwtZGItdGVzdC1hcHAnO1xuLy8gZXNsaW50LWRpc2FibGUtbmV4dC1saW5lIEB0eXBlc2NyaXB0LWVzbGludC9uby1yZXF1aXJlLWltcG9ydHNcbmNvbnN0IGNvb2tpZVBhcnNlciA9IHJlcXVpcmUoJ2Nvb2tpZS1wYXJzZXInKTtcblxuLy8gQmlnSW50IOKGkiBudW1iZXIg0LIgSlNPTi3QvtGC0LLQtdGC0LDRhSDigJQg0YLQsCDQttC1INGB0YLRgNC+0LrQsCwg0YfRgtC+INCyIHNyYy9tYWluLnRzLiDQkdC10Lcg0L3QtdGRXG4vLyDQu9GO0LHQvtC5INC+0YLQstC10YIg0YEg0L/QvtC70LXQvC1CaWdJbnQgKHVzZXJJZCDQsiDQvdC10LrQvtGC0L7RgNGL0YUg0Y3QvdC00L/QvtC40L3RgtCw0YUpINC/0LDQtNCw0LXRgiDQvdCwXG4vLyBKU09OLnN0cmluZ2lmeSAoVHlwZUVycm9yOiBEbyBub3Qga25vdyBob3cgdG8gc2VyaWFsaXplIGEgQmlnSW50KS5cbihCaWdJbnQucHJvdG90eXBlIGFzIGFueSkudG9KU09OID0gZnVuY3Rpb24gKCkge1xuICByZXR1cm4gTnVtYmVyKHRoaXMpO1xufTtcblxuZXhwb3J0IGludGVyZmFjZSBUZXN0QXBwIHtcbiAgYXBwOiBJTmVzdEFwcGxpY2F0aW9uO1xuICBwcmlzbWE6IEZha2VQcmlzbWE7XG59XG5cbmV4cG9ydCBhc3luYyBmdW5jdGlvbiBidWlsZFRlc3RBcHAoKTogUHJvbWlzZTxUZXN0QXBwPiB7XG4gIC8vINCg0LXQttC40LwgwqvRgNC10LDQu9GM0L3QsNGPINCR0JTCuyAoVEVTVF9UUlVTVF9QTEFOLm1kLCDQvy4xKTog0YTQtdC50LrQvtCy0LDRjyBQcmlzbWEg0YLRgNC40LbQtNGLXG4gIC8vINGA0LDRgdGF0L7QtNC40LvQsNGB0Ywg0YEg0L3QsNGB0YLQvtGP0YnQtdC5INC90LAg0JfQldCb0IHQndCr0KUg0YLQtdGB0YLQsNGFICjQvdC1INC/0L7QvdC40LzQsNC70LAgdG9wLWxldmVsIE9SLFxuICAvLyDQvdC1INC/0YDQuNC80LXQvdGP0LvQsCBAZGVmYXVsdCDQuNC3INGB0YXQtdC80YssINC90LUg0L/QvtC00LTQtdGA0LbQuNCy0LDQu9CwIGluY2x1ZGUpIOKAlCBvd25lcnNoaXAtXG4gIC8vINGB0L/QtdC60LggKNGC0LUg0YHQsNC80YvQtSwg0YfRgtC+INC/0YDQviDRhNC40LvRjNGC0YDQsNGG0LjRjiDQv9C+IHVzZXJJZCkg0LPQvtC90Y/RjtGC0YHRjyDQstGC0L7RgNGL0Lwg0L/RgNC+0LPQvtC90L7QvFxuICAvLyDQv9GA0L7RgtC40LIg0YDQtdCw0LvRjNC90L7Qs9C+IFBvc3RncmVzINC00LbQvtCx0YsgYG1pZ3JhdGlvbnNgICguZ2l0aHViL3dvcmtmbG93cy9jaS55bWwpLlxuICAvLyDQodC40LPQvdCw0YLRg9GA0LAg0Lgg0LLQvtC30LLRgNCw0YnQsNC10LzRi9C5INGC0LjQvyDQvdC1INC80LXQvdGP0Y7RgtGB0Y8g0YDQsNC00Lgg0YHRg9GJ0LXRgdGC0LLRg9GO0YnQuNGFINCy0YvQt9C+0LLQvtCyOlxuICAvLyBQcmlzbWFTZXJ2aWNlINGB0YLRgNGD0LrRgtGD0YDQvdC+INC00LDRkdGCINGC0LUg0LbQtSDQvNC10YLQvtC00YsgKGZpbmQqL2NyZWF0ZS91cHNlcnQvXG4gIC8vIGRlbGV0ZU1hbnkpLCDQutC+0YLQvtGA0YvQvNC4INC/0L7Qu9GM0LfRg9GO0YLRgdGPINGB0L/QtdC60Lgg4oCUIGAuX3Jvd3NgLdGB0L/QtdGG0LjRhNC40YfQvdGL0LUg0LzQtdGB0YLQsFxuICAvLyAoZmFrZS1wcmlzbWEtb25seSkg0L/QtdGA0LXQv9C40YHQsNC90Ysg0L3QsCBmaW5kKi9kZWxldGVNYW55INGH0LXRgNC10LdcbiAgLy8gY2xlYW51cC1maXh0dXJlcy50cyDQuCDRgtC+0YfQtdGH0L3Ri9C1INC/0YDQsNCy0LrQuCDQsiDRgdCw0LzQuNGFINGB0L/QtdC60LDRhS5cbiAgaWYgKHByb2Nlc3MuZW52LkUyRV9SRUFMX0RCID09PSAnMScpIHtcbiAgICAvLyBGYWtlUHJpc21hIOKAlCBSZXR1cm5UeXBlPHR5cGVvZiBtYWtlRmFrZVByaXNtYT4sINC60L7RgtC+0YDRi9C5INGB0LDQvCB0eXBlZFxuICAgIC8vIGBhbnlgIChzZWUgZmFrZS1wcmlzbWEudHMpIOKAlCDQv9GA0LjRgdCy0L7QtdC90LjQtSBQcmlzbWFTZXJ2aWNlINGB0Y7QtNCwINC90LUg0YLRgNC10LHRg9C10YJcbiAgICAvLyDQv9GA0LjQstC10LTQtdC90LjRjyDRgtC40L/QsCwg0L3QviDQvtGB0YLQsNGR0YLRgdGPINGB0YLRgNGD0LrRgtGD0YDQvdC+INGB0L7QstC80LXRgdGC0LjQvNGL0Lwg0L/QviDQstGL0LfQvtCy0LDQvCxcbiAgICAvLyDQutC+0YLQvtGA0YvQtSDQuNGB0L/QvtC70YzQt9GD0Y7RgiDRgdC/0LXQutC4LlxuICAgIHJldHVybiBhd2FpdCBidWlsZFJlYWxEYlRlc3RBcHAoKTtcbiAgfVxuXG4gIGNvbnN0IHByaXNtYSA9IG1ha2VGYWtlUHJpc21hKCk7XG5cbiAgY29uc3QgbW9kdWxlUmVmID0gYXdhaXQgVGVzdC5jcmVhdGVUZXN0aW5nTW9kdWxlKHtcbiAgICBpbXBvcnRzOiBbQXBwTW9kdWxlXSxcbiAgfSlcbiAgICAub3ZlcnJpZGVQcm92aWRlcihQcmlzbWFTZXJ2aWNlKVxuICAgIC51c2VWYWx1ZShwcmlzbWEpXG4gICAgLm92ZXJyaWRlUHJvdmlkZXIoVEVMRUdSQUZfQk9UKVxuICAgIC51c2VWYWx1ZShtYWtlRmFrZUJvdCgpKVxuICAgIC5jb21waWxlKCk7XG5cbiAgY29uc3QgYXBwID0gbW9kdWxlUmVmLmNyZWF0ZU5lc3RBcHBsaWNhdGlvbigpO1xuXG4gIC8vIOKUgOKUgCDQl9CV0KDQmtCQ0JvQniBzcmMvbWFpbi50cyDigJQg0LTQtdGA0LbQsNGC0Ywg0YHQuNC90YXRgNC+0L3QvdC+INC/0YDQuCDQv9GA0LDQstC60LDRhSBib290c3RyYXAoKSDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgLy8gKGhlbG1ldC9DT1JTL3JlZGlyZWN0LW1pZGRsZXdhcmUvU2VydmVTdGF0aWMg0L3QsNC80LXRgNC10L3QvdC+INC+0L/Rg9GJ0LXQvdGLOiDQvtC90Lgg0L3QtVxuICAvLyDRg9GH0LDRgdGC0LLRg9GO0YIg0LIg0L/RgNC+0LLQtdGA0Y/QtdC80YvRhSDRgdC80L7Rg9C60L7QvCDQuNC90LLQsNGA0LjQsNC90YLQsNGFIOKAlCBndWFyZC9EVE8vb3duZXJzaGlwIOKAlCDQuCDQvdC1XG4gIC8vINC90YPQttC90Ysg0LTQu9GPINC30LDQv9GA0L7RgdC+0LIgc3VwZXJ0ZXN0INC90LDQv9GA0Y/QvNGD0Y4g0LogaGFuZGxlcifQsNC8LilcbiAgYXBwLnVzZShjb29raWVQYXJzZXIoKSk7XG4gIGFwcC51c2VHbG9iYWxGaWx0ZXJzKFxuICAgIG5ldyBHZW5lcmljRXhjZXB0aW9uRmlsdGVyKCksXG4gICAgbmV3IFByaXNtYUV4Y2VwdGlvbkZpbHRlcigpLFxuICApO1xuICBhcHAudXNlR2xvYmFsUGlwZXMobmV3IFZhbGlkYXRpb25QaXBlKHsgd2hpdGVsaXN0OiB0cnVlLCB0cmFuc2Zvcm06IHRydWUgfSkpO1xuICBhcHAudXNlKGpzb24oeyBsaW1pdDogJzI1NmtiJyB9KSk7XG4gIGFwcC51c2UodXJsZW5jb2RlZCh7IGxpbWl0OiAnMjU2a2InLCBleHRlbmRlZDogdHJ1ZSB9KSk7XG4gIC8vIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIGF3YWl0IGFwcC5pbml0KCk7XG4gIHJldHVybiB7IGFwcCwgcHJpc21hIH07XG59XG4iXSwidmVyc2lvbiI6M30=

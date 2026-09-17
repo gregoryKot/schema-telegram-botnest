@@ -15,7 +15,7 @@ export function SchemaDescSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 16,
           }}
         >

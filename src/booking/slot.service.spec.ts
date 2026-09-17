@@ -73,6 +73,18 @@ describe('SlotService.getSlots — базовая генерация и гран
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
   });
 
+  it('диапазон >366 дней клампится — перебор не виснет, слоты в пределах потолка (D1)', async () => {
+    const { service } = makeService({ rules: [RULE] });
+    const farFuture = new Date(MONDAY.getTime() + 400 * 86_400_000);
+    const slots = await service.getSlots(MONDAY, farFuture);
+    expect(slots.length).toBeGreaterThan(0);
+    // Без клампа слоты дотянулись бы до +400 дней; потолок 366 их обрезает.
+    const ceiling = MONDAY.getTime() + 367 * 86_400_000;
+    expect(Math.max(...slots.map((s) => s.startsAt.getTime()))).toBeLessThan(
+      ceiling,
+    );
+  });
+
   it('генерирует слоты с шагом sessionDuration+bufferMin (буфер соблюдён)', async () => {
     const { service } = makeService({ rules: [RULE] });
     const slots = await service.getSlots(MONDAY, MONDAY);
@@ -216,8 +228,14 @@ describe('SlotService.getSlots — занятость из внешнего ка
       rules: [RULE],
       blockBusy: false,
     });
-    await service.getSlots(MONDAY, MONDAY);
+    const slots = await service.getSlots(MONDAY, MONDAY);
     expect(calDav.getBusyTimes).not.toHaveBeenCalled();
+    // Без блокировки по календарю оба слота из правила остаются на месте —
+    // это не «пустой список из-за сломанного пути», а честный неотфильтрованный результат.
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
   });
 
   it('CALENDAR_BLOCK_SLOTS включён — занятый интервал из календаря вычёркивает пересекающийся слот', async () => {

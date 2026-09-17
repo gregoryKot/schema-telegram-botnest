@@ -1,4 +1,5 @@
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { ALL_SCHEMAS, MODE_GROUPS } from '../../schemaTherapyData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
 
 interface ClinicalSnapshotProps {
@@ -83,22 +84,20 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                 }}
               >
                 {activeSchemaIds.map((id) => {
-                  const domain = SCHEMA_DOMAINS.find((d) =>
-                    d.schemas.some((s) => s.id === id),
-                  );
-                  const schema = domain?.schemas.find((s) => s.id === id);
+                  const schema = ALL_SCHEMAS.find((s) => s.id === id);
                   return schema ? (
                     <span
                       key={id}
                       style={{
                         fontSize: 12,
                         padding: '3px 9px',
-                        borderRadius: 20,
-                        background: (domain?.color ?? '#888') + '25',
-                        color: domain?.color ?? 'rgba(var(--fg-rgb),0.6)',
+                        borderRadius: 'var(--r-20)',
+                        background: (schema.domainColor ?? '#888') + '25',
+                        color: schema.domainColor ?? 'rgba(var(--fg-rgb),0.6)',
                       }}
                     >
-                      {schema.emoji} {schema.name}
+                      <IdentityDot color={schema.domainColor} size={7} />{' '}
+                      {schema.name}
                     </span>
                   ) : null;
                 })}
@@ -130,7 +129,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',
-                      gap: 8,
+                      gap: 'var(--space-8)',
                       marginBottom: 5,
                     }}
                   >
@@ -152,7 +151,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                       style={{
                         display: 'flex',
                         flexWrap: 'wrap',
-                        gap: 4,
+                        gap: 'var(--space-4)',
                       }}
                     >
                       {groupModes.map((m) => (
@@ -161,12 +160,12 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
                           style={{
                             fontSize: 12,
                             padding: '3px 9px',
-                            borderRadius: 20,
+                            borderRadius: 'var(--r-20)',
                             background: group.color + '25',
                             color: group.color,
                           }}
                         >
-                          {m.emoji} {m.name}
+                          <IdentityDot color={group.color} size={7} /> {m.name}
                         </span>
                       ))}
                     </div>
@@ -241,7 +240,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
             style={{
               background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
               border: 'none',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '9px 18px',
               color: 'var(--accent)',
               fontSize: 13,

@@ -2,8 +2,8 @@
 
 export function DiaryTypeBadge({ type }: { type: string }) {
   const MAP: Record<string, { label: string; color: string }> = {
-    schema: { label: 'Сх', color: '#818cf8' },
-    mode: { label: 'Рж', color: '#f472b6' },
+    schema: { label: 'Сх', color: 'var(--accent)' },
+    mode: { label: 'Рж', color: 'var(--accent-pink)' },
     gratitude: { label: 'Бл', color: '#4ade80' },
   };
   const { label, color } = MAP[type] ?? {
@@ -22,7 +22,7 @@ export function DiaryTypeBadge({ type }: { type: string }) {
         fontSize: 10,
         fontWeight: 700,
         color,
-        background: color + '18',
+        background: `color-mix(in srgb, ${color} 9%, transparent)`,
         borderRadius: '50%',
       }}
     >

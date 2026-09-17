@@ -25,6 +25,7 @@ export class DeliveryLogService {
     source: string,
     delivered: Delivery[],
     failed: DeliveryFailure[],
+    text?: string,
   ): Promise<void> {
     const data = [
       ...delivered.map((d) => ({
@@ -32,6 +33,7 @@ export class DeliveryLogService {
         platform: d.platform,
         destination: d.destination,
         ok: true,
+        text,
       })),
       ...failed.map((f) => ({
         source,
@@ -41,6 +43,7 @@ export class DeliveryLogService {
         // Причина уже человекочитаемая (explain площадки); режем длину, чтобы
         // одна многословная ошибка не растянула весь отчёт.
         reason: f.reason.slice(0, 300),
+        text,
       })),
     ];
     if (data.length === 0) return;
@@ -56,6 +59,18 @@ export class DeliveryLogService {
     return this.prisma.channelDelivery.findMany({
       orderBy: { id: 'desc' },
       take: limit,
+    });
+  }
+
+  /**
+   * Записи одного слота начиная с момента `since` — по ним считается, кому
+   * досылать. Берём и повторы: успешный повтор закрывает долг площадки.
+   */
+  slotRows(source: string, since: Date) {
+    return this.prisma.channelDelivery.findMany({
+      where: { createdAt: { gte: since }, source: { startsWith: source } },
+      orderBy: { id: 'desc' },
+      take: 40,
     });
   }
 }

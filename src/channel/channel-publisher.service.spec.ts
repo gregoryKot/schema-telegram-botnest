@@ -180,6 +180,62 @@ describe('ChannelPublisherService', () => {
     expect(svc.pickFromPool).toHaveBeenCalledWith(['вчерашнее']);
   });
 
+  describe('досылка упавшим площадкам', () => {
+    it('шлёт ту же фразу только названным площадкам', async () => {
+      const tg = makeTarget('telegram', '@ch');
+      const max = makeTarget('max', 'c1');
+      const { svc, recordPost } = makePhrases();
+      const log = journal();
+
+      const res = await new ChannelPublisherService(
+        [tg.target, max.target],
+        svc,
+        log,
+      ).retry('утро', 'та самая фраза', ['max']);
+
+      expect(max.send).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'та самая фраза' }),
+        'c1',
+      );
+      // Telegram пост уже принял — второй раз ему нельзя, это дубль.
+      expect(tg.send).not.toHaveBeenCalled();
+      expect(res.ok).toBe(true);
+      // Пул и история публикации не трогаются: публикация уже состоялась.
+      expect(svc.pickFromPool).not.toHaveBeenCalled();
+      expect(recordPost).not.toHaveBeenCalled();
+    });
+
+    it('повтор виден в журнале отдельным источником', async () => {
+      const max = makeTarget('max', 'c1');
+      const { svc } = makePhrases();
+      const log = journal();
+
+      await new ChannelPublisherService([max.target], svc, log).retry(
+        'вечер',
+        'фраза',
+        ['max'],
+      );
+
+      const [source, delivered] = (log.record as jest.Mock).mock.calls[0];
+      expect(source).toBe('вечер — повтор');
+      expect(delivered).toEqual([expect.objectContaining({ platform: 'max' })]);
+    });
+
+    it('площадка выключилась между попытками — в сеть не идём', async () => {
+      const off = makeTarget('max', null);
+      const { svc } = makePhrases();
+
+      const res = await new ChannelPublisherService(
+        [off.target],
+        svc,
+        journal(),
+      ).retry('утро', 'фраза', ['max']);
+
+      expect(off.send).not.toHaveBeenCalled();
+      expect(res.posted).toBe(false);
+    });
+  });
+
   describe('частичный успех', () => {
     const partial = async () => {
       const ok = makeTarget('telegram', '@ch');
@@ -232,12 +288,16 @@ describe('ChannelPublisherService', () => {
     expect(res.message).toContain('connect failed');
   });
 
-  it('сбой записи поста и проверки остатка не отменяет отправленное', async () => {
+  it('сбой записи поста и проверки остатка не отменяет отправленное, но оба сбоя видны в логе', async () => {
+    // Регресс: poolStatus().catch(() => null) глушил ошибку молча — сосед
+    // recordPost логировал, а этот нет (асимметрия внутри одного метода).
     const a = makeTarget('telegram', '@ch');
     const { svc } = makePhrases();
     (svc.recordPost as jest.Mock).mockRejectedValue(new Error('db down'));
     (svc.poolStatus as jest.Mock).mockRejectedValue(new Error('db down'));
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
 
     const res = await new ChannelPublisherService(
       [a.target],
@@ -246,5 +306,11 @@ describe('ChannelPublisherService', () => {
     ).publish();
     expect(a.send).toHaveBeenCalled();
     expect(res.ok).toBe(true);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('healthy-adult recordPost failed: db down'),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('healthy-adult poolStatus failed: db down'),
+    );
   });
 });

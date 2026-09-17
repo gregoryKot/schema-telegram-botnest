@@ -124,12 +124,20 @@ export function hasNoActionMatch(fakeBot: FakeBot, data: string): boolean {
 // Матчинг регексов/строк здесь копирует поведение реального Telegraf — если
 // сломается, все behavior-тесты src/telegram/*.spec.ts начнут врать молча.
 describe('telegram.test-helpers — matching callback_data', () => {
-  it('runAction находит хендлер по точной строке', async () => {
+  it('runAction находит хендлер по точной строке и передаёт ему настоящий ctx', async () => {
     const fakeBot = makeFakeBot();
     const handler = jest.fn();
     fakeBot.bot.action('foo:bar', handler);
     await runAction(fakeBot, 'foo:bar');
+    // Голое toHaveBeenCalledTimes(1) не ловит мутанта, который вызвал бы
+    // handler с undefined/пустым объектом вместо реального ctx — все
+    // behavior-тесты src/telegram/*.spec.ts опираются на ctx.from/reply/
+    // answerCbQuery, поэтому это ключевой инвариант хелпера.
     expect(handler).toHaveBeenCalledTimes(1);
+    const ctx = handler.mock.calls[0][0];
+    expect(ctx.from).toEqual({ id: 1, first_name: 'Тест' });
+    expect(jest.isMockFunction(ctx.answerCbQuery)).toBe(true);
+    expect(ctx.match).toBeNull(); // строковый matcher не даёт regex-групп
   });
 
   it('runAction находит хендлер по regex и подставляет ctx.match', async () => {
@@ -169,13 +177,23 @@ describe('telegram.test-helpers — matching callback_data', () => {
     );
   });
 
-  it('command с массивом имён регистрирует хендлер на каждый алиас', async () => {
+  it('command с массивом имён регистрирует ОДИН И ТОТ ЖЕ хендлер на каждый алиас', async () => {
     const fakeBot = makeFakeBot();
     const handler = jest.fn();
     fakeBot.bot.command(['tests', 'test'], handler);
+    // Регистр самих алиасов — commands.size === 2, а не «первый алиас
+    // перезаписал второй ключ в Map» (мутант с обратным for-of или
+    // вызовом commands.set() один раз для всего массива).
+    expect(fakeBot.commands.size).toBe(2);
     await runCommand(fakeBot, 'tests');
     await runCommand(fakeBot, 'test');
+    // Голое toHaveBeenCalledTimes(2) не отличило бы «оба алиаса зовут один
+    // handler» от «каждый вызов runCommand создаёт новый ctx» — берём оба
+    // ctx из mock.calls и убеждаемся, что это разные объекты (свежий ctx
+    // на каждый вызов, не переиспользованный/замороженный).
     expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.mock.calls[0][0]).not.toBe(handler.mock.calls[1][0]);
+    expect(jest.isMockFunction(handler.mock.calls[1][0].reply)).toBe(true);
   });
 
   it('makeCtx даёт jest.fn() для всех методов, которые обычно дёргают хендлеры', () => {

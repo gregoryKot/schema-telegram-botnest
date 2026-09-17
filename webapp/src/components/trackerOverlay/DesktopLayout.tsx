@@ -1,4 +1,5 @@
 import { PickerRail } from './PickerRail';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import type { LayoutProps } from './types';
 
 export function DesktopLayout({
@@ -53,7 +54,7 @@ export function DesktopLayout({
                 marginBottom: 12,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 color,
               }}
             >
@@ -97,10 +98,8 @@ export function DesktopLayout({
                 style={{ all: 'unset', cursor: 'pointer' }}
               >
                 {needName}
-              </button>
-              <span style={{ marginLeft: 14, fontSize: 48 }}>
-                {need.emoji}
-              </span>
+              </button>{' '}
+              <IdentityDot id={need.id} size={20} />
             </h1>
             {extra?.desc && (
               <p
@@ -236,7 +235,7 @@ export function DesktopLayout({
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '24px 1fr',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '10px 0',
                   borderBottom:
                     i < arr.length - 1

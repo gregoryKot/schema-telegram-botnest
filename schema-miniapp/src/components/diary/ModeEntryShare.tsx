@@ -1,50 +1,44 @@
-import { useState } from 'react';
-import { SharePill } from '../../share/SharePill';
-import { ShareCardSheet } from '../../share/ShareCardSheet';
-import {
-  modeEntryShareProps,
-  type ModeEntryMode,
-} from '../../../../shared/src/share/cards/modeEntryCard';
+import { ShareTwoOptions } from '../../share/ShareTwoOptions';
+import { useModeEntryShare } from '../../../../shared/src/share/useModeEntryShare';
+import type { ModeEntryFullSource } from '../../../../shared/src/share/cards/modeEntryFullCard';
+import type { ModeEntryMode } from '../../../../shared/src/share/cards/modeEntryCard';
 import { botShortUrl } from '../../utils/botConfig';
 
 /**
- * Сохранить/поделиться записью режима карточкой — «голос Здорового Взрослого».
- * Только когда клиент написал ответ ЗВ (иначе делиться нечем). Тап явный, с
- * превью. Общий конфиг карточки — modeEntryShareProps (shared).
+ * Сохранить/поделиться записью режима: краткая карточка «Голос Здорового
+ * Взрослого» первична (нужен healthyResponse). Вторая, более откровенная
+ * опция — «поделиться всей записью» (нужен entry хоть с одним полем, кроме
+ * healthyResponse). Ветвление и оба набора пропсов ShareCardSheet считает
+ * modeEntryShareOptions (shared, правило №11), вёрстку даёт общий
+ * ShareTwoOptions — тот же контрол, что у разбора фразы.
  */
 export function ModeEntryShare({
   mode,
   healthyResponse,
+  entry,
+  dateLabel,
 }: {
   mode?: ModeEntryMode;
   healthyResponse?: string | null;
+  entry?: ModeEntryFullSource;
+  dateLabel?: string;
 }) {
-  const [showShare, setShowShare] = useState(false);
-  if (!mode || !healthyResponse) return null;
+  const { share, setShare, shortProps, fullProps } = useModeEntryShare(
+    mode,
+    healthyResponse,
+    entry,
+    botShortUrl,
+    dateLabel,
+  );
 
   return (
-    <>
-      <div
-        style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}
-      >
-        <SharePill compact onClick={() => setShowShare(true)} />
-      </div>
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text-faint)',
-          marginTop: 6,
-          lineHeight: 1.5,
-        }}
-      >
-        Можно сохранить карточку и перечитывать, когда снова накроет.
-      </div>
-      {showShare && (
-        <ShareCardSheet
-          {...modeEntryShareProps(mode, healthyResponse, botShortUrl)}
-          onClose={() => setShowShare(false)}
-        />
-      )}
-    </>
+    <ShareTwoOptions
+      share={share}
+      setShare={setShare}
+      shortProps={shortProps}
+      fullProps={fullProps}
+      shortHint="Можно сохранить карточку и перечитывать, когда снова накроет."
+      fullLabel="Поделиться всей записью"
+    />
   );
 }

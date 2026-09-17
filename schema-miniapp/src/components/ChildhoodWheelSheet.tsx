@@ -13,7 +13,7 @@ import {
 import { buildNeedMeta } from './childhoodWheelSheet/needMeta';
 import { IntroPhase } from './childhoodWheelSheet/IntroPhase';
 import { FillPhase } from './childhoodWheelSheet/FillPhase';
-import { ResultPhase } from './childhoodWheelSheet/ResultPhase';
+import { ResultPhaseGate } from './childhoodWheelSheet/ResultPhaseGate';
 import { SchemaDescSheet } from './childhoodWheelSheet/SchemaDescSheet';
 
 export { CHILDHOOD_DONE_KEY, shouldShowChildhoodWheel };
@@ -44,31 +44,29 @@ export function ChildhoodWheelSheet({
   const [saving, setSaving] = useState(false);
   const [openExampleId, setOpenExampleId] = useState<NeedId | null>(null);
   const [openExampleIdx, setOpenExampleIdx] = useState<number | null>(null);
+  const [result, setResult] = useState({ loaded: !alreadyDone, error: false });
 
   useEffect(() => {
-    if (alreadyDone) {
-      api
-        .getChildhoodRatings()
-        .then((saved) => {
-          setRatings((prev) => ({
-            ...prev,
-            ...(saved as Ratings),
-          }));
-        })
-        .catch(() => {});
-    }
+    if (!alreadyDone) return;
+    api
+      .getChildhoodRatings()
+      .then((saved) => {
+        setRatings((prev) => ({ ...prev, ...(saved as Ratings) }));
+        setResult({ loaded: true, error: false });
+      })
+      .catch(() => setResult({ loaded: true, error: true }));
   }, []);
 
   function handleSave() {
     if (saving) return;
     setSaving(true);
-    // Save locally first so UI never gets stuck
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     onSaved?.(ratings);
     setPhase('result');
     setSaving(false);
-    // Sync to server in background
-    api.saveChildhoodRatings(ratings as Record<string, number>).catch(() => {});
+    api
+      .saveChildhoodRatings(ratings as Record<string, number>)
+      .catch((e) => console.error('saveChildhoodRatings failed', e));
   }
 
   function finish() {
@@ -101,7 +99,9 @@ export function ChildhoodWheelSheet({
 
         {/* ── RESULT ── */}
         {phase === 'result' && (
-          <ResultPhase
+          <ResultPhaseGate
+            loaded={result.loaded}
+            loadError={result.error}
             NEED_META={NEED_META}
             ratings={ratings}
             onEdit={() => setPhase('fill')}

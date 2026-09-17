@@ -12,6 +12,8 @@
  * ближайший тик крона наверстает (catch-up).
  */
 
+import { fnv1a } from '../utils/hash';
+
 export type HealthyAdultSlot = 'morning' | 'evening';
 
 /** Час начала окна (МСК) для каждого слота. Окно длится WINDOW_MINUTES. */
@@ -47,6 +49,28 @@ export function mskParts(now: Date): MskParts {
   };
 }
 
+/** Слот, которому принадлежит момент (null — вне обоих окон). */
+export function slotForMoment(now: Date): HealthyAdultSlot | null {
+  return slotForHour(mskParts(now).hour);
+}
+
+/**
+ * Слот, долг которого ещё имеет смысл досылать.
+ *
+ * Окно публикации узкое (два часа), и повторы, живущие только внутри него,
+ * бесполезны для поста, вышедшего на последнем тике: досылать уже нечем
+ * (инцидент 2026-08-09, публикация в 10:55 при окне до 10:55). Поэтому долг
+ * тянется до вечернего окна, а вечерний — до конца суток. Ночью не досылаем:
+ * подписчики спят, а к утру выйдет свежая фраза.
+ */
+export function catchUpSlot(now: Date): HealthyAdultSlot | null {
+  const { hour } = mskParts(now);
+  if (hour >= SLOT_START_HOUR.morning && hour < SLOT_START_HOUR.evening)
+    return 'morning';
+  if (hour >= SLOT_START_HOUR.evening) return 'evening';
+  return null;
+}
+
 /** Слот, которому принадлежит час МСК (null — вне обоих окон). */
 function slotForHour(hour: number): HealthyAdultSlot | null {
   if (hour === SLOT_START_HOUR.morning || hour === SLOT_START_HOUR.morning + 1)
@@ -63,13 +87,7 @@ function slotForHour(hour: number): HealthyAdultSlot | null {
  * не нужна криптостойкость, нужна лишь равномерная «размазанность».
  */
 export function plannedOffset(dateKey: string, slot: HealthyAdultSlot): number {
-  const seed = `${dateKey}:${slot}`;
-  let h = 2166136261; // FNV-1a
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) % WINDOW_MINUTES;
+  return fnv1a(`${dateKey}:${slot}`) % WINDOW_MINUTES;
 }
 
 /** Момент относительно начала окна: попадает ли `at` (МСК) в слот-окно `slot` того же дня. */

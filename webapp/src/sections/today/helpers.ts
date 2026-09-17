@@ -24,12 +24,6 @@ export function readLocalIds(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { return []; }
 }
 
-export const TASK_EMOJI: Record<string, string> = {
-  diary_streak: '📔', tracker_streak: '📊', belief_check: '🔍',
-  letter_to_self: '✉️', safe_place: '🏡', childhood_wheel: '🌱',
-  flashcard: '🆘', schema_intro: '🧩', mode_intro: '🔄', custom: '🎯',
-};
-
 export function resolveTaskText(task: UserTask): string {
   const text = getTaskDisplayText(task.type, task.text);
   if (text === task.text) {
@@ -41,9 +35,10 @@ export function resolveTaskText(task: UserTask): string {
   return text;
 }
 
-export function resolveTaskEmoji(task: UserTask): string {
-  if (TASK_EMOJI[task.type]) return TASK_EMOJI[task.type];
-  if (ALL_SCHEMAS.some(s => s.id === task.text)) return '🧩';
-  if (ALL_MODES.some(m => m.id === task.text)) return '🔄';
-  return '🎯';
+// Маркер состояния — типографика (правило "род/ты-вы/эмодзи" CLAUDE.md, R4):
+// сделано ✓, не сделано ×, ещё не решено (в работе) ·.
+export function taskStatusMark(done: boolean | null): string {
+  if (done === true)  return '✓';
+  if (done === false) return '×';
+  return '·';
 }

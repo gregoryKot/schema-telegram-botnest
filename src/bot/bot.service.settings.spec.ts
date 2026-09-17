@@ -113,6 +113,19 @@ describe('BotService.getNote / saveNote — read-after-write', () => {
     const note = await svc.getNote(1n, '2026-07-16');
     expect(note.text).toBe('вторая версия');
   });
+
+  // Без явного tags-аргумента tagsPlain = '' (не 'undefined' и не падение на
+  // .join) — мутант, меняющий `tags ? tags.join(',') : ''` на всегда-join,
+  // упал бы на TypeError, а мутант с другим дефолтом дал бы tags=[''] вместо [].
+  it('saveNote без аргумента tags → getNote возвращает пустой массив тегов, а не [""]', async () => {
+    const db = makeDb();
+    const svc = new BotService(db);
+
+    await svc.saveNote(1n, '2026-07-16', 'без тегов');
+    const note = await svc.getNote(1n, '2026-07-16');
+
+    expect(note.tags).toEqual([]);
+  });
 });
 
 describe('BotService.getUserSettings / updateUserSettings — read-after-write денормализованных списков', () => {
@@ -137,6 +150,23 @@ describe('BotService.getUserSettings / updateUserSettings — read-after-write �
 
     expect(await svc.getUserSettings(1n)).toBeNull();
   });
+
+  // uiPrefs — plain JSON (не в EncryptSchema), должен пройти через
+  // encryptRecord/decryptRecord неизменным (read-after-write).
+  it('uiPrefs, записанный через updateUserSettings, читается назад как есть (plain-поле)', async () => {
+    const db = makeDb();
+    const svc = new BotService(db);
+
+    await svc.updateUserSettings(1n, {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+    });
+    const settings = await svc.getUserSettings(1n);
+
+    expect(settings?.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+  });
 });
 
 describe('BotService.getChildhoodRatings / saveChildhoodRatings — read-after-write', () => {
@@ -150,13 +180,23 @@ describe('BotService.getChildhoodRatings / saveChildhoodRatings — read-after-w
     expect(result).toEqual({ attachment: 6, autonomy: 2 });
   });
 
-  it('сохранение батчем идёт одной транзакцией (атомарность)', async () => {
+  it('сохранение батчем идёт одной транзакцией с одной операцией на каждую потребность (атомарность)', async () => {
     const db = makeDb();
     const svc = new BotService(db);
 
     await svc.saveChildhoodRatings(1n, { attachment: 6, autonomy: 2 });
 
+    // Голое toHaveBeenCalledTimes(1) не поймало бы мутанта, вызывающего
+    // upsert по одному вне $transaction (тогда мок тоже был бы вызван 1
+    // раз — просто с пустым/иным массивом). Проверяем реальный аргумент:
+    // массив из ровно двух промисов, по числу переданных потребностей —
+    // если саму запись «размотать» из транзакции, вызов $transaction либо
+    // не произойдёт вовсе, либо придёт с другой формой аргумента.
     expect(db.$transaction).toHaveBeenCalledTimes(1);
+    const opsArg = db.$transaction.mock.calls[0][0];
+    expect(Array.isArray(opsArg)).toBe(true);
+    expect(opsArg).toHaveLength(2);
+    expect(db.childhoodRating.upsert).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -168,6 +208,25 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
     await svc.acceptDisclaimer(1n);
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
+  });
+
+  // Поле отсутствует (undefined), а не явно false — только этот случай реально
+  // проверяет `?? false`: при disclaimerAccepted=false оператор `??` не
+  // срабатывает вовсе (false не nullish), и мутант `?? true` прошёл бы мимо.
+  it('поле disclaimerAccepted отсутствует у строки → false, а не true', async () => {
+    const db = makeDb();
+    delete db._user.disclaimerAccepted;
+    const svc = new BotService(db);
+
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
+  });
+
+  it('юзер не найден в БД → false, а не падение', async () => {
+    const db = makeDb();
+    db.user.findUnique = jest.fn(() => null);
+    const svc = new BotService(db);
+
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
   });
 });
 

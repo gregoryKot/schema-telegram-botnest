@@ -122,11 +122,20 @@ function makeReq(
   } as unknown as Request;
 }
 
-function makeRes(): Response & { cookie: jest.Mock; redirect: jest.Mock } {
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  clearCookie: jest.Mock;
+  redirect: jest.Mock;
+} {
   return {
     cookie: jest.fn(),
+    clearCookie: jest.fn(),
     redirect: jest.fn(),
-  } as unknown as Response & { cookie: jest.Mock; redirect: jest.Mock };
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    clearCookie: jest.Mock;
+    redirect: jest.Mock;
+  };
 }
 
 function makeController() {
@@ -262,7 +271,7 @@ describe('Auth2faController.recoveryEmailStart', () => {
     await expect(
       controller.recoveryEmailStart(
         makeReq({ csrf: false, webUser: { userId: 1n } }),
-        'a@b.ru',
+        { email: 'a@b.ru' },
       ),
     ).rejects.toThrow(UnauthorizedException);
     expect(emailSvc.sendVerificationLink).not.toHaveBeenCalled();
@@ -272,7 +281,7 @@ describe('Auth2faController.recoveryEmailStart', () => {
     const { controller, emailSvc } = makeController();
     const res = await controller.recoveryEmailStart(
       makeReq({ webUser: { userId: 6n } }),
-      'a@b.ru',
+      { email: 'a@b.ru' },
     );
     expect(emailSvc.sendVerificationLink).toHaveBeenCalledWith(6n, 'a@b.ru');
     expect(res).toEqual({ ok: true });
@@ -306,7 +315,7 @@ describe('Auth2faController.recoveryEmailVerify', () => {
 describe('Auth2faController.recoveryRequest', () => {
   it('публичный эндпоинт (без CSRF) → делегирует в emailSvc.sendRecoveryLink', async () => {
     const { controller, emailSvc } = makeController();
-    const res = await controller.recoveryRequest('x@y.ru');
+    const res = await controller.recoveryRequest({ email: 'x@y.ru' });
     expect(emailSvc.sendRecoveryLink).toHaveBeenCalledWith('x@y.ru');
     expect(res).toEqual({ ok: true });
   });
@@ -316,7 +325,9 @@ describe('Auth2faController.recoveryConfirm', () => {
   it('без CSRF-заголовка → UnauthorizedException, токен не потребляется', async () => {
     const { controller, emailSvc } = makeController();
     await expect(
-      controller.recoveryConfirm(makeReq({ csrf: false }), makeRes(), 'tok-1'),
+      controller.recoveryConfirm(makeReq({ csrf: false }), makeRes(), {
+        token: 'tok-1',
+      }),
     ).rejects.toThrow(UnauthorizedException);
     expect(emailSvc.consumeToken).not.toHaveBeenCalled();
   });
@@ -326,7 +337,9 @@ describe('Auth2faController.recoveryConfirm', () => {
     emailSvc.consumeToken.mockResolvedValue({ userId: 8n, email: 'x@y.ru' });
     const req = makeReq();
     const res = makeRes();
-    const result = await controller.recoveryConfirm(req, res, 'tok-1');
+    const result = await controller.recoveryConfirm(req, res, {
+      token: 'tok-1',
+    });
     expect(emailSvc.consumeToken).toHaveBeenCalledWith('tok-1', 'recovery');
     expect(auth.issueTokens).toHaveBeenCalledWith(
       8n,
@@ -408,5 +421,51 @@ describe('Auth2faController.totpChallenge', () => {
       controller.totpChallenge(makeReq(), makeRes(), CHALLENGE_DTO),
     ).rejects.toThrow(UnauthorizedException);
     expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+});
+
+// Второй фактор больше НЕ одобряет билет на сервере (device-code phishing,
+// разбор 2026-08-31): код в теле мог подставить кто угодно. Билет теперь
+// подтверждает человек на /auth/confirm; здесь проверяем лишь, что сам вход в
+// браузере работает и на билет не завязан.
+describe('Auth2faController.totpChallenge', () => {
+  const challenge = { code: '123456', challengeToken: 'chal' };
+
+  it('код верный — выдаёт сессию, даже если в теле приехал билет', async () => {
+    const { controller, totp } = makeController();
+    totp.verifyCode.mockResolvedValue(true);
+
+    const out = await controller.totpChallenge(makeReq({}), makeRes(), {
+      ...challenge,
+      ticket: 'K7M2QX94',
+    });
+
+    expect(out.accessToken).toBeTruthy();
+  });
+
+  it('код неверный — вход не выдаётся', async () => {
+    const { controller, totp, auth } = makeController();
+    totp.verifyCode.mockResolvedValue(false);
+
+    await expect(
+      controller.totpChallenge(makeReq({}), makeRes(), {
+        ...challenge,
+        ticket: 'K7M2QX94',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
+  it('обычный вход без билета — выдаёт сессию', async () => {
+    const { controller, totp } = makeController();
+    totp.verifyCode.mockResolvedValue(true);
+
+    const out = await controller.totpChallenge(
+      makeReq({}),
+      makeRes(),
+      challenge,
+    );
+
+    expect(out.accessToken).toBeTruthy();
   });
 });

@@ -1,0 +1,63 @@
+fa9de09beed032e7b2fddec01bddd833
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PracticeSessionsController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const request_utils_1 = require("./request-utils");
+const telegram_auth_guard_1 = require("./telegram-auth.guard");
+const practice_sessions_service_1 = require("../bot/practice-sessions.service");
+const practice_session_dto_1 = require("./dto/practice-session.dto");
+// Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») — фиксируем
+// каждое прохождение, чтобы «Мой путь» и /stats видели след, а не пустоту.
+let PracticeSessionsController = class PracticeSessionsController {
+    practiceSessions;
+    constructor(practiceSessions) {
+        this.practiceSessions = practiceSessions;
+    }
+    // Идентичность верифицирована гардом (правило №5) — троттлинг per-user,
+    // с запасом под серию быстрых нажатий, но не даёт заспамить таблицу.
+    async record(req, body) {
+        const { count } = await this.practiceSessions.record((0, request_utils_1.uid)(req), body.tool);
+        return { ok: true, count };
+    }
+    getCounts(req) {
+        return this.practiceSessions.counts((0, request_utils_1.uid)(req));
+    }
+};
+exports.PracticeSessionsController = PracticeSessionsController;
+__decorate([
+    (0, common_1.Post)('practice-session'),
+    (0, throttler_1.Throttle)({ long: { limit: 60, ttl: 60_000 } }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_b = typeof practice_session_dto_1.RecordPracticeSessionDto !== "undefined" && practice_session_dto_1.RecordPracticeSessionDto) === "function" ? _b : Object]),
+    __metadata("design:returntype", typeof (_c = typeof Promise !== "undefined" && Promise) === "function" ? _c : Object)
+], PracticeSessionsController.prototype, "record", null);
+__decorate([
+    (0, common_1.Get)('practice-sessions'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PracticeSessionsController.prototype, "getCounts", null);
+exports.PracticeSessionsController = PracticeSessionsController = __decorate([
+    (0, common_1.Controller)('api'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof practice_sessions_service_1.PracticeSessionsService !== "undefined" && practice_sessions_service_1.PracticeSessionsService) === "function" ? _a : Object])
+], PracticeSessionsController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3ByYWN0aWNlLXNlc3Npb25zLmNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUE2RTtBQUU3RSxpREFBNkM7QUFDN0MsbURBQXNDO0FBQ3RDLCtEQUEwRDtBQUMxRCxnRkFBMkU7QUFDM0UscUVBQXNFO0FBTXRFLDRFQUE0RTtBQUM1RSwyRUFBMkU7QUFHcEUsSUFBTSwwQkFBMEIsR0FBaEMsTUFBTSwwQkFBMEI7SUFDUjtJQUE3QixZQUE2QixnQkFBeUM7UUFBekMscUJBQWdCLEdBQWhCLGdCQUFnQixDQUF5QjtJQUFHLENBQUM7SUFFMUUsd0VBQXdFO0lBQ3hFLHFFQUFxRTtJQUcvRCxBQUFOLEtBQUssQ0FBQyxNQUFNLENBQ0gsR0FBZ0IsRUFDZixJQUE4QjtRQUV0QyxNQUFNLEVBQUUsS0FBSyxFQUFFLEdBQUcsTUFBTSxJQUFJLENBQUMsZ0JBQWdCLENBQUMsTUFBTSxDQUFDLElBQUEsbUJBQUcsRUFBQyxHQUFHLENBQUMsRUFBRSxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUM7UUFDMUUsT0FBTyxFQUFFLEVBQUUsRUFBRSxJQUFJLEVBQUUsS0FBSyxFQUFFLENBQUM7SUFDN0IsQ0FBQztJQUdELFNBQVMsQ0FBUSxHQUFnQjtRQUMvQixPQUFPLElBQUksQ0FBQyxnQkFBZ0IsQ0FBQyxNQUFNLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7SUFDaEQsQ0FBQztDQUNGLENBQUE7QUFuQlksZ0VBQTBCO0FBTy9CO0lBRkwsSUFBQSxhQUFJLEVBQUMsa0JBQWtCLENBQUM7SUFDeEIsSUFBQSxvQkFBUSxFQUFDLEVBQUUsSUFBSSxFQUFFLEVBQUUsS0FBSyxFQUFFLEVBQUUsRUFBRSxHQUFHLEVBQUUsTUFBTSxFQUFFLEVBQUUsQ0FBQztJQUU1QyxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7SUFDTCxXQUFBLElBQUEsYUFBSSxHQUFFLENBQUE7O2lFQUFPLCtDQUF3QixvQkFBeEIsK0NBQXdCO3dEQUNyQyxPQUFPLG9CQUFQLE9BQU87d0RBR1Q7QUFHRDtJQURDLElBQUEsWUFBRyxFQUFDLG1CQUFtQixDQUFDO0lBQ2QsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBOzs7OzJEQUVmO3FDQWxCVSwwQkFBMEI7SUFGdEMsSUFBQSxtQkFBVSxFQUFDLEtBQUssQ0FBQztJQUNqQixJQUFBLGtCQUFTLEVBQUMsdUNBQWlCLENBQUM7eURBRW9CLG1EQUF1QixvQkFBdkIsbURBQXVCO0dBRDNELDBCQUEwQixDQW1CdEMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3ByYWN0aWNlLXNlc3Npb25zLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgQm9keSwgQ29udHJvbGxlciwgR2V0LCBQb3N0LCBSZXEsIFVzZUd1YXJkcyB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFJlcXVlc3QgfSBmcm9tICdleHByZXNzJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgdWlkIH0gZnJvbSAnLi9yZXF1ZXN0LXV0aWxzJztcbmltcG9ydCB7IFRlbGVncmFtQXV0aEd1YXJkIH0gZnJvbSAnLi90ZWxlZ3JhbS1hdXRoLmd1YXJkJztcbmltcG9ydCB7IFByYWN0aWNlU2Vzc2lvbnNTZXJ2aWNlIH0gZnJvbSAnLi4vYm90L3ByYWN0aWNlLXNlc3Npb25zLnNlcnZpY2UnO1xuaW1wb3J0IHsgUmVjb3JkUHJhY3RpY2VTZXNzaW9uRHRvIH0gZnJvbSAnLi9kdG8vcHJhY3RpY2Utc2Vzc2lvbi5kdG8nO1xuXG5pbnRlcmZhY2UgQXV0aFJlcXVlc3QgZXh0ZW5kcyBSZXF1ZXN0IHtcbiAgd2ViVXNlcjogeyB1c2VySWQ6IGJpZ2ludCB9O1xufVxuXG4vLyDQkdGL0YHRgtGA0YvQtSDQv9GA0LDQutGC0LjQutC4IMKr0JfQtNC10YHRjCDQuCDRgdC10LnRh9Cw0YHCuyAo0LTRi9GF0LDQvdC40LUv0LfQsNC30LXQvNC70LXQvdC40LUvwqvQodGC0L7Qv8K7KSDigJQg0YTQuNC60YHQuNGA0YPQtdC8XG4vLyDQutCw0LbQtNC+0LUg0L/RgNC+0YXQvtC20LTQtdC90LjQtSwg0YfRgtC+0LHRiyDCq9Cc0L7QuSDQv9GD0YLRjMK7INC4IC9zdGF0cyDQstC40LTQtdC70Lgg0YHQu9C10LQsINCwINC90LUg0L/Rg9GB0YLQvtGC0YMuXG5AQ29udHJvbGxlcignYXBpJylcbkBVc2VHdWFyZHMoVGVsZWdyYW1BdXRoR3VhcmQpXG5leHBvcnQgY2xhc3MgUHJhY3RpY2VTZXNzaW9uc0NvbnRyb2xsZXIge1xuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHByYWN0aWNlU2Vzc2lvbnM6IFByYWN0aWNlU2Vzc2lvbnNTZXJ2aWNlKSB7fVxuXG4gIC8vINCY0LTQtdC90YLQuNGH0L3QvtGB0YLRjCDQstC10YDQuNGE0LjRhtC40YDQvtCy0LDQvdCwINCz0LDRgNC00L7QvCAo0L/RgNCw0LLQuNC70L4g4oSWNSkg4oCUINGC0YDQvtGC0YLQu9C40L3QsyBwZXItdXNlcixcbiAgLy8g0YEg0LfQsNC/0LDRgdC+0Lwg0L/QvtC0INGB0LXRgNC40Y4g0LHRi9GB0YLRgNGL0YUg0L3QsNC20LDRgtC40LksINC90L4g0L3QtSDQtNCw0ZHRgiDQt9Cw0YHQv9Cw0LzQuNGC0Ywg0YLQsNCx0LvQuNGG0YMuXG4gIEBQb3N0KCdwcmFjdGljZS1zZXNzaW9uJylcbiAgQFRocm90dGxlKHsgbG9uZzogeyBsaW1pdDogNjAsIHR0bDogNjBfMDAwIH0gfSlcbiAgYXN5bmMgcmVjb3JkKFxuICAgIEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0LFxuICAgIEBCb2R5KCkgYm9keTogUmVjb3JkUHJhY3RpY2VTZXNzaW9uRHRvLFxuICApOiBQcm9taXNlPHsgb2s6IHRydWU7IGNvdW50OiBudW1iZXIgfT4ge1xuICAgIGNvbnN0IHsgY291bnQgfSA9IGF3YWl0IHRoaXMucHJhY3RpY2VTZXNzaW9ucy5yZWNvcmQodWlkKHJlcSksIGJvZHkudG9vbCk7XG4gICAgcmV0dXJuIHsgb2s6IHRydWUsIGNvdW50IH07XG4gIH1cblxuICBAR2V0KCdwcmFjdGljZS1zZXNzaW9ucycpXG4gIGdldENvdW50cyhAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCkge1xuICAgIHJldHVybiB0aGlzLnByYWN0aWNlU2Vzc2lvbnMuY291bnRzKHVpZChyZXEpKTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

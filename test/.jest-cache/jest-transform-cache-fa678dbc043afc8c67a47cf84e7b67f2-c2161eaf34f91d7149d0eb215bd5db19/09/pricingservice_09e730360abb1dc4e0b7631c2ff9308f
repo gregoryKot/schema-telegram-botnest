@@ -1,0 +1,55 @@
+656a32a62f420d1500d08cc88aae643e
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PricingService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const booking_config_1 = require("./booking.config");
+const KEY = (type) => `price:${type}`;
+/** Session prices, editable in the admin panel (BookingSetting), with config defaults. */
+let PricingService = class PricingService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    /** Price for a session type — DB override if set, else the config default. */
+    async getPrice(type) {
+        const row = await this.prisma.bookingSetting.findUnique({
+            where: { key: KEY(type) },
+        });
+        const n = row ? parseInt(row.value, 10) : NaN;
+        return Number.isFinite(n) && n >= 0 ? n : booking_config_1.SESSION_DEFAULT_PRICE[type];
+    }
+    /** Set the price for a session type (rubles). */
+    async setPrice(type, amount) {
+        const value = String(Math.max(0, Math.round(amount)));
+        await this.prisma.bookingSetting.upsert({
+            where: { key: KEY(type) },
+            create: { key: KEY(type), value },
+            update: { value },
+        });
+    }
+    /** Public session catalogue with current prices, for the UI. */
+    async getOptions() {
+        return Promise.all(booking_config_1.SESSION_META.map(async (m) => ({
+            ...m,
+            price: await this.getPrice(m.type),
+        })));
+    }
+};
+exports.PricingService = PricingService;
+exports.PricingService = PricingService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], PricingService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9wcmljaW5nLnNlcnZpY2UudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUE0QztBQUM1Qyw2REFBeUQ7QUFDekQscURBSTBCO0FBRzFCLE1BQU0sR0FBRyxHQUFHLENBQUMsSUFBaUIsRUFBRSxFQUFFLENBQUMsU0FBUyxJQUFJLEVBQUUsQ0FBQztBQUVuRCwwRkFBMEY7QUFFbkYsSUFBTSxjQUFjLEdBQXBCLE1BQU0sY0FBYztJQUNJO0lBQTdCLFlBQTZCLE1BQXFCO1FBQXJCLFdBQU0sR0FBTixNQUFNLENBQWU7SUFBRyxDQUFDO0lBRXRELDhFQUE4RTtJQUM5RSxLQUFLLENBQUMsUUFBUSxDQUFDLElBQWlCO1FBQzlCLE1BQU0sR0FBRyxHQUFHLE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxjQUFjLENBQUMsVUFBVSxDQUFDO1lBQ3RELEtBQUssRUFBRSxFQUFFLEdBQUcsRUFBRSxHQUFHLENBQUMsSUFBSSxDQUFDLEVBQUU7U0FDMUIsQ0FBQyxDQUFDO1FBQ0gsTUFBTSxDQUFDLEdBQUcsR0FBRyxDQUFDLENBQUMsQ0FBQyxRQUFRLENBQUMsR0FBRyxDQUFDLEtBQUssRUFBRSxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDO1FBQzlDLE9BQU8sTUFBTSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLHNDQUFxQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ3hFLENBQUM7SUFFRCxpREFBaUQ7SUFDakQsS0FBSyxDQUFDLFFBQVEsQ0FBQyxJQUFpQixFQUFFLE1BQWM7UUFDOUMsTUFBTSxLQUFLLEdBQUcsTUFBTSxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsQ0FBQyxFQUFFLElBQUksQ0FBQyxLQUFLLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxDQUFDO1FBQ3RELE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxjQUFjLENBQUMsTUFBTSxDQUFDO1lBQ3RDLEtBQUssRUFBRSxFQUFFLEdBQUcsRUFBRSxHQUFHLENBQUMsSUFBSSxDQUFDLEVBQUU7WUFDekIsTUFBTSxFQUFFLEVBQUUsR0FBRyxFQUFFLEdBQUcsQ0FBQyxJQUFJLENBQUMsRUFBRSxLQUFLLEVBQUU7WUFDakMsTUFBTSxFQUFFLEVBQUUsS0FBSyxFQUFFO1NBQ2xCLENBQUMsQ0FBQztJQUNMLENBQUM7SUFFRCxnRUFBZ0U7SUFDaEUsS0FBSyxDQUFDLFVBQVU7UUFDZCxPQUFPLE9BQU8sQ0FBQyxHQUFHLENBQ2hCLDZCQUFZLENBQUMsR0FBRyxDQUFDLEtBQUssRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUM7WUFDN0IsR0FBRyxDQUFDO1lBQ0osS0FBSyxFQUFFLE1BQU0sSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDO1NBQ25DLENBQUMsQ0FBQyxDQUNKLENBQUM7SUFDSixDQUFDO0NBQ0YsQ0FBQTtBQS9CWSx3Q0FBYzt5QkFBZCxjQUFjO0lBRDFCLElBQUEsbUJBQVUsR0FBRTt5REFFMEIsOEJBQWEsb0JBQWIsOEJBQWE7R0FEdkMsY0FBYyxDQStCMUIiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9wcmljaW5nLnNlcnZpY2UudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSW5qZWN0YWJsZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFByaXNtYVNlcnZpY2UgfSBmcm9tICcuLi9wcmlzbWEvcHJpc21hLnNlcnZpY2UnO1xuaW1wb3J0IHtcbiAgU0VTU0lPTl9ERUZBVUxUX1BSSUNFLFxuICBTRVNTSU9OX01FVEEsXG4gIFNlc3Npb25PcHRpb24sXG59IGZyb20gJy4vYm9va2luZy5jb25maWcnO1xuaW1wb3J0IHsgU2Vzc2lvblR5cGUgfSBmcm9tICdAcHJpc21hL2NsaWVudCc7XG5cbmNvbnN0IEtFWSA9ICh0eXBlOiBTZXNzaW9uVHlwZSkgPT4gYHByaWNlOiR7dHlwZX1gO1xuXG4vKiogU2Vzc2lvbiBwcmljZXMsIGVkaXRhYmxlIGluIHRoZSBhZG1pbiBwYW5lbCAoQm9va2luZ1NldHRpbmcpLCB3aXRoIGNvbmZpZyBkZWZhdWx0cy4gKi9cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBQcmljaW5nU2VydmljZSB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgcHJpc21hOiBQcmlzbWFTZXJ2aWNlKSB7fVxuXG4gIC8qKiBQcmljZSBmb3IgYSBzZXNzaW9uIHR5cGUg4oCUIERCIG92ZXJyaWRlIGlmIHNldCwgZWxzZSB0aGUgY29uZmlnIGRlZmF1bHQuICovXG4gIGFzeW5jIGdldFByaWNlKHR5cGU6IFNlc3Npb25UeXBlKTogUHJvbWlzZTxudW1iZXI+IHtcbiAgICBjb25zdCByb3cgPSBhd2FpdCB0aGlzLnByaXNtYS5ib29raW5nU2V0dGluZy5maW5kVW5pcXVlKHtcbiAgICAgIHdoZXJlOiB7IGtleTogS0VZKHR5cGUpIH0sXG4gICAgfSk7XG4gICAgY29uc3QgbiA9IHJvdyA/IHBhcnNlSW50KHJvdy52YWx1ZSwgMTApIDogTmFOO1xuICAgIHJldHVybiBOdW1iZXIuaXNGaW5pdGUobikgJiYgbiA+PSAwID8gbiA6IFNFU1NJT05fREVGQVVMVF9QUklDRVt0eXBlXTtcbiAgfVxuXG4gIC8qKiBTZXQgdGhlIHByaWNlIGZvciBhIHNlc3Npb24gdHlwZSAocnVibGVzKS4gKi9cbiAgYXN5bmMgc2V0UHJpY2UodHlwZTogU2Vzc2lvblR5cGUsIGFtb3VudDogbnVtYmVyKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgY29uc3QgdmFsdWUgPSBTdHJpbmcoTWF0aC5tYXgoMCwgTWF0aC5yb3VuZChhbW91bnQpKSk7XG4gICAgYXdhaXQgdGhpcy5wcmlzbWEuYm9va2luZ1NldHRpbmcudXBzZXJ0KHtcbiAgICAgIHdoZXJlOiB7IGtleTogS0VZKHR5cGUpIH0sXG4gICAgICBjcmVhdGU6IHsga2V5OiBLRVkodHlwZSksIHZhbHVlIH0sXG4gICAgICB1cGRhdGU6IHsgdmFsdWUgfSxcbiAgICB9KTtcbiAgfVxuXG4gIC8qKiBQdWJsaWMgc2Vzc2lvbiBjYXRhbG9ndWUgd2l0aCBjdXJyZW50IHByaWNlcywgZm9yIHRoZSBVSS4gKi9cbiAgYXN5bmMgZ2V0T3B0aW9ucygpOiBQcm9taXNlPFNlc3Npb25PcHRpb25bXT4ge1xuICAgIHJldHVybiBQcm9taXNlLmFsbChcbiAgICAgIFNFU1NJT05fTUVUQS5tYXAoYXN5bmMgKG0pID0+ICh7XG4gICAgICAgIC4uLm0sXG4gICAgICAgIHByaWNlOiBhd2FpdCB0aGlzLmdldFByaWNlKG0udHlwZSksXG4gICAgICB9KSksXG4gICAgKTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

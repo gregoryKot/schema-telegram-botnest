@@ -84,4 +84,14 @@ describe('useShareCard', () => {
 
     expect(writeText).toHaveBeenCalledWith('короткий текст');
   });
+
+  it('копирование в буфер упало — failed=true (был: молча проглочен)', async () => {
+    writeText.mockRejectedValueOnce(new Error('denied'));
+    const { hook } = setup();
+
+    await act(() => hook.result.current.copy());
+
+    expect(hook.result.current.failed).toBe(true);
+    expect(hook.result.current.copied).toBe(false);
+  });
 });

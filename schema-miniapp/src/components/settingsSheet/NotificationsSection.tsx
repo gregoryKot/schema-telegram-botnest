@@ -36,13 +36,13 @@ export function NotificationsSection({
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               padding: '12px 16px',
               marginBottom: 8,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
@@ -59,7 +59,7 @@ export function NotificationsSection({
                 background:
                   'color-mix(in srgb, var(--accent) 15%, transparent)',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '7px 14px',
                 color: 'var(--accent)',
                 fontSize: 13,
@@ -75,7 +75,7 @@ export function NotificationsSection({
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           overflow: 'hidden',
           marginBottom: 8,
         }}
@@ -171,7 +171,7 @@ export function NotificationsSection({
           <div
             style={{
               fontSize: 12,
-              color: 'var(--accent-yellow, #eab308)',
+              color: 'var(--accent-yellow)',
               lineHeight: 1.5,
               marginBottom: 8,
               padding: '0 4px',

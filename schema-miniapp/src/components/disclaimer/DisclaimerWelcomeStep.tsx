@@ -9,26 +9,10 @@ export function DisclaimerWelcomeStep() {
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
         <div
           style={{
-            width: 68,
-            height: 68,
-            borderRadius: 22,
-            margin: '0 auto 14px',
-            background: 'linear-gradient(135deg, var(--accent), #60a5fa)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 30,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          }}
-        >
-          🧠
-        </div>
-        <div
-          style={{
             fontSize: 22,
             fontWeight: 700,
             color: 'var(--text)',
-            marginBottom: 6,
+            marginBottom: 14,
           }}
         >
           Всё по схеме
@@ -40,7 +24,7 @@ export function DisclaimerWelcomeStep() {
             gap: 6,
             background: 'rgba(251,191,36,0.1)',
             border: '1px solid rgba(251,191,36,0.25)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '3px 12px',
             fontSize: 10,
             fontWeight: 700,
@@ -53,7 +37,11 @@ export function DisclaimerWelcomeStep() {
       </div>
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 12,
+        }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
           {tr(
@@ -62,13 +50,17 @@ export function DisclaimerWelcomeStep() {
           )}
         </div>
       </div>
-      <div className="card" style={{ borderRadius: 16, padding: '16px 18px' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: '16px 18px' }}
+      >
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.7 }}
         >
-          «Всё по схеме» — инструмент самопознания: трекер потребностей,
-          дневники схем и режимов, тесты, практики и пространство для работы с
-          терапевтом.
+          «Всё по схеме» — про схема-терапию. Начать можно с одного случая:
+          вспомнить момент, когда что-то задело, и разобрать по шагам. Три
+          минуты — и видно, что это было и чего в тот момент не хватило.
+          Дневники, трекер и практики открываются оттуда же, когда понадобятся.
           <br />
           <br />
           {tr(

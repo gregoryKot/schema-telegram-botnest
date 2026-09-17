@@ -9,6 +9,9 @@ const MINIAPP_APP_NAME =
   (import.meta.env.VITE_MINIAPP_APP_NAME as string | undefined)?.trim() ||
   'diary';
 
+// Username без @ — напр. 'SchemaLabBot'; из него строится ссылка входа
+// `t.me/<bot>?start=login_<КОД>` (shared/src/auth/useLoginTicket).
+export const botUsername = BOT_USERNAME;
 // С @ — для отображения в тексте.
 export const botHandle = `@${BOT_USERNAME}`;
 // https-ссылка на бота (href кнопок).

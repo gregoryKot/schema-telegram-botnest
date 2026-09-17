@@ -1,0 +1,31 @@
+a5c9380932aa6d0c2b4ede5ba91d640e
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CRISIS_SURFACES = void 0;
+// Экран, на котором показалась кризисная карточка (meta.surface для
+// crisis_*). Без свободного текста — только перечислимый источник (правило №7
+// CLAUDE.md). Вынесено из analytics.constants.ts отдельным файлом (правило
+// №10 — тот файл держим ≤201 строки).
+//   schema       — заметка к схеме;
+//   mode         — заметка к режиму;
+//   gratitude    — практика благодарности;
+//   note         — дневниковая заметка;
+//   practice     — упражнение-практика;
+//   letter       — письмо себе (упражнение-письмо);
+//   safe_place   — безопасное место;
+//   weekly       — вопрос недели;
+//   belief_check — проверка убеждения;
+//   flashcard    — карточки-упражнения (schema flashcard).
+exports.CRISIS_SURFACES = [
+    'schema',
+    'mode',
+    'gratitude',
+    'note',
+    'practice',
+    'letter',
+    'safe_place',
+    'weekly',
+    'belief_check',
+    'flashcard',
+];
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYW5hbHl0aWNzL2NyaXNpcy1zdXJmYWNlcy5jb25zdGFudHMudHMiLCJtYXBwaW5ncyI6Ijs7O0FBQUEsb0VBQW9FO0FBQ3BFLDhFQUE4RTtBQUM5RSwyRUFBMkU7QUFDM0Usc0NBQXNDO0FBQ3RDLG9DQUFvQztBQUNwQyxxQ0FBcUM7QUFDckMsMkNBQTJDO0FBQzNDLHdDQUF3QztBQUN4Qyx3Q0FBd0M7QUFDeEMsb0RBQW9EO0FBQ3BELHFDQUFxQztBQUNyQyxrQ0FBa0M7QUFDbEMsdUNBQXVDO0FBQ3ZDLDJEQUEyRDtBQUM5QyxRQUFBLGVBQWUsR0FBRztJQUM3QixRQUFRO0lBQ1IsTUFBTTtJQUNOLFdBQVc7SUFDWCxNQUFNO0lBQ04sVUFBVTtJQUNWLFFBQVE7SUFDUixZQUFZO0lBQ1osUUFBUTtJQUNSLGNBQWM7SUFDZCxXQUFXO0NBQ0gsQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hbmFseXRpY3MvY3Jpc2lzLXN1cmZhY2VzLmNvbnN0YW50cy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyDQrdC60YDQsNC9LCDQvdCwINC60L7RgtC+0YDQvtC8INC/0L7QutCw0LfQsNC70LDRgdGMINC60YDQuNC30LjRgdC90LDRjyDQutCw0YDRgtC+0YfQutCwIChtZXRhLnN1cmZhY2Ug0LTQu9GPXG4vLyBjcmlzaXNfKikuINCR0LXQtyDRgdCy0L7QsdC+0LTQvdC+0LPQviDRgtC10LrRgdGC0LAg4oCUINGC0L7Qu9GM0LrQviDQv9C10YDQtdGH0LjRgdC70LjQvNGL0Lkg0LjRgdGC0L7Rh9C90LjQuiAo0L/RgNCw0LLQuNC70L4g4oSWN1xuLy8gQ0xBVURFLm1kKS4g0JLRi9C90LXRgdC10L3QviDQuNC3IGFuYWx5dGljcy5jb25zdGFudHMudHMg0L7RgtC00LXQu9GM0L3Ri9C8INGE0LDQudC70L7QvCAo0L/RgNCw0LLQuNC70L5cbi8vIOKEljEwIOKAlCDRgtC+0YIg0YTQsNC50Lsg0LTQtdGA0LbQuNC8IOKJpDIwMSDRgdGC0YDQvtC60LgpLlxuLy8gICBzY2hlbWEgICAgICAg4oCUINC30LDQvNC10YLQutCwINC6INGB0YXQtdC80LU7XG4vLyAgIG1vZGUgICAgICAgICDigJQg0LfQsNC80LXRgtC60LAg0Log0YDQtdC20LjQvNGDO1xuLy8gICBncmF0aXR1ZGUgICAg4oCUINC/0YDQsNC60YLQuNC60LAg0LHQu9Cw0LPQvtC00LDRgNC90L7RgdGC0Lg7XG4vLyAgIG5vdGUgICAgICAgICDigJQg0LTQvdC10LLQvdC40LrQvtCy0LDRjyDQt9Cw0LzQtdGC0LrQsDtcbi8vICAgcHJhY3RpY2UgICAgIOKAlCDRg9C/0YDQsNC20L3QtdC90LjQtS3Qv9GA0LDQutGC0LjQutCwO1xuLy8gICBsZXR0ZXIgICAgICAg4oCUINC/0LjRgdGM0LzQviDRgdC10LHQtSAo0YPQv9GA0LDQttC90LXQvdC40LUt0L/QuNGB0YzQvNC+KTtcbi8vICAgc2FmZV9wbGFjZSAgIOKAlCDQsdC10LfQvtC/0LDRgdC90L7QtSDQvNC10YHRgtC+O1xuLy8gICB3ZWVrbHkgICAgICAg4oCUINCy0L7Qv9GA0L7RgSDQvdC10LTQtdC70Lg7XG4vLyAgIGJlbGllZl9jaGVjayDigJQg0L/RgNC+0LLQtdGA0LrQsCDRg9Cx0LXQttC00LXQvdC40Y87XG4vLyAgIGZsYXNoY2FyZCAgICDigJQg0LrQsNGA0YLQvtGH0LrQuC3Rg9C/0YDQsNC20L3QtdC90LjRjyAoc2NoZW1hIGZsYXNoY2FyZCkuXG5leHBvcnQgY29uc3QgQ1JJU0lTX1NVUkZBQ0VTID0gW1xuICAnc2NoZW1hJyxcbiAgJ21vZGUnLFxuICAnZ3JhdGl0dWRlJyxcbiAgJ25vdGUnLFxuICAncHJhY3RpY2UnLFxuICAnbGV0dGVyJyxcbiAgJ3NhZmVfcGxhY2UnLFxuICAnd2Vla2x5JyxcbiAgJ2JlbGllZl9jaGVjaycsXG4gICdmbGFzaGNhcmQnLFxuXSBhcyBjb25zdDtcbmV4cG9ydCB0eXBlIENyaXNpc1N1cmZhY2UgPSAodHlwZW9mIENSSVNJU19TVVJGQUNFUylbbnVtYmVyXTtcbiJdLCJ2ZXJzaW9uIjozfQ==

@@ -3,6 +3,7 @@
 // kept OUT of the editable `content` so the WYSIWYG editor can't strip it when
 // the admin edits an article.
 export const ARTICLE_DIAGRAM_KEYS: Record<string, string> = {
+  'schema-terapiya-vs-razgovornaya-terapiya': 'support-vs-structure',
   'schema-terapiya-pri-perfektsionizme': 'standards',
   'skolko-dlitsya-schema-terapiya': 'duration',
   'chto-takoe-schema-terapiya': 'cycle',

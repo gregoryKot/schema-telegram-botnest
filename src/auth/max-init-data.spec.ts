@@ -170,4 +170,57 @@ describe('verifyMaxInitData', () => {
     const result = verifyMaxInitData(reordered, BOT_TOKEN);
     expect(result.id).toBe('67890');
   });
+
+  // Диагностика в сообщении об ошибке. «Подпись неверна» одинаково выглядит и
+  // когда токен от другого бота, и когда площадка прислала строку в другом
+  // виде — форма строки различает эти случаи. Наружу уходит ТОЛЬКО структура:
+  // сообщение попадает в аудит-лог и в DM админу, значениям там не место.
+  describe('форма строки в сообщении о несовпавшей подписи', () => {
+    it('перечисляет поля и не содержит ни одного значения', () => {
+      const initData = signInitData({
+        authDate: 1700000000,
+        user: { id: 42, first_name: 'Ира' },
+        botToken: 'чужой-токен',
+      });
+      let message = '';
+      try {
+        verifyMaxInitData(initData, BOT_TOKEN, { now: 1700000000_000 });
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toContain('поля: auth_date,query_id,user');
+      // Ни имени, ни идентификатора, ни JSON значения быть не должно.
+      expect(message).not.toContain('Ира');
+      expect(message).not.toContain('42');
+      expect(message).not.toContain('{');
+    });
+
+    it('отмечает, что значения остались процент-кодированными', () => {
+      // Ровно тот случай, который мы подозреваем: лишний слой кодирования.
+      const raw = 'auth_date=1700000000&user=%257B%2522id%2522%253A42%257D';
+      const withHash = `${raw}&hash=${'0'.repeat(64)}`;
+      let message = '';
+      try {
+        verifyMaxInitData(withHash, BOT_TOKEN, { now: 1700000000_000 });
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toContain('значения ещё кодированы: да');
+    });
+
+    it('при нормальной строке отмечает, что кодирования не осталось', () => {
+      const initData = signInitData({
+        authDate: 1700000000,
+        user: { id: 42 },
+        botToken: 'чужой-токен',
+      });
+      let message = '';
+      try {
+        verifyMaxInitData(initData, BOT_TOKEN, { now: 1700000000_000 });
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).toContain('значения ещё кодированы: нет');
+    });
+  });
 });

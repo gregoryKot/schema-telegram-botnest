@@ -1,0 +1,52 @@
+1450bcce843c15dfb4b38794ac3a0f9b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DonationController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const donation_service_1 = require("./donation.service");
+let DonationController = class DonationController {
+    donation;
+    constructor(donation) {
+        this.donation = donation;
+    }
+    /** POST /api/donation — create a donation, returns { paymentUrl } to redirect to. */
+    async donate(dto) {
+        if (dto.website)
+            throw new common_1.BadRequestException('rejected'); // honeypot
+        return this.donation.create({
+            amount: dto.amount,
+            source: dto.source,
+            email: dto.email,
+            comment: dto.comment,
+        });
+    }
+};
+exports.DonationController = DonationController;
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ long: { limit: 20, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], DonationController.prototype, "donate", null);
+exports.DonationController = DonationController = __decorate([
+    (0, common_1.Controller)('api/donation'),
+    __metadata("design:paramtypes", [typeof (_a = typeof donation_service_1.DonationService !== "undefined" && donation_service_1.DonationService) === "function" ? _a : Object])
+], DonationController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvZG9uYXRpb24vZG9uYXRpb24uY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBT3dCO0FBQ3hCLGlEQUE2QztBQUM3Qyx5REFBcUQ7QUFXOUMsSUFBTSxrQkFBa0IsR0FBeEIsTUFBTSxrQkFBa0I7SUFDQTtJQUE3QixZQUE2QixRQUF5QjtRQUF6QixhQUFRLEdBQVIsUUFBUSxDQUFpQjtJQUFHLENBQUM7SUFFMUQscUZBQXFGO0lBSS9FLEFBQU4sS0FBSyxDQUFDLE1BQU0sQ0FBUyxHQUFjO1FBQ2pDLElBQUksR0FBRyxDQUFDLE9BQU87WUFBRSxNQUFNLElBQUksNEJBQW1CLENBQUMsVUFBVSxDQUFDLENBQUMsQ0FBQyxXQUFXO1FBQ3ZFLE9BQU8sSUFBSSxDQUFDLFFBQVEsQ0FBQyxNQUFNLENBQUM7WUFDMUIsTUFBTSxFQUFFLEdBQUcsQ0FBQyxNQUFNO1lBQ2xCLE1BQU0sRUFBRSxHQUFHLENBQUMsTUFBTTtZQUNsQixLQUFLLEVBQUUsR0FBRyxDQUFDLEtBQUs7WUFDaEIsT0FBTyxFQUFFLEdBQUcsQ0FBQyxPQUFPO1NBQ3JCLENBQUMsQ0FBQztJQUNMLENBQUM7Q0FDRixDQUFBO0FBaEJZLGdEQUFrQjtBQU92QjtJQUhMLElBQUEsYUFBSSxHQUFFO0lBQ04sSUFBQSxpQkFBUSxFQUFDLG1CQUFVLENBQUMsRUFBRSxDQUFDO0lBQ3ZCLElBQUEsb0JBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxFQUFFLEtBQUssRUFBRSxFQUFFLEVBQUUsR0FBRyxFQUFFLFNBQVMsRUFBRSxFQUFFLENBQUM7SUFDcEMsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBOzs7O2dEQVFuQjs2QkFmVSxrQkFBa0I7SUFEOUIsSUFBQSxtQkFBVSxFQUFDLGNBQWMsQ0FBQzt5REFFYyxrQ0FBZSxvQkFBZixrQ0FBZTtHQUQzQyxrQkFBa0IsQ0FnQjlCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2RvbmF0aW9uL2RvbmF0aW9uLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQ29udHJvbGxlcixcbiAgUG9zdCxcbiAgQm9keSxcbiAgSHR0cENvZGUsXG4gIEh0dHBTdGF0dXMsXG4gIEJhZFJlcXVlc3RFeGNlcHRpb24sXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgRG9uYXRpb25TZXJ2aWNlIH0gZnJvbSAnLi9kb25hdGlvbi5zZXJ2aWNlJztcblxuaW50ZXJmYWNlIERvbmF0ZUR0byB7XG4gIGFtb3VudDogbnVtYmVyO1xuICBzb3VyY2U/OiAnYXBwJyB8ICdnYW1lJztcbiAgZW1haWw/OiBzdHJpbmc7XG4gIGNvbW1lbnQ/OiBzdHJpbmc7XG4gIHdlYnNpdGU/OiBzdHJpbmc7IC8vIGhvbmV5cG90XG59XG5cbkBDb250cm9sbGVyKCdhcGkvZG9uYXRpb24nKVxuZXhwb3J0IGNsYXNzIERvbmF0aW9uQ29udHJvbGxlciB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgZG9uYXRpb246IERvbmF0aW9uU2VydmljZSkge31cblxuICAvKiogUE9TVCAvYXBpL2RvbmF0aW9uIOKAlCBjcmVhdGUgYSBkb25hdGlvbiwgcmV0dXJucyB7IHBheW1lbnRVcmwgfSB0byByZWRpcmVjdCB0by4gKi9cbiAgQFBvc3QoKVxuICBASHR0cENvZGUoSHR0cFN0YXR1cy5PSylcbiAgQFRocm90dGxlKHsgbG9uZzogeyBsaW1pdDogMjAsIHR0bDogM182MDBfMDAwIH0gfSlcbiAgYXN5bmMgZG9uYXRlKEBCb2R5KCkgZHRvOiBEb25hdGVEdG8pIHtcbiAgICBpZiAoZHRvLndlYnNpdGUpIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdyZWplY3RlZCcpOyAvLyBob25leXBvdFxuICAgIHJldHVybiB0aGlzLmRvbmF0aW9uLmNyZWF0ZSh7XG4gICAgICBhbW91bnQ6IGR0by5hbW91bnQsXG4gICAgICBzb3VyY2U6IGR0by5zb3VyY2UsXG4gICAgICBlbWFpbDogZHRvLmVtYWlsLFxuICAgICAgY29tbWVudDogZHRvLmNvbW1lbnQsXG4gICAgfSk7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

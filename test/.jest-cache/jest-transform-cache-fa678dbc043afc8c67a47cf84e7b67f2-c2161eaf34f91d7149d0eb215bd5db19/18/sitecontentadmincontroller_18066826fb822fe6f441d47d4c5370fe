@@ -1,0 +1,73 @@
+0156c72787e1c324d1f9ecc5a2028f6c
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SiteContentAdminController = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const site_content_service_1 = require("./site-content.service");
+const admin_key_util_1 = require("../booking/admin-key.util");
+const site_content_admin_dto_1 = require("./site-content-admin.dto");
+// The global express json() body limit is 256kb (main.ts) — stay well under it,
+// the frontend compresses the photo client-side before upload.
+const MAX_PHOTO_BYTES = 220 * 1024;
+/** Admin endpoints for hero photo + marquee topics, guarded by ADMIN_BOOKING_KEY. */
+let SiteContentAdminController = class SiteContentAdminController {
+    content;
+    config;
+    adminKey;
+    constructor(content, config) {
+        this.content = content;
+        this.config = config;
+        this.adminKey = config.get('ADMIN_BOOKING_KEY') ?? '';
+    }
+    async setHeroPhoto(body, key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        if (!body.dataUri?.startsWith('data:image/'))
+            throw new common_1.BadRequestException('Expected an image data URI');
+        if (body.dataUri.length > MAX_PHOTO_BYTES)
+            throw new common_1.BadRequestException('Photo too large');
+        return this.content.setHeroPhoto(body.dataUri);
+    }
+    async setMarquee(body, key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        if (body.topics.some((t) => !t.label?.trim() || !t.href?.trim())) {
+            throw new common_1.BadRequestException('Invalid topics');
+        }
+        return this.content.setMarqueeTopics(body.group, body.topics);
+    }
+};
+exports.SiteContentAdminController = SiteContentAdminController;
+__decorate([
+    (0, common_1.Patch)('hero-photo'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_c = typeof site_content_admin_dto_1.HeroPhotoDto !== "undefined" && site_content_admin_dto_1.HeroPhotoDto) === "function" ? _c : Object, String]),
+    __metadata("design:returntype", Promise)
+], SiteContentAdminController.prototype, "setHeroPhoto", null);
+__decorate([
+    (0, common_1.Patch)('marquee'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_d = typeof site_content_admin_dto_1.MarqueeDto !== "undefined" && site_content_admin_dto_1.MarqueeDto) === "function" ? _d : Object, String]),
+    __metadata("design:returntype", Promise)
+], SiteContentAdminController.prototype, "setMarquee", null);
+exports.SiteContentAdminController = SiteContentAdminController = __decorate([
+    (0, common_1.Controller)('api/site-content/admin'),
+    __metadata("design:paramtypes", [typeof (_a = typeof site_content_service_1.SiteContentService !== "undefined" && site_content_service_1.SiteContentService) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object])
+], SiteContentAdminController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc2l0ZS1jb250ZW50L3NpdGUtY29udGVudC1hZG1pbi5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FNd0I7QUFDeEIsMkNBQStDO0FBQy9DLGlFQUE0RDtBQUM1RCw4REFBMkQ7QUFDM0QscUVBQW9FO0FBRXBFLGdGQUFnRjtBQUNoRiwrREFBK0Q7QUFDL0QsTUFBTSxlQUFlLEdBQUcsR0FBRyxHQUFHLElBQUksQ0FBQztBQUVuQyxxRkFBcUY7QUFFOUUsSUFBTSwwQkFBMEIsR0FBaEMsTUFBTSwwQkFBMEI7SUFJbEI7SUFDQTtJQUpGLFFBQVEsQ0FBUztJQUVsQyxZQUNtQixPQUEyQixFQUMzQixNQUFxQjtRQURyQixZQUFPLEdBQVAsT0FBTyxDQUFvQjtRQUMzQixXQUFNLEdBQU4sTUFBTSxDQUFlO1FBRXRDLElBQUksQ0FBQyxRQUFRLEdBQUcsTUFBTSxDQUFDLEdBQUcsQ0FBUyxtQkFBbUIsQ0FBQyxJQUFJLEVBQUUsQ0FBQztJQUNoRSxDQUFDO0lBR0ssQUFBTixLQUFLLENBQUMsWUFBWSxDQUNSLElBQWtCLEVBQ0YsR0FBVztRQUVuQyxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztRQUNuQyxJQUFJLENBQUMsSUFBSSxDQUFDLE9BQU8sRUFBRSxVQUFVLENBQUMsYUFBYSxDQUFDO1lBQzFDLE1BQU0sSUFBSSw0QkFBbUIsQ0FBQyw0QkFBNEIsQ0FBQyxDQUFDO1FBQzlELElBQUksSUFBSSxDQUFDLE9BQU8sQ0FBQyxNQUFNLEdBQUcsZUFBZTtZQUN2QyxNQUFNLElBQUksNEJBQW1CLENBQUMsaUJBQWlCLENBQUMsQ0FBQztRQUNuRCxPQUFPLElBQUksQ0FBQyxPQUFPLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsQ0FBQztJQUNqRCxDQUFDO0lBR0ssQUFBTixLQUFLLENBQUMsVUFBVSxDQUNOLElBQWdCLEVBQ0EsR0FBVztRQUVuQyxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztRQUNuQyxJQUFJLElBQUksQ0FBQyxNQUFNLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQyxLQUFLLEVBQUUsSUFBSSxFQUFFLElBQUksQ0FBQyxDQUFDLENBQUMsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDLEVBQUUsQ0FBQztZQUNqRSxNQUFNLElBQUksNEJBQW1CLENBQUMsZ0JBQWdCLENBQUMsQ0FBQztRQUNsRCxDQUFDO1FBQ0QsT0FBTyxJQUFJLENBQUMsT0FBTyxDQUFDLGdCQUFnQixDQUFDLElBQUksQ0FBQyxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxDQUFDO0lBQ2hFLENBQUM7Q0FDRixDQUFBO0FBbENZLGdFQUEwQjtBQVcvQjtJQURMLElBQUEsY0FBSyxFQUFDLFlBQVksQ0FBQztJQUVqQixXQUFBLElBQUEsYUFBSSxHQUFFLENBQUE7SUFDTixXQUFBLElBQUEsZ0JBQU8sRUFBQyxhQUFhLENBQUMsQ0FBQTs7eURBRFQscUNBQVksb0JBQVoscUNBQVk7OzhEQVMzQjtBQUdLO0lBREwsSUFBQSxjQUFLLEVBQUMsU0FBUyxDQUFDO0lBRWQsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBO0lBQ04sV0FBQSxJQUFBLGdCQUFPLEVBQUMsYUFBYSxDQUFDLENBQUE7O3lEQURULG1DQUFVLG9CQUFWLG1DQUFVOzs0REFRekI7cUNBakNVLDBCQUEwQjtJQUR0QyxJQUFBLG1CQUFVLEVBQUMsd0JBQXdCLENBQUM7eURBS1AseUNBQWtCLG9CQUFsQix5Q0FBa0Isb0RBQ25CLHNCQUFhLG9CQUFiLHNCQUFhO0dBTDdCLDBCQUEwQixDQWtDdEMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc2l0ZS1jb250ZW50L3NpdGUtY29udGVudC1hZG1pbi5jb250cm9sbGVyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIEJvZHksXG4gIENvbnRyb2xsZXIsXG4gIEhlYWRlcnMsXG4gIFBhdGNoLFxuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxufSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDb25maWdTZXJ2aWNlIH0gZnJvbSAnQG5lc3Rqcy9jb25maWcnO1xuaW1wb3J0IHsgU2l0ZUNvbnRlbnRTZXJ2aWNlIH0gZnJvbSAnLi9zaXRlLWNvbnRlbnQuc2VydmljZSc7XG5pbXBvcnQgeyBhc3NlcnRBZG1pbktleSB9IGZyb20gJy4uL2Jvb2tpbmcvYWRtaW4ta2V5LnV0aWwnO1xuaW1wb3J0IHsgSGVyb1Bob3RvRHRvLCBNYXJxdWVlRHRvIH0gZnJvbSAnLi9zaXRlLWNvbnRlbnQtYWRtaW4uZHRvJztcblxuLy8gVGhlIGdsb2JhbCBleHByZXNzIGpzb24oKSBib2R5IGxpbWl0IGlzIDI1NmtiIChtYWluLnRzKSDigJQgc3RheSB3ZWxsIHVuZGVyIGl0LFxuLy8gdGhlIGZyb250ZW5kIGNvbXByZXNzZXMgdGhlIHBob3RvIGNsaWVudC1zaWRlIGJlZm9yZSB1cGxvYWQuXG5jb25zdCBNQVhfUEhPVE9fQllURVMgPSAyMjAgKiAxMDI0O1xuXG4vKiogQWRtaW4gZW5kcG9pbnRzIGZvciBoZXJvIHBob3RvICsgbWFycXVlZSB0b3BpY3MsIGd1YXJkZWQgYnkgQURNSU5fQk9PS0lOR19LRVkuICovXG5AQ29udHJvbGxlcignYXBpL3NpdGUtY29udGVudC9hZG1pbicpXG5leHBvcnQgY2xhc3MgU2l0ZUNvbnRlbnRBZG1pbkNvbnRyb2xsZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGFkbWluS2V5OiBzdHJpbmc7XG5cbiAgY29uc3RydWN0b3IoXG4gICAgcHJpdmF0ZSByZWFkb25seSBjb250ZW50OiBTaXRlQ29udGVudFNlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSBjb25maWc6IENvbmZpZ1NlcnZpY2UsXG4gICkge1xuICAgIHRoaXMuYWRtaW5LZXkgPSBjb25maWcuZ2V0PHN0cmluZz4oJ0FETUlOX0JPT0tJTkdfS0VZJykgPz8gJyc7XG4gIH1cblxuICBAUGF0Y2goJ2hlcm8tcGhvdG8nKVxuICBhc3luYyBzZXRIZXJvUGhvdG8oXG4gICAgQEJvZHkoKSBib2R5OiBIZXJvUGhvdG9EdG8sXG4gICAgQEhlYWRlcnMoJ3gtYWRtaW4ta2V5Jykga2V5OiBzdHJpbmcsXG4gICkge1xuICAgIGFzc2VydEFkbWluS2V5KGtleSwgdGhpcy5hZG1pbktleSk7XG4gICAgaWYgKCFib2R5LmRhdGFVcmk/LnN0YXJ0c1dpdGgoJ2RhdGE6aW1hZ2UvJykpXG4gICAgICB0aHJvdyBuZXcgQmFkUmVxdWVzdEV4Y2VwdGlvbignRXhwZWN0ZWQgYW4gaW1hZ2UgZGF0YSBVUkknKTtcbiAgICBpZiAoYm9keS5kYXRhVXJpLmxlbmd0aCA+IE1BWF9QSE9UT19CWVRFUylcbiAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdQaG90byB0b28gbGFyZ2UnKTtcbiAgICByZXR1cm4gdGhpcy5jb250ZW50LnNldEhlcm9QaG90byhib2R5LmRhdGFVcmkpO1xuICB9XG5cbiAgQFBhdGNoKCdtYXJxdWVlJylcbiAgYXN5bmMgc2V0TWFycXVlZShcbiAgICBAQm9keSgpIGJvZHk6IE1hcnF1ZWVEdG8sXG4gICAgQEhlYWRlcnMoJ3gtYWRtaW4ta2V5Jykga2V5OiBzdHJpbmcsXG4gICkge1xuICAgIGFzc2VydEFkbWluS2V5KGtleSwgdGhpcy5hZG1pbktleSk7XG4gICAgaWYgKGJvZHkudG9waWNzLnNvbWUoKHQpID0+ICF0LmxhYmVsPy50cmltKCkgfHwgIXQuaHJlZj8udHJpbSgpKSkge1xuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ0ludmFsaWQgdG9waWNzJyk7XG4gICAgfVxuICAgIHJldHVybiB0aGlzLmNvbnRlbnQuc2V0TWFycXVlZVRvcGljcyhib2R5Lmdyb3VwLCBib2R5LnRvcGljcyk7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

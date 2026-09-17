@@ -27,7 +27,7 @@ export function DonatePage() {
   const field: React.CSSProperties = {
     width: '100%', padding: '13px 15px', fontSize: 15, boxSizing: 'border-box',
     background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-    borderRadius: 12, color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
+    borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
   };
 
   return (
@@ -37,7 +37,6 @@ export function DonatePage() {
 
         {ret === 'ok' ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>💛</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, margin: '0 0 10px' }}>Спасибо за поддержку!</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6 }}>Это очень помогает развивать проект.</p>
           </div>
@@ -45,14 +44,14 @@ export function DonatePage() {
           <div style={{ marginTop: 24 }}>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, margin: '0 0 8px' }}>Поддержать проект</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6, margin: '0 0 24px' }}>
-              SchemeHappens бесплатный. Если он полезен — поддержите развитие любой суммой. 💛
+              SchemeHappens бесплатный. Если он полезен — поддержите развитие любой суммой.
             </p>
             {ret === 'fail' && <p style={{ color: 'var(--accent-red)', fontSize: 14, margin: '0 0 16px' }}>Оплата не прошла. Можно попробовать снова.</p>}
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap', marginBottom: 12 }}>
               {PRESETS.map((p) => (
                 <button key={p} type="button" onClick={() => setAmount(p)} style={{
-                  flex: '1 1 60px', padding: '12px 0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10,
+                  flex: '1 1 60px', padding: '12px 0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)',
                   background: amount === p ? 'var(--accent)' : 'transparent', color: amount === p ? '#fff' : 'var(--text-sub)',
                   border: `1.5px solid ${amount === p ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>{p} ₽</button>
@@ -62,10 +61,10 @@ export function DonatePage() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...field, marginBottom: 20 }} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
-            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробуйте ещё раз.</p>}
+            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробовать ещё раз.</p>}
             <button onClick={submit} disabled={status === 'loading' || amount < 10} style={{
               width: '100%', padding: '15px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit',
-              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12,
+              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
               cursor: 'pointer', opacity: status === 'loading' || amount < 10 ? 0.5 : 1,
             }}>
               {status === 'loading' ? 'Перехожу к оплате…' : `Поддержать ${amount.toLocaleString('ru-RU')} ₽`}

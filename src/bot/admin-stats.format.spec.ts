@@ -10,6 +10,7 @@ const EMPTY: AdminStatsData = {
   todayCount: 0,
   fillRate: 0,
   week7Count: 0,
+  activeCoreCount: 0,
   month30Count: 0,
   churnRisk: 0,
   ret1: 0,
@@ -34,6 +35,10 @@ describe('formatAdminStats', () => {
     expect(out).toContain('2026-07-26');
     // Лучший день недели — валидный день (bestDow=0 → «вс»), не пусто.
     expect(out).toContain('Чаще всего заполняют: вс');
+    // Активное ядро на пустой БД — честный «0 из 0», а не NaN/пропуск строки.
+    expect(out).toContain(
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 0 из 0 заходивших за неделю',
+    );
   });
 
   it('форматирует населённый отчёт с метками потребностей и днём недели', () => {
@@ -47,6 +52,7 @@ describe('formatAdminStats', () => {
       todayCount: 42,
       fillRate: 35,
       week7Count: 60,
+      activeCoreCount: 25,
       month30Count: 120,
       churnRisk: 7,
       ret1: 100,
@@ -58,6 +64,10 @@ describe('formatAdminStats', () => {
     });
     expect(out).toContain('Всего людей: 120');
     expect(out).toContain('Заполнили сегодня: 42 (это 35%');
+    // Активное ядро — подмножество недельных, оба числа читаются вместе.
+    expect(out).toContain(
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 25 из 60 заходивших за неделю',
+    );
     expect(out).toContain('Могут уйти');
     expect(out).toContain('7'); // churnRisk
     // needId → человекочитаемая метка (play → Спонтанность) + округление до 0.1.

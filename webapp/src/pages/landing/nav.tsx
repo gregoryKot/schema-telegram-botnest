@@ -1,6 +1,7 @@
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { Btn } from '../../components/landing-kit';
 import { MOSS, TG_URL, NAV_LINKS, MOBILE_LINKS } from './constants';
+import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 
 // ─── Telegram link – quiet editorial text link (matches nav "Написать ↗") ────
 export function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
@@ -45,7 +46,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
   const go = (href: string) => {
     if (href.startsWith('#')) {
       goBack();
-      setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
+      setTimeout(() => scrollIntoViewSafe(document.getElementById(href.slice(1))), 60);
     } else {
       // location.assign() navigates the same as `location.href = …` but is a
       // method call, not a property write react-compiler flags as a mutation.
@@ -54,7 +55,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
   };
   return (
     <div role="dialog" aria-modal="true" aria-label="Меню" style={{
-      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)',
+      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto',
       display: 'flex', flexDirection: 'column', padding: '20px 24px calc(28px + var(--safe-bottom))',
       animation: 'menu-in .28s cubic-bezier(.16,1,.3,1) both',
     }}>

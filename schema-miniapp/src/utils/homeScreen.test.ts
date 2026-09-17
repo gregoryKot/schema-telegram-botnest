@@ -138,8 +138,11 @@ describe('triggerAddToHomeScreen', () => {
   it('Android — нативный вызов; iOS — openLink прыжковой страницей', () => {
     const addToHomeScreen = vi.fn();
     const openLink = vi.fn();
+    // platform обязателен: вне мессенджера их SDK оставляет 'unknown', и
+    // детект хоста такой объект настоящим Telegram не считает (инцидент
+    // 2026-08-03, shared/src/host/telegram.ts).
     (globalThis as never as { Telegram: unknown }).Telegram = {
-      WebApp: { addToHomeScreen, openLink },
+      WebApp: { platform: 'android', addToHomeScreen, openLink },
     };
 
     triggerAddToHomeScreen('android');

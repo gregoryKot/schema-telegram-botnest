@@ -5,12 +5,15 @@
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ExpiredError, SignatureInvalidError } from '@tma.js/init-data-node';
 import {
-  AlertThrottle,
   classifyInitDataFailure,
   INITDATA_EXPIRED_CODE,
   rejectInitData,
 } from './initdata-alert';
 import { SecurityLogService } from '../auth/security-log.service';
+
+// Тесты самого AlertThrottle (примитива) переехали в
+// src/utils/alert-throttle.spec.ts вместе с извлечением класса — здесь
+// остаётся только его применение к initData-гварду.
 
 describe('classifyInitDataFailure', () => {
   it('ExpiredError библиотеки → expired', () => {
@@ -34,42 +37,6 @@ describe('classifyInitDataFailure', () => {
 
   it('неизвестная ошибка → suspicious (по умолчанию считаем подозрительным)', () => {
     expect(classifyInitDataFailure('what')).toBe('suspicious');
-  });
-});
-
-describe('AlertThrottle', () => {
-  const WINDOW = 10 * 60_000;
-
-  it('первый случай проходит, остальные в окне копятся счётчиком', () => {
-    const t = new AlertThrottle(WINDOW);
-    expect(t.take('ip', 0)).toEqual({ allow: true, suppressed: 0 });
-    expect(t.take('ip', 1_000)).toEqual({ allow: false, suppressed: 1 });
-    expect(t.take('ip', 2_000)).toEqual({ allow: false, suppressed: 2 });
-  });
-
-  it('после окна снова пропускает и сообщает, сколько проглотил', () => {
-    const t = new AlertThrottle(WINDOW);
-    t.take('ip', 0);
-    t.take('ip', 1_000);
-    t.take('ip', 2_000);
-    expect(t.take('ip', WINDOW + 1)).toEqual({ allow: true, suppressed: 2 });
-    // счётчик обнулился вместе с новым окном
-    expect(t.take('ip', WINDOW + 2)).toEqual({ allow: false, suppressed: 1 });
-  });
-
-  it('разные ключи не глушат друг друга', () => {
-    const t = new AlertThrottle(WINDOW);
-    expect(t.take('a', 0).allow).toBe(true);
-    expect(t.take('b', 0).allow).toBe(true);
-  });
-
-  it('старые ключи вычищаются — карта не растёт бесконечно', () => {
-    const t = new AlertThrottle(WINDOW, 3);
-    for (let i = 0; i < 5; i++) t.take(`ip-${i}`, i * WINDOW * 3);
-    expect(t.take('ip-0', 5 * WINDOW * 3)).toEqual({
-      allow: true,
-      suppressed: 0,
-    });
   });
 });
 

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { MODE_GROUPS, getModeById } from '../../schemaTherapyData';
+import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { ModeSelectScreen } from './ModeSelectScreen';
 import { ModeEntryForm, type ModeFormFields } from './ModeEntryForm';
-import { ModeEntryShare } from './ModeEntryShare';
+import { ModeEntryDone } from './ModeEntryDone';
 import {
   MODE_ENTRY_SAVED_EVENT,
+  MODE_CHAIN_FOLLOWUP_EVENT,
   modeEntrySavedMeta,
 } from '../../../../shared/src/share/analytics';
 import { type ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
@@ -43,6 +43,11 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     d?.healthyResponse ?? '',
   );
   const [saving, setSaving] = useState(false);
+  // Отказ раньше сообщался ТОЛЬКО вибрацией haptic.error() — на сайте в
+  // браузере (в отличие от Telegram/установленного PWA) вибрации нет вовсе,
+  // и человек считал, что запись сохранена, хотя черновик просто завис
+  // (тот же баг, что был в GratitudeEntrySheet, см. её комментарий).
+  const [saveError, setSaveError] = useState(false);
   const [done, setDone] = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);
 
@@ -106,6 +111,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
@@ -121,64 +127,48 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
-      api.trackEvent(
-        MODE_ENTRY_SAVED_EVENT,
-        modeEntrySavedMeta(
-          [
-            situation,
-            thoughts,
-            feelings,
-            bodyFeelings,
-            actions,
-            actualNeed,
-            childhoodMemories,
-          ],
-          healthyResponse,
-        ),
-      );
+      const fields = [situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories];
+      api.trackEvent(MODE_ENTRY_SAVED_EVENT, modeEntrySavedMeta(fields, healthyResponse));
       setDone(true); // итог вместо молчаливого закрытия (не «всё исчезло»)
     } catch {
       haptic.error();
+      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
     }
   };
 
+  // Подсказка «разобрать связанный режим» (ModeChainSuggestion) на экране
+  // «Запись сохранена»: ситуация — та же, поэтому ситуацию СОХРАНЯЕМ, а
+  // остальные поля и ответ Здорового Взрослого очищаем и открываем форму
+  // заново уже на новом режиме (modeId='' — обратно на ModeSelectScreen).
+  // Событие шлём только при выборе конкретного кандидата — «Другой режим»
+  // (to === null) не считается принятой подсказкой.
+  const handleChainPick = (to: string | null) => {
+    if (to != null) {
+      api.trackEvent(MODE_CHAIN_FOLLOWUP_EVENT, { from: modeId, to });
+    }
+    setThoughts('');
+    setFeelings('');
+    setBodyFeelings('');
+    setActions('');
+    setActualNeed('');
+    setChildhoodMemories('');
+    setHealthyResponse('');
+    setModeId(to ?? '');
+    setDone(false);
+  };
+
   // ── Итог: запись сохранена + карточка/шеринг ──
   if (done) {
     return (
-      <ExScreen
-        onBack={goBack}
-        backLabel="Закрыть"
-        eyebrow="Дневник режимов"
-        eyebrowColor="var(--c-moss)"
-        title={
-          <>
-            Запись
-            <br />
-            <span className="it">сохранена</span>
-          </>
-        }
-        lede="Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать в любой момент."
-      >
-        <ModeEntryShare
-          mode={getModeById(modeId)}
-          healthyResponse={healthyResponse}
-          color="var(--c-moss)"
-        />
-        <button
-          className="ex-btn ex-btn-primary"
-          onClick={goBack}
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          Готово <GlyphCheck />
-        </button>
-      </ExScreen>
+      <ModeEntryDone
+        modeId={modeId}
+        healthyResponse={healthyResponse}
+        entry={{ ...values, healthyResponse }}
+        goBack={goBack}
+        onPickChain={handleChainPick}
+      />
     );
   }
 
@@ -199,10 +189,12 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       healthyResponse={healthyResponse}
       setHealthyResponse={setHealthyResponse}
       saving={saving}
+      saveError={saveError}
       canSave={canSave}
       onSave={handleSave}
       onBack={goBack}
       onChangeMode={() => setShowPicker(true)}
+      onSwitchMode={setModeId}
     />
   );
 }

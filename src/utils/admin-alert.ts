@@ -24,11 +24,21 @@ export function isAdminSender(from: { id?: number } | undefined): boolean {
   return a !== null && from?.id === a;
 }
 
+export interface NotifyOptions {
+  /**
+   * Не пытаться слать в Telegram. Нужно, когда сбой — в самом Telegram:
+   * сообщение о его недоступности по нему же не доставить (инцидент
+   * 2026-08-09: канал падал три дня, алерты уходили в никуда).
+   */
+  skipTelegram?: boolean;
+}
+
 export async function notifyAdminWithFallback(
   text: string,
   subject = 'Уведомление SchemeHappens',
+  options: NotifyOptions = {},
 ): Promise<void> {
-  if (await sendTelegram(text)) return;
+  if (!options.skipTelegram && (await sendTelegram(text))) return;
   await sendEmail(subject, text);
 }
 

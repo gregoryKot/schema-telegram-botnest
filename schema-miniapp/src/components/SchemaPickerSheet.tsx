@@ -88,7 +88,13 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             >
               {domain.domain}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-4)',
+              }}
+            >
               {domain.schemas.map((s) => {
                 const active = ids.includes(s.id);
                 return (
@@ -106,9 +112,9 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--space-10)',
                       padding: '10px 12px',
-                      borderRadius: 12,
+                      borderRadius: 'var(--r-12)',
                       cursor: 'pointer',
                       background: active
                         ? `${domain.color}12`
@@ -181,9 +187,10 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             marginTop: 8,
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
-            background: 'linear-gradient(135deg, #a78bfa, #60a5fa)',
+            background:
+              'linear-gradient(135deg, var(--accent), var(--accent-hi))',
             color: 'var(--text)',
             fontSize: 16,
             fontWeight: 600,

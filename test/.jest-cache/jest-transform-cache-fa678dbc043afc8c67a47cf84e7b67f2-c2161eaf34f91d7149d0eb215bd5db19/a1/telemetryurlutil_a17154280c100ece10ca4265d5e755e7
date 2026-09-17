@@ -1,0 +1,25 @@
+2fe463742cc012798c9af31cc59aa5b0
+"use strict";
+/**
+ * Санитайзер URL краш-телеметрии на стороне бэкенда.
+ *
+ * Зачем дубль фронтового `shared/src/utils/telemetryUrl` (правило №11 про
+ * дубли — осознанное исключение, два разных слоя обороны):
+ *   1. корневой tsconfig ЯВНО исключает `shared/` — импортировать оттуда
+ *      бэкендом нельзя;
+ *   2. `POST /api/client-errors` публичный и без auth-гарда: фронт может быть
+ *      устаревшим (закэшенный бандл шлёт полный href), а атакующий положит в
+ *      `url` что угодно. Полагаться на санитайзинг клиента нельзя в принципе.
+ *
+ * См. аудит 2026-07-20, H0 (утечка живой initData/JWT в логи и DM админа).
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.stripUrlSecrets = stripUrlSecrets;
+/** Схема+хост+путь без query/fragment — там живут initData и access-токен. */
+function stripUrlSecrets(url) {
+    if (!url)
+        return undefined;
+    const cut = url.split('#')[0].split('?')[0].trim();
+    return cut ? cut.slice(0, 200) : undefined;
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3RlbGVtZXRyeS11cmwudXRpbC50cyIsIm1hcHBpbmdzIjoiO0FBQUE7Ozs7Ozs7Ozs7OztHQVlHOztBQUdILDBDQUlDO0FBTEQsOEVBQThFO0FBQzlFLFNBQWdCLGVBQWUsQ0FBQyxHQUF1QjtJQUNyRCxJQUFJLENBQUMsR0FBRztRQUFFLE9BQU8sU0FBUyxDQUFDO0lBQzNCLE1BQU0sR0FBRyxHQUFHLEdBQUcsQ0FBQyxLQUFLLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsS0FBSyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDO0lBQ25ELE9BQU8sR0FBRyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsS0FBSyxDQUFDLENBQUMsRUFBRSxHQUFHLENBQUMsQ0FBQyxDQUFDLENBQUMsU0FBUyxDQUFDO0FBQzdDLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3RlbGVtZXRyeS11cmwudXRpbC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqINCh0LDQvdC40YLQsNC50LfQtdGAIFVSTCDQutGA0LDRiC3RgtC10LvQtdC80LXRgtGA0LjQuCDQvdCwINGB0YLQvtGA0L7QvdC1INCx0Y3QutC10L3QtNCwLlxuICpcbiAqINCX0LDRh9C10Lwg0LTRg9Cx0LvRjCDRhNGA0L7QvdGC0L7QstC+0LPQviBgc2hhcmVkL3NyYy91dGlscy90ZWxlbWV0cnlVcmxgICjQv9GA0LDQstC40LvQviDihJYxMSDQv9GA0L5cbiAqINC00YPQsdC70Lgg4oCUINC+0YHQvtC30L3QsNC90L3QvtC1INC40YHQutC70Y7Rh9C10L3QuNC1LCDQtNCy0LAg0YDQsNC30L3Ri9GFINGB0LvQvtGPINC+0LHQvtGA0L7QvdGLKTpcbiAqICAgMS4g0LrQvtGA0L3QtdCy0L7QuSB0c2NvbmZpZyDQr9CS0J3QniDQuNGB0LrQu9GO0YfQsNC10YIgYHNoYXJlZC9gIOKAlCDQuNC80L/QvtGA0YLQuNGA0L7QstCw0YLRjCDQvtGC0YLRg9C00LBcbiAqICAgICAg0LHRjdC60LXQvdC00L7QvCDQvdC10LvRjNC30Y87XG4gKiAgIDIuIGBQT1NUIC9hcGkvY2xpZW50LWVycm9yc2Ag0L/Rg9Cx0LvQuNGH0L3Ri9C5INC4INCx0LXQtyBhdXRoLdCz0LDRgNC00LA6INGE0YDQvtC90YIg0LzQvtC20LXRgiDQsdGL0YLRjFxuICogICAgICDRg9GB0YLQsNGA0LXQstGI0LjQvCAo0LfQsNC60Y3RiNC10L3QvdGL0Lkg0LHQsNC90LTQuyDRiNC70ZHRgiDQv9C+0LvQvdGL0LkgaHJlZiksINCwINCw0YLQsNC60YPRjtGJ0LjQuSDQv9C+0LvQvtC20LjRgiDQslxuICogICAgICBgdXJsYCDRh9GC0L4g0YPQs9C+0LTQvdC+LiDQn9C+0LvQsNCz0LDRgtGM0YHRjyDQvdCwINGB0LDQvdC40YLQsNC50LfQuNC90LMg0LrQu9C40LXQvdGC0LAg0L3QtdC70YzQt9GPINCyINC/0YDQuNC90YbQuNC/0LUuXG4gKlxuICog0KHQvC4g0LDRg9C00LjRgiAyMDI2LTA3LTIwLCBIMCAo0YPRgtC10YfQutCwINC20LjQstC+0LkgaW5pdERhdGEvSldUINCyINC70L7Qs9C4INC4IERNINCw0LTQvNC40L3QsCkuXG4gKi9cblxuLyoqINCh0YXQtdC80LAr0YXQvtGB0YIr0L/Rg9GC0Ywg0LHQtdC3IHF1ZXJ5L2ZyYWdtZW50IOKAlCDRgtCw0Lwg0LbQuNCy0YPRgiBpbml0RGF0YSDQuCBhY2Nlc3Mt0YLQvtC60LXQvS4gKi9cbmV4cG9ydCBmdW5jdGlvbiBzdHJpcFVybFNlY3JldHModXJsOiBzdHJpbmcgfCB1bmRlZmluZWQpOiBzdHJpbmcgfCB1bmRlZmluZWQge1xuICBpZiAoIXVybCkgcmV0dXJuIHVuZGVmaW5lZDtcbiAgY29uc3QgY3V0ID0gdXJsLnNwbGl0KCcjJylbMF0uc3BsaXQoJz8nKVswXS50cmltKCk7XG4gIHJldHVybiBjdXQgPyBjdXQuc2xpY2UoMCwgMjAwKSA6IHVuZGVmaW5lZDtcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

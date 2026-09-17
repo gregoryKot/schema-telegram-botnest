@@ -1,0 +1,56 @@
+7d6019a66d2117107388c6031d303137
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PinterestChannelTarget = void 0;
+const common_1 = require("@nestjs/common");
+const channel_http_1 = require("../channel-http");
+/** id доски. Без него площадка выключена. */
+const BOARD_ENV = 'HEALTHY_ADULT_PINTEREST_BOARD';
+const TOKEN_ENV = 'HEALTHY_ADULT_PINTEREST_TOKEN';
+const API = 'https://api.pinterest.com/v5/pins';
+/** Лимит описания пина у Pinterest — длинные фразы обрезаем, а не теряем пин. */
+const DESCRIPTION_LIMIT = 500;
+/**
+ * Pinterest: единственная площадка канала, которой нужен не текст, а картинка
+ * — пин без изображения создать нельзя. Картинку рисует бэкенд (pin-image),
+ * фраза дублируется в описании: так пин находится поиском и читается без
+ * загрузки картинки.
+ */
+let PinterestChannelTarget = class PinterestChannelTarget {
+    platform = 'pinterest';
+    title = 'Pinterest';
+    envKey = BOARD_ENV;
+    destination() {
+        const raw = process.env[BOARD_ENV]?.trim();
+        return raw ? raw : null;
+    }
+    async send(post, destination) {
+        const token = process.env[TOKEN_ENV]?.trim();
+        if (!token)
+            throw new Error(`нет ${TOKEN_ENV} — токена Pinterest`);
+        const image = await post.image();
+        await (0, channel_http_1.postJson)(API, {
+            board_id: destination,
+            description: post.text.slice(0, DESCRIPTION_LIMIT),
+            media_source: {
+                source_type: 'image_base64',
+                content_type: 'image/png',
+                data: image.toString('base64'),
+            },
+        }, { authorization: `Bearer ${token}` });
+    }
+    explain(err) {
+        return `${(0, channel_http_1.describeHttpError)(err)}\nПроверь токен Pinterest (нужны права pins:write) и id доски.`;
+    }
+};
+exports.PinterestChannelTarget = PinterestChannelTarget;
+exports.PinterestChannelTarget = PinterestChannelTarget = __decorate([
+    (0, common_1.Injectable)()
+], PinterestChannelTarget);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC90YXJnZXRzL3BpbnRlcmVzdC50YXJnZXQudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7O0FBQUEsMkNBQTRDO0FBRTVDLGtEQUE4RDtBQUU5RCw2Q0FBNkM7QUFDN0MsTUFBTSxTQUFTLEdBQUcsK0JBQStCLENBQUM7QUFDbEQsTUFBTSxTQUFTLEdBQUcsK0JBQStCLENBQUM7QUFDbEQsTUFBTSxHQUFHLEdBQUcsbUNBQW1DLENBQUM7QUFDaEQsaUZBQWlGO0FBQ2pGLE1BQU0saUJBQWlCLEdBQUcsR0FBRyxDQUFDO0FBRTlCOzs7OztHQUtHO0FBRUksSUFBTSxzQkFBc0IsR0FBNUIsTUFBTSxzQkFBc0I7SUFDeEIsUUFBUSxHQUFHLFdBQVcsQ0FBQztJQUN2QixLQUFLLEdBQUcsV0FBVyxDQUFDO0lBQ3BCLE1BQU0sR0FBRyxTQUFTLENBQUM7SUFFNUIsV0FBVztRQUNULE1BQU0sR0FBRyxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUMsU0FBUyxDQUFDLEVBQUUsSUFBSSxFQUFFLENBQUM7UUFDM0MsT0FBTyxHQUFHLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDO0lBQzFCLENBQUM7SUFFRCxLQUFLLENBQUMsSUFBSSxDQUFDLElBQWlCLEVBQUUsV0FBbUI7UUFDL0MsTUFBTSxLQUFLLEdBQUcsT0FBTyxDQUFDLEdBQUcsQ0FBQyxTQUFTLENBQUMsRUFBRSxJQUFJLEVBQUUsQ0FBQztRQUM3QyxJQUFJLENBQUMsS0FBSztZQUFFLE1BQU0sSUFBSSxLQUFLLENBQUMsT0FBTyxTQUFTLHFCQUFxQixDQUFDLENBQUM7UUFDbkUsTUFBTSxLQUFLLEdBQUcsTUFBTSxJQUFJLENBQUMsS0FBSyxFQUFFLENBQUM7UUFDakMsTUFBTSxJQUFBLHVCQUFRLEVBQ1osR0FBRyxFQUNIO1lBQ0UsUUFBUSxFQUFFLFdBQVc7WUFDckIsV0FBVyxFQUFFLElBQUksQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLENBQUMsRUFBRSxpQkFBaUIsQ0FBQztZQUNsRCxZQUFZLEVBQUU7Z0JBQ1osV0FBVyxFQUFFLGNBQWM7Z0JBQzNCLFlBQVksRUFBRSxXQUFXO2dCQUN6QixJQUFJLEVBQUUsS0FBSyxDQUFDLFFBQVEsQ0FBQyxRQUFRLENBQUM7YUFDL0I7U0FDRixFQUNELEVBQUUsYUFBYSxFQUFFLFVBQVUsS0FBSyxFQUFFLEVBQUUsQ0FDckMsQ0FBQztJQUNKLENBQUM7SUFFRCxPQUFPLENBQUMsR0FBWTtRQUNsQixPQUFPLEdBQUcsSUFBQSxnQ0FBaUIsRUFBQyxHQUFHLENBQUMsZ0VBQWdFLENBQUM7SUFDbkcsQ0FBQztDQUNGLENBQUE7QUFoQ1ksd0RBQXNCO2lDQUF0QixzQkFBc0I7SUFEbEMsSUFBQSxtQkFBVSxHQUFFO0dBQ0Esc0JBQXNCLENBZ0NsQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9jaGFubmVsL3RhcmdldHMvcGludGVyZXN0LnRhcmdldC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHR5cGUgeyBDaGFubmVsUG9zdCwgQ2hhbm5lbFRhcmdldCB9IGZyb20gJy4uL2NoYW5uZWwtdGFyZ2V0JztcbmltcG9ydCB7IGRlc2NyaWJlSHR0cEVycm9yLCBwb3N0SnNvbiB9IGZyb20gJy4uL2NoYW5uZWwtaHR0cCc7XG5cbi8qKiBpZCDQtNC+0YHQutC4LiDQkdC10Lcg0L3QtdCz0L4g0L/Qu9C+0YnQsNC00LrQsCDQstGL0LrQu9GO0YfQtdC90LAuICovXG5jb25zdCBCT0FSRF9FTlYgPSAnSEVBTFRIWV9BRFVMVF9QSU5URVJFU1RfQk9BUkQnO1xuY29uc3QgVE9LRU5fRU5WID0gJ0hFQUxUSFlfQURVTFRfUElOVEVSRVNUX1RPS0VOJztcbmNvbnN0IEFQSSA9ICdodHRwczovL2FwaS5waW50ZXJlc3QuY29tL3Y1L3BpbnMnO1xuLyoqINCb0LjQvNC40YIg0L7Qv9C40YHQsNC90LjRjyDQv9C40L3QsCDRgyBQaW50ZXJlc3Qg4oCUINC00LvQuNC90L3Ri9C1INGE0YDQsNC30Ysg0L7QsdGA0LXQt9Cw0LXQvCwg0LAg0L3QtSDRgtC10YDRj9C10Lwg0L/QuNC9LiAqL1xuY29uc3QgREVTQ1JJUFRJT05fTElNSVQgPSA1MDA7XG5cbi8qKlxuICogUGludGVyZXN0OiDQtdC00LjQvdGB0YLQstC10L3QvdCw0Y8g0L/Qu9C+0YnQsNC00LrQsCDQutCw0L3QsNC70LAsINC60L7RgtC+0YDQvtC5INC90YPQttC10L0g0L3QtSDRgtC10LrRgdGCLCDQsCDQutCw0YDRgtC40L3QutCwXG4gKiDigJQg0L/QuNC9INCx0LXQtyDQuNC30L7QsdGA0LDQttC10L3QuNGPINGB0L7Qt9C00LDRgtGMINC90LXQu9GM0LfRjy4g0JrQsNGA0YLQuNC90LrRgyDRgNC40YHRg9C10YIg0LHRjdC60LXQvdC0IChwaW4taW1hZ2UpLFxuICog0YTRgNCw0LfQsCDQtNGD0LHQu9C40YDRg9C10YLRgdGPINCyINC+0L/QuNGB0LDQvdC40Lg6INGC0LDQuiDQv9C40L0g0L3QsNGF0L7QtNC40YLRgdGPINC/0L7QuNGB0LrQvtC8INC4INGH0LjRgtCw0LXRgtGB0Y8g0LHQtdC3XG4gKiDQt9Cw0LPRgNGD0LfQutC4INC60LDRgNGC0LjQvdC60LguXG4gKi9cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBQaW50ZXJlc3RDaGFubmVsVGFyZ2V0IGltcGxlbWVudHMgQ2hhbm5lbFRhcmdldCB7XG4gIHJlYWRvbmx5IHBsYXRmb3JtID0gJ3BpbnRlcmVzdCc7XG4gIHJlYWRvbmx5IHRpdGxlID0gJ1BpbnRlcmVzdCc7XG4gIHJlYWRvbmx5IGVudktleSA9IEJPQVJEX0VOVjtcblxuICBkZXN0aW5hdGlvbigpOiBzdHJpbmcgfCBudWxsIHtcbiAgICBjb25zdCByYXcgPSBwcm9jZXNzLmVudltCT0FSRF9FTlZdPy50cmltKCk7XG4gICAgcmV0dXJuIHJhdyA/IHJhdyA6IG51bGw7XG4gIH1cblxuICBhc3luYyBzZW5kKHBvc3Q6IENoYW5uZWxQb3N0LCBkZXN0aW5hdGlvbjogc3RyaW5nKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgY29uc3QgdG9rZW4gPSBwcm9jZXNzLmVudltUT0tFTl9FTlZdPy50cmltKCk7XG4gICAgaWYgKCF0b2tlbikgdGhyb3cgbmV3IEVycm9yKGDQvdC10YIgJHtUT0tFTl9FTlZ9IOKAlCDRgtC+0LrQtdC90LAgUGludGVyZXN0YCk7XG4gICAgY29uc3QgaW1hZ2UgPSBhd2FpdCBwb3N0LmltYWdlKCk7XG4gICAgYXdhaXQgcG9zdEpzb24oXG4gICAgICBBUEksXG4gICAgICB7XG4gICAgICAgIGJvYXJkX2lkOiBkZXN0aW5hdGlvbixcbiAgICAgICAgZGVzY3JpcHRpb246IHBvc3QudGV4dC5zbGljZSgwLCBERVNDUklQVElPTl9MSU1JVCksXG4gICAgICAgIG1lZGlhX3NvdXJjZToge1xuICAgICAgICAgIHNvdXJjZV90eXBlOiAnaW1hZ2VfYmFzZTY0JyxcbiAgICAgICAgICBjb250ZW50X3R5cGU6ICdpbWFnZS9wbmcnLFxuICAgICAgICAgIGRhdGE6IGltYWdlLnRvU3RyaW5nKCdiYXNlNjQnKSxcbiAgICAgICAgfSxcbiAgICAgIH0sXG4gICAgICB7IGF1dGhvcml6YXRpb246IGBCZWFyZXIgJHt0b2tlbn1gIH0sXG4gICAgKTtcbiAgfVxuXG4gIGV4cGxhaW4oZXJyOiB1bmtub3duKTogc3RyaW5nIHtcbiAgICByZXR1cm4gYCR7ZGVzY3JpYmVIdHRwRXJyb3IoZXJyKX1cXG7Qn9GA0L7QstC10YDRjCDRgtC+0LrQtdC9IFBpbnRlcmVzdCAo0L3Rg9C20L3RiyDQv9GA0LDQstCwIHBpbnM6d3JpdGUpINC4IGlkINC00L7RgdC60LguYDtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

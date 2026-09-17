@@ -15,11 +15,17 @@ name: Nightly flaky-детекция
 
 on:
   schedule:
+    # Ежедневно — флаки и mutation золотых зон.
     - cron: '0 3 * * *'
+    # По воскресеньям — тяжёлый mutation семейства src/bot (см. mutation-bot).
+    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 jobs:
   backend-flaky:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -46,6 +52,9 @@ jobs:
         run: npx jest --detectOpenHandles --forceExit=false 2>&1 | tail -50
 
   frontend-flaky:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -85,9 +94,29 @@ jobs:
   # на каждом — это минуты, неприемлемые на каждый пуш. Ночью же вопрос
   # «а поймают ли тесты, если сломать шифрование/подпись платежа?» проверяется
   # честно, и просадка счёта роняет ночной ран.
-  mutation:
+  #
+  # Раньше это была ОДНА джоба на все 15 файлов (`stryker.config.json`,
+  # ~90 минут таймаут) — 6 из 7 ночных ранов с 2026-09-10 падали по таймауту
+  # (список файлов вырос с 7 «волны А», под которую считался бюджет 45 минут,
+  # до 15, без пересчёта). Возврат к историческим волнам A/Б
+  # (docs/TEST_TRUST_PLAN.md), но теперь КАЖДАЯ — отдельная GitHub Actions
+  # джоба: они выполняются параллельно на разных раннерах (а не последовательно
+  # внутри одной), поэтому суммарное время падения таймаута вдвое НЕ
+  # складывается — каждая волна укладывается в собственный бюджет независимо
+  # от соседней. У каждой волны свой бейслайн (scripts/mutation-golden-*-baseline.json)
+  # — сумма реальных счётов по файлам из старого scripts/mutation-baseline.json,
+  # не новый замер: --update здесь не запускали, числа не выдуманы.
+  mutation-golden-auth:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Волна А (docs/TEST_TRUST_PLAN.md) — 6 файлов входа/шифрования/приватности
+    # (crypto, auth.service, merge.service, telegram-auth.guard,
+    # security-log.service, therapy-relations.service), ~1700 строк. Историческая
+    # оценка «7 файлов за 45 минут» — здесь файлов чуть меньше и они легче
+    # (без крупных booking/notification), запас до 60 минут оставлен на рост.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -96,17 +125,366 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - name: Stryker по золотым зонам (crypto/auth/robokassa/tz)
-        run: npm run mutation
-      # Храповик: счёт не может просесть ниже scripts/mutation-baseline.json
-      # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
-      - name: mutation-храповик
-        run: node scripts/check-mutation-ratchet.mjs
+      # ignoreStatic — не «послабление», а условие выполнимости: статические
+      # мутанты (код уровня модуля) заставляют перегонять ВЕСЬ набор тестов на
+      # каждого, и 9% таких мутантов съедали 86% времени прогона (счёт при
+      # этом не уточняли) — см. stryker.golden-auth.config.json.
+      - name: Stryker — волна А (вход/шифрование/приватность)
+        run: npm run mutation:golden-auth
+      - name: mutation-храповик волны А
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
       # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
       - name: отчёт артефактом
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mutation-report
+          name: mutation-report-golden-auth
           path: reports/mutation/
           retention-days: 14
+
+  mutation-golden-payments:
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-latest
+    # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
+    # booking, subscription, slot, pricing, payment.controller, donation,
+    # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker — волна Б (платежи/бронирования/напоминания)
+        run: npm run mutation:golden-payments
+      - name: mutation-храповик волны Б
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+      # Кризисная детекция (правило №7) — отдельный прогон command-раннером
+      # (файл в shared, тесты у него vitest'овые; jest-раннер Stryker её
+      # мутантов убить не может). Первый же замер 16.08.2026 нашёл живую
+      # дыру: «покончу с собой» не ловился. Висит на этой джобе (а не на
+      # golden-auth) — обе лёгкие command-runner цели, бюджет минут, не часов.
+      - run: npm ci --prefix shared
+      - name: Stryker по кризисной детекции
+        run: npm run mutation:crisis
+      - name: mutation-храповик кризисной детекции
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/crisis.json --baseline=scripts/mutation-crisis-baseline.json
+      # Durability оценок (rating outbox) — второй command-runner таргет
+      # (правило №3: единственная копия offline-очереди для обоих фронтендов,
+      # тесты у неё vitest'овые, jest-раннер Stryker её мутантов не убьёт).
+      # npm ci --prefix shared уже стоит выше, второй раз не нужен.
+      - name: Stryker по durability оценок (rating outbox)
+        run: npm run mutation:outbox
+      - name: mutation-храповик durability оценок
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/outbox.json --baseline=scripts/mutation-outbox-baseline.json
+      # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-golden-payments
+          path: reports/mutation/
+          retention-days: 14
+
+  # Браузерный smoke (TEST_TRUST_PLAN.md, п.4; WebKit/мобильный вьюпорт/axe —
+  # аудит тестовых практик 2026-08, пп.2-4): у проекта 2300 юнитов и 79
+  # HTTP-e2e, но ни один из них не открывает приложение целиком. Между «все
+  # части работают» и «продукт работает» есть зазор — битый бандл, сломанный
+  # SPA-fallback, ошибка рантайма до первого рендера. Такое собирается зелёным
+  # и не работает у пользователя. Смок открывает ПРОД-СБОРКУ и проверяет
+  # главное: страница рендерится, вложенный путь не даёт 404, в консоли нет
+  # ошибок рантайма, ключевые экраны проходят базовую a11y-сверку. /api/*
+  # замокан — смок про фронт, контракт с бэком держат HTTP-e2e и контрактный
+  # тест api-мока.
+  #
+  # Движки: Chromium (webapp + miniapp, мобильным вьюпортом для miniapp) и
+  # WebKit (miniapp) — iOS-Телеграм и MAX рендерят мини-апп через WKWebView,
+  # и до этой джобы ни один прогон его не касался. В dev-окружении агента
+  # WebKit недоступен (нельзя качать браузеры) — там playwright.config.ts сам
+  # не подключает третий проект; здесь он появляется, потому что бинарь
+  # реально ставится шагом ниже.
+  browser-smoke:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Явный флаг — второй (запасной) способ включить WebKit-проект помимо
+      # факта наличия бинаря (playwright.config.ts проверяет оба). Играет
+      # роль документации в самом workflow: видно, что WebKit здесь ожидаемо
+      # включён, а не подключился случайно по стечению путей.
+      PW_WEBKIT: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      - run: npm run build --prefix webapp
+      # На раннере GitHub предустановленных браузеров нет (в отличие от
+      # dev-окружения) — ставим Chromium и WebKit, с системными зависимостями
+      # обоих (Firefox по-прежнему не нужен — в проекте не используется).
+      - run: npx playwright install --with-deps chromium webkit
+      # Путь к Chromium конфиг выбирает сам по факту наличия файла: на
+      # раннере предустановленного нет, поэтому берётся скачанный выше.
+      # WebKit конфиг подключает третьим проектом по PW_WEBKIT=1 выше (и по
+      # факту наличия бинаря, который эта же команда только что поставила).
+      - name: браузерный smoke прод-сборки (Chromium + WebKit)
+        run: npx playwright test
+      - name: трейс упавшего смока артефактом
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 14
+
+  # Репетиция restore бэкапа (аудит тестовых практик 2026-08, пункт №1):
+  # «бэкап без проверенного restore — не бэкап». До этой джобы restore
+  # существовал только как комментарий в хвосте scripts/backup-to-b2.sh — и
+  # он был НЕВЕРЕН (encrypt-сторона кладёт IV как 16 сырых байт, комментарий
+  # читал первые 32 БАЙТА как «32 hex-символа»); по задокументированной
+  # процедуре восстановление отдавало бы мусор. Живой фикс — scripts/restore-backup.sh
+  # (round-trip и негативные пробы юнит-тестом в src/infra/backup-restore.spec.ts);
+  # здесь та же механика прогоняется на настоящем Postgres от начала до конца:
+  # миграции → маркер → бэкап → restore во ВТОРУЮ пустую БД → сверка данных
+  # и схемы. Щит обязан уметь краснеть — последние два шага портят
+  # файл/ключ и требуют, чтобы restore упал.
+  backup-restore:
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # libpq подхватывает эти переменные сам — psql/createdb/pg_dump ниже
+      # без -h/-U/-p каждый раз.
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci
+      # Фикстура, не боевой секрет: ключ репетиции, нигде больше не используется.
+      TEST_ENCRYPTION_KEY: '4aa953d30d55de81814bbf6b85b1b65cb3109e81f82151d6f866f360492f8326'
+      SRC_DB: postgresql://postgres:ci@localhost:5432/backup_rehearsal_src
+      DST_DB: postgresql://postgres:ci@localhost:5432/backup_rehearsal_dst
+      OUT_DIR: /tmp/backup-rehearsal
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      # ubuntu-latest — тот же образ, что и в джобе `migrations` — но там
+      # pg_dump/psql не нужны (только `prisma migrate deploy`, у него свой
+      # драйвер). Здесь дампим и заливаем реальным клиентом, версия обязана
+      # совпадать с сервером (postgres:16 выше) — Ubuntu 24.04 (noble) несёт
+      # postgresql-client-16 в основных репах, отдельный apt-репозиторий pgdg
+      # не нужен. xxd ставим явно, а не полагаемся на то, что он уже есть в
+      # образе — backup-to-b2.sh и restore-backup.sh оба на нём завязаны.
+      - name: клиент Postgres 16 + xxd
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
+      - name: создать исходную БД и применить миграции — ловит битые миграции тем же приёмом, что джоба migrations
+        run: |
+          psql -c "CREATE DATABASE backup_rehearsal_src;"
+          DATABASE_URL="$SRC_DB" npx prisma migrate deploy
+      # HealthyAdultPost — таблица без FK (глобальный контент канала, не
+      # пользовательские данные), маркер безопасно чистится DROP DATABASE
+      # вместе со всей исходной БД в конце джобы.
+      - name: засеять контрольную строку
+        run: |
+          MARKER="restore-rehearsal-$(date -u +%Y-%m-%d)"
+          echo "MARKER=$MARKER" >> "$GITHUB_ENV"
+          psql -d backup_rehearsal_src -c "INSERT INTO \"HealthyAdultPost\" (text, source) VALUES ('$MARKER', 'nightly-rehearsal');"
+      - name: зашифрованный бэкап (SKIP_UPLOAD=1 — без B2-кредов, файл локально)
+        run: |
+          SKIP_UPLOAD=1 ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" DATABASE_URL="$SRC_DB" \
+            BACKUP_OUT_DIR="$OUT_DIR" bash scripts/backup-to-b2.sh
+      - name: вторая пустая БД + restore из бэкапа
+        run: |
+          psql -c "CREATE DATABASE backup_rehearsal_dst;"
+          ENC_FILE=$(ls "$OUT_DIR"/*.sql.gz.enc)
+          echo "ENC_FILE=$ENC_FILE" >> "$GITHUB_ENV"
+          ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" bash scripts/restore-backup.sh "$ENC_FILE" "$DST_DB"
+      - name: маркер восстановился во второй БД
+        run: psql -d backup_rehearsal_dst -c "SELECT text FROM \"HealthyAdultPost\";" | grep -F "$MARKER"
+      # Тот же приём, что джоба migrations (schema.prisma == миграции): здесь
+      # сверяем не «миграции == схема», а «восстановленная ИЗ БЭКАПА БД ==
+      # схема» — restore обязан вернуть структуру без дрейфа, не только данные.
+      - name: схема восстановленной БД == prisma/schema.prisma, без дрейфа
+        run: DATABASE_URL="$DST_DB" npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      # Негативные пробы (правило №15 CLAUDE.md — щит обязан уметь краснеть,
+      # не только зеленеть): порченый файл и чужой ключ ОБЯЗАНЫ ронять
+      # restore-backup.sh. Без этих двух шагов джоба могла бы быть зелёной
+      # даже с восстановлением, которое молча не проверяет целостность.
+      - name: проба 1 — порченый байт шифртекста ОБЯЗАН ронять restore
+        run: |
+          cp "$ENC_FILE" /tmp/corrupt.sql.gz.enc
+          printf '\xff' | dd of=/tmp/corrupt.sql.gz.enc bs=1 seek=19 count=1 conv=notrunc status=none
+          if ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" bash scripts/restore-backup.sh /tmp/corrupt.sql.gz.enc; then
+            echo "::error::restore-backup.sh ОБЯЗАН был упасть на порченом файле, но не упал"
+            exit 1
+          fi
+          echo "OK: restore упал на порченом файле, как и должен"
+      - name: проба 2 — неверный ключ ОБЯЗАН ронять restore
+        run: |
+          if ENCRYPTION_KEY="$(openssl rand -hex 32)" bash scripts/restore-backup.sh "$ENC_FILE"; then
+            echo "::error::restore-backup.sh ОБЯЗАН был упасть с неверным ключом, но не упал"
+            exit 1
+          fi
+          echo "OK: restore упал с неверным ключом, как и должен"
+
+  # Тяжёлый mutation-замер семейства src/bot — ОТДЕЛЬНОЙ джобой и раз в неделю,
+  # а не вместе с золотыми зонами. Причина простая: bot.service с соседями дают
+  # ~950 мутантов, и каждый перегоняет свой срез из 3100 тестов. Замер на
+  # локальной машине шёл со скоростью 2.5 мутанта в минуту — пять часов; в
+  # ночную джобу такое не помещается, а раздутая джоба, падающая по таймауту,
+  # ничем не отличается от выключенной.
+  #
+  # Храповика здесь пока НЕТ намеренно: пола не существует, пока не получен
+  # первый полный прогон. Джоба печатает таблицу и выкладывает отчёт артефактом;
+  # как только появится честное число — заводим scripts/mutation-baseline-bot.json
+  # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
+  mutation-bot:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker по семейству src/bot
+        run: npx stryker run stryker.bot.config.json
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-bot-report
+          path: reports/mutation/
+          retention-days: 14
+
+  # Сигнализация (щит): красный nightly раньше был виден только тому, кто сам
+  # зашёл во вкладку Actions — 6 из 7 ночных ранов с 2026-09-10 были красными,
+  # и никто не заметил. Эта джоба — единственный наблюдатель после самих
+  # тестов: заводит/обновляет issue (одну открытую на воркфлоу, не плодит
+  # дубли) и, если настроены секреты бота, шлёт короткое DM владельцу.
+  alarm:
+    needs:
+      - backend-flaky
+      - frontend-flaky
+      - mutation-golden-auth
+      - mutation-golden-payments
+      - browser-smoke
+      - backup-restore
+      - mutation-bot
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      # needs.*.result — 'success'/'failure'/'cancelled'/'skipped'. Джобы,
+      # пропущенные штатно (воскресный if: github.event.schedule != '0 4 * * 0'
+      # /будний if у mutation-bot) — 'skipped', не авария, в алярм не идут.
+      - name: собрать список упавших джоб
+        id: collect
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          node -e '
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const failed = Object.entries(needs)
+              .filter(([, v]) => v.result === "failure" || v.result === "cancelled")
+              .map(([name]) => name);
+            require("fs").appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              `failed=${failed.join(",")}\nhas_failures=${failed.length > 0}\n`,
+            );
+          '
+      - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на воркфлоу)
+        uses: actions/github-script@v7
+        env:
+          FAILED: ${{ steps.collect.outputs.failed }}
+        with:
+          script: |
+            const title = 'Ночная flaky-детекция — красный прогон';
+            const label = 'ci-alarm';
+            const failed = (process.env.FAILED || '').split(',').filter(Boolean);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const existing = openIssues.find((i) => i.title === title);
+            if (failed.length > 0) {
+              const body = `Упали джобы: ${failed.join(', ')}.\n\nСсылка на прогон: ${runUrl}`;
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels: [label],
+                });
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Снова зелёный: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+            }
+      - name: DM владельцу в Telegram (только если есть провалы и настроены секреты)
+        if: steps.collect.outputs.has_failures == 'true'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+          FAILED: ${{ steps.collect.outputs.failed }}
+        run: |
+          if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
+            echo "DM не отправлен: нет секретов BOT_TOKEN/ADMIN_ID"
+            exit 0
+          fi
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          TEXT=$(printf 'Ночная проверка упала: %s.\nСмотреть: %s' "${FAILED//,/, }" "$RUN_URL")
+          curl -sS --max-time 10 \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${ADMIN_ID}" \
+            --data-urlencode "text=${TEXT}" > /dev/null

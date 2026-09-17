@@ -10,6 +10,12 @@
 jest.mock('jose', () => ({
   createRemoteJWKSet: jest.fn(() => 'FAKE_JWKS_SET'),
   jwtVerify: jest.fn(),
+  // Настоящий разбор payload — офлайн-ветка (JWKS недостижим) обязана
+  // проверяться против реального токена, а не против заглушки.
+  decodeJwt: (token: string): unknown =>
+    JSON.parse(
+      Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+    ) as unknown,
 }));
 
 import { UnauthorizedException } from '@nestjs/common';
@@ -56,6 +62,28 @@ describe('GoogleProvider.buildAuthUrl', () => {
     expect(p.get('scope')).toBe('openid email profile');
     expect(p.get('state')).toBe('state-xyz');
     expect(p.get('access_type')).toBe('online');
+  });
+
+  it('callbackOrigin() = origin GOOGLE_REDIRECT_URI (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
+    const provider = makeProvider();
+    expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
+  });
+
+  it('ВХОД (forceChooser не задан): prompt НЕ ставится — вошедшего впускаем одним касанием', () => {
+    // Разбор 2026-08-31: хардкод prompt=select_account заставлял выбирать
+    // аккаунт заново на каждый вход — «авторизация с нуля». Без prompt Google
+    // сам вернёт уже вошедшего («Continue as X»).
+    const provider = makeProvider();
+    const p = new URL(provider.buildAuthUrl('state-login')).searchParams;
+    expect(p.get('prompt')).toBeNull();
+  });
+
+  it('ПРИВЯЗКА (forceChooser=true): prompt=select_account — выбор аккаунта принудительно', () => {
+    // При привязке второго аккаунта выбор оставляем явным, чтобы человек не
+    // прицепил случайно уже открытый в браузере Google вместо нужного.
+    const provider = makeProvider();
+    const p = new URL(provider.buildAuthUrl('state-link', undefined, true))
+      .searchParams;
     expect(p.get('prompt')).toBe('select_account');
   });
 });
@@ -129,6 +157,61 @@ describe('GoogleProvider.exchangeCode — happy path и payload → profile', ()
     mockedJwtVerify.mockRejectedValue(
       new Error('"exp" claim timestamp check failed'),
     );
+
+    const provider = makeProvider();
+    await expect(provider.exchangeCode('auth-code')).rejects.toThrow(
+      'Google ID token invalid',
+    );
+  });
+});
+
+describe('GoogleProvider.exchangeCode — ключи Google недоступны с хоста', () => {
+  // Инцидент 2026-08-04: googleapis.com перестал резолвиться с хостинга, обмен
+  // кода проходил (у него свой fallback), а JWKS — нет, и вход ломался всем.
+  function idToken(payload: Record<string, unknown>): string {
+    const body = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'base64url',
+    );
+    return `header.${body}.signature`;
+  }
+
+  it('JWKS не скачался → identity всё равно выдана (токен получен от Google по TLS)', async () => {
+    const token = idToken({
+      iss: 'https://accounts.google.com',
+      aud: CONFIG_MAP.GOOGLE_CLIENT_ID,
+      sub: 'google-user-offline',
+      email: 'offline@example.com',
+      email_verified: true,
+      name: 'Офлайн',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    global.fetch = jest.fn(() => ({
+      ok: true,
+      json: () => Promise.resolve({ id_token: token }),
+    })) as any;
+    mockedJwtVerify.mockRejectedValue(new TypeError('fetch failed'));
+
+    const provider = makeProvider();
+    await expect(provider.exchangeCode('auth-code')).resolves.toEqual({
+      providerId: 'google-user-offline',
+      email: 'offline@example.com',
+      displayName: 'Офлайн',
+    });
+  });
+
+  it('JWKS не скачался, но токен выписан другому приложению → отказ', async () => {
+    const token = idToken({
+      iss: 'https://accounts.google.com',
+      aud: 'someone-else.apps.googleusercontent.com',
+      sub: 'attacker',
+      email_verified: true,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    global.fetch = jest.fn(() => ({
+      ok: true,
+      json: () => Promise.resolve({ id_token: token }),
+    })) as any;
+    mockedJwtVerify.mockRejectedValue(new TypeError('fetch failed'));
 
     const provider = makeProvider();
     await expect(provider.exchangeCode('auth-code')).rejects.toThrow(

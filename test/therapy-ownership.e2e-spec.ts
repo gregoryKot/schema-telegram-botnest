@@ -20,18 +20,11 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
-
-  beforeAll(async () => {
-    ({ app, prisma } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
 
   const secret = () => process.env.JWT_SECRET as string;
 
@@ -41,6 +34,21 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
   const T2 = 4_000_000_000_000_002n;
   const C1 = 4_000_000_000_000_003n;
   const C1_ID = Number(C1);
+  const ALL_USER_IDS = [T1, T2, C1];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. На реальном Postgres обязательна и перед
+    // прямой вставкой User-строк ниже (role: THERAPIST) — иначе повторный
+    // локальный прогон падает на PK-конфликте id.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());
@@ -193,7 +201,12 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
   it('T2 не может создать заметку C1 — запись не появляется в БД', async () => {
     const t2 = agentAs(T2);
-    const before = prisma.therapistNote._rows.length;
+    // Фильтруем по clientId (не read-all таблицы) — на реальном Postgres в
+    // той же таблице могут лежать строки других therapy-ownership-спеков
+    // этого же CI-прогона.
+    const before = (
+      await prisma.therapistNote.findMany({ where: { clientId: C1 } })
+    ).length;
 
     const res = await t2.post(`/api/therapy/notes/${C1_ID}`, {
       date: '2026-07-21',
@@ -201,7 +214,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     });
     expect(res.status).toBe(403);
 
-    expect(prisma.therapistNote._rows.length).toBe(before);
+    const after = (
+      await prisma.therapistNote.findMany({ where: { clientId: C1 } })
+    ).length;
+    expect(after).toBe(before);
     // Убедимся и через T1: список заметок C1 не пополнился чужой записью.
     const t1 = agentAs(T1);
     const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);

@@ -11,12 +11,8 @@ export function pluralEntries(n: number): string {
   return 'записей';
 }
 
-export function achievementShareText(
-  emoji: string,
-  title: string,
-  link: string,
-): string {
-  return `${emoji} Новое достижение — «${title}»!\n\nВеду дневник потребностей. ${link}`;
+export function achievementShareText(title: string, link: string): string {
+  return `Новое достижение — «${title}»!\n\nВеду дневник потребностей. ${link}`;
 }
 
 export function streakShareText(streak: number, link: string): string {
@@ -81,6 +77,21 @@ export function gratitudeShareText(link: string): string {
 /** Карточка записи режима: слова самоподдержки — на картинке, не в тексте. */
 export function modeEntryShareText(link: string): string {
   return `🌿 Голос моего Здорового Взрослого.\n\n${link}`;
+}
+
+/** Карточка полной записи режима: сама запись — на картинке, не в тексте. */
+export function modeEntryFullShareText(link: string): string {
+  return `🌿 Моя запись из дневника режимов.\n\n${link}`;
+}
+
+/** Краткая карточка разбора фразы: обе реплики — на картинке, не в тексте. */
+export function phraseCheckShareText(link: string): string {
+  return `🔎 Одна фраза — два голоса: как это звучит у критика и как у заботы.\n\n${link}`;
+}
+
+/** Полный разбор: приметы и фраза остаются на картинке. */
+export function phraseCheckFullShareText(link: string): string {
+  return `🔎 Разбор своей фразы по приметам самокритики.\n\n${link}`;
 }
 
 export function journeyShareText(

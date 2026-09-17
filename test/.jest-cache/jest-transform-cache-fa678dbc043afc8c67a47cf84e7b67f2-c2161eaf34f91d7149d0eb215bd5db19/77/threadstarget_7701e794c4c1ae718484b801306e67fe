@@ -1,0 +1,72 @@
+03c0b623d2568eda69dc0364e0d73a38
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ThreadsChannelTarget = void 0;
+const common_1 = require("@nestjs/common");
+const channel_http_1 = require("../channel-http");
+const threads_token_service_1 = require("./threads-token.service");
+const threads_api_1 = require("./threads-api");
+/** id пользователя Threads (me тоже подходит). Без него площадка выключена. */
+const USER_ENV = 'HEALTHY_ADULT_THREADS_USER';
+const API = '/v1.0';
+/**
+ * Threads: публикация в два шага — сначала контейнер с текстом, потом сам
+ * пост по creation_id. Один шаг ничего не публикует, поэтому оба обязаны
+ * пройти, а неудача второго оставляет висеть черновик-контейнер (он протухает
+ * сам через сутки, чистить нечего).
+ */
+let ThreadsChannelTarget = class ThreadsChannelTarget {
+    tokens;
+    platform = 'threads';
+    title = 'Threads';
+    envKey = USER_ENV;
+    constructor(tokens) {
+        this.tokens = tokens;
+    }
+    destination() {
+        const raw = process.env[USER_ENV]?.trim();
+        return raw ? raw : null;
+    }
+    async send(post, destination) {
+        const token = await this.tokens.current();
+        if (!token)
+            throw new Error('нет токена Threads');
+        const container = (0, threads_api_1.threadsApi)(`${API}/${destination}/threads?media_type=TEXT` +
+            `&text=${encodeURIComponent(post.text)}&access_token=${token}`);
+        const created = await (0, channel_http_1.postEmpty)(container.url, container.transport);
+        const creationId = created.id;
+        if (typeof creationId !== 'string' || !creationId)
+            throw new Error('Threads не вернул id контейнера');
+        const publish = (0, threads_api_1.threadsApi)(`${API}/${destination}/threads_publish` +
+            `?creation_id=${creationId}&access_token=${token}`);
+        await (0, channel_http_1.postEmpty)(publish.url, publish.transport);
+    }
+    explain(err) {
+        // Сетевой отказ (ENOTFOUND/ETIMEDOUT/fetch failed) — это не про токен:
+        // Threads принадлежит Meta и с российского хостинга просто недоступен.
+        // Инцидент 2026-07-30: подсказка про токен увела диагностику не туда.
+        const reason = (0, channel_http_1.describeHttpError)(err);
+        const network = /ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ECONNRESET|EAI_AGAIN|CONNECT_TIMEOUT|fetch failed|не ответила/i.test(reason);
+        return network
+            ? `${reason}\n${(0, threads_api_1.threadsViaRelay)()
+                ? 'Не отвечает ретранслятор (Cloudflare), а не Threads. Проверь, что воркер жив и HEALTHY_ADULT_THREADS_RELAY указывает на него.'
+                : 'Соединение не установилось: серверы Threads с этого хостинга недоступны. Токен тут ни при чём — нужен ретранслятор (HEALTHY_ADULT_THREADS_RELAY), см. deploy/threads-relay.'}`
+            : `${reason}\nПроверь токен Threads (живёт 60 дней) и id пользователя.`;
+    }
+};
+exports.ThreadsChannelTarget = ThreadsChannelTarget;
+exports.ThreadsChannelTarget = ThreadsChannelTarget = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof threads_token_service_1.ThreadsTokenService !== "undefined" && threads_token_service_1.ThreadsTokenService) === "function" ? _a : Object])
+], ThreadsChannelTarget);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC90YXJnZXRzL3RocmVhZHMudGFyZ2V0LnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBNEM7QUFFNUMsa0RBQStEO0FBQy9ELG1FQUE4RDtBQUM5RCwrQ0FBNEQ7QUFFNUQsK0VBQStFO0FBQy9FLE1BQU0sUUFBUSxHQUFHLDRCQUE0QixDQUFDO0FBQzlDLE1BQU0sR0FBRyxHQUFHLE9BQU8sQ0FBQztBQUVwQjs7Ozs7R0FLRztBQUVJLElBQU0sb0JBQW9CLEdBQTFCLE1BQU0sb0JBQW9CO0lBS0Y7SUFKcEIsUUFBUSxHQUFHLFNBQVMsQ0FBQztJQUNyQixLQUFLLEdBQUcsU0FBUyxDQUFDO0lBQ2xCLE1BQU0sR0FBRyxRQUFRLENBQUM7SUFFM0IsWUFBNkIsTUFBMkI7UUFBM0IsV0FBTSxHQUFOLE1BQU0sQ0FBcUI7SUFBRyxDQUFDO0lBRTVELFdBQVc7UUFDVCxNQUFNLEdBQUcsR0FBRyxPQUFPLENBQUMsR0FBRyxDQUFDLFFBQVEsQ0FBQyxFQUFFLElBQUksRUFBRSxDQUFDO1FBQzFDLE9BQU8sR0FBRyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQztJQUMxQixDQUFDO0lBRUQsS0FBSyxDQUFDLElBQUksQ0FBQyxJQUFpQixFQUFFLFdBQW1CO1FBQy9DLE1BQU0sS0FBSyxHQUFHLE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxPQUFPLEVBQUUsQ0FBQztRQUMxQyxJQUFJLENBQUMsS0FBSztZQUFFLE1BQU0sSUFBSSxLQUFLLENBQUMsb0JBQW9CLENBQUMsQ0FBQztRQUNsRCxNQUFNLFNBQVMsR0FBRyxJQUFBLHdCQUFVLEVBQzFCLEdBQUcsR0FBRyxJQUFJLFdBQVcsMEJBQTBCO1lBQzdDLFNBQVMsa0JBQWtCLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxpQkFBaUIsS0FBSyxFQUFFLENBQ2pFLENBQUM7UUFDRixNQUFNLE9BQU8sR0FBRyxNQUFNLElBQUEsd0JBQVMsRUFBQyxTQUFTLENBQUMsR0FBRyxFQUFFLFNBQVMsQ0FBQyxTQUFTLENBQUMsQ0FBQztRQUNwRSxNQUFNLFVBQVUsR0FBRyxPQUFPLENBQUMsRUFBRSxDQUFDO1FBQzlCLElBQUksT0FBTyxVQUFVLEtBQUssUUFBUSxJQUFJLENBQUMsVUFBVTtZQUMvQyxNQUFNLElBQUksS0FBSyxDQUFDLGlDQUFpQyxDQUFDLENBQUM7UUFDckQsTUFBTSxPQUFPLEdBQUcsSUFBQSx3QkFBVSxFQUN4QixHQUFHLEdBQUcsSUFBSSxXQUFXLGtCQUFrQjtZQUNyQyxnQkFBZ0IsVUFBVSxpQkFBaUIsS0FBSyxFQUFFLENBQ3JELENBQUM7UUFDRixNQUFNLElBQUEsd0JBQVMsRUFBQyxPQUFPLENBQUMsR0FBRyxFQUFFLE9BQU8sQ0FBQyxTQUFTLENBQUMsQ0FBQztJQUNsRCxDQUFDO0lBRUQsT0FBTyxDQUFDLEdBQVk7UUFDbEIsdUVBQXVFO1FBQ3ZFLHVFQUF1RTtRQUN2RSxzRUFBc0U7UUFDdEUsTUFBTSxNQUFNLEdBQUcsSUFBQSxnQ0FBaUIsRUFBQyxHQUFHLENBQUMsQ0FBQztRQUN0QyxNQUFNLE9BQU8sR0FDWCxpR0FBaUcsQ0FBQyxJQUFJLENBQ3BHLE1BQU0sQ0FDUCxDQUFDO1FBQ0osT0FBTyxPQUFPO1lBQ1osQ0FBQyxDQUFDLEdBQUcsTUFBTSxLQUNQLElBQUEsNkJBQWUsR0FBRTtnQkFDZixDQUFDLENBQUMsK0hBQStIO2dCQUNqSSxDQUFDLENBQUMsNktBQ04sRUFBRTtZQUNKLENBQUMsQ0FBQyxHQUFHLE1BQU0sNERBQTRELENBQUM7SUFDNUUsQ0FBQztDQUNGLENBQUE7QUEvQ1ksb0RBQW9COytCQUFwQixvQkFBb0I7SUFEaEMsSUFBQSxtQkFBVSxHQUFFO3lEQU0wQiwyQ0FBbUIsb0JBQW5CLDJDQUFtQjtHQUw3QyxvQkFBb0IsQ0ErQ2hDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2NoYW5uZWwvdGFyZ2V0cy90aHJlYWRzLnRhcmdldC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHR5cGUgeyBDaGFubmVsUG9zdCwgQ2hhbm5lbFRhcmdldCB9IGZyb20gJy4uL2NoYW5uZWwtdGFyZ2V0JztcbmltcG9ydCB7IGRlc2NyaWJlSHR0cEVycm9yLCBwb3N0RW1wdHkgfSBmcm9tICcuLi9jaGFubmVsLWh0dHAnO1xuaW1wb3J0IHsgVGhyZWFkc1Rva2VuU2VydmljZSB9IGZyb20gJy4vdGhyZWFkcy10b2tlbi5zZXJ2aWNlJztcbmltcG9ydCB7IHRocmVhZHNBcGksIHRocmVhZHNWaWFSZWxheSB9IGZyb20gJy4vdGhyZWFkcy1hcGknO1xuXG4vKiogaWQg0L/QvtC70YzQt9C+0LLQsNGC0LXQu9GPIFRocmVhZHMgKG1lINGC0L7QttC1INC/0L7QtNGF0L7QtNC40YIpLiDQkdC10Lcg0L3QtdCz0L4g0L/Qu9C+0YnQsNC00LrQsCDQstGL0LrQu9GO0YfQtdC90LAuICovXG5jb25zdCBVU0VSX0VOViA9ICdIRUFMVEhZX0FEVUxUX1RIUkVBRFNfVVNFUic7XG5jb25zdCBBUEkgPSAnL3YxLjAnO1xuXG4vKipcbiAqIFRocmVhZHM6INC/0YPQsdC70LjQutCw0YbQuNGPINCyINC00LLQsCDRiNCw0LPQsCDigJQg0YHQvdCw0YfQsNC70LAg0LrQvtC90YLQtdC50L3QtdGAINGBINGC0LXQutGB0YLQvtC8LCDQv9C+0YLQvtC8INGB0LDQvFxuICog0L/QvtGB0YIg0L/QviBjcmVhdGlvbl9pZC4g0J7QtNC40L0g0YjQsNCzINC90LjRh9C10LPQviDQvdC1INC/0YPQsdC70LjQutGD0LXRgiwg0L/QvtGN0YLQvtC80YMg0L7QsdCwINC+0LHRj9C30LDQvdGLXG4gKiDQv9GA0L7QudGC0LgsINCwINC90LXRg9C00LDRh9CwINCy0YLQvtGA0L7Qs9C+INC+0YHRgtCw0LLQu9GP0LXRgiDQstC40YHQtdGC0Ywg0YfQtdGA0L3QvtCy0LjQui3QutC+0L3RgtC10LnQvdC10YAgKNC+0L0g0L/RgNC+0YLRg9GF0LDQtdGCXG4gKiDRgdCw0Lwg0YfQtdGA0LXQtyDRgdGD0YLQutC4LCDRh9C40YHRgtC40YLRjCDQvdC10YfQtdCz0L4pLlxuICovXG5ASW5qZWN0YWJsZSgpXG5leHBvcnQgY2xhc3MgVGhyZWFkc0NoYW5uZWxUYXJnZXQgaW1wbGVtZW50cyBDaGFubmVsVGFyZ2V0IHtcbiAgcmVhZG9ubHkgcGxhdGZvcm0gPSAndGhyZWFkcyc7XG4gIHJlYWRvbmx5IHRpdGxlID0gJ1RocmVhZHMnO1xuICByZWFkb25seSBlbnZLZXkgPSBVU0VSX0VOVjtcblxuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHRva2VuczogVGhyZWFkc1Rva2VuU2VydmljZSkge31cblxuICBkZXN0aW5hdGlvbigpOiBzdHJpbmcgfCBudWxsIHtcbiAgICBjb25zdCByYXcgPSBwcm9jZXNzLmVudltVU0VSX0VOVl0/LnRyaW0oKTtcbiAgICByZXR1cm4gcmF3ID8gcmF3IDogbnVsbDtcbiAgfVxuXG4gIGFzeW5jIHNlbmQocG9zdDogQ2hhbm5lbFBvc3QsIGRlc3RpbmF0aW9uOiBzdHJpbmcpOiBQcm9taXNlPHZvaWQ+IHtcbiAgICBjb25zdCB0b2tlbiA9IGF3YWl0IHRoaXMudG9rZW5zLmN1cnJlbnQoKTtcbiAgICBpZiAoIXRva2VuKSB0aHJvdyBuZXcgRXJyb3IoJ9C90LXRgiDRgtC+0LrQtdC90LAgVGhyZWFkcycpO1xuICAgIGNvbnN0IGNvbnRhaW5lciA9IHRocmVhZHNBcGkoXG4gICAgICBgJHtBUEl9LyR7ZGVzdGluYXRpb259L3RocmVhZHM/bWVkaWFfdHlwZT1URVhUYCArXG4gICAgICAgIGAmdGV4dD0ke2VuY29kZVVSSUNvbXBvbmVudChwb3N0LnRleHQpfSZhY2Nlc3NfdG9rZW49JHt0b2tlbn1gLFxuICAgICk7XG4gICAgY29uc3QgY3JlYXRlZCA9IGF3YWl0IHBvc3RFbXB0eShjb250YWluZXIudXJsLCBjb250YWluZXIudHJhbnNwb3J0KTtcbiAgICBjb25zdCBjcmVhdGlvbklkID0gY3JlYXRlZC5pZDtcbiAgICBpZiAodHlwZW9mIGNyZWF0aW9uSWQgIT09ICdzdHJpbmcnIHx8ICFjcmVhdGlvbklkKVxuICAgICAgdGhyb3cgbmV3IEVycm9yKCdUaHJlYWRzINC90LUg0LLQtdGA0L3Rg9C7IGlkINC60L7QvdGC0LXQudC90LXRgNCwJyk7XG4gICAgY29uc3QgcHVibGlzaCA9IHRocmVhZHNBcGkoXG4gICAgICBgJHtBUEl9LyR7ZGVzdGluYXRpb259L3RocmVhZHNfcHVibGlzaGAgK1xuICAgICAgICBgP2NyZWF0aW9uX2lkPSR7Y3JlYXRpb25JZH0mYWNjZXNzX3Rva2VuPSR7dG9rZW59YCxcbiAgICApO1xuICAgIGF3YWl0IHBvc3RFbXB0eShwdWJsaXNoLnVybCwgcHVibGlzaC50cmFuc3BvcnQpO1xuICB9XG5cbiAgZXhwbGFpbihlcnI6IHVua25vd24pOiBzdHJpbmcge1xuICAgIC8vINCh0LXRgtC10LLQvtC5INC+0YLQutCw0LcgKEVOT1RGT1VORC9FVElNRURPVVQvZmV0Y2ggZmFpbGVkKSDigJQg0Y3RgtC+INC90LUg0L/RgNC+INGC0L7QutC10L06XG4gICAgLy8gVGhyZWFkcyDQv9GA0LjQvdCw0LTQu9C10LbQuNGCIE1ldGEg0Lgg0YEg0YDQvtGB0YHQuNC50YHQutC+0LPQviDRhdC+0YHRgtC40L3Qs9CwINC/0YDQvtGB0YLQviDQvdC10LTQvtGB0YLRg9C/0LXQvS5cbiAgICAvLyDQmNC90YbQuNC00LXQvdGCIDIwMjYtMDctMzA6INC/0L7QtNGB0LrQsNC30LrQsCDQv9GA0L4g0YLQvtC60LXQvSDRg9Cy0LXQu9CwINC00LjQsNCz0L3QvtGB0YLQuNC60YMg0L3QtSDRgtGD0LTQsC5cbiAgICBjb25zdCByZWFzb24gPSBkZXNjcmliZUh0dHBFcnJvcihlcnIpO1xuICAgIGNvbnN0IG5ldHdvcmsgPVxuICAgICAgL0VOT1RGT1VORHxFVElNRURPVVR8RUNPTk5SRUZVU0VEfEVDT05OUkVTRVR8RUFJX0FHQUlOfENPTk5FQ1RfVElNRU9VVHxmZXRjaCBmYWlsZWR80L3QtSDQvtGC0LLQtdGC0LjQu9CwL2kudGVzdChcbiAgICAgICAgcmVhc29uLFxuICAgICAgKTtcbiAgICByZXR1cm4gbmV0d29ya1xuICAgICAgPyBgJHtyZWFzb259XFxuJHtcbiAgICAgICAgICB0aHJlYWRzVmlhUmVsYXkoKVxuICAgICAgICAgICAgPyAn0J3QtSDQvtGC0LLQtdGH0LDQtdGCINGA0LXRgtGA0LDQvdGB0LvRj9GC0L7RgCAoQ2xvdWRmbGFyZSksINCwINC90LUgVGhyZWFkcy4g0J/RgNC+0LLQtdGA0YwsINGH0YLQviDQstC+0YDQutC10YAg0LbQuNCyINC4IEhFQUxUSFlfQURVTFRfVEhSRUFEU19SRUxBWSDRg9C60LDQt9GL0LLQsNC10YIg0L3QsCDQvdC10LPQvi4nXG4gICAgICAgICAgICA6ICfQodC+0LXQtNC40L3QtdC90LjQtSDQvdC1INGD0YHRgtCw0L3QvtCy0LjQu9C+0YHRjDog0YHQtdGA0LLQtdGA0YsgVGhyZWFkcyDRgSDRjdGC0L7Qs9C+INGF0L7RgdGC0LjQvdCz0LAg0L3QtdC00L7RgdGC0YPQv9C90YsuINCi0L7QutC10L0g0YLRg9GCINC90Lgg0L/RgNC4INGH0ZHQvCDigJQg0L3Rg9C20LXQvSDRgNC10YLRgNCw0L3RgdC70Y/RgtC+0YAgKEhFQUxUSFlfQURVTFRfVEhSRUFEU19SRUxBWSksINGB0LwuIGRlcGxveS90aHJlYWRzLXJlbGF5LidcbiAgICAgICAgfWBcbiAgICAgIDogYCR7cmVhc29ufVxcbtCf0YDQvtCy0LXRgNGMINGC0L7QutC10L0gVGhyZWFkcyAo0LbQuNCy0ZHRgiA2MCDQtNC90LXQuSkg0LggaWQg0L/QvtC70YzQt9C+0LLQsNGC0LXQu9GPLmA7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

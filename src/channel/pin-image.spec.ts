@@ -1,7 +1,15 @@
 // Картинка пина: Pinterest не примет пин без изображения, поэтому проверяем
 // не «нарисовалось что-то», а что это валидный PNG нужного формата (2:3 —
 // лента Pinterest режет всё остальное) и что длинная фраза не ломает вёрстку.
-import { renderPhrasePin, clampPinLines, makeChannelPost } from './pin-image';
+import { createCanvas } from '@napi-rs/canvas';
+import {
+  renderPhrasePin,
+  clampPinLines,
+  makeChannelPost,
+  wrapPinText,
+  FONT,
+} from './pin-image';
+import { pinStyle } from './pin-style';
 
 /** Ширина и высота PNG лежат в IHDR — байты 16..23 после сигнатуры. */
 function pngSize(buf: Buffer): { width: number; height: number } {
@@ -26,6 +34,30 @@ describe('pin-image', () => {
     expect(pngSize(png)).toEqual({ width: 1000, height: 1500 });
   });
 
+  it('одна и та же фраза рисуется одинаково — повтор не даст второй вид', () => {
+    // Оформление берётся из текста, а не случайно: ретрай отправки не должен
+    // порождать непохожий пин на ту же фразу.
+    const text = 'Ты имеешь право передумать.';
+    expect(renderPhrasePin(text).equals(renderPhrasePin(text))).toBe(true);
+  });
+
+  it('разные фразы получают разное оформление, а не только разный текст', () => {
+    // Лента Pinterest — витрина превью: одинаковые пины подряд читаются как
+    // один, показанный много раз. Совпадения при случайном выборе неизбежны,
+    // поэтому проверяем не «все разные», а что вариантов действительно много.
+    const looks = new Set<string>();
+    const palettes = new Set<string>();
+    for (let i = 0; i < 24; i++) {
+      const s = pinStyle(`фраза номер ${i} про заботу о себе`);
+      palettes.add(s.palette.name);
+      looks.add(
+        [s.palette.name, s.layout, s.backdrop, s.corner, s.decor].join(),
+      );
+    }
+    expect(looks.size).toBeGreaterThanOrEqual(20);
+    expect(palettes.size).toBeGreaterThanOrEqual(8);
+  });
+
   it('одна строка и многострочная фраза дают разные картинки', () => {
     const short = renderPhrasePin('Отдых не надо заслуживать.');
     const long = renderPhrasePin(
@@ -34,21 +66,56 @@ describe('pin-image', () => {
     expect(short.equals(long)).toBe(false);
   });
 
+  describe('wrapPinText', () => {
+    // Тот же шрифт, что и у настоящего рендера (регистрируется побочным
+    // эффектом renderPhrasePin) — иначе метрики нерегистрированного шрифта
+    // непредсказуемы и переносы ломаются посередине обычных слов.
+    renderPhrasePin('прогрев шрифта');
+    const ctx = createCanvas(10, 10).getContext('2d');
+    ctx.font = `40px ${FONT}`;
+
+    it('переносит по словам, не разбивая обычные слова', () => {
+      const lines = wrapPinText(ctx, 'раз два три четыре пять', 400);
+      expect(lines.length).toBeGreaterThan(1);
+      // Ни одна строка не содержит символов сверх исходных слов (без разрывов).
+      expect(lines.join(' ').replace(/\s+/g, ' ')).toBe(
+        'раз два три четыре пять',
+      );
+    });
+
+    it('слово шире строки (длинная ссылка) рвётся по символам, а не теряется', () => {
+      // Инцидент-класс: ссылка без пробелов шире maxW целиком не влезает ни в
+      // одну строку — без посимвольного разрыва строка ушла бы за край пина.
+      const longWord = 'а'.repeat(80);
+      const lines = wrapPinText(ctx, longWord, 50);
+      expect(lines.length).toBeGreaterThan(1);
+      // Все символы сохранены — просто разложены по нескольким строкам.
+      expect(lines.join('')).toBe(longWord);
+      for (const line of lines) {
+        expect(ctx.measureText(line).width).toBeLessThanOrEqual(50);
+      }
+    });
+
+    it('пустой текст — пустой список строк, а не строка с мусором', () => {
+      expect(wrapPinText(ctx, '   ', 100)).toEqual([]);
+    });
+  });
+
   describe('clampPinLines', () => {
     it('короткий текст оставляет как есть', () => {
-      expect(clampPinLines(['раз', 'два'])).toEqual(['раз', 'два']);
+      expect(clampPinLines(['раз', 'два'], 11)).toEqual(['раз', 'два']);
     });
 
     it('лишние строки срезает, последнюю закрывает многоточием', () => {
       const lines = Array.from({ length: 15 }, (_, i) => `строка ${i}`);
-      const clamped = clampPinLines(lines);
+      const clamped = clampPinLines(lines, 11);
       expect(clamped).toHaveLength(11);
       expect(clamped[10]).toBe('строка 10…');
     });
 
     it('не оставляет висящий знак препинания перед многоточием', () => {
       const lines = Array.from({ length: 12 }, () => 'текст,');
-      expect(clampPinLines(lines)[10]).toBe('текст…');
+      expect(clampPinLines(lines, 11)[10]).toBe('текст…');
     });
   });
 

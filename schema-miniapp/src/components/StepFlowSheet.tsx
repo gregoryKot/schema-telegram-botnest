@@ -93,7 +93,7 @@ export function StepFlowSheet({
               style={{
                 width: i === step ? 18 : 7,
                 height: 7,
-                borderRadius: 4,
+                borderRadius: 'var(--r-4)',
                 background:
                   i < step
                     ? 'var(--accent-green)'
@@ -106,12 +106,12 @@ export function StepFlowSheet({
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button
             onClick={onClose}
             style={{
               padding: '13px 18px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.06)',
               color: 'var(--text-sub)',

@@ -28,6 +28,26 @@ describe('SaveNoteDto', () => {
       }),
     ).resolves.toContain('text');
   });
+
+  it('tags: больше 50 штук — отказ (L5, ArrayMaxSize)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: Array.from({ length: 51 }, (_, i) => `t${i}`),
+      }),
+    ).resolves.toContain('tags');
+  });
+
+  it('tags: элемент длиннее 100 символов — отказ (L5)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: ['x'.repeat(101)],
+      }),
+    ).resolves.toContain('tags');
+  });
 });
 
 describe('SchemaNoteDto', () => {
@@ -94,5 +114,35 @@ describe('ModeNoteDto', () => {
         healthyView: 'x'.repeat(3001),
       }),
     ).resolves.toContain('healthyView');
+  });
+
+  // modeFunction/needsMet — вопросы бланка проработки режима («какая у режима
+  // функция», «даёт ли поведение то, что нужно»), режим-специфичные поля.
+  it('modeFunction/needsMet — валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'защищает от боли отвержения',
+        needsMet: 'даёт передышку, но потребность остаётся',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('modeFunction длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('modeFunction');
+  });
+
+  it('needsMet длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        needsMet: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('needsMet');
   });
 });

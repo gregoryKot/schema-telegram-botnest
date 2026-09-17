@@ -4,8 +4,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
+import { TherapyNote } from './TherapyNote';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import {
   drawWeeklyCard,
   buildWeeklyShareText,
@@ -15,7 +16,9 @@ import {
   SHARE_CARD_EVENT,
   SHARE_RESULT_EVENT,
 } from '../../../shared/src/share/analytics';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../utils/botConfig';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   needs: Need[];
@@ -25,27 +28,30 @@ interface Props {
 
 export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streak, setStreak] = useState(0);
   const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card clipboard write failed', section: 'weeklyCard' }),
+  });
   const [fallbackText, setFallbackText] = useState<string | null>(null);
-  const [fallbackCopied, setFallbackCopied] = useState(false);
+  const { copied: fallbackCopied, copy: copyFallback } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card fallback clipboard write failed', section: 'weeklyCard' }),
+  });
 
   useEffect(() => {
     api
       .getStreak()
       .then((s) => setStreak(s.currentStreak))
-      .catch(() => {});
+      .catch(() => reportClientError({ message: 'weekly card streak load failed', section: 'weeklyCard' }));
   }, []);
 
   useEffect(() => {
     if (!canvasRef.current || history.length === 0) return;
     try {
       drawWeeklyCard(canvasRef.current, needs, history, streak);
-    } catch {
-      // Отрисовка карточки не должна ронять весь экран
-    }
+    } catch { reportClientError({ message: 'weekly card draw failed', section: 'weeklyCard' }); } // не роняем экран
   }, [needs, history, streak]);
 
   async function handleShare() {
@@ -63,13 +69,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
     } catch {
       api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: false });
       const text = buildWeeklyShareText(needs, history, streak, true, botShortUrl);
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
+      await copy(text);
       setFallbackText(text);
     } finally {
       setSharing(false);
@@ -89,7 +89,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
           <span className="it">для поделиться</span>
         </>
       }
-      lede="Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту."
+      lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
         <div
@@ -106,7 +106,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         <>
           <div
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               overflow: 'hidden',
               border: '1px solid var(--line)',
               marginBottom: 24,
@@ -138,6 +138,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   : 'Поделиться'}
             </button>
           </div>
+
+          {/* Заход на терапию после «Поделиться» — паритет с miniapp
+              WeeklyCardSheet (В10 аудита 2026-08). Этот экран не ходит через
+              ShareCardSheet (собственный share-флоу с .ics-независимым
+              фолбэком), поэтому TherapyNote вставлен напрямую. */}
+          <div style={{ marginTop: 16 }}>
+            <TherapyNote compact />
+          </div>
         </>
       )}
 
@@ -152,10 +160,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             display: 'flex',
             alignItems: 'flex-end',
           }}
-          onClick={() => {
-            setFallbackText(null);
-            setFallbackCopied(false);
-          }}
+          onClick={() => setFallbackText(null)}
         >
           <div
             role="presentation"
@@ -173,7 +178,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               style={{
                 width: 36,
                 height: 4,
-                borderRadius: 2,
+                borderRadius: 'var(--r-2)',
                 background: 'var(--surface-3)',
                 margin: '0 auto 20px',
               }}
@@ -194,7 +199,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                 color: 'var(--text-sub)',
                 lineHeight: 1.6,
                 background: 'var(--surface-2)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 14px',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
@@ -207,20 +212,12 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               {fallbackText}
             </pre>
             <button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(fallbackText);
-                  setFallbackCopied(true);
-                  setTimeout(() => setFallbackCopied(false), 2000);
-                } catch {
-                  /* best-effort: ошибку намеренно игнорируем */
-                }
-              }}
+              onClick={() => void copyFallback(fallbackText)}
               style={{
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: fallbackCopied
                   ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
                   : 'var(--surface-2)',

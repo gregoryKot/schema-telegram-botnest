@@ -2,14 +2,8 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-
-const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy:   '#4fa3f7',
-  expression: '#facc15',
-  play:       '#06d6a0',
-  limits:     '#a78bfa',
-};
+import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -28,9 +22,10 @@ interface Props {
 
 export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = NEED_COLORS[needId] ?? '#a78bfa';
+  const color = needColor(needId);
 
   if (!need) return null;
 
@@ -44,7 +39,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
   const relatedSchemas = SCHEMA_DOMAINS
     .filter(d => domainIds.includes(d.id))
-    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)));
+    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainColor: d.color })));
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
@@ -52,15 +47,15 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
-      eyebrow={`${need.emoji} Потребность`}
+      eyebrow="Потребность"
       eyebrowColor={color}
       title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
       lede={need.explanation}
       aside={
         childhoodRating !== undefined ? (
           <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
-            <div className="aside-card-eyebrow" style={{ color }}>Твой балл в детстве</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+            <div className="aside-card-eyebrow" style={{ color }}>{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-8)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 56, lineHeight: 1, color }}>{childhoodRating}</span>
               <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>из 10</span>
             </div>
@@ -70,7 +65,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${color}22` }}>
               <div style={{ display: 'flex', gap: 3 }}>
                 {[...Array(10)].map((_, i) => (
-                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < childhoodRating ? color : `${color}20` }} />
+                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 'var(--r-2)', background: i < childhoodRating ? color : `${color}20` }} />
                 ))}
               </div>
             </div>
@@ -84,12 +79,12 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
           <div className="prompt-num">·</div>
           <div style={{ width: '100%' }}>
             <div className="prompt-label">Связанные схемы</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginTop: 8 }}>
               {relatedSchemas.map(s => (
                 <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
                   <span className="mode-card-stripe" />
                   <div>
-                    <div className="mode-card-name">{s.emoji ?? '●'} {s.name}</div>
+                    <div className="mode-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
                     <div className="mode-card-short">{s.desc}</div>
                   </div>
                 </div>
@@ -108,7 +103,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
             {tips.map((tip, i) => (
               <div key={i} style={{ display: 'flex', gap: 16 }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  width: 28, height: 28, borderRadius: 'var(--r-8)', flexShrink: 0,
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'var(--serif)', fontSize: 15, color,

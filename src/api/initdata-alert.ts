@@ -10,6 +10,7 @@
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ExpiredError } from '@tma.js/init-data-node';
 import { SecurityLogService } from '../auth/security-log.service';
+import { AlertThrottle } from '../utils/alert-throttle';
 
 export type InitDataFailureKind = 'expired' | 'suspicious';
 
@@ -24,51 +25,8 @@ export function classifyInitDataFailure(err: unknown): InitDataFailureKind {
   return /^init data expired/i.test(msg) ? 'expired' : 'suspicious';
 }
 
-/**
- * Троттлинг однотипных алертов по ключу (у нас — IP). Настоящая атака тоже
- * приходит пачкой (скрипт перебирает подписи), а сотня DM подряд = замьюченный
- * чат, то есть ноль алертов. Первый случай в окне доходит сразу, остальные
- * копятся счётчиком и приезжают числом в следующем алерте.
- */
-export class AlertThrottle {
-  private readonly seen = new Map<
-    string,
-    { firstAt: number; suppressed: number }
-  >();
-
-  constructor(
-    private readonly windowMs: number,
-    private readonly maxKeys = 500,
-  ) {}
-
-  take(
-    key: string,
-    now: number = Date.now(),
-  ): { allow: boolean; suppressed: number } {
-    const entry = this.seen.get(key);
-    if (entry && now - entry.firstAt < this.windowMs) {
-      entry.suppressed += 1;
-      return { allow: false, suppressed: entry.suppressed };
-    }
-    // Окно закрылось — пропускаем алерт и сообщаем, сколько попыток проглотили.
-    const suppressed = entry?.suppressed ?? 0;
-    this.seen.set(key, { firstAt: now, suppressed: 0 });
-    this.prune(now, key);
-    return { allow: true, suppressed };
-  }
-
-  private prune(now: number, keep: string): void {
-    // Держим запись ещё одно окно после закрытия — иначе счётчик подавленных
-    // потеряется до того, как о нём успеет сообщить следующий алерт.
-    for (const [k, v] of this.seen) {
-      if (k !== keep && now - v.firstAt >= this.windowMs * 2)
-        this.seen.delete(k);
-    }
-    // Аварийный потолок: распределённый перебор с тысяч IP не должен съесть память.
-    if (this.seen.size > this.maxKeys) this.seen.clear();
-  }
-}
-
+// Троттлинг по IP, специфичный для этого гварда (см. src/utils/alert-throttle.ts
+// для примитива и общей мотивации).
 export const initDataAlerts = new AlertThrottle(10 * 60_000);
 
 /** Всегда бросает 401; различает истёкшую сессию и попытку подделки. */

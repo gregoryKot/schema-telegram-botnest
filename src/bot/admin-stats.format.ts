@@ -12,6 +12,8 @@ export interface AdminStatsData {
   todayCount: number;
   fillRate: number;
   week7Count: number;
+  /** «Активное ядро» (docs/LAUNCH_STRATEGY.md §5): ≥3 разных дня дневника за последние 7. Подмножество week7Count. */
+  activeCoreCount: number;
   month30Count: number;
   churnRisk: number;
   ret1: number;
@@ -39,11 +41,15 @@ export function formatAdminStats(d: AdminStatsData): string {
     '',
     `👥 <b>Люди</b>`,
     `Всего людей: ${d.totalUsers} (новых за неделю: ${d.newUsers7}, за месяц: ${d.newUsers30})`,
-    `Выключили напоминания: ${d.notifyOff} · заблокировали бота: ${d.blockedUsers}`,
+    // «Бот не может им написать», а не «заблокировали бота»: в это число
+    // попадает и тот, у кого чат просто не нашёлся. Формулировка «заблокировали»
+    // читалась как выбор человека, хотя часто это была наша ошибка адресации.
+    `Выключили напоминания: ${d.notifyOff} · бот не может им написать: ${d.blockedUsers}`,
     '',
     `📔 <b>Дневник настроения</b>`,
     `Заполнили сегодня: ${d.todayCount} (это ${d.fillRate}% от тех, кто заходил за месяц)`,
     `Заходили за неделю: ${d.week7Count} · за месяц: ${d.month30Count}`,
+    `Ведут дневник регулярно (хотя бы 3 дня из последних 7): ${d.activeCoreCount} из ${d.week7Count} заходивших за неделю`,
     `⚠️ Могут уйти (заходили раньше, а всю неделю — ни разу): ${d.churnRisk}`,
     '',
     `📈 <b>Сколько дней люди ведут дневник</b> (за всё время)`,

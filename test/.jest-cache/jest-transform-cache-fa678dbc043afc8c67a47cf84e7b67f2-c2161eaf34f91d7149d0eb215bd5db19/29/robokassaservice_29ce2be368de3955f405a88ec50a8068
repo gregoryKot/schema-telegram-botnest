@@ -1,0 +1,196 @@
+d3829d91748efb45687965dc2793dad6
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var RobokassaService_1;
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RobokassaService = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const crypto_1 = require("crypto");
+/**
+ * Robokassa payment integration.
+ *
+ * Required env vars:
+ *   ROBOKASSA_MERCHANT_LOGIN  — login from Robokassa merchant cabinet
+ *   ROBOKASSA_PASSWORD1       — password 1 (for payment URL signing)
+ *   ROBOKASSA_PASSWORD2       — password 2 (for webhook signature validation)
+ *   ROBOKASSA_IS_TEST         — "true" to use test mode (default: false)
+ *   ROBOKASSA_FISCAL          — "false" to NOT send a Receipt (default: true).
+ *                               Robokassa's "Робочеки СМЗ" auto-registers the
+ *                               income in «Мой налог» (ФНС) for self-employed —
+ *                               for that it REQUIRES the Receipt, and the Receipt
+ *                               is part of the payment signature. Only turn this
+ *                               off if the shop has no fiscalization at all.
+ */
+let RobokassaService = RobokassaService_1 = class RobokassaService {
+    logger = new common_1.Logger(RobokassaService_1.name);
+    login;
+    pass1;
+    pass2;
+    isTest;
+    fiscal;
+    constructor(config) {
+        this.login = config.get('ROBOKASSA_MERCHANT_LOGIN') ?? '';
+        this.pass1 = config.get('ROBOKASSA_PASSWORD1') ?? '';
+        this.pass2 = config.get('ROBOKASSA_PASSWORD2') ?? '';
+        this.isTest = config.get('ROBOKASSA_IS_TEST') === 'true';
+        this.fiscal = config.get('ROBOKASSA_FISCAL') !== 'false'; // default ON
+    }
+    get enabled() {
+        return Boolean(this.login && this.pass1 && this.pass2);
+    }
+    /**
+     * Build a Robokassa payment URL.
+     * @param invId   booking.id — used as Robokassa InvId (must be unique per merchant)
+     * @param amount  amount in rubles (e.g. 3500)
+     * @param desc    payment description shown to the client
+     * @param email   client e-mail for the receipt (optional)
+     * @param successUrl  where to redirect after success
+     * @param failUrl     where to redirect after failure/cancel
+     */
+    buildPaymentUrl(params) {
+        const { invId, amount, desc, email, successUrl, failUrl, recurring } = params;
+        const outSum = amount.toFixed(2);
+        // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
+        // MUST be part of the signature between InvId and Password1:
+        //   MD5(MerchantLogin:OutSum:InvId:Receipt:Password1)
+        // The Receipt here is the URL-encoded minified JSON (NOT base64), and the
+        // SAME url-encoded string is used both in the signature and as the Receipt
+        // value. URLSearchParams then encodes it once more for the wire; Robokassa
+        // decodes once → gets back this url-encoded string → signature matches, then
+        // decodes again to parse the JSON. Mismatching these two is exactly error 29.
+        let receiptParam = null;
+        let sig;
+        if (this.fiscal) {
+            receiptParam = encodeURIComponent(JSON.stringify(buildReceipt(desc, amount)));
+            sig = md5(`${this.login}:${outSum}:${invId}:${receiptParam}:${this.pass1}`);
+        }
+        else {
+            sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
+        }
+        const base = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+        const qs = new URLSearchParams({
+            MerchantLogin: this.login,
+            OutSum: outSum,
+            InvId: String(invId),
+            Description: desc,
+            SignatureValue: sig,
+            ...(receiptParam ? { Receipt: receiptParam } : {}),
+            ...(email ? { Email: email } : {}),
+            // Recurring is NOT a signature modifier — plain optional param.
+            ...(recurring ? { Recurring: 'true' } : {}),
+            SuccessURL: successUrl,
+            FailURL: failUrl,
+            IsTest: this.isTest ? '1' : '0',
+        });
+        this.logger.debug(`Payment URL built for InvId=${invId} (fiscal=${this.fiscal})`);
+        return `${base}?${qs}`;
+    }
+    /**
+     * Validate Robokassa webhook (ResultURL) signature.
+     * Expected formula: MD5(OutSum:InvId:Password2)
+     */
+    validateWebhook(outSum, invId, sigReceived) {
+        const expected = md5(`${outSum}:${invId}:${this.pass2}`);
+        return safeEqualHex(expected, sigReceived);
+    }
+    /**
+     * Validate the SuccessURL redirect signature (browser returns from Robokassa).
+     * Expected formula: MD5(OutSum:InvId:Password1). Lets us trust the InvId before
+     * handing the client their booking link.
+     */
+    validateSuccess(outSum, invId, sigReceived) {
+        if (!outSum || !invId || !sigReceived)
+            return false;
+        const expected = md5(`${outSum}:${invId}:${this.pass1}`);
+        return safeEqualHex(expected, sigReceived);
+    }
+    /**
+     * Charge a recurring (MIT) payment server-to-server, reusing the card the
+     * client tokenised on the first payment. The actual confirmation arrives on
+     * the usual ResultURL webhook. Requires the recurring service to be enabled
+     * for the shop by Robokassa support (otherwise error 34).
+     *   SignatureValue = MD5(MerchantLogin:OutSum:InvId:Password1)
+     *   PreviousInvoiceID is sent but NOT part of the signature.
+     * Returns { ok, body } — ok=true when Robokassa accepted the charge request.
+     */
+    async chargeRecurring(params) {
+        const { invId, previousInvId, amount, desc } = params;
+        const outSum = amount.toFixed(2);
+        const sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
+        const form = new URLSearchParams({
+            MerchantLogin: this.login,
+            InvoiceID: String(invId),
+            PreviousInvoiceID: String(previousInvId),
+            OutSum: outSum,
+            Description: desc,
+            SignatureValue: sig,
+        });
+        try {
+            const res = await fetch('https://auth.robokassa.ru/Merchant/Recurring', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: form.toString(),
+                signal: AbortSignal.timeout(15_000),
+            });
+            const body = (await res.text().catch(() => '')).trim();
+            // Robokassa replies "OK<InvId>" on success, otherwise an error code/text.
+            const ok = res.ok && /^OK/i.test(body);
+            if (!ok)
+                this.logger.error(`Recurring charge InvId=${invId} failed: ${res.status} ${body.slice(0, 200)}`);
+            return { ok, body };
+        }
+        catch (e) {
+            this.logger.error(`Recurring charge InvId=${invId} error: ${e.message}`);
+            return { ok: false, body: e.message };
+        }
+    }
+};
+exports.RobokassaService = RobokassaService;
+exports.RobokassaService = RobokassaService = RobokassaService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
+], RobokassaService);
+// ── helpers ──────────────────────────────────────────────────────────────────
+function md5(input) {
+    return (0, crypto_1.createHash)('md5').update(input, 'utf8').digest('hex');
+}
+/** Constant-time comparison of two hex signatures (case-insensitive). */
+function safeEqualHex(a, b) {
+    const x = Buffer.from((a ?? '').toLowerCase(), 'utf8');
+    const y = Buffer.from((b ?? '').toLowerCase(), 'utf8');
+    if (x.length !== y.length)
+        return false;
+    return (0, crypto_1.timingSafeEqual)(x, y);
+}
+/**
+ * Receipt for Robokassa fiscalization. For self-employed (НПД / Робочеки СМЗ)
+ * the `sno` field is intentionally omitted — it's only needed to distinguish
+ * tax systems, and there is no НПД value (the old 'patent' was simply wrong and
+ * could make Robokassa reject the cheque). Robokassa registers the income in
+ * «Мой налог» automatically from these items.
+ */
+function buildReceipt(name, amount) {
+    return {
+        items: [
+            {
+                name: name.slice(0, 128),
+                quantity: 1,
+                sum: parseFloat(amount.toFixed(2)),
+                tax: 'none',
+                payment_method: 'full_payment',
+                payment_object: 'service',
+            },
+        ],
+    };
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9yb2Jva2Fzc2Euc2VydmljZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUFvRDtBQUNwRCwyQ0FBK0M7QUFDL0MsbUNBQXFEO0FBRXJEOzs7Ozs7Ozs7Ozs7OztHQWNHO0FBRUksSUFBTSxnQkFBZ0Isd0JBQXRCLE1BQU0sZ0JBQWdCO0lBQ1YsTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLGtCQUFnQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBQzNDLEtBQUssQ0FBUztJQUNkLEtBQUssQ0FBUztJQUNkLEtBQUssQ0FBUztJQUNkLE1BQU0sQ0FBVTtJQUNoQixNQUFNLENBQVU7SUFFakMsWUFBWSxNQUFxQjtRQUMvQixJQUFJLENBQUMsS0FBSyxHQUFHLE1BQU0sQ0FBQyxHQUFHLENBQVMsMEJBQTBCLENBQUMsSUFBSSxFQUFFLENBQUM7UUFDbEUsSUFBSSxDQUFDLEtBQUssR0FBRyxNQUFNLENBQUMsR0FBRyxDQUFTLHFCQUFxQixDQUFDLElBQUksRUFBRSxDQUFDO1FBQzdELElBQUksQ0FBQyxLQUFLLEdBQUcsTUFBTSxDQUFDLEdBQUcsQ0FBUyxxQkFBcUIsQ0FBQyxJQUFJLEVBQUUsQ0FBQztRQUM3RCxJQUFJLENBQUMsTUFBTSxHQUFHLE1BQU0sQ0FBQyxHQUFHLENBQVMsbUJBQW1CLENBQUMsS0FBSyxNQUFNLENBQUM7UUFDakUsSUFBSSxDQUFDLE1BQU0sR0FBRyxNQUFNLENBQUMsR0FBRyxDQUFTLGtCQUFrQixDQUFDLEtBQUssT0FBTyxDQUFDLENBQUMsYUFBYTtJQUNqRixDQUFDO0lBRUQsSUFBSSxPQUFPO1FBQ1QsT0FBTyxPQUFPLENBQUMsSUFBSSxDQUFDLEtBQUssSUFBSSxJQUFJLENBQUMsS0FBSyxJQUFJLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQztJQUN6RCxDQUFDO0lBRUQ7Ozs7Ozs7O09BUUc7SUFDSCxlQUFlLENBQUMsTUFTZjtRQUNDLE1BQU0sRUFB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O0lBQ3ZELE1BQU0sQ0FBQyxHQUFHLE1BQU0sQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDLENBQUMsV0FBVyxFQUFFLEVBQUUsTUFBTSxDQUFDLENBQUM7SUFDdkQsSUFBSSxDQUFDLENBQUMsTUFBTSxLQUFLLENBQUMsQ0FBQyxNQUFNO1FBQUUsT0FBTyxLQUFLLENBQUM7SUFDeEMsT0FBTyxJQUFBLHdCQUFlLEVBQUMsQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDO0FBQy9CLENBQUM7QUFFRDs7Ozs7O0dBTUc7QUFDSCxTQUFTLFlBQVksQ0FBQyxJQUFZLEVBQUUsTUFBYztJQUNoRCxPQUFPO1FBQ0wsS0FBSyxFQUFFO1lBQ0w7Z0JBQ0UsSUFBSSxFQUFFLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQyxFQUFFLEdBQUcsQ0FBQztnQkFDeEIsUUFBUSxFQUFFLENBQUM7Z0JBQ1gsR0FBRyxFQUFFLFVBQVUsQ0FBQyxNQUFNLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQyxDQUFDO2dCQUNsQyxHQUFHLEVBQUUsTUFBTTtnQkFDWCxjQUFjLEVBQUUsY0FBYztnQkFDOUIsY0FBYyxFQUFFLFNBQVM7YUFDMUI7U0FDRjtLQUNGLENBQUM7QUFDSixDQUFDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2Jvb2tpbmcvcm9ib2thc3NhLnNlcnZpY2UudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSW5qZWN0YWJsZSwgTG9nZ2VyIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgQ29uZmlnU2VydmljZSB9IGZyb20gJ0BuZXN0anMvY29uZmlnJztcbmltcG9ydCB7IGNyZWF0ZUhhc2gsIHRpbWluZ1NhZmVFcXVhbCB9IGZyb20gJ2NyeXB0byc7XG5cbi8qKlxuICogUm9ib2thc3NhIHBheW1lbnQgaW50ZWdyYXRpb24uXG4gKlxuICogUmVxdWlyZWQgZW52IHZhcnM6XG4gKiAgIFJPQk9LQVNTQV9NRVJDSEFOVF9MT0dJTiAg4oCUIGxvZ2luIGZyb20gUm9ib2thc3NhIG1lcmNoYW50IGNhYmluZXRcbiAqICAgUk9CT0tBU1NBX1BBU1NXT1JEMSAgICAgICDigJQgcGFzc3dvcmQgMSAoZm9yIHBheW1lbnQgVVJMIHNpZ25pbmcpXG4gKiAgIFJPQk9LQVNTQV9QQVNTV09SRDIgICAgICAg4oCUIHBhc3N3b3JkIDIgKGZvciB3ZWJob29rIHNpZ25hdHVyZSB2YWxpZGF0aW9uKVxuICogICBST0JPS0FTU0FfSVNfVEVTVCAgICAgICAgIOKAlCBcInRydWVcIiB0byB1c2UgdGVzdCBtb2RlIChkZWZhdWx0OiBmYWxzZSlcbiAqICAgUk9CT0tBU1NBX0ZJU0NBTCAgICAgICAgICDigJQgXCJmYWxzZVwiIHRvIE5PVCBzZW5kIGEgUmVjZWlwdCAoZGVmYXVsdDogdHJ1ZSkuXG4gKiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBSb2Jva2Fzc2EncyBcItCg0L7QsdC+0YfQtdC60Lgg0KHQnNCXXCIgYXV0by1yZWdpc3RlcnMgdGhlXG4gKiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBpbmNvbWUgaW4gwqvQnNC+0Lkg0L3QsNC70L7Qs8K7ICjQpNCd0KEpIGZvciBzZWxmLWVtcGxveWVkIOKAlFxuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZm9yIHRoYXQgaXQgUkVRVUlSRVMgdGhlIFJlY2VpcHQsIGFuZCB0aGUgUmVjZWlwdFxuICogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgaXMgcGFydCBvZiB0aGUgcGF5bWVudCBzaWduYXR1cmUuIE9ubHkgdHVybiB0aGlzXG4gKiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBvZmYgaWYgdGhlIHNob3AgaGFzIG5vIGZpc2NhbGl6YXRpb24gYXQgYWxsLlxuICovXG5ASW5qZWN0YWJsZSgpXG5leHBvcnQgY2xhc3MgUm9ib2thc3NhU2VydmljZSB7XG4gIHByaXZhdGUgcmVhZG9ubHkgbG9nZ2VyID0gbmV3IExvZ2dlcihSb2Jva2Fzc2FTZXJ2aWNlLm5hbWUpO1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2luOiBzdHJpbmc7XG4gIHByaXZhdGUgcmVhZG9ubHkgcGFzczE6IHN0cmluZztcbiAgcHJpdmF0ZSByZWFkb25seSBwYXNzMjogc3RyaW5nO1xuICBwcml2YXRlIHJlYWRvbmx5IGlzVGVzdDogYm9vbGVhbjtcbiAgcHJpdmF0ZSByZWFkb25seSBmaXNjYWw6IGJvb2xlYW47XG5cbiAgY29uc3RydWN0b3IoY29uZmlnOiBDb25maWdTZXJ2aWNlKSB7XG4gICAgdGhpcy5sb2dpbiA9IGNvbmZpZy5nZXQ8c3RyaW5nPignUk9CT0tBU1NBX01FUkNIQU5UX0xPR0lOJykgPz8gJyc7XG4gICAgdGhpcy5wYXNzMSA9IGNvbmZpZy5nZXQ8c3RyaW5nPignUk9CT0tBU1NBX1BBU1NXT1JEMScpID8/ICcnO1xuICAgIHRoaXMucGFzczIgPSBjb25maWcuZ2V0PHN0cmluZz4oJ1JPQk9LQVNTQV9QQVNTV09SRDInKSA/PyAnJztcbiAgICB0aGlzLmlzVGVzdCA9IGNvbmZpZy5nZXQ8c3RyaW5nPignUk9CT0tBU1NBX0lTX1RFU1QnKSA9PT0gJ3RydWUnO1xuICAgIHRoaXMuZmlzY2FsID0gY29uZmlnLmdldDxzdHJpbmc+KCdST0JPS0FTU0FfRklTQ0FMJykgIT09ICdmYWxzZSc7IC8vIGRlZmF1bHQgT05cbiAgfVxuXG4gIGdldCBlbmFibGVkKCk6IGJvb2xlYW4ge1xuICAgIHJldHVybiBCb29sZWFuKHRoaXMubG9naW4gJiYgdGhpcy5wYXNzMSAmJiB0aGlzLnBhc3MyKTtcbiAgfVxuXG4gIC8qKlxuICAgKiBCdWlsZCBhIFJvYm9rYXNzYSBwYXltZW50IFVSTC5cbiAgICogQHBhcmFtIGludklkICAgYm9va2luZy5pZCDigJQgdXNlZCBhcyBSb2Jva2Fzc2EgSW52SWQgKG11c3QgYmUgdW5pcXVlIHBlciBtZXJjaGFudClcbiAgICogQHBhcmFtIGFtb3VudCAgYW1vdW50IGluIHJ1YmxlcyAoZS5nLiAzNTAwKVxuICAgKiBAcGFyYW0gZGVzYyAgICBwYXltZW50IGRlc2NyaXB0aW9uIHNob3duIHRvIHRoZSBjbGllbnRcbiAgICogQHBhcmFtIGVtYWlsICAgY2xpZW50IGUtbWFpbCBmb3IgdGhlIHJlY2VpcHQgKG9wdGlvbmFsKVxuICAgKiBAcGFyYW0gc3VjY2Vzc1VybCAgd2hlcmUgdG8gcmVkaXJlY3QgYWZ0ZXIgc3VjY2Vzc1xuICAgKiBAcGFyYW0gZmFpbFVybCAgICAgd2hlcmUgdG8gcmVkaXJlY3QgYWZ0ZXIgZmFpbHVyZS9jYW5jZWxcbiAgICovXG4gIGJ1aWxkUGF5bWVudFVybChwYXJhbXM6IHtcbiAgICBpbnZJZDogbnVtYmVyO1xuICAgIGFtb3VudDogbnVtYmVyO1xuICAgIGRlc2M6IHN0cmluZztcbiAgICBlbWFpbD86IHN0cmluZztcbiAgICBzdWNjZXNzVXJsOiBzdHJpbmc7XG4gICAgZmFpbFVybDogc3RyaW5nO1xuICAgIC8qKiBGaXJzdCBwYXltZW50IG9mIGEgcmVjdXJyaW5nIHNlcmllcyDigJQgdG9rZW5pc2VzIHRoZSBjYXJkIGZvciBsYXRlciBNSVQgY2hhcmdlcy4gKi9cbiAgICByZWN1cnJpbmc/OiBib29sZWFuO1xuICB9KTogc3RyaW5nIHtcbiAgICBjb25zdCB7IGludklkLCBhbW91bnQsIGRlc2MsIGVtYWlsLCBzdWNjZXNzVXJsLCBmYWlsVXJsLCByZWN1cnJpbmcgfSA9XG4gICAgICBwYXJhbXM7XG4gICAgY29uc3Qgb3V0U3VtID0gYW1vdW50LnRvRml4ZWQoMik7XG5cbiAgICAvLyBPcHRpb25hbCDQntCk0JQgZmlzY2FsaXphdGlvbi4gUGVyIFJvYm9rYXNzYSBkb2NzLCB3aGVuIGEgUmVjZWlwdCBpcyBzZW50IGl0XG4gICAgLy8gTVVTVCBiZSBwYXJ0IG9mIHRoZSBzaWduYXR1cmUgYmV0d2VlbiBJbnZJZCBhbmQgUGFzc3dvcmQxOlxuICAgIC8vICAgTUQ1KE1lcmNoYW50TG9naW46T3V0U3VtOkludklkOlJlY2VpcHQ6UGFzc3dvcmQxKVxuICAgIC8vIFRoZSBSZWNlaXB0IGhlcmUgaXMgdGhlIFVSTC1lbmNvZGVkIG1pbmlmaWVkIEpTT04gKE5PVCBiYXNlNjQpLCBhbmQgdGhlXG4gICAgLy8gU0FNRSB1cmwtZW5jb2RlZCBzdHJpbmcgaXMgdXNlZCBib3RoIGluIHRoZSBzaWduYXR1cmUgYW5kIGFzIHRoZSBSZWNlaXB0XG4gICAgLy8gdmFsdWUuIFVSTFNlYXJjaFBhcmFtcyB0aGVuIGVuY29kZXMgaXQgb25jZSBtb3JlIGZvciB0aGUgd2lyZTsgUm9ib2thc3NhXG4gICAgLy8gZGVjb2RlcyBvbmNlIOKGkiBnZXRzIGJhY2sgdGhpcyB1cmwtZW5jb2RlZCBzdHJpbmcg4oaSIHNpZ25hdHVyZSBtYXRjaGVzLCB0aGVuXG4gICAgLy8gZGVjb2RlcyBhZ2FpbiB0byBwYXJzZSB0aGUgSlNPTi4gTWlzbWF0Y2hpbmcgdGhlc2UgdHdvIGlzIGV4YWN0bHkgZXJyb3IgMjkuXG4gICAgbGV0IHJlY2VpcHRQYXJhbTogc3RyaW5nIHwgbnVsbCA9IG51bGw7XG4gICAgbGV0IHNpZzogc3RyaW5nO1xuICAgIGlmICh0aGlzLmZpc2NhbCkge1xuICAgICAgcmVjZWlwdFBhcmFtID0gZW5jb2RlVVJJQ29tcG9uZW50KFxuICAgICAgICBKU09OLnN0cmluZ2lmeShidWlsZFJlY2VpcHQoZGVzYywgYW1vdW50KSksXG4gICAgICApO1xuICAgICAgc2lnID0gbWQ1KFxuICAgICAgICBgJHt0aGlzLmxvZ2lufToke291dFN1bX06JHtpbnZJZH06JHtyZWNlaXB0UGFyYW19OiR7dGhpcy5wYXNzMX1gLFxuICAgICAgKTtcbiAgICB9IGVsc2Uge1xuICAgICAgc2lnID0gbWQ1KGAke3RoaXMubG9naW59OiR7b3V0U3VtfToke2ludklkfToke3RoaXMucGFzczF9YCk7XG4gICAgfVxuXG4gICAgY29uc3QgYmFzZSA9ICdodHRwczovL2F1dGgucm9ib2thc3NhLnJ1L01lcmNoYW50L0luZGV4LmFzcHgnO1xuICAgIGNvbnN0IHFzID0gbmV3IFVSTFNlYXJjaFBhcmFtcyh7XG4gICAgICBNZXJjaGFudExvZ2luOiB0aGlzLmxvZ2luLFxuICAgICAgT3V0U3VtOiBvdXRTdW0sXG4gICAgICBJbnZJZDogU3RyaW5nKGludklkKSxcbiAgICAgIERlc2NyaXB0aW9uOiBkZXNjLFxuICAgICAgU2lnbmF0dXJlVmFsdWU6IHNpZyxcbiAgICAgIC4uLihyZWNlaXB0UGFyYW0gPyB7IFJlY2VpcHQ6IHJlY2VpcHRQYXJhbSB9IDoge30pLFxuICAgICAgLi4uKGVtYWlsID8geyBFbWFpbDogZW1haWwgfSA6IHt9KSxcbiAgICAgIC8vIFJlY3VycmluZyBpcyBOT1QgYSBzaWduYXR1cmUgbW9kaWZpZXIg4oCUIHBsYWluIG9wdGlvbmFsIHBhcmFtLlxuICAgICAgLi4uKHJlY3VycmluZyA/IHsgUmVjdXJyaW5nOiAndHJ1ZScgfSA6IHt9KSxcbiAgICAgIFN1Y2Nlc3NVUkw6IHN1Y2Nlc3NVcmwsXG4gICAgICBGYWlsVVJMOiBmYWlsVXJsLFxuICAgICAgSXNUZXN0OiB0aGlzLmlzVGVzdCA/ICcxJyA6ICcwJyxcbiAgICB9KTtcbiAgICB0aGlzLmxvZ2dlci5kZWJ1ZyhcbiAgICAgIGBQYXltZW50IFVSTCBidWlsdCBmb3IgSW52SWQ9JHtpbnZJZH0gKGZpc2NhbD0ke3RoaXMuZmlzY2FsfSlgLFxuICAgICk7XG4gICAgcmV0dXJuIGAke2Jhc2V9PyR7cXN9YDtcbiAgfVxuXG4gIC8qKlxuICAgKiBWYWxpZGF0ZSBSb2Jva2Fzc2Egd2ViaG9vayAoUmVzdWx0VVJMKSBzaWduYXR1cmUuXG4gICAqIEV4cGVjdGVkIGZvcm11bGE6IE1ENShPdXRTdW06SW52SWQ6UGFzc3dvcmQyKVxuICAgKi9cbiAgdmFsaWRhdGVXZWJob29rKG91dFN1bTogc3RyaW5nLCBpbnZJZDogc3RyaW5nLCBzaWdSZWNlaXZlZDogc3RyaW5nKTogYm9vbGVhbiB7XG4gICAgY29uc3QgZXhwZWN0ZWQgPSBtZDUoYCR7b3V0U3VtfToke2ludklkfToke3RoaXMucGFzczJ9YCk7XG4gICAgcmV0dXJuIHNhZmVFcXVhbEhleChleHBlY3RlZCwgc2lnUmVjZWl2ZWQpO1xuICB9XG5cbiAgLyoqXG4gICAqIFZhbGlkYXRlIHRoZSBTdWNjZXNzVVJMIHJlZGlyZWN0IHNpZ25hdHVyZSAoYnJvd3NlciByZXR1cm5zIGZyb20gUm9ib2thc3NhKS5cbiAgICogRXhwZWN0ZWQgZm9ybXVsYTogTUQ1KE91dFN1bTpJbnZJZDpQYXNzd29yZDEpLiBMZXRzIHVzIHRydXN0IHRoZSBJbnZJZCBiZWZvcmVcbiAgICogaGFuZGluZyB0aGUgY2xpZW50IHRoZWlyIGJvb2tpbmcgbGluay5cbiAgICovXG4gIHZhbGlkYXRlU3VjY2VzcyhvdXRTdW06IHN0cmluZywgaW52SWQ6IHN0cmluZywgc2lnUmVjZWl2ZWQ6IHN0cmluZyk6IGJvb2xlYW4ge1xuICAgIGlmICghb3V0U3VtIHx8ICFpbnZJZCB8fCAhc2lnUmVjZWl2ZWQpIHJldHVybiBmYWxzZTtcbiAgICBjb25zdCBleHBlY3RlZCA9IG1kNShgJHtvdXRTdW19OiR7aW52SWR9OiR7dGhpcy5wYXNzMX1gKTtcbiAgICByZXR1cm4gc2FmZUVxdWFsSGV4KGV4cGVjdGVkLCBzaWdSZWNlaXZlZCk7XG4gIH1cblxuICAvKipcbiAgICogQ2hhcmdlIGEgcmVjdXJyaW5nIChNSVQpIHBheW1lbnQgc2VydmVyLXRvLXNlcnZlciwgcmV1c2luZyB0aGUgY2FyZCB0aGVcbiAgICogY2xpZW50IHRva2VuaXNlZCBvbiB0aGUgZmlyc3QgcGF5bWVudC4gVGhlIGFjdHVhbCBjb25maXJtYXRpb24gYXJyaXZlcyBvblxuICAgKiB0aGUgdXN1YWwgUmVzdWx0VVJMIHdlYmhvb2suIFJlcXVpcmVzIHRoZSByZWN1cnJpbmcgc2VydmljZSB0byBiZSBlbmFibGVkXG4gICAqIGZvciB0aGUgc2hvcCBieSBSb2Jva2Fzc2Egc3VwcG9ydCAob3RoZXJ3aXNlIGVycm9yIDM0KS5cbiAgICogICBTaWduYXR1cmVWYWx1ZSA9IE1ENShNZXJjaGFudExvZ2luOk91dFN1bTpJbnZJZDpQYXNzd29yZDEpXG4gICAqICAgUHJldmlvdXNJbnZvaWNlSUQgaXMgc2VudCBidXQgTk9UIHBhcnQgb2YgdGhlIHNpZ25hdHVyZS5cbiAgICogUmV0dXJucyB7IG9rLCBib2R5IH0g4oCUIG9rPXRydWUgd2hlbiBSb2Jva2Fzc2EgYWNjZXB0ZWQgdGhlIGNoYXJnZSByZXF1ZXN0LlxuICAgKi9cbiAgYXN5bmMgY2hhcmdlUmVjdXJyaW5nKHBhcmFtczoge1xuICAgIGludklkOiBudW1iZXI7XG4gICAgcHJldmlvdXNJbnZJZDogbnVtYmVyO1xuICAgIGFtb3VudDogbnVtYmVyO1xuICAgIGRlc2M6IHN0cmluZztcbiAgfSk6IFByb21pc2U8eyBvazogYm9vbGVhbjsgYm9keTogc3RyaW5nIH0+IHtcbiAgICBjb25zdCB7IGludklkLCBwcmV2aW91c0ludklkLCBhbW91bnQsIGRlc2MgfSA9IHBhcmFtcztcbiAgICBjb25zdCBvdXRTdW0gPSBhbW91bnQudG9GaXhlZCgyKTtcbiAgICBjb25zdCBzaWcgPSBtZDUoYCR7dGhpcy5sb2dpbn06JHtvdXRTdW19OiR7aW52SWR9OiR7dGhpcy5wYXNzMX1gKTtcbiAgICBjb25zdCBmb3JtID0gbmV3IFVSTFNlYXJjaFBhcmFtcyh7XG4gICAgICBNZXJjaGFudExvZ2luOiB0aGlzLmxvZ2luLFxuICAgICAgSW52b2ljZUlEOiBTdHJpbmcoaW52SWQpLFxuICAgICAgUHJldmlvdXNJbnZvaWNlSUQ6IFN0cmluZyhwcmV2aW91c0ludklkKSxcbiAgICAgIE91dFN1bTogb3V0U3VtLFxuICAgICAgRGVzY3JpcHRpb246IGRlc2MsXG4gICAgICBTaWduYXR1cmVWYWx1ZTogc2lnLFxuICAgIH0pO1xuICAgIHRyeSB7XG4gICAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaCgnaHR0cHM6Ly9hdXRoLnJvYm9rYXNzYS5ydS9NZXJjaGFudC9SZWN1cnJpbmcnLCB7XG4gICAgICAgIG1ldGhvZDogJ1BPU1QnLFxuICAgICAgICBoZWFkZXJzOiB7ICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24veC13d3ctZm9ybS11cmxlbmNvZGVkJyB9LFxuICAgICAgICBib2R5OiBmb3JtLnRvU3RyaW5nKCksXG4gICAgICAgIHNpZ25hbDogQWJvcnRTaWduYWwudGltZW91dCgxNV8wMDApLFxuICAgICAgfSk7XG4gICAgICBjb25zdCBib2R5ID0gKGF3YWl0IHJlcy50ZXh0KCkuY2F0Y2goKCkgPT4gJycpKS50cmltKCk7XG4gICAgICAvLyBSb2Jva2Fzc2EgcmVwbGllcyBcIk9LPEludklkPlwiIG9uIHN1Y2Nlc3MsIG90aGVyd2lzZSBhbiBlcnJvciBjb2RlL3RleHQuXG4gICAgICBjb25zdCBvayA9IHJlcy5vayAmJiAvXk9LL2kudGVzdChib2R5KTtcbiAgICAgIGlmICghb2spXG4gICAgICAgIHRoaXMubG9nZ2VyLmVycm9yKFxuICAgICAgICAgIGBSZWN1cnJpbmcgY2hhcmdlIEludklkPSR7aW52SWR9IGZhaWxlZDogJHtyZXMuc3RhdHVzfSAke2JvZHkuc2xpY2UoMCwgMjAwKX1gLFxuICAgICAgICApO1xuICAgICAgcmV0dXJuIHsgb2ssIGJvZHkgfTtcbiAgICB9IGNhdGNoIChlKSB7XG4gICAgICB0aGlzLmxvZ2dlci5lcnJvcihcbiAgICAgICAgYFJlY3VycmluZyBjaGFyZ2UgSW52SWQ9JHtpbnZJZH0gZXJyb3I6ICR7KGUgYXMgRXJyb3IpLm1lc3NhZ2V9YCxcbiAgICAgICk7XG4gICAgICByZXR1cm4geyBvazogZmFsc2UsIGJvZHk6IChlIGFzIEVycm9yKS5tZXNzYWdlIH07XG4gICAgfVxuICB9XG59XG5cbi8vIOKUgOKUgCBoZWxwZXJzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG5mdW5jdGlvbiBtZDUoaW5wdXQ6IHN0cmluZyk6IHN0cmluZyB7XG4gIHJldHVybiBjcmVhdGVIYXNoKCdtZDUnKS51cGRhdGUoaW5wdXQsICd1dGY4JykuZGlnZXN0KCdoZXgnKTtcbn1cblxuLyoqIENvbnN0YW50LXRpbWUgY29tcGFyaXNvbiBvZiB0d28gaGV4IHNpZ25hdHVyZXMgKGNhc2UtaW5zZW5zaXRpdmUpLiAqL1xuZnVuY3Rpb24gc2FmZUVxdWFsSGV4KGE6IHN0cmluZywgYjogc3RyaW5nKTogYm9vbGVhbiB7XG4gIGNvbnN0IHggPSBCdWZmZXIuZnJvbSgoYSA/PyAnJykudG9Mb3dlckNhc2UoKSwgJ3V0ZjgnKTtcbiAgY29uc3QgeSA9IEJ1ZmZlci5mcm9tKChiID8/ICcnKS50b0xvd2VyQ2FzZSgpLCAndXRmOCcpO1xuICBpZiAoeC5sZW5ndGggIT09IHkubGVuZ3RoKSByZXR1cm4gZmFsc2U7XG4gIHJldHVybiB0aW1pbmdTYWZlRXF1YWwoeCwgeSk7XG59XG5cbi8qKlxuICogUmVjZWlwdCBmb3IgUm9ib2thc3NhIGZpc2NhbGl6YXRpb24uIEZvciBzZWxmLWVtcGxveWVkICjQndCf0JQgLyDQoNC+0LHQvtGH0LXQutC4INCh0JzQlylcbiAqIHRoZSBgc25vYCBmaWVsZCBpcyBpbnRlbnRpb25hbGx5IG9taXR0ZWQg4oCUIGl0J3Mgb25seSBuZWVkZWQgdG8gZGlzdGluZ3Vpc2hcbiAqIHRheCBzeXN0ZW1zLCBhbmQgdGhlcmUgaXMgbm8g0J3Qn9CUIHZhbHVlICh0aGUgb2xkICdwYXRlbnQnIHdhcyBzaW1wbHkgd3JvbmcgYW5kXG4gKiBjb3VsZCBtYWtlIFJvYm9rYXNzYSByZWplY3QgdGhlIGNoZXF1ZSkuIFJvYm9rYXNzYSByZWdpc3RlcnMgdGhlIGluY29tZSBpblxuICogwqvQnNC+0Lkg0L3QsNC70L7Qs8K7IGF1dG9tYXRpY2FsbHkgZnJvbSB0aGVzZSBpdGVtcy5cbiAqL1xuZnVuY3Rpb24gYnVpbGRSZWNlaXB0KG5hbWU6IHN0cmluZywgYW1vdW50OiBudW1iZXIpIHtcbiAgcmV0dXJuIHtcbiAgICBpdGVtczogW1xuICAgICAge1xuICAgICAgICBuYW1lOiBuYW1lLnNsaWNlKDAsIDEyOCksXG4gICAgICAgIHF1YW50aXR5OiAxLFxuICAgICAgICBzdW06IHBhcnNlRmxvYXQoYW1vdW50LnRvRml4ZWQoMikpLFxuICAgICAgICB0YXg6ICdub25lJyxcbiAgICAgICAgcGF5bWVudF9tZXRob2Q6ICdmdWxsX3BheW1lbnQnLFxuICAgICAgICBwYXltZW50X29iamVjdDogJ3NlcnZpY2UnLFxuICAgICAgfSxcbiAgICBdLFxuICB9O1xufVxuIl0sInZlcnNpb24iOjN9

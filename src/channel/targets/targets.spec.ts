@@ -102,6 +102,16 @@ describe('адаптеры площадок', () => {
       ).rejects.toThrow('214: Access denied');
     });
 
+    it('ошибка VK без текста/кода не превращается в «undefined»', async () => {
+      // VK иногда отдаёт {"error":{}} — без объяснения падать в "undefined:
+      // undefined" нельзя, владелец должен увидеть хоть что-то читаемое.
+      process.env.HEALTHY_ADULT_VK_TOKEN = 'vk-token';
+      mockFetch('{"error":{}}');
+      await expect(
+        new VkChannelTarget().send(post(), 'club123'),
+      ).rejects.toThrow('0: VK отказал без объяснения');
+    });
+
     it('без токена сообщения не уходят, причина названа', async () => {
       const fetchMock = mockFetch('{}');
       await expect(
@@ -308,6 +318,17 @@ describe('адаптеры площадок', () => {
       await new PinterestChannelTarget().send(post('я'.repeat(900)), 'board-9');
       const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
       expect(body.description).toHaveLength(500);
+    });
+
+    it('без токена в сеть не ходим — и не платим за рендер картинки', async () => {
+      const fetchMock = mockFetch('{}');
+      const post_ = post();
+      const image = jest.spyOn(post_, 'image');
+      await expect(
+        new PinterestChannelTarget().send(post_, 'board-9'),
+      ).rejects.toThrow('HEALTHY_ADULT_PINTEREST_TOKEN');
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(image).not.toHaveBeenCalled();
     });
   });
 

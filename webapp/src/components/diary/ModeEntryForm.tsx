@@ -5,15 +5,15 @@ import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
+import { ModeDoubtButton } from './ModeDoubtButton';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 
 // Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран
-// (правило онбординга «одно главное действие на экран», низкий порог для СДВГ).
-// Обязательна только ситуация; остальное можно пропустить или сохранить рано.
-// Шаги/тексты/примеры — из общего конфига shared/mode/modeDiarySteps (правило №3).
-// Состояние живёт в родителе (ModeEntrySheet): автосейв черновика, сохранение.
+// (правило онбординга «одно действие на экран», низкий порог для СДВГ).
+// Обязательна только ситуация; шаги/тексты — из shared/mode/modeDiarySteps
+// (правило №3). Состояние живёт в родителе (ModeEntrySheet): автосейв, сохранение.
 
 export interface ModeFormFields {
   situation: string; thoughts: string; feelings: string; bodyFeelings: string;
@@ -29,14 +29,14 @@ interface Props {
   set: (key: FieldKey, value: string) => void;
   healthyResponse: string;
   setHealthyResponse: (value: string) => void;
-  saving: boolean;
-  canSave: boolean;
+  saving: boolean; saveError?: boolean; canSave: boolean;
   onSave: () => void;
   onBack: () => void;
   onChangeMode: () => void;
+  onSwitchMode: (id: string) => void;
 }
 
-export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, canSave, onSave, onBack, onChangeMode }: Props) {
+export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, saveError, canSave, onSave, onBack, onChangeMode, onSwitchMode }: Props) {
   const tr = useTr();
   const steps = buildModeDiarySteps(tr);
   const modeColor = selectedMode?.color ?? 'var(--c-slate)';
@@ -79,12 +79,13 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <>
           <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
             <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
-            <h3>Говори от лица режима</h3>
+            <h3>{tr('Говори от лица режима', 'Говорите от лица режима')}</h3>
             <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </div>
-          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
             <GlyphArrowLeft /> Сменить режим
           </button>
+          <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
         </>
       }
     >
@@ -106,17 +107,15 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <div className="flash-eyebrow" style={{ color: modeColor }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: 'currentColor' }} />
           Шаг {stepIdx + 1} из {totalSteps}
-          {curRequired
-            ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span>
-            : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
+          {curRequired ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span> : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
           <span className="flash-counter">{filledCount} / {totalSteps} заполнено</span>
         </div>
         {isHealthyStep ? (
           <>
-            <div className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
+            <div id="mode-entry-question" className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
             <div className="flash-hint">{tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')}</div>
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
-            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 12, background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
+            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 'var(--r-12)', background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c-moss)', marginBottom: 6 }}>Например, можно сказать себе:</div>
               <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-sub)', lineHeight: 1.55 }}>«{hint}»</div>
             </div>
@@ -127,11 +126,12 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={healthyResponse}
               onChange={e => setHealthyResponse(e.target.value)}
               placeholder={tr('Напиши своими словами…', 'Напишите своими словами…')}
+              aria-labelledby="mode-entry-question"
             />
           </>
         ) : (
           <>
-            <div className="flash-q">{cur!.title}</div>
+            <div id="mode-entry-question" className="flash-q">{cur!.title}</div>
             <div className="flash-hint">{cur!.hint}</div>
             <textarea
               ref={areaRef}
@@ -140,6 +140,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={curValue}
               onChange={e => set(cur!.key, e.target.value)}
               placeholder={cur!.example}
+              aria-labelledby="mode-entry-question"
             />
           </>
         )}
@@ -158,6 +159,9 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         curRequired={curRequired}
         onNext={goNext}
       />
+      {saveError && (
+        <div role="status" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--accent-red)' }}>{tr('Не удалось сохранить. Черновик остался — попробуй ещё раз.', 'Не удалось сохранить. Черновик остался — попробуйте ещё раз.')}</div>
+      )}
     </ExScreen>
   );
 }

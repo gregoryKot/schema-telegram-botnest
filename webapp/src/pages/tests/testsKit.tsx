@@ -17,7 +17,7 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
         <div style={{ position: 'absolute', width: 480, height: 480, borderRadius: '50%', background: glow(PINK, .10), filter: 'blur(130px)', bottom: '-14%', left: '-6%' }} />
       </div>
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 24px', borderBottom: `1px solid ${GLASS_BORDER}`, background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-12)', padding: '14px 24px', borderBottom: `1px solid ${GLASS_BORDER}`, background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <a href="/" style={{ textDecoration: 'none' }} aria-label="На главную"><Logo /></a>
           <Cta href={botUrl}>Бот в Telegram ↗</Cta>
         </header>
@@ -30,7 +30,7 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
               Эти же тесты есть в телеграм-боте — вместе с трекером пяти
               потребностей, дневниками и большим тестом схем.
             </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-12)', justifyContent: 'center', flexWrap: 'wrap' }}>
               <Cta href={botUrl} size="lg">Продолжить в Telegram</Cta>
               <Cta href="/login" variant="ghost" size="lg">Войти в приложение</Cta>
             </div>
@@ -53,8 +53,8 @@ export function QuizProgress({ index, total }: { index: number; total: number })
         <span>Вопрос {index + 1} из {total}</span>
         <Link to="/tests" style={{ color: FAINT, textDecoration: 'none' }}>✕ выйти</Link>
       </div>
-      <div style={{ height: 6, borderRadius: 4, background: 'rgba(255,255,255,.08)' }}>
-        <div style={{ width: `${(index / total) * 100}%`, height: '100%', borderRadius: 4, background: AURORA, transition: 'width .25s' }} />
+      <div style={{ height: 6, borderRadius: 'var(--r-4)', background: 'rgba(255,255,255,.08)' }}>
+        <div style={{ width: `${(index / total) * 100}%`, height: '100%', borderRadius: 'var(--r-4)', background: AURORA, transition: 'width .25s' }} />
       </div>
     </div>
   );

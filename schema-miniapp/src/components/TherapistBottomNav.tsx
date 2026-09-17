@@ -12,9 +12,8 @@ export function TherapistBottomNav({
         left: 0,
         right: 0,
         zIndex: 50,
+        // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
         background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid rgba(var(--fg-rgb),0.08)',
         paddingBottom: 'var(--safe-bottom)',
       }}
@@ -49,7 +48,20 @@ export function TherapistBottomNav({
             gap: 3,
           }}
         >
-          <span style={{ fontSize: 18 }}>👨‍⚕️</span>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="7" width="18" height="13" rx="2" />
+            <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+          </svg>
           <span
             style={{
               fontSize: 10,

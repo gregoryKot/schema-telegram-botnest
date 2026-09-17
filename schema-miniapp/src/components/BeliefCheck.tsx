@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
+import { BeliefStep } from './beliefCheck/BeliefStep';
+import { EvidenceStep } from './beliefCheck/EvidenceStep';
+import { ReframeStep } from './beliefCheck/ReframeStep';
+import { HistoryList } from './beliefCheck/HistoryList';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
-import { CrisisGate } from './CrisisGate';
-import { EvidenceList } from './beliefCheck/EvidenceList';
-import {
-  STORAGE_KEY,
-  BeliefEntry,
-  fmtDate,
-  loadLocal,
-} from './beliefCheck/storage';
+import { cm } from '../sections/schemas/utils';
+import { BeliefEntry, fmtDate, loadLocal } from './beliefCheck/storage';
 import { BeliefDoneScreen } from './beliefCheck/DoneScreen';
+import { useSaveBeliefCheck } from './beliefCheck/useSaveBeliefCheck';
 
 type Step = 'belief' | 'for' | 'against' | 'reframe' | 'done';
 
@@ -29,6 +28,10 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
   const [againstInput, setAgainstInput] = useState('');
   const [againstList, setAgainstList] = useState<string[]>([]);
   const [reframe, setReframe] = useState('');
+  const { saving, saveError, save } = useSaveBeliefCheck(
+    () => setStep('done'),
+    onComplete,
+  );
   const [history, setHistory] = useState<BeliefEntry[]>(() =>
     loadLocal().slice(0, 3),
   );
@@ -48,7 +51,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           })),
         );
       })
-      .catch(() => {});
+      .catch((e) => console.error('getBeliefChecks failed', e));
   }, []);
 
   function addFor() {
@@ -66,31 +69,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
   }
 
   function handleSave() {
-    const entry: BeliefEntry = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-      }),
-      belief: belief.trim(),
-      for: forList,
-      against: againstList,
-      reframe: reframe.trim(),
-    };
-    // Sync to localStorage immediately
-    const all = [entry, ...loadLocal()].slice(0, 20);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    // Save to server
-    api
-      .createBeliefCheck({
-        belief: entry.belief,
-        evidenceFor: entry.for,
-        evidenceAgainst: entry.against,
-        reframe: entry.reframe || undefined,
-      })
-      .catch(() => {});
-    setStep('done');
-    onComplete?.();
+    void save({ belief, forList, againstList, reframe });
   }
 
   if (step === 'done') {
@@ -120,7 +99,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
               style={{
                 flex: 1,
                 height: 3,
-                borderRadius: 2,
+                borderRadius: 'var(--r-2)',
                 background:
                   i <= stepIndex
                     ? 'var(--accent-blue)'
@@ -161,7 +140,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 20,
           }}
         >
@@ -169,9 +148,9 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
-              background: 'rgba(96,165,250,0.12)',
-              border: '1px solid rgba(96,165,250,0.2)',
+              borderRadius: 'var(--r-14)',
+              background: cm('var(--accent-blue)', 12),
+              border: `1px solid ${cm('var(--accent-blue)', 20)}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -196,329 +175,61 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
         </div>
 
         {step === 'belief' && (
-          <>
-            <div
-              style={{
-                background: 'rgba(96,165,250,0.06)',
-                border: '1px solid rgba(96,165,250,0.12)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                marginBottom: 14,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.6,
-                }}
-              >
-                {tr(
-                  'Запиши мысль или убеждение, которое тебя беспокоит.',
-                  'Запишите мысль или убеждение, которое вас беспокоит.',
-                )}{' '}
-                Схемы часто говорят с нами голосом абсолютных утверждений: «я
-                никогда», «всё всегда», «я недостаточно».
-              </div>
-            </div>
-            <textarea
-              value={belief}
-              onChange={(e) => setBelief(e.target.value)}
-              placeholder="Например: я всегда всё порчу, меня никто не любит..."
-              rows={4}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'rgba(var(--fg-rgb),0.04)',
-                border: `1px solid ${belief.trim() ? 'rgba(96,165,250,0.3)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
-                padding: '13px 14px',
-                color: 'var(--text)',
-                fontSize: 14,
-                lineHeight: 1.7,
-                resize: 'none',
-                outline: 'none',
-                fontFamily: 'inherit',
-                marginBottom: 14,
-              }}
-            />
-            <CrisisGate texts={[belief]} surface="belief_check" />
-            <button
-              onClick={() => setStep('for')}
-              disabled={!belief.trim()}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                borderRadius: 14,
-                border: 'none',
-                background: belief.trim()
-                  ? 'rgba(96,165,250,0.15)'
-                  : 'rgba(var(--fg-rgb),0.06)',
-                color: belief.trim()
-                  ? 'var(--accent-blue)'
-                  : 'rgba(var(--fg-rgb),0.25)',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: belief.trim() ? 'pointer' : 'default',
-                transition: 'all 0.2s',
-              }}
-            >
-              Дальше →
-            </button>
-          </>
+          <BeliefStep
+            belief={belief}
+            setBelief={setBelief}
+            onNext={() => setStep('for')}
+          />
         )}
 
         {step === 'for' && (
-          <>
-            <div
-              style={{
-                background:
-                  'color-mix(in srgb, var(--accent-red) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-red) 12%, transparent)',
-                borderRadius: 14,
-                padding: '10px 14px',
-                marginBottom: 14,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent-red)',
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Доказательства ЗА
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
-                «{belief}» — что подтверждает эту мысль? Будь честен.
-              </div>
-            </div>
-            <EvidenceList
-              items={forList}
-              setItems={setForList}
-              input={forInput}
-              setInput={setForInput}
-              onAdd={addFor}
-              accentColor="var(--accent-red)"
-              surface="belief_check"
-            />
-            <button
-              onClick={() => setStep('against')}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                borderRadius: 14,
-                border: 'none',
-                background: 'rgba(96,165,250,0.15)',
-                color: 'var(--accent-blue)',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Дальше →
-            </button>
-          </>
+          <EvidenceStep
+            accent="var(--accent-red)"
+            title="Доказательства ЗА"
+            hint={<>«{belief}» — что подтверждает эту мысль? Будь честен.</>}
+            items={forList}
+            setItems={setForList}
+            input={forInput}
+            setInput={setForInput}
+            onAdd={addFor}
+            onNext={() => setStep('against')}
+          />
         )}
 
         {step === 'against' && (
-          <>
-            <div
-              style={{
-                background:
-                  'color-mix(in srgb, var(--accent-green) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
-                borderRadius: 14,
-                padding: '10px 14px',
-                marginBottom: 14,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent-green)',
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Доказательства ПРОТИВ
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
+          <EvidenceStep
+            accent="var(--accent-green)"
+            title="Доказательства ПРОТИВ"
+            hint={
+              <>
                 Что опровергает «{belief}»?{' '}
                 {tr(
                   'Вспомни факты, исключения, другие точки зрения.',
                   'Вспомните факты, исключения, другие точки зрения.',
                 )}
-              </div>
-            </div>
-            <EvidenceList
-              items={againstList}
-              setItems={setAgainstList}
-              input={againstInput}
-              setInput={setAgainstInput}
-              onAdd={addAgainst}
-              accentColor="var(--accent-green)"
-              surface="belief_check"
-            />
-            <button
-              onClick={() => setStep('reframe')}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                borderRadius: 14,
-                border: 'none',
-                background: 'rgba(96,165,250,0.15)',
-                color: 'var(--accent-blue)',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Дальше →
-            </button>
-          </>
+              </>
+            }
+            items={againstList}
+            setItems={setAgainstList}
+            input={againstInput}
+            setInput={setAgainstInput}
+            onAdd={addAgainst}
+            onNext={() => setStep('reframe')}
+          />
         )}
 
         {step === 'reframe' && (
-          <>
-            <div
-              style={{
-                background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent) 12%, transparent)',
-                borderRadius: 14,
-                padding: '10px 14px',
-                marginBottom: 14,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent)',
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Переформулировка
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
-                Посмотрев на оба списка — как можно сформулировать эту мысль
-                точнее и добрее к себе?
-              </div>
-            </div>
-            <textarea
-              value={reframe}
-              onChange={(e) => setReframe(e.target.value)}
-              placeholder="Например: иногда я ошибаюсь, но это не значит что я всегда всё порчу..."
-              rows={4}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'rgba(var(--fg-rgb),0.04)',
-                border: `1px solid ${reframe.trim() ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
-                padding: '13px 14px',
-                color: 'var(--text)',
-                fontSize: 14,
-                lineHeight: 1.7,
-                resize: 'none',
-                outline: 'none',
-                fontFamily: 'inherit',
-                marginBottom: 14,
-              }}
-            />
-            <CrisisGate texts={[reframe]} surface="belief_check" />
-            <button
-              onClick={handleSave}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                borderRadius: 14,
-                border: 'none',
-                background:
-                  'color-mix(in srgb, var(--accent-green) 15%, transparent)',
-                color: 'var(--accent-green)',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                marginBottom: 16,
-              }}
-            >
-              Сохранить
-            </button>
-          </>
+          <ReframeStep
+            reframe={reframe}
+            setReframe={setReframe}
+            saving={saving}
+            saveError={saveError}
+            onSave={handleSave}
+          />
         )}
 
         {step === 'belief' && history.length > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--text-faint)',
-                marginBottom: 10,
-              }}
-            >
-              Прошлые проверки
-            </div>
-            {history.map((h) => (
-              <div
-                key={h.id}
-                style={{
-                  padding: '10px 14px',
-                  background: 'rgba(var(--fg-rgb),0.03)',
-                  border: '1px solid rgba(var(--fg-rgb),0.06)',
-                  borderRadius: 12,
-                  marginBottom: 7,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                    marginBottom: 3,
-                  }}
-                >
-                  {h.date}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  «{h.belief}»
-                </div>
-              </div>
-            ))}
-          </div>
+          <HistoryList history={history} />
         )}
 
         {(step === 'reframe' || step === 'belief') && (

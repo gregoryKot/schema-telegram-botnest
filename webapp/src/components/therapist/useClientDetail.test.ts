@@ -18,9 +18,11 @@ vi.mock('../../api', () => ({
     saveConceptualization: vi.fn(), renameClient: vi.fn(),
     updateSessionInfo: vi.fn(), requestYsq: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const makeClient = (o: Partial<Record<string, unknown>> = {}) => ({
@@ -46,7 +48,6 @@ async function openedHook(clientOverrides: Partial<Record<string, unknown>> = {}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
   mockApi.getTherapistNotes.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(null);
@@ -94,6 +95,23 @@ describe('openClient', () => {
     expect(result.current.notes).toEqual([]);
     expect(result.current.tabLoading).toBe(false);
   });
+  // РЕГРЕССИЯ (check-silent-catch): раньше .catch(() => []) глотал отказ
+  // молча — [] неотличимо от «у клиента правда нет заметок», и терапевт не
+  // мог понять, что данные не загрузились. Теперь отказ уходит в
+  // reportClientError, оставляя фолбэк-поведение (не роняя остальные вкладки).
+  it('при отказе источника шлёт reportClientError с его именем, не показывая пользователю ошибку', async () => {
+    mockApi.getTherapistNotes.mockRejectedValue(new Error('boom'));
+    await openedHook();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0]).toMatchObject({
+      section: 'therapist.clientDetail',
+      message: expect.stringContaining('заметки'),
+    });
+  });
+  it('при успехе всех источников reportClientError не вызывается', async () => {
+    await openedHook();
+    expect(mockReport).not.toHaveBeenCalled();
+  });
   it('игнорирует устаревший ответ, если за это время открыли другого клиента (защита от гонки)', async () => {
     let resolveFirst!: (v: unknown[]) => void;
     mockApi.getTherapyTasksForClient.mockImplementationOnce(() => new Promise(res => { resolveFirst = res; }));
@@ -118,15 +136,34 @@ describe('openClient', () => {
 });
 
 // ── Удаление клиента ─────────────────────────────────────────────────────────
+// Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog
+// (рендерится в ClientHeader). requestDeleteClient открывает подтверждение
+// (confirmingDelete=true), deleteClient — сама операция (вызывается диалогом
+// на «Удалить»), cancelDeleteClient — отмена без обращения к api.
+describe('requestDeleteClient / cancelDeleteClient', () => {
+  it('ничего не делает без выбранного клиента', () => {
+    const { result } = setup();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+  });
+  it('с выбранным клиентом — открывает подтверждение', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(true);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+  it('отмена закрывает подтверждение без обращения к api', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    act(() => { result.current.cancelDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+});
+
 describe('deleteClient', () => {
   it('ничего не делает без выбранного клиента', async () => {
     const { result } = setup();
-    await act(async () => { await result.current.deleteClient(); });
-    expect(mockApi.removeClient).not.toHaveBeenCalled();
-  });
-  it('ничего не делает, если пользователь отменил confirm', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const { result } = await openedHook();
     await act(async () => { await result.current.deleteClient(); });
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });

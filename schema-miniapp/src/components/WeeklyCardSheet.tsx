@@ -24,7 +24,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
     api
       .getStreak()
       .then((s) => setStreak(s.currentStreak))
-      .catch(() => {});
+      .catch((e) => console.error('getStreak failed', e));
   }, []);
 
   const draw = useCallback(

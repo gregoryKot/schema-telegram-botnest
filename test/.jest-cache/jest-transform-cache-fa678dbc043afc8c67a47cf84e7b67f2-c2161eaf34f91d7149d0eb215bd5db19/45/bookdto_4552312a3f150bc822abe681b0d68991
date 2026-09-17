@@ -1,0 +1,96 @@
+9ead0a6d9a6bd6b11b7a9c0a99a4c6e8
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookDto = void 0;
+const client_1 = require("@prisma/client");
+const class_validator_1 = require("class-validator");
+/**
+ * Тело POST /api/booking/book — первый DTO с рантайм-валидацией
+ * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Публичный анонимный
+ * эндпоинт с деньгами — приоритетный кандидат: до этого тело
+ * проверялось только compile-time интерфейсом.
+ */
+class BookDto {
+    startsAt;
+    durationMin;
+    type;
+    clientName;
+    clientContact;
+    message;
+    clientTelegramId;
+    // Атрибуция лида: страница + referrer (собирает фронт, leadSource()).
+    source;
+    returning;
+    acceptedOffer;
+    // Honeypot: людям поле не показывается; боты его заполняют.
+    website;
+}
+exports.BookDto = BookDto;
+__decorate([
+    (0, class_validator_1.IsISO8601)(),
+    __metadata("design:type", String)
+], BookDto.prototype, "startsAt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(15),
+    (0, class_validator_1.Max)(180),
+    __metadata("design:type", Number)
+], BookDto.prototype, "durationMin", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.SessionType),
+    __metadata("design:type", typeof (_a = typeof client_1.SessionType !== "undefined" && client_1.SessionType) === "function" ? _a : Object)
+], BookDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(2, 100),
+    __metadata("design:type", String)
+], BookDto.prototype, "clientName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(3, 200),
+    __metadata("design:type", String)
+], BookDto.prototype, "clientContact", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(2000),
+    __metadata("design:type", String)
+], BookDto.prototype, "message", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], BookDto.prototype, "clientTelegramId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(200),
+    __metadata("design:type", String)
+], BookDto.prototype, "source", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], BookDto.prototype, "returning", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], BookDto.prototype, "acceptedOffer", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BookDto.prototype, "website", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29rLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7O0FBQUEsMkNBQTZDO0FBQzdDLHFEQVd5QjtBQUV6Qjs7Ozs7R0FLRztBQUNILE1BQWEsT0FBTztJQUVsQixRQUFRLENBQVU7SUFNbEIsV0FBVyxDQUFVO0lBSXJCLElBQUksQ0FBZTtJQUluQixVQUFVLENBQVU7SUFJcEIsYUFBYSxDQUFVO0lBS3ZCLE9BQU8sQ0FBVTtJQUlqQixnQkFBZ0IsQ0FBVTtJQUUxQixzRUFBc0U7SUFJdEUsTUFBTSxDQUFVO0lBSWhCLFNBQVMsQ0FBVztJQUdwQixhQUFhLENBQVc7SUFFeEIsNERBQTREO0lBRzVELE9BQU8sQ0FBVTtDQUNsQjtBQWhERCwwQkFnREM7QUE5Q0M7SUFEQyxJQUFBLDJCQUFTLEdBQUU7O3lDQUNNO0FBTWxCO0lBSkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx1QkFBSyxHQUFFO0lBQ1AsSUFBQSxxQkFBRyxFQUFDLEVBQUUsQ0FBQztJQUNQLElBQUEscUJBQUcsRUFBQyxHQUFHLENBQUM7OzRDQUNZO0FBSXJCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx3QkFBTSxFQUFDLG9CQUFXLENBQUM7a0RBQ2Isb0JBQVcsb0JBQVgsb0JBQVc7cUNBQUM7QUFJbkI7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLHdCQUFNLEVBQUMsQ0FBQyxFQUFFLEdBQUcsQ0FBQzs7MkNBQ0s7QUFJcEI7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLHdCQUFNLEVBQUMsQ0FBQyxFQUFFLEdBQUcsQ0FBQzs7OENBQ1E7QUFLdkI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsSUFBSSxDQUFDOzt3Q0FDQztBQUlqQjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsdUJBQUssR0FBRTs7aURBQ2tCO0FBTTFCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLEdBQUcsQ0FBQzs7dUNBQ0M7QUFJaEI7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEdBQUU7OzBDQUNRO0FBR3BCO0lBREMsSUFBQSwyQkFBUyxHQUFFOzs4Q0FDWTtBQUt4QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7d0NBQ00iLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29rLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBTZXNzaW9uVHlwZSB9IGZyb20gJ0BwcmlzbWEvY2xpZW50JztcbmltcG9ydCB7XG4gIElzQm9vbGVhbixcbiAgSXNFbnVtLFxuICBJc0ludCxcbiAgSXNJU084NjAxLFxuICBJc09wdGlvbmFsLFxuICBJc1N0cmluZyxcbiAgTGVuZ3RoLFxuICBNYXgsXG4gIE1heExlbmd0aCxcbiAgTWluLFxufSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuXG4vKipcbiAqINCi0LXQu9C+IFBPU1QgL2FwaS9ib29raW5nL2Jvb2sg4oCUINC/0LXRgNCy0YvQuSBEVE8g0YEg0YDQsNC90YLQsNC50Lwt0LLQsNC70LjQtNCw0YbQuNC10LlcbiAqICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+IOKEljYgQ0xBVURFLm1kKS4g0J/Rg9Cx0LvQuNGH0L3Ri9C5INCw0L3QvtC90LjQvNC90YvQuVxuICog0Y3QvdC00L/QvtC40L3RgiDRgSDQtNC10L3RjNCz0LDQvNC4IOKAlCDQv9GA0LjQvtGA0LjRgtC10YLQvdGL0Lkg0LrQsNC90LTQuNC00LDRgjog0LTQviDRjdGC0L7Qs9C+INGC0LXQu9C+XG4gKiDQv9GA0L7QstC10YDRj9C70L7RgdGMINGC0L7Qu9GM0LrQviBjb21waWxlLXRpbWUg0LjQvdGC0LXRgNGE0LXQudGB0L7QvC5cbiAqL1xuZXhwb3J0IGNsYXNzIEJvb2tEdG8ge1xuICBASXNJU084NjAxKClcbiAgc3RhcnRzQXQhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbnQoKVxuICBATWluKDE1KVxuICBATWF4KDE4MClcbiAgZHVyYXRpb25NaW4/OiBudW1iZXI7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNFbnVtKFNlc3Npb25UeXBlKVxuICB0eXBlPzogU2Vzc2lvblR5cGU7XG5cbiAgQElzU3RyaW5nKClcbiAgQExlbmd0aCgyLCAxMDApXG4gIGNsaWVudE5hbWUhOiBzdHJpbmc7XG5cbiAgQElzU3RyaW5nKClcbiAgQExlbmd0aCgzLCAyMDApXG4gIGNsaWVudENvbnRhY3QhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKDIwMDApXG4gIG1lc3NhZ2U/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbnQoKVxuICBjbGllbnRUZWxlZ3JhbUlkPzogbnVtYmVyO1xuXG4gIC8vINCQ0YLRgNC40LHRg9GG0LjRjyDQu9C40LTQsDog0YHRgtGA0LDQvdC40YbQsCArIHJlZmVycmVyICjRgdC+0LHQuNGA0LDQtdGCINGE0YDQvtC90YIsIGxlYWRTb3VyY2UoKSkuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aCgyMDApXG4gIHNvdXJjZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0Jvb2xlYW4oKVxuICByZXR1cm5pbmc/OiBib29sZWFuO1xuXG4gIEBJc0Jvb2xlYW4oKVxuICBhY2NlcHRlZE9mZmVyITogYm9vbGVhbjtcblxuICAvLyBIb25leXBvdDog0LvRjtC00Y/QvCDQv9C+0LvQtSDQvdC1INC/0L7QutCw0LfRi9Cy0LDQtdGC0YHRjzsg0LHQvtGC0Ysg0LXQs9C+INC30LDQv9C+0LvQvdGP0Y7Rgi5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICB3ZWJzaXRlPzogc3RyaW5nO1xufVxuIl0sInZlcnNpb24iOjN9

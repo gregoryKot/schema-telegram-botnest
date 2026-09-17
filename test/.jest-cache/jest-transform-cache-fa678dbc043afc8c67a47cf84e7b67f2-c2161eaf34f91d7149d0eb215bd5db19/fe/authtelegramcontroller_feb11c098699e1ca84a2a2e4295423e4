@@ -1,0 +1,219 @@
+539299a1f64e46b5ff1c4f3d73c110a4
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var AuthTelegramController_1;
+var _a, _b, _c, _d, _e, _f, _g, _h;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthTelegramController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const config_1 = require("@nestjs/config");
+const jwt_guard_1 = require("./jwt.guard");
+const registry_1 = require("./providers/registry");
+const security_log_service_1 = require("./security-log.service");
+const auth_flow_service_1 = require("./auth-flow.service");
+const auth_http_util_1 = require("./auth-http.util");
+let AuthTelegramController = AuthTelegramController_1 = class AuthTelegramController {
+    config;
+    providers;
+    securityLog;
+    flow;
+    logger = new common_1.Logger(AuthTelegramController_1.name);
+    constructor(config, providers, securityLog, flow) {
+        this.config = config;
+        this.providers = providers;
+        this.securityLog = securityLog;
+        this.flow = flow;
+    }
+    // ─── Telegram Login Widget ────────────────────────────────────────────────
+    async telegramWidget(body, req, res) {
+        (0, auth_http_util_1.requireCsrf)(req, 'telegram/widget', this.securityLog);
+        const telegramHandler = this.providers.get('telegram');
+        if (!telegramHandler.verifyClientData)
+            throw new common_1.BadRequestException('Telegram provider does not support direct verification');
+        const identity = telegramHandler.verifyClientData(body);
+        // JWT-based link (inline widget inside the app) takes priority.
+        // Cookie-based link is used by the redirect flow: the user left the app
+        // to authenticate on oauth.telegram.org, so the access token is gone but
+        // the httpOnly tg_link_user cookie is still present.
+        let linkUserId = req.webUser?.userId ?? null;
+        const tgLinkCookie = (0, auth_http_util_1.getCookie)(req, 'tg_link_user');
+        if (!linkUserId && tgLinkCookie) {
+            try {
+                linkUserId = BigInt(tgLinkCookie);
+            }
+            catch {
+                /* ignore */
+            }
+        }
+        res.clearCookie('tg_link_user', { path: '/api/auth' });
+        const outcome = await this.flow.signInOrLinkOrMerge('telegram', identity, {
+            linkUserId: linkUserId ? BigInt(String(linkUserId)) : null,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        });
+        if (outcome.kind === 'merge') {
+            return {
+                merge: true,
+                mergeToken: outcome.mergeToken,
+                summary: outcome.summary,
+                otherDisplay: outcome.otherDisplay,
+                provider: 'telegram',
+            };
+        }
+        if (outcome.kind === 'totp_challenge') {
+            return { totp: true, challengeToken: outcome.challengeToken };
+        }
+        res.cookie(auth_http_util_1.REFRESH_COOKIE, outcome.tokens.refreshToken, (0, auth_http_util_1.cookieOptions)(30 * 24 * 3600));
+        return {
+            accessToken: outcome.tokens.accessToken,
+            expiresIn: outcome.tokens.expiresIn,
+        };
+    }
+    // ─── Telegram Login Widget — redirect flow ───────────────────────────────
+    // Full-page redirect to oauth.telegram.org (no iframe, no domain setup in
+    // BotFather required). User authorizes in Telegram's own page, then comes
+    // back to widget-redirect with the signed user data as query params.
+    telegramRedirect(req, res) {
+        const botToken = this.config.getOrThrow('BOT_TOKEN').trim();
+        const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
+        const frontendBase = this.config
+            .getOrThrow('WEBAPP_URL')
+            .replace(/\/$/, '');
+        // Return to the frontend SPA page that reads the hash fragment.
+        // oauth.telegram.org puts auth data in #tgAuthResult=BASE64URL_JSON (hash fragment),
+        // which browsers never send to the server. The frontend page reads window.location.hash
+        // and calls /api/auth/telegram/widget directly.
+        const returnTo = `${frontendBase}/auth/telegram`;
+        // Persist linkUserId in a short-lived cookie so we can restore it after redirect
+        const linkUserId = req.webUser?.userId?.toString() ?? null;
+        if (linkUserId) {
+            res.cookie('tg_link_user', linkUserId, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 10 * 60 * 1000,
+                path: '/api/auth',
+            });
+        }
+        const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(frontendBase)}&return_to=${encodeURIComponent(returnTo)}&request_access=write&lang=ru&embed=0`;
+        res.redirect(url);
+    }
+    async telegramWidgetRedirect(query, req, res) {
+        const frontendBase = this.config.getOrThrow('WEBAPP_URL');
+        // oauth.telegram.org/auth?embed=0 sends auth data in the URL *hash fragment*
+        // (#tgAuthResult=BASE64URL_JSON), which browsers never send to the server.
+        // When we receive a request with no query params, serve a tiny HTML trampoline
+        // that reads the hash client-side and bounces back with the data as a query param.
+        if (Object.keys(query).length === 0) {
+            res.type('text/html').send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Вход через Telegram...</title></head><body>
+<script>
+try {
+  var h = window.location.hash.slice(1);
+  var p = new URLSearchParams(h);
+  var r = p.get('tgAuthResult');
+  if (r) {
+    window.location.replace(window.location.pathname + '?tgAuthResult=' + encodeURIComponent(r));
+  } else {
+    window.location.replace('/auth/error?reason=telegram_no_data');
+  }
+} catch(e) {
+  window.location.replace('/auth/error?reason=telegram_fragment_error');
+}
+</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px">Загрузка...</p>
+</body></html>`);
+            return;
+        }
+        try {
+            const telegramHandler = this.providers.get('telegram');
+            if (!telegramHandler.verifyClientData)
+                throw new common_1.BadRequestException('Telegram provider missing');
+            // oauth.telegram.org/auth?embed=0 may also return data as a query param:
+            //   ?tgAuthResult=BASE64URL_JSON  (wrapped format)
+            //   ?id=...&hash=...             (flat Login Widget format)
+            // Detect and normalise to plain fields before passing to verifyClientData.
+            let fields = { ...query };
+            if (query['tgAuthResult']) {
+                try {
+                    const decoded = JSON.parse(Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'));
+                    fields = {};
+                    for (const [k, v] of Object.entries(decoded)) {
+                        if (v != null)
+                            fields[k] = String(v);
+                    }
+                    this.logger.debug(`telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`);
+                }
+                catch (e) {
+                    throw new common_1.UnauthorizedException(`Failed to decode tgAuthResult: ${e.message}`);
+                }
+            }
+            const identity = telegramHandler.verifyClientData(fields);
+            const savedLinkUserId = (0, auth_http_util_1.getCookie)(req, 'tg_link_user') ?? null;
+            res.clearCookie('tg_link_user', { path: '/api/auth' });
+            const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
+            const outcome = await this.flow.signInOrLinkOrMerge('telegram', identity, {
+                linkUserId,
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            });
+            this.flow.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
+        }
+        catch (err) {
+            const msg = err.message ?? 'unknown';
+            this.logger.error(`telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`);
+            res.redirect(`${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`);
+        }
+    }
+};
+exports.AuthTelegramController = AuthTelegramController;
+__decorate([
+    (0, common_1.Post)('telegram/widget'),
+    (0, common_1.UseGuards)(jwt_guard_1.OptionalJwtGuard),
+    (0, throttler_1.Throttle)({
+        short: { limit: 5, ttl: 60_000 },
+        long: { limit: 30, ttl: 3_600_000 },
+    }),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_e = typeof Record !== "undefined" && Record) === "function" ? _e : Object, Object, Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], AuthTelegramController.prototype, "telegramWidget", null);
+__decorate([
+    (0, common_1.Get)('telegram/redirect'),
+    (0, common_1.UseGuards)(jwt_guard_1.OptionalJwtGuard),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthTelegramController.prototype, "telegramRedirect", null);
+__decorate([
+    (0, common_1.Get)('telegram/widget-redirect'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_g = typeof Record !== "undefined" && Record) === "function" ? _g : Object, Object, Object]),
+    __metadata("design:returntype", typeof (_h = typeof Promise !== "undefined" && Promise) === "function" ? _h : Object)
+], AuthTelegramController.prototype, "telegramWidgetRedirect", null);
+exports.AuthTelegramController = AuthTelegramController = AuthTelegramController_1 = __decorate([
+    (0, common_1.Controller)('api/auth'),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object, typeof (_b = typeof registry_1.AuthProviderRegistry !== "undefined" && registry_1.AuthProviderRegistry) === "function" ? _b : Object, typeof (_c = typeof security_log_service_1.SecurityLogService !== "undefined" && security_log_service_1.SecurityLogService) === "function" ? _c : Object, typeof (_d = typeof auth_flow_service_1.AuthFlowService !== "undefined" && auth_flow_service_1.AuthFlowService) === "function" ? _d : Object])
+], AuthTelegramController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9hdXRoLXRlbGVncmFtLmNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0Fhd0I7QUFDeEIsaURBQTZDO0FBQzdDLDJDQUErQztBQUMvQywyQ0FBK0M7QUFDL0MsbURBQTREO0FBQzVELGlFQUE0RDtBQUU1RCwyREFBc0Q7QUFDdEQscURBSzBCO0FBR25CLElBQU0sc0JBQXNCLDhCQUE1QixNQUFNLHNCQUFzQjtJQUlkO0lBQ0E7SUFDQTtJQUNBO0lBTkYsTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLHdCQUFzQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBRWxFLFlBQ21CLE1BQXFCLEVBQ3JCLFNBQStCLEVBQy9CLFdBQStCLEVBQy9CLElBQXFCO1FBSHJCLFdBQU0sR0FBTixNQUFNLENBQWU7UUFDckIsY0FBUyxHQUFULFNBQVMsQ0FBc0I7UUFDL0IsZ0JBQVcsR0FBWCxXQUFXLENBQW9CO1FBQy9CLFNBQUksR0FBSixJQUFJLENBQWlCO0lBQ3JDLENBQUM7SUFFSiw2RUFBNkU7SUFTdkUsQUFBTixLQUFLLENBQUMsY0FBYyxDQUVWLElBQTRCLEVBQzdCLEdBQVksRUFDUyxHQUFhO1FBWXpDLElBQUEsNEJBQVcsRUFBQyxHQUFHLEVBQUUsaUJBQWlCLEVBQUUsSUFBSSxDQUFDLFdBQVcsQ0FBQyxDQUFDO1FBQ3RELE1BQU0sZUFBZSxHQUFHLElBQUksQ0FBQyxTQUFTLENBQUMsR0FBRyxDQUFDLFVBQVUsQ0FBQyxDQUFDO1FBQ3ZELElBQUksQ0FBQyxlQUFlLENBQUMsZ0JBQWdCO1lBQ25DLE1BQU0sSUFBSSw0QkFBbUIsQ0FDM0Isd0RBQXdELENBQ3pELENBQUM7UUFDSixNQUFNLFFBQVEsR0FBRyxlQUFlLENBQUMsZ0JBQWdCLENBQUMsSUFBSSxDQUFDLENBQUM7UUFFeEQsZ0VBQWdFO1FBQ2hFLHdFQUF3RTtRQUN4RSx5RUFBeUU7UUFDekUscURBQXFEO1FBQ3JE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R0FBRSxDQUFBO0lBQ0wsV0FBQSxJQUFBLFlBQUcsRUFBQyxFQUFFLFdBQVcsRUFBRSxJQUFJLEVBQUUsQ0FBQyxDQUFBOzt5REFGYixNQUFNLG9CQUFOLE1BQU07d0RBR25CLE9BQU8sb0JBQVAsT0FBTzs0REE2RFQ7QUFTRDtJQUZDLElBQUEsWUFBRyxFQUFDLG1CQUFtQixDQUFDO0lBQ3hCLElBQUEsa0JBQVMsRUFBQyw0QkFBZ0IsQ0FBQztJQUNWLFdBQUEsSUFBQSxZQUFHLEdBQUUsQ0FBQTtJQUFnQixXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7Ozs7OERBd0IzQztBQUdLO0lBREwsSUFBQSxZQUFHLEVBQUMsMEJBQTBCLENBQUM7SUFFN0IsV0FBQSxJQUFBLGNBQUssR0FBRSxDQUFBO0lBQ1AsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBO0lBQ0wsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBOzt5REFGVSxNQUFNLG9CQUFOLE1BQU07d0RBR3JCLE9BQU8sb0JBQVAsT0FBTztvRUFtRlQ7aUNBaE5VLHNCQUFzQjtJQURsQyxJQUFBLG1CQUFVLEVBQUMsVUFBVSxDQUFDO3lEQUtNLHNCQUFhLG9CQUFiLHNCQUFhLG9EQUNWLCtCQUFvQixvQkFBcEIsK0JBQW9CLG9EQUNsQix5Q0FBa0Isb0JBQWxCLHlDQUFrQixvREFDekIsbUNBQWUsb0JBQWYsbUNBQWU7R0FQN0Isc0JBQXNCLENBaU5sQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hdXRoL2F1dGgtdGVsZWdyYW0uY29udHJvbGxlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBDb250cm9sbGVyLFxuICBHZXQsXG4gIFBvc3QsXG4gIEJvZHksXG4gIFJlcSxcbiAgUmVzLFxuICBRdWVyeSxcbiAgVW5hdXRob3JpemVkRXhjZXB0aW9uLFxuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxuICBMb2dnZXIsXG4gIFVzZUd1YXJkcyxcbiAgSHR0cENvZGUsXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgQ29uZmlnU2VydmljZSB9IGZyb20gJ0BuZXN0anMvY29uZmlnJztcbmltcG9ydCB7IE9wdGlvbmFsSnd0R3VhcmQgfSBmcm9tICcuL2p3dC5ndWFyZCc7XG5pbXBvcnQgeyBBdXRoUHJvdmlkZXJSZWdpc3RyeSB9IGZyb20gJy4vcHJvdmlkZXJzL3JlZ2lzdHJ5JztcbmltcG9ydCB7IFNlY3VyaXR5TG9nU2VydmljZSB9IGZyb20gJy4vc2VjdXJpdHktbG9nLnNlcnZpY2UnO1xuaW1wb3J0IHR5cGUgeyBSZXF1ZXN0LCBSZXNwb25zZSB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgQXV0aEZsb3dTZXJ2aWNlIH0gZnJvbSAnLi9hdXRoLWZsb3cuc2VydmljZSc7XG5pbXBvcnQge1xuICBSRUZSRVNIX0NPT0tJRSxcbiAgY29va2llT3B0aW9ucyxcbiAgZ2V0Q29va2llLFxuICByZXF1aXJlQ3NyZixcbn0gZnJvbSAnLi9hdXRoLWh0dHAudXRpbCc7XG5cbkBDb250cm9sbGVyKCdhcGkvYXV0aCcpXG5leHBvcnQgY2xhc3MgQXV0aFRlbGVncmFtQ29udHJvbGxlciB7XG4gIHByaXZhdGUgcmVhZG9ubHkgbG9nZ2VyID0gbmV3IExvZ2dlcihBdXRoVGVsZWdyYW1Db250cm9sbGVyLm5hbWUpO1xuXG4gIGNvbnN0cnVjdG9yKFxuICAgIHByaXZhdGUgcmVhZG9ubHkgY29uZmlnOiBDb25maWdTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgcHJvdmlkZXJzOiBBdXRoUHJvdmlkZXJSZWdpc3RyeSxcbiAgICBwcml2YXRlIHJlYWRvbmx5IHNlY3VyaXR5TG9nOiBTZWN1cml0eUxvZ1NlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSBmbG93OiBBdXRoRmxvd1NlcnZpY2UsXG4gICkge31cblxuICAvLyDilIDilIDilIAgVGVsZWdyYW0gTG9naW4gV2lkZ2V0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIEBQb3N0KCd0ZWxlZ3JhbS93aWRnZXQnKVxuICBAVXNlR3VhcmRzKE9wdGlvbmFsSnd0R3VhcmQpXG4gIEBUaHJvdHRsZSh7XG4gICAgc2hvcnQ6IHsgbGltaXQ6IDUsIHR0bDogNjBfMDAwIH0sXG4gICAgbG9uZzogeyBsaW1pdDogMzAsIHR0bDogM182MDBfMDAwIH0sXG4gIH0pXG4gIEBIdHRwQ29kZSgyMDApXG4gIGFzeW5jIHRlbGVncmFtV2lkZ2V0KFxuICAgIC8vINCd0LUgRFRPOiDQv9C+0LTQv9C40YHQsNC90L3Ri9C5IFRlbGVncmFtLXBheWxvYWQsIHdoaXRlbGlzdCDRgdGA0LXQttC10YIg0L/QvtC70Y8g0Lgg0YHQu9C+0LzQsNC10YIgaGFzaC3QstC10YDQuNGE0LjQutCw0YbQuNGOLlxuICAgIEBCb2R5KCkgYm9keTogUmVjb3JkPHN0cmluZywgc3RyaW5nPixcbiAgICBAUmVxKCkgcmVxOiBSZXF1ZXN0LFxuICAgIEBSZXMoeyBwYXNzdGhyb3VnaDogdHJ1ZSB9KSByZXM6IFJlc3BvbnNlLFxuICApOiBQcm9taXNlPFxuICAgIHwge1xuICAgICAgICBtZXJnZTogdHJ1ZTtcbiAgICAgICAgbWVyZ2VUb2tlbjogc3RyaW5nO1xuICAgICAgICBzdW1tYXJ5OiBSZWNvcmQ8c3RyaW5nLCBudW1iZXI+O1xuICAgICAgICBvdGhlckRpc3BsYXk6IHN0cmluZyB8IG51bGw7XG4gICAgICAgIHByb3ZpZGVyOiBzdHJpbmc7XG4gICAgICB9XG4gICAgfCB7IHRvdHA6IHRydWU7IGNoYWxsZW5nZVRva2VuOiBzdHJpbmcgfVxuICAgIHwgeyBhY2Nlc3NUb2tlbjogc3RyaW5nOyBleHBpcmVzSW46IG51bWJlciB9XG4gID4ge1xuICAgIHJlcXVpcmVDc3JmKHJlcSwgJ3RlbGVncmFtL3dpZGdldCcsIHRoaXMuc2VjdXJpdHlMb2cpO1xuICAgIGNvbnN0IHRlbGVncmFtSGFuZGxlciA9IHRoaXMucHJvdmlkZXJzLmdldCgndGVsZWdyYW0nKTtcbiAgICBpZiAoIXRlbGVncmFtSGFuZGxlci52ZXJpZnlDbGllbnREYXRhKVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oXG4gICAgICAgICdUZWxlZ3JhbSBwcm92aWRlciBkb2VzIG5vdCBzdXBwb3J0IGRpcmVjdCB2ZXJpZmljYXRpb24nLFxuICAgICAgKTtcbiAgICBjb25zdCBpZGVudGl0eSA9IHRlbGVncmFtSGFuZGxlci52ZXJpZnlDbGllbnREYXRhKGJvZHkpO1xuXG4gICAgLy8gSldULWJhc2VkIGxpbmsgKGlubGluZSB3aWRnZXQgaW5zaWRlIHRoZSBhcHApIHRha2VzIHByaW9yaXR5LlxuICAgIC8vIENvb2tpZS1iYXNlZCBsaW5rIGlzIHVzZWQgYnkgdGhlIHJlZGlyZWN0IGZsb3c6IHRoZSB1c2VyIGxlZnQgdGhlIGFwcFxuICAgIC8vIHRvIGF1dGhlbnRpY2F0ZSBvbiBvYXV0aC50ZWxlZ3JhbS5vcmcsIHNvIHRoZSBhY2Nlc3MgdG9rZW4gaXMgZ29uZSBidXRcbiAgICAvLyB0aGUgaHR0cE9ubHkgdGdfbGlua191c2VyIGNvb2tpZSBpcyBzdGlsbCBwcmVzZW50LlxuICAgIGxldCBsaW5rVXNlcklkID0gcmVxLndlYlVzZXI/LnVzZXJJZCA/PyBudWxsO1xuICAgIGNvbnN0IHRnTGlua0Nvb2tpZSA9IGdldENvb2tpZShyZXEsICd0Z19saW5rX3VzZXInKTtcbiAgICBpZiAoIWxpbmtVc2VySWQgJiYgdGdMaW5rQ29va2llKSB7XG4gICAgICB0cnkge1xuICAgICAgICBsaW5rVXNlcklkID0gQmlnSW50KHRnTGlua0Nvb2tpZSk7XG4gICAgICB9IGNhdGNoIHtcbiAgICAgICAgLyogaWdub3JlICovXG4gICAgICB9XG4gICAgfVxuICAgIHJlcy5jbGVhckNvb2tpZSgndGdfbGlua191c2VyJywgeyBwYXRoOiAnL2FwaS9hdXRoJyB9KTtcblxuICAgIGNvbnN0IG91dGNvbWUgPSBhd2FpdCB0aGlzLmZsb3cuc2lnbkluT3JMaW5rT3JNZXJnZSgndGVsZWdyYW0nLCBpZGVudGl0eSwge1xuICAgICAgbGlua1VzZXJJZDogbGlua1VzZXJJZCA/IEJpZ0ludChTdHJpbmcobGlua1VzZXJJZCkpIDogbnVsbCxcbiAgICAgIGlwOiByZXEuaXAsXG4gICAgICB1c2VyQWdlbnQ6IHJlcS5oZWFkZXJzWyd1c2VyLWFnZW50J10sXG4gICAgfSk7XG5cbiAgICBpZiAob3V0Y29tZS5raW5kID09PSAnbWVyZ2UnKSB7XG4gICAgICByZXR1cm4ge1xuICAgICAgICBtZXJnZTogdHJ1ZSxcbiAgICAgICAgbWVyZ2VUb2tlbjogb3V0Y29tZS5tZXJnZVRva2VuLFxuICAgICAgICBzdW1tYXJ5OiBvdXRjb21lLnN1bW1hcnksXG4gICAgICAgIG90aGVyRGlzcGxheTogb3V0Y29tZS5vdGhlckRpc3BsYXksXG4gICAgICAgIHByb3ZpZGVyOiAndGVsZWdyYW0nLFxuICAgICAgfTtcbiAgICB9XG4gICAgaWYgKG91dGNvbWUua2luZCA9PT0gJ3RvdHBfY2hhbGxlbmdlJykge1xuICAgICAgcmV0dXJuIHsgdG90cDogdHJ1ZSwgY2hhbGxlbmdlVG9rZW46IG91dGNvbWUuY2hhbGxlbmdlVG9rZW4gfTtcbiAgICB9XG4gICAgcmVzLmNvb2tpZShcbiAgICAgIFJFRlJFU0hfQ09PS0lFLFxuICAgICAgb3V0Y29tZS50b2tlbnMucmVmcmVzaFRva2VuLFxuICAgICAgY29va2llT3B0aW9ucygzMCAqIDI0ICogMzYwMCksXG4gICAgKTtcbiAgICByZXR1cm4ge1xuICAgICAgYWNjZXNzVG9rZW46IG91dGNvbWUudG9rZW5zLmFjY2Vzc1Rva2VuLFxuICAgICAgZXhwaXJlc0luOiBvdXRjb21lLnRva2Vucy5leHBpcmVzSW4sXG4gICAgfTtcbiAgfVxuXG4gIC8vIOKUgOKUgOKUgCBUZWxlZ3JhbSBMb2dpbiBXaWRnZXQg4oCUIHJlZGlyZWN0IGZsb3cg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gIC8vIEZ1bGwtcGFnZSByZWRpcmVjdCB0byBvYXV0aC50ZWxlZ3JhbS5vcmcgKG5vIGlmcmFtZSwgbm8gZG9tYWluIHNldHVwIGluXG4gIC8vIEJvdEZhdGhlciByZXF1aXJlZCkuIFVzZXIgYXV0aG9yaXplcyBpbiBUZWxlZ3JhbSdzIG93biBwYWdlLCB0aGVuIGNvbWVzXG4gIC8vIGJhY2sgdG8gd2lkZ2V0LXJlZGlyZWN0IHdpdGggdGhlIHNpZ25lZCB1c2VyIGRhdGEgYXMgcXVlcnkgcGFyYW1zLlxuXG4gIEBHZXQoJ3RlbGVncmFtL3JlZGlyZWN0JylcbiAgQFVzZUd1YXJkcyhPcHRpb25hbEp3dEd1YXJkKVxuICB0ZWxlZ3JhbVJlZGlyZWN0KEBSZXEoKSByZXE6IFJlcXVlc3QsIEBSZXMoKSByZXM6IFJlc3BvbnNlKTogdm9pZCB7XG4gICAgY29uc3QgYm90VG9rZW4gPSB0aGlzLmNvbmZpZy5nZXRPclRocm93PHN0cmluZz4oJ0JPVF9UT0tFTicpLnRyaW0oKTtcbiAgICBjb25zdCBib3RJZCA9IGJvdFRva2VuLnNwbGl0KCc6JylbMF07IC8vIEJPVF9UT0tFTiBmb3JtYXQ6IDEyMzQ1Njc4OTpIQVNIXG4gICAgY29uc3QgZnJvbnRlbmRCYXNlID0gdGhpcy5jb25maWdcbiAgICAgIC5nZXRPclRocm93PHN0cmluZz4oJ1dFQkFQUF9VUkwnKVxuICAgICAgLnJlcGxhY2UoL1xcLyQvLCAnJyk7XG4gICAgLy8gUmV0dXJuIHRvIHRoZSBmcm9udGVuZCBTUEEgcGFnZSB0aGF0IHJlYWRzIHRoZSBoYXNoIGZyYWdtZW50LlxuICAgIC8vIG9hdXRoLnRlbGVncmFtLm9yZyBwdXRzIGF1dGggZGF0YSBpbiAjdGdBdXRoUmVzdWx0PUJBU0U2NFVSTF9KU09OIChoYXNoIGZyYWdtZW50KSxcbiAgICAvLyB3aGljaCBicm93c2VycyBuZXZlciBzZW5kIHRvIHRoZSBzZXJ2ZXIuIFRoZSBmcm9udGVuZCBwYWdlIHJlYWRzIHdpbmRvdy5sb2NhdGlvbi5oYXNoXG4gICAgLy8gYW5kIGNhbGxzIC9hcGkvYXV0aC90ZWxlZ3JhbS93aWRnZXQgZGlyZWN0bHkuXG4gICAgY29uc3QgcmV0dXJuVG8gPSBgJHtmcm9udGVuZEJhc2V9L2F1dGgvdGVsZWdyYW1gO1xuICAgIC8vIFBlcnNpc3QgbGlua1VzZXJJZCBpbiBhIHNob3J0LWxpdmVkIGNvb2tpZSBzbyB3ZSBjYW4gcmVzdG9yZSBpdCBhZnRlciByZWRpcmVjdFxuICAgIGNvbnN0IGxpbmtVc2VySWQgPSByZXEud2ViVXNlcj8udXNlcklkPy50b1N0cmluZygpID8/IG51bGw7XG4gICAgaWYgKGxpbmtVc2VySWQpIHtcbiAgICAgIHJlcy5jb29raWUoJ3RnX2xpbmtfdXNlcicsIGxpbmtVc2VySWQsIHtcbiAgICAgICAgaHR0cE9ubHk6IHRydWUsXG4gICAgICAgIHNlY3VyZTogdHJ1ZSxcbiAgICAgICAgc2FtZVNpdGU6ICdsYXgnLFxuICAgICAgICBtYXhBZ2U6IDEwICogNjAgKiAxMDAwLFxuICAgICAgICBwYXRoOiAnL2FwaS9hdXRoJyxcbiAgICAgIH0pO1xuICAgIH1cbiAgICBjb25zdCB1cmwgPSBgaHR0cHM6Ly9vYXV0aC50ZWxlZ3JhbS5vcmcvYXV0aD9ib3RfaWQ9JHtib3RJZH0mb3JpZ2luPSR7ZW5jb2RlVVJJQ29tcG9uZW50KGZyb250ZW5kQmFzZSl9JnJldHVybl90bz0ke2VuY29kZVVSSUNvbXBvbmVudChyZXR1cm5Ubyl9JnJlcXVlc3RfYWNjZXNzPXdyaXRlJmxhbmc9cnUmZW1iZWQ9MGA7XG4gICAgcmVzLnJlZGlyZWN0KHVybCk7XG4gIH1cblxuICBAR2V0KCd0ZWxlZ3JhbS93aWRnZXQtcmVkaXJlY3QnKVxuICBhc3luYyB0ZWxlZ3JhbVdpZGdldFJlZGlyZWN0KFxuICAgIEBRdWVyeSgpIHF1ZXJ5OiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+LFxuICAgIEBSZXEoKSByZXE6IFJlcXVlc3QsXG4gICAgQFJlcygpIHJlczogUmVzcG9uc2UsXG4gICk6IFByb21pc2U8dm9pZD4ge1xuICAgIGNvbnN0IGZyb250ZW5kQmFzZSA9IHRoaXMuY29uZmlnLmdldE9yVGhyb3c8c3RyaW5nPignV0VCQVBQX1VSTCcpO1xuXG4gICAgLy8gb2F1dGgudGVsZWdyYW0ub3JnL2F1dGg/ZW1iZWQ9MCBzZW5kcyBhdXRoIGRhdGEgaW4gdGhlIFVSTCAqaGFzaCBmcmFnbWVudCpcbiAgICAvLyAoI3RnQXV0aFJlc3VsdD1CQVNFNjRVUkxfSlNPTiksIHdoaWNoIGJyb3dzZXJzIG5ldmVyIHNlbmQgdG8gdGhlIHNlcnZlci5cbiAgICAvLyBXaGVuIHdlIHJlY2VpdmUgYSByZXF1ZXN0IHdpdGggbm8gcXVlcnkgcGFyYW1zLCBzZXJ2ZSBhIHRpbnkgSFRNTCB0cmFtcG9saW5lXG4gICAgLy8gdGhhdCByZWFkcyB0aGUgaGFzaCBjbGllbnQtc2lkZSBhbmQgYm91bmNlcyBiYWNrIHdpdGggdGhlIGRhdGEgYXMgYSBxdWVyeSBwYXJhbS5cbiAgICBpZiAoT2JqZWN0LmtleXMocXVlcnkpLmxlbmd0aCA9PT0gMCkge1xuICAgICAgcmVzLnR5cGUoJ3RleHQvaHRtbCcpLnNlbmQoYDwhRE9DVFlQRSBodG1sPlxuPGh0bWw+PGhlYWQ+PG1ldGEgY2hhcnNldD1cInV0Zi04XCI+PHRpdGxlPtCS0YXQvtC0INGH0LXRgNC10LcgVGVsZWdyYW0uLi48L3RpdGxlPjwvaGVhZD48Ym9keT5cbjxzY3JpcHQ+XG50cnkge1xuICB2YXIgaCA9IHdpbmRvdy5sb2NhdGlvbi5oYXNoLnNsaWNlKDEpO1xuICB2YXIgcCA9IG5ldyBVUkxTZWFyY2hQYXJhbXMoaCk7XG4gIHZhciByID0gcC5nZXQoJ3RnQXV0aFJlc3VsdCcpO1xuICBpZiAocikge1xuICAgIHdpbmRvdy5sb2NhdGlvbi5yZXBsYWNlKHdpbmRvdy5sb2NhdGlvbi5wYXRobmFtZSArICc/dGdBdXRoUmVzdWx0PScgKyBlbmNvZGVVUklDb21wb25lbnQocikpO1xuICB9IGVsc2Uge1xuICAgIHdpbmRvdy5sb2NhdGlvbi5yZXBsYWNlKCcvYXV0aC9lcnJvcj9yZWFzb249dGVsZWdyYW1fbm9fZGF0YScpO1xuICB9XG59IGNhdGNoKGUpIHtcbiAgd2luZG93LmxvY2F0aW9uLnJlcGxhY2UoJy9hdXRoL2Vycm9yP3JlYXNvbj10ZWxlZ3JhbV9mcmFnbWVudF9lcnJvcicpO1xufVxuPC9zY3JpcHQ+XG48cCBzdHlsZT1cImZvbnQtZmFtaWx5OnNhbnMtc2VyaWY7dGV4dC1hbGlnbjpjZW50ZXI7bWFyZ2luLXRvcDo0MHB4XCI+0JfQsNCz0YDRg9C30LrQsC4uLjwvcD5cbjwvYm9keT48L2h0bWw+YCk7XG4gICAgICByZXR1cm47XG4gICAgfVxuXG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IHRlbGVncmFtSGFuZGxlciA9IHRoaXMucHJvdmlkZXJzLmdldCgndGVsZWdyYW0nKTtcbiAgICAgIGlmICghdGVsZWdyYW1IYW5kbGVyLnZlcmlmeUNsaWVudERhdGEpXG4gICAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdUZWxlZ3JhbSBwcm92aWRlciBtaXNzaW5nJyk7XG5cbiAgICAgIC8vIG9hdXRoLnRlbGVncmFtLm9yZy9hdXRoP2VtYmVkPTAgbWF5IGFsc28gcmV0dXJuIGRhdGEgYXMgYSBxdWVyeSBwYXJhbTpcbiAgICAgIC8vICAgP3RnQXV0aFJlc3VsdD1CQVNFNjRVUkxfSlNPTiAgKHdyYXBwZWQgZm9ybWF0KVxuICAgICAgLy8gICA/aWQ9Li4uJmhhc2g9Li4uICAgICAgICAgICAgIChmbGF0IExvZ2luIFdpZGdldCBmb3JtYXQpXG4gICAgICAvLyBEZXRlY3QgYW5kIG5vcm1hbGlzZSB0byBwbGFpbiBmaWVsZHMgYmVmb3JlIHBhc3NpbmcgdG8gdmVyaWZ5Q2xpZW50RGF0YS5cbiAgICAgIGxldCBmaWVsZHM6IFJlY29yZDxzdHJpbmcsIHN0cmluZz4gPSB7IC4uLnF1ZXJ5IH07XG4gICAgICBpZiAocXVlcnlbJ3RnQXV0aFJlc3VsdCddKSB7XG4gICAgICAgIHRyeSB7XG4gICAgICAgICAgY29uc3QgZGVjb2RlZCA9IEpTT04ucGFyc2UoXG4gICAgICAgICAgICBCdWZmZXIuZnJvbShxdWVyeVsndGdBdXRoUmVzdWx0J10sICdiYXNlNjR1cmwnKS50b1N0cmluZygndXRmOCcpLFxuICAgICAgICAgICkgYXMgUmVjb3JkPHN0cmluZywgc3RyaW5nIHwgbnVtYmVyIHwgYm9vbGVhbiB8IG51bGw+O1xuICAgICAgICAgIGZpZWxkcyA9IHt9O1xuICAgICAgICAgIGZvciAoY29uc3QgW2ssIHZdIG9mIE9iamVjdC5lbnRyaWVzKGRlY29kZWQpKSB7XG4gICAgICAgICAgICBpZiAodiAhPSBudWxsKSBmaWVsZHNba10gPSBTdHJpbmcodik7XG4gICAgICAgICAgfVxuICAgICAgICAgIHRoaXMubG9nZ2VyLmRlYnVnKFxuICAgICAgICAgICAgYHRlbGVncmFtIHdpZGdldC1yZWRpcmVjdDogZGVjb2RlZCB0Z0F1dGhSZXN1bHQsIGlkPSR7ZmllbGRzWydpZCddfWAsXG4gICAgICAgICAgKTtcbiAgICAgICAgfSBjYXRjaCAoZSkge1xuICAgICAgICAgIHRocm93IG5ldyBVbmF1dGhvcml6ZWRFeGNlcHRpb24oXG4gICAgICAgICAgICBgRmFpbGVkIHRvIGRlY29kZSB0Z0F1dGhSZXN1bHQ6ICR7KGUgYXMgRXJyb3IpLm1lc3NhZ2V9YCxcbiAgICAgICAgICApO1xuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIGNvbnN0IGlkZW50aXR5ID0gdGVsZWdyYW1IYW5kbGVyLnZlcmlmeUNsaWVudERhdGEoZmllbGRzKTtcblxuICAgICAgY29uc3Qgc2F2ZWRMaW5rVXNlcklkID0gZ2V0Q29va2llKHJlcSwgJ3RnX2xpbmtfdXNlcicpID8/IG51bGw7XG4gICAgICByZXMuY2xlYXJDb29raWUoJ3RnX2xpbmtfdXNlcicsIHsgcGF0aDogJy9hcGkvYXV0aCcgfSk7XG4gICAgICBjb25zdCBsaW5rVXNlcklkID0gc2F2ZWRMaW5rVXNlcklkID8gQmlnSW50KHNhdmVkTGlua1VzZXJJZCkgOiBudWxsO1xuXG4gICAgICBjb25zdCBvdXRjb21lID0gYXdhaXQgdGhpcy5mbG93LnNpZ25Jbk9yTGlua09yTWVyZ2UoXG4gICAgICAgICd0ZWxlZ3JhbScsXG4gICAgICAgIGlkZW50aXR5LFxuICAgICAgICB7XG4gICAgICAgICAgbGlua1VzZXJJZCxcbiAgICAgICAgICBpcDogcmVxLmlwLFxuICAgICAgICAgIHVzZXJBZ2VudDogcmVxLmhlYWRlcnNbJ3VzZXItYWdlbnQnXSxcbiAgICAgICAgfSxcbiAgICAgICk7XG4gICAgICB0aGlzLmZsb3cuZmluaXNoT0F1dGhSZWRpcmVjdChvdXRjb21lLCAndGVsZWdyYW0nLCByZXMsIGZyb250ZW5kQmFzZSk7XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBjb25zdCBtc2cgPSAoZXJyIGFzIEVycm9yKS5tZXNzYWdlID8/ICd1bmtub3duJztcbiAgICAgIHRoaXMubG9nZ2VyLmVycm9yKFxuICAgICAgICBgdGVsZWdyYW0gd2lkZ2V0LXJlZGlyZWN0IGVycm9yOiAke21zZ30gfCBxdWVyeSBrZXlzPSR7SlNPTi5zdHJpbmdpZnkoT2JqZWN0LmtleXMocXVlcnkpKX1gLFxuICAgICAgKTtcbiAgICAgIHJlcy5yZWRpcmVjdChcbiAgICAgICAgYCR7ZnJvbnRlbmRCYXNlfS9hdXRoL2Vycm9yP3JlYXNvbj0ke2VuY29kZVVSSUNvbXBvbmVudChtc2cpfWAsXG4gICAgICApO1xuICAgIH1cbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

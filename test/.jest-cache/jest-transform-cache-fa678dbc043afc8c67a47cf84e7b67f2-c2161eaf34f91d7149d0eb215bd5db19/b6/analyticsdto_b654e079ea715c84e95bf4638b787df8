@@ -1,0 +1,45 @@
+de9c1e85639ca47effcc7137785f07d7
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HOME_SCREEN_SURFACE_SET = exports.HOME_SCREEN_ACTION_SET = exports.CUSTOMIZE_ENTRY_SET = exports.TODAY_BLOCK_SET = exports.ONBOARDING_STEP_SET = exports.WEB_BANNER_ID_SET = exports.TODAY_FOCUS_PRACTICE_SET = exports.CRISIS_SURFACE_SET = exports.SHARE_CARD_KIND_SET = exports.TrackEventDto = void 0;
+const class_validator_1 = require("class-validator");
+const analytics_constants_1 = require("../../analytics/analytics.constants");
+// DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
+// глобальный ValidationPipe whitelist). name — из allow-list; meta — опциональный
+// маленький объект без PII. Валидация конкретных полей meta (напр. kind) —
+// в сервисе/контроллере по событию, т.к. форма meta зависит от name.
+class TrackEventDto {
+    name;
+    meta;
+}
+exports.TrackEventDto = TrackEventDto;
+__decorate([
+    (0, class_validator_1.IsIn)(analytics_constants_1.ANALYTICS_EVENTS),
+    __metadata("design:type", String)
+], TrackEventDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsObject)(),
+    __metadata("design:type", typeof (_a = typeof Record !== "undefined" && Record) === "function" ? _a : Object)
+], TrackEventDto.prototype, "meta", void 0);
+// Допустимые значения meta для санитизации в контроллере (перед записью).
+exports.SHARE_CARD_KIND_SET = new Set(analytics_constants_1.SHARE_CARD_KINDS);
+exports.CRISIS_SURFACE_SET = new Set(analytics_constants_1.CRISIS_SURFACES);
+exports.TODAY_FOCUS_PRACTICE_SET = new Set(analytics_constants_1.TODAY_FOCUS_PRACTICES);
+exports.WEB_BANNER_ID_SET = new Set(analytics_constants_1.WEB_BANNER_IDS);
+exports.ONBOARDING_STEP_SET = new Set(analytics_constants_1.ONBOARDING_STEPS);
+exports.TODAY_BLOCK_SET = new Set(analytics_constants_1.TODAY_BLOCKS);
+exports.CUSTOMIZE_ENTRY_SET = new Set(analytics_constants_1.CUSTOMIZE_ENTRY_POINTS);
+exports.HOME_SCREEN_ACTION_SET = new Set(analytics_constants_1.HOME_SCREEN_ACTIONS);
+exports.HOME_SCREEN_SURFACE_SET = new Set(analytics_constants_1.HOME_SCREEN_SURFACES);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9hbmFseXRpY3MuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSxxREFBNkQ7QUFDN0QsNkVBVzZDO0FBRTdDLHdFQUF3RTtBQUN4RSxrRkFBa0Y7QUFDbEYsMkVBQTJFO0FBQzNFLHFFQUFxRTtBQUNyRSxNQUFhLGFBQWE7SUFFeEIsSUFBSSxDQUFVO0lBSWQsSUFBSSxDQUEyQjtDQUNoQztBQVBELHNDQU9DO0FBTEM7SUFEQyxJQUFBLHNCQUFJLEVBQUMsc0NBQWdCLENBQUM7OzJDQUNUO0FBSWQ7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7a0RBQ0osTUFBTSxvQkFBTixNQUFNOzJDQUFrQjtBQUdqQywwRUFBMEU7QUFDN0QsUUFBQSxtQkFBbUIsR0FBd0IsSUFBSSxHQUFHLENBQzdELHNDQUFnQixDQUNqQixDQUFDO0FBQ1csUUFBQSxrQkFBa0IsR0FBd0IsSUFBSSxHQUFHLENBQUMscUNBQWUsQ0FBQyxDQUFDO0FBQ25FLFFBQUEsd0JBQXdCLEdBQXdCLElBQUksR0FBRyxDQUNsRSwyQ0FBcUIsQ0FDdEIsQ0FBQztBQUNXLFFBQUEsaUJBQWlCLEdBQXdCLElBQUksR0FBRyxDQUFDLG9DQUFjLENBQUMsQ0FBQztBQUNqRSxRQUFBLG1CQUFtQixHQUF3QixJQUFJLEdBQUcsQ0FDN0Qsc0NBQWdCLENBQ2pCLENBQUM7QUFDVyxRQUFBLGVBQWUsR0FBd0IsSUFBSSxHQUFHLENBQUMsa0NBQVksQ0FBQyxDQUFDO0FBQzdELFFBQUEsbUJBQW1CLEdBQXdCLElBQUksR0FBRyxDQUM3RCw0Q0FBc0IsQ0FDdkIsQ0FBQztBQUNXLFFBQUEsc0JBQXNCLEdBQXdCLElBQUksR0FBRyxDQUNoRSx5Q0FBbUIsQ0FDcEIsQ0FBQztBQUNXLFFBQUEsdUJBQXVCLEdBQXdCLElBQUksR0FBRyxDQUNqRSwwQ0FBb0IsQ0FDckIsQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvZHRvL2FuYWx5dGljcy5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSXNJbiwgSXNPYmplY3QsIElzT3B0aW9uYWwgfSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuaW1wb3J0IHtcbiAgQU5BTFlUSUNTX0VWRU5UUyxcbiAgQ1JJU0lTX1NVUkZBQ0VTLFxuICBDVVNUT01JWkVfRU5UUllfUE9JTlRTLFxuICBIT01FX1NDUkVFTl9BQ1RJT05TLFxuICBIT01FX1NDUkVFTl9TVVJGQUNFUyxcbiAgT05CT0FSRElOR19TVEVQUyxcbiAgVE9EQVlfQkxPQ0tTLFxuICBTSEFSRV9DQVJEX0tJTkRTLFxuICBUT0RBWV9GT0NVU19QUkFDVElDRVMsXG4gIFdFQl9CQU5ORVJfSURTLFxufSBmcm9tICcuLi8uLi9hbmFseXRpY3MvYW5hbHl0aWNzLmNvbnN0YW50cyc7XG5cbi8vIERUTyDQtNC70Y8gUE9TVCAvYXBpL2V2ZW50ICjQv9GA0LDQstC40LvQviDihJY2OiDRgNCw0L3RgtCw0LnQvC3QstCw0LvQuNC00LDRhtC40Y8g0LTQtdC60L7RgNCw0YLQvtGA0LDQvNC4ICtcbi8vINCz0LvQvtCx0LDQu9GM0L3Ri9C5IFZhbGlkYXRpb25QaXBlIHdoaXRlbGlzdCkuIG5hbWUg4oCUINC40LcgYWxsb3ctbGlzdDsgbWV0YSDigJQg0L7Qv9GG0LjQvtC90LDQu9GM0L3Ri9C5XG4vLyDQvNCw0LvQtdC90YzQutC40Lkg0L7QsdGK0LXQutGCINCx0LXQtyBQSUkuINCS0LDQu9C40LTQsNGG0LjRjyDQutC+0L3QutGA0LXRgtC90YvRhSDQv9C+0LvQtdC5IG1ldGEgKNC90LDQv9GALiBraW5kKSDigJRcbi8vINCyINGB0LXRgNCy0LjRgdC1L9C60L7QvdGC0YDQvtC70LvQtdGA0LUg0L/QviDRgdC+0LHRi9GC0LjRjiwg0YIu0LouINGE0L7RgNC80LAgbWV0YSDQt9Cw0LLQuNGB0LjRgiDQvtGCIG5hbWUuXG5leHBvcnQgY2xhc3MgVHJhY2tFdmVudER0byB7XG4gIEBJc0luKEFOQUxZVElDU19FVkVOVFMpXG4gIG5hbWUhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNPYmplY3QoKVxuICBtZXRhPzogUmVjb3JkPHN0cmluZywgdW5rbm93bj47XG59XG5cbi8vINCU0L7Qv9GD0YHRgtC40LzRi9C1INC30L3QsNGH0LXQvdC40Y8gbWV0YSDQtNC70Y8g0YHQsNC90LjRgtC40LfQsNGG0LjQuCDQsiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1ICjQv9C10YDQtdC0INC30LDQv9C40YHRjNGOKS5cbmV4cG9ydCBjb25zdCBTSEFSRV9DQVJEX0tJTkRfU0VUOiBSZWFkb25seVNldDxzdHJpbmc+ID0gbmV3IFNldChcbiAgU0hBUkVfQ0FSRF9LSU5EUyxcbik7XG5leHBvcnQgY29uc3QgQ1JJU0lTX1NVUkZBQ0VfU0VUOiBSZWFkb25seVNldDxzdHJpbmc+ID0gbmV3IFNldChDUklTSVNfU1VSRkFDRVMpO1xuZXhwb3J0IGNvbnN0IFRPREFZX0ZPQ1VTX1BSQUNUSUNFX1NFVDogUmVhZG9ubHlTZXQ8c3RyaW5nPiA9IG5ldyBTZXQoXG4gIFRPREFZX0ZPQ1VTX1BSQUNUSUNFUyxcbik7XG5leHBvcnQgY29uc3QgV0VCX0JBTk5FUl9JRF9TRVQ6IFJlYWRvbmx5U2V0PHN0cmluZz4gPSBuZXcgU2V0KFdFQl9CQU5ORVJfSURTKTtcbmV4cG9ydCBjb25zdCBPTkJPQVJESU5HX1NURVBfU0VUOiBSZWFkb25seVNldDxzdHJpbmc+ID0gbmV3IFNldChcbiAgT05CT0FSRElOR19TVEVQUyxcbik7XG5leHBvcnQgY29uc3QgVE9EQVlfQkxPQ0tfU0VUOiBSZWFkb25seVNldDxzdHJpbmc+ID0gbmV3IFNldChUT0RBWV9CTE9DS1MpO1xuZXhwb3J0IGNvbnN0IENVU1RPTUlaRV9FTlRSWV9TRVQ6IFJlYWRvbmx5U2V0PHN0cmluZz4gPSBuZXcgU2V0KFxuICBDVVNUT01JWkVfRU5UUllfUE9JTlRTLFxuKTtcbmV4cG9ydCBjb25zdCBIT01FX1NDUkVFTl9BQ1RJT05fU0VUOiBSZWFkb25seVNldDxzdHJpbmc+ID0gbmV3IFNldChcbiAgSE9NRV9TQ1JFRU5fQUNUSU9OUyxcbik7XG5leHBvcnQgY29uc3QgSE9NRV9TQ1JFRU5fU1VSRkFDRV9TRVQ6IFJlYWRvbmx5U2V0PHN0cmluZz4gPSBuZXcgU2V0KFxuICBIT01FX1NDUkVFTl9TVVJGQUNFUyxcbik7XG4iXSwidmVyc2lvbiI6M30=

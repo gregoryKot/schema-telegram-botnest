@@ -1,0 +1,64 @@
+dd3e258e67160b3fd3fd2541aaacc055
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.QuizMetricsService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+// Счётчики мини-тестов для /stats: события quiz_started/quiz_completed из
+// AnalyticsEvent (в т.ч. анонимные с сайта, userId = null). Запросы отдельно
+// от ProductMetricsService — свой домен, свой файл (правило №10).
+let QuizMetricsService = class QuizMetricsService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async getMetrics() {
+        const since30 = new Date(Date.now() - 30 * 86_400_000);
+        const [started30, completed30, bySrcRows, byQuizRows] = await Promise.all([
+            this.prisma.analyticsEvent.count({
+                where: { name: 'quiz_started', createdAt: { gte: since30 } },
+            }),
+            this.prisma.analyticsEvent.count({
+                where: { name: 'quiz_completed', createdAt: { gte: since30 } },
+            }),
+            this.prisma.$queryRaw `
+        SELECT "meta"->>'src' AS src, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'quiz_completed' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'src'`,
+            this.prisma.$queryRaw `
+        SELECT "meta"->>'quiz' AS quiz, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'quiz_completed' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'quiz'
+        ORDER BY c DESC`,
+        ]);
+        const srcCount = (src) => Number(bySrcRows.find((r) => r.src === src)?.c ?? 0n);
+        return {
+            started30,
+            completed30,
+            completedBot30: srcCount('bot'),
+            completedWeb30: srcCount('web'),
+            byQuiz30: byQuizRows.map((r) => ({
+                quiz: r.quiz ?? 'другое',
+                count: Number(r.c),
+            })),
+        };
+    }
+};
+exports.QuizMetricsService = QuizMetricsService;
+exports.QuizMetricsService = QuizMetricsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], QuizMetricsService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3F1aXotbWV0cmljcy5zZXJ2aWNlLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBNEM7QUFDNUMsNkRBQXlEO0FBR3pELDBFQUEwRTtBQUMxRSw2RUFBNkU7QUFDN0Usa0VBQWtFO0FBRTNELElBQU0sa0JBQWtCLEdBQXhCLE1BQU0sa0JBQWtCO0lBQ0E7SUFBN0IsWUFBNkIsTUFBcUI7UUFBckIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtJQUFHLENBQUM7SUFFdEQsS0FBSyxDQUFDLFVBQVU7UUFDZCxNQUFNLE9BQU8sR0FBRyxJQUFJLElBQUksQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLEdBQUcsRUFBRSxHQUFHLFVBQVUsQ0FBQyxDQUFDO1FBQ3ZELE1BQU0sQ0FBQyxTQUFTLEVBQUUsV0FBVyxFQUFFLFNBQVMsRUFBRSxVQUFVLENBQUMsR0FBRyxNQUFNLE9BQU8sQ0FBQyxHQUFHLENBQUM7WUFDeEUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxjQUFjLENBQUMsS0FBSyxDQUFDO2dCQUMvQixLQUFLLEVBQUUsRUFBRSxJQUFJLEVBQUUsY0FBYyxFQUFFLFNBQVMsRUFBRSxFQUFFLEdBQUcsRUFBRSxPQUFPLEVBQUUsRUFBRTthQUM3RCxDQUFDO1lBQ0YsSUFBSSxDQUFDLE1BQU0sQ0FBQyxjQUFjLENBQUMsS0FBSyxDQUFDO2dCQUMvQixLQUFLLEVBQUUsRUFBRSxJQUFJLEVBQUUsZ0JBQWdCLEVBQUUsU0FBUyxFQUFFLEVBQUUsR0FBRyxFQUFFLE9BQU8sRUFBRSxFQUFFO2FBQy9ELENBQUM7WUFDRixJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBMEM7Ozs2REFHUixPQUFPO2dDQUNwQztZQUMxQixJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBMkM7Ozs2REFHVCxPQUFPOzt3QkFFNUM7U0FDbkIsQ0FBQyxDQUFDO1FBQ0gsTUFBTSxRQUFRLEdBQUcsQ0FBQyxHQUFXLEVBQVUsRUFBRSxDQUN2QyxNQUFNLENBQUMsU0FBUyxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxDQUFDLEdBQUcsS0FBSyxHQUFHLENBQUMsRUFBRSxDQUFDLElBQUksRUFBRSxDQUFDLENBQUM7UUFDeEQsT0FBTztZQUNMLFNBQVM7WUFDVCxXQUFXO1lBQ1gsY0FBYyxFQUFFLFFBQVEsQ0FBQyxLQUFLLENBQUM7WUFDL0IsY0FBYyxFQUFFLFFBQVEsQ0FBQyxLQUFLLENBQUM7WUFDL0IsUUFBUSxFQUFFLFVBQVUsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUM7Z0JBQy9CLElBQUksRUFBRSxDQUFDLENBQUMsSUFBSSxJQUFJLFFBQVE7Z0JBQ3hCLEtBQUssRUFBRSxNQUFNLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQzthQUNuQixDQUFDLENBQUM7U0FDSixDQUFDO0lBQ0osQ0FBQztDQUNGLENBQUE7QUFyQ1ksZ0RBQWtCOzZCQUFsQixrQkFBa0I7SUFEOUIsSUFBQSxtQkFBVSxHQUFFO3lEQUUwQiw4QkFBYSxvQkFBYiw4QkFBYTtHQUR2QyxrQkFBa0IsQ0FxQzlCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2JvdC9xdWl6LW1ldHJpY3Muc2VydmljZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEuc2VydmljZSc7XG5pbXBvcnQgeyBRdWl6TWV0cmljcyB9IGZyb20gJy4vcXVpei1tZXRyaWNzLmZvcm1hdCc7XG5cbi8vINCh0YfRkdGC0YfQuNC60Lgg0LzQuNC90Lgt0YLQtdGB0YLQvtCyINC00LvRjyAvc3RhdHM6INGB0L7QsdGL0YLQuNGPIHF1aXpfc3RhcnRlZC9xdWl6X2NvbXBsZXRlZCDQuNC3XG4vLyBBbmFseXRpY3NFdmVudCAo0LIg0YIu0YcuINCw0L3QvtC90LjQvNC90YvQtSDRgSDRgdCw0LnRgtCwLCB1c2VySWQgPSBudWxsKS4g0JfQsNC/0YDQvtGB0Ysg0L7RgtC00LXQu9GM0L3QvlxuLy8g0L7RgiBQcm9kdWN0TWV0cmljc1NlcnZpY2Ug4oCUINGB0LLQvtC5INC00L7QvNC10L0sINGB0LLQvtC5INGE0LDQudC7ICjQv9GA0LDQstC40LvQviDihJYxMCkuXG5ASW5qZWN0YWJsZSgpXG5leHBvcnQgY2xhc3MgUXVpek1ldHJpY3NTZXJ2aWNlIHtcbiAgY29uc3RydWN0b3IocHJpdmF0ZSByZWFkb25seSBwcmlzbWE6IFByaXNtYVNlcnZpY2UpIHt9XG5cbiAgYXN5bmMgZ2V0TWV0cmljcygpOiBQcm9taXNlPFF1aXpNZXRyaWNzPiB7XG4gICAgY29uc3Qgc2luY2UzMCA9IG5ldyBEYXRlKERhdGUubm93KCkgLSAzMCAqIDg2XzQwMF8wMDApO1xuICAgIGNvbnN0IFtzdGFydGVkMzAsIGNvbXBsZXRlZDMwLCBieVNyY1Jvd3MsIGJ5UXVpelJvd3NdID0gYXdhaXQgUHJvbWlzZS5hbGwoW1xuICAgICAgdGhpcy5wcmlzbWEuYW5hbHl0aWNzRXZlbnQuY291bnQoe1xuICAgICAgICB3aGVyZTogeyBuYW1lOiAncXVpel9zdGFydGVkJywgY3JlYXRlZEF0OiB7IGd0ZTogc2luY2UzMCB9IH0sXG4gICAgICB9KSxcbiAgICAgIHRoaXMucHJpc21hLmFuYWx5dGljc0V2ZW50LmNvdW50KHtcbiAgICAgICAgd2hlcmU6IHsgbmFtZTogJ3F1aXpfY29tcGxldGVkJywgY3JlYXRlZEF0OiB7IGd0ZTogc2luY2UzMCB9IH0sXG4gICAgICB9KSxcbiAgICAgIHRoaXMucHJpc21hLiRxdWVyeVJhdzxBcnJheTx7IHNyYzogc3RyaW5nIHwgbnVsbDsgYzogYmlnaW50IH0+PmBcbiAgICAgICAgU0VMRUNUIFwibWV0YVwiLT4+J3NyYycgQVMgc3JjLCBjb3VudCgqKTo6YmlnaW50IEFTIGNcbiAgICAgICAgRlJPTSBcIkFuYWx5dGljc0V2ZW50XCJcbiAgICAgICAgV0hFUkUgXCJuYW1lXCIgPSAncXVpel9jb21wbGV0ZWQnIEFORCBcImNyZWF0ZWRBdFwiID49ICR7c2luY2UzMH1cbiAgICAgICAgR1JPVVAgQlkgXCJtZXRhXCItPj4nc3JjJ2AsXG4gICAgICB0aGlzLnByaXNtYS4kcXVlcnlSYXc8QXJyYXk8eyBxdWl6OiBzdHJpbmcgfCBudWxsOyBjOiBiaWdpbnQgfT4+YFxuICAgICAgICBTRUxFQ1QgXCJtZXRhXCItPj4ncXVpeicgQVMgcXVpeiwgY291bnQoKik6OmJpZ2ludCBBUyBjXG4gICAgICAgIEZST00gXCJBbmFseXRpY3NFdmVudFwiXG4gICAgICAgIFdIRVJFIFwibmFtZVwiID0gJ3F1aXpfY29tcGxldGVkJyBBTkQgXCJjcmVhdGVkQXRcIiA+PSAke3NpbmNlMzB9XG4gICAgICAgIEdST1VQIEJZIFwibWV0YVwiLT4+J3F1aXonXG4gICAgICAgIE9SREVSIEJZIGMgREVTQ2AsXG4gICAgXSk7XG4gICAgY29uc3Qgc3JjQ291bnQgPSAoc3JjOiBzdHJpbmcpOiBudW1iZXIgPT5cbiAgICAgIE51bWJlcihieVNyY1Jvd3MuZmluZCgocikgPT4gci5zcmMgPT09IHNyYyk/LmMgPz8gMG4pO1xuICAgIHJldHVybiB7XG4gICAgICBzdGFydGVkMzAsXG4gICAgICBjb21wbGV0ZWQzMCxcbiAgICAgIGNvbXBsZXRlZEJvdDMwOiBzcmNDb3VudCgnYm90JyksXG4gICAgICBjb21wbGV0ZWRXZWIzMDogc3JjQ291bnQoJ3dlYicpLFxuICAgICAgYnlRdWl6MzA6IGJ5UXVpelJvd3MubWFwKChyKSA9PiAoe1xuICAgICAgICBxdWl6OiByLnF1aXogPz8gJ9C00YDRg9Cz0L7QtScsXG4gICAgICAgIGNvdW50OiBOdW1iZXIoci5jKSxcbiAgICAgIH0pKSxcbiAgICB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

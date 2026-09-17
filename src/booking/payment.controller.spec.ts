@@ -3,7 +3,22 @@
 // напрямую; RobokassaService — настоящий (как в robokassa.service.spec.ts,
 // с тестовыми паролями), а не мок — иначе тест не проверял бы саму подпись.
 // booking/donation/subscription — фейки-шпионы.
-import { ConflictException } from '@nestjs/common';
+//
+// Этот файл — золотая зона mutation-тестирования (stryker.config.json,
+// щит-волна 5). Причина: волна 3 (docs/archive/, PR #308) нашла здесь
+// ЗЕЛЁНЫЙ тест с утверждением в названии — «ошибка mark-paid доната → FAIL,
+// без алерта на этом уровне (алертит сам DonationService)». В
+// DonationService не было ни одного try/catch: он алертит на успехе и на
+// расхождении суммы, а когда падает сам запрос в БД — молчит. Тест не
+// пропускал дыру, а обосновывал её — покрытие было зелёным, а защиты не
+// было. Обычный гейт эту разницу не ловит: он умеет проверять, что тест
+// СУЩЕСТВУЕТ и ЗЕЛЁНЫЙ, но не умеет отличить верное утверждение от уверенно
+// сформулированного неверного. Mutation-тестирование умеет: вырежи алерт
+// из кода — тест, который его действительно проверяет, покраснеет. Зона
+// покрывает три денежных/алертинговых файла разом (payment.controller.ts,
+// donation.service.ts, security-log.service.ts) — там же, где резинка
+// зелёного теста рвётся молча.
+import { ConflictException, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
 import { PaymentAmountMismatchError } from './booking.service';
@@ -80,6 +95,29 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
 
     expect(res).toBe('FAIL7');
     expect(booking.confirm).not.toHaveBeenCalled();
+  });
+
+  // Текст этого лога специально стабильный (см. комментарий в
+  // payment.controller.ts): каждый Logger.error() в проде уходит в
+  // AlertLogger (main.ts: NestFactory.create(..., { logger: new AlertLogger() })),
+  // который дедуплицирует DM админу ПО ТЕКСТУ сообщения (60с окно). Если
+  // текст поплывёт — шквал неверных подписей перестанет схлопываться в один
+  // DM и снова замьютит админский чат (тот же класс, что и инцидент
+  // 2026-07-29). errorSpy стоит здесь, а не проверяется через мок AlertLogger,
+  // потому что контроллер в юнит-тесте инстанцирован напрямую, без бутстрапа
+  // Nest-приложения — сам факт вызова .error() с ТОЧНЫМ текстом и есть
+  // контракт с интеграцией.
+  it('неверная подпись → лог с точным, стабильным текстом (для дедупа AlertLogger)', async () => {
+    const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    try {
+      const { controller } = makeController();
+      await controller.handleResult('4000.00', '7', 'deadbeef');
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Robokassa webhook: invalid signature',
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('InvId не число → "FAIL<InvId>" без обращения к booking', async () => {
@@ -168,8 +206,8 @@ describe('PaymentController.handleResult — донаты и подписки д
     expect(booking.confirm).not.toHaveBeenCalled();
   });
 
-  it('ошибка mark-paid доната → "FAIL", без алерта на этом уровне (алертит сам DonationService)', async () => {
-    const { controller, donation } = makeController();
+  it('ошибка mark-paid доната → "FAIL" и алерт админу на этом уровне тоже (не только внутри DonationService)', async () => {
+    const { controller, donation, notify } = makeController();
     donation.markPaidByInvId.mockRejectedValueOnce(new Error('boom'));
     const id = DONATION_INVID_BASE + 5;
     const outSum = '500.00';
@@ -178,6 +216,75 @@ describe('PaymentController.handleResult — донаты и подписки д
 
     const res = await controller.handleResult(outSum, invId, sig);
     expect(res).toBe(`FAIL${id}`);
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    expect(notify.alertAdmin.mock.calls[0][0]).toContain(String(id));
+  });
+});
+
+// ── Класс бага, а не два точечных фикса ─────────────────────────────────────
+// Один вебхук Robokassa обслуживает три диапазона InvId. До этого фикса
+// реальная (не benign) ошибка mark-paid алертила админа только у booking —
+// у subscription и donation она молча уходила в this.logger.error и деньги
+// «терялись» бесследно (узнавали от человека или из логов хостинга). Таблица
+// параметризована по диапазону: если завтра появится четвёртый диапазон и
+// забудет алерт — этот тест покраснеет сам, без ручной дописки it().
+describe('PaymentController.handleResult — деньги не немые ни в одном из трёх диапазонов', () => {
+  const RANGES: Array<{
+    name: string;
+    invId: number;
+    mockReject: (m: ReturnType<typeof makeController>, err: Error) => void;
+  }> = [
+    {
+      name: 'booking',
+      invId: 7,
+      mockReject: (m, err) => m.booking.confirm.mockRejectedValueOnce(err),
+    },
+    {
+      name: 'subscription',
+      invId: SUBSCRIPTION_INVID_BASE + 5,
+      mockReject: (m, err) =>
+        m.subscription.markChargePaidByInvId.mockRejectedValueOnce(err),
+    },
+    {
+      name: 'donation',
+      invId: DONATION_INVID_BASE + 5,
+      mockReject: (m, err) =>
+        m.donation.markPaidByInvId.mockRejectedValueOnce(err),
+    },
+  ];
+
+  it.each(RANGES)(
+    '$name: реальная ошибка mark-paid → алерт админу + "FAIL<InvId>" (Robokassa повторит)',
+    async ({ invId, mockReject }) => {
+      const m = makeController();
+      mockReject(m, new Error('DB down'));
+      const outSum = '500.00';
+      const sig = md5(`${outSum}:${invId}:${PASS2}`);
+
+      const res = await m.controller.handleResult(outSum, String(invId), sig);
+
+      expect(res).toBe(`FAIL${invId}`);
+      expect(m.notify.alertAdmin).toHaveBeenCalledTimes(1);
+      expect(m.notify.alertAdmin.mock.calls[0][0]).toContain(String(invId));
+    },
+  );
+
+  // Контрольный случай для той же таблицы: benign-повтор на booking-диапазоне
+  // обязан остаться тихим. Без этого теста имплементация «алертить на любую
+  // ошибку без разбора» тоже прошла бы it.each выше.
+  it('booking: ConflictException (повтор) — OK без алерта, это НЕ та же ошибка', async () => {
+    const m = makeController();
+    const invId = 7;
+    m.booking.confirm.mockRejectedValueOnce(
+      new ConflictException('Cannot confirm booking in status CONFIRMED'),
+    );
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:${invId}:${PASS2}`);
+
+    const res = await m.controller.handleResult(outSum, String(invId), sig);
+
+    expect(res).toBe(`OK${invId}`);
+    expect(m.notify.alertAdmin).not.toHaveBeenCalled();
   });
 });
 

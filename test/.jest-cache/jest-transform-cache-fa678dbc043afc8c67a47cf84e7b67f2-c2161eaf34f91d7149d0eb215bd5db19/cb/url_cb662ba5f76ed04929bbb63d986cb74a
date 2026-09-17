@@ -1,0 +1,20 @@
+5addd9b1d74a4eed6d7ea7d786176f19
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalizeBaseUrl = normalizeBaseUrl;
+/**
+ * Normalise a base URL from env into a fully-qualified https origin.
+ *
+ * Telegram inline URL buttons and Robokassa return URLs both require a scheme.
+ * If APP_URL is configured as a bare domain (e.g. "schemehappens.ru"), a URL
+ * like "schemehappens.ru/donate" is invalid and Telegram rejects the whole
+ * sendMessage (BUTTON_URL_INVALID) — which breaks /about, /donate, the welcome
+ * keyboard, etc. Prepending https:// keeps everything working regardless of how
+ * the env value is written. Trailing slash is stripped.
+ */
+function normalizeBaseUrl(raw, fallback) {
+    const value = (raw ?? '').trim() || fallback;
+    const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    return withScheme.replace(/\/$/, '');
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdXRpbHMvdXJsLnRzIiwibWFwcGluZ3MiOiI7O0FBVUEsNENBT0M7QUFqQkQ7Ozs7Ozs7OztHQVNHO0FBQ0gsU0FBZ0IsZ0JBQWdCLENBQzlCLEdBQXVCLEVBQ3ZCLFFBQWdCO0lBRWhCLE1BQU0sS0FBSyxHQUFHLENBQUMsR0FBRyxJQUFJLEVBQUUsQ0FBQyxDQUFDLElBQUksRUFBRSxJQUFJLFFBQVEsQ0FBQztJQUM3QyxNQUFNLFVBQVUsR0FBRyxlQUFlLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDLFdBQVcsS0FBSyxFQUFFLENBQUM7SUFDNUUsT0FBTyxVQUFVLENBQUMsT0FBTyxDQUFDLEtBQUssRUFBRSxFQUFFLENBQUMsQ0FBQztBQUN2QyxDQUFDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3V0aWxzL3VybC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIE5vcm1hbGlzZSBhIGJhc2UgVVJMIGZyb20gZW52IGludG8gYSBmdWxseS1xdWFsaWZpZWQgaHR0cHMgb3JpZ2luLlxuICpcbiAqIFRlbGVncmFtIGlubGluZSBVUkwgYnV0dG9ucyBhbmQgUm9ib2thc3NhIHJldHVybiBVUkxzIGJvdGggcmVxdWlyZSBhIHNjaGVtZS5cbiAqIElmIEFQUF9VUkwgaXMgY29uZmlndXJlZCBhcyBhIGJhcmUgZG9tYWluIChlLmcuIFwic2NoZW1laGFwcGVucy5ydVwiKSwgYSBVUkxcbiAqIGxpa2UgXCJzY2hlbWVoYXBwZW5zLnJ1L2RvbmF0ZVwiIGlzIGludmFsaWQgYW5kIFRlbGVncmFtIHJlamVjdHMgdGhlIHdob2xlXG4gKiBzZW5kTWVzc2FnZSAoQlVUVE9OX1VSTF9JTlZBTElEKSDigJQgd2hpY2ggYnJlYWtzIC9hYm91dCwgL2RvbmF0ZSwgdGhlIHdlbGNvbWVcbiAqIGtleWJvYXJkLCBldGMuIFByZXBlbmRpbmcgaHR0cHM6Ly8ga2VlcHMgZXZlcnl0aGluZyB3b3JraW5nIHJlZ2FyZGxlc3Mgb2YgaG93XG4gKiB0aGUgZW52IHZhbHVlIGlzIHdyaXR0ZW4uIFRyYWlsaW5nIHNsYXNoIGlzIHN0cmlwcGVkLlxuICovXG5leHBvcnQgZnVuY3Rpb24gbm9ybWFsaXplQmFzZVVybChcbiAgcmF3OiBzdHJpbmcgfCB1bmRlZmluZWQsXG4gIGZhbGxiYWNrOiBzdHJpbmcsXG4pOiBzdHJpbmcge1xuICBjb25zdCB2YWx1ZSA9IChyYXcgPz8gJycpLnRyaW0oKSB8fCBmYWxsYmFjaztcbiAgY29uc3Qgd2l0aFNjaGVtZSA9IC9eaHR0cHM/OlxcL1xcLy9pLnRlc3QodmFsdWUpID8gdmFsdWUgOiBgaHR0cHM6Ly8ke3ZhbHVlfWA7XG4gIHJldHVybiB3aXRoU2NoZW1lLnJlcGxhY2UoL1xcLyQvLCAnJyk7XG59XG4iXSwidmVyc2lvbiI6M30=

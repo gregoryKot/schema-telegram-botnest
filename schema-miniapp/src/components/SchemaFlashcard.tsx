@@ -33,6 +33,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   const [selectedNeed, setSelectedNeed] = useState<string | null>(null);
   const [action, setAction] = useState('');
   const [done, setDone] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [allCards, setAllCards] = useState<FlashcardEntry[]>(() => loadLocal());
   const [viewing, setViewing] = useState<FlashcardEntry | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -55,7 +56,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           })),
         );
       })
-      .catch(() => {});
+      .catch((e) => console.error('getFlashcards failed', e));
   }, []);
 
   const stepIndex = STEPS.indexOf(step);
@@ -83,7 +84,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         reflection: reflection || undefined,
         action: action || undefined,
       })
-      .catch(() => {});
+      .catch((e) => {
+        console.error('createFlashcard failed', e);
+        setSaveError(true);
+      });
     setDone(true);
     onComplete?.();
   }
@@ -96,9 +100,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     setAction('');
     setDone(false);
     setGrounded(false);
+    setSaveError(false);
   }
 
-  // ── Viewing past card ─────────────────────────────────────────────────────
   if (viewing) {
     return (
       <ViewCard
@@ -109,7 +113,6 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // ── History list ──────────────────────────────────────────────────────────
   if (showHistory) {
     return (
       <HistoryList
@@ -121,7 +124,6 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // ── Done ──────────────────────────────────────────────────────────────────
   if (done) {
     return (
       <DoneStep
@@ -133,11 +135,11 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         onClose={onClose}
         onOpenTracker={onOpenTracker}
         onNew={handleNew}
+        saveError={saveError}
       />
     );
   }
 
-  // ── Grounding ─────────────────────────────────────────────────────────────
   if (!grounded) {
     return (
       <GroundingStep
@@ -150,7 +152,6 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // ── Step 1: Mode ──────────────────────────────────────────────────────────
   if (step === 'mode') {
     return (
       <ModeStep
@@ -167,7 +168,6 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // ── Step 2: Healthy Adult response ────────────────────────────────────────
   if (step === 'response') {
     return (
       <ResponseStep

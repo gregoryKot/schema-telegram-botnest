@@ -52,7 +52,7 @@ export function HistoryList({
                   padding: '12px 14px',
                   background: 'var(--surface)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   marginBottom: 8,
                   cursor: 'pointer',
                 }}
@@ -73,8 +73,8 @@ export function HistoryList({
                     lineHeight: 1.4,
                   }}
                 >
-                  {m?.emoji ?? '🧩'} {m?.label ?? card.mode}
-                  {n ? ` · ${n.emoji} ${n.label}` : ''}
+                  {m?.label ?? card.mode}
+                  {n ? ` · ${n.label}` : ''}
                 </div>
                 {card.action && (
                   <div

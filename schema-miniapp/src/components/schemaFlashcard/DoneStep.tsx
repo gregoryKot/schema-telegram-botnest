@@ -1,4 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
+import { SaveErrorNote } from '../SaveErrorNote';
+import { DoneSummaryCard } from './DoneSummaryCard';
 import { NEEDS } from './constants';
 import type { ModeData } from './types';
 
@@ -11,6 +13,7 @@ interface DoneStepProps {
   onClose: () => void;
   onOpenTracker?: () => void;
   onNew: () => void;
+  saveError?: boolean;
 }
 
 export function DoneStep({
@@ -22,6 +25,7 @@ export function DoneStep({
   onClose,
   onOpenTracker,
   onNew,
+  saveError,
 }: DoneStepProps) {
   const modeInfo = modes.find((m) => m.id === selectedMode);
   const needInfo = NEEDS.find((n) => n.id === selectedNeed);
@@ -29,7 +33,15 @@ export function DoneStep({
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>🌿</div>
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              background: 'var(--calm)',
+              margin: '0 auto 14px',
+            }}
+          />
           <div
             style={{
               fontSize: 18,
@@ -48,73 +60,22 @@ export function DoneStep({
             }}
           >
             {tr(
-              'Ты сделал шаг навстречу себе. Это уже немало.',
-              'Вы сделали шаг навстречу себе. Это уже немало.',
+              'Это твой шаг навстречу себе. Уже немало.',
+              'Это ваш шаг навстречу себе. Уже немало.',
             )}
           </div>
         </div>
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 20,
-            padding: '16px',
-            marginBottom: 20,
-          }}
-        >
-          {[
-            {
-              label: 'Режим',
-              value: `${modeInfo?.emoji} ${modeInfo?.label}`,
-            },
-            needInfo
-              ? {
-                  label: 'Потребность',
-                  value: `${needInfo.emoji} ${needInfo.label}`,
-                }
-              : null,
-            action ? { label: 'Шаг', value: action } : null,
-          ]
-            .filter(Boolean)
-            .map(
-              (row, i, arr) =>
-                row && (
-                  <div
-                    key={row.label}
-                    style={{
-                      paddingBottom: i < arr.length - 1 ? 12 : 0,
-                      marginBottom: i < arr.length - 1 ? 12 : 0,
-                      borderBottom:
-                        i < arr.length - 1
-                          ? '1px solid var(--border-color)'
-                          : undefined,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.07em',
-                        textTransform: 'uppercase',
-                        color: 'var(--text-faint)',
-                        marginBottom: 3,
-                      }}
-                    >
-                      {row.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: 'var(--text)',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {row.value}
-                    </div>
-                  </div>
-                ),
-            )}
-        </div>
+        <DoneSummaryCard
+          modeLabel={modeInfo?.label ?? ''}
+          needLabel={needInfo?.label}
+          action={action}
+        />
+        {saveError && (
+          <SaveErrorNote
+            ty="Не удалось сохранить на сервере — карточка осталась на этом устройстве."
+            vy="Не удалось сохранить на сервере — карточка осталась на этом устройстве."
+          />
+        )}
         {onOpenTracker && (
           <button
             onClick={() => {
@@ -124,7 +85,7 @@ export function DoneStep({
             style={{
               width: '100%',
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface)',
@@ -139,13 +100,13 @@ export function DoneStep({
             Открыть трекер →
           </button>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={onNew}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -162,7 +123,7 @@ export function DoneStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.06)',

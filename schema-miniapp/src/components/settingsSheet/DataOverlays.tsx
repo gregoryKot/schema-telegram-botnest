@@ -1,18 +1,33 @@
 import { api } from '../../api';
+import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
+// Из общего реестра ключей, не из YSQTestSheet.tsx (компонент теперь ленивый,
+// LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
+// eager) тянуло бы за собой и код теста YSQ.
+import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
+import {
+  privacyStorageText,
+  PRIVACY_NO_SHARE_TEXT,
+} from '../../../../shared/src/settings/privacyText';
+
+// 3 состояния кнопки «Скопировать» (copied/failed/idle) — индекс вместо копипасты ternary.
+const FG = ['#06d6a0', 'var(--accent-red)', 'rgba(var(--fg-rgb),0.7)'];
+const LABEL = ['✓ Скопировано', 'Не получилось', 'Скопировать'];
 
 export function ExportOverlay({
   exportText,
   exportCopied,
-  setExportCopied,
+  exportFailed,
+  onCopy,
   onClose,
 }: {
   exportText: string;
   exportCopied: boolean;
-  setExportCopied: (v: boolean) => void;
+  exportFailed: boolean;
+  onCopy: () => void;
   onClose: () => void;
 }) {
+  const st = exportCopied ? 0 : exportFailed ? 1 : 2;
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 4 }}>
@@ -32,7 +47,7 @@ export function ExportOverlay({
             color: 'var(--text-sub)',
             lineHeight: 1.6,
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '12px 14px',
             overflowX: 'auto',
             whiteSpace: 'pre-wrap',
@@ -45,30 +60,22 @@ export function ExportOverlay({
           {exportText}
         </pre>
         <button
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(exportText);
-              setExportCopied(true);
-              setTimeout(() => setExportCopied(false), 2000);
-            } catch {
-              /* best-effort: ошибку намеренно игнорируем */
-            }
-          }}
+          onClick={onCopy}
           style={{
             width: '100%',
             padding: '13px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: exportCopied
               ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
               : 'rgba(var(--fg-rgb),0.08)',
-            color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
+            color: FG[st],
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
           }}
         >
-          {exportCopied ? '✓ Скопировано' : 'Скопировать'}
+          {LABEL[st]}
         </button>
       </div>
     </BottomSheet>
@@ -95,15 +102,14 @@ export function PrivacyOverlay({
         >
           Данные и конфиденциальность
         </div>
-
         {[
           {
             title: 'Что хранится на сервере',
-            text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.',
+            text: privacyStorageText('Telegram-аккаунту'),
           },
           {
             title: 'Передача третьим лицам',
-            text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.',
+            text: PRIVACY_NO_SHARE_TEXT,
           },
         ].map((block) => (
           <div
@@ -111,7 +117,7 @@ export function PrivacyOverlay({
             style={{
               marginBottom: 12,
               background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '14px 16px',
             }}
           >
@@ -154,13 +160,13 @@ export function PrivacyOverlay({
               onClick={() => {
                 localStorage.removeItem(YSQ_PROGRESS_KEY);
                 localStorage.removeItem(YSQ_RESULT_KEY);
-                api.deleteYsqResult().catch(() => {});
+                api.deleteYsqResult().catch(logErr('deleteYsq'));
                 onDeletedYsq();
               }}
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 border: '1px solid rgba(239,68,68,0.3)',
                 background: 'rgba(239,68,68,0.08)',
                 color: 'var(--accent-red)',
@@ -231,13 +237,13 @@ export function DeleteOverlay({
           действие необратимо.
         </div>
         {!deleteConfirm ? (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             <button
               onClick={onCancel}
               style={{
                 flex: 1,
                 padding: '14px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: '1px solid rgba(var(--fg-rgb),0.1)',
                 background: 'transparent',
                 color: 'var(--text-sub)',
@@ -252,7 +258,7 @@ export function DeleteOverlay({
               style={{
                 flex: 1,
                 padding: '14px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: 'rgba(239,68,68,0.15)',
                 color: 'var(--accent-red)',
@@ -296,7 +302,7 @@ export function DeleteOverlay({
               style={{
                 width: '100%',
                 padding: '14px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 background: '#ef4444',
                 color: 'var(--text)',

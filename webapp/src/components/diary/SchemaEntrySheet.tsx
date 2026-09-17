@@ -175,7 +175,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         )}
         {kind === 'schemas' && (
           <>
-            <div className="flash-q">{chipLabels.schemas.title}</div>
+            <div id="schema-entry-question" className="flash-q">{chipLabels.schemas.title}</div>
             <div className="flash-hint">{chipLabels.schemas.hint}</div>
             <SchemaChipsStep
               schemaIds={schemaIds}
@@ -185,20 +185,24 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
               onToggleShowAll={() => { haptic.tap(); setShowAllSchemas((v) => !v); }}
             />
             {/* Свободный текст — здесь, а не в чип-компоненте: detectCrisisAny
-                ниже прогоняет его вместе с остальными полями (правило №7). */}
+                ниже прогоняет его вместе с остальными полями (правило №7).
+                Своя aria-label (не flash-q выше — тот описывает чипы, а не
+                это поле): у schemaOrigin есть отдельный вопрос в контенте
+                (stepByKey.schemaOrigin.title), видимо он нигде не рендерится. */}
             <textarea
               className={'paper-area ' + (values.schemaOrigin.trim() ? 'is-filled' : '')}
               rows={2}
               value={values.schemaOrigin}
               onChange={(e) => setField('schemaOrigin', e.target.value)}
               placeholder={stepByKey.schemaOrigin.example}
+              aria-label={stepByKey.schemaOrigin.title}
               style={{ marginTop: 12 }}
             />
           </>
         )}
         {textStep && (
           <>
-            <div className="flash-q">{textStep.title}</div>
+            <div id="schema-entry-question" className="flash-q">{textStep.title}</div>
             <div className="flash-hint">{textStep.hint}</div>
             <textarea
               ref={areaRef}
@@ -207,6 +211,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
               value={values[textStep.key]}
               onChange={(e) => setField(textStep.key, e.target.value)}
               placeholder={textStep.example}
+              aria-labelledby="schema-entry-question"
             />
           </>
         )}

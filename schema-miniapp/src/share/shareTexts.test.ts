@@ -34,9 +34,9 @@ describe('pluralEntries', () => {
 });
 
 describe('тексты шаринга', () => {
-  it('достижение: эмодзи, титул, ссылка на бота — без рода', () => {
-    const text = achievementShareText('🏆', 'Месяц', 't.me/TestBot');
-    expect(text).toContain('🏆');
+  it('достижение: титул и ссылка на бота, без эмодзи и без рода', () => {
+    const text = achievementShareText('Месяц', 't.me/TestBot');
+    expect(text).not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
     expect(text).toContain('«Месяц»');
     expect(text).toContain('t.me/');
     expect(text).not.toMatch(/получил|получила/i);

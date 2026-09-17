@@ -1,29 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useHelpOverlays } from './helpSection/useHelpOverlays';
+import { HelpOverlays } from './helpSection/HelpOverlays';
+import { HereAndNow } from './helpSection/HereAndNow';
 import { useSafeTop } from '../utils/safezone';
-import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { LetterToSelf } from '../components/LetterToSelf';
-import { BeliefCheck } from '../components/BeliefCheck';
-import { SafePlace } from '../components/SafePlace';
 import { TherapyNote } from '../components/TherapyNote';
-import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
+// Из общего реестра ключей, не из ChildhoodWheelSheet.tsx (компонент теперь
+// ленивый, LazyOverlays.tsx) — иначе открытие «Помощи» тянуло бы за собой и
+// код колеса детства ещё до того, как его реально открыли.
+import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
-import { ToolRow } from '../components/ToolRow';
-import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
-import { pressable } from '../utils/a11y';
-import { BreathingCard } from '../components/BreathingCard';
-import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
-import { CrisisCard } from '../components/CrisisCard';
-import { useTr } from '../utils/addressForm';
-import { practiceCountLabel } from '../components/PracticeDoneFooter';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
-import { NextSessionBanner } from './helpSection/NextSessionBanner';
+import { HelpHeader } from './helpSection/HelpHeader';
 import { ToolsList } from './helpSection/ToolsList';
 
 interface Props {
@@ -55,18 +46,9 @@ export function HelpSection({
 }: Props) {
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
+  const customizeOpenRef = useRef<() => void>(() => {});
 
-  const tr = useTr();
-  const [showFlashcard, setShowFlashcard] = useState(false);
-  const [showGrounding, setShowGrounding] = useState(false);
-  const [showStop, setShowStop] = useState(false);
-  const [showCrisis, setShowCrisis] = useState(false);
-  const [showSelfHelp, setShowSelfHelp] = useState(false);
-  const [showBeliefCheck, setShowBeliefCheck] = useState(false);
-  const [showLetterToSelf, setShowLetterToSelf] = useState(false);
-  const [showSafePlace, setShowSafePlace] = useState(false);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
-  const [introModeId, setIntroModeId] = useState<string | null>(null);
+  const overlays = useHelpOverlays();
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
@@ -92,7 +74,7 @@ export function HelpSection({
       .then((c) => {
         if (!ignore) setPracticeCounts(c);
       })
-      .catch(() => {});
+      .catch((e) => console.error('getPracticeSessions failed', e));
     return () => {
       ignore = true;
     };
@@ -107,7 +89,7 @@ export function HelpSection({
           setTaskHistory(h);
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error('getTasks/getTaskHistory failed', e));
     api
       .getTherapyRelation()
       .then((r) => {
@@ -136,34 +118,46 @@ export function HelpSection({
         onOpenTracker();
         break;
       case 'belief_check':
-        setShowBeliefCheck(true);
+        overlays.show('beliefCheck');
         break;
       case 'letter_to_self':
-        setShowLetterToSelf(true);
+        overlays.show('letterToSelf');
         break;
       case 'safe_place':
-        setShowSafePlace(true);
+        overlays.show('safePlace');
         break;
       case 'childhood_wheel':
         onOpenChildhoodWheel();
         break;
       case 'flashcard':
-        setShowFlashcard(true);
+        overlays.show('flashcard');
         break;
       case 'schema_intro':
-        if (task.text) setIntroSchemaId(task.text);
+        if (task.text) overlays.setIntroSchemaId(task.text);
         break;
       case 'mode_intro':
-        if (task.text) setIntroModeId(task.text);
+        if (task.text) overlays.setIntroModeId(task.text);
         break;
       default: {
         // Fallback: raw schema/mode ID stored as text (old task format)
         const legacy = findLegacyTaskTarget(task.text);
-        if (legacy?.type === 'schema') setIntroSchemaId(legacy.id);
-        else if (legacy?.type === 'mode') setIntroModeId(legacy.id);
+        if (legacy?.type === 'schema') overlays.setIntroSchemaId(legacy.id);
+        else if (legacy?.type === 'mode') overlays.setIntroModeId(legacy.id);
         break;
       }
     }
+  }
+
+  // Общий рефетч списка задач — раньше три копии этого Promise.all глушили
+  // ошибку по отдельности молча; теперь один центр логирования.
+  function refreshTasks() {
+    return Promise.all([api.getTasks(), api.getTaskHistory()])
+      .then(([t, h]) => {
+        setTasks(t);
+        setTaskHistory(h);
+        onTasksChanged?.();
+      })
+      .catch((e) => console.error('refreshTasks failed', e));
   }
 
   function handleTaskComplete() {
@@ -172,13 +166,8 @@ export function HelpSection({
     setActiveTaskId(null);
     api
       .completeTask(taskId, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => {
-        setTasks(t);
-        setTaskHistory(h);
-        onTasksChanged?.();
-      })
-      .catch(() => {});
+      .then(() => refreshTasks())
+      .catch((e) => console.error('completeTask failed', e));
   }
 
   return (
@@ -190,111 +179,21 @@ export function HelpSection({
         overflowX: 'hidden',
       }}
     >
-      {/* Header */}
-      <div style={{ padding: '20px 20px 12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-            }}
-          >
-            Здесь и сейчас
-          </div>
-          <button
-            {...pressable(() => setShowSelfHelp(true))}
-            aria-label="О границах самопомощи"
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              flexShrink: 0,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 15,
-              lineHeight: 1,
-              background:
-                'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            ⚠️
-          </button>
-        </div>
-        <div
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            marginTop: 4,
-            lineHeight: 1.5,
-          }}
-        >
-          {tr(
-            'Тяжёлый момент? Начни с одного вдоха',
-            'Тяжёлый момент? Начните с одного вдоха',
-          )}
-        </div>
-        {/* Next session banner for clients */}
-        <NextSessionBanner relation={relation} />
-      </div>
+      <HelpHeader
+        relation={relation}
+        onOpenSelfHelp={() => overlays.show('selfHelp')}
+        onOpenCustomize={() => customizeOpenRef.current()}
+      />
 
       <div
         style={{
           padding: '0 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
-        {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
-        <BreathingCard />
-
-        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
-          Если нужно больше
-        </div>
-        <ToolRow
-          emoji="🌍"
-          label="Заземление 5-4-3-2-1"
-          sub={
-            practiceCountLabel(practiceCounts?.grounding ?? null) ??
-            'вернуться в тело и в комнату'
-          }
-          tint="var(--accent-blue)"
-          index={0}
-          onClick={() => setShowGrounding(true)}
-        />
-        <ToolRow
-          emoji="🛑"
-          label="Техника «Стоп»"
-          sub={
-            practiceCountLabel(practiceCounts?.stop ?? null) ??
-            'пауза между импульсом и действием'
-          }
-          tint="var(--accent-orange)"
-          index={1}
-          onClick={() => setShowStop(true)}
-        />
-        <ToolRow
-          emoji="📞"
-          label="Мне очень плохо"
-          sub="контакты помощи прямо сейчас"
-          tint="var(--accent-red)"
-          danger
-          index={2}
-          onClick={() => setShowCrisis(true)}
-        />
+        <HereAndNow overlays={overlays} practiceCounts={practiceCounts} />
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
@@ -340,11 +239,14 @@ export function HelpSection({
           onOpenTasks={() => setShowAllTasks(true)}
           onOpenPractices={onOpenPractices}
           onOpenPlans={onOpenPlans}
-          onOpenBeliefCheck={() => setShowBeliefCheck(true)}
-          onOpenSafePlace={() => setShowSafePlace(true)}
-          onOpenLetterToSelf={() => setShowLetterToSelf(true)}
-          onOpenFlashcard={() => setShowFlashcard(true)}
+          onOpenBeliefCheck={() => overlays.show('beliefCheck')}
+          onOpenPhraseCheck={() => overlays.show('phraseCheck')}
+          onOpenSafePlace={() => overlays.show('safePlace')}
+          onOpenLetterToSelf={() => overlays.show('letterToSelf')}
+          onOpenFlashcard={() => overlays.show('flashcard')}
           onOpenChildhoodWheel={onOpenChildhoodWheel}
+          onOpenWarmWords={() => overlays.show('warmWords')}
+          customizeOpenRef={customizeOpenRef}
         />
 
         <div style={{ paddingBottom: 4 }}>
@@ -352,108 +254,16 @@ export function HelpSection({
         </div>
       </div>
 
-      {showFlashcard && (
-        <SchemaFlashcard
-          onClose={() => setShowFlashcard(false)}
-          onOpenTracker={onOpenTracker}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showBeliefCheck && (
-        <BeliefCheck
-          onClose={() => setShowBeliefCheck(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showLetterToSelf && (
-        <LetterToSelf
-          onClose={() => setShowLetterToSelf(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {showSafePlace && (
-        <SafePlace
-          onClose={() => setShowSafePlace(false)}
-          onComplete={handleTaskComplete}
-        />
-      )}
-      {introSchemaId && (
-        <SchemaIntroSheet
-          schemaId={introSchemaId}
-          onClose={() => setIntroSchemaId(null)}
-          onComplete={() => {
-            setIntroSchemaId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-      {introModeId && (
-        <ModeIntroSheet
-          modeId={introModeId}
-          onClose={() => setIntroModeId(null)}
-          onComplete={() => {
-            setIntroModeId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-      {showSelfHelp && (
-        <SelfHelpSheet
-          onClose={() => setShowSelfHelp(false)}
-          onOpenCrisis={() => {
-            setShowSelfHelp(false);
-            setShowCrisis(true);
-          }}
-        />
-      )}
-      {showGrounding && (
-        <QuickPracticeSheet
-          id="grounding"
-          onClose={() => setShowGrounding(false)}
-        />
-      )}
-      {showStop && (
-        <QuickPracticeSheet id="stop" onClose={() => setShowStop(false)} />
-      )}
-      {showCrisis && (
-        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
-          <div style={{ paddingTop: 4 }}>
-            <div
-              style={{
-                fontSize: 17,
-                fontWeight: 800,
-                color: 'var(--text)',
-                marginBottom: 4,
-              }}
-            >
-              Помощь рядом
-            </div>
-            <CrisisCard />
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-                marginTop: 4,
-              }}
-            >
-              Если есть угроза жизни — 112. Разговор с близким человеком тоже
-              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
-            </div>
-          </div>
-        </BottomSheet>
-      )}
+      <HelpOverlays
+        overlays={overlays}
+        onTaskComplete={handleTaskComplete}
+        onOpenTracker={onOpenTracker}
+      />
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {
             setShowTaskCreate(false);
-            Promise.all([api.getTasks(), api.getTaskHistory()])
-              .then(([t, h]) => {
-                setTasks(t);
-                setTaskHistory(h);
-                onTasksChanged?.();
-              })
-              .catch(() => {});
+            void refreshTasks();
           }}
           onClose={() => setShowTaskCreate(false)}
         />
@@ -464,15 +274,7 @@ export function HelpSection({
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
           onOpenTask={openTask}
-          onReload={() =>
-            Promise.all([api.getTasks(), api.getTaskHistory()])
-              .then(([t, h]) => {
-                setTasks(t);
-                setTaskHistory(h);
-                onTasksChanged?.();
-              })
-              .catch(() => {})
-          }
+          onReload={() => refreshTasks()}
           onAdd={() => {
             setShowAllTasks(false);
             setShowTaskCreate(true);

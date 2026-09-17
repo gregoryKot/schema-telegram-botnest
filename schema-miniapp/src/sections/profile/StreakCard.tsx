@@ -1,5 +1,10 @@
 import { DOW, TODAY_DOW_IDX } from './constants';
 
+// Отбивка шапки и шаг недельных полос — их повторяет скелетон карточки
+// (ProfileCardSkeletons), поэтому число одно на обоих, а не скопировано.
+export const STREAK_HEAD_GAP = 18;
+export const STREAK_BAR_GAP = 5;
+
 interface StreakCardProps {
   currentStreak: number;
   longestStreak: number;
@@ -20,7 +25,7 @@ export function StreakCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, padding: '20px 20px 18px' }}
+      style={{ borderRadius: 'var(--r-20)', padding: '20px 20px 18px' }}
     >
       {/* Top row: big number + secondary stats */}
       <div
@@ -28,10 +33,16 @@ export function StreakCard({
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          marginBottom: 18,
+          marginBottom: STREAK_HEAD_GAP,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 'var(--space-10)',
+          }}
+        >
           <div
             style={{
               fontSize: 56,
@@ -128,7 +139,7 @@ export function StreakCard({
 
       {/* Week bars */}
       {weekDots.length > 0 && (
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: 'flex', gap: STREAK_BAR_GAP }}>
           {weekDots.map((done, i) => {
             const isToday = i === TODAY_DOW_IDX;
             return (
@@ -139,7 +150,7 @@ export function StreakCard({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 5,
+                  gap: STREAK_BAR_GAP,
                 }}
               >
                 <div
@@ -184,7 +195,7 @@ export function StreakCard({
             width: '100%',
             padding: '10px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: 'rgba(var(--fg-rgb),0.06)',
             color: 'var(--text-sub)',
             fontSize: 13,

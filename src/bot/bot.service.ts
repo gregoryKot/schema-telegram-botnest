@@ -126,6 +126,7 @@ export class BotService {
         myModeIds: true,
         therapistShareCards: true,
         therapistShareProfile: true,
+        uiPrefs: true,
       },
     });
     if (!row) return row;
@@ -153,6 +154,7 @@ export class BotService {
       myModeIds?: string[];
       therapistShareCards?: boolean;
       therapistShareProfile?: boolean;
+      uiPrefs?: Record<string, string>;
     },
   ) {
     const enc = encryptRecord(data as Record<string, unknown>, {

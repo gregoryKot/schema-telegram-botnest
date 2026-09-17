@@ -1,6 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { ProgressBar } from './ProgressBar';
+import { useTr } from '../../utils/addressForm';
 import type { ModeData } from './types';
 
 interface ModeStepProps {
@@ -20,6 +21,7 @@ export function ModeStep({
   onShowHistory,
   onSelectMode,
 }: ModeStepProps) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
@@ -44,7 +46,7 @@ export function ModeStep({
                 marginTop: 2,
               }}
             >
-              Шаг 1 из 4 — выбери режим
+              {tr('Шаг 1 из 4 — выбери режим', 'Шаг 1 из 4 — выберите режим')}
             </div>
           </div>
           {allCardsCount > 0 && (
@@ -64,7 +66,13 @@ export function ModeStep({
           )}
         </div>
         <ProgressBar stepIndex={stepIndex} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-8)',
+          }}
+        >
           {modes.map((m) => (
             <button
               key={m.id}
@@ -72,7 +80,7 @@ export function ModeStep({
               style={{
                 textAlign: 'left',
                 padding: '14px 16px',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 border: '1px solid var(--border-color)',
                 background: 'var(--surface)',
                 cursor: 'pointer',
@@ -82,11 +90,10 @@ export function ModeStep({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   marginBottom: 4,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{m.emoji}</span>
                 <span style={{ fontSize: 15, fontWeight: 600, color: m.color }}>
                   {m.label}
                 </span>

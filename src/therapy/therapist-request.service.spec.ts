@@ -11,15 +11,18 @@
 // после переезда бота (@SchemaLabBot → @SchemeHappensBot) DM админу мог
 // молча падать (админ ещё не нажал Start у нового бота), а старый sendTg
 // только писал warn в лог — заявка терялась. Фикс: при неудачной доставке
-// в Telegram уходит e-mail-фолбэк (notifyAdminWithFallback), покрыто ниже
-// в describe('TherapistRequestService.notifyAdmin — доставка заявки админу').
+// в Telegram уходит e-mail-фолбэк (notifyAdminWithFallback) — низкоуровневые
+// тесты доставки и текстов ты/вы переехали в therapist-request.notify.spec.ts
+// вместе с TherapistRequestNotifyService (правило №10 CLAUDE.md).
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { TherapistRequestService } from './therapist-request.service';
+import { TherapistRequestNotifyService } from './therapist-request.notify';
 import * as adminAlert from '../utils/admin-alert';
 
 jest.mock('../utils/admin-alert', () => ({
@@ -69,10 +72,22 @@ function makeFakePrisma() {
       }),
     },
     user: {
+      findUnique: jest.fn(({ where: { id } }: any) => {
+        const u = users.find((x: any) => x.id === id);
+        return u ? { ...u } : null;
+      }),
       update: jest.fn(({ where: { id }, data }: any) => {
         const u = users.find((x: any) => x.id === id);
         Object.assign(u, data);
         return u;
+      }),
+      // TherapistRequestNotifyService.notifyApplicant читает addressForm —
+      // фейковые юзеры в этом файле его не задают, поэтому дефолт «ты».
+      findUnique: jest.fn(({ where: { id } }: any) => {
+        const u = users.find((x: any) => x.id === id);
+        return Promise.resolve(
+          u ? { addressForm: u.addressForm ?? null } : null,
+        );
       }),
     },
     $transaction: jest.fn((arg: any) =>
@@ -82,7 +97,9 @@ function makeFakePrisma() {
   return { prisma, requests, users };
 }
 
-function makeService() {
+// prisma + accountService + securityLog, БЕЗ notifyService — используется там,
+// где notifyService подменяется на фейк (тесты сбоя notifyApplicant).
+function makeFakePrismaService() {
   const { prisma, requests, users } = makeFakePrisma();
   const accountService = {
     getUserRole: jest.fn((userId: bigint) => {
@@ -91,10 +108,18 @@ function makeService() {
     }),
   };
   const securityLog = { log: jest.fn() };
+  return { prisma, requests, users, accountService, securityLog };
+}
+
+function makeService() {
+  const { prisma, requests, users, accountService, securityLog } =
+    makeFakePrismaService();
+  const notifyService = new TherapistRequestNotifyService(prisma);
   const svc = new TherapistRequestService(
     prisma,
     accountService as any,
     securityLog as any,
+    notifyService,
   );
   return { svc, prisma, requests, users, accountService, securityLog };
 }
@@ -171,13 +196,42 @@ describe('TherapistRequestService.submit', () => {
 
   it.each([
     ['fullName пустой', { ...INPUT, fullName: '  ' }],
+    ['fullName отсутствует', { ...INPUT, fullName: undefined }],
+    ['qualification пустая', { ...INPUT, qualification: '  ' }],
+    ['qualification отсутствует', { ...INPUT, qualification: undefined }],
+    ['qualification длиннее 500', { ...INPUT, qualification: 'x'.repeat(501) }],
     ['contacts пустой', { ...INPUT, contacts: '' }],
+    ['contacts отсутствует', { ...INPUT, contacts: undefined }],
     ['message длиннее 1000', { ...INPUT, message: 'x'.repeat(1001) }],
   ])('невалидное поле (%s) → BadRequestException', async (_name, bad) => {
     const { svc, users, requests } = makeService();
     users.push({ id: 3n, role: 'CLIENT' });
-    await expect(svc.submit(3n, bad)).rejects.toThrow(BadRequestException);
+    await expect(svc.submit(3n, bad as typeof INPUT)).rejects.toThrow(
+      BadRequestException,
+    );
     expect(requests).toHaveLength(0);
+  });
+
+  it('отсутствующий message (undefined) — не ошибка, сохраняется как null', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 21n, role: 'CLIENT' });
+    const { message: _drop, ...withoutMessage } = INPUT;
+    await svc.submit(21n, withoutMessage);
+    expect(requests[0].message).toBeNull();
+  });
+
+  it('повторная отправка при УЖЕ ОДОБРЕННОЙ заявке отклоняется', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 22n, role: 'CLIENT' });
+    await svc.submit(22n, INPUT);
+    // approve() меняет role пользователя на THERAPIST — обходим через прямую
+    // правку статуса заявки, чтобы проверить ИМЕННО ветку "already approved"
+    // независимо от роли юзера (роль уже THERAPIST даёт другой ConflictException раньше).
+    requests[0].status = 'approved';
+    await expect(svc.submit(22n, INPUT)).rejects.toThrow(
+      'Request already approved',
+    );
+    expect(requests).toHaveLength(1);
   });
 
   it('повторная отправка при pending-заявке отклоняется, карточка не дублируется', async () => {
@@ -260,6 +314,27 @@ describe('TherapistRequestService.approve — выдача роли THERAPIST', 
     expect(body.text).toContain('одобрена');
   });
 
+  // Регрессия: notifyApplicant игнорировал User.addressForm и всегда слал
+  // «Твоя заявка…» — юзер с формой «вы» видел «ты» (аудит 2026-08).
+  it('addressForm=vy → уведомление заявителю приходит на «вы»', async () => {
+    const { svc, users } = makeService();
+    users.push({
+      id: 17n,
+      role: 'CLIENT',
+      therapistMode: false,
+      addressForm: 'vy',
+    });
+    const { id: reqId } = await svc.submit(17n, INPUT);
+    await svc.approve(ADMIN_ID, reqId);
+
+    await flush();
+    const [, opts] = fetchMock.mock.calls.at(-1)!;
+    const body = JSON.parse(opts.body);
+    expect(body.text).toContain('Ваша заявка');
+    expect(body.text).toContain('Перезапустите');
+    expect(body.text).not.toContain('Твоя заявка');
+  });
+
   it('несуществующая заявка → NotFoundException, роль не трогается', async () => {
     const { svc, users } = makeService();
     users.push({ id: 9n, role: 'CLIENT' });
@@ -340,78 +415,141 @@ describe('approve/reject — только для админа, плюс пове
       NotFoundException,
     );
   });
+
+  it('reject уже решённой (не pending) заявки → ConflictException, статус не трогается', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 15n, role: 'CLIENT' });
+    const { id: reqId } = await svc.submit(15n, INPUT);
+    await svc.approve(ADMIN_ID, reqId);
+    await expect(svc.reject(ADMIN_ID, reqId, 'x')).rejects.toThrow(
+      ConflictException,
+    );
+    expect(requests[0].status).toBe('approved');
+  });
+
+  it('reject без причины (undefined) — rejectReason становится null, сообщение без "Причина"', async () => {
+    const { svc, users, requests } = makeService();
+    users.push({ id: 16n, role: 'CLIENT' });
+    const { id: reqId } = await svc.submit(16n, INPUT);
+    await svc.reject(ADMIN_ID, reqId, undefined as unknown as string);
+    expect(requests[0].rejectReason).toBeNull();
+    await flush();
+    const [, opts] = fetchMock.mock.calls.at(-1)!;
+    expect(JSON.parse(opts.body).text).not.toContain('Причина');
+  });
 });
 
-// notifyAdmin — приватный; вызываем через типизированный доступ, без `any`.
-const NOTIFY_REQ = {
-  id: 42,
-  userId: 123n,
-  fullName: 'Мария Иванова',
-  qualification: 'Схема-терапевт',
-  contacts: '@maria',
-  message: null,
-};
+// Регрессия: раньше approve()/reject() глушили сбой notifyApplicant молча
+// (`.catch(() => null)`) — заявитель не узнавал о судьбе заявки, и никто об
+// этом не узнавал тоже. Фикс: сбой логируется через logger.error, approve()/
+// reject() не падают (роль уже выдана/заявка уже отклонена — транзакция не
+// зависит от доставки DM).
+describe('approve()/reject() — сбой notifyApplicant логируется, а не глушится', () => {
+  it('approve(): notifyApplicant реджектится → logger.error вызван, approve НЕ падает', async () => {
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const { prisma, users, requests, accountService, securityLog } =
+      makeFakePrismaService();
+    users.push({ id: 17n, role: 'CLIENT', therapistMode: false });
 
-type WithNotify = { notifyAdmin: (r: typeof NOTIFY_REQ) => Promise<void> };
-function makeNotifyAdminService(): TherapistRequestService & WithNotify {
-  const prisma = {} as never;
-  const accountService = {} as never;
-  const securityLog = { log: jest.fn() } as any;
-  return new TherapistRequestService(
-    prisma,
-    accountService,
-    securityLog,
-  ) as TherapistRequestService & WithNotify;
-}
+    const failingNotify = {
+      notifyApplicant: jest.fn(() => Promise.reject(new Error('DM failed'))),
+      notifyAdmin: jest.fn(() => Promise.resolve()),
+    } as unknown as TherapistRequestNotifyService;
+    const svc = new TherapistRequestService(
+      prisma,
+      accountService as any,
+      securityLog as any,
+      failingNotify,
+    );
 
-function mockFetchForNotify(ok: boolean, status = ok ? 200 : 403): jest.Mock {
-  const fn = jest.fn(() =>
-    Promise.resolve({
-      ok,
-      status,
-      json: () => Promise.resolve({ description: ok ? '' : 'blocked' }),
-    }),
-  );
-  global.fetch = fn;
-  return fn;
-}
+    const { id: reqId } = await svc.submit(17n, INPUT);
+    await expect(svc.approve(ADMIN_ID, reqId)).resolves.toBeUndefined();
 
-describe('TherapistRequestService.notifyAdmin — доставка заявки админу', () => {
-  const NOTIFY_OLD_ENV = process.env;
+    // Роль всё равно выдана — approve() не зависит от доставки DM.
+    expect(users[0]).toMatchObject({ role: 'THERAPIST', therapistMode: true });
+    expect(requests[0]).toMatchObject({ status: 'approved' });
 
-  beforeEach(() => {
-    jest.resetAllMocks();
-    process.env = {
-      ...NOTIFY_OLD_ENV,
-      BOT_TOKEN: 'test-token',
-      ADMIN_ID: '999',
-    };
-  });
-  afterAll(() => {
-    process.env = NOTIFY_OLD_ENV;
+    await flush();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'notifyApplicant failed',
+      expect.any(Error),
+    );
+    errorSpy.mockRestore();
   });
 
-  it('DM админу не прошёл (Telegram 403) → e-mail-фолбэк вызван', async () => {
-    mockFetchForNotify(false);
-    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+  it('reject(): notifyApplicant реджектится → logger.error вызван, reject НЕ падает', async () => {
+    const errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const { prisma, users, requests, accountService, securityLog } =
+      makeFakePrismaService();
+    users.push({ id: 18n, role: 'CLIENT' });
 
-    expect(fallback).toHaveBeenCalledTimes(1);
-    expect(fallback.mock.calls[0][0]).toContain('#42');
+    const failingNotify = {
+      notifyApplicant: jest.fn(() => Promise.reject(new Error('DM failed'))),
+      notifyAdmin: jest.fn(() => Promise.resolve()),
+    } as unknown as TherapistRequestNotifyService;
+    const svc = new TherapistRequestService(
+      prisma,
+      accountService as any,
+      securityLog as any,
+      failingNotify,
+    );
+
+    const { id: reqId } = await svc.submit(18n, INPUT);
+    await expect(
+      svc.reject(ADMIN_ID, reqId, 'причина'),
+    ).resolves.toBeUndefined();
+    expect(requests[0]).toMatchObject({ status: 'rejected' });
+
+    await flush();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'notifyApplicant failed',
+      expect.any(Error),
+    );
+    errorSpy.mockRestore();
+  });
+});
+
+describe('TherapistRequestService.submit — notifyAdmin падает целиком', () => {
+  it('и сеть, и e-mail-фолбэк недоступны — submit всё равно возвращает результат, ошибка только логируется', async () => {
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const { svc, users, requests } = makeService();
+    users.push({ id: 23n, role: 'CLIENT' });
+    fetchMock.mockRejectedValue(new Error('network down'));
+    fallback.mockRejectedValueOnce(new Error('smtp down'));
+
+    const result = await svc.submit(23n, INPUT);
+    expect(result.status).toBe('pending');
+    expect(requests).toHaveLength(1);
+
+    await flush();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('notifyAdmin failed: smtp down'),
+    );
+    warnSpy.mockRestore();
   });
 
-  it('ADMIN_ID не задан → пуш невозможен, e-mail-фолбэк вызван', async () => {
-    delete process.env.ADMIN_ID;
-    const fetchMockLocal = mockFetchForNotify(true);
-    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+  it('падение не-Error значением (напр. строкой) тоже логируется без падения submit', async () => {
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const { svc, users } = makeService();
+    users.push({ id: 24n, role: 'CLIENT' });
+    fetchMock.mockRejectedValue(new Error('network down'));
+    fallback.mockRejectedValueOnce('smtp-string-failure');
 
-    expect(fetchMockLocal).not.toHaveBeenCalled();
-    expect(fallback).toHaveBeenCalledTimes(1);
-  });
+    const result = await svc.submit(24n, INPUT);
+    expect(result.status).toBe('pending');
 
-  it('DM админу прошёл (Telegram ok) → e-mail-фолбэк НЕ нужен', async () => {
-    mockFetchForNotify(true);
-    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
-
-    expect(fallback).not.toHaveBeenCalled();
+    await flush();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('notifyAdmin failed: smtp-string-failure'),
+    );
+    warnSpy.mockRestore();
   });
 });

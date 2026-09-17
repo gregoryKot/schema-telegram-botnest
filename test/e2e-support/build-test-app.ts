@@ -7,6 +7,11 @@
 // Всё остальное — ValidationPipe, guard'ы, фильтры — то самое, что реально
 // работает в проде: это и есть смысл e2e (юнит-тесты не могут поймать
 // "guard не примонтирован" или "ValidationPipe не применён глобально").
+//
+// E2E_REAL_DB=1 (TEST_TRUST_PLAN.md, п.1) переключает PrismaService на
+// настоящий Postgres (см. buildTestApp() ниже и build-real-db-test-app.ts) —
+// для ownership-спеков, которые именно про фильтрацию по userId, там, где
+// фейк расходился с реальностью.
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { json, urlencoded } from 'express';
@@ -19,6 +24,7 @@ import {
 } from '../../src/prisma/prisma-exception.filter';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
+import { buildRealDbTestApp } from './build-real-db-test-app';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -35,6 +41,24 @@ export interface TestApp {
 }
 
 export async function buildTestApp(): Promise<TestApp> {
+  // Режим «реальная БД» (TEST_TRUST_PLAN.md, п.1): фейковая Prisma трижды
+  // расходилась с настоящей на ЗЕЛЁНЫХ тестах (не понимала top-level OR,
+  // не применяла @default из схемы, не поддерживала include) — ownership-
+  // спеки (те самые, что про фильтрацию по userId) гоняются вторым прогоном
+  // против реального Postgres джобы `migrations` (.github/workflows/ci.yml).
+  // Сигнатура и возвращаемый тип не меняются ради существующих вызовов:
+  // PrismaService структурно даёт те же методы (find*/create/upsert/
+  // deleteMany), которыми пользуются спеки — `._rows`-специфичные места
+  // (fake-prisma-only) переписаны на find*/deleteMany через
+  // cleanup-fixtures.ts и точечные правки в самих спеках.
+  if (process.env.E2E_REAL_DB === '1') {
+    // FakePrisma — ReturnType<typeof makeFakePrisma>, который сам typed
+    // `any` (see fake-prisma.ts) — присвоение PrismaService сюда не требует
+    // приведения типа, но остаётся структурно совместимым по вызовам,
+    // которые используют спеки.
+    return await buildRealDbTestApp();
+  }
+
   const prisma = makeFakePrisma();
 
   const moduleRef = await Test.createTestingModule({

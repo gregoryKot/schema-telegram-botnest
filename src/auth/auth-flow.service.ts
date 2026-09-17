@@ -4,15 +4,21 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
-import { ProviderIdentity } from './providers/types';
+import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
-import { REFRESH_COOKIE, cookieOptions, getCookie } from './auth-http.util';
+import { setRefreshCookie } from './auth-http.util';
+import { signOAuthState, readOAuthState, readOAuthTicket } from './oauth-state';
+import {
+  OAUTH_STATE_COOKIE,
+  setOAuthCookie,
+  redirectToCallbackHost,
+  assertOAuthStateMatches,
+} from './oauth-host';
 
 export type SignInOutcome =
   | {
@@ -44,10 +50,8 @@ export class AuthFlowService {
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
-  //
   // signInOrLinkOrMerge handles the three outcomes after we obtain a
   // ProviderIdentity from any provider:
-  //
   //   1. No linkUserId given → sign-in or sign-up (findOrCreate). Issue tokens.
   //   2. linkUserId given, no conflict → link provider to that user. Issue tokens
   //      (refresh token of the active user is already valid; we re-issue for
@@ -55,7 +59,6 @@ export class AuthFlowService {
   //   3. linkUserId given, but providerId already belongs to another user →
   //      return a merge token; the UI asks the user to confirm before we
   //      destroy the other account.
-  //
   // Returns either { tokens } or { mergeToken, summary } so the caller can act.
   async signInOrLinkOrMerge(
     providerId_: string,
@@ -118,13 +121,18 @@ export class AuthFlowService {
     };
   }
 
-  // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
-  // Routes the user to the right next page based on the outcome.
+  // Общий обработчик OAuth-редирект-колбэков (Google/VK/Telegram-OIDC) — ведёт
+  // на нужный экран по исходу. Синхронный: молчаливого одобрения билета здесь
+  // больше нет (device-code phishing, разбор 2026-08-31) — одобрение уехало
+  // на экран сверки /auth/confirm.
   finishOAuthRedirect(
     outcome: SignInOutcome,
     provider: string,
     res: Response,
     frontendBase: string,
+    // Билет входа: вход начат в контейнере, который сессию из браузера не
+    // увидит. Код подтверждаем на /auth/confirm, а браузеру говорим вернуться.
+    ticketCode: string | null = null,
   ): void {
     if (outcome.kind === 'merge') {
       const params = new URLSearchParams({
@@ -137,47 +145,57 @@ export class AuthFlowService {
       return;
     }
     if (outcome.kind === 'totp_challenge') {
+      // Билет доживает до второго шага (после кода 2FA) — иначе человек с
+      // включённой двухфакторкой упёрся бы в тупик до истечения билета.
+      const tail = ticketCode
+        ? `&ticket=${encodeURIComponent(ticketCode)}`
+        : '';
       res.redirect(
-        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`,
+        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}${tail}`,
       );
       return;
     }
-    res.cookie(
-      REFRESH_COOKIE,
-      outcome.tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    // crossSite:false — OAuth-редирект (Google/VK/Telegram-OIDC) приходит
+    // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
+    // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
+    setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
+    // Билет НЕ одобряем молча (device-code phishing, 2026-08-31): код в
+    // `?ticket=` мог подставить кто угодно. Уже вошедшего уводим на экран
+    // сверки `/auth/confirm` для ЯВНОГО подтверждения. Без билета — обычный приём сессии.
+    const hash = `#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`;
     res.redirect(
-      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`,
+      ticketCode
+        ? `${frontendBase}/auth/confirm?code=${encodeURIComponent(ticketCode)}${hash}`
+        : `${frontendBase}/auth/callback${hash}`,
     );
   }
 
-  // Достаёт linkUserId из подписанного state (base64url JSON). Битый/чужой
-  // state → null (аноним-вход), не бросаем — три колбэка разбирали это
-  // одинаковым копипастом с `JSON.parse(...).linkUserId as any`.
+  // linkUserId в link-флоу едет через ПОДПИСАННЫЙ носитель (OAuth-`state`) —
+  // неподписанный давал захват аккаунта (крипта/разбор в oauth-state.ts, C1).
+  private stateSecret(): string {
+    return this.config.getOrThrow<string>('JWT_SECRET');
+  }
   linkUserIdFromState(state: string): bigint | null {
-    try {
-      const parsed = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-        linkUserId?: string | null;
-      };
-      return parsed.linkUserId ? BigInt(parsed.linkUserId) : null;
-    } catch {
-      return null;
-    }
+    return readOAuthState(this.stateSecret(), state);
+  }
+  buildLinkState(
+    linkUserId: bigint | null,
+    ticketCode?: string | null,
+  ): string {
+    return signOAuthState(this.stateSecret(), linkUserId, ticketCode ?? null);
+  }
+  ticketFromState(state: string): string | null {
+    return readOAuthTicket(this.stateSecret(), state);
+  }
+  readLinkState(raw: string | null | undefined): bigint | null {
+    return readOAuthState(this.stateSecret(), raw);
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
-  //
-  // Each redirect-flow provider has a tiny stub that calls these helpers.
-  // Adding a new OAuth provider (Yandex, Apple, …) = add provider file,
-  // register in AuthProviderRegistry/AuthModule, add stub here:
-  //
-  //   @Get('yandex') @UseGuards(OptionalJwtGuard)
-  //   yandexRedirect(@Req() r,@Res() s) { return this.oauthRedirect('yandex', r, s); }
-  //   @Get('yandex/callback')
-  //   yandexCallback(...) { return this.oauthCallback('yandex', ...); }
-  //
-  // We don't use Get(':provider') because it would shadow /me, /refresh etc.
+  // Each redirect-flow provider has a tiny controller stub calling these
+  // helpers (oauthRedirect/oauthCallback). Adding a new one (Yandex, Apple,
+  // …): provider file + registry/module registration + @Get(id) и
+  // @Get(id + '/callback') стабы. Не Get(':provider') — затенил бы /me, /refresh.
 
   oauthRedirect(provider: string, req: Request, res: Response): void {
     const handler = this.providers.get(provider);
@@ -185,20 +203,27 @@ export class AuthFlowService {
       throw new BadRequestException(
         `Provider ${provider} doesn't support OAuth`,
       );
-    const state = Buffer.from(
-      JSON.stringify({
-        nonce: randomBytes(16).toString('hex'),
-        linkUserId: req.webUser?.userId?.toString() ?? null,
-      }),
-    ).toString('base64url');
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.redirect(handler.buildAuthUrl(state));
+    // Алиас-домен (kotlarewski.gr) отдаёт /api/auth/*, но колбэк провайдера
+    // всегда на канонический хост — кука здесь не увидится (2026-09-08).
+    // Только АНОНИМНЫЙ вход: у привязки кука link_token/сессия на текущем
+    // хосте, редирект превратил бы её во вход под другим аккаунтом (2026-08-21).
+    if (
+      req.webUser?.userId == null &&
+      redirectToCallbackHost(req, res, this.callbackOrigin(handler))
+    )
+      return;
+    // `?ticket=` ставит контейнер, начавший вход у себя (ярлык, вкладка).
+    // Дальше код едет внутри подписи, а не в открытом query.
+    const ticket =
+      typeof req.query?.ticket === 'string' ? req.query.ticket : null;
+    const state = this.buildLinkState(req.webUser?.userId ?? null, ticket);
+    setOAuthCookie(res, OAUTH_STATE_COOKIE, state);
+    // Привязка (уже есть webUser) заставляет выбрать аккаунт явно; вход
+    // (webUser нет) — нет: провайдер впускает уже вошедшего одним касанием,
+    // а не гоняет через полный выбор аккаунта заново (см. buildAuthUrl).
+    res.redirect(
+      handler.buildAuthUrl(state, undefined, req.webUser?.userId != null),
+    );
   }
 
   async oauthCallback(
@@ -220,10 +245,8 @@ export class AuthFlowService {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      assertOAuthStateMatches(req, state, this.callbackOrigin(handler));
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/auth' });
 
       const identity = await handler.exchangeCode(code);
       const linkUserId = this.linkUserIdFromState(state);
@@ -233,12 +256,26 @@ export class AuthFlowService {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      this.finishOAuthRedirect(outcome, provider, res, frontendBase);
+      this.finishOAuthRedirect(
+        outcome,
+        provider,
+        res,
+        frontendBase,
+        this.ticketFromState(state),
+      );
     } catch (err) {
       this.logger.error(
         `${provider} callback error: ${(err as Error).message}`,
       );
       res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
     }
+  }
+
+  // Хост колбэка провайдера; фолбэк WEBAPP_URL — для verifyClientData-флоу без callbackOrigin.
+  private callbackOrigin(handler: AuthProviderHandler): string {
+    return (
+      handler.callbackOrigin?.() ??
+      new URL(this.config.getOrThrow<string>('WEBAPP_URL')).origin
+    );
   }
 }

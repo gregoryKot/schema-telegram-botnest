@@ -105,4 +105,46 @@ describe('PracticesService — план: read-after-write и изоляция ч
 
     expect(pending.map((p) => p.practiceText)).toEqual(['будущий']);
   });
+
+  it('getPlanHistory возвращает планы за N дней (по scheduledDate >= сегодня-N), с расшифрованным текстом и отсортированные по дате desc', async () => {
+    const db = makeDb();
+    const svc = new PracticesService(db);
+    const today = new Date();
+    const iso = (daysAgo: number) =>
+      new Date(today.getTime() - daysAgo * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+
+    await svc.createPlan(1n, 'attachment', 'слишком старый', iso(30));
+    await svc.createPlan(1n, 'attachment', 'недавний', iso(2));
+    await svc.createPlan(1n, 'attachment', 'сегодняшний', iso(0));
+
+    const history = await svc.getPlanHistory(1n, 7);
+
+    expect(history.map((h) => h.practiceText)).toEqual([
+      'сегодняшний',
+      'недавний',
+    ]);
+  });
+
+  it('getPlanHistory не подмешивает чужие планы (изоляция по userId)', async () => {
+    const db = makeDb();
+    const svc = new PracticesService(db);
+    await svc.createPlan(
+      1n,
+      'attachment',
+      'моё',
+      new Date().toISOString().slice(0, 10),
+    );
+    await svc.createPlan(
+      2n,
+      'attachment',
+      'чужое',
+      new Date().toISOString().slice(0, 10),
+    );
+
+    const history = await svc.getPlanHistory(1n, 7);
+
+    expect(history.map((h) => h.practiceText)).toEqual(['моё']);
+  });
 });

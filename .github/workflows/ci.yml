@@ -80,7 +80,8 @@ jobs:
       - run: >-
           npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
           test/app-auth test/app-ownership test/app-ownership-sweep
-          test/auth-flows test/public-quizzes
+          test/auth-flows test/public-quizzes test/phrase-check-ownership
+          test/scheduler-teardown test/login-ticket test/refresh-rotation
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -101,6 +102,18 @@ jobs:
       # слова-филлеры расползлись по всему user-facing тексту. Счётчик
       # пофайловый и может только падать.
       - run: node scripts/check-robot-phrases.mjs
+      # Храповик мужского рода (свип 2026-08): продукт говорит на «ты», а в
+      # прошедшем времени и кратких прилагательных русский род не прячет —
+      # «ты сделал», «ты не обязан», «позволь себе быть сильным». Для половины
+      # читателей это звучало как написанное не им. Форма «вы» защищена сама
+      # (множественное число рода не имеет), «ты» — нет, и она по умолчанию.
+      - run: node scripts/check-gendered-forms.mjs
+      # Храповик тихих catch (три волны ужесточения тестов, 2026-08): девять
+      # проды-багов имели одну форму — `.catch(() => {})` (или `=> []` / `=>
+      # null`) глушит ошибку сети, а код после него ведёт себя так, будто
+      # запрос удался («✓ Сохранено» на упавшем запросе, список задач молча
+      # схлопывается в пустой). tsc и coverage это не ловят — только гейт.
+      - run: node scripts/check-silent-catch.mjs
 
   # Лёгкие fs-only проверки (CI-гигиена 4.2): читают исходники через
   # node:fs/node:path, без единой npm-зависимости — не нуждаются в npm ci
@@ -118,10 +131,165 @@ jobs:
       # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
       # с разъехавшейся privacy-логикой).
       - run: node scripts/check-route-collisions.mjs
+      # Правило №6 CLAUDE.md: новый эндпоинт = DTO с class-validator.
+      # ValidationPipe({ whitelist: true }) валидирует тело запроса рефлексией
+      # класса — у `@Body() dto: SomeInterface`/`Record<...>` этой рефлексии в
+      # рантайме нет, и Nest молча пропускает тело без единой проверки. Найдено
+      # 8 таких мест, включая два публичных денежных эндпоинта —
+      # `POST /api/donation` и `POST /api/subscription`. Сами суммы там
+      # защищены (донат клампится, цену подписки берёт сервер), а форма тела
+      # не проверяется: нестроковый email ловит TypeError на .trim() и отдаёт
+      # 500 вместо 400. Причина по каждому исключению — в бейслайне.
+      - run: node scripts/check-body-dto.mjs
       # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
       - run: node scripts/check-legacy-name.mjs
+      # Мёртвые файлы: у каждого исходника должен быть потребитель в прод-коде.
+      # Найдено этим гейтом: вторая копия prisma-exception.filter (правки в неё
+      # не доезжали до прода) и два неподключённых компонента мини-аппа.
+      - run: node scripts/check-dead-files.mjs
+      # Паритет фич между фронтендами (правило №3, расследование 2026-08-21):
+      # check-paired-files.mjs (джоба webapp) видит только файлы из жёсткого
+      # списка PAIRS — файл, которого в списке нет, гейт не видит вообще, и
+      # PhraseCheck-упражнение/DiaryShareButton/.ics-экспорт жили только в
+      # мини-аппе незамеченными. check-dead-files.mjs выше считает единицей
+      # учёта ФАЙЛ — живой api.ts прикрывает собой мёртвый метод внутри
+      # (deleteBeliefCheck/deleteFlashcard/deleteLetter объявлены в обоих
+      # фронтендах и не вызываются НИОТКУДА, кроме тестов). Источник истины —
+      # роуты бэкенда (src/api/**/*.controller.ts, общие для обеих площадок):
+      # гейт проверяет, что каждый роут реально доступен с обеих площадок или
+      # осознанно заведён в scripts/feature-parity-baseline.json с причиной.
+      - run: node scripts/check-feature-parity.mjs
+      # Leader-election кронов: крон без него дублируется на втором инстансе
+      # (второй под, перекатывающийся деплой Amvera) — два процесса шлют одно и
+      # то же сообщение дважды. Гейт не ищет признак «похоже на безопасное», а
+      # требует явной классификации каждого `@Cron(` в
+      # scripts/cron-leader-baseline.json (leader — claimRun( обязателен в
+      # теле, exempt — только с внятной причиной); протухшая запись тоже красит
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-cron-leader.mjs
+      - run: node scripts/check-raw-sql-live.mjs
+      # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
+      # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
+      # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
+      # Telegram — файл никто не импортирует, поэтому его не видели ни
+      # coverage, ни гейт мёртвых файлов, ни один тест.
+      - run: node scripts/check-public-scripts.mjs
+      # Пул канала «Здоровый Взрослый»: живая БД (миграции) обязана совпадать
+      # с фолбэком src/bot/healthy-adult.data.ts. Инцидент (аудит 2026-08):
+      # дегендерный свип поправил только фолбэк — синхронизирующей миграции
+      # не было, подписчики канала получали фразы с мужским родом ещё
+      # несколько недель, потому что публикация идёт из БД, а не из фолбэка.
+      - run: node scripts/check-pool-sync.mjs
+      # merge-драйверы (.gitattributes ↔ scripts/setup-merge-drivers.mjs):
+      # атрибут без драйвера молча деградирует до текстового слияния, то есть
+      # защита от конфликтов между параллельными агентами есть на бумаге и нет
+      # на деле. Сверка ловит рассинхрон.
+      - run: node scripts/setup-merge-drivers.mjs --check
+      # Исполняемый код вне наблюдаемых деревьев (тот же класс, что уронил
+      # инцидент 2026-08-08 — webapp/public/max-bridge.js ломал вход всем
+      # пользователям Telegram 5 суток, потому что его не видел ни один
+      # инструмент). check-dead-files.mjs и check-public-scripts.mjs выше
+      # смотрят только на конкретные деревья/расширения — гейт нашёл дыру
+      # СОСЕДОМ с ними: `deploy/threads-relay/worker.js` (Cloudflare Worker,
+      # реально работает в проде, содержит сверку секрета `x-relay-key` —
+      # AUTH-путь) не видел ни один из них. Тест-лекарство —
+      # src/infra/threads-relay-worker.spec.ts.
+      - run: node scripts/check-unwatched-code.mjs
+      # Троттлинг сигнализации живёт в КАНАЛЕ ДОСТАВКИ, а не у вызывающего
+      # (инцидент 2026-07-29: шквал одинаковых DM «suspicious_initdata»
+      # замьютил чат админу — фикс завели точечно, и он не защитил соседние
+      # вызовы того же notifyAdminWithFallback: `csrf_blocked`
+      # (auth-http.util.ts) слал DM вообще без троттлинга — регрессия
+      # cookie/SameSite после деплоя ломает CSRF для КАЖДОЙ авторизованной
+      # записи КАЖДОГО пользователя разом, то есть DM на каждый запрос).
+      # Теперь бюджет (K=3 за 15 минут на имя события) встроен в
+      # SecurityLogService — единственный канал DM для событий безопасности —
+      # и новому call site не нужно об этом помнить.
+      - run: node scripts/check-alert-throttle.mjs
+      # Деплой-шов (правило №14 CLAUDE.md): Dockerfile/.dockerignore/amvera.yml
+      # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Гейт статически
+      # проверяет, что то, что Dockerfile копирует (COPY/`cp -r`), существует
+      # в репозитории или производится сборкой, что назначение мини-аппа
+      # совпадает с rootPath ServeStaticModule в src/app.module.ts, что
+      # .dockerignore не исключает то, что COPY тут же копирует, и что
+      # amvera.yml согласован с deploy/entrypoint.mjs. Это ловит рассинхрон
+      # ПУТЕЙ за миллисекунды, но не докажет, что образ вообще собирается —
+      # синтаксис Dockerfile, версии пакетов, реестр — за это отвечает джоба
+      # `docker` ниже (щит, волна 6): раньше этот класс дефекта красил только
+      # сборку на Amvera, уже после мержа, перед живыми пользователями.
+      - run: node scripts/check-deploy-paths.mjs
+      # Щит, волна 8: «ветка, зависящая от конфигурации, деградирует МОЛЧА».
+      # Заголовный случай — src/utils/admin-alert.ts: без BOT_TOKEN/ADMIN_ID
+      # и без RESEND_API_KEY/ADMIN_EMAIL КАЖДЫЙ алерт (события безопасности,
+      # сбои платежей, сбои канала волн 2/3/7) улетает в никуда без следа —
+      # позвоночник всех рантайм-наблюдателей щита молча отключается одной
+      # пропущенной env-переменной. Гейт ищет форму `if (!token/key/secret/
+      # process.env.X) return …` без throw; найденное либо в
+      # src/infra/capability-report.ts (видно в /stats и в логе старта), либо
+      # в бейслайне с причиной.
+      - run: node scripts/check-capability-registry.mjs
+      # Реестр env-переменных (щит, инциденты 2026-09-15/16: пустой
+      # ADMIN_EMAIL молчал; GOOGLE_REDIRECT_URI указывал на хост, который
+      # сервер сам редиректит дальше — вход зацикливался). Дополняет гейт
+      # выше: тот про «переменной НЕТ — фича молча выключена», этот — про
+      # «переменная ЕСТЬ, но неверна» (опечатка, чужой хост, пустая строка).
+      # Каждое чтение process.env.X/config.get('X') в src/** обязано
+      # ссылаться на запись src/infra/env-registry.entries*.ts, и каждая
+      # запись обязана реально читаться — иначе протухла. Классификация, не
+      # счётчик долга: флага --update нет.
+      - run: node scripts/check-env-registry.mjs
+      # Правило №14: «фикстура как у настоящей площадки». Два из трёх
+      # последних инцидентов CalDAV (PR #491, PR #494) — один класс: парсер
+      # внешнего формата (PROPFIND-ответ iCloud) тестировался на фикстуре,
+      # которую выдумал сам автор кода, а не на том, что реально присылает
+      # площадка. Гейт находит каждый парсер внешнего формата в src/** (явные
+      # пути — caldav-*.ts, *init-data*.ts, auth/providers/*.ts,
+      # channel/targets/*.ts — и content-эвристика: fetch(+разбор ответа или
+      # проверка подписи/токена извне) и требует классификации в
+      # scripts/recorded-fixtures-baseline.json: recorded — реально
+      # записанная фикстура в test/fixtures/recorded/, которую спек читает
+      # по имени, либо честный exempt (записи с площадки нет — долг, а не
+      # нарушение). Флага --update нет: это классификация, не счётчик.
+      - run: node scripts/check-recorded-fixtures.mjs
+      # Правило №15: «гейт про гейты». Список исключений (ALLOW/EXCLUDE/
+      # EXEMPT/EXCLUDED) внесли в храповик — а тест на то, что он гасит
+      # именно законный случай и не шире, никто не написал: замер на каждый
+      # существующий такой список в репозитории показал, что часть можно
+      # было опустошить бесследно. Гейт требует у каждого непустого списка
+      # тест, упоминающий его по имени (loadRegexList/loadStringList/
+      # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
+      - run: node scripts/check-gate-exemptions.mjs
+
+  # Щит, волна 6: `docker build` реально собирает прод-образ. До этой джобы
+  # ни одна не гоняла настоящую сборку — check-deploy-paths.mjs (джоба
+  # `checks`, выше) статически сверяет ПУТИ за миллисекунды, но не исполняет
+  # Dockerfile; синтаксис RUN-команд, версии npm-пакетов, доступность
+  # deb.debian.org/реестра — всё это красило только сборку на Amvera, уже
+  # после мержа, перед живыми пользователями. Джобы дополняют друг друга, а
+  # не дублируют: без этой джобы push в main мог сломать сборку, и первым об
+  # этом узнавал прод.
+  #
+  # docker/build-push-action с GitHub Actions cache (а не голый `docker
+  # build`): у образа 20+ шагов (три npm ci, три сборки фронтендов) и без
+  # кэша слоёв каждый прогон CI пересобирал бы всё с нуля — минуты впустую на
+  # шагах, которые PR не менял. push:false — только собрать и проверить,
+  # реестр не нужен (сам деплой делает Amvera по push в main, см. CLAUDE.md
+  # «Деплой webapp»).
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: schema-telegram-botnest:ci-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
@@ -169,6 +337,68 @@ jobs:
       # требует полного env — здесь не нужен). --runInBand: одна БД, без гонок.
       - name: e2e read-after-write smoke
         run: npx jest --config ./test/jest-e2e.json --runInBand test/read-after-write.e2e-spec.ts
+      # Leader-election кронов: вся защита от дублей на втором инстансе держится
+      # на атомарности одного запроса, а атомарность — свойство Postgres, а не
+      # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
+      - name: e2e leader-election кронов на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
+      # advisory-lock через $queryRaw, а Prisma 7 не читает колонку типа `void`.
+      # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
+      # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
+      - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
+      # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
+      # удаления аккаунта, захват списания подписки. Состав держит гейт
+      # check-raw-sql-live.mjs (джоба checks).
+      - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+      # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
+      # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
+      - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/throttle-storage.e2e-spec.ts
+      # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
+      # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
+      # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей
+      # Prisma на ЗЕЛЁНЫХ тестах (не понимал top-level OR → disconnect удалял
+      # 0 строк, не применял @default из схемы → invite/join молча отбивался,
+      # не поддерживал include → связь TherapyRelation→User была undefined).
+      # Расхождение фейка с реальностью теперь падает здесь, а не живёт
+      # годами незамеченным. E2E_REAL_DB=1 переключает buildTestApp() на
+      # настоящий PrismaService (build-test-app.ts) вместо фейка.
+      # --runInBand: одна БД, спеки чистят свои userId сами (cleanup-fixtures.ts).
+      - name: e2e ownership smoke на реальном Postgres (фейк vs реальность)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
+          test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
+          test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts
+          test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
+          test/phrase-check-ownership.e2e-spec.ts
+          test/login-ticket.e2e-spec.ts
+          test/refresh-rotation.e2e-spec.ts
+          test/notify-address.e2e-spec.ts
+          test/account-export-ownership.e2e-spec.ts
+        env:
+          E2E_REAL_DB: '1'
+      # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
+      # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
+      # уникальных констрейнтов и транзакционных апдейтов, которые
+      # fake-prisma.ts (generic in-memory `where`-матчер) не эмулирует —
+      # фейк физически не может уронить тест на гонке/дублирующем INSERT.
+      # cleanupPaymentFixtures (test/e2e-support/cleanup-fixtures.ts) чистит
+      # фикстуры спека по фиксированным cancelToken/marker перед прогоном,
+      # поэтому сам спек идемпотентен и локально гоняется на одной БД подряд
+      # без ручной чистки между прогонами.
+      - name: e2e payment webhook smoke на реальном Postgres (идемпотентность)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/payment-webhooks.e2e-spec.ts
+        env:
+          E2E_REAL_DB: '1'
 
   webapp:
     runs-on: ubuntu-latest
@@ -181,6 +411,14 @@ jobs:
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
       - run: npm run build --prefix webapp
+      # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
+      # печатает «chunks larger than 400 kB» и это молча игнорировалось —
+      # гейт меряет байты webapp/dist (свежесобран шагом выше) и уже
+      # закоммиченного schema-miniapp/dist (checkout принёс его вместе с
+      # репозиторием — джоба не собирает мини-апп отдельно). Шаг стоит СРАЗУ
+      # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
+      # понятной подсказкой «сначала собери».
+      - run: node scripts/check-bundle-size-ratchet.mjs
       # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по
       # образцу scripts/check-coverage-ratchet.mjs бэкенда): сам гоняет
       # `vitest run --coverage` и падает при просадке покрытия ниже
@@ -195,9 +433,33 @@ jobs:
       # «вы благодарен», «вы вырос». Сплошная вычитка нашла 11 таких мест;
       # проверка жёсткая, без бейслайна — новых быть не должно.
       - run: node scripts/check-address-agreement.mjs
+      # Обращение вне механики форм (свип 2026-08): храповик выше ловит только
+      # захардкоженные «ты»-МЕСТОИМЕНИЯ во фронтендах — этот заодно ловит
+      # императивы («Нажми») без местоимения рядом, зеркальные «вы»-формы и
+      # бэкенд (`src/`, письма/уведомления). Пофайловый бейслайн.
+      - run: node scripts/check-second-person.mjs
+      # Храповик подпороговых fontSize (дизайн-аудит 2026-08, В1): inline
+      # `fontSize: N` ниже 11px — нижний читаемый порог. fs-only, тот же
+      # принцип, что у check-second-person.mjs выше.
+      - run: node scripts/check-tiny-fonts.mjs
       # Драйв-гард парных файлов (правило №3): канонические пары
       # webapp ↔ miniapp обязаны быть побайтово идентичны.
       - run: node scripts/check-paired-files.mjs
+      # Контракт дизайн-токенов (дизайн-аудит 2026-08, В11): оба index.css
+      # обязаны импортировать shared/src/theme/tokens.css (акцент+шрифты) и
+      # объявлять одни и те же имена для токенов, чьё значение намеренно
+      # локально (статусные цвета, поверхности).
+      - run: node scripts/check-token-contract.mjs
+      # Храповик значений вне шкалы (дизайн-аудит 2026-08, В11, волна
+      # «порядок»): без гейта шкала --r-*/--space-* в tokens.css — просто
+      # комментарий, который следующий PR не обязан соблюдать. fs-only,
+      # тот же принцип, что у check-tiny-fonts.mjs выше.
+      - run: node scripts/check-scale-drift.mjs
+      # Храповик размытия (расследование скорости 2026-08-26): backdrop-filter
+      # и filter: blur считаются программно в установленном на телефон PWA —
+      # ~1.4с на кадр, приложение вязнет. fs-only, тот же принцип, что у
+      # check-tiny-fonts.mjs выше.
+      - run: node scripts/check-render-poison.mjs
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
@@ -231,10 +493,19 @@ jobs:
             package-lock.json
             webapp/package-lock.json
             schema-miniapp/package-lock.json
+            shared/package-lock.json
       - run: npm ci
       - run: npx prisma generate
       - run: npm ci --prefix webapp
       - run: npm ci --prefix schema-miniapp
+      # shared тоже линтуется храповиком, а зависимости ему не ставили —
+      # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
+      # без node_modules разрешают TS иначе, чем локально. Итог: файл
+      # shared/ проходил локальный прогон и краснел в CI (реальный случай
+      # 2026-08 — лишний каст в useConfetti.test.tsx). Разные вердикты у
+      # одного гейта хуже, чем строгий гейт: локальной проверке перестают
+      # верить.
+      - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
 
   miniapp:

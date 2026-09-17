@@ -7,23 +7,37 @@
 // данные A. Плюс один BUG-тест на /api/settings — см. комментарий у него.
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { buildTestApp } from './e2e-support/build-test-app';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
   let app: INestApplication;
-
-  beforeAll(async () => {
-    ({ app } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  let prisma: TestApp['prisma'];
 
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 6_000_000_000_000_001n;
   const USER_B = 6_000_000_000_000_002n;
+  const ALL_USER_IDS = [USER_A, USER_B];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
+    // на фейке. Особо важна здесь: streak/insights/achievements читают ВСЮ
+    // историю юзера — мусор от прошлого локального прогона портит счётчики.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());
@@ -123,8 +137,6 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
     expect(bRatings.body.attachment).toBeUndefined();
   });
 
-  // FINDING (this sweep): SettingsController (src/api/settings.controller.ts)
-  // is never added to ApiModule.controllers — since the settings routes were
   // Регрессия инцидента 2026-07-27: после распила api.controller (PR #43)
   // SettingsController существовал, но НЕ был зарегистрирован в ApiModule —
   // GET/POST /api/settings отдавали 404 на проде (экраны настроек били в
@@ -139,5 +151,35 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
     const other = await b.get('/api/settings');
     expect(other.status).toBe(200);
     expect(other.body.addressForm).not.toBe('vy');
+  });
+
+  // Смок на User.uiPrefs (серверное зеркало кастомизации мини-аппа, добавлено
+  // 2026-08-07) — тот же контракт: сохранил → прочитал ровно то же, B не
+  // видит и не может перезаписать настройку A через свой собственный вызов.
+  it('/api/settings uiPrefs: сохранил → прочитал; B не видит и не пишет поверх настройки A', async () => {
+    const updated = await a.post('/api/settings', {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+    });
+    expect(updated.status).toBeLessThan(300);
+    const got = await a.get('/api/settings');
+    expect(got.status).toBe(200);
+    expect(got.body.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+
+    const other = await b.get('/api/settings');
+    expect(other.status).toBe(200);
+    expect(other.body.uiPrefs).not.toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+
+    await b.post('/api/settings', { uiPrefs: { today_streak_hidden: '0' } });
+    const aAfterB = await a.get('/api/settings');
+    expect(aAfterB.body.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
   });
 });

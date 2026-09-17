@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
-import { pickTips } from './modeMapTips';
+import { pickTips, useModeMapTips } from './modeMapTips';
 import { useTr } from '../utils/addressForm';
 import { MMIcon } from './modeMapIcons';
 
@@ -45,7 +45,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   // ── Steps with clinical descriptions ────────────────────────────────────────
   const steps: Step[] = kind === 'couple'
     ? [
-        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между вами — момент, с которого закрутился цикл',
+        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между партнёрами — момент, с которого закрутился цикл',
           add: mk('trigger', 'Триггер', { side: 'A' }) },
         { ok: hasSide('child', 'A'),   label: 'Боль Партнёра А',     desc: 'Что задело А под поверхностью: страх, стыд, покинутость',
           add: mk('child', 'Уязвимый Ребёнок', { side: 'A' }) },
@@ -71,8 +71,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         { ok: hasBehavior, label: 'Поведение',         desc: 'Что человек реально делает — и к каким последствиям это ведёт',
           add: mk('behavior', 'Поведение') },
         { ok: hasNeed,     label: 'Потребность',       desc: hasChild
-            ? 'Что на самом деле было нужно ребёнку — нажми, чтобы вписать на режиме Ребёнка'
-            : 'Что было нужно ребёнку — сначала добавь Уязвимого Ребёнка',
+            ? tr('Что на самом деле было нужно ребёнку — нажми, чтобы вписать на режиме Ребёнка', 'Что на самом деле было нужно ребёнку — нажмите, чтобы вписать на режиме Ребёнка')
+            : tr('Что было нужно ребёнку — сначала добавь Уязвимого Ребёнка', 'Что было нужно ребёнку — сначала добавьте Уязвимого Ребёнка'),
           add: null, action: onOpenNeed, actionReady: hasChild },
       ]
     : [
@@ -95,25 +95,25 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   if (hasCoping && !hasChild)
     alerts.push({ text: 'За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?', level: 'info' });
   if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
-    alerts.push({ text: 'Назови потребность ребёнка — именно она становится целью терапии.', level: 'info' });
+    alerts.push({ text: tr('Назови потребность ребёнка — именно она становится целью терапии.', 'Назовите потребность ребёнка — именно она становится целью терапии.'), level: 'info' });
   // Fresh random picks — new set each time the panel opens or you reroll
-  const random = useMemo(
-    () => pickTips(kind, 3, []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [kind, reroll],
-  );
+  const tips = useModeMapTips();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const random = useMemo(() => pickTips(tips, kind, 3, []), [tips, kind, reroll]);
 
   return (
     <div style={{
       width: 264, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto',
       background: 'var(--bg-elev)', border: '1px solid var(--line)',
-      borderRadius: 12, padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
+      borderRadius: 'var(--r-12)', padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
           {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
-        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+        {/* Хитбокс ≥32px (аудит 2026-08, К3): padding + компенсирующий отрицательный
+            margin — иконка визуально остаётся 14px, тач-зона растёт до 32px. */}
+        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 9, margin: -9, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
         {kind === 'couple'
@@ -131,8 +131,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
             <button key={i} disabled={!clickable}
               onClick={() => { if (!clickable) return; if (s.add) onAdd(s.add); else s.action?.(); }}
               title={clickable ? (s.add ? 'Добавить на холст' : 'Открыть поле') : undefined}
-              style={{ display: 'flex', gap: 8, textAlign: 'left', width: '100%',
-                background: 'none', border: 'none', padding: '6px 5px', borderRadius: 6,
+              style={{ display: 'flex', gap: 'var(--space-8)', textAlign: 'left', width: '100%',
+                background: 'none', border: 'none', padding: '6px 5px', borderRadius: 'var(--r-6)',
                 cursor: clickable ? 'pointer' : 'default', alignItems: 'flex-start' }}
               onMouseEnter={e => { if (clickable) e.currentTarget.style.background = 'var(--surface-2)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
@@ -184,9 +184,9 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
             ↻
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
           {random.map((t, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
+            <div key={i} style={{ display: 'flex', gap: 'var(--space-8)', fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
               <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-line)', marginTop: 6 }} /><span>{t}</span>
             </div>
           ))}

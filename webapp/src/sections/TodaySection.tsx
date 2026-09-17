@@ -2,9 +2,9 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
 import { useNeedData } from '../needData';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import type { Section } from '../components/BottomNav';
+import type { Section } from '../components/appShell/navigation';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { hasDraft } from '../utils/drafts';
@@ -17,7 +17,9 @@ import { greeting, formatHeaderDate, readLocalIds, resolveTaskText } from './tod
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { Sparkline } from './today/Sparkline';
 import { SkeletonLines } from './today/SkeletonLines';
-import { OnboardingWidget } from './today/OnboardingWidget';
+import { CaseEntryBlock } from './today/CaseEntryBlock';
+import { useTaskActions } from './today/useTaskActions';
+import { PhraseShareCard } from '../components/PhraseShareCard';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -60,8 +62,7 @@ export function TodaySection({
   const [recentDiaries,  setRecentDiaries]  = useState<Array<{ type: string; label: string; time: string; dateStr: string }>>([]);
   const [diariesLoaded,  setDiariesLoaded]  = useState(false);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
-  const [tasks,          setTasks]          = useState<UserTask[]>([]);
-  const [taskHistory,    setTaskHistory]    = useState<UserTask[]>([]);
+  const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [introSchemaId,  setIntroSchemaId]  = useState<string | null>(null);
@@ -93,7 +94,7 @@ export function TodaySection({
         setManualSchemaIds(p.mySchemaIds);
         localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
       }
-    }).catch(() => {});
+    }).catch(() => reportClientError({ message: 'today profile background load failed', section: 'today' }));
 
     Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
       .then(([schema, mode, gratitude]) => {
@@ -108,10 +109,10 @@ export function TodaySection({
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
       })
-      .catch(() => {})
+      .catch(() => reportClientError({ message: 'today diaries background load failed', section: 'today' }))
       .finally(() => { if (!ignore) setDiariesLoaded(true); });
 
-    api.getTherapyRelation().then(r => { if (!ignore && r) setTherapyRelation(r); }).catch(() => {});
+    api.getTherapyRelation().then(r => { if (!ignore && r) setTherapyRelation(r); }).catch(() => reportClientError({ message: 'today therapy relation load failed', section: 'today' }));
 
     api.history(14).then(days => {
       if (ignore) return;
@@ -130,26 +131,17 @@ export function TodaySection({
         vals.push(avg);
       }
       setHistory14(vals);
-    }).catch(() => {});
+    }).catch(() => reportClientError({ message: 'today history background load failed', section: 'today' }));
 
     return () => { ignore = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
-  }, [refreshKey]);
-
-  useEffect(() => {
-    Promise.all([api.getTasks(), api.getTaskHistory()])
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); })
-      .catch(() => {});
   }, [refreshKey]);
 
   function handleTaskComplete() {
     if (activeTaskId === null) return;
     const id = activeTaskId;
     setActiveTaskId(null);
-    api.completeTask(id, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
-      .catch(() => {});
+    completeTask(id, onTasksChanged);
   }
 
   function handleTaskAction(task: UserTask) {
@@ -167,7 +159,7 @@ export function TodaySection({
   const allRated   = needs.length > 0 && ratedCount === needs.length;
   const avgRaw     = allRated ? needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length : 0;
   const avgScore   = allRated ? avgRaw.toFixed(1) : null;
-  const hasSchemas = [...new Set([...(profile?.ysq.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
+  const hasSchemas = [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
 
   // Week delta for index: compare last 7 days avg vs previous 7 days avg
   const weekDelta = (() => {
@@ -232,8 +224,8 @@ export function TodaySection({
             </div>
           )}
 
-          {/* Onboarding */}
-          <OnboardingWidget
+          {/* Точка входа «Что это было» + онбординг после первого разбора */}
+          <CaseEntryBlock
             profile={profile}
             hasSchemas={hasSchemas}
             onOpenSchema={onOpenSchema}
@@ -280,19 +272,27 @@ export function TodaySection({
           </div>
 
           {/* ── Practices section ── */}
-          {(activeTasks.length > 0 || tasks.some(t => t.done !== null)) && (
+          {(activeTasks.length > 0 || tasks.some(t => t.done !== null) || taskError) && (
             <div className="section">
               <div className="section-head">
                 <h3>Практики на сегодня</h3>
                 {activeTasks.length > 0 && <span className="hint">{activeTasks.length} активных</span>}
               </div>
+              {taskError && (
+                <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 10 }}>
+                  {tr(
+                    'Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз',
+                    'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз',
+                  )}
+                </div>
+              )}
               {tasks.slice(0, 5).map(task => {
                 const isDone = task.done === true;
                 const isFail = task.done === false;
                 return (
                   <div key={task.id} className="list-line">
                     <span style={{
-                      width: 14, height: 14, borderRadius: 4,
+                      width: 14, height: 14, borderRadius: 'var(--r-4)',
                       border: `1.5px solid ${isDone ? 'var(--text)' : 'var(--line-strong)'}`,
                       background: isDone ? 'var(--text)' : 'transparent',
                       flexShrink: 0, marginTop: 4,
@@ -412,8 +412,7 @@ export function TodaySection({
           {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
             <>
               <div className="eyebrow" style={{ marginBottom: 8 }}>Терапевт</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{therapyRelation.partnerName}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Схема-терапевт</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{therapyRelation.partnerName}</div>
               {nextSessionLabel && (
                 <>
                   <div className="eyebrow" style={{ marginBottom: 6 }}>Следующая встреча</div>
@@ -438,6 +437,8 @@ export function TodaySection({
             {streak === 0 ? tr('Оцени потребности – начнётся стрик', 'Оцените потребности – начнётся стрик') : 'дней подряд'}
           </div>
 
+          <PhraseShareCard />
+
         </aside>
       </div>
 
@@ -445,7 +446,7 @@ export function TodaySection({
       {showDiaryTask && <TaskCreateSheet defaultType="diary_streak" onCreated={() => setShowDiaryTask(false)} onClose={() => setShowDiaryTask(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); }).catch(() => {}); }}
+          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}
@@ -466,7 +467,7 @@ export function TodaySection({
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
-          onTaskDone={id => api.completeTask(id, true).then(() => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); })).catch(() => {})}
+          onTaskDone={id => completeTask(id)}
           onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
         />
       )}

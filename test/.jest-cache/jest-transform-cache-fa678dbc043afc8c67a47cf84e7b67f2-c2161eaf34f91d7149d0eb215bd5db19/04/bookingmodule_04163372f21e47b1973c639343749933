@@ -1,0 +1,57 @@
+fd8ffa4ac42b8a458e0c9b50fc7552b3
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookingModule = void 0;
+const common_1 = require("@nestjs/common");
+const booking_controller_1 = require("./booking.controller");
+const booking_admin_controller_1 = require("./booking-admin.controller");
+const payment_controller_1 = require("./payment.controller");
+const booking_service_1 = require("./booking.service");
+const booking_notify_service_1 = require("./booking-notify.service");
+const slot_service_1 = require("./slot.service");
+const availability_service_1 = require("./availability.service");
+const caldav_service_1 = require("./caldav.service");
+const meeting_service_1 = require("./meeting.service");
+const robokassa_service_1 = require("./robokassa.service");
+const pricing_service_1 = require("./pricing.service");
+const donation_controller_1 = require("../donation/donation.controller");
+const donation_service_1 = require("../donation/donation.service");
+const subscription_controller_1 = require("../subscription/subscription.controller");
+const subscription_service_1 = require("../subscription/subscription.service");
+const telegram_module_1 = require("../telegram/telegram.module");
+const auth_module_1 = require("../auth/auth.module");
+let BookingModule = class BookingModule {
+};
+exports.BookingModule = BookingModule;
+exports.BookingModule = BookingModule = __decorate([
+    (0, common_1.Module)({
+        imports: [telegram_module_1.TelegramModule, auth_module_1.AuthModule],
+        controllers: [
+            booking_controller_1.BookingController,
+            booking_admin_controller_1.BookingAdminController,
+            payment_controller_1.PaymentController,
+            donation_controller_1.DonationController,
+            subscription_controller_1.SubscriptionController,
+        ],
+        providers: [
+            booking_service_1.BookingService,
+            booking_notify_service_1.BookingNotifyService,
+            slot_service_1.SlotService,
+            availability_service_1.AvailabilityService,
+            caldav_service_1.CalDavService,
+            meeting_service_1.MeetingService,
+            robokassa_service_1.RobokassaService,
+            pricing_service_1.PricingService,
+            donation_service_1.DonationService,
+            subscription_service_1.SubscriptionService,
+        ],
+        exports: [booking_service_1.BookingService, slot_service_1.SlotService, subscription_service_1.SubscriptionService],
+    })
+], BookingModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29raW5nLm1vZHVsZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7QUFBQSwyQ0FBd0M7QUFDeEMsNkRBQXlEO0FBQ3pELHlFQUFvRTtBQUNwRSw2REFBeUQ7QUFDekQsdURBQW1EO0FBQ25ELHFFQUFnRTtBQUNoRSxpREFBNkM7QUFDN0MsaUVBQTZEO0FBQzdELHFEQUFpRDtBQUNqRCx1REFBbUQ7QUFDbkQsMkRBQXVEO0FBQ3ZELHVEQUFtRDtBQUNuRCx5RUFBcUU7QUFDckUsbUVBQStEO0FBQy9ELHFGQUFpRjtBQUNqRiwrRUFBMkU7QUFDM0UsaUVBQTZEO0FBQzdELHFEQUFpRDtBQXlCMUMsSUFBTSxhQUFhLEdBQW5CLE1BQU0sYUFBYTtDQUFHLENBQUE7QUFBaEIsc0NBQWE7d0JBQWIsYUFBYTtJQXZCekIsSUFBQSxlQUFNLEVBQUM7UUFDTixPQUFPLEVBQUUsQ0FBQyxnQ0FBYyxFQUFFLHdCQUFVLENBQUM7UUFDckMsV0FBVyxFQUFFO1lBQ1gsc0NBQWlCO1lBQ2pCLGlEQUFzQjtZQUN0QixzQ0FBaUI7WUFDakIsd0NBQWtCO1lBQ2xCLGdEQUFzQjtTQUN2QjtRQUNELFNBQVMsRUFBRTtZQUNULGdDQUFjO1lBQ2QsNkNBQW9CO1lBQ3BCLDBCQUFXO1lBQ1gsMENBQW1CO1lBQ25CLDhCQUFhO1lBQ2IsZ0NBQWM7WUFDZCxvQ0FBZ0I7WUFDaEIsZ0NBQWM7WUFDZCxrQ0FBZTtZQUNmLDBDQUFtQjtTQUNwQjtRQUNELE9BQU8sRUFBRSxDQUFDLGdDQUFjLEVBQUUsMEJBQVcsRUFBRSwwQ0FBbUIsQ0FBQztLQUM1RCxDQUFDO0dBQ1csYUFBYSxDQUFHIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2Jvb2tpbmcvYm9va2luZy5tb2R1bGUudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgTW9kdWxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgQm9va2luZ0NvbnRyb2xsZXIgfSBmcm9tICcuL2Jvb2tpbmcuY29udHJvbGxlcic7XG5pbXBvcnQgeyBCb29raW5nQWRtaW5Db250cm9sbGVyIH0gZnJvbSAnLi9ib29raW5nLWFkbWluLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgUGF5bWVudENvbnRyb2xsZXIgfSBmcm9tICcuL3BheW1lbnQuY29udHJvbGxlcic7XG5pbXBvcnQgeyBCb29raW5nU2VydmljZSB9IGZyb20gJy4vYm9va2luZy5zZXJ2aWNlJztcbmltcG9ydCB7IEJvb2tpbmdOb3RpZnlTZXJ2aWNlIH0gZnJvbSAnLi9ib29raW5nLW5vdGlmeS5zZXJ2aWNlJztcbmltcG9ydCB7IFNsb3RTZXJ2aWNlIH0gZnJvbSAnLi9zbG90LnNlcnZpY2UnO1xuaW1wb3J0IHsgQXZhaWxhYmlsaXR5U2VydmljZSB9IGZyb20gJy4vYXZhaWxhYmlsaXR5LnNlcnZpY2UnO1xuaW1wb3J0IHsgQ2FsRGF2U2VydmljZSB9IGZyb20gJy4vY2FsZGF2LnNlcnZpY2UnO1xuaW1wb3J0IHsgTWVldGluZ1NlcnZpY2UgfSBmcm9tICcuL21lZXRpbmcuc2VydmljZSc7XG5pbXBvcnQgeyBSb2Jva2Fzc2FTZXJ2aWNlIH0gZnJvbSAnLi9yb2Jva2Fzc2Euc2VydmljZSc7XG5pbXBvcnQgeyBQcmljaW5nU2VydmljZSB9IGZyb20gJy4vcHJpY2luZy5zZXJ2aWNlJztcbmltcG9ydCB7IERvbmF0aW9uQ29udHJvbGxlciB9IGZyb20gJy4uL2RvbmF0aW9uL2RvbmF0aW9uLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgRG9uYXRpb25TZXJ2aWNlIH0gZnJvbSAnLi4vZG9uYXRpb24vZG9uYXRpb24uc2VydmljZSc7XG5pbXBvcnQgeyBTdWJzY3JpcHRpb25Db250cm9sbGVyIH0gZnJvbSAnLi4vc3Vic2NyaXB0aW9uL3N1YnNjcmlwdGlvbi5jb250cm9sbGVyJztcbmltcG9ydCB7IFN1YnNjcmlwdGlvblNlcnZpY2UgfSBmcm9tICcuLi9zdWJzY3JpcHRpb24vc3Vic2NyaXB0aW9uLnNlcnZpY2UnO1xuaW1wb3J0IHsgVGVsZWdyYW1Nb2R1bGUgfSBmcm9tICcuLi90ZWxlZ3JhbS90ZWxlZ3JhbS5tb2R1bGUnO1xuaW1wb3J0IHsgQXV0aE1vZHVsZSB9IGZyb20gJy4uL2F1dGgvYXV0aC5tb2R1bGUnO1xuXG5ATW9kdWxlKHtcbiAgaW1wb3J0czogW1RlbGVncmFtTW9kdWxlLCBBdXRoTW9kdWxlXSxcbiAgY29udHJvbGxlcnM6IFtcbiAgICBCb29raW5nQ29udHJvbGxlcixcbiAgICBCb29raW5nQWRtaW5Db250cm9sbGVyLFxuICAgIFBheW1lbnRDb250cm9sbGVyLFxuICAgIERvbmF0aW9uQ29udHJvbGxlcixcbiAgICBTdWJzY3JpcHRpb25Db250cm9sbGVyLFxuICBdLFxuICBwcm92aWRlcnM6IFtcbiAgICBCb29raW5nU2VydmljZSxcbiAgICBCb29raW5nTm90aWZ5U2VydmljZSxcbiAgICBTbG90U2VydmljZSxcbiAgICBBdmFpbGFiaWxpdHlTZXJ2aWNlLFxuICAgIENhbERhdlNlcnZpY2UsXG4gICAgTWVldGluZ1NlcnZpY2UsXG4gICAgUm9ib2thc3NhU2VydmljZSxcbiAgICBQcmljaW5nU2VydmljZSxcbiAgICBEb25hdGlvblNlcnZpY2UsXG4gICAgU3Vic2NyaXB0aW9uU2VydmljZSxcbiAgXSxcbiAgZXhwb3J0czogW0Jvb2tpbmdTZXJ2aWNlLCBTbG90U2VydmljZSwgU3Vic2NyaXB0aW9uU2VydmljZV0sXG59KVxuZXhwb3J0IGNsYXNzIEJvb2tpbmdNb2R1bGUge31cbiJdLCJ2ZXJzaW9uIjozfQ==

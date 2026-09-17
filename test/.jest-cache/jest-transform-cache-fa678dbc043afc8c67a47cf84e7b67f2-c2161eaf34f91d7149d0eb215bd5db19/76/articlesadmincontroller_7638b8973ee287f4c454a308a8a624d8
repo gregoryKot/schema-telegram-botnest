@@ -1,0 +1,91 @@
+b1667ab924831499d555df3d9d9b1d98
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ArticlesAdminController = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const articles_service_1 = require("./articles.service");
+const admin_key_util_1 = require("../booking/admin-key.util");
+const article_dto_1 = require("./article.dto");
+/**
+ * Admin article endpoints, guarded by the same ADMIN_BOOKING_KEY used by the
+ * booking admin panel (one key for the whole admin panel, x-admin-key header).
+ */
+let ArticlesAdminController = class ArticlesAdminController {
+    articles;
+    config;
+    adminKey;
+    constructor(articles, config) {
+        this.articles = articles;
+        this.config = config;
+        this.adminKey = config.get('ADMIN_BOOKING_KEY') ?? '';
+    }
+    async list(key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        return this.articles.adminList();
+    }
+    async create(dto, key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        return this.articles.create(dto);
+    }
+    async update(id, dto, key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        return this.articles.update(id, dto);
+    }
+    async remove(id, key) {
+        (0, admin_key_util_1.assertAdminKey)(key, this.adminKey);
+        return this.articles.remove(id);
+    }
+};
+exports.ArticlesAdminController = ArticlesAdminController;
+__decorate([
+    (0, common_1.Get)('list'),
+    __param(0, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ArticlesAdminController.prototype, "list", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_c = typeof article_dto_1.ArticleDto !== "undefined" && article_dto_1.ArticleDto) === "function" ? _c : Object, String]),
+    __metadata("design:returntype", Promise)
+], ArticlesAdminController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, typeof (_d = typeof article_dto_1.UpdateArticleDto !== "undefined" && article_dto_1.UpdateArticleDto) === "function" ? _d : Object, String]),
+    __metadata("design:returntype", Promise)
+], ArticlesAdminController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Headers)('x-admin-key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String]),
+    __metadata("design:returntype", Promise)
+], ArticlesAdminController.prototype, "remove", null);
+exports.ArticlesAdminController = ArticlesAdminController = __decorate([
+    (0, common_1.Controller)('api/articles/admin'),
+    __metadata("design:paramtypes", [typeof (_a = typeof articles_service_1.ArticlesService !== "undefined" && articles_service_1.ArticlesService) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object])
+], ArticlesAdminController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXJ0aWNsZXMvYXJ0aWNsZXMtYWRtaW4uY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBWXdCO0FBQ3hCLDJDQUErQztBQUMvQyx5REFBcUQ7QUFDckQsOERBQTJEO0FBQzNELCtDQUE2RDtBQUU3RDs7O0dBR0c7QUFFSSxJQUFNLHVCQUF1QixHQUE3QixNQUFNLHVCQUF1QjtJQUlmO0lBQ0E7SUFKRixRQUFRLENBQVM7SUFFbEMsWUFDbUIsUUFBeUIsRUFDekIsTUFBcUI7UUFEckIsYUFBUSxHQUFSLFFBQVEsQ0FBaUI7UUFDekIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtRQUV0QyxJQUFJLENBQUMsUUFBUSxHQUFHLE1BQU0sQ0FBQyxHQUFHLENBQVMsbUJBQW1CLENBQUMsSUFBSSxFQUFFLENBQUM7SUFDaEUsQ0FBQztJQUdLLEFBQU4sS0FBSyxDQUFDLElBQUksQ0FBeUIsR0FBVztRQUM1QyxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztRQUNuQyxPQUFPLElBQUksQ0FBQyxRQUFRLENBQUMsU0FBUyxFQUFFLENBQUM7SUFDbkMsQ0FBQztJQUlLLEFBQU4sS0FBSyxDQUFDLE1BQU0sQ0FBUyxHQUFlLEVBQTBCLEdBQVc7UUFDdkUsSUFBQSwrQkFBYyxFQUFDLEdBQUcsRUFBRSxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUM7UUFDbkMsT0FBTyxJQUFJLENBQUMsUUFBUSxDQUFDLE1BQU0sQ0FBQyxHQUFHLENBQUMsQ0FBQztJQUNuQyxDQUFDO0lBR0ssQUFBTixLQUFLLENBQUMsTUFBTSxDQUNpQixFQUFVLEVBQzdCLEdBQXFCLEVBQ0wsR0FBVztRQUVuQyxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztRQUNuQyxPQUFPLElBQUksQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLEVBQUUsRUFBRSxHQUFHLENBQUMsQ0FBQztJQUN2QyxDQUFDO0lBR0ssQUFBTixLQUFLLENBQUMsTUFBTSxDQUNpQixFQUFVLEVBQ2IsR0FBVztRQUVuQyxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztRQUNuQyxPQUFPLElBQUksQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLEVBQUUsQ0FBQyxDQUFDO0lBQ2xDLENBQUM7Q0FDRixDQUFBO0FBekNZLDBEQUF1QjtBQVc1QjtJQURMLElBQUEsWUFBRyxFQUFDLE1BQU0sQ0FBQztJQUNBLFdBQUEsSUFBQSxnQkFBTyxFQUFDLGFBQWEsQ0FBQyxDQUFBOzs7O21EQUdqQztBQUlLO0lBRkwsSUFBQSxhQUFJLEdBQUU7SUFDTixJQUFBLGlCQUFRLEVBQUMsbUJBQVUsQ0FBQyxFQUFFLENBQUM7SUFDVixXQUFBLElBQUEsYUFBSSxHQUFFLENBQUE7SUFBbUIsV0FBQSxJQUFBLGdCQUFPLEVBQUMsYUFBYSxDQUFDLENBQUE7O3lEQUFuQyx3QkFBVSxvQkFBVix3QkFBVTs7cURBR25DO0FBR0s7SUFETCxJQUFBLGNBQUssRUFBQyxLQUFLLENBQUM7SUFFVixXQUFBLElBQUEsY0FBSyxFQUFDLElBQUksRUFBRSxxQkFBWSxDQUFDLENBQUE7SUFDekIsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBO0lBQ04sV0FBQSxJQUFBLGdCQUFPLEVBQUMsYUFBYSxDQUFDLENBQUE7O2lFQURWLDhCQUFnQixvQkFBaEIsOEJBQWdCOztxREFLOUI7QUFHSztJQURMLElBQUEsZUFBTSxFQUFDLEtBQUssQ0FBQztJQUVYLFdBQUEsSUFBQSxjQUFLLEVBQUMsSUFBSSxFQUFFLHFCQUFZLENBQUMsQ0FBQTtJQUN6QixXQUFBLElBQUEsZ0JBQU8sRUFBQyxhQUFhLENBQUMsQ0FBQTs7OztxREFJeEI7a0NBeENVLHVCQUF1QjtJQURuQyxJQUFBLG1CQUFVLEVBQUMsb0JBQW9CLENBQUM7eURBS0Ysa0NBQWUsb0JBQWYsa0NBQWUsb0RBQ2pCLHNCQUFhLG9CQUFiLHNCQUFhO0dBTDdCLHVCQUF1QixDQXlDbkMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXJ0aWNsZXMvYXJ0aWNsZXMtYWRtaW4uY29udHJvbGxlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBDb250cm9sbGVyLFxuICBHZXQsXG4gIFBvc3QsXG4gIFBhdGNoLFxuICBEZWxldGUsXG4gIEJvZHksXG4gIFBhcmFtLFxuICBIZWFkZXJzLFxuICBIdHRwQ29kZSxcbiAgSHR0cFN0YXR1cyxcbiAgUGFyc2VJbnRQaXBlLFxufSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDb25maWdTZXJ2aWNlIH0gZnJvbSAnQG5lc3Rqcy9jb25maWcnO1xuaW1wb3J0IHsgQXJ0aWNsZXNTZXJ2aWNlIH0gZnJvbSAnLi9hcnRpY2xlcy5zZXJ2aWNlJztcbmltcG9ydCB7IGFzc2VydEFkbWluS2V5IH0gZnJvbSAnLi4vYm9va2luZy9hZG1pbi1rZXkudXRpbCc7XG5pbXBvcnQgeyBBcnRpY2xlRHRvLCBVcGRhdGVBcnRpY2xlRHRvIH0gZnJvbSAnLi9hcnRpY2xlLmR0byc7XG5cbi8qKlxuICogQWRtaW4gYXJ0aWNsZSBlbmRwb2ludHMsIGd1YXJkZWQgYnkgdGhlIHNhbWUgQURNSU5fQk9PS0lOR19LRVkgdXNlZCBieSB0aGVcbiAqIGJvb2tpbmcgYWRtaW4gcGFuZWwgKG9uZSBrZXkgZm9yIHRoZSB3aG9sZSBhZG1pbiBwYW5lbCwgeC1hZG1pbi1rZXkgaGVhZGVyKS5cbiAqL1xuQENvbnRyb2xsZXIoJ2FwaS9hcnRpY2xlcy9hZG1pbicpXG5leHBvcnQgY2xhc3MgQXJ0aWNsZXNBZG1pbkNvbnRyb2xsZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGFkbWluS2V5OiBzdHJpbmc7XG5cbiAgY29uc3RydWN0b3IoXG4gICAgcHJpdmF0ZSByZWFkb25seSBhcnRpY2xlczogQXJ0aWNsZXNTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgY29uZmlnOiBDb25maWdTZXJ2aWNlLFxuICApIHtcbiAgICB0aGlzLmFkbWluS2V5ID0gY29uZmlnLmdldDxzdHJpbmc+KCdBRE1JTl9CT09LSU5HX0tFWScpID8/ICcnO1xuICB9XG5cbiAgQEdldCgnbGlzdCcpXG4gIGFzeW5jIGxpc3QoQEhlYWRlcnMoJ3gtYWRtaW4ta2V5Jykga2V5OiBzdHJpbmcpIHtcbiAgICBhc3NlcnRBZG1pbktleShrZXksIHRoaXMuYWRtaW5LZXkpO1xuICAgIHJldHVybiB0aGlzLmFydGljbGVzLmFkbWluTGlzdCgpO1xuICB9XG5cbiAgQFBvc3QoKVxuICBASHR0cENvZGUoSHR0cFN0YXR1cy5PSylcbiAgYXN5bmMgY3JlYXRlKEBCb2R5KCkgZHRvOiBBcnRpY2xlRHRvLCBASGVhZGVycygneC1hZG1pbi1rZXknKSBrZXk6IHN0cmluZykge1xuICAgIGFzc2VydEFkbWluS2V5KGtleSwgdGhpcy5hZG1pbktleSk7XG4gICAgcmV0dXJuIHRoaXMuYXJ0aWNsZXMuY3JlYXRlKGR0byk7XG4gIH1cblxuICBAUGF0Y2goJzppZCcpXG4gIGFzeW5jIHVwZGF0ZShcbiAgICBAUGFyYW0oJ2lkJywgUGFyc2VJbnRQaXBlKSBpZDogbnVtYmVyLFxuICAgIEBCb2R5KCkgZHRvOiBVcGRhdGVBcnRpY2xlRHRvLFxuICAgIEBIZWFkZXJzKCd4LWFkbWluLWtleScpIGtleTogc3RyaW5nLFxuICApIHtcbiAgICBhc3NlcnRBZG1pbktleShrZXksIHRoaXMuYWRtaW5LZXkpO1xuICAgIHJldHVybiB0aGlzLmFydGljbGVzLnVwZGF0ZShpZCwgZHRvKTtcbiAgfVxuXG4gIEBEZWxldGUoJzppZCcpXG4gIGFzeW5jIHJlbW92ZShcbiAgICBAUGFyYW0oJ2lkJywgUGFyc2VJbnRQaXBlKSBpZDogbnVtYmVyLFxuICAgIEBIZWFkZXJzKCd4LWFkbWluLWtleScpIGtleTogc3RyaW5nLFxuICApIHtcbiAgICBhc3NlcnRBZG1pbktleShrZXksIHRoaXMuYWRtaW5LZXkpO1xuICAgIHJldHVybiB0aGlzLmFydGljbGVzLnJlbW92ZShpZCk7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

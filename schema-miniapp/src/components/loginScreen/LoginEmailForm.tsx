@@ -94,7 +94,7 @@ export function LoginEmailForm() {
           padding: '11px 14px',
           fontSize: 15,
           border: '1.5px solid var(--border-color)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           background: 'rgba(var(--fg-rgb), 0.04)',
           color: 'var(--text)',
           fontFamily: 'inherit',

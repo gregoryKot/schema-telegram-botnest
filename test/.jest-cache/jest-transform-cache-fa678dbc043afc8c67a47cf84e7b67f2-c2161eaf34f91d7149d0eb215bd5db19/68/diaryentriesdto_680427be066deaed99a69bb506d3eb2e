@@ -1,0 +1,182 @@
+d021e68589b214ca0794733ea96d59b4
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GratitudeDiaryDto = exports.ModeDiaryDto = exports.SchemaDiaryDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для дневников (схема/режим/благодарность) в diary.controller.ts —
+ * аудит 2026-07, 2г / правило №6 CLAUDE.md. Свободный текст обрезается
+ * контроллером до 2000/500 символов без отказа — здесь щедрый потолок
+ * 10000 против abuse (правило CLAUDE.md про свободный текст), сама
+ * обрезка в контроллере не убрана. `emotions` — массив {id, intensity},
+ * контроллер сам не проверяет форму элементов — оставляем как есть,
+ * только ограничение количества.
+ */
+const FREE_TEXT_MAX = 10000;
+class SchemaDiaryDto {
+    trigger;
+    emotions;
+    thoughts;
+    bodyFeelings;
+    actualBehavior;
+    schemaIds;
+    schemaOrigin;
+    healthyView;
+    realProblems;
+    excessiveReactions;
+    healthyBehavior;
+}
+exports.SchemaDiaryDto = SchemaDiaryDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "trigger", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(50),
+    __metadata("design:type", Array)
+], SchemaDiaryDto.prototype, "emotions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "thoughts", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "bodyFeelings", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "actualBehavior", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(50),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], SchemaDiaryDto.prototype, "schemaIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "schemaOrigin", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "healthyView", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "realProblems", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "excessiveReactions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], SchemaDiaryDto.prototype, "healthyBehavior", void 0);
+class ModeDiaryDto {
+    modeId;
+    situation;
+    thoughts;
+    feelings;
+    bodyFeelings;
+    actions;
+    actualNeed;
+    childhoodMemories;
+    // Что бы сказал Здоровый Взрослый — свободный текст, пишет клиент сам.
+    healthyResponse;
+}
+exports.ModeDiaryDto = ModeDiaryDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "modeId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "situation", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "thoughts", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "feelings", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "bodyFeelings", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "actions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "actualNeed", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "childhoodMemories", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX),
+    __metadata("design:type", String)
+], ModeDiaryDto.prototype, "healthyResponse", void 0);
+class GratitudeDiaryDto {
+    date;
+    items;
+}
+exports.GratitudeDiaryDto = GratitudeDiaryDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], GratitudeDiaryDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMinSize)(1),
+    (0, class_validator_1.ArrayMaxSize)(20),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(FREE_TEXT_MAX, { each: true }),
+    __metadata("design:type", Array)
+], GratitudeDiaryDto.prototype, "items", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9kaWFyeS1lbnRyaWVzLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFPeUI7QUFFekI7Ozs7Ozs7O0dBUUc7QUFDSCxNQUFNLGFBQWEsR0FBRyxLQUFLLENBQUM7QUFFNUIsTUFBYSxjQUFjO0lBRXpCLE9BQU8sQ0FBVTtJQUlqQixRQUFRLENBQXVDO0lBSy9DLFFBQVEsQ0FBVTtJQUtsQixZQUFZLENBQVU7SUFLdEIsY0FBYyxDQUFVO0lBS3hCLFNBQVMsQ0FBWTtJQUtyQixZQUFZLENBQVU7SUFLdEIsV0FBVyxDQUFVO0lBS3JCLFlBQVksQ0FBVTtJQUt0QixrQkFBa0IsQ0FBVTtJQUs1QixlQUFlLENBQVU7Q0FDMUI7QUFwREQsd0NBb0RDO0FBbERDO0lBREMsSUFBQSwwQkFBUSxHQUFFOzsrQ0FDTTtBQUlqQjtJQUZDLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxFQUFFLENBQUM7O2dEQUM4QjtBQUsvQztJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxhQUFhLENBQUM7O2dEQUNQO0FBS2xCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7b0RBQ0g7QUFLdEI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsYUFBYSxDQUFDOztzREFDRDtBQUt4QjtJQUhDLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxFQUFFLENBQUM7SUFDaEIsSUFBQSwwQkFBUSxFQUFDLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDOztpREFDSjtBQUtyQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxhQUFhLENBQUM7O29EQUNIO0FBS3RCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7bURBQ0o7QUFLckI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsYUFBYSxDQUFDOztvREFDSDtBQUt0QjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxhQUFhLENBQUM7OzBEQUNHO0FBSzVCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7dURBQ0E7QUFHM0IsTUFBYSxZQUFZO0lBRXZCLE1BQU0sQ0FBVTtJQUdoQixTQUFTLENBQVU7SUFLbkIsUUFBUSxDQUFVO0lBS2xCLFFBQVEsQ0FBVTtJQUtsQixZQUFZLENBQVU7SUFLdEIsT0FBTyxDQUFVO0lBS2pCLFVBQVUsQ0FBVTtJQUtwQixpQkFBaUIsQ0FBVTtJQUUzQix1RUFBdUU7SUFJdkUsZUFBZSxDQUFVO0NBQzFCO0FBMUNELG9DQTBDQztBQXhDQztJQURDLElBQUEsMEJBQVEsR0FBRTs7NENBQ0s7QUFHaEI7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OytDQUNRO0FBS25CO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7OENBQ1A7QUFLbEI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsYUFBYSxDQUFDOzs4Q0FDUDtBQUtsQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxhQUFhLENBQUM7O2tEQUNIO0FBS3RCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7NkNBQ1I7QUFLakI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsYUFBYSxDQUFDOztnREFDTDtBQUtwQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxhQUFhLENBQUM7O3VEQUNFO0FBTTNCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGFBQWEsQ0FBQzs7cURBQ0E7QUFHM0IsTUFBYSxpQkFBaUI7SUFFNUIsSUFBSSxDQUFVO0lBT2QsS0FBSyxDQUFZO0NBQ2xCO0FBVkQsOENBVUM7QUFSQztJQURDLElBQUEsMEJBQVEsR0FBRTs7K0NBQ0c7QUFPZDtJQUxDLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxDQUFDLENBQUM7SUFDZixJQUFBLDhCQUFZLEVBQUMsRUFBRSxDQUFDO0lBQ2hCLElBQUEsMEJBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQztJQUN4QixJQUFBLDJCQUFTLEVBQUMsYUFBYSxFQUFFLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDOztnREFDeEIiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9kaWFyeS1lbnRyaWVzLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBBcnJheU1heFNpemUsXG4gIEFycmF5TWluU2l6ZSxcbiAgSXNBcnJheSxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heExlbmd0aCxcbn0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcblxuLyoqXG4gKiBEVE8g0LTQu9GPINC00L3QtdCy0L3QuNC60L7QsiAo0YHRhdC10LzQsC/RgNC10LbQuNC8L9Cx0LvQsNCz0L7QtNCw0YDQvdC+0YHRgtGMKSDQsiBkaWFyeS5jb250cm9sbGVyLnRzIOKAlFxuICog0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZC4g0KHQstC+0LHQvtC00L3Ri9C5INGC0LXQutGB0YIg0L7QsdGA0LXQt9Cw0LXRgtGB0Y9cbiAqINC60L7QvdGC0YDQvtC70LvQtdGA0L7QvCDQtNC+IDIwMDAvNTAwINGB0LjQvNCy0L7Qu9C+0LIg0LHQtdC3INC+0YLQutCw0LfQsCDigJQg0LfQtNC10YHRjCDRidC10LTRgNGL0Lkg0L/QvtGC0L7Qu9C+0LpcbiAqIDEwMDAwINC/0YDQvtGC0LjQsiBhYnVzZSAo0L/RgNCw0LLQuNC70L4gQ0xBVURFLm1kINC/0YDQviDRgdCy0L7QsdC+0LTQvdGL0Lkg0YLQtdC60YHRgiksINGB0LDQvNCwXG4gKiDQvtCx0YDQtdC30LrQsCDQsiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1INC90LUg0YPQsdGA0LDQvdCwLiBgZW1vdGlvbnNgIOKAlCDQvNCw0YHRgdC40LIge2lkLCBpbnRlbnNpdHl9LFxuICog0LrQvtC90YLRgNC+0LvQu9C10YAg0YHQsNC8INC90LUg0L/RgNC+0LLQtdGA0Y/QtdGCINGE0L7RgNC80YMg0Y3Qu9C10LzQtdC90YLQvtCyIOKAlCDQvtGB0YLQsNCy0LvRj9C10Lwg0LrQsNC6INC10YHRgtGMLFxuICog0YLQvtC70YzQutC+INC+0LPRgNCw0L3QuNGH0LXQvdC40LUg0LrQvtC70LjRh9C10YHRgtCy0LAuXG4gKi9cbmNvbnN0IEZSRUVfVEVYVF9NQVggPSAxMDAwMDtcblxuZXhwb3J0IGNsYXNzIFNjaGVtYURpYXJ5RHRvIHtcbiAgQElzU3RyaW5nKClcbiAgdHJpZ2dlciE6IHN0cmluZztcblxuICBASXNBcnJheSgpXG4gIEBBcnJheU1heFNpemUoNTApXG4gIGVtb3Rpb25zITogeyBpZDogc3RyaW5nOyBpbnRlbnNpdHk6IG51bWJlciB9W107XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKEZSRUVfVEVYVF9NQVgpXG4gIHRob3VnaHRzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBib2R5RmVlbGluZ3M/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKEZSRUVfVEVYVF9NQVgpXG4gIGFjdHVhbEJlaGF2aW9yPzogc3RyaW5nO1xuXG4gIEBJc0FycmF5KClcbiAgQEFycmF5TWF4U2l6ZSg1MClcbiAgQElzU3RyaW5nKHsgZWFjaDogdHJ1ZSB9KVxuICBzY2hlbWFJZHMhOiBzdHJpbmdbXTtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoRlJFRV9URVhUX01BWClcbiAgc2NoZW1hT3JpZ2luPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBoZWFsdGh5Vmlldz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoRlJFRV9URVhUX01BWClcbiAgcmVhbFByb2JsZW1zPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBleGNlc3NpdmVSZWFjdGlvbnM/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKEZSRUVfVEVYVF9NQVgpXG4gIGhlYWx0aHlCZWhhdmlvcj86IHN0cmluZztcbn1cblxuZXhwb3J0IGNsYXNzIE1vZGVEaWFyeUR0byB7XG4gIEBJc1N0cmluZygpXG4gIG1vZGVJZCE6IHN0cmluZztcblxuICBASXNTdHJpbmcoKVxuICBzaXR1YXRpb24hOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKEZSRUVfVEVYVF9NQVgpXG4gIHRob3VnaHRzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBmZWVsaW5ncz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoRlJFRV9URVhUX01BWClcbiAgYm9keUZlZWxpbmdzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBhY3Rpb25zPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBhY3R1YWxOZWVkPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChGUkVFX1RFWFRfTUFYKVxuICBjaGlsZGhvb2RNZW1vcmllcz86IHN0cmluZztcblxuICAvLyDQp9GC0L4g0LHRiyDRgdC60LDQt9Cw0Lsg0JfQtNC+0YDQvtCy0YvQuSDQktC30YDQvtGB0LvRi9C5IOKAlCDRgdCy0L7QsdC+0LTQvdGL0Lkg0YLQtdC60YHRgiwg0L/QuNGI0LXRgiDQutC70LjQtdC90YIg0YHQsNC8LlxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoRlJFRV9URVhUX01BWClcbiAgaGVhbHRoeVJlc3BvbnNlPzogc3RyaW5nO1xufVxuXG5leHBvcnQgY2xhc3MgR3JhdGl0dWRlRGlhcnlEdG8ge1xuICBASXNTdHJpbmcoKVxuICBkYXRlITogc3RyaW5nO1xuXG4gIEBJc0FycmF5KClcbiAgQEFycmF5TWluU2l6ZSgxKVxuICBAQXJyYXlNYXhTaXplKDIwKVxuICBASXNTdHJpbmcoeyBlYWNoOiB0cnVlIH0pXG4gIEBNYXhMZW5ndGgoRlJFRV9URVhUX01BWCwgeyBlYWNoOiB0cnVlIH0pXG4gIGl0ZW1zITogc3RyaW5nW107XG59XG4iXSwidmVyc2lvbiI6M30=

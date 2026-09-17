@@ -1,8 +1,16 @@
-// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки
-// get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии. Чистый
-// транспорт — доменные методы живут в api.ts, состояние сессии — в session.ts.
+// HTTP-инфраструктура мини-аппа: get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — api.ts, состояние сессии — session.ts).
+// Кеш GET (дедуп + stale-while-revalidate) и инвалидация мутаций — shared/src/api/apiCache*.ts (правило №3); authedFetch — единственная точка отправки, хук здесь покрывает и ratingApi/updatePhraseCheck (прямые вызовы authedFetch).
 import { BASE } from './utils/apiBase';
-import { authHeaders, markSessionExpired, renewSession } from './session';
+import {
+  authHeaders,
+  ensureSession,
+  hasInstantAuth,
+  isSessionDead,
+  markSessionExpired,
+  renewSession,
+} from './session';
+import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
+import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 
 export { BASE, authHeaders };
 
@@ -40,36 +48,46 @@ export class HttpStatusError extends Error {
   }
 }
 
-// Единственная точка отправки. На 401 один раз перевыпускает сессию и повторяет
-// запрос: initData протухает через час после открытия мини-аппа, и без этого
-// свернутое приложение переставало работать целиком (инцидент 2026-07-29).
-// Перевыпустить не вышло — говорим об этом экрану, а не молчим.
+// Единственная точка отправки. На 401 перевыпускает сессию и повторяет запрос
+// (инцидент 2026-07-29). Не вышло ИЗ-ЗА СЕССИИ (401/403 от refresh) — говорим
+// об этом экрану; не вышло из-за сети/5xx — сессия жива, молчим, оставляем
+// пользователя в приложении (диагностика 2026-08-21).
 export async function authedFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
   const send = () =>
     fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
+  // Веб-хост (PWA с ярлыка / вкладка) без живого токена: authHeaders() пуст,
+  // запрос обречён на 401 → renew → повтор. До этой правки ВЕСЬ стартовый
+  // залп (~19 GET) ходил по этому кругу — каждый запрос дважды плюс общий
+  // обмен куки между попытками; отсюда «в Телеграме летает, из ярлыка
+  // долго» (2026-08-23). Ждём один общий обмен (ensureSession дедуплицирует)
+  // и уходим сразу с Bearer. Обмен не удался (кука мертва/сети нет) —
+  // отправляем как раньше: существующая ветка 401 покажет экран входа.
+  if (!hasInstantAuth()) await ensureSession();
   const res = await send();
-  if (res.status !== 401) return res;
+  if (res.status !== 401) {
+    if (res.ok) applyMutationInvalidation(init.method, path, init.body);
+    return res;
+  }
   if (!(await renewSession())) {
-    markSessionExpired();
+    if (isSessionDead()) markSessionExpired();
     return res;
   }
   const retried = await send();
   if (retried.status === 401) markSessionExpired();
+  else if (retried.ok) applyMutationInvalidation(init.method, path, init.body);
   return retried;
 }
 
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
-// ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
-// прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
-// изменит. POST/DELETE здесь не участвуют: они не идемпотентны на уровне
-// протокола (см. outbox.ts для единственного исключения — оценок).
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки
+// и 502/503/504. 4xx и прочие 5xx не ретраятся — осмысленный ответ сервера.
+// POST/DELETE не участвуют — не идемпотентны (см. outbox.ts, исключение — оценки).
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
-export async function get<T>(path: string): Promise<T> {
+async function rawGet<T>(path: string): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await authedFetch(path);
@@ -94,8 +112,15 @@ export async function get<T>(path: string): Promise<T> {
   }
 }
 
-// Тело ошибки сервера (message от ValidationPipe/контроллера) полезнее статуса:
-// его показывают пользователю — вытаскиваем один раз для всех не-GET методов.
+// Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
+// одновременных запросов и stale-while-revalidate на возврате в открытый
+// экран. /api/auth/* и health исключены isCacheableGetPath.
+export function get<T>(path: string): Promise<T> {
+  if (!isCacheableGetPath(path)) return rawGet<T>(path);
+  return cachedGet(path, () => rawGet<T>(path));
+}
+
+// Тело ошибки (message от ValidationPipe) полезнее статуса — вытаскиваем один раз для всех не-GET методов.
 async function sendWithBody(
   path: string,
   method: 'POST' | 'DELETE',

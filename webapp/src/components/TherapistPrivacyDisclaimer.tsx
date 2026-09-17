@@ -1,4 +1,5 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 
 export const THERAPIST_DISCLAIMER_KEY = 'therapist_privacy_disclaimer_seen';
 
@@ -13,6 +14,7 @@ interface Props {
  */
 export function TherapistPrivacyDisclaimer({ onDone }: Props) {
   const goBack = useHistorySheet(onDone);
+  const tr = useTr();
 
   function acknowledge() {
     localStorage.setItem(THERAPIST_DISCLAIMER_KEY, '1');
@@ -27,7 +29,6 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '56px 24px 40px' }}>
 
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <div style={{ fontSize: 52, marginBottom: 16 }}>🕊️</div>
           <h1 style={{
             fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400,
             color: 'var(--text)', lineHeight: 1.2, marginBottom: 14,
@@ -35,16 +36,15 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
             Немного о заботе о клиентах
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-            Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая
-            привычка поможет бережно сохранить это доверие.
+            {tr('Здесь будет твоя работа с людьми, которые тебе доверились. Одна маленькая привычка поможет бережно сохранить это доверие.', 'Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая привычка поможет бережно сохранить это доверие.')}
           </p>
         </div>
 
         <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, marginBottom: 18 }}>
-          Пожалуйста, старайтесь <span style={{ fontWeight: 600 }}>не вносить настоящие имена
+          Пожалуйста, {tr('старайся', 'старайтесь')} <span style={{ fontWeight: 600 }}>не вносить настоящие имена
           и фамилии клиентов</span> — ни в карточку клиента, ни в заметки, ни в записи о
           сессиях. Достаточно инициалов, псевдонима или любого обозначения, понятного
-          только вам.
+          только {tr('тебе', 'вам')}.
         </p>
 
         <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, marginBottom: 20 }}>
@@ -56,7 +56,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
         <div style={{
           background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
           border: '1px solid color-mix(in srgb, var(--accent) 16%, transparent)',
-          borderRadius: 14, padding: '16px 18px', marginBottom: 22,
+          borderRadius: 'var(--r-14)', padding: '16px 18px', marginBottom: 22,
         }}>
           <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.7 }}>
             На этом стоят и этические кодексы психологов —{' '}
@@ -71,30 +71,25 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
           А обо всём остальном мы уже позаботились. Вот что делаем со своей стороны:
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-14)', marginBottom: 24 }}>
           {[
-            ['🔒', 'Шифрование',
+            ['Шифрование',
               'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],
-            ['👤', 'Только ваш доступ',
-              'Данные каждого клиента видите только вы — они привязаны к вашему аккаунту и не пересекаются с чужими.'],
-            ['🛡️', 'Защищённый вход',
+            [tr('Только твой доступ', 'Только ваш доступ'), tr('Данные каждого клиента видишь только ты — они привязаны к твоему аккаунту и не пересекаются с чужими.', 'Данные каждого клиента видите только вы — они привязаны к вашему аккаунту и не пересекаются с чужими.')],
+            ['Защищённый вход',
               'Вход подтверждается подписью Telegram, а попытки подделать сессию мы отслеживаем и отклоняем.'],
-            ['🧹', 'Полное удаление',
-              'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.'],
-          ].map(([icon, title, text]) => (
-            <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 18, lineHeight: 1.4, flexShrink: 0 }}>{icon}</div>
-              <div>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
-                <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.65 }}>{text}</div>
-              </div>
+            ['Полное удаление', tr('Если решишь удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.', 'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.')],
+          ].map(([title, text]) => (
+            <div key={title}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.65 }}>{text}</div>
             </div>
           ))}
         </div>
 
         <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.75, marginBottom: 32 }}>
           И всё же самая надёжная защита — когда лишних персональных данных в системе
-          просто нет. 💛
+          просто нет.
         </p>
 
         <button

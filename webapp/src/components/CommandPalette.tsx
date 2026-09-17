@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { TherapyClientSummary } from '../api';
 import { todayStr } from '../utils/format';
 import { pressable } from '../utils/a11y';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 
@@ -59,6 +60,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogA11y = useDialogA11y();
 
   // Reset the highlighted row to the top whenever the query changes. Adjusting
   // state during render (not in an effect) is the documented pattern for
@@ -130,8 +132,18 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   return (
     <div className="cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      <div className="cmd-panel" onClick={e => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}>
+      {/* onClick/onKeyDown — не интерактив, а stopPropagation: не дать клику
+          или Enter/Space (печатая в поиске) всплыть до onClick/onKeyDown
+          бэкдропа выше и закрыть палитру на пробеле в запросе.
+          role="dialog" (К4) не входит в список «интерактивных» ролей
+          jsx-a11y — ложное срабатывание. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div
+        {...dialogA11y}
+        className="cmd-panel"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
+      >
         <div className="cmd-search">
           <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-faint)', flexShrink: 0 }}>
             <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />

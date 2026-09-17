@@ -47,7 +47,7 @@ export function useAddressFormValue(
       .then((f) => {
         if (f === 'ty' || f === 'vy') setForm(f);
       })
-      .catch(() => {});
+      .catch((e) => console.error('loadForm failed', e));
   }, [setForm]);
   return [form, setForm];
 }

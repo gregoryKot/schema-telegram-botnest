@@ -1,0 +1,42 @@
+1d920ef14e7f25332b8e0a5451c57033
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.QuizController = void 0;
+const common_1 = require("@nestjs/common");
+const address_form_1 = require("../notification/address-form");
+const quiz_registry_1 = require("../quiz/quiz-registry");
+// Публичная выдача контента мини-тестов для сайта (лид-магнит «тесты без
+// регистрации» — auth-гарда нет намеренно). Контент статический, из
+// quiz-registry — единый источник правды с ботом; PII/БД не затрагивается.
+// Троттлинг — глобальный UserThrottlerGuard по IP (правило №5).
+// ?form=ty|vy — форма обращения; всё неизвестное падает в «ты» (дефолт
+// проекта для анонимов).
+let QuizController = class QuizController {
+    list(form) {
+        return { quizzes: (0, quiz_registry_1.buildQuizzes)((0, address_form_1.normalizeAddressForm)(form)) };
+    }
+};
+exports.QuizController = QuizController;
+__decorate([
+    (0, common_1.Get)('quizzes'),
+    __param(0, (0, common_1.Query)('form')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Object)
+], QuizController.prototype, "list", null);
+exports.QuizController = QuizController = __decorate([
+    (0, common_1.Controller)('api')
+], QuizController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3F1aXouY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBd0Q7QUFDeEQsK0RBQW9FO0FBQ3BFLHlEQUFxRDtBQUdyRCx5RUFBeUU7QUFDekUsb0VBQW9FO0FBQ3BFLDJFQUEyRTtBQUMzRSxnRUFBZ0U7QUFDaEUsdUVBQXVFO0FBQ3ZFLHlCQUF5QjtBQUVsQixJQUFNLGNBQWMsR0FBcEIsTUFBTSxjQUFjO0lBRXpCLElBQUksQ0FBZ0IsSUFBYTtRQUMvQixPQUFPLEVBQUUsT0FBTyxFQUFFLElBQUEsNEJBQVksRUFBQyxJQUFBLG1DQUFvQixFQUFDLElBQUksQ0FBQyxDQUFDLEVBQUUsQ0FBQztJQUMvRCxDQUFDO0NBQ0YsQ0FBQTtBQUxZLHdDQUFjO0FBRXpCO0lBREMsSUFBQSxZQUFHLEVBQUMsU0FBUyxDQUFDO0lBQ1QsV0FBQSxJQUFBLGNBQUssRUFBQyxNQUFNLENBQUMsQ0FBQTs7OzswQ0FFbEI7eUJBSlUsY0FBYztJQUQxQixJQUFBLG1CQUFVLEVBQUMsS0FBSyxDQUFDO0dBQ0wsY0FBYyxDQUsxQiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvcXVpei5jb250cm9sbGVyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IENvbnRyb2xsZXIsIEdldCwgUXVlcnkgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBub3JtYWxpemVBZGRyZXNzRm9ybSB9IGZyb20gJy4uL25vdGlmaWNhdGlvbi9hZGRyZXNzLWZvcm0nO1xuaW1wb3J0IHsgYnVpbGRRdWl6emVzIH0gZnJvbSAnLi4vcXVpei9xdWl6LXJlZ2lzdHJ5JztcbmltcG9ydCB0eXBlIHsgUXVpeiB9IGZyb20gJy4uL3F1aXovcXVpei50eXBlcyc7XG5cbi8vINCf0YPQsdC70LjRh9C90LDRjyDQstGL0LTQsNGH0LAg0LrQvtC90YLQtdC90YLQsCDQvNC40L3QuC3RgtC10YHRgtC+0LIg0LTQu9GPINGB0LDQudGC0LAgKNC70LjQtC3QvNCw0LPQvdC40YIgwqvRgtC10YHRgtGLINCx0LXQt1xuLy8g0YDQtdCz0LjRgdGC0YDQsNGG0LjQuMK7IOKAlCBhdXRoLdCz0LDRgNC00LAg0L3QtdGCINC90LDQvNC10YDQtdC90L3QvikuINCa0L7QvdGC0LXQvdGCINGB0YLQsNGC0LjRh9C10YHQutC40LksINC40Ldcbi8vIHF1aXotcmVnaXN0cnkg4oCUINC10LTQuNC90YvQuSDQuNGB0YLQvtGH0L3QuNC6INC/0YDQsNCy0LTRiyDRgSDQsdC+0YLQvtC8OyBQSUkv0JHQlCDQvdC1INC30LDRgtGA0LDQs9C40LLQsNC10YLRgdGPLlxuLy8g0KLRgNC+0YLRgtC70LjQvdCzIOKAlCDQs9C70L7QsdCw0LvRjNC90YvQuSBVc2VyVGhyb3R0bGVyR3VhcmQg0L/QviBJUCAo0L/RgNCw0LLQuNC70L4g4oSWNSkuXG4vLyA/Zm9ybT10eXx2eSDigJQg0YTQvtGA0LzQsCDQvtCx0YDQsNGJ0LXQvdC40Y87INCy0YHRkSDQvdC10LjQt9Cy0LXRgdGC0L3QvtC1INC/0LDQtNCw0LXRgiDQsiDCq9GC0YvCuyAo0LTQtdGE0L7Qu9GCXG4vLyDQv9GA0L7QtdC60YLQsCDQtNC70Y8g0LDQvdC+0L3QuNC80L7QsikuXG5AQ29udHJvbGxlcignYXBpJylcbmV4cG9ydCBjbGFzcyBRdWl6Q29udHJvbGxlciB7XG4gIEBHZXQoJ3F1aXp6ZXMnKVxuICBsaXN0KEBRdWVyeSgnZm9ybScpIGZvcm0/OiBzdHJpbmcpOiB7IHF1aXp6ZXM6IFF1aXpbXSB9IHtcbiAgICByZXR1cm4geyBxdWl6emVzOiBidWlsZFF1aXp6ZXMobm9ybWFsaXplQWRkcmVzc0Zvcm0oZm9ybSkpIH07XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

@@ -41,11 +41,17 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           />
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-10)',
+              }}
+            >
               <span
                 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
               >
-                🧭 Мой путь
+                Мой путь
               </span>
               <span style={{ marginRight: 'auto' }} />
               {j.total > 0 && <SharePill compact onClick={sh.shareSummary} />}

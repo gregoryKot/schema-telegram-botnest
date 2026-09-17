@@ -1,0 +1,121 @@
+1fb1f13896376fd2b4b2cd11d2944a40
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ModeNoteDto = exports.SchemaNoteDto = exports.NoteFieldsDto = exports.NOTE_MAX = exports.SaveNoteDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
+ * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Формат `date`
+ * (YYYY-MM-DD) и `schemaId`/`modeId` (`[a-z_]{1,64}`) уже проверяются
+ * вручную в контроллере — regex не дублируем.
+ */
+class SaveNoteDto {
+    date;
+    text;
+    tags;
+}
+exports.SaveNoteDto = SaveNoteDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SaveNoteDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(10000),
+    __metadata("design:type", String)
+], SaveNoteDto.prototype, "text", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], SaveNoteDto.prototype, "tags", void 0);
+exports.NOTE_MAX = 3000;
+// Поля, общие для карточки схемы и карточки режима (правило №11 — одна
+// механика ввода не копипастится). Схема-специфичные (`reality`) и
+// режим-специфичные (`needs`) поля — в дочерних классах.
+class NoteFieldsDto {
+    triggers;
+    feelings;
+    thoughts;
+    origins;
+    healthyView;
+    behavior;
+}
+exports.NoteFieldsDto = NoteFieldsDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "triggers", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "feelings", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "thoughts", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "origins", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "healthyView", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], NoteFieldsDto.prototype, "behavior", void 0);
+class SchemaNoteDto extends NoteFieldsDto {
+    schemaId;
+    reality;
+}
+exports.SchemaNoteDto = SchemaNoteDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SchemaNoteDto.prototype, "schemaId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], SchemaNoteDto.prototype, "reality", void 0);
+class ModeNoteDto extends NoteFieldsDto {
+    modeId;
+    needs;
+}
+exports.ModeNoteDto = ModeNoteDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ModeNoteDto.prototype, "modeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(exports.NOTE_MAX),
+    __metadata("design:type", String)
+], ModeNoteDto.prototype, "needs", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9ub3Rlcy5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQTJFO0FBRTNFOzs7OztHQUtHO0FBQ0gsTUFBYSxXQUFXO0lBRXRCLElBQUksQ0FBVTtJQUlkLElBQUksQ0FBVTtJQUtkLElBQUksQ0FBWTtDQUNqQjtBQVpELGtDQVlDO0FBVkM7SUFEQyxJQUFBLDBCQUFRLEdBQUU7O3lDQUNHO0FBSWQ7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsS0FBSyxDQUFDOzt5Q0FDSDtBQUtkO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx5QkFBTyxHQUFFO0lBQ1QsSUFBQSwwQkFBUSxFQUFDLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDOzt5Q0FDVDtBQUdMLFFBQUEsUUFBUSxHQUFHLElBQUksQ0FBQztBQUU3Qix1RUFBdUU7QUFDdkUsbUVBQW1FO0FBQ25FLHlEQUF5RDtBQUN6RCxNQUFhLGFBQWE7SUFJeEIsUUFBUSxDQUFVO0lBS2xCLFFBQVEsQ0FBVTtJQUtsQixRQUFRLENBQVU7SUFLbEIsT0FBTyxDQUFVO0lBS2pCLFdBQVcsQ0FBVTtJQUtyQixRQUFRLENBQVU7Q0FDbkI7QUE5QkQsc0NBOEJDO0FBMUJDO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OytDQUNGO0FBS2xCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OytDQUNGO0FBS2xCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OytDQUNGO0FBS2xCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OzhDQUNIO0FBS2pCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7O2tEQUNDO0FBS3JCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OytDQUNGO0FBR3BCLE1BQWEsYUFBYyxTQUFRLGFBQWE7SUFFOUMsUUFBUSxDQUFVO0lBS2xCLE9BQU8sQ0FBVTtDQUNsQjtBQVJELHNDQVFDO0FBTkM7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OytDQUNPO0FBS2xCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OzhDQUNIO0FBR25CLE1BQWEsV0FBWSxTQUFRLGFBQWE7SUFFNUMsTUFBTSxDQUFVO0lBS2hCLEtBQUssQ0FBVTtDQUNoQjtBQVJELGtDQVFDO0FBTkM7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OzJDQUNLO0FBS2hCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLGdCQUFRLENBQUM7OzBDQUNMIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9kdG8vbm90ZXMuZHRvLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IElzQXJyYXksIElzT3B0aW9uYWwsIElzU3RyaW5nLCBNYXhMZW5ndGggfSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuXG4vKipcbiAqIERUTyDQtNC70Y8gUE9TVCAvYXBpL25vdGUsIC9hcGkvc2NoZW1hLW5vdGVzLCAvYXBpL21vZGUtbm90ZXNcbiAqICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+IOKEljYgQ0xBVURFLm1kKS4g0KTQvtGA0LzQsNGCIGBkYXRlYFxuICogKFlZWVktTU0tREQpINC4IGBzY2hlbWFJZGAvYG1vZGVJZGAgKGBbYS16X117MSw2NH1gKSDRg9C20LUg0L/RgNC+0LLQtdGA0Y/RjtGC0YHRj1xuICog0LLRgNGD0YfQvdGD0Y4g0LIg0LrQvtC90YLRgNC+0LvQu9C10YDQtSDigJQgcmVnZXgg0L3QtSDQtNGD0LHQu9C40YDRg9C10LwuXG4gKi9cbmV4cG9ydCBjbGFzcyBTYXZlTm90ZUR0byB7XG4gIEBJc1N0cmluZygpXG4gIGRhdGUhOiBzdHJpbmc7XG5cbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aCgxMDAwMClcbiAgdGV4dCE6IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0FycmF5KClcbiAgQElzU3RyaW5nKHsgZWFjaDogdHJ1ZSB9KVxuICB0YWdzPzogc3RyaW5nW107XG59XG5cbmV4cG9ydCBjb25zdCBOT1RFX01BWCA9IDMwMDA7XG5cbi8vINCf0L7Qu9GPLCDQvtCx0YnQuNC1INC00LvRjyDQutCw0YDRgtC+0YfQutC4INGB0YXQtdC80Ysg0Lgg0LrQsNGA0YLQvtGH0LrQuCDRgNC10LbQuNC80LAgKNC/0YDQsNCy0LjQu9C+IOKEljExIOKAlCDQvtC00L3QsFxuLy8g0LzQtdGF0LDQvdC40LrQsCDQstCy0L7QtNCwINC90LUg0LrQvtC/0LjQv9Cw0YHRgtC40YLRgdGPKS4g0KHRhdC10LzQsC3RgdC/0LXRhtC40YTQuNGH0L3Ri9C1IChgcmVhbGl0eWApINC4XG4vLyDRgNC10LbQuNC8LdGB0L/QtdGG0LjRhNC40YfQvdGL0LUgKGBuZWVkc2ApINC/0L7Qu9GPIOKAlCDQsiDQtNC+0YfQtdGA0L3QuNGFINC60LvQsNGB0YHQsNGFLlxuZXhwb3J0IGNsYXNzIE5vdGVGaWVsZHNEdG8ge1xuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoTk9URV9NQVgpXG4gIHRyaWdnZXJzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChOT1RFX01BWClcbiAgZmVlbGluZ3M/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKE5PVEVfTUFYKVxuICB0aG91Z2h0cz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoTk9URV9NQVgpXG4gIG9yaWdpbnM/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKE5PVEVfTUFYKVxuICBoZWFsdGh5Vmlldz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoTk9URV9NQVgpXG4gIGJlaGF2aW9yPzogc3RyaW5nO1xufVxuXG5leHBvcnQgY2xhc3MgU2NoZW1hTm90ZUR0byBleHRlbmRzIE5vdGVGaWVsZHNEdG8ge1xuICBASXNTdHJpbmcoKVxuICBzY2hlbWFJZCE6IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoTk9URV9NQVgpXG4gIHJlYWxpdHk/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBNb2RlTm90ZUR0byBleHRlbmRzIE5vdGVGaWVsZHNEdG8ge1xuICBASXNTdHJpbmcoKVxuICBtb2RlSWQhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKE5PVEVfTUFYKVxuICBuZWVkcz86IHN0cmluZztcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

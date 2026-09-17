@@ -1,0 +1,54 @@
+4287c95c4920d5864f747ccbea93b5f4
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TwoFaChallengeDto = exports.TwoFaCodeDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO for the 2FA `code` body field (auth.controller.ts: 2fa/enable,
+ * 2fa/disable, 2fa/recovery-codes, 2fa/challenge) — CLAUDE.md правило №6.
+ *
+ * Before this DTO, `code` was pulled via `@Body('code') code: string`
+ * (compile-time type only). A JSON body with a *numeric* code sailed past
+ * the controller's `if (!code)` guard, then TotpService's `code.trim()`
+ * threw a bare TypeError (numbers have no `.trim`), surfacing as a 500
+ * instead of a 400 (see test/auth-flows.e2e-spec.ts).
+ *
+ * Length 6–10 covers both formats TotpService.verifyCode() accepts:
+ * a 6-digit TOTP code (otplib default) or a 10-hex-char recovery code
+ * (RECOVERY_CODE_BYTES=5 → 10 hex chars, see totp.service.ts). confirmSetup
+ * (used by 2fa/enable) only ever expects the 6-digit form — the DTO stays
+ * permissive on the exact format; TotpService does the real check via
+ * authenticator.check()/hashCode() comparison. No trim/regex here: the
+ * service already trims internally (code.trim()), so leading/trailing
+ * whitespace within the length budget still round-trips correctly.
+ */
+class TwoFaCodeDto {
+    code;
+}
+exports.TwoFaCodeDto = TwoFaCodeDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(6, 10),
+    __metadata("design:type", String)
+], TwoFaCodeDto.prototype, "code", void 0);
+/** 2fa/challenge also carries the short-lived challengeToken (a signed JWT). */
+class TwoFaChallengeDto extends TwoFaCodeDto {
+    challengeToken;
+}
+exports.TwoFaChallengeDto = TwoFaChallengeDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(4096),
+    __metadata("design:type", String)
+], TwoFaChallengeDto.prototype, "challengeToken", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9kdG8vdHdvZmEuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQUEwRTtBQUUxRTs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBa0JHO0FBQ0gsTUFBYSxZQUFZO0lBR3ZCLElBQUksQ0FBVTtDQUNmO0FBSkQsb0NBSUM7QUFEQztJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsd0JBQU0sRUFBQyxDQUFDLEVBQUUsRUFBRSxDQUFDOzswQ0FDQTtBQUdoQixnRkFBZ0Y7QUFDaEYsTUFBYSxpQkFBa0IsU0FBUSxZQUFZO0lBSWpELGNBQWMsQ0FBVTtDQUN6QjtBQUxELDhDQUtDO0FBREM7SUFIQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEVBQUMsSUFBSSxDQUFDOzt5REFDUSIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hdXRoL2R0by90d29mYS5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSXNOb3RFbXB0eSwgSXNTdHJpbmcsIExlbmd0aCwgTWF4TGVuZ3RoIH0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcblxuLyoqXG4gKiBEVE8gZm9yIHRoZSAyRkEgYGNvZGVgIGJvZHkgZmllbGQgKGF1dGguY29udHJvbGxlci50czogMmZhL2VuYWJsZSxcbiAqIDJmYS9kaXNhYmxlLCAyZmEvcmVjb3ZlcnktY29kZXMsIDJmYS9jaGFsbGVuZ2UpIOKAlCBDTEFVREUubWQg0L/RgNCw0LLQuNC70L4g4oSWNi5cbiAqXG4gKiBCZWZvcmUgdGhpcyBEVE8sIGBjb2RlYCB3YXMgcHVsbGVkIHZpYSBgQEJvZHkoJ2NvZGUnKSBjb2RlOiBzdHJpbmdgXG4gKiAoY29tcGlsZS10aW1lIHR5cGUgb25seSkuIEEgSlNPTiBib2R5IHdpdGggYSAqbnVtZXJpYyogY29kZSBzYWlsZWQgcGFzdFxuICogdGhlIGNvbnRyb2xsZXIncyBgaWYgKCFjb2RlKWAgZ3VhcmQsIHRoZW4gVG90cFNlcnZpY2UncyBgY29kZS50cmltKClgXG4gKiB0aHJldyBhIGJhcmUgVHlwZUVycm9yIChudW1iZXJzIGhhdmUgbm8gYC50cmltYCksIHN1cmZhY2luZyBhcyBhIDUwMFxuICogaW5zdGVhZCBvZiBhIDQwMCAoc2VlIHRlc3QvYXV0aC1mbG93cy5lMmUtc3BlYy50cykuXG4gKlxuICogTGVuZ3RoIDbigJMxMCBjb3ZlcnMgYm90aCBmb3JtYXRzIFRvdHBTZXJ2aWNlLnZlcmlmeUNvZGUoKSBhY2NlcHRzOlxuICogYSA2LWRpZ2l0IFRPVFAgY29kZSAob3RwbGliIGRlZmF1bHQpIG9yIGEgMTAtaGV4LWNoYXIgcmVjb3ZlcnkgY29kZVxuICogKFJFQ09WRVJZX0NPREVfQllURVM9NSDihpIgMTAgaGV4IGNoYXJzLCBzZWUgdG90cC5zZXJ2aWNlLnRzKS4gY29uZmlybVNldHVwXG4gKiAodXNlZCBieSAyZmEvZW5hYmxlKSBvbmx5IGV2ZXIgZXhwZWN0cyB0aGUgNi1kaWdpdCBmb3JtIOKAlCB0aGUgRFRPIHN0YXlzXG4gKiBwZXJtaXNzaXZlIG9uIHRoZSBleGFjdCBmb3JtYXQ7IFRvdHBTZXJ2aWNlIGRvZXMgdGhlIHJlYWwgY2hlY2sgdmlhXG4gKiBhdXRoZW50aWNhdG9yLmNoZWNrKCkvaGFzaENvZGUoKSBjb21wYXJpc29uLiBObyB0cmltL3JlZ2V4IGhlcmU6IHRoZVxuICogc2VydmljZSBhbHJlYWR5IHRyaW1zIGludGVybmFsbHkgKGNvZGUudHJpbSgpKSwgc28gbGVhZGluZy90cmFpbGluZ1xuICogd2hpdGVzcGFjZSB3aXRoaW4gdGhlIGxlbmd0aCBidWRnZXQgc3RpbGwgcm91bmQtdHJpcHMgY29ycmVjdGx5LlxuICovXG5leHBvcnQgY2xhc3MgVHdvRmFDb2RlRHRvIHtcbiAgQElzU3RyaW5nKClcbiAgQExlbmd0aCg2LCAxMClcbiAgY29kZSE6IHN0cmluZztcbn1cblxuLyoqIDJmYS9jaGFsbGVuZ2UgYWxzbyBjYXJyaWVzIHRoZSBzaG9ydC1saXZlZCBjaGFsbGVuZ2VUb2tlbiAoYSBzaWduZWQgSldUKS4gKi9cbmV4cG9ydCBjbGFzcyBUd29GYUNoYWxsZW5nZUR0byBleHRlbmRzIFR3b0ZhQ29kZUR0byB7XG4gIEBJc1N0cmluZygpXG4gIEBJc05vdEVtcHR5KClcbiAgQE1heExlbmd0aCg0MDk2KVxuICBjaGFsbGVuZ2VUb2tlbiE6IHN0cmluZztcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

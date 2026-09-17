@@ -1,0 +1,46 @@
+2f03d40be9eb9647411a49ea6fedfca7
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JourneyController = void 0;
+const common_1 = require("@nestjs/common");
+const request_utils_1 = require("./request-utils");
+const telegram_auth_guard_1 = require("./telegram-auth.guard");
+const journey_service_1 = require("../bot/journey.service");
+// «Мой путь» — сводный архив всей активности (счётчики + лента без
+// расшифровки свободного текста). Только чтение, тела запроса нет.
+let JourneyController = class JourneyController {
+    journeyService;
+    constructor(journeyService) {
+        this.journeyService = journeyService;
+    }
+    getJourney(req) {
+        return this.journeyService.getJourney((0, request_utils_1.uid)(req));
+    }
+};
+exports.JourneyController = JourneyController;
+__decorate([
+    (0, common_1.Get)('journey'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], JourneyController.prototype, "getJourney", null);
+exports.JourneyController = JourneyController = __decorate([
+    (0, common_1.Controller)('api'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof journey_service_1.JourneyService !== "undefined" && journey_service_1.JourneyService) === "function" ? _a : Object])
+], JourneyController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2pvdXJuZXkuY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBQWlFO0FBRWpFLG1EQUFzQztBQUN0QywrREFBMEQ7QUFDMUQsNERBQXdEO0FBTXhELG1FQUFtRTtBQUNuRSxtRUFBbUU7QUFHNUQsSUFBTSxpQkFBaUIsR0FBdkIsTUFBTSxpQkFBaUI7SUFDQztJQUE3QixZQUE2QixjQUE4QjtRQUE5QixtQkFBYyxHQUFkLGNBQWMsQ0FBZ0I7SUFBRyxDQUFDO0lBRy9ELFVBQVUsQ0FBUSxHQUFnQjtRQUNoQyxPQUFPLElBQUksQ0FBQyxjQUFjLENBQUMsVUFBVSxDQUFDLElBQUEsbUJBQUcsRUFBQyxHQUFHLENBQUMsQ0FBQyxDQUFDO0lBQ2xELENBQUM7Q0FDRixDQUFBO0FBUFksOENBQWlCO0FBSTVCO0lBREMsSUFBQSxZQUFHLEVBQUMsU0FBUyxDQUFDO0lBQ0gsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBOzs7O21EQUVoQjs0QkFOVSxpQkFBaUI7SUFGN0IsSUFBQSxtQkFBVSxFQUFDLEtBQUssQ0FBQztJQUNqQixJQUFBLGtCQUFTLEVBQUMsdUNBQWlCLENBQUM7eURBRWtCLGdDQUFjLG9CQUFkLGdDQUFjO0dBRGhELGlCQUFpQixDQU83QiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvam91cm5leS5jb250cm9sbGVyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IENvbnRyb2xsZXIsIEdldCwgUmVxLCBVc2VHdWFyZHMgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBSZXF1ZXN0IH0gZnJvbSAnZXhwcmVzcyc7XG5pbXBvcnQgeyB1aWQgfSBmcm9tICcuL3JlcXVlc3QtdXRpbHMnO1xuaW1wb3J0IHsgVGVsZWdyYW1BdXRoR3VhcmQgfSBmcm9tICcuL3RlbGVncmFtLWF1dGguZ3VhcmQnO1xuaW1wb3J0IHsgSm91cm5leVNlcnZpY2UgfSBmcm9tICcuLi9ib3Qvam91cm5leS5zZXJ2aWNlJztcblxuaW50ZXJmYWNlIEF1dGhSZXF1ZXN0IGV4dGVuZHMgUmVxdWVzdCB7XG4gIHdlYlVzZXI6IHsgdXNlcklkOiBiaWdpbnQgfTtcbn1cblxuLy8gwqvQnNC+0Lkg0L/Rg9GC0YzCuyDigJQg0YHQstC+0LTQvdGL0Lkg0LDRgNGF0LjQsiDQstGB0LXQuSDQsNC60YLQuNCy0L3QvtGB0YLQuCAo0YHRh9GR0YLRh9C40LrQuCArINC70LXQvdGC0LAg0LHQtdC3XG4vLyDRgNCw0YHRiNC40YTRgNC+0LLQutC4INGB0LLQvtCx0L7QtNC90L7Qs9C+INGC0LXQutGB0YLQsCkuINCi0L7Qu9GM0LrQviDRh9GC0LXQvdC40LUsINGC0LXQu9CwINC30LDQv9GA0L7RgdCwINC90LXRgi5cbkBDb250cm9sbGVyKCdhcGknKVxuQFVzZUd1YXJkcyhUZWxlZ3JhbUF1dGhHdWFyZClcbmV4cG9ydCBjbGFzcyBKb3VybmV5Q29udHJvbGxlciB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgam91cm5leVNlcnZpY2U6IEpvdXJuZXlTZXJ2aWNlKSB7fVxuXG4gIEBHZXQoJ2pvdXJuZXknKVxuICBnZXRKb3VybmV5KEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgcmV0dXJuIHRoaXMuam91cm5leVNlcnZpY2UuZ2V0Sm91cm5leSh1aWQocmVxKSk7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

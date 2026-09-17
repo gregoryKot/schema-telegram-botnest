@@ -1,0 +1,47 @@
+92f9bc95d4b80b34f6d586c2777ea52e
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthProviderRegistry = void 0;
+const common_1 = require("@nestjs/common");
+const google_provider_1 = require("./google.provider");
+const telegram_provider_1 = require("./telegram.provider");
+const telegram_oidc_provider_1 = require("./telegram-oidc.provider");
+const vk_provider_1 = require("./vk.provider");
+const max_provider_1 = require("./max.provider");
+// Single place that knows about all providers. Add a new auth method by:
+//   1. Drop a new file in src/auth/providers/foo.provider.ts implementing AuthProviderHandler
+//   2. Add it to the constructor + map below
+//   3. Register the @Injectable in auth.module.ts providers
+// Controller / merge logic / linking — all of it works automatically.
+let AuthProviderRegistry = class AuthProviderRegistry {
+    map = new Map();
+    constructor(google, telegram, telegramOidc, vk, max) {
+        for (const p of [google, telegram, telegramOidc, vk, max])
+            this.map.set(p.id, p);
+    }
+    get(id) {
+        const p = this.map.get(id);
+        if (!p)
+            throw new common_1.NotFoundException(`Unknown auth provider: ${id}`);
+        return p;
+    }
+    list() {
+        return [...this.map.values()];
+    }
+};
+exports.AuthProviderRegistry = AuthProviderRegistry;
+exports.AuthProviderRegistry = AuthProviderRegistry = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof google_provider_1.GoogleProvider !== "undefined" && google_provider_1.GoogleProvider) === "function" ? _a : Object, typeof (_b = typeof telegram_provider_1.TelegramProvider !== "undefined" && telegram_provider_1.TelegramProvider) === "function" ? _b : Object, typeof (_c = typeof telegram_oidc_provider_1.TelegramOidcProvider !== "undefined" && telegram_oidc_provider_1.TelegramOidcProvider) === "function" ? _c : Object, typeof (_d = typeof vk_provider_1.VkProvider !== "undefined" && vk_provider_1.VkProvider) === "function" ? _d : Object, typeof (_e = typeof max_provider_1.MaxProvider !== "undefined" && max_provider_1.MaxProvider) === "function" ? _e : Object])
+], AuthProviderRegistry);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9wcm92aWRlcnMvcmVnaXN0cnkudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUErRDtBQUMvRCx1REFBbUQ7QUFDbkQsMkRBQXVEO0FBQ3ZELHFFQUFnRTtBQUNoRSwrQ0FBMkM7QUFDM0MsaURBQTZDO0FBRzdDLHlFQUF5RTtBQUN6RSw4RkFBOEY7QUFDOUYsNkNBQTZDO0FBQzdDLDREQUE0RDtBQUM1RCxzRUFBc0U7QUFFL0QsSUFBTSxvQkFBb0IsR0FBMUIsTUFBTSxvQkFBb0I7SUFDZCxHQUFHLEdBQUcsSUFBSSxHQUFHLEVBQStCLENBQUM7SUFFOUQsWUFDRSxNQUFzQixFQUN0QixRQUEwQixFQUMxQixZQUFrQyxFQUNsQyxFQUFjLEVBQ2QsR0FBZ0I7UUFFaEIsS0FBSyxNQUFNLENBQUMsSUFBSSxDQUFDLE1BQU0sRUFBRSxRQUFRLEVBQUUsWUFBWSxFQUFFLEVBQUUsRUFBRSxHQUFHLENBQUM7WUFDdkQsSUFBSSxDQUFDLEdBQUcsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQztJQUMxQixDQUFDO0lBRUQsR0FBRyxDQUFDLEVBQVU7UUFDWixNQUFNLENBQUMsR0FBRyxJQUFJLENBQUMsR0FBRyxDQUFDLEdBQUcsQ0FBQyxFQUFFLENBQUMsQ0FBQztRQUMzQixJQUFJLENBQUMsQ0FBQztZQUFFLE1BQU0sSUFBSSwwQkFBaUIsQ0FBQywwQkFBMEIsRUFBRSxFQUFFLENBQUMsQ0FBQztRQUNwRSxPQUFPLENBQUMsQ0FBQztJQUNYLENBQUM7SUFFRCxJQUFJO1FBQ0YsT0FBTyxDQUFDLEdBQUcsSUFBSSxDQUFDLEdBQUcsQ0FBQyxNQUFNLEVBQUUsQ0FBQyxDQUFDO0lBQ2hDLENBQUM7Q0FDRixDQUFBO0FBdkJZLG9EQUFvQjsrQkFBcEIsb0JBQW9CO0lBRGhDLElBQUEsbUJBQVUsR0FBRTt5REFLRCxnQ0FBYyxvQkFBZCxnQ0FBYyxvREFDWixvQ0FBZ0Isb0JBQWhCLG9DQUFnQixvREFDWiw2Q0FBb0Isb0JBQXBCLDZDQUFvQixvREFDOUIsd0JBQVUsb0JBQVYsd0JBQVUsb0RBQ1QsMEJBQVcsb0JBQVgsMEJBQVc7R0FSUCxvQkFBb0IsQ0F1QmhDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2F1dGgvcHJvdmlkZXJzL3JlZ2lzdHJ5LnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEluamVjdGFibGUsIE5vdEZvdW5kRXhjZXB0aW9uIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgR29vZ2xlUHJvdmlkZXIgfSBmcm9tICcuL2dvb2dsZS5wcm92aWRlcic7XG5pbXBvcnQgeyBUZWxlZ3JhbVByb3ZpZGVyIH0gZnJvbSAnLi90ZWxlZ3JhbS5wcm92aWRlcic7XG5pbXBvcnQgeyBUZWxlZ3JhbU9pZGNQcm92aWRlciB9IGZyb20gJy4vdGVsZWdyYW0tb2lkYy5wcm92aWRlcic7XG5pbXBvcnQgeyBWa1Byb3ZpZGVyIH0gZnJvbSAnLi92ay5wcm92aWRlcic7XG5pbXBvcnQgeyBNYXhQcm92aWRlciB9IGZyb20gJy4vbWF4LnByb3ZpZGVyJztcbmltcG9ydCB7IEF1dGhQcm92aWRlckhhbmRsZXIgfSBmcm9tICcuL3R5cGVzJztcblxuLy8gU2luZ2xlIHBsYWNlIHRoYXQga25vd3MgYWJvdXQgYWxsIHByb3ZpZGVycy4gQWRkIGEgbmV3IGF1dGggbWV0aG9kIGJ5OlxuLy8gICAxLiBEcm9wIGEgbmV3IGZpbGUgaW4gc3JjL2F1dGgvcHJvdmlkZXJzL2Zvby5wcm92aWRlci50cyBpbXBsZW1lbnRpbmcgQXV0aFByb3ZpZGVySGFuZGxlclxuLy8gICAyLiBBZGQgaXQgdG8gdGhlIGNvbnN0cnVjdG9yICsgbWFwIGJlbG93XG4vLyAgIDMuIFJlZ2lzdGVyIHRoZSBASW5qZWN0YWJsZSBpbiBhdXRoLm1vZHVsZS50cyBwcm92aWRlcnNcbi8vIENvbnRyb2xsZXIgLyBtZXJnZSBsb2dpYyAvIGxpbmtpbmcg4oCUIGFsbCBvZiBpdCB3b3JrcyBhdXRvbWF0aWNhbGx5LlxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIEF1dGhQcm92aWRlclJlZ2lzdHJ5IHtcbiAgcHJpdmF0ZSByZWFkb25seSBtYXAgPSBuZXcgTWFwPHN0cmluZywgQXV0aFByb3ZpZGVySGFuZGxlcj4oKTtcblxuICBjb25zdHJ1Y3RvcihcbiAgICBnb29nbGU6IEdvb2dsZVByb3ZpZGVyLFxuICAgIHRlbGVncmFtOiBUZWxlZ3JhbVByb3ZpZGVyLFxuICAgIHRlbGVncmFtT2lkYzogVGVsZWdyYW1PaWRjUHJvdmlkZXIsXG4gICAgdms6IFZrUHJvdmlkZXIsXG4gICAgbWF4OiBNYXhQcm92aWRlcixcbiAgKSB7XG4gICAgZm9yIChjb25zdCBwIG9mIFtnb29nbGUsIHRlbGVncmFtLCB0ZWxlZ3JhbU9pZGMsIHZrLCBtYXhdKVxuICAgICAgdGhpcy5tYXAuc2V0KHAuaWQsIHApO1xuICB9XG5cbiAgZ2V0KGlkOiBzdHJpbmcpOiBBdXRoUHJvdmlkZXJIYW5kbGVyIHtcbiAgICBjb25zdCBwID0gdGhpcy5tYXAuZ2V0KGlkKTtcbiAgICBpZiAoIXApIHRocm93IG5ldyBOb3RGb3VuZEV4Y2VwdGlvbihgVW5rbm93biBhdXRoIHByb3ZpZGVyOiAke2lkfWApO1xuICAgIHJldHVybiBwO1xuICB9XG5cbiAgbGlzdCgpOiBBdXRoUHJvdmlkZXJIYW5kbGVyW10ge1xuICAgIHJldHVybiBbLi4udGhpcy5tYXAudmFsdWVzKCldO1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

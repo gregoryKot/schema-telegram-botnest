@@ -1,0 +1,132 @@
+6de348ba2b559e6477231fc453013308
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookingController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const booking_service_1 = require("./booking.service");
+const slot_service_1 = require("./slot.service");
+const pricing_service_1 = require("./pricing.service");
+const client_1 = require("@prisma/client");
+const book_dto_1 = require("./book.dto");
+/** Public booking endpoints: browse slots, book one, self-cancel. */
+let BookingController = class BookingController {
+    slots;
+    booking;
+    pricing;
+    constructor(slots, booking, pricing) {
+        this.slots = slots;
+        this.booking = booking;
+        this.pricing = pricing;
+    }
+    /** GET /api/booking/options — session types, durations and prices for the UI. */
+    getOptions() {
+        return this.pricing.getOptions();
+    }
+    /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */
+    async getSlots(from, to) {
+        const fromDate = from ? new Date(from) : new Date();
+        const toDate = to ? new Date(to) : addDays(fromDate, 14);
+        const list = await this.slots.getSlots(fromDate, toDate);
+        return list.map((s) => ({
+            startsAt: s.startsAt.toISOString(),
+            endsAt: s.endsAt.toISOString(),
+            durationMin: s.durationMin,
+        }));
+    }
+    /**
+     * POST /api/booking/book — book a slot (free intro confirms immediately).
+     * Anti-spam: per-IP rate limit (max 6/hour via the 'long' bucket) + honeypot.
+     */
+    async bookSlot(dto) {
+        if (dto.website)
+            throw new common_1.BadRequestException('rejected'); // honeypot tripped
+        const payload = {
+            startsAt: new Date(dto.startsAt),
+            durationMin: dto.durationMin ?? 50,
+            type: dto.type ?? client_1.SessionType.INTRO_15,
+            clientName: dto.clientName?.trim(),
+            clientContact: dto.clientContact?.trim(),
+            message: dto.message?.trim(),
+            clientTelegramId: dto.clientTelegramId
+                ? BigInt(dto.clientTelegramId)
+                : undefined,
+            returning: dto.returning ?? false,
+            acceptedOffer: dto.acceptedOffer ?? false,
+            source: dto.source?.trim() || undefined,
+        };
+        return this.booking.book(payload);
+    }
+    /** GET /api/booking/by-token/:token — public booking view (no PII) for the post-payment page. */
+    async getByToken(token) {
+        return this.booking.getPublicByToken(token);
+    }
+    /** POST /api/booking/cancel/:token — client self-cancel */
+    async cancelByToken(token) {
+        return this.booking.cancel(token);
+    }
+};
+exports.BookingController = BookingController;
+__decorate([
+    (0, common_1.Get)('options'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], BookingController.prototype, "getOptions", null);
+__decorate([
+    (0, common_1.Get)('slots'),
+    __param(0, (0, common_1.Query)('from')),
+    __param(1, (0, common_1.Query)('to')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], BookingController.prototype, "getSlots", null);
+__decorate([
+    (0, common_1.Post)('book'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ long: { limit: 6, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_d = typeof book_dto_1.BookDto !== "undefined" && book_dto_1.BookDto) === "function" ? _d : Object]),
+    __metadata("design:returntype", Promise)
+], BookingController.prototype, "bookSlot", null);
+__decorate([
+    (0, common_1.Get)('by-token/:token'),
+    (0, throttler_1.Throttle)({ long: { limit: 60, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Param)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BookingController.prototype, "getByToken", null);
+__decorate([
+    (0, common_1.Post)('cancel/:token'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ long: { limit: 30, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Param)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BookingController.prototype, "cancelByToken", null);
+exports.BookingController = BookingController = __decorate([
+    (0, common_1.Controller)('api/booking'),
+    __metadata("design:paramtypes", [typeof (_a = typeof slot_service_1.SlotService !== "undefined" && slot_service_1.SlotService) === "function" ? _a : Object, typeof (_b = typeof booking_service_1.BookingService !== "undefined" && booking_service_1.BookingService) === "function" ? _b : Object, typeof (_c = typeof pricing_service_1.PricingService !== "undefined" && pricing_service_1.PricingService) === "function" ? _c : Object])
+], BookingController);
+function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29raW5nLmNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJDQVV3QjtBQUN4QixpREFBNkM7QUFDN0MsdURBQXFFO0FBQ3JFLGlEQUE2QztBQUM3Qyx1REFBbUQ7QUFDbkQsMkNBQTZDO0FBQzdDLHlDQUFxQztBQUVyQyxxRUFBcUU7QUFFOUQsSUFBTSxpQkFBaUIsR0FBdkIsTUFBTSxpQkFBaUI7SUFFVDtJQUNBO0lBQ0E7SUFIbkIsWUFDbUIsS0FBa0IsRUFDbEIsT0FBdUIsRUFDdkIsT0FBdUI7UUFGdkIsVUFBSyxHQUFMLEtBQUssQ0FBYTtRQUNsQixZQUFPLEdBQVAsT0FBTyxDQUFnQjtRQUN2QixZQUFPLEdBQVAsT0FBTyxDQUFnQjtJQUN2QyxDQUFDO0lBRUosaUZBQWlGO0lBRWpGLFVBQVU7UUFDUixPQUFPLElBQUksQ0FBQyxPQUFPLENBQUMsVUFBVSxFQUFFLENBQUM7SUFDbkMsQ0FBQztJQUVELDJEQUEyRDtJQUVyRCxBQUFOLEtBQUssQ0FBQyxRQUFRLENBQWdCLElBQVksRUFBZSxFQUFVO1FBQ2pFLE1BQU0sUUFBUSxHQUFHLElBQUksQ0FBQyxDQUFDLENBQUMsSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksSUFBSSxFQUFFLENBQUM7UUFDcEQsTUFBTSxNQUFNLEdBQUcsRUFBRSxDQUFDLENBQUMsQ0FBQyxJQUFJLElBQUksQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUMsT0FBTyxDQUFDLFFBQVEsRUFBRSxFQUFFLENBQUMsQ0FBQztRQUN6RCxNQUFNLElBQUksR0FBRyxNQUFNLElBQUksQ0FBQyxLQUFLLENBQUMsUUFBUSxDQUFDLFFBQVEsRUFBRSxNQUFNLENBQUMsQ0FBQztRQUN6RCxPQUFPLElBQUksQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUM7WUFDdEIsUUFB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LENBQUMsRUFBRSxDQUFDO0lBQ3ZCLElBQUEsb0JBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxFQUFFLEtBQUssRUFBRSxFQUFFLEVBQUUsR0FBRyxFQUFFLFNBQVMsRUFBRSxFQUFFLENBQUM7SUFDN0IsV0FBQSxJQUFBLGNBQUssRUFBQyxPQUFPLENBQUMsQ0FBQTs7OztzREFFbEM7NEJBakVVLGlCQUFpQjtJQUQ3QixJQUFBLG1CQUFVLEVBQUMsYUFBYSxDQUFDO3lEQUdFLDBCQUFXLG9CQUFYLDBCQUFXLG9EQUNULGdDQUFjLG9CQUFkLGdDQUFjLG9EQUNkLGdDQUFjLG9CQUFkLGdDQUFjO0dBSi9CLGlCQUFpQixDQWtFN0I7QUFFRCxTQUFTLE9BQU8sQ0FBQyxDQUFPLEVBQUUsQ0FBUztJQUNqQyxNQUFNLENBQUMsR0FBRyxJQUFJLElBQUksQ0FBQyxDQUFDLENBQUMsQ0FBQztJQUN0QixDQUFDLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQyxPQUFPLEVBQUUsR0FBRyxDQUFDLENBQUMsQ0FBQztJQUMzQixPQUFPLENBQUMsQ0FBQztBQUNYLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm9va2luZy9ib29raW5nLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQ29udHJvbGxlcixcbiAgR2V0LFxuICBQb3N0LFxuICBCb2R5LFxuICBQYXJhbSxcbiAgUXVlcnksXG4gIEh0dHBDb2RlLFxuICBIdHRwU3RhdHVzLFxuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxufSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBUaHJvdHRsZSB9IGZyb20gJ0BuZXN0anMvdGhyb3R0bGVyJztcbmltcG9ydCB7IEJvb2tpbmdTZXJ2aWNlLCBDcmVhdGVCb29raW5nRHRvIH0gZnJvbSAnLi9ib29raW5nLnNlcnZpY2UnO1xuaW1wb3J0IHsgU2xvdFNlcnZpY2UgfSBmcm9tICcuL3Nsb3Quc2VydmljZSc7XG5pbXBvcnQgeyBQcmljaW5nU2VydmljZSB9IGZyb20gJy4vcHJpY2luZy5zZXJ2aWNlJztcbmltcG9ydCB7IFNlc3Npb25UeXBlIH0gZnJvbSAnQHByaXNtYS9jbGllbnQnO1xuaW1wb3J0IHsgQm9va0R0byB9IGZyb20gJy4vYm9vay5kdG8nO1xuXG4vKiogUHVibGljIGJvb2tpbmcgZW5kcG9pbnRzOiBicm93c2Ugc2xvdHMsIGJvb2sgb25lLCBzZWxmLWNhbmNlbC4gKi9cbkBDb250cm9sbGVyKCdhcGkvYm9va2luZycpXG5leHBvcnQgY2xhc3MgQm9va2luZ0NvbnRyb2xsZXIge1xuICBjb25zdHJ1Y3RvcihcbiAgICBwcml2YXRlIHJlYWRvbmx5IHNsb3RzOiBTbG90U2VydmljZSxcbiAgICBwcml2YXRlIHJlYWRvbmx5IGJvb2tpbmc6IEJvb2tpbmdTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgcHJpY2luZzogUHJpY2luZ1NlcnZpY2UsXG4gICkge31cblxuICAvKiogR0VUIC9hcGkvYm9va2luZy9vcHRpb25zIOKAlCBzZXNzaW9uIHR5cGVzLCBkdXJhdGlvbnMgYW5kIHByaWNlcyBmb3IgdGhlIFVJLiAqL1xuICBAR2V0KCdvcHRpb25zJylcbiAgZ2V0T3B0aW9ucygpIHtcbiAgICByZXR1cm4gdGhpcy5wcmljaW5nLmdldE9wdGlvbnMoKTtcbiAgfVxuXG4gIC8qKiBHRVQgL2FwaS9ib29raW5nL3Nsb3RzP2Zyb209MjAyNi0wNi0yMyZ0bz0yMDI2LTA2LTMwICovXG4gIEBHZXQoJ3Nsb3RzJylcbiAgYXN5bmMgZ2V0U2xvdHMoQFF1ZXJ5KCdmcm9tJykgZnJvbTogc3RyaW5nLCBAUXVlcnkoJ3RvJykgdG86IHN0cmluZykge1xuICAgIGNvbnN0IGZyb21EYXRlID0gZnJvbSA/IG5ldyBEYXRlKGZyb20pIDogbmV3IERhdGUoKTtcbiAgICBjb25zdCB0b0RhdGUgPSB0byA/IG5ldyBEYXRlKHRvKSA6IGFkZERheXMoZnJvbURhdGUsIDE0KTtcbiAgICBjb25zdCBsaXN0ID0gYXdhaXQgdGhpcy5zbG90cy5nZXRTbG90cyhmcm9tRGF0ZSwgdG9EYXRlKTtcbiAgICByZXR1cm4gbGlzdC5tYXAoKHMpID0+ICh7XG4gICAgICBzdGFydHNBdDogcy5zdGFydHNBdC50b0lTT1N0cmluZygpLFxuICAgICAgZW5kc0F0OiBzLmVuZHNBdC50b0lTT1N0cmluZygpLFxuICAgICAgZHVyYXRpb25NaW46IHMuZHVyYXRpb25NaW4sXG4gICAgfSkpO1xuICB9XG5cbiAgLyoqXG4gICAqIFBPU1QgL2FwaS9ib29raW5nL2Jvb2sg4oCUIGJvb2sgYSBzbG90IChmcmVlIGludHJvIGNvbmZpcm1zIGltbWVkaWF0ZWx5KS5cbiAgICogQW50aS1zcGFtOiBwZXItSVAgcmF0ZSBsaW1pdCAobWF4IDYvaG91ciB2aWEgdGhlICdsb25nJyBidWNrZXQpICsgaG9uZXlwb3QuXG4gICAqL1xuICBAUG9zdCgnYm9vaycpXG4gIEBIdHRwQ29kZShIdHRwU3RhdHVzLk9LKVxuICBAVGhyb3R0bGUoeyBsb25nOiB7IGxpbWl0OiA2LCB0dGw6IDNfNjAwXzAwMCB9IH0pXG4gIGFzeW5jIGJvb2tTbG90KEBCb2R5KCkgZHRvOiBCb29rRHRvKSB7XG4gICAgaWYgKGR0by53ZWJzaXRlKSB0aHJvdyBuZXcgQmFkUmVxdWVzdEV4Y2VwdGlvbigncmVqZWN0ZWQnKTsgLy8gaG9uZXlwb3QgdHJpcHBlZFxuICAgIGNvbnN0IHBheWxvYWQ6IENyZWF0ZUJvb2tpbmdEdG8gPSB7XG4gICAgICBzdGFydHNBdDogbmV3IERhdGUoZHRvLnN0YXJ0c0F0KSxcbiAgICAgIGR1cmF0aW9uTWluOiBkdG8uZHVyYXRpb25NaW4gPz8gNTAsXG4gICAgICB0eXBlOiBkdG8udHlwZSA/PyBTZXNzaW9uVHlwZS5JTlRST18xNSxcbiAgICAgIGNsaWVudE5hbWU6IGR0by5jbGllbnROYW1lPy50cmltKCksXG4gICAgICBjbGllbnRDb250YWN0OiBkdG8uY2xpZW50Q29udGFjdD8udHJpbSgpLFxuICAgICAgbWVzc2FnZTogZHRvLm1lc3NhZ2U/LnRyaW0oKSxcbiAgICAgIGNsaWVudFRlbGVncmFtSWQ6IGR0by5jbGllbnRUZWxlZ3JhbUlkXG4gICAgICAgID8gQmlnSW50KGR0by5jbGllbnRUZWxlZ3JhbUlkKVxuICAgICAgICA6IHVuZGVmaW5lZCxcbiAgICAgIHJldHVybmluZzogZHRvLnJldHVybmluZyA/PyBmYWxzZSxcbiAgICAgIGFjY2VwdGVkT2ZmZXI6IGR0by5hY2NlcHRlZE9mZmVyID8/IGZhbHNlLFxuICAgICAgc291cmNlOiBkdG8uc291cmNlPy50cmltKCkgfHwgdW5kZWZpbmVkLFxuICAgIH07XG4gICAgcmV0dXJuIHRoaXMuYm9va2luZy5ib29rKHBheWxvYWQpO1xuICB9XG5cbiAgLyoqIEdFVCAvYXBpL2Jvb2tpbmcvYnktdG9rZW4vOnRva2VuIOKAlCBwdWJsaWMgYm9va2luZyB2aWV3IChubyBQSUkpIGZvciB0aGUgcG9zdC1wYXltZW50IHBhZ2UuICovXG4gIEBHZXQoJ2J5LXRva2VuLzp0b2tlbicpXG4gIEBUaHJvdHRsZSh7IGxvbmc6IHsgbGltaXQ6IDYwLCB0dGw6IDNfNjAwXzAwMCB9IH0pXG4gIGFzeW5jIGdldEJ5VG9rZW4oQFBhcmFtKCd0b2tlbicpIHRva2VuOiBzdHJpbmcpIHtcbiAgICByZXR1cm4gdGhpcy5ib29raW5nLmdldFB1YmxpY0J5VG9rZW4odG9rZW4pO1xuICB9XG5cbiAgLyoqIFBPU1QgL2FwaS9ib29raW5nL2NhbmNlbC86dG9rZW4g4oCUIGNsaWVudCBzZWxmLWNhbmNlbCAqL1xuICBAUG9zdCgnY2FuY2VsLzp0b2tlbicpXG4gIEBIdHRwQ29kZShIdHRwU3RhdHVzLk9LKVxuICBAVGhyb3R0bGUoeyBsb25nOiB7IGxpbWl0OiAzMCwgdHRsOiAzXzYwMF8wMDAgfSB9KVxuICBhc3luYyBjYW5jZWxCeVRva2VuKEBQYXJhbSgndG9rZW4nKSB0b2tlbjogc3RyaW5nKSB7XG4gICAgcmV0dXJuIHRoaXMuYm9va2luZy5jYW5jZWwodG9rZW4pO1xuICB9XG59XG5cbmZ1bmN0aW9uIGFkZERheXMoZDogRGF0ZSwgbjogbnVtYmVyKTogRGF0ZSB7XG4gIGNvbnN0IHIgPSBuZXcgRGF0ZShkKTtcbiAgci5zZXREYXRlKHIuZ2V0RGF0ZSgpICsgbik7XG4gIHJldHVybiByO1xufVxuIl0sInZlcnNpb24iOjN9

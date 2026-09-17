@@ -1,0 +1,11 @@
+{
+  "total": 93.19,
+  "files": {
+    "src/utils/crypto.ts": 89.86,
+    "src/auth/auth.service.ts": 91.61,
+    "src/auth/merge.service.ts": 92,
+    "src/api/telegram-auth.guard.ts": 92,
+    "src/auth/security-log.service.ts": 95.74,
+    "src/therapy/therapy-relations.service.ts": 97.95
+  }
+}

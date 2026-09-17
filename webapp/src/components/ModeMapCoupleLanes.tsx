@@ -61,8 +61,8 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
         </div>
       </div>
       {/* Editable partner chips — fixed top bar */}
-      <div style={{ position: 'absolute', top: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 10, zIndex: 4, pointerEvents: 'none' }}>
-        <div style={{ display: 'flex', gap: 10, pointerEvents: 'all' }}>
+      <div style={{ position: 'absolute', top: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 'var(--space-10)', zIndex: 4, pointerEvents: 'none' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)', pointerEvents: 'all' }}>
           {chip('a')}
           <span style={{ alignSelf: 'center', fontSize: 12, color: 'var(--text-faint)' }}>⇄</span>
           {chip('b')}

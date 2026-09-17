@@ -5,9 +5,18 @@ import { UserProfile } from '../../types';
 export const ONBOARDING_DONE_KEY = 'onboarding_done';
 export const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
 
+// Ж10 (аудит 2026-08): та же видимость, что решает OnboardingWidget.tsx
+// (`if (done || profile === null) return null;`) — нужна и вовне (TodayBlocks
+// сворачивает вторичный блок, пока виден виджет обучения). Один источник
+// правды на ключ ONBOARDING_DONE_KEY, а не вторая копия условия.
+export function isOnboardingWidgetVisible(
+  profile: UserProfile | null,
+): boolean {
+  return profile !== null && !localStorage.getItem(ONBOARDING_DONE_KEY);
+}
+
 export interface StepDef {
   id: string;
-  emoji: string;
   color: string;
   title: string;
   description: string;
@@ -22,29 +31,26 @@ export interface StepDef {
 export const STEPS: StepDef[] = [
   {
     id: 'ysq',
-    emoji: '🧪',
     color: 'var(--accent)',
     title: 'Тест на схемы',
     description:
       '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
-    isDone: (p, ctx) => !!p?.ysq.completedAt || !!ctx?.hasSchemas,
+    isDone: (p, ctx) => !!p?.ysq?.completedAt || !!ctx?.hasSchemas,
   },
   {
     id: 'tracker',
-    emoji: '📊',
     color: 'var(--accent-blue)',
     title: 'Оценка потребностей сегодня',
     description:
       'Пять оценок — и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
-    detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
+    detail: 'Привязанность · Автономия · Выражение · Спонтанность · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: (p) => !!p?.lastActivity.needsTracker,
   },
   {
     id: 'diary',
-    emoji: '📔',
     color: 'var(--accent-indigo)',
     title: 'Первая запись в дневнике',
     description:
@@ -60,18 +66,16 @@ export const STEPS: StepDef[] = [
   },
   {
     id: 'notify',
-    emoji: '🔔',
     color: 'var(--accent-orange)',
     title: 'Ежедневное напоминание',
     description:
-      'Без регулярности ничего не выйдет. Одно уведомление в нужное время — всё что нужно.',
+      'Одно уведомление в удобное время — чтобы практика не держалась на памяти.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: (p) => !!p?.notifications.enabled,
   },
   {
     id: 'childhood',
-    emoji: '🌀',
     color: 'var(--accent-green)',
     title: 'Колесо детства',
     description:

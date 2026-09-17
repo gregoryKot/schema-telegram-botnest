@@ -7,6 +7,7 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { UpdateSettingsDto } from './dto/settings.dto';
+import { sanitizeUiPrefs } from './ui-prefs.sanitize';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -44,6 +45,10 @@ export class SettingsController {
       myModeIds: Array.isArray(s?.myModeIds) ? (s.myModeIds as string[]) : [],
       therapistShareCards: s?.therapistShareCards ?? true,
       therapistShareProfile: s?.therapistShareProfile ?? true,
+      // sanitizeUiPrefs повторно фильтрует и на чтение — защита от того, что
+      // в колонке лежит устаревшая/битая форма (например ключ, выведенный
+      // из SYNCED_PREF_KEYS в более старой версии контракта).
+      uiPrefs: sanitizeUiPrefs(s?.uiPrefs) ?? {},
     };
   }
 
@@ -110,6 +115,10 @@ export class SettingsController {
       clean.therapistShareCards = body.therapistShareCards;
     if (typeof body.therapistShareProfile === 'boolean')
       clean.therapistShareProfile = body.therapistShareProfile;
+    if (body.uiPrefs !== undefined) {
+      const prefs = sanitizeUiPrefs(body.uiPrefs);
+      if (prefs) clean.uiPrefs = prefs;
+    }
     await this.botService.updateUserSettings(uid(req), clean);
 
     // Явный выбор частоты сбрасывает адаптацию на выбранный уровень

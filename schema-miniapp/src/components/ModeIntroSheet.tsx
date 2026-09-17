@@ -9,6 +9,7 @@ import { buildModeIntroQuestions } from '../../../shared/src/mode/modeIntroQuest
 import { getModeCard } from '../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../shared/src/share/analytics';
 import { ModePortrait } from './modeIntro/ModePortrait';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 
 const STORAGE_KEY = (modeId: string) => `mode_intro_${modeId}`;
 const SEEN_KEY = (modeId: string) => `mode_portrait_seen_${modeId}`;
@@ -19,7 +20,9 @@ interface IntroData {
   feelings: string;
   thoughts: string;
   behavior: string;
+  modeFunction: string;
   needs: string;
+  needsMet: string;
   origins: string;
   healthyView: string;
 }
@@ -29,7 +32,9 @@ const EMPTY: IntroData = {
   feelings: '',
   thoughts: '',
   behavior: '',
+  modeFunction: '',
   needs: '',
+  needsMet: '',
   origins: '',
   healthyView: '',
 };
@@ -38,9 +43,18 @@ interface Props {
   modeId: string;
   onClose: () => void;
   onComplete?: () => void;
+  /** Принудительно открыть портрет режима, даже если он уже был показан
+   *  раньше — используется ссылкой «О режиме» из PatternSheet (справка,
+   *  а не тихий переход сразу к вопросам). */
+  forcePortrait?: boolean;
 }
 
-export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
+export function ModeIntroSheet({
+  modeId,
+  onClose,
+  onComplete,
+  forcePortrait,
+}: Props) {
   const tr = useTr();
   const mode = getModeById(modeId);
   const card = getModeCard(modeId);
@@ -48,18 +62,21 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   // но честно подписать кнопку при ручном возврате («Про режим» в шапке).
   const seen = Boolean(localStorage.getItem(SEEN_KEY(modeId)));
   const [showPortrait, setShowPortrait] = useState(
-    () => Boolean(card) && !seen,
+    () => Boolean(card) && (forcePortrait || !seen),
   );
   if (!mode) return null;
+  const accentColor = mode.groupColor ?? 'var(--accent)';
+  // Опознаватель режима — цветной кружок группы вместо эмодзи (волна 6).
+  const modeDot = <IdentityDot color={accentColor} size={20} />;
 
   if (showPortrait && card) {
     return (
       <ModePortrait
         onClose={onClose}
-        emoji={mode.emoji}
+        emoji={modeDot}
         name={mode.name}
         groupName={mode.groupName}
-        accentColor={mode.groupColor ?? 'var(--accent)'}
+        accentColor={accentColor}
         card={card}
         explainer={buildModeIntroExplainer(tr)}
         ctaLabel={seen ? 'Назад к вопросам →' : undefined}
@@ -103,14 +120,16 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
             thoughts,
             behavior,
             needs,
+            modeFunction: n.modeFunction ?? '',
+            needsMet: n.needsMet ?? '',
             origins: n.origins ?? '',
             healthyView: n.healthyView ?? '',
           };
         })
       }
       saveNote={(data) => api.saveModeNote({ modeId, ...data })}
-      accentColor={mode.groupColor ?? 'var(--accent)'}
-      emoji={mode.emoji}
+      accentColor={accentColor}
+      emoji={modeDot}
       title={mode.name}
       subtitle={mode.groupName}
       description={mode.short}
@@ -119,7 +138,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       headerAction={
         card && <HeaderInfoButton onClick={() => setShowPortrait(true)} />
       }
-      answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
+      savedHint="Карточка режима — в разделе «Паттерны». Её можно открыть и дополнить в любой момент."
       nextButtonLabel="Следующий →"
     />
   );

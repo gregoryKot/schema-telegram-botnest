@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { api, UserPractice } from '../api';
-import { SkeletonList } from './Skeleton';
+import { useState } from 'react';
+import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
-import { useNeedData } from '../needData';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
+import { usePracticesData } from '../hooks/usePracticesData';
+import { hitboxStyle } from '../utils/hitbox';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -22,56 +24,23 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
-  const NEED_DATA = useNeedData();
   const tr = useTr();
   const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);
-  const [practices, setPractices] = useState<UserPractice[] | null>(null);
   const [input, setInput] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [addedToast, setAddedToast] = useState(false);
-  const [errorToast, setErrorToast] = useState(false);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    api
-      .ratings()
-      .then(setRatings)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    setPractices(null);
-    api
-      .getPractices(NEED_IDS[needIdx])
-      .then(setPractices)
-      .catch(() => setPractices([]));
-  }, [needIdx]);
+  const {
+    practices,
+    ratings,
+    addedToast,
+    errorToast,
+    saving,
+    loadFailed,
+    addPractice,
+    deletePractice: handleDelete,
+  } = usePracticesData(NEED_IDS[needIdx]);
 
   async function handleAdd() {
-    const text = input.trim();
-    if (!text || saving) return;
-    setSaving(true);
-    try {
-      await api.addPractice(NEED_IDS[needIdx], text);
-      setInput('');
-      setAddedToast(true);
-      setTimeout(() => setAddedToast(false), 2000);
-      api
-        .getPractices(NEED_IDS[needIdx])
-        .then(setPractices)
-        .catch(() => {});
-    } catch {
-      setErrorToast(true);
-      setTimeout(() => setErrorToast(false), 2500);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleDelete(id: number) {
-    setPractices((prev) => prev?.filter((x) => x.id !== id) ?? null);
-    api.deletePractice(id).catch(() => {});
+    if (await addPractice(input.trim())) setInput('');
   }
 
   const needId = NEED_IDS[needIdx];
@@ -96,21 +65,29 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           padding: '16px 20px 8px',
         }}
       >
-        <span
-          {...pressable(onClose)}
-          style={{
-            fontSize: 26,
-            color: 'var(--text-sub)',
-            cursor: 'pointer',
-            lineHeight: 1,
-          }}
+        <button
+          onClick={onClose}
+          aria-label="Назад"
+          style={hitboxStyle(26, 26).outer}
         >
-          ‹
-        </span>
+          <span
+            style={{
+              ...hitboxStyle(26, 26).inner,
+              fontSize: 26,
+              color: 'var(--text-sub)',
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ‹
+          </span>
+        </button>
         <span
           style={{
             fontSize: 18,
@@ -183,7 +160,6 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         >
           {NEED_IDS.map((id, i) => {
             const color = COLORS[id] ?? '#888';
-            const emoji = NEED_DATA[id]?.emoji ?? '';
             const active = i === needIdx;
             const score = ratings[id];
             return (
@@ -196,7 +172,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                 style={{
                   flexShrink: 0,
                   padding: '7px 12px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   background: active
                     ? color + '28'
                     : 'rgba(var(--fg-rgb),0.05)',
@@ -211,7 +187,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                   gap: 5,
                 }}
               >
-                {emoji} {NEED_NAMES[id]}
+                {NEED_NAMES[id]}
                 {score !== undefined && (
                   <span
                     style={{
@@ -240,12 +216,12 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: `${needColor}12`,
               border: `1px solid ${needColor}25`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>📍</span>
@@ -270,12 +246,12 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: 'rgba(251,191,36,0.08)',
               border: '1px solid rgba(251,191,36,0.2)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>💛</span>
@@ -292,73 +268,15 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         )}
 
         {/* Practices list */}
-        {!practices ? (
-          <SkeletonList rows={4} h={84} />
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              marginBottom: 16,
-            }}
-          >
-            {practices.length === 0 && (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  padding: '20px 0',
-                  textAlign: 'center',
-                }}
-              >
-                Пока пусто — добавь первую практику ниже
-              </div>
-            )}
-            {practices.map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 14,
-                  padding: '13px 14px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'rgba(var(--fg-rgb),0.85)',
-                    flex: 1,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {p.text}
-                </div>
-                <div
-                  {...pressable(() => handleDelete(p.id))}
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 9,
-                    flexShrink: 0,
-                    background: 'rgba(255,100,100,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    color: 'rgba(255,100,100,0.5)',
-                  }}
-                >
-                  ×
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PracticesList
+          loadFailed={loadFailed}
+          failedMessage={tr(
+            'Не удалось загрузить практики. Проверь соединение и попробуй ещё раз',
+            'Не удалось загрузить практики. Проверьте соединение и попробуйте ещё раз',
+          )}
+          practices={practices}
+          onDelete={handleDelete}
+        />
 
         {/* Add input */}
         <div
@@ -372,7 +290,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           Небольшое конкретное действие — например «позвонить другу» или
           «прогулка 20 минут»
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -385,7 +303,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.05)',
               border: '1px solid rgba(var(--fg-rgb),0.1)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 14px',
               color: 'var(--text)',
               fontSize: 14,
@@ -398,7 +316,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             disabled={!input.trim() || saving}
             style={{
               padding: '12px 18px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               background: input.trim() ? needColor : 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text)',
@@ -411,6 +329,9 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             +
           </button>
         </div>
+        {/* правило №7: свободный текст обязан проходить кризисную детекцию,
+            до сохранения/шифрования — см. TaskCreateSheet/GratitudeEntrySheet */}
+        {detectCrisisAny(input) && <CrisisCard surface="practice" />}
       </div>
     </div>
   );

@@ -1,0 +1,52 @@
+c8b253c97a411e212df3d8ec500af069
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ModeCardMetricsService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const mode_card_metrics_format_1 = require("./mode-card-metrics.format");
+// Счётчики сохранений карточки режима для /stats: событие mode_card_saved
+// из AnalyticsEvent (meta.modeId + meta.filledFields). Свой домен — свой
+// файл (правило №10), образец — quiz-metrics.service.ts. Подклеивается к
+// /stats самим telegram.service.ts (как pool status), не через
+// ProductMetricsService — тот держим на зафиксированном размере.
+let ModeCardMetricsService = class ModeCardMetricsService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    /** Готовый текстовый блок для /stats. */
+    async render() {
+        return (0, mode_card_metrics_format_1.formatModeCardMetrics)(await this.getMetrics());
+    }
+    async getMetrics() {
+        const since30 = new Date(Date.now() - 30 * 86_400_000);
+        const [row] = await this.prisma.$queryRaw `
+      SELECT count(*)::bigint AS saved,
+             count(DISTINCT "userId")::bigint AS users,
+             AVG(("meta"->>'filledFields')::numeric) AS "avgFilled"
+      FROM "AnalyticsEvent"
+      WHERE "name" = 'mode_card_saved' AND "createdAt" >= ${since30}`;
+        return {
+            saved30: Number(row?.saved ?? 0n),
+            users30: Number(row?.users ?? 0n),
+            avgFilled30: Number(row?.avgFilled ?? 0),
+        };
+    }
+};
+exports.ModeCardMetricsService = ModeCardMetricsService;
+exports.ModeCardMetricsService = ModeCardMetricsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], ModeCardMetricsService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L21vZGUtY2FyZC1tZXRyaWNzLnNlcnZpY2UudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUE0QztBQUM1Qyw2REFBeUQ7QUFDekQseUVBR29DO0FBRXBDLDBFQUEwRTtBQUMxRSx5RUFBeUU7QUFDekUseUVBQXlFO0FBQ3pFLCtEQUErRDtBQUMvRCxpRUFBaUU7QUFFMUQsSUFBTSxzQkFBc0IsR0FBNUIsTUFBTSxzQkFBc0I7SUFDSjtJQUE3QixZQUE2QixNQUFxQjtRQUFyQixXQUFNLEdBQU4sTUFBTSxDQUFlO0lBQUcsQ0FBQztJQUV0RCx5Q0FBeUM7SUFDekMsS0FBSyxDQUFDLE1BQU07UUFDVixPQUFPLElBQUEsZ0RBQXFCLEVBQUMsTUFBTSxJQUFJLENBQUMsVUFBVSxFQUFFLENBQUMsQ0FBQztJQUN4RCxDQUFDO0lBRUQsS0FBSyxDQUFDLFVBQVU7UUFDZCxNQUFNLE9BQU8sR0FBRyxJQUFJLElBQUksQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLEdBQUcsRUFBRSxHQUFHLFVBQVUsQ0FBQyxDQUFDO1FBQ3ZELE1BQU0sQ0FBQyxHQUFHLENBQUMsR0FBRyxNQUFNLElBQUksQ0FBQyxNQUFNLENBQUMsU0FBUyxDQUV4Qzs7Ozs7NERBS3VELE9BQU8sRUFBRSxDQUFDO1FBQ2xFLE9BQU87WUFDTCxPQUFPLEVBQUUsTUFBTSxDQUFDLEdBQUcsRUFBRSxLQUFLLElBQUksRUFBRSxDQUFDO1lBQ2pDLE9BQU8sRUFBRSxNQUFNLENBQUMsR0FBRyxFQUFFLEtBQUssSUFBSSxFQUFFLENBQUM7WUFDakMsV0FBVyxFQUFFLE1BQU0sQ0FBQyxHQUFHLEVBQUUsU0FBUyxJQUFJLENBQUMsQ0FBQztTQUN6QyxDQUFDO0lBQ0osQ0FBQztDQUNGLENBQUE7QUF4Qlksd0RBQXNCO2lDQUF0QixzQkFBc0I7SUFEbEMsSUFBQSxtQkFBVSxHQUFFO3lEQUUwQiw4QkFBYSxvQkFBYiw4QkFBYTtHQUR2QyxzQkFBc0IsQ0F3QmxDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2JvdC9tb2RlLWNhcmQtbWV0cmljcy5zZXJ2aWNlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEluamVjdGFibGUgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBQcmlzbWFTZXJ2aWNlIH0gZnJvbSAnLi4vcHJpc21hL3ByaXNtYS5zZXJ2aWNlJztcbmltcG9ydCB7XG4gIE1vZGVDYXJkTWV0cmljcyxcbiAgZm9ybWF0TW9kZUNhcmRNZXRyaWNzLFxufSBmcm9tICcuL21vZGUtY2FyZC1tZXRyaWNzLmZvcm1hdCc7XG5cbi8vINCh0YfRkdGC0YfQuNC60Lgg0YHQvtGF0YDQsNC90LXQvdC40Lkg0LrQsNGA0YLQvtGH0LrQuCDRgNC10LbQuNC80LAg0LTQu9GPIC9zdGF0czog0YHQvtCx0YvRgtC40LUgbW9kZV9jYXJkX3NhdmVkXG4vLyDQuNC3IEFuYWx5dGljc0V2ZW50IChtZXRhLm1vZGVJZCArIG1ldGEuZmlsbGVkRmllbGRzKS4g0KHQstC+0Lkg0LTQvtC80LXQvSDigJQg0YHQstC+0Llcbi8vINGE0LDQudC7ICjQv9GA0LDQstC40LvQviDihJYxMCksINC+0LHRgNCw0LfQtdGGIOKAlCBxdWl6LW1ldHJpY3Muc2VydmljZS50cy4g0J/QvtC00LrQu9C10LjQstCw0LXRgtGB0Y8g0Lpcbi8vIC9zdGF0cyDRgdCw0LzQuNC8IHRlbGVncmFtLnNlcnZpY2UudHMgKNC60LDQuiBwb29sIHN0YXR1cyksINC90LUg0YfQtdGA0LXQt1xuLy8gUHJvZHVjdE1ldHJpY3NTZXJ2aWNlIOKAlCDRgtC+0YIg0LTQtdGA0LbQuNC8INC90LAg0LfQsNGE0LjQutGB0LjRgNC+0LLQsNC90L3QvtC8INGA0LDQt9C80LXRgNC1LlxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIE1vZGVDYXJkTWV0cmljc1NlcnZpY2Uge1xuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHByaXNtYTogUHJpc21hU2VydmljZSkge31cblxuICAvKiog0JPQvtGC0L7QstGL0Lkg0YLQtdC60YHRgtC+0LLRi9C5INCx0LvQvtC6INC00LvRjyAvc3RhdHMuICovXG4gIGFzeW5jIHJlbmRlcigpOiBQcm9taXNlPHN0cmluZz4ge1xuICAgIHJldHVybiBmb3JtYXRNb2RlQ2FyZE1ldHJpY3MoYXdhaXQgdGhpcy5nZXRNZXRyaWNzKCkpO1xuICB9XG5cbiAgYXN5bmMgZ2V0TWV0cmljcygpOiBQcm9taXNlPE1vZGVDYXJkTWV0cmljcz4ge1xuICAgIGNvbnN0IHNpbmNlMzAgPSBuZXcgRGF0ZShEYXRlLm5vdygpIC0gMzAgKiA4Nl80MDBfMDAwKTtcbiAgICBjb25zdCBbcm93XSA9IGF3YWl0IHRoaXMucHJpc21hLiRxdWVyeVJhdzxcbiAgICAgIEFycmF5PHsgc2F2ZWQ6IGJpZ2ludDsgdXNlcnM6IGJpZ2ludDsgYXZnRmlsbGVkOiBudW1iZXIgfCBudWxsIH0+XG4gICAgPmBcbiAgICAgIFNFTEVDVCBjb3VudCgqKTo6YmlnaW50IEFTIHNhdmVkLFxuICAgICAgICAgICAgIGNvdW50KERJU1RJTkNUIFwidXNlcklkXCIpOjpiaWdpbnQgQVMgdXNlcnMsXG4gICAgICAgICAgICAgQVZHKChcIm1ldGFcIi0+PidmaWxsZWRGaWVsZHMnKTo6bnVtZXJpYykgQVMgXCJhdmdGaWxsZWRcIlxuICAgICAgRlJPTSBcIkFuYWx5dGljc0V2ZW50XCJcbiAgICAgIFdIRVJFIFwibmFtZVwiID0gJ21vZGVfY2FyZF9zYXZlZCcgQU5EIFwiY3JlYXRlZEF0XCIgPj0gJHtzaW5jZTMwfWA7XG4gICAgcmV0dXJuIHtcbiAgICAgIHNhdmVkMzA6IE51bWJlcihyb3c/LnNhdmVkID8/IDBuKSxcbiAgICAgIHVzZXJzMzA6IE51bWJlcihyb3c/LnVzZXJzID8/IDBuKSxcbiAgICAgIGF2Z0ZpbGxlZDMwOiBOdW1iZXIocm93Py5hdmdGaWxsZWQgPz8gMCksXG4gICAgfTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

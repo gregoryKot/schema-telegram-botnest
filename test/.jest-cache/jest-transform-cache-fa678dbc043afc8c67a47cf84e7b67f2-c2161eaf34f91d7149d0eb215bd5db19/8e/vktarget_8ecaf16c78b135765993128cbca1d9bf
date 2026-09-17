@@ -1,0 +1,56 @@
+7223a66719a59e321b3809fe692c0d4b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.VkChannelTarget = void 0;
+const common_1 = require("@nestjs/common");
+const channel_http_1 = require("../channel-http");
+/** id сообщества (без минуса). Без него площадка выключена. */
+const GROUP_ENV = 'HEALTHY_ADULT_VK_GROUP';
+/** Ключ доступа сообщества из настроек группы (права «Стена»). */
+const TOKEN_ENV = 'HEALTHY_ADULT_VK_TOKEN';
+const API = 'https://api.vk.com/method/wall.post';
+const API_VERSION = '5.199';
+/**
+ * ВКонтакте: пост на стену сообщества от имени сообщества. Токен берётся в
+ * настройках самой группы — согласование приложения с VK нужно только для
+ * постинга в чужие стены, а сюда постим в свою.
+ */
+let VkChannelTarget = class VkChannelTarget {
+    platform = 'vk';
+    title = 'ВКонтакте';
+    envKey = GROUP_ENV;
+    destination() {
+        const raw = process.env[GROUP_ENV]?.trim().replace(/^-|^club/, '');
+        return raw ? `club${raw}` : null;
+    }
+    async send(post, destination) {
+        const token = process.env[TOKEN_ENV]?.trim();
+        if (!token)
+            throw new Error(`нет ${TOKEN_ENV} — ключа доступа сообщества`);
+        const res = await (0, channel_http_1.postForm)(API, {
+            owner_id: `-${destination.replace('club', '')}`,
+            from_group: '1',
+            message: post.text,
+            access_token: token,
+            v: API_VERSION,
+        });
+        // VK отвечает 200 и на отказ: ошибка лежит в теле, а не в статусе.
+        const error = res.error;
+        if (error)
+            throw new channel_http_1.ChannelHttpError(error.error_code ?? 0, error.error_msg ?? 'VK отказал без объяснения');
+    }
+    explain(err) {
+        return `${(0, channel_http_1.describeHttpError)(err)}\nПроверь ключ доступа сообщества (нужны права на стену) и id группы.`;
+    }
+};
+exports.VkChannelTarget = VkChannelTarget;
+exports.VkChannelTarget = VkChannelTarget = __decorate([
+    (0, common_1.Injectable)()
+], VkChannelTarget);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC90YXJnZXRzL3ZrLnRhcmdldC50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7QUFBQSwyQ0FBNEM7QUFFNUMsa0RBQWdGO0FBRWhGLCtEQUErRDtBQUMvRCxNQUFNLFNBQVMsR0FBRyx3QkFBd0IsQ0FBQztBQUMzQyxrRUFBa0U7QUFDbEUsTUFBTSxTQUFTLEdBQUcsd0JBQXdCLENBQUM7QUFDM0MsTUFBTSxHQUFHLEdBQUcscUNBQXFDLENBQUM7QUFDbEQsTUFBTSxXQUFXLEdBQUcsT0FBTyxDQUFDO0FBRTVCOzs7O0dBSUc7QUFFSSxJQUFNLGVBQWUsR0FBckIsTUFBTSxlQUFlO0lBQ2pCLFFBQVEsR0FBRyxJQUFJLENBQUM7SUFDaEIsS0FBSyxHQUFHLFdBQVcsQ0FBQztJQUNwQixNQUFNLEdBQUcsU0FBUyxDQUFDO0lBRTVCLFdBQVc7UUFDVCxNQUFNLEdBQUcsR0FBRyxPQUFPLENBQUMsR0FBRyxDQUFDLFNBQVMsQ0FBQyxFQUFFLElBQUksRUFBRSxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsRUFBRSxDQUFDLENBQUM7UUFDbkUsT0FBTyxHQUFHLENBQUMsQ0FBQyxDQUFDLE9BQU8sR0FBRyxFQUFFLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQztJQUNuQyxDQUFDO0lBRUQsS0FBSyxDQUFDLElBQUksQ0FBQyxJQUFpQixFQUFFLFdBQW1CO1FBQy9DLE1BQU0sS0FBSyxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUMsU0FBUyxDQUFDLEVBQUUsSUFBSSxFQUFFLENBQUM7UUFDN0MsSUFBSSxDQUFDLEtBQUs7WUFBRSxNQUFNLElBQUksS0FBSyxDQUFDLE9BQU8sU0FBUyw2QkFBNkIsQ0FBQyxDQUFDO1FBQzNFLE1BQU0sR0FBRyxHQUFHLE1BQU0sSUFBQSx1QkFBUSxFQUFDLEdBQUcsRUFBRTtZQUM5QixRQUFRLEVBQUUsSUFBSSxXQUFXLENBQUMsT0FBTyxDQUFDLE1BQU0sRUFBRSxFQUFFLENBQUMsRUFBRTtZQUMvQyxVQUFVLEVBQUUsR0FBRztZQUNmLE9BQU8sRUFBRSxJQUFJLENBQUMsSUFBSTtZQUNsQixZQUFZLEVBQUUsS0FBSztZQUNuQixDQUFDLEVBQUUsV0FBVztTQUNmLENBQUMsQ0FBQztRQUNILG1FQUFtRTtRQUNuRSxNQUFNLEtBQUssR0FBRyxHQUFHLENBQUMsS0FDdUMsQ0FBQztRQUMxRCxJQUFJLEtBQUs7WUFDUCxNQUFNLElBQUksK0JBQWdCLENBQ3hCLEtBQUssQ0FBQyxVQUFVLElBQUksQ0FBQyxFQUNyQixLQUFLLENBQUMsU0FBUyxJQUFJLDJCQUEyQixDQUMvQyxDQUFDO0lBQ04sQ0FBQztJQUVELE9BQU8sQ0FBQyxHQUFZO1FBQ2xCLE9BQU8sR0FBRyxJQUFBLGdDQUFpQixFQUFDLEdBQUcsQ0FBQyx1RUFBdUUsQ0FBQztJQUMxRyxDQUFDO0NBQ0YsQ0FBQTtBQWpDWSwwQ0FBZTswQkFBZixlQUFlO0lBRDNCLElBQUEsbUJBQVUsR0FBRTtHQUNBLGVBQWUsQ0FpQzNCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2NoYW5uZWwvdGFyZ2V0cy92ay50YXJnZXQudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSW5qZWN0YWJsZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB0eXBlIHsgQ2hhbm5lbFBvc3QsIENoYW5uZWxUYXJnZXQgfSBmcm9tICcuLi9jaGFubmVsLXRhcmdldCc7XG5pbXBvcnQgeyBDaGFubmVsSHR0cEVycm9yLCBkZXNjcmliZUh0dHBFcnJvciwgcG9zdEZvcm0gfSBmcm9tICcuLi9jaGFubmVsLWh0dHAnO1xuXG4vKiogaWQg0YHQvtC+0LHRidC10YHRgtCy0LAgKNCx0LXQtyDQvNC40L3Rg9GB0LApLiDQkdC10Lcg0L3QtdCz0L4g0L/Qu9C+0YnQsNC00LrQsCDQstGL0LrQu9GO0YfQtdC90LAuICovXG5jb25zdCBHUk9VUF9FTlYgPSAnSEVBTFRIWV9BRFVMVF9WS19HUk9VUCc7XG4vKiog0JrQu9GO0Ycg0LTQvtGB0YLRg9C/0LAg0YHQvtC+0LHRidC10YHRgtCy0LAg0LjQtyDQvdCw0YHRgtGA0L7QtdC6INCz0YDRg9C/0L/RiyAo0L/RgNCw0LLQsCDCq9Ch0YLQtdC90LDCuykuICovXG5jb25zdCBUT0tFTl9FTlYgPSAnSEVBTFRIWV9BRFVMVF9WS19UT0tFTic7XG5jb25zdCBBUEkgPSAnaHR0cHM6Ly9hcGkudmsuY29tL21ldGhvZC93YWxsLnBvc3QnO1xuY29uc3QgQVBJX1ZFUlNJT04gPSAnNS4xOTknO1xuXG4vKipcbiAqINCS0JrQvtC90YLQsNC60YLQtTog0L/QvtGB0YIg0L3QsCDRgdGC0LXQvdGDINGB0L7QvtCx0YnQtdGB0YLQstCwINC+0YIg0LjQvNC10L3QuCDRgdC+0L7QsdGJ0LXRgdGC0LLQsC4g0KLQvtC60LXQvSDQsdC10YDRkdGC0YHRjyDQslxuICog0L3QsNGB0YLRgNC+0LnQutCw0YUg0YHQsNC80L7QuSDQs9GA0YPQv9C/0Ysg4oCUINGB0L7Qs9C70LDRgdC+0LLQsNC90LjQtSDQv9GA0LjQu9C+0LbQtdC90LjRjyDRgSBWSyDQvdGD0LbQvdC+INGC0L7Qu9GM0LrQviDQtNC70Y9cbiAqINC/0L7RgdGC0LjQvdCz0LAg0LIg0YfRg9C20LjQtSDRgdGC0LXQvdGLLCDQsCDRgdGO0LTQsCDQv9C+0YHRgtC40Lwg0LIg0YHQstC+0Y4uXG4gKi9cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBWa0NoYW5uZWxUYXJnZXQgaW1wbGVtZW50cyBDaGFubmVsVGFyZ2V0IHtcbiAgcmVhZG9ubHkgcGxhdGZvcm0gPSAndmsnO1xuICByZWFkb25seSB0aXRsZSA9ICfQktCa0L7QvdGC0LDQutGC0LUnO1xuICByZWFkb25seSBlbnZLZXkgPSBHUk9VUF9FTlY7XG5cbiAgZGVzdGluYXRpb24oKTogc3RyaW5nIHwgbnVsbCB7XG4gICAgY29uc3QgcmF3ID0gcHJvY2Vzcy5lbnZbR1JPVVBfRU5WXT8udHJpbSgpLnJlcGxhY2UoL14tfF5jbHViLywgJycpO1xuICAgIHJldHVybiByYXcgPyBgY2x1YiR7cmF3fWAgOiBudWxsO1xuICB9XG5cbiAgYXN5bmMgc2VuZChwb3N0OiBDaGFubmVsUG9zdCwgZGVzdGluYXRpb246IHN0cmluZyk6IFByb21pc2U8dm9pZD4ge1xuICAgIGNvbnN0IHRva2VuID0gcHJvY2Vzcy5lbnZbVE9LRU5fRU5WXT8udHJpbSgpO1xuICAgIGlmICghdG9rZW4pIHRocm93IG5ldyBFcnJvcihg0L3QtdGCICR7VE9LRU5fRU5WfSDigJQg0LrQu9GO0YfQsCDQtNC+0YHRgtGD0L/QsCDRgdC+0L7QsdGJ0LXRgdGC0LLQsGApO1xuICAgIGNvbnN0IHJlcyA9IGF3YWl0IHBvc3RGb3JtKEFQSSwge1xuICAgICAgb3duZXJfaWQ6IGAtJHtkZXN0aW5hdGlvbi5yZXBsYWNlKCdjbHViJywgJycpfWAsXG4gICAgICBmcm9tX2dyb3VwOiAnMScsXG4gICAgICBtZXNzYWdlOiBwb3N0LnRleHQsXG4gICAgICBhY2Nlc3NfdG9rZW46IHRva2VuLFxuICAgICAgdjogQVBJX1ZFUlNJT04sXG4gICAgfSk7XG4gICAgLy8gVksg0L7RgtCy0LXRh9Cw0LXRgiAyMDAg0Lgg0L3QsCDQvtGC0LrQsNC3OiDQvtGI0LjQsdC60LAg0LvQtdC20LjRgiDQsiDRgtC10LvQtSwg0LAg0L3QtSDQsiDRgdGC0LDRgtGD0YHQtS5cbiAgICBjb25zdCBlcnJvciA9IHJlcy5lcnJvciBhc1xuICAgICAgeyBlcnJvcl9jb2RlPzogbnVtYmVyOyBlcnJvcl9tc2c/OiBzdHJpbmcgfSB8IHVuZGVmaW5lZDtcbiAgICBpZiAoZXJyb3IpXG4gICAgICB0aHJvdyBuZXcgQ2hhbm5lbEh0dHBFcnJvcihcbiAgICAgICAgZXJyb3IuZXJyb3JfY29kZSA/PyAwLFxuICAgICAgICBlcnJvci5lcnJvcl9tc2cgPz8gJ1ZLINC+0YLQutCw0LfQsNC7INCx0LXQtyDQvtCx0YrRj9GB0L3QtdC90LjRjycsXG4gICAgICApO1xuICB9XG5cbiAgZXhwbGFpbihlcnI6IHVua25vd24pOiBzdHJpbmcge1xuICAgIHJldHVybiBgJHtkZXNjcmliZUh0dHBFcnJvcihlcnIpfVxcbtCf0YDQvtCy0LXRgNGMINC60LvRjtGHINC00L7RgdGC0YPQv9CwINGB0L7QvtCx0YnQtdGB0YLQstCwICjQvdGD0LbQvdGLINC/0YDQsNCy0LAg0L3QsCDRgdGC0LXQvdGDKSDQuCBpZCDQs9GA0YPQv9C/0YsuYDtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphArrowRight } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useSavingAction } from '../../hooks/useSavingAction';
+import { useTr } from '../../utils/addressForm';
 
 const NEEDS = [
   {
@@ -28,7 +30,7 @@ const NEEDS = [
     color: 'var(--c-moss)',
     question:
       'Было ли безопасно выражать злость, страх, грусть – без наказания или стыда?',
-    low: 'Сильные чувства было опасно показывать. Научился прятать или подавлять.',
+    low: 'Сильные чувства было опасно показывать. Пришлось научиться прятать или подавлять.',
     high: 'Можно было плакать, злиться, бояться. Чувства принимались как норма.',
   },
   {
@@ -36,8 +38,8 @@ const NEEDS = [
     label: 'Спонтанность',
     color: 'var(--accent-indigo)',
     question:
-      'Было ли место для игры и лёгкости – без постоянного давления быть продуктивным?',
-    low: 'Давление выполнять, достигать, быть серьёзным. Беззаботность вызывала вину.',
+      'Было ли место для игры и лёгкости – без постоянного давления всё время быть при деле?',
+    low: 'Давление выполнять, достигать, держаться серьёзно. Беззаботность вызывала вину.',
     high: 'Было место для игры ради игры. Смех и лёгкость – часть обычной жизни.',
   },
   {
@@ -191,6 +193,7 @@ export function ChildhoodWheelEx({
   onSaved?: (r: Record<string, number>) => void;
 }) {
   const goBack = useHistorySheet(onBack);
+  const tr = useTr();
   const [ratings, setRatings] = useState<Record<string, number>>({
     attachment: 5,
     autonomy: 5,
@@ -209,14 +212,14 @@ export function ChildhoodWheelEx({
     ) / 10;
   const lowNeeds = NEEDS.filter((n) => ratings[n.id] <= 4);
 
+  // Та же беда, что нашли в FlashcardEx (аудит 2026-08-22, находка №2):
+  // сбой saveChildhoodRatings молча игнорировался, а колесо всё равно
+  // показывало результат как сохранённый, и не было ни индикации отправки,
+  // ни защиты от двойного нажатия. useSavingAction — общий примитив.
+  const { saving, error, run } = useSavingAction();
   async function save() {
-    try {
-      await api.saveChildhoodRatings(ratings);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
-    onSaved?.(ratings);
-    setDone(true);
+    const ok = await run(() => api.saveChildhoodRatings(ratings));
+    if (ok) { onSaved?.(ratings); setDone(true); }
   }
 
   if (done) {
@@ -238,8 +241,10 @@ export function ChildhoodWheelEx({
             <div className="aside-card-eyebrow">Что дальше</div>
             <h3>Связать с сегодня</h3>
             <p className="body">
-              Открой дневник за последнюю неделю и сравни – какие потребности
-              сегодня просели больше всего. Часто это те же зоны.
+              {tr(
+                'Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+                'Откройте дневник за последнюю неделю и сравните – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+              )}
             </p>
           </div>
         }
@@ -273,7 +278,7 @@ export function ChildhoodWheelEx({
             ))}
           </div>
           <div className="cw-wheel-card">
-            <h4>Твоё колесо</h4>
+            <h4>{tr('Твоё колесо', 'Ваше колесо')}</h4>
             <div className="sub">
               Сохранено ·{' '}
               {new Date().toLocaleDateString('ru-RU', {
@@ -436,10 +441,15 @@ export function ChildhoodWheelEx({
           </div>
         </div>
       ))}
+      {error && (
+        <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>
+          {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
+        </div>
+      )}
       <div className="ex-foot">
         <span className="spacer" />
-        <button className="ex-btn ex-btn-primary" onClick={save}>
-          Посмотреть результат <GlyphArrowRight />
+        <button className="ex-btn ex-btn-primary" disabled={saving} onClick={save}>
+          {saving ? 'Сохраняю…' : <>Посмотреть результат <GlyphArrowRight /></>}
         </button>
       </div>
     </ExScreen>

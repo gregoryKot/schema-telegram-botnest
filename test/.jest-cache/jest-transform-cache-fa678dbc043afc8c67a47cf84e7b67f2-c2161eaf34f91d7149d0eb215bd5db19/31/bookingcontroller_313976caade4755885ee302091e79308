@@ -1,0 +1,81 @@
+b9e9c32398f32a534a393792230cb36d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var BookingController_1;
+var _a, _b;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookingController = void 0;
+const common_1 = require("@nestjs/common");
+const telegram_service_1 = require("../telegram/telegram.service");
+const email_service_1 = require("../auth/email.service");
+const escape_html_1 = require("../utils/escape-html");
+let BookingController = BookingController_1 = class BookingController {
+    telegram;
+    email;
+    logger = new common_1.Logger(BookingController_1.name);
+    constructor(telegram, email) {
+        this.telegram = telegram;
+        this.email = email;
+    }
+    submitBooking(dto) {
+        const { name, contact, message, source } = dto;
+        if (!name?.trim() || !contact?.trim()) {
+            return { ok: true }; // silent — validation on frontend
+        }
+        const n = (0, escape_html_1.escapeHtml)(name.slice(0, 100).trim());
+        const c = (0, escape_html_1.escapeHtml)(contact.slice(0, 100).trim());
+        const m = message?.trim() ? (0, escape_html_1.escapeHtml)(message.slice(0, 500).trim()) : null;
+        const src = source?.trim() ? source.trim().slice(0, 200) : null;
+        const tgText = [
+            '📩 <b>Новая заявка с сайта</b>',
+            '',
+            `👤 <b>Имя:</b> ${n}`,
+            `📬 <b>Контакт:</b> ${c}`,
+            m ? `💬 <b>Запрос:</b>\n${m}` : null,
+            src ? `🔗 <b>Откуда:</b> ${(0, escape_html_1.escapeHtml)(src)}` : null,
+        ]
+            .filter(Boolean)
+            .join('\n');
+        const emailText = [
+            'Новая заявка с сайта',
+            '',
+            `Имя: ${name.trim()}`,
+            `Контакт: ${contact.trim()}`,
+            m ? `Запрос:\n${message.trim()}` : null,
+            src ? `Откуда: ${src}` : null,
+        ]
+            .filter(Boolean)
+            .join('\n');
+        this.logger.log('New booking received');
+        // Both channels are fire-and-forget — response is instant regardless of
+        // Telegram/Resend availability. Email is the fallback if Telegram fails.
+        void this.telegram.notifyAdmin(tgText);
+        void this.email.sendAdminNotification('📩 Новая заявка с сайта', emailText);
+        return { ok: true };
+    }
+};
+exports.BookingController = BookingController;
+__decorate([
+    (0, common_1.Post)('booking'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Object)
+], BookingController.prototype, "submitBooking", null);
+exports.BookingController = BookingController = BookingController_1 = __decorate([
+    (0, common_1.Controller)('api'),
+    __metadata("design:paramtypes", [typeof (_a = typeof telegram_service_1.TelegramService !== "undefined" && telegram_service_1.TelegramService) === "function" ? _a : Object, typeof (_b = typeof email_service_1.EmailService !== "undefined" && email_service_1.EmailService) === "function" ? _b : Object])
+], BookingController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2Jvb2tpbmcuY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJDQU93QjtBQUN4QixtRUFBK0Q7QUFDL0QseURBQXFEO0FBQ3JELHNEQUFrRDtBQVkzQyxJQUFNLGlCQUFpQix5QkFBdkIsTUFBTSxpQkFBaUI7SUFJVDtJQUNBO0lBSkYsTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLG1CQUFpQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBRTdELFlBQ21CLFFBQXlCLEVBQ3pCLEtBQW1CO1FBRG5CLGFBQVEsR0FBUixRQUFRLENBQWlCO1FBQ3pCLFVBQUssR0FBTCxLQUFLLENBQWM7SUFDbkMsQ0FBQztJQUlKLGFBQWEsQ0FBUyxHQUFlO1FBQ25DLE1BQU0sRUFBRSxJQUFJLEVBQUUsT0FBTyxFQUFFLE9BQU8sRUFBRSxNQUFNLEVBQUUsR0FBRyxHQUFHLENBQUM7UUFFL0MsSUFBSSxDQUFDLElBQUksRUFBRSxJQUFJLEVBQUUsSUFBSSxDQUFDLE9BQU8sRUFBRSxJQUFJLEVBQUUsRUFBRSxDQUFDO1lBQ3RDLE9BQU8sRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLENBQUMsQ0FBQyxrQ0FBa0M7UUFDekQsQ0FBQztRQUVELE1BQU0sQ0FBQyxHQUFHLElBQUEsd0JBQVUsRUFBQyxJQUFJLENBQUMsS0FBSyxDQUFDLENBQUMsRUFBRSxHQUFHLENBQUMsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDO1FBQ2hELE1BQU0sQ0FBQyxHQUFHLElBQUEsd0JBQVUsRUFBQyxPQUFPLENBQUMsS0FBSyxDQUFDLENBQUMsRUFBRSxHQUFHLENBQUMsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDO1FBQ25ELE1BQU0sQ0FBQyxHQUFHLE9BQU8sRUFBRSxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBQSx3QkFBVSxFQUFDLE9BQU8sQ0FBQyxLQUFLLENBQUMsQ0FBQyxFQUFFLEdBQUcsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQztRQUM1RSxNQUFNLEdBQUcsR0FBRyxNQUFNLEVBQUUsSUFBSSxFQUFFLENBQUMsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxJQUFJLEVBQUUsQ0FBQyxLQUFLLENBQUMsQ0FBQyxFQUFFLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUM7UUFFaEUsTUFBTSxNQUFNLEdBQUc7WUFDYixnQ0FBZ0M7WUFDaEMsRUFBRTtZQUNGLGtCQUFrQixDQUFDLEVBQUU7WUFDckIsc0JBQXNCLENBQUMsRUFBRTtZQUN6QixDQUFDLENBQUMsQ0FBQyxDQUFDLHNCQUFzQixDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBSTtZQUNwQyxHQUFHLENBQUMsQ0FBQyxDQUFDLHFCQUFxQixJQUFBLHdCQUFVLEVBQUMsR0FBRyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBSTtTQUNwRDthQUNFLE1BQU0sQ0FBQyxPQUFPLENBQUM7YUFDZixJQUFJLENBQUMsSUFBSSxDQUFDLENBQUM7UUFFZCxNQUFNLFNBQVMsR0FBRztZQUNoQixzQkFBc0I7WUFDdEIsRUFBRTtZQUNGLFFBQVEsSUFBSSxDQUFDLElBQUksRUFBRSxFQUFFO1lBQ3JCLFlBQVksT0FBTyxDQUFDLElBQUksRUFBRSxFQUFFO1lBQzVCLENBQUMsQ0FBQyxDQUFDLENBQUMsWUFBWSxPQUFRLENBQUMsSUFBSSxFQUFFLEVBQUUsQ0FBQyxDQUFDLENBQUMsSUFBSTtZQUN4QyxHQUFHLENBQUMsQ0FBQyxDQUFDLFdBQVcsR0FBRyxFQUFFLENBQUMsQ0FBQyxDQUFDLElBQUk7U0FDOUI7YUFDRSxNQUFNLENBQUMsT0FBTyxDQUFDO2FBQ2YsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBRWQsSUFBSSxDQUFDLE1BQU0sQ0FBQyxHQUFHLENBQUMsc0JBQXNCLENBQUMsQ0FBQztRQUV4Qyx3RUFBd0U7UUFDeEUseUVBQXlFO1FBQ3pFLEtBQUssSUFBSSxDQUFDLFFBQVEsQ0FBQyxXQUFXLENBQUMsTUFBTSxDQUFDLENBQUM7UUFDdkMsS0FBSyxJQUFJLENBQUMsS0FBSyxDQUFDLHFCQUFxQixDQUFDLHlCQUF5QixFQUFFLFNBQVMsQ0FBQyxDQUFDO1FBRTVFLE9BQU8sRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDdEIsQ0FBQztDQUNGLENBQUE7QUFyRFksOENBQWlCO0FBVTVCO0lBRkMsSUFBQSxhQUFJLEVBQUMsU0FBUyxDQUFDO0lBQ2YsSUFBQSxpQkFBUSxFQUFDLG1CQUFVLENBQUMsRUFBRSxDQUFDO0lBQ1QsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBOzs7O3NEQTBDcEI7NEJBcERVLGlCQUFpQjtJQUQ3QixJQUFBLG1CQUFVLEVBQUMsS0FBSyxDQUFDO3lEQUthLGtDQUFlLG9CQUFmLGtDQUFlLG9EQUNsQiw0QkFBWSxvQkFBWiw0QkFBWTtHQUwzQixpQkFBaUIsQ0FxRDdCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9ib29raW5nLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQm9keSxcbiAgQ29udHJvbGxlcixcbiAgSHR0cENvZGUsXG4gIEh0dHBTdGF0dXMsXG4gIExvZ2dlcixcbiAgUG9zdCxcbn0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgVGVsZWdyYW1TZXJ2aWNlIH0gZnJvbSAnLi4vdGVsZWdyYW0vdGVsZWdyYW0uc2VydmljZSc7XG5pbXBvcnQgeyBFbWFpbFNlcnZpY2UgfSBmcm9tICcuLi9hdXRoL2VtYWlsLnNlcnZpY2UnO1xuaW1wb3J0IHsgZXNjYXBlSHRtbCB9IGZyb20gJy4uL3V0aWxzL2VzY2FwZS1odG1sJztcblxuaW50ZXJmYWNlIEJvb2tpbmdEdG8ge1xuICBuYW1lOiBzdHJpbmc7XG4gIGNvbnRhY3Q6IHN0cmluZztcbiAgbWVzc2FnZT86IHN0cmluZztcbiAgLy8g0J7RgtC60YPQtNCwINC/0YDQuNGI0LvQsCDQt9Cw0Y/QstC60LA6INGB0YLRgNCw0L3QuNGG0LAgKyByZWZlcnJlciwg0YHQvtCx0LjRgNCw0LXRgiDRhNGA0L7QvdGCLiDQotC+0LvRjNC60L4g0LTQu9GPXG4gIC8vINGD0LLQtdC00L7QvNC70LXQvdC40Y8g0LDQtNC80LjQvdGDICjQsNGC0YDQuNCx0YPRhtC40Y8g0LvQuNC00L7QsiksINCyINCR0JQg0L3QtSDQv9C40YjQtdGC0YHRjy5cbiAgc291cmNlPzogc3RyaW5nO1xufVxuXG5AQ29udHJvbGxlcignYXBpJylcbmV4cG9ydCBjbGFzcyBCb29raW5nQ29udHJvbGxlciB7XG4gIHByaXZhdGUgcmVhZG9ubHkgbG9nZ2VyID0gbmV3IExvZ2dlcihCb29raW5nQ29udHJvbGxlci5uYW1lKTtcblxuICBjb25zdHJ1Y3RvcihcbiAgICBwcml2YXRlIHJlYWRvbmx5IHRlbGVncmFtOiBUZWxlZ3JhbVNlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSBlbWFpbDogRW1haWxTZXJ2aWNlLFxuICApIHt9XG5cbiAgQFBvc3QoJ2Jvb2tpbmcnKVxuICBASHR0cENvZGUoSHR0cFN0YXR1cy5PSylcbiAgc3VibWl0Qm9va2luZyhAQm9keSgpIGR0bzogQm9va2luZ0R0byk6IHsgb2s6IHRydWUgfSB7XG4gICAgY29uc3QgeyBuYW1lLCBjb250YWN0LCBtZXNzYWdlLCBzb3VyY2UgfSA9IGR0bztcblxuICAgIGlmICghbmFtZT8udHJpbSgpIHx8ICFjb250YWN0Py50cmltKCkpIHtcbiAgICAgIHJldHVybiB7IG9rOiB0cnVlIH07IC8vIHNpbGVudCDigJQgdmFsaWRhdGlvbiBvbiBmcm9udGVuZFxuICAgIH1cblxuICAgIGNvbnN0IG4gPSBlc2NhcGVIdG1sKG5hbWUuc2xpY2UoMCwgMTAwKS50cmltKCkpO1xuICAgIGNvbnN0IGMgPSBlc2NhcGVIdG1sKGNvbnRhY3Quc2xpY2UoMCwgMTAwKS50cmltKCkpO1xuICAgIGNvbnN0IG0gPSBtZXNzYWdlPy50cmltKCkgPyBlc2NhcGVIdG1sKG1lc3NhZ2Uuc2xpY2UoMCwgNTAwKS50cmltKCkpIDogbnVsbDtcbiAgICBjb25zdCBzcmMgPSBzb3VyY2U/LnRyaW0oKSA/IHNvdXJjZS50cmltKCkuc2xpY2UoMCwgMjAwKSA6IG51bGw7XG5cbiAgICBjb25zdCB0Z1RleHQgPSBbXG4gICAgICAn8J+TqSA8Yj7QndC+0LLQsNGPINC30LDRj9Cy0LrQsCDRgSDRgdCw0LnRgtCwPC9iPicsXG4gICAgICAnJyxcbiAgICAgIGDwn5GkIDxiPtCY0LzRjzo8L2I+ICR7bn1gLFxuICAgICAgYPCfk6wgPGI+0JrQvtC90YLQsNC60YI6PC9iPiAke2N9YCxcbiAgICAgIG0gPyBg8J+SrCA8Yj7Ql9Cw0L/RgNC+0YE6PC9iPlxcbiR7bX1gIDogbnVsbCxcbiAgICAgIHNyYyA/IGDwn5SXIDxiPtCe0YLQutGD0LTQsDo8L2I+ICR7ZXNjYXBlSHRtbChzcmMpfWAgOiBudWxsLFxuICAgIF1cbiAgICAgIC5maWx0ZXIoQm9vbGVhbilcbiAgICAgIC5qb2luKCdcXG4nKTtcblxuICAgIGNvbnN0IGVtYWlsVGV4dCA9IFtcbiAgICAgICfQndC+0LLQsNGPINC30LDRj9Cy0LrQsCDRgSDRgdCw0LnRgtCwJyxcbiAgICAgICcnLFxuICAgICAgYNCY0LzRjzogJHtuYW1lLnRyaW0oKX1gLFxuICAgICAgYNCa0L7QvdGC0LDQutGCOiAke2NvbnRhY3QudHJpbSgpfWAsXG4gICAgICBtID8gYNCX0LDQv9GA0L7RgTpcXG4ke21lc3NhZ2UhLnRyaW0oKX1gIDogbnVsbCxcbiAgICAgIHNyYyA/IGDQntGC0LrRg9C00LA6ICR7c3JjfWAgOiBudWxsLFxuICAgIF1cbiAgICAgIC5maWx0ZXIoQm9vbGVhbilcbiAgICAgIC5qb2luKCdcXG4nKTtcblxuICAgIHRoaXMubG9nZ2VyLmxvZygnTmV3IGJvb2tpbmcgcmVjZWl2ZWQnKTtcblxuICAgIC8vIEJvdGggY2hhbm5lbHMgYXJlIGZpcmUtYW5kLWZvcmdldCDigJQgcmVzcG9uc2UgaXMgaW5zdGFudCByZWdhcmRsZXNzIG9mXG4gICAgLy8gVGVsZWdyYW0vUmVzZW5kIGF2YWlsYWJpbGl0eS4gRW1haWwgaXMgdGhlIGZhbGxiYWNrIGlmIFRlbGVncmFtIGZhaWxzLlxuICAgIHZvaWQgdGhpcy50ZWxlZ3JhbS5ub3RpZnlBZG1pbih0Z1RleHQpO1xuICAgIHZvaWQgdGhpcy5lbWFpbC5zZW5kQWRtaW5Ob3RpZmljYXRpb24oJ/Cfk6kg0J3QvtCy0LDRjyDQt9Cw0Y/QstC60LAg0YEg0YHQsNC50YLQsCcsIGVtYWlsVGV4dCk7XG5cbiAgICByZXR1cm4geyBvazogdHJ1ZSB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

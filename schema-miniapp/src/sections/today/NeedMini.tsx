@@ -1,5 +1,6 @@
 import { Need, COLORS } from '../../types';
 import { useNeedData } from '../../needData';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { hexToRgb } from './helpers';
 
 // ── NeedMini ──────────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export function NeedMini({
         style={{
           width: 46,
           height: 46,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           position: 'relative',
           overflow: 'hidden',
           background: filled ? `rgba(${rgb},0.14)` : 'var(--surface)',
@@ -76,22 +77,22 @@ export function NeedMini({
         <span
           style={{
             position: 'relative',
-            fontSize: filled ? 14 : 18,
+            fontSize: 14,
             fontWeight: 700,
-            color: filled ? color : 'var(--text-faint)',
+            color,
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {filled ? value : need.emoji}
+          {filled ? value : <IdentityDot id={need.id} size={12} />}
         </span>
         {/* Yesterday delta badge */}
         {delta !== null && delta !== 0 && (
           <div
             style={{
               position: 'absolute',
-              top: 2,
-              right: 2,
-              fontSize: 7,
+              top: -4,
+              right: -4,
+              fontSize: 11,
               fontWeight: 700,
               lineHeight: 1,
               color: delta > 0 ? 'var(--accent-green)' : 'var(--accent-red)',
@@ -99,24 +100,23 @@ export function NeedMini({
                 delta > 0
                   ? 'color-mix(in srgb, var(--accent-green) 18%, transparent)'
                   : 'color-mix(in srgb, var(--accent-red) 18%, transparent)',
-              borderRadius: 4,
-              padding: '1px 3px',
+              borderRadius: 5,
+              padding: '1px 4px',
             }}
           >
-            {delta > 0 ? '+' : ''}
-            {delta}
+            {delta > 0 ? `+${delta}` : delta}
           </div>
         )}
       </div>
       <span
         style={{
-          fontSize: 9,
+          fontSize: 11,
           color: 'var(--text-faint)',
           fontWeight: 600,
           textAlign: 'center',
           letterSpacing: '0.02em',
           lineHeight: 1.2,
-          maxWidth: 52,
+          maxWidth: 60,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',

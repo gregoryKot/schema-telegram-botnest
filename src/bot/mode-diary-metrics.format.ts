@@ -12,6 +12,12 @@ export interface ModeDiaryMetrics {
   testCompleted7: number;
   /** За месяц. */
   testCompleted30: number;
+  /** За месяц: сколько раз после записи согласились разобрать связанный режим. */
+  chainAccepted30: number;
+  /** За месяц: сколько раз открыли «С чем путают режим» с карточки выбранного. */
+  doubtOpened30: number;
+  /** За месяц: сколько раз из открытых поменяли выбор кнопкой «Это ближе». */
+  doubtSwitched30: number;
 }
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -32,5 +38,15 @@ export function formatModeDiaryMetrics(m: ModeDiaryMetrics): string {
       `Определяли режим тестом за неделю: ${m.testCompleted7} · за месяц: ${m.testCompleted30}`,
     );
   }
+  lines.push(
+    m.chainAccepted30 > 0
+      ? `Разбирали связанный режим после записи: ${m.chainAccepted30}`
+      : 'Связанный режим после записи пока не разбирали.',
+  );
+  lines.push(
+    m.doubtOpened30 > 0
+      ? `Сравнивали похожие режимы ${m.doubtOpened30} раз, из них ${m.doubtSwitched30} — поменяли выбор.`
+      : 'Похожие режимы пока не сравнивали.',
+  );
   return lines.join('\n');
 }

@@ -31,9 +31,7 @@ export function useQuickPractice(id: QuickPracticeId): UseQuickPracticeResult {
       .then((counts) => {
         if (!ignore) setCount(counts[id]);
       })
-      .catch(() => {
-        // Сеть упала — count остаётся null, а не выдуманным нулём.
-      });
+      .catch((e) => console.error('getPracticeSessions failed', e)); // count = null, не 0
     return () => {
       ignore = true;
     };

@@ -12,6 +12,9 @@ import { fmtDate } from '../utils/format';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
+import { useTr } from '../utils/addressForm';
+import { useTaskActions } from './today/useTaskActions';
+import { CrisisBlock } from './practice/CrisisBlock';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -19,17 +22,21 @@ const ModeEx           = lazy(() => import('../components/exercises/FlashcardEx'
 const LetterEx         = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
 const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
 const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
+const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
+const PhraseCheckEx    = lazy(() => import('../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 
-type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel';
+type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm' | 'phrase';
 interface ExStats { count: number; lastDone: string | null; }
 
 const EXERCISES = [
   { id: 'belief' as ExId, num: '01', eyebrow: 'Когнитивная работа',   title: 'Проверка убеждения',       desc: 'Поставить мысль перед судом фактов.',     time: '8–12 мин', color: 'var(--c-slate)' },
   { id: 'schema' as ExId, num: '02', eyebrow: 'Знакомство',            title: 'Карточка схемы',            desc: 'Семь вопросов про одну схему: триггеры, тело, истоки, здоровый взгляд.', time: '10–15 мин', color: 'var(--c-plum)' },
   { id: 'mode'   as ExId, num: '03', eyebrow: 'Знакомство',            title: 'Карточка режима',           desc: 'Пять вопросов: когда активируется, что чувствует, что хочет.',         time: '7–10 мин', color: 'var(--c-clay)' },
-  { id: 'letter' as ExId, num: '04', eyebrow: 'Эмоциональная работа', title: 'Письмо уязвимому ребёнку', desc: 'Сказать себе-маленькому то, что он должен был услышать.',               time: '15–25 мин', color: 'var(--c-amber)' },
+  { id: 'letter' as ExId, num: '04', eyebrow: 'Эмоциональная работа', title: 'Письмо уязвимому ребёнку', desc: 'Сказать себе в детстве то, что тогда важно было услышать.',               time: '15–25 мин', color: 'var(--c-amber)' },
   { id: 'safe'   as ExId, num: '05', eyebrow: 'Ресурс',                title: 'Безопасное место',          desc: 'Описать место, в которое можно мысленно возвращаться в тревогу.',      time: '5–10 мин', color: 'var(--c-moss)' },
   { id: 'wheel'  as ExId, num: '06', eyebrow: 'Истоки',                title: 'Колесо детства',            desc: 'Оценить базовые потребности в детстве. Найти связь с паттернами сегодня.', time: '8–12 мин', color: 'var(--accent-indigo)' },
+  { id: 'warm'   as ExId, num: '07', eyebrow: 'Ресурс',                title: 'Тёплые слова',               desc: 'Слова поддержки — перечитать, когда трудно.',                            time: '2–5 мин',  color: 'var(--accent-yellow)' },
+  { id: 'phrase' as ExId, num: '08', eyebrow: 'Внутренний голос',      title: 'Критик или забота?',         desc: 'Разобрать фразу внутреннего голоса по девяти приметам, переписать её.', time: '6–10 мин', color: 'var(--c-teal)' },
 ];
 
 function fmtAgo(d: string | null): string {
@@ -67,6 +74,8 @@ function ExGlyph({ id }: { id: ExId }) {
   if (id === 'mode')   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="4"/><path d="M14 5v3M14 20v3M5 14h3M20 14h3"/></svg>;
   if (id === 'letter') return <svg viewBox="0 0 28 28" {...s}><path d="M6 8h16v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8z"/><path d="M6 8l8 7 8-7"/></svg>;
   if (id === 'safe')   return <svg viewBox="0 0 28 28" {...s}><path d="M5 13l9-7 9 7v9a1 1 0 01-1 1h-5v-7h-6v7H6a1 1 0 01-1-1v-9z"/></svg>;
+  if (id === 'warm')   return <svg viewBox="0 0 28 28" {...s}><path d="M14 23s-9-5.5-9-12a5.5 5.5 0 019-4.2A5.5 5.5 0 0123 11c0 6.5-9 12-9 12z"/></svg>;
+  if (id === 'phrase') return <svg viewBox="0 0 28 28" {...s}><path d="M4 6h16v11H12l-4 4v-4H4V6z"/><circle cx="20" cy="20" r="4"/><path d="M23 23l3 3"/></svg>;
   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><path d="M14 5v18M5 14h18M7.5 7.5l13 13M20.5 7.5l-13 13"/></svg>;
 }
 
@@ -120,6 +129,7 @@ interface Props {
 }
 
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
+  const tr = useTr();
   const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
@@ -132,8 +142,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [activeTaskId,   setActiveTaskId]   = useState<number | null>(null);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const [showAllGoals,   setShowAllGoals]   = useState(false);
-  const [tasks,          setTasks]          = useState<UserTask[]>([]);
-  const [taskHistory,    setTaskHistory]    = useState<UserTask[]>([]);
+  const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey, 'practice.tasks');
   const [relation,       setRelation]       = useState<TherapyRelationInfo | null | undefined>(undefined);
 
   // Detect openSchemaEx state from navigation
@@ -150,9 +159,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => {
-      if (!ignore) { setTasks(t); setTaskHistory(h); }
-    }).catch(() => {});
     api.getTherapyRelation().then(r => { if (!ignore) setRelation(r); }).catch(() => { if (!ignore) setRelation(null); });
     return () => { ignore = true; };
   }, [refreshKey]);
@@ -160,8 +166,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   useEffect(() => {
     Promise.allSettled([
       api.getBeliefChecks(), api.getSchemaNotes(), api.getModeNotes(),
-      api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(),
-    ]).then(([beliefs, schemas, modes, letters, safe, wheel]) => {
+      api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(), api.getPhraseChecks(),
+    ]).then(([beliefs, schemas, modes, letters, safe, wheel, phrases]) => {
       const upd: Partial<Record<ExId, ExStats>> = {};
       if (beliefs.status === 'fulfilled') { const b = beliefs.value; if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null }; }
       if (schemas.status === 'fulfilled') { const s = schemas.value; if (s.length) { const sr = [...s].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.schema = { count: s.length, lastDone: sr[0]?.updatedAt ?? null }; } }
@@ -169,17 +175,16 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       if (letters.status === 'fulfilled') { const l = letters.value; if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null }; }
       if (safe.status === 'fulfilled' && safe.value) upd.safe = { count: 1, lastDone: safe.value.updatedAt ?? null };
       if (wheel.status === 'fulfilled' && Object.keys(wheel.value as object).length > 0) upd.wheel = { count: 1, lastDone: null };
+      if (phrases.status === 'fulfilled') { const p = phrases.value; if (p.length) upd.phrase = { count: p.length, lastDone: p[0]?.createdAt ?? null }; }
       setStats(upd);
     });
   }, []);
 
   function handleTaskComplete() {
     if (activeTaskId === null) return;
-    const id = activeTaskId; setActiveTaskId(null);
-    api.completeTask(id, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
-      .catch(() => {});
+    const id = activeTaskId;
+    setActiveTaskId(null);
+    completeTask(id, onTasksChanged);
   }
 
   function openTask(task: UserTask) {
@@ -219,6 +224,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'letter' && <LetterEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} />}
+        {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
+        {openEx === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={handleTaskComplete} />}
       </Suspense>
     );
   }
@@ -242,7 +249,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         Упражнения<br /><span className="it">и задания</span>
       </h1>
       <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
-        Шесть практик схема-терапии плюс ваши персональные цели.
+        {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
       </p>
       {sessionBanner && (
         <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
@@ -251,13 +258,20 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </div>
       )}
 
+      <CrisisBlock />
+
       {/* Tasks from therapist */}
-      {therapistTasks.length > 0 && (
+      {(therapistTasks.length > 0 || taskError) && (
         <div className="section">
           <div className="section-head">
             <h3>От терапевта</h3>
-            <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>
+            {therapistTasks.length > 0 && <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
+          {taskError && (
+            <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 10 }}>
+              {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
+            </div>
+          )}
           {therapistTasks.map(task => (
             <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -273,7 +287,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       {/* Exercise library */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · 6 упражнений</div>
+        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · {EXERCISES.length} упражнений</div>
         <div className="ex-grid">
           {EXERCISES.map(ex => {
             const s = stats[ex.id];
@@ -307,8 +321,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 32 }}>
           {[
             { label: 'Мне плохо',       sub: 'Пять шагов: разобраться что происходит, успокоиться', color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
-            { label: 'Тест на схемы',   sub: '116 вопросов, 20 шкал схем – узнай свои паттерны',   color: 'var(--accent)',  onClick: () => onOpenSchema?.({ startTest: true }) },
-            { label: 'Карта режимов',   sub: 'Найди Уязвимого Ребёнка, Критика, Защитника',         color: 'var(--c-slate)', onClick: () => onOpenSchema?.({ tab: 'modes' }) },
+            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   color: 'var(--accent)',  onClick: () => onOpenSchema?.({ startTest: true }) },
+            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         color: 'var(--c-slate)', onClick: () => onOpenSchema?.({ tab: 'modes' }) },
             { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           color: 'var(--accent-indigo)', onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (
             <div key={item.label} {...pressable(item.onClick)}
@@ -329,7 +343,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </div>
         {myGoals.length === 0 ? (
           <div className="text-sm muted" style={{ lineHeight: 1.55 }}>
-            Поставь цель и иди к ней маленькими шагами.
+            {tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}
           </div>
         ) : (
           myGoals.slice(0, 4).map(task => (
@@ -371,7 +385,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); }).catch(() => {}); }}
+          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}

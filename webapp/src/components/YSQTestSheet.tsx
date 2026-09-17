@@ -11,13 +11,13 @@ import { YsqDisclaimer } from '../../../shared/src/components/YsqDisclaimer';
 import { YsqTherapyCta } from '../../../shared/src/components/YsqTherapyCta';
 import { YsqResultTopBar } from '../../../shared/src/components/YsqResultTopBar';
 import { YsqTestHeader } from '../../../shared/src/components/YsqTestHeader';
-import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList';
+import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList'; import { YsqSyncErrorNote } from '../../../shared/src/components/YsqSyncErrorNote';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import {
   useYsqTest,
   QUESTIONS,
   NEED_LABELS,
-  TIP_VY,
+  useYsqSchemas,
   getSchemaForQuestion,
   avgBarPct,
   buildShareText,
@@ -40,6 +40,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const cta = contactCta();
+  const ysqSchemas = useYsqSchemas(); // tip зависит от addressForm — не TIP_VY-вилкой
   const {
     phase, setPhase,
     answers,
@@ -50,13 +51,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
     inactiveExpanded, setInactiveExpanded,
     retakeConfirm, setRetakeConfirm,
     progressAnswered,
-    handleContinue,
-    handleStartFresh,
+    handleContinue, handleStartFresh,
     selectAnswer,
-    handleBack,
-    handleRetake,
-    scores,
-    resultView,
+    handleBack, handleRetake,
+    scores, resultView,
+    resumeCheckFailed, retryResumeCheck, resultSaveError, retrySaveResult,
   } = useYsqTest({ api, autoResume });
 
   const [showShare, setShowShare] = useState(false);
@@ -122,7 +121,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
       {phase === 'intro' && (
         <div>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>🧠</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
               Тест на схемы
             </h1>
@@ -131,14 +129,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginBottom: 20 }}>
             {[
-              ['📋', '116 утверждений', 'Оцени каждое от 1 до 6'],
-              ['⏱️', '~10 минут', 'Можно прервать – прогресс сохраняется'],
-              ['🔍', '20 схем', 'Результат с описанием и советом для каждой'],
-            ].map(([emoji, title, desc]) => (
-              <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 16px' }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
+              ['116 утверждений', 'Оцени каждое от 1 до 6'],
+              ['~10 минут', 'Можно прервать — прогресс сохраняется'],
+              ['20 схем', 'Результат с описанием и советом для каждой'],
+            ].map(([title, desc]) => (
+              <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-14)', padding: '12px 16px' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 1 }}>{desc}</div>
@@ -147,13 +144,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             ))}
           </div>
 
-          <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 'var(--r-14)', padding: '12px 16px', marginBottom: 20 }}>
             <div style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 600, marginBottom: 10 }}>Шкала ответов:</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
               {[1,2,3,4,5,6].map(n => (
                 <div key={n} style={{ textAlign: 'center', flex: 1 }}>
                   <div style={{
-                    height: 34, borderRadius: 10,
+                    height: 34, borderRadius: 'var(--r-10)',
                     background: `color-mix(in srgb, var(--accent) ${6 + n * 13}%, rgba(var(--fg-rgb),0.06))`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 15, fontWeight: 700,
@@ -172,12 +169,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
           </div>
 
+          {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
           {hasProgress ? (
             <>
               <button onClick={handleContinue} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
                 Продолжить ({progressAnswered} из 116)
               </button>
-              <button onClick={handleStartFresh} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>
+              <button onClick={handleStartFresh} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 'var(--r-14)', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>
                 Начать заново
               </button>
             </>
@@ -187,7 +185,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </button>
           )}
 
-          <button onClick={goBack} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
+          <button onClick={goBack} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 'var(--r-14)', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
             Отмена
           </button>
 
@@ -201,6 +199,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
         return (
           <div>
+            {resultSaveError && retrySaveResult && <YsqSyncErrorNote variant="result-save" onRetry={retrySaveResult} />}
             {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
             <YsqResultTopBar tr={tr} onShare={() => setShowShare(true)} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
 
@@ -216,7 +215,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
             {activeCount === 0 && (
               <div style={{ textAlign: 'center', padding: '28px 0', fontSize: 14, color: 'var(--text-sub)' }}>
-                Выраженных схем нет – отличный результат.
+                Выраженных схем нет — отличный результат.
               </div>
             )}
 
@@ -236,12 +235,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                     <div key={schema.name} style={{
                       marginBottom: 10,
                       background: `color-mix(in srgb, ${color} 10%, transparent)`,
-                      borderRadius: 16,
+                      borderRadius: 'var(--r-16)',
                       padding: '14px 16px',
                       border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', flex: 1, paddingRight: 8 }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3 }} />
                           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>{schema.name}</div>
                         </div>
@@ -266,9 +265,8 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                         {schema.desc}
                       </div>
 
-                      <div style={{ display: 'flex', gap: 8, background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}</span>
+                      <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 'var(--r-10)', padding: '8px 12px', marginBottom: 10 }}>
+                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}</span>
                       </div>
 
                       <div
@@ -280,8 +278,8 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       {showDiaryHint && (
-                        <div style={{ fontSize: 12, color: 'var(--accent-yellow)', lineHeight: 1.4, padding: '6px 10px', background: 'rgba(250,204,21,0.1)', borderRadius: 8 }}>
-                          ⚡ Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая
+                        <div style={{ fontSize: 12, color: 'var(--accent-yellow)', lineHeight: 1.4, padding: '6px 10px', background: 'rgba(250,204,21,0.1)', borderRadius: 'var(--r-8)' }}>
+                          Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая
                         </div>
                       )}
                     </div>
@@ -296,7 +294,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 <button
                   onClick={() => setInactiveExpanded(prev => !prev)}
                   style={{
-                    width: '100%', padding: '11px 16px', border: 'none', borderRadius: 12,
+                    width: '100%', padding: '11px 16px', border: 'none', borderRadius: 'var(--r-12)',
                     background: 'rgba(var(--fg-rgb),0.05)', color: 'var(--text-sub)',
                     fontSize: 14, fontWeight: 500, cursor: 'pointer', textAlign: 'left',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -313,13 +311,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       const mid = s.avg >= 3;
                       const barColor = mid ? 'var(--accent-yellow)' : 'rgba(var(--fg-rgb),0.2)';
                       return (
-                        <div key={schema.name} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
+                        <div key={schema.name} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-12)', padding: '12px 14px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
                             <div style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{schema.name}</div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.avg} из 6</div>
                           </div>
-                          <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2 }}>
-                            <div style={{ height: '100%', width: `${avgBarPct(s.avg)}%`, background: barColor, borderRadius: 2 }} />
+                          <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 'var(--r-2)' }}>
+                            <div style={{ height: '100%', width: `${avgBarPct(s.avg)}%`, background: barColor, borderRadius: 'var(--r-2)' }} />
                           </div>
                         </div>
                       );
@@ -346,7 +344,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   История прохождений
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
                   {history.map((entry, idx) => {
                     const entryActive = countActiveInHistory(entry);
                     const prevEntryItem = history[idx + 1];
@@ -355,7 +353,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       : null;
                     const entryDate = new Date(entry.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
                     return (
-                      <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12 }}>
+                      <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-12)' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: idx === 0 ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)', flexShrink: 0 }} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 13, color: idx === 0 ? 'var(--text)' : 'var(--text-sub)', fontWeight: idx === 0 ? 600 : 400 }}>
@@ -381,15 +379,15 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </button>
 
             {retakeConfirm ? (
-              <div style={{ background: 'rgba(255,100,100,0.08)', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ background: 'rgba(255,100,100,0.08)', borderRadius: 'var(--r-12)', padding: '14px 16px' }}>
                 <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 12 }}>Результаты будут удалены. Точно начать заново?</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setRetakeConfirm(false)} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>Отмена</button>
-                  <button onClick={handleRetake} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 10, background: 'rgba(255,100,100,0.2)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Начать заново</button>
+                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                  <button onClick={() => setRetakeConfirm(false)} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 'var(--r-10)', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>Отмена</button>
+                  <button onClick={handleRetake} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 'var(--r-10)', background: 'rgba(255,100,100,0.2)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Начать заново</button>
                 </div>
               </div>
             ) : (
-              <button onClick={() => setRetakeConfirm(true)} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={() => setRetakeConfirm(true)} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 'var(--r-14)', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
                 Пройти заново
               </button>
             )}
@@ -409,6 +407,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         fallbackText={buildShareText(scores, resultView.dateLabel)}
         onClose={() => setShowShare(false)}
         zIndex={400}
+        therapyNote
       />
     )}
     </>

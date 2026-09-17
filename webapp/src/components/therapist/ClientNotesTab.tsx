@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
 import { fmtDate } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 type DiaryEntry = {
   type: 'schema' | 'mode' | 'gratitude';
@@ -20,13 +21,29 @@ type SchemaNoteData = {
 type ModeNoteData = {
   modeId: string;
   triggers: string; feelings: string; thoughts: string;
-  needs: string; behavior: string;
+  needs: string; behavior: string; origins: string; healthyView: string;
+  modeFunction: string; needsMet: string;
 };
 
 interface Props {
   clientSchemaNotesData: SchemaNoteData[];
   clientModeNotesData: ModeNoteData[];
   clientDiary: DiaryEntry[];
+}
+
+// Общий грид заполненных полей карточки (схема и режим) — раньше разметка
+// жила дублем в обоих блоках (jscpd-храповик).
+function NoteFieldGrid({ fields }: { fields: { label: string; val?: string }[] }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
+      {fields.filter(f => f.val?.trim()).map(f => (
+        <div key={f.label}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, clientDiary }: Props) {
@@ -57,7 +74,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
       {clientDiary.length > 0 && (
         <div style={{ marginBottom: 40 }}>
           <div className="eyebrow" style={{ marginBottom: 16 }}>Дневник событий · {clientDiary.length}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             {clientDiary.map((entry, i) => {
               let color: string;
               let title: string;
@@ -67,14 +84,14 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                 const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
                 const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
                 color = domain?.color ?? 'var(--accent)';
-                title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                title = schema ? schema.name : (entry.schemaIds?.join(', ') ?? 'Схема');
                 if ((entry.schemaIds?.length ?? 0) > 1) title += ` +${(entry.schemaIds?.length ?? 1) - 1}`;
                 typeLabel = 'Схема-дневник';
               } else if (entry.type === 'mode') {
                 const mode = getModeById(entry.modeId ?? '');
                 const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
                 color = group?.color ?? 'var(--accent)';
-                title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                title = mode ? mode.name : (entry.modeId ?? 'Режим');
                 typeLabel = 'Режим-дневник';
               } else {
                 color = 'var(--c-moss)';
@@ -88,7 +105,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                   style={{ borderLeft: `3px solid ${color}`, paddingLeft: 16, paddingBottom: 20, marginBottom: 4, cursor: 'pointer' }}
                   {...pressable(() => setExpandedDiary(expanded ? null : i))}
                 >
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-12)' }}>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 10 }}>{typeLabel}</span>
@@ -121,26 +138,19 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
             return (
               <div key={n.schemaId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 3, height: 16, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 12 }}>
+                  <IdentityDot color={domain?.color} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.name ?? n.schemaId}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                  {[
-                    { label: 'Триггеры', val: n.triggers },
-                    { label: 'Чувства', val: n.feelings },
-                    { label: 'Мысли', val: n.thoughts },
-                    { label: 'Корни', val: n.origins },
-                    { label: 'Проверка реальности', val: n.reality },
-                    { label: 'Здоровый взгляд', val: n.healthyView },
-                    { label: 'Поведение', val: n.behavior },
-                  ].filter(f => f.val?.trim()).map(f => (
-                    <div key={f.label}>
-                      <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                    </div>
-                  ))}
-                </div>
+                <NoteFieldGrid fields={[
+                  { label: 'Триггеры', val: n.triggers },
+                  { label: 'Чувства', val: n.feelings },
+                  { label: 'Мысли', val: n.thoughts },
+                  { label: 'Корни', val: n.origins },
+                  { label: 'Проверка реальности', val: n.reality },
+                  { label: 'Здоровый взгляд', val: n.healthyView },
+                  { label: 'Поведение', val: n.behavior },
+                ]} />
               </div>
             );
           })}
@@ -156,24 +166,21 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
             const group = MODE_GROUPS.find(g => g.items.some(x => x.id === n.modeId));
             return (
               <div key={n.modeId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 3, height: 16, borderRadius: 2, background: group?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.emoji} {m?.name ?? n.modeId}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 12 }}>
+                  <IdentityDot color={group?.color} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.name ?? n.modeId}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                  {[
-                    { label: 'Триггеры', val: n.triggers },
-                    { label: 'Чувства', val: n.feelings },
-                    { label: 'Мысли', val: n.thoughts },
-                    { label: 'Потребности', val: n.needs },
-                    { label: 'Поведение', val: n.behavior },
-                  ].filter(f => f.val?.trim()).map(f => (
-                    <div key={f.label}>
-                      <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                    </div>
-                  ))}
-                </div>
+                <NoteFieldGrid fields={[
+                  { label: 'Триггеры', val: n.triggers },
+                  { label: 'Чувства', val: n.feelings },
+                  { label: 'Мысли', val: n.thoughts },
+                  { label: 'Поведение', val: n.behavior },
+                  { label: 'Функция режима', val: n.modeFunction },
+                  { label: 'Потребности', val: n.needs },
+                  { label: 'Даёт ли то, что нужно', val: n.needsMet },
+                  { label: 'Корни', val: n.origins },
+                  { label: 'Здоровый взгляд', val: n.healthyView },
+                ]} />
               </div>
             );
           })}

@@ -1,0 +1,84 @@
+af331e9bbc6288299e5e64a0efbb4678
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var AuthMaxController_1;
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthMaxController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const auth_service_1 = require("./auth.service");
+const max_provider_1 = require("./providers/max.provider");
+const security_log_service_1 = require("./security-log.service");
+const initdata_alert_1 = require("../api/initdata-alert");
+const auth_http_util_1 = require("./auth-http.util");
+const max_init_data_1 = require("./max-init-data");
+const max_webapp_dto_1 = require("./dto/max-webapp.dto");
+// MAX mini-app auto-auth — тот же паттерн, что telegram/webapp
+// (auth-account.controller.ts): подписанный initData обменивается на сессию
+// без предварительной аутентификации — это и есть точка входа.
+let AuthMaxController = AuthMaxController_1 = class AuthMaxController {
+    maxProvider;
+    auth;
+    securityLog;
+    logger = new common_1.Logger(AuthMaxController_1.name);
+    constructor(maxProvider, auth, securityLog) {
+        this.maxProvider = maxProvider;
+        this.auth = auth;
+        this.securityLog = securityLog;
+    }
+    async maxWebApp(body, req, res) {
+        if (!body?.initData)
+            throw new common_1.BadRequestException('Missing initData');
+        let identity;
+        try {
+            identity = this.maxProvider.verifyInitData(body.initData);
+        }
+        catch (err) {
+            // Нет токена — это мы не дособрали конфигурацию, а не клиент подделал
+            // подпись: в rejectInitData такую ошибку отдавать нельзя.
+            if (err instanceof max_init_data_1.MaxNotConfiguredError) {
+                this.logger.error('вход из MAX недоступен: не задан MAX_BOT_TOKEN');
+                throw new common_1.ServiceUnavailableException('MAX login is not configured');
+            }
+            (0, initdata_alert_1.rejectInitData)(err, req.ip, this.logger, this.securityLog);
+        }
+        const userId = await this.auth.findOrCreateUserByProvider('max', identity.providerId, identity.displayName);
+        const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
+        // crossSite: MAX открывает мини-апп в iframe, и strict-куку браузер оттуда
+        // не пошлёт — сессия перестала бы продлеваться через 15 минут.
+        (0, auth_http_util_1.setRefreshCookie)(res, tokens.refreshToken, 30 * 24 * 3600, true);
+        return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    }
+};
+exports.AuthMaxController = AuthMaxController;
+__decorate([
+    (0, common_1.Post)('max/webapp'),
+    (0, throttler_1.Throttle)({
+        short: { limit: 5, ttl: 60_000 },
+        long: { limit: 30, ttl: 3_600_000 },
+    }),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_d = typeof max_webapp_dto_1.MaxWebAppDto !== "undefined" && max_webapp_dto_1.MaxWebAppDto) === "function" ? _d : Object, Object, Object]),
+    __metadata("design:returntype", typeof (_e = typeof Promise !== "undefined" && Promise) === "function" ? _e : Object)
+], AuthMaxController.prototype, "maxWebApp", null);
+exports.AuthMaxController = AuthMaxController = AuthMaxController_1 = __decorate([
+    (0, common_1.Controller)('api/auth'),
+    __metadata("design:paramtypes", [typeof (_a = typeof max_provider_1.MaxProvider !== "undefined" && max_provider_1.MaxProvider) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object, typeof (_c = typeof security_log_service_1.SecurityLogService !== "undefined" && security_log_service_1.SecurityLogService) === "function" ? _c : Object])
+], AuthMaxController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9hdXRoLW1heC5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBVXdCO0FBQ3hCLGlEQUE2QztBQUU3QyxpREFBNkM7QUFDN0MsMkRBQXVEO0FBRXZELGlFQUE0RDtBQUM1RCwwREFBdUQ7QUFDdkQscURBQW9EO0FBQ3BELG1EQUF3RDtBQUN4RCx5REFBb0Q7QUFFcEQsK0RBQStEO0FBQy9ELDRFQUE0RTtBQUM1RSwrREFBK0Q7QUFFeEQsSUFBTSxpQkFBaUIseUJBQXZCLE1BQU0saUJBQWlCO0lBSVQ7SUFDQTtJQUNBO0lBTEYsTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLG1CQUFpQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBRTdELFlBQ21CLFdBQXdCLEVBQ3hCLElBQWlCLEVBQ2pCLFdBQStCO1FBRi9CLGdCQUFXLEdBQVgsV0FBVyxDQUFhO1FBQ3hCLFNBQUksR0FBSixJQUFJLENBQWE7UUFDakIsZ0JBQVcsR0FBWCxXQUFXLENBQW9CO0lBQy9DLENBQUM7SUFRRSxBQUFOLEtBQUssQ0FBQyxTQUFTLENBQ0wsSUFBa0IsRUFDbkIsR0FBWSxFQUNTLEdBQWE7UUFFekMsSUFBSSxDQUFDLElBQUksRUFBRSxRQUFRO1lBQUUsTUFBTSxJQUFJLDRCQUFtQixDQUFDLGtCQUFrQixDQUFDLENBQUM7UUFFdkUsSUFBSSxRQUEwQixDQUFDO1FBQy9CLElBQUksQ0FBQztZQUNILFFBQVEsR0FBRyxJQUFJLENBQUMsV0FBVyxDQUFDLGNBQWMsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUM7UUFDNUQsQ0FBQztRQUFDLE9BQU8sR0FBRyxFQUFFLENBQUM7WUFDYixzRUFBc0U7WUFDdEUsMERBQTBEO1lBQzFELElBQUksR0FBRyxZQUFZLHFDQUFxQixFQUFFLENBQUM7Z0JBQ3pDLElBQUksQ0FBQyxNQUFNLENBQUMsS0FBSyxDQUFDLGdEQUFnRCxDQUFDLENBQUM7Z0JBQ3BFLE1BQU0sSUFBSSxvQ0FBMkIsQ0FBQyw2QkFBNkIsQ0FBQyxDQUFDO1lBQ3ZFLENBQUM7WUFDRCxJQUFBLCtCQUFjLEVBQUMsR0FBRyxFQUFFLEdBQUcsQ0FBQyxFQUFFLEVBQUUsSUFBSSxDQUFDLE1BQU0sRUFBRSxJQUFJLENBQUMsV0FBVyxDQUFDLENBQUM7UUFDN0QsQ0FBQztRQUVELE1BQU0sTUFBTSxHQUFHLE1BQU0sSUFBSSxDQUFDLElBQUksQ0FBQywwQkFBMEIsQ0FDdkQsS0FBSyxFQUNMLFFBQVEsQ0FBQyxVQUFVLEVBQ25CLFFBQVEsQ0FBQyxXQUFXLENBQ3JCLENBQUM7UUFDRixNQUFNLE1BQU0sR0FBRyxNQUFNLElBQUksQ0FBQyxJQUFJLENBQUMsV0FBVyxDQUN4QyxNQUFNLEVBQ04sR0FBRyxDQUFDLEVBQUUsRUFDTixHQUFHLENBQUMsT0FBTyxDQUFDLFlBQVksQ0FBQyxDQUMxQixDQUFDO1FBQ0YsMkVBQTJFO1FBQzNFLCtEQUErRDtRQUMvRCxJQUFBLGlDQUFnQixFQUFDLEdBQUcsRUFBRSxNQUFNLENBQUMsWUFBWSxFQUFFLEVBQUUsR0FBRyxFQUFFLEdBQUcsSUFBSSxFQUFFLElBQUksQ0FBQyxDQUFDO1FBQ2pFLE9BQU8sRUFBRSxXQUFXLEVBQUUsTUFBTSxDQUFDLFdBQVcsRUFBRSxTQUFTLEVBQUUsTUFBTSxDQUFDLFNBQVMsRUFBRSxDQUFDO0lBQzFFLENBQUM7Q0FDRixDQUFBO0FBbERZLDhDQUFpQjtBQWV0QjtJQU5MLElBQUEsYUFBSSxFQUFDLFlBQVksQ0FBQztJQUNsQixJQUFBLG9CQUFRLEVBQUM7UUFDUixLQUFLLEVBQUUsRUFBRSxLQUFLLEVBQUUsQ0FBQyxFQUFFLEdBQUcsRUFBRSxNQUFNLEVBQUU7UUFDaEMsSUFBSSxFQUFFLEVBQUUsS0FBSyxFQUFFLEVBQUUsRUFBRSxHQUFHLEVBQUUsU0FBUyxFQUFFO0tBQ3BDLENBQUM7SUFDRCxJQUFBLGlCQUFRLEVBQUMsR0FBRyxDQUFDO0lBRVgsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBO0lBQ04sV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBO0lBQ0wsV0FBQSxJQUFBLFlBQUcsRUFBQyxFQUFFLFdBQVcsRUFBRSxJQUFJLEVBQUUsQ0FBQyxDQUFBOzt5REFGYiw2QkFBWSxvQkFBWiw2QkFBWTt3REFHekIsT0FBTyxvQkFBUCxPQUFPO2tEQThCVDs0QkFqRFUsaUJBQWlCO0lBRDdCLElBQUEsbUJBQVUsRUFBQyxVQUFVLENBQUM7eURBS1csMEJBQVcsb0JBQVgsMEJBQVcsb0RBQ2xCLDBCQUFXLG9CQUFYLDBCQUFXLG9EQUNKLHlDQUFrQixvQkFBbEIseUNBQWtCO0dBTnZDLGlCQUFpQixDQWtEN0IiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9hdXRoLW1heC5jb250cm9sbGVyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIENvbnRyb2xsZXIsXG4gIFBvc3QsXG4gIEJvZHksXG4gIFJlcSxcbiAgUmVzLFxuICBMb2dnZXIsXG4gIEh0dHBDb2RlLFxuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxuICBTZXJ2aWNlVW5hdmFpbGFibGVFeGNlcHRpb24sXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHR5cGUgeyBSZXF1ZXN0LCBSZXNwb25zZSB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgQXV0aFNlcnZpY2UgfSBmcm9tICcuL2F1dGguc2VydmljZSc7XG5pbXBvcnQgeyBNYXhQcm92aWRlciB9IGZyb20gJy4vcHJvdmlkZXJzL21heC5wcm92aWRlcic7XG5pbXBvcnQgeyBQcm92aWRlcklkZW50aXR5IH0gZnJvbSAnLi9wcm92aWRlcnMvdHlwZXMnO1xuaW1wb3J0IHsgU2VjdXJpdHlMb2dTZXJ2aWNlIH0gZnJvbSAnLi9zZWN1cml0eS1sb2cuc2VydmljZSc7XG5pbXBvcnQgeyByZWplY3RJbml0RGF0YSB9IGZyb20gJy4uL2FwaS9pbml0ZGF0YS1hbGVydCc7XG5pbXBvcnQgeyBzZXRSZWZyZXNoQ29va2llIH0gZnJvbSAnLi9hdXRoLWh0dHAudXRpbCc7XG5pbXBvcnQgeyBNYXhOb3RDb25maWd1cmVkRXJyb3IgfSBmcm9tICcuL21heC1pbml0LWRhdGEnO1xuaW1wb3J0IHsgTWF4V2ViQXBwRHRvIH0gZnJvbSAnLi9kdG8vbWF4LXdlYmFwcC5kdG8nO1xuXG4vLyBNQVggbWluaS1hcHAgYXV0by1hdXRoIOKAlCDRgtC+0YIg0LbQtSDQv9Cw0YLRgtC10YDQvSwg0YfRgtC+IHRlbGVncmFtL3dlYmFwcFxuLy8gKGF1dGgtYWNjb3VudC5jb250cm9sbGVyLnRzKTog0L/QvtC00L/QuNGB0LDQvdC90YvQuSBpbml0RGF0YSDQvtCx0LzQtdC90LjQstCw0LXRgtGB0Y8g0L3QsCDRgdC10YHRgdC40Y5cbi8vINCx0LXQtyDQv9GA0LXQtNCy0LDRgNC40YLQtdC70YzQvdC+0Lkg0LDRg9GC0LXQvdGC0LjRhNC40LrQsNGG0LjQuCDigJQg0Y3RgtC+INC4INC10YHRgtGMINGC0L7Rh9C60LAg0LLRhdC+0LTQsC5cbkBDb250cm9sbGVyKCdhcGkvYXV0aCcpXG5leHBvcnQgY2xhc3MgQXV0aE1heENvbnRyb2xsZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoQXV0aE1heENvbnRyb2xsZXIubmFtZSk7XG5cbiAgY29uc3RydWN0b3IoXG4gICAgcHJpdmF0ZSByZWFkb25seSBtYXhQcm92aWRlcjogTWF4UHJvdmlkZXIsXG4gICAgcHJpdmF0ZSByZWFkb25seSBhdXRoOiBBdXRoU2VydmljZSxcbiAgICBwcml2YXRlIHJlYWRvbmx5IHNlY3VyaXR5TG9nOiBTZWN1cml0eUxvZ1NlcnZpY2UsXG4gICkge31cblxuICBAUG9zdCgnbWF4L3dlYmFwcCcpXG4gIEBUaHJvdHRsZSh7XG4gICAgc2hvcnQ6IHsgbGltaXQ6IDUsIHR0bDogNjBfMDAwIH0sXG4gICAgbG9uZzogeyBsaW1pdDogMzAsIHR0bDogM182MDBfMDAwIH0sXG4gIH0pXG4gIEBIdHRwQ29kZSgyMDApXG4gIGFzeW5jIG1heFdlYkFwcChcbiAgICBAQm9keSgpIGJvZHk6IE1heFdlYkFwcER0byxcbiAgICBAUmVxKCkgcmVxOiBSZXF1ZXN0LFxuICAgIEBSZXMoeyBwYXNzdGhyb3VnaDogdHJ1ZSB9KSByZXM6IFJlc3BvbnNlLFxuICApOiBQcm9taXNlPHsgYWNjZXNzVG9rZW46IHN0cmluZzsgZXhwaXJlc0luOiBudW1iZXIgfT4ge1xuICAgIGlmICghYm9keT8uaW5pdERhdGEpIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdNaXNzaW5nIGluaXREYXRhJyk7XG5cbiAgICBsZXQgaWRlbnRpdHk6IFByb3ZpZGVySWRlbnRpdHk7XG4gICAgdHJ5IHtcbiAgICAgIGlkZW50aXR5ID0gdGhpcy5tYXhQcm92aWRlci52ZXJpZnlJbml0RGF0YShib2R5LmluaXREYXRhKTtcbiAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgIC8vINCd0LXRgiDRgtC+0LrQtdC90LAg4oCUINGN0YLQviDQvNGLINC90LUg0LTQvtGB0L7QsdGA0LDQu9C4INC60L7QvdGE0LjQs9GD0YDQsNGG0LjRjiwg0LAg0L3QtSDQutC70LjQtdC90YIg0L/QvtC00LTQtdC70LDQu1xuICAgICAgLy8g0L/QvtC00L/QuNGB0Yw6INCyIHJlamVjdEluaXREYXRhINGC0LDQutGD0Y4g0L7RiNC40LHQutGDINC+0YLQtNCw0LLQsNGC0Ywg0L3QtdC70YzQt9GPLlxuICAgICAgaWYgKGVyciBpbnN0YW5jZW9mIE1heE5vdENvbmZpZ3VyZWRFcnJvcikge1xuICAgICAgICB0aGlzLmxvZ2dlci5lcnJvcign0LLRhdC+0LQg0LjQtyBNQVgg0L3QtdC00L7RgdGC0YPQv9C10L06INC90LUg0LfQsNC00LDQvSBNQVhfQk9UX1RPS0VOJyk7XG4gICAgICAgIHRocm93IG5ldyBTZXJ2aWNlVW5hdmFpbGFibGVFeGNlcHRpb24oJ01BWCBsb2dpbiBpcyBub3QgY29uZmlndXJlZCcpO1xuICAgICAgfVxuICAgICAgcmVqZWN0SW5pdERhdGEoZXJyLCByZXEuaXAsIHRoaXMubG9nZ2VyLCB0aGlzLnNlY3VyaXR5TG9nKTtcbiAgICB9XG5cbiAgICBjb25zdCB1c2VySWQgPSBhd2FpdCB0aGlzLmF1dGguZmluZE9yQ3JlYXRlVXNlckJ5UHJvdmlkZXIoXG4gICAgICAnbWF4JyxcbiAgICAgIGlkZW50aXR5LnByb3ZpZGVySWQsXG4gICAgICBpZGVudGl0eS5kaXNwbGF5TmFtZSxcbiAgICApO1xuICAgIGNvbnN0IHRva2VucyA9IGF3YWl0IHRoaXMuYXV0aC5pc3N1ZVRva2VucyhcbiAgICAgIHVzZXJJZCxcbiAgICAgIHJlcS5pcCxcbiAgICAgIHJlcS5oZWFkZXJzWyd1c2VyLWFnZW50J10sXG4gICAgKTtcbiAgICAvLyBjcm9zc1NpdGU6IE1BWCDQvtGC0LrRgNGL0LLQsNC10YIg0LzQuNC90Lgt0LDQv9C/INCyIGlmcmFtZSwg0Lggc3RyaWN0LdC60YPQutGDINCx0YDQsNGD0LfQtdGAINC+0YLRgtGD0LTQsFxuICAgIC8vINC90LUg0L/QvtGI0LvRkdGCIOKAlCDRgdC10YHRgdC40Y8g0L/QtdGA0LXRgdGC0LDQu9CwINCx0Ysg0L/RgNC+0LTQu9C10LLQsNGC0YzRgdGPINGH0LXRgNC10LcgMTUg0LzQuNC90YPRgi5cbiAgICBzZXRSZWZyZXNoQ29va2llKHJlcywgdG9rZW5zLnJlZnJlc2hUb2tlbiwgMzAgKiAyNCAqIDM2MDAsIHRydWUpO1xuICAgIHJldHVybiB7IGFjY2Vzc1Rva2VuOiB0b2tlbnMuYWNjZXNzVG9rZW4sIGV4cGlyZXNJbjogdG9rZW5zLmV4cGlyZXNJbiB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

@@ -1,0 +1,125 @@
+f1e75394fca3440de0bc869034690116
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var ChannelScheduleService_1;
+var _a, _b;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ChannelScheduleService = void 0;
+const common_1 = require("@nestjs/common");
+const schedule_1 = require("@nestjs/schedule");
+const healthy_adult_service_1 = require("../bot/healthy-adult.service");
+const healthy_adult_schedule_1 = require("../bot/healthy-adult.schedule");
+const admin_alert_1 = require("../utils/admin-alert");
+const healthy_adult_attempts_1 = require("../bot/healthy-adult.attempts");
+const channel_publisher_service_1 = require("./channel-publisher.service");
+const publish_report_1 = require("./publish-report");
+/** Часовой пояс расписания канала (единый для broadcast, не per-user). */
+const POST_TZ = 'Europe/Moscow';
+// Тики каждые 5 минут внутри окон 09:00–10:55 и 18:00–19:55 МСК. Публикует не
+// каждый тик — а один раз за окно, в детерминированно-случайную минуту (jitter,
+// см. healthy-adult.schedule): время гуляет ото дня ко дню, но переживает
+// рестарт — setTimeout-задержка потерялась бы при деплое.
+const MORNING_CRON = '*/5 9,10 * * *';
+const EVENING_CRON = '*/5 18,19 * * *';
+/** Имя слота для владельца и для журнала отправок. */
+const SLOT_NAME = {
+    morning: 'утро',
+    evening: 'вечер',
+};
+/**
+ * Когда каналу «Здоровый Взрослый» пора говорить: дважды в день, утром
+ * (~10:00 ±час) и вечером (~19:00 ±час), в случайную минуту, чтобы не выглядеть
+ * ботом. Что именно и куда уходит — дело ChannelPublisherService: этот сервис
+ * решает только «пора / не пора / хватит пробовать».
+ */
+let ChannelScheduleService = ChannelScheduleService_1 = class ChannelScheduleService {
+    publisher;
+    phrases;
+    logger = new common_1.Logger(ChannelScheduleService_1.name);
+    attempts = new healthy_adult_attempts_1.SlotAttempts();
+    constructor(publisher, phrases) {
+        this.publisher = publisher;
+        this.phrases = phrases;
+    }
+    async tickMorning() {
+        await this.maybePost();
+    }
+    async tickEvening() {
+        await this.maybePost();
+    }
+    /**
+     * Тик расписания: публикует, только если настала запланированная минута слота
+     * и в этот слот ещё не постили (ручная публикация из админки и /zv идёт мимо,
+     * через publisher.publish()). Полная неудача не пишется как пост, поэтому
+     * следующий тик попробует снова — но не бесконечно: три попытки на слот и
+     * одно сообщение владельцу, когда они кончились (инцидент 2026-07-29: 24
+     * одинаковых DM за утро).
+     */
+    async maybePost(now = new Date()) {
+        try {
+            const slot = (0, healthy_adult_schedule_1.dueSlot)(now, await this.phrases.lastPostAt());
+            if (!slot)
+                return;
+            const key = `${(0, healthy_adult_schedule_1.mskParts)(now).dateKey}:${slot}`;
+            if (!this.attempts.allow(key))
+                return;
+            const res = await this.publisher.publish(SLOT_NAME[slot]);
+            if (res.posted) {
+                this.attempts.reset(key);
+                // Частичный успех: слот закрыт (повтор дал бы дубль там, где пост уже
+                // вышел), но про упавшую площадку владелец должен узнать — один раз.
+                if (res.failed.length > 0 || res.silent.length > 0)
+                    await this.alert(`Канал ЗВ (${SLOT_NAME[slot]}): дошло не везде\n` +
+                        `${(0, publish_report_1.failedSummary)(res.failed)}${(0, publish_report_1.silentSummary)(res.silent)}`);
+                return;
+            }
+            const { attempt, exhausted } = this.attempts.fail(key);
+            // Владельца будим один раз — когда стало ясно, что само не починится.
+            if (exhausted)
+                await this.alert(`Канал ЗВ (${SLOT_NAME[slot]}): не вышло ничего\n${res.message}`);
+            else
+                this.logger.warn(`healthy-adult ${slot}: попытка ${attempt} не удалась — ${res.message}`);
+        }
+        catch (err) {
+            this.logger.error(`healthy-adult tick failed: ${err?.message}`);
+        }
+    }
+    /**
+     * Сообщение владельцу — напрямую, а не через `logger.error` → AlertLogger.
+     * Инцидент 2026-07-31: пост вышел не на все площадки, а DM не пришёл. На
+     * пути этого сообщения стояло лишнее звено с собственным троттлингом по
+     * нормализованному тексту, обрезкой до 300 символов и молчаливым
+     * проглатыванием ошибок. Алерт о канале слишком редкий, чтобы его троттлить.
+     */
+    async alert(text) {
+        // warn, а не error: DM уходит явной строкой ниже, дублировать не нужно.
+        this.logger.warn(text);
+        await (0, admin_alert_1.notifyAdminWithFallback)(text, 'Канал «Здоровый Взрослый»');
+    }
+};
+exports.ChannelScheduleService = ChannelScheduleService;
+__decorate([
+    (0, schedule_1.Cron)(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ChannelScheduleService.prototype, "tickMorning", null);
+__decorate([
+    (0, schedule_1.Cron)(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ChannelScheduleService.prototype, "tickEvening", null);
+exports.ChannelScheduleService = ChannelScheduleService = ChannelScheduleService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof channel_publisher_service_1.ChannelPublisherService !== "undefined" && channel_publisher_service_1.ChannelPublisherService) === "function" ? _a : Object, typeof (_b = typeof healthy_adult_service_1.HealthyAdultService !== "undefined" && healthy_adult_service_1.HealthyAdultService) === "function" ? _b : Object])
+], ChannelScheduleService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvY2hhbm5lbC9jaGFubmVsLXNjaGVkdWxlLnNlcnZpY2UudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBb0Q7QUFDcEQsK0NBQXdDO0FBQ3hDLHdFQUFtRTtBQUNuRSwwRUFJdUM7QUFDdkMsc0RBQStEO0FBQy9ELDBFQUE2RDtBQUM3RCwyRUFBc0U7QUFDdEUscURBQWdFO0FBRWhFLDBFQUEwRTtBQUMxRSxNQUFNLE9BQU8sR0FBRyxlQUFlLENBQUM7QUFDaEMsOEVBQThFO0FBQzlFLGdGQUFnRjtBQUNoRiwwRUFBMEU7QUFDMUUsMERBQTBEO0FBQzFELE1BQU0sWUFBWSxHQUFHLGdCQUFnQixDQUFDO0FBQ3RDLE1BQU0sWUFBWSxHQUFHLGlCQUFpQixDQUFDO0FBQ3ZDLHNEQUFzRDtBQUN0RCxNQUFNLFNBQVMsR0FBcUM7SUFDbEQsT0FBTyxFQUFFLE1BQU07SUFDZixPQUFPLEVBQUUsT0FBTztDQUNqQixDQUFDO0FBRUY7Ozs7O0dBS0c7QUFFSSxJQUFNLHNCQUFzQiw4QkFBNUIsTUFBTSxzQkFBc0I7SUFLZDtJQUNBO0lBTEYsTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLHdCQUFzQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ2pELFFBQVEsR0FBRyxJQUFJLHFDQUFZLEVBQUUsQ0FBQztJQUUvQyxZQUNtQixTQUFrQyxFQUNsQyxPQUE0QjtRQUQ1QixjQUFTLEdBQVQsU0FBUyxDQUF5QjtRQUNsQyxZQUFPLEdBQVAsT0FBTyxDQUFxQjtJQUM1QyxDQUFDO0lBR0UsQUFBTixLQUFLLENBQUMsV0FBVztRQUNmLE1BQU0sSUFBSSxDQUFDLFNBQVMsRUFBRSxDQUFDO0lBQ3pCLENBQUM7SUFHSyxBQUFOLEtBQUssQ0FBQyxXQUFXO1FBQ2YsTUFBTSxJQUFJLENBQUMsU0FBUyxFQUFFLENBQUM7SUFDekIsQ0FBQztJQUVEOzs7Ozs7O09BT0c7SUFDSCxLQUFLLENBQUMsU0FBUyxDQUFDLEdBQUcsR0FBRyxJQUFJLElBQUksRUFBRTtRQUM5QixJQUFJLENBQUM7WUFDSCxNQUFNLElBQUksR0FBRyxJQUFBLGdDQUFPLEVBQUMsR0FBRyxFQUFFLE1BQU0sSUFBSSxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsQ0FBQyxDQUFDO1lBQzNELElBQUksQ0FBQyxJQUFJO2dCQUFFLE9BQU87WUFDbEIsTUFBTSxHQUFHLEdBQUcsR0FBRyxJQUFBLGlDQUFRLEVBQUMsR0FBRyxDQUFDLENBQUMsT0FBTyxJQUFJLElBQUksRUFBRSxDQUFDO1lBQy9DLElBQUksQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLEtBQUssQ0FBQyxHQUFHLENBQUM7Z0JBQUUsT0FBTztZQUV0QyxNQUFNLEdBQUcsR0FBRyxNQUFNLElBQUksQ0FBQyxTQUFTLENBQUMsT0FBTyxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDO1lBQzFELElBQUksR0FBRyxDQUFDLE1BQU0sRUFBRSxDQUFDO2dCQUNmLElBQUksQ0FBQyxRQUFRLENBQUMsS0FBSyxDQUFDLEdBQUcsQ0FBQyxDQUFDO2dCQUN6QixzRUFBc0U7Z0JBQ3RFLHFFQUFxRTtnQkFDckUsSUFBSSxHQUFHLENBQUMsTUFBTSxDQUFDLE1BQU0sR0FBRyxDQUFDLElBQUksR0FBRyxDQUFDLE1BQU0sQ0FBQyxNQUFNLEdBQUcsQ0FBQztvQkFDaEQsTUFBTSxJQUFJLENBQUMsS0FBSyxDQUNkLGFBQWEsU0FBUyxDQUFDLElBQUksQ0FBQyxxQkFBcUI7d0JBQy9DLEdBQUcsSUFBQSw4QkFBYSxFQUFDLEdBQUcsQ0FBQyxNQUFNLENBQUMsR0FBRyxJQUFBLDhCQUFhLEVBQUMsR0FBRyxDQUFDLE1BQU0sQ0FBQyxFQUFFLENBQzdELENBQUM7Z0JBQ0osT0FBTztZQUNULENBQUM7WUFFRCxNQUFNLEVBQUUsT0FBTyxFQUFFLFNBQVMsRUFBRSxHQUFHLElBQUksQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLEdBQUcsQ0FBQyxDQUFDO1lBQ3ZELHNFQUFzRTtZQUN0RSxJQUFJLFNBQVM7Z0JBQ1gsTUFBTSxJQUFJLENBQUMsS0FBSyxDQUNkLGFBQWEsU0FBUyxDQUFDLElBQUksQ0FBQyx1QkFBdUIsR0FBRyxDQUFDLE9BQU8sRUFBRSxDQUNqRSxDQUFDOztnQkFFRixJQUFJLENBQUMsTUFBTSxDQUFDLElBQUksQ0FDZCxpQkFBaUIsSUFBSSxhQUFhLE9BQU8saUJBQWlCLEdBQUcsQ0FBQyxPQUFPLEVBQUUsQ0FDeEUsQ0FBQztRQUNOLENBQUM7UUFBQyxPQUFPLEdBQUcsRUFBRSxDQUFDO1lBQ2IsSUFBSSxDQUFDLE1BQU0sQ0FBQyxLQUFLLENBQ2YsOEJBQStCLEdBQWEsRUFBRSxPQUFPLEVBQUUsQ0FDeEQsQ0FBQztRQUNKLENBQUM7SUFDSCxDQUFDO0lBRUQ7Ozs7OztPQU1HO0lBQ0ssS0FBSyxDQUFDLEtBQUssQ0FBQyxJQUFZO1FBQzlCLHdFQUF3RTtRQUN4RSxJQUFJLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUN2QixNQUFNLElBQUEscUNBQXVCLEVBQUMsSUFBSSxFQUFFLDJCQUEyQixDQUFDLENBQUM7SUFDbkUsQ0FBQztDQUNGLENBQUE7QUE1RVksd0RBQXNCO0FBVTNCO0lBREwsSUFBQSxlQUFJLEVBQUMsWUFBWSxFQUFFLEVBQUUsSUFBSSxFQUFFLHFCQUFxQixFQUFFLFFBQVEsRUFBRSxPQUFPLEVBQUUsQ0FBQzs7Ozt5REFHdEU7QUFHSztJQURMLElBQUEsZUFBSSxFQUFDLFlBQVksRUFBRSxFQUFFLElBQUksRUFBRSxxQkFBcUIsRUFBRSxRQUFRLEVBQUUsT0FBTyxFQUFFLENBQUM7Ozs7eURBR3RFO2lDQWpCVSxzQkFBc0I7SUFEbEMsSUFBQSxtQkFBVSxHQUFFO3lEQU1tQixtREFBdUIsb0JBQXZCLG1EQUF1QixvREFDekIsMkNBQW1CLG9CQUFuQiwyQ0FBbUI7R0FOcEMsc0JBQXNCLENBNEVsQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9jaGFubmVsL2NoYW5uZWwtc2NoZWR1bGUuc2VydmljZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlLCBMb2dnZXIgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDcm9uIH0gZnJvbSAnQG5lc3Rqcy9zY2hlZHVsZSc7XG5pbXBvcnQgeyBIZWFsdGh5QWR1bHRTZXJ2aWNlIH0gZnJvbSAnLi4vYm90L2hlYWx0aHktYWR1bHQuc2VydmljZSc7XG5pbXBvcnQge1xuICBkdWVTbG90LFxuICBtc2tQYXJ0cyxcbiAgdHlwZSBIZWFsdGh5QWR1bHRTbG90LFxufSBmcm9tICcuLi9ib3QvaGVhbHRoeS1hZHVsdC5zY2hlZHVsZSc7XG5pbXBvcnQgeyBub3RpZnlBZG1pbldpdGhGYWxsYmFjayB9IGZyb20gJy4uL3V0aWxzL2FkbWluLWFsZXJ0JztcbmltcG9ydCB7IFNsb3RBdHRlbXB0cyB9IGZyb20gJy4uL2JvdC9oZWFsdGh5LWFkdWx0LmF0dGVtcHRzJztcbmltcG9ydCB7IENoYW5uZWxQdWJsaXNoZXJTZXJ2aWNlIH0gZnJvbSAnLi9jaGFubmVsLXB1Ymxpc2hlci5zZXJ2aWNlJztcbmltcG9ydCB7IGZhaWxlZFN1bW1hcnksIHNpbGVudFN1bW1hcnkgfSBmcm9tICcuL3B1Ymxpc2gtcmVwb3J0JztcblxuLyoqINCn0LDRgdC+0LLQvtC5INC/0L7Rj9GBINGA0LDRgdC/0LjRgdCw0L3QuNGPINC60LDQvdCw0LvQsCAo0LXQtNC40L3Ri9C5INC00LvRjyBicm9hZGNhc3QsINC90LUgcGVyLXVzZXIpLiAqL1xuY29uc3QgUE9TVF9UWiA9ICdFdXJvcGUvTW9zY293Jztcbi8vINCi0LjQutC4INC60LDQttC00YvQtSA1INC80LjQvdGD0YIg0LLQvdGD0YLRgNC4INC+0LrQvtC9IDA5OjAw4oCTMTA6NTUg0LggMTg6MDDigJMxOTo1NSDQnNCh0JouINCf0YPQsdC70LjQutGD0LXRgiDQvdC1XG4vLyDQutCw0LbQtNGL0Lkg0YLQuNC6IOKAlCDQsCDQvtC00LjQvSDRgNCw0Lcg0LfQsCDQvtC60L3Qviwg0LIg0LTQtdGC0LXRgNC80LjQvdC40YDQvtCy0LDQvdC90L4t0YHQu9GD0YfQsNC50L3Rg9GOINC80LjQvdGD0YLRgyAoaml0dGVyLFxuLy8g0YHQvC4gaGVhbHRoeS1hZHVsdC5zY2hlZHVsZSk6INCy0YDQtdC80Y8g0LPRg9C70Y/QtdGCINC+0YLQviDQtNC90Y8g0LrQviDQtNC90Y4sINC90L4g0L/QtdGA0LXQttC40LLQsNC10YJcbi8vINGA0LXRgdGC0LDRgNGCIOKAlCBzZXRUaW1lb3V0LdC30LDQtNC10YDQttC60LAg0L/QvtGC0LXRgNGP0LvQsNGB0Ywg0LHRiyDQv9GA0Lgg0LTQtdC/0LvQvtC1LlxuY29uc3QgTU9STklOR19DUk9OID0gJyovNSA5LDEwICogKiAqJztcbmNvbnN0IEVWRU5JTkdfQ1JPTiA9ICcqLzUgMTgsMTkgKiAqIConO1xuLyoqINCY0LzRjyDRgdC70L7RgtCwINC00LvRjyDQstC70LDQtNC10LvRjNGG0LAg0Lgg0LTQu9GPINC20YPRgNC90LDQu9CwINC+0YLQv9GA0LDQstC+0LouICovXG5jb25zdCBTTE9UX05BTUU6IFJlY29yZDxIZWFsdGh5QWR1bHRTbG90LCBzdHJpbmc+ID0ge1xuICBtb3JuaW5nOiAn0YPRgtGA0L4nLFxuICBldmVuaW5nOiAn0LLQtdGH0LXRgCcsXG59O1xuXG4vKipcbiAqINCa0L7Qs9C00LAg0LrQsNC90LDQu9GDIMKr0JfQtNC+0YDQvtCy0YvQuSDQktC30YDQvtGB0LvRi9C5wrsg0L/QvtGA0LAg0LPQvtCy0L7RgNC40YLRjDog0LTQstCw0LbQtNGLINCyINC00LXQvdGMLCDRg9GC0YDQvtC8XG4gKiAofjEwOjAwIMKx0YfQsNGBKSDQuCDQstC10YfQtdGA0L7QvCAofjE5OjAwIMKx0YfQsNGBKSwg0LIg0YHQu9GD0YfQsNC50L3Rg9GOINC80LjQvdGD0YLRgywg0YfRgtC+0LHRiyDQvdC1INCy0YvQs9C70Y/QtNC10YLRjFxuICog0LHQvtGC0L7QvC4g0KfRgtC+INC40LzQtdC90L3QviDQuCDQutGD0LTQsCDRg9GF0L7QtNC40YIg4oCUINC00LXQu9C+IENoYW5uZWxQdWJsaXNoZXJTZXJ2aWNlOiDRjdGC0L7RgiDRgdC10YDQstC40YFcbiAqINGA0LXRiNCw0LXRgiDRgtC+0LvRjNC60L4gwqvQv9C+0YDQsCAvINC90LUg0L/QvtGA0LAgLyDRhdCy0LDRgtC40YIg0L/RgNC+0LHQvtCy0LDRgtGMwrsuXG4gKi9cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBDaGFubmVsU2NoZWR1bGVTZXJ2aWNlIHtcbiAgcHJpdmF0ZSByZWFkb25seSBsb2dnZXIgPSBuZXcgTG9nZ2VyKENoYW5uZWxTY2hlZHVsZVNlcnZpY2UubmFtZSk7XG4gIHByaXZhdGUgcmVhZG9ubHkgYXR0ZW1wdHMgPSBuZXcgU2xvdEF0dGVtcHRzKCk7XG5cbiAgY29uc3RydWN0b3IoXG4gICAgcHJpdmF0ZSByZWFkb25seSBwdWJsaXNoZXI6IENoYW5uZWxQdWJsaXNoZXJTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgcGhyYXNlczogSGVhbHRoeUFkdWx0U2VydmljZSxcbiAgKSB7fVxuXG4gIEBDcm9uKE1PUk5JTkdfQ1JPTiwgeyBuYW1lOiAnaGVhbHRoeUFkdWx0TW9ybmluZycsIHRpbWVab25lOiBQT1NUX1RaIH0pXG4gIGFzeW5jIHRpY2tNb3JuaW5nKCkge1xuICAgIGF3YWl0IHRoaXMubWF5YmVQb3N0KCk7XG4gIH1cblxuICBAQ3JvbihFVkVOSU5HX0NST04sIHsgbmFtZTogJ2hlYWx0aHlBZHVsdEV2ZW5pbmcnLCB0aW1lWm9uZTogUE9TVF9UWiB9KVxuICBhc3luYyB0aWNrRXZlbmluZygpIHtcbiAgICBhd2FpdCB0aGlzLm1heWJlUG9zdCgpO1xuICB9XG5cbiAgLyoqXG4gICAqINCi0LjQuiDRgNCw0YHQv9C40YHQsNC90LjRjzog0L/Rg9Cx0LvQuNC60YPQtdGCLCDRgtC+0LvRjNC60L4g0LXRgdC70Lgg0L3QsNGB0YLQsNC70LAg0LfQsNC/0LvQsNC90LjRgNC+0LLQsNC90L3QsNGPINC80LjQvdGD0YLQsCDRgdC70L7RgtCwXG4gICAqINC4INCyINGN0YLQvtGCINGB0LvQvtGCINC10YnRkSDQvdC1INC/0L7RgdGC0LjQu9C4ICjRgNGD0YfQvdCw0Y8g0L/Rg9Cx0LvQuNC60LDRhtC40Y8g0LjQtyDQsNC00LzQuNC90LrQuCDQuCAvenYg0LjQtNGR0YIg0LzQuNC80L4sXG4gICAqINGH0LXRgNC10LcgcHVibGlzaGVyLnB1Ymxpc2goKSkuINCf0L7Qu9C90LDRjyDQvdC10YPQtNCw0YfQsCDQvdC1INC/0LjRiNC10YLRgdGPINC60LDQuiDQv9C+0YHRgiwg0L/QvtGN0YLQvtC80YNcbiAgICog0YHQu9C10LTRg9GO0YnQuNC5INGC0LjQuiDQv9C+0L/RgNC+0LHRg9C10YIg0YHQvdC+0LLQsCDigJQg0L3QviDQvdC1INCx0LXRgdC60L7QvdC10YfQvdC+OiDRgtGA0Lgg0L/QvtC/0YvRgtC60Lgg0L3QsCDRgdC70L7RgiDQuFxuICAgKiDQvtC00L3QviDRgdC+0L7QsdGJ0LXQvdC40LUg0LLQu9Cw0LTQtdC70YzRhtGDLCDQutC+0LPQtNCwINC+0L3QuCDQutC+0L3Rh9C40LvQuNGB0YwgKNC40L3RhtC40LTQtdC90YIgMjAyNi0wNy0yOTogMjRcbiAgICog0L7QtNC40L3QsNC60L7QstGL0YUgRE0g0LfQsCDRg9GC0YDQvikuXG4gICAqL1xuICBhc3luYyBtYXliZVBvc3Qobm93ID0gbmV3IERhdGUoKSk6IFByb21pc2U8dm9pZD4ge1xuICAgIHRyeSB7XG4gICAgICBjb25zdCBzbG90ID0gZHVlU2xvdChub3csIGF3YWl0IHRoaXMucGhyYXNlcy5sYXN0UG9zdEF0KCkpO1xuICAgICAgaWYgKCFzbG90KSByZXR1cm47XG4gICAgICBjb25zdCBrZXkgPSBgJHttc2tQYXJ0cyhub3cpLmRhdGVLZXl9OiR7c2xvdH1gO1xuICAgICAgaWYgKCF0aGlzLmF0dGVtcHRzLmFsbG93KGtleSkpIHJldHVybjtcblxuICAgICAgY29uc3QgcmVzID0gYXdhaXQgdGhpcy5wdWJsaXNoZXIucHVibGlzaChTTE9UX05BTUVbc2xvdF0pO1xuICAgICAgaWYgKHJlcy5wb3N0ZWQpIHtcbiAgICAgICAgdGhpcy5hdHRlbXB0cy5yZXNldChrZXkpO1xuICAgICAgICAvLyDQp9Cw0YHRgtC40YfQvdGL0Lkg0YPRgdC/0LXRhTog0YHQu9C+0YIg0LfQsNC60YDRi9GCICjQv9C+0LLRgtC+0YAg0LTQsNC7INCx0Ysg0LTRg9Cx0LvRjCDRgtCw0LwsINCz0LTQtSDQv9C+0YHRgiDRg9C20LVcbiAgICAgICAgLy8g0LLRi9GI0LXQuyksINC90L4g0L/RgNC+INGD0L/QsNCy0YjRg9GOINC/0LvQvtGJ0LDQtNC60YMg0LLQu9Cw0LTQtdC70LXRhiDQtNC+0LvQttC10L0g0YPQt9C90LDRgtGMIOKAlCDQvtC00LjQvSDRgNCw0LcuXG4gICAgICAgIGlmIChyZXMuZmFpbGVkLmxlbmd0aCA+IDAgfHwgcmVzLnNpbGVudC5sZW5ndGggPiAwKVxuICAgICAgICAgIGF3YWl0IHRoaXMuYWxlcnQoXG4gICAgICAgICAgICBg0JrQsNC90LDQuyDQl9CSICgke1NMT1RfTkFNRVtzbG90XX0pOiDQtNC+0YjQu9C+INC90LUg0LLQtdC30LTQtVxcbmAgK1xuICAgICAgICAgICAgICBgJHtmYWlsZWRTdW1tYXJ5KHJlcy5mYWlsZWQpfSR7c2lsZW50U3VtbWFyeShyZXMuc2lsZW50KX1gLFxuICAgICAgICAgICk7XG4gICAgICAgIHJldHVybjtcbiAgICAgIH1cblxuICAgICAgY29uc3QgeyBhdHRlbXB0LCBleGhhdXN0ZWQgfSA9IHRoaXMuYXR0ZW1wdHMuZmFpbChrZXkpO1xuICAgICAgLy8g0JLQu9Cw0LTQtdC70YzRhtCwINCx0YPQtNC40Lwg0L7QtNC40L0g0YDQsNC3IOKAlCDQutC+0LPQtNCwINGB0YLQsNC70L4g0Y/RgdC90L4sINGH0YLQviDRgdCw0LzQviDQvdC1INC/0L7Rh9C40L3QuNGC0YHRjy5cbiAgICAgIGlmIChleGhhdXN0ZWQpXG4gICAgICAgIGF3YWl0IHRoaXMuYWxlcnQoXG4gICAgICAgICAgYNCa0LDQvdCw0Lsg0JfQkiAoJHtTTE9UX05BTUVbc2xvdF19KTog0L3QtSDQstGL0YjQu9C+INC90LjRh9C10LPQvlxcbiR7cmVzLm1lc3NhZ2V9YCxcbiAgICAgICAgKTtcbiAgICAgIGVsc2VcbiAgICAgICAgdGhpcy5sb2dnZXIud2FybihcbiAgICAgICAgICBgaGVhbHRoeS1hZHVsdCAke3Nsb3R9OiDQv9C+0L/Ri9GC0LrQsCAke2F0dGVtcHR9INC90LUg0YPQtNCw0LvQsNGB0Ywg4oCUICR7cmVzLm1lc3NhZ2V9YCxcbiAgICAgICAgKTtcbiAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgIHRoaXMubG9nZ2VyLmVycm9yKFxuICAgICAgICBgaGVhbHRoeS1hZHVsdCB0aWNrIGZhaWxlZDogJHsoZXJyIGFzIEVycm9yKT8ubWVzc2FnZX1gLFxuICAgICAgKTtcbiAgICB9XG4gIH1cblxuICAvKipcbiAgICog0KHQvtC+0LHRidC10L3QuNC1INCy0LvQsNC00LXQu9GM0YbRgyDigJQg0L3QsNC/0YDRj9C80YPRjiwg0LAg0L3QtSDRh9C10YDQtdC3IGBsb2dnZXIuZXJyb3JgIOKGkiBBbGVydExvZ2dlci5cbiAgICog0JjQvdGG0LjQtNC10L3RgiAyMDI2LTA3LTMxOiDQv9C+0YHRgiDQstGL0YjQtdC7INC90LUg0L3QsCDQstGB0LUg0L/Qu9C+0YnQsNC00LrQuCwg0LAgRE0g0L3QtSDQv9GA0LjRiNGR0LsuINCd0LBcbiAgICog0L/Rg9GC0Lgg0Y3RgtC+0LPQviDRgdC+0L7QsdGJ0LXQvdC40Y8g0YHRgtC+0Y/Qu9C+INC70LjRiNC90LXQtSDQt9Cy0LXQvdC+INGBINGB0L7QsdGB0YLQstC10L3QvdGL0Lwg0YLRgNC+0YLRgtC70LjQvdCz0L7QvCDQv9C+XG4gICAqINC90L7RgNC80LDQu9C40LfQvtCy0LDQvdC90L7QvNGDINGC0LXQutGB0YLRgywg0L7QsdGA0LXQt9C60L7QuSDQtNC+IDMwMCDRgdC40LzQstC+0LvQvtCyINC4INC80L7Qu9GH0LDQu9C40LLRi9C8XG4gICAqINC/0YDQvtCz0LvQsNGC0YvQstCw0L3QuNC10Lwg0L7RiNC40LHQvtC6LiDQkNC70LXRgNGCINC+INC60LDQvdCw0LvQtSDRgdC70LjRiNC60L7QvCDRgNC10LTQutC40LksINGH0YLQvtCx0Ysg0LXQs9C+INGC0YDQvtGC0YLQu9C40YLRjC5cbiAgICovXG4gIHByaXZhdGUgYXN5bmMgYWxlcnQodGV4dDogc3RyaW5nKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgLy8gd2Fybiwg0LAg0L3QtSBlcnJvcjogRE0g0YPRhdC+0LTQuNGCINGP0LLQvdC+0Lkg0YHRgtGA0L7QutC+0Lkg0L3QuNC20LUsINC00YPQsdC70LjRgNC+0LLQsNGC0Ywg0L3QtSDQvdGD0LbQvdC+LlxuICAgIHRoaXMubG9nZ2VyLndhcm4odGV4dCk7XG4gICAgYXdhaXQgbm90aWZ5QWRtaW5XaXRoRmFsbGJhY2sodGV4dCwgJ9Ca0LDQvdCw0LsgwqvQl9C00L7RgNC+0LLRi9C5INCS0LfRgNC+0YHQu9GL0LnCuycpO1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

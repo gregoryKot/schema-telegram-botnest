@@ -21,7 +21,7 @@ function loadMetrika() {
   s.src = `https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`;
   document.head.appendChild(s);
   w.ym(YM_ID, 'init', {
-    webvisor: true,
+    webvisor: false, // аудит H2: Webvisor слал бы клинический текст SPA в Яндекс
     clickmap: true,
     accurateTrackBounce: true,
     trackLinks: true,
@@ -75,17 +75,7 @@ export function CookieBanner() {
         }}
       >
         {/* Header row */}
-        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="cookie-glow" />
-            <div style={{
-              position: 'relative', width: 44, height: 44, borderRadius: 14,
-              background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>
-              <span className="cookie-emoji">🍪</span>
-            </div>
-          </div>
+        <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'flex-start', position: 'relative' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
@@ -94,7 +84,7 @@ export function CookieBanner() {
               Немного о куки
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
+              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики включаем только после согласия.{' '}
               <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
                 Подробнее
               </a>
@@ -103,7 +93,7 @@ export function CookieBanner() {
         </div>
 
         {/* Actions – equal prominence (GDPR 2026): same size, both solid */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button onClick={decline} className="cookie-btn cookie-btn-reject">
             Только необходимые
           </button>

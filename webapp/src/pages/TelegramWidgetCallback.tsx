@@ -1,55 +1,45 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { parseTelegramAuthResult } from './telegramAuthResult';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 // Handles the redirect from oauth.telegram.org after Telegram Login Widget auth.
-// Backend sends the user here at /auth/telegram — the auth data arrives in the
-// URL *hash fragment* (#tgAuthResult=BASE64URL_JSON) because browsers never
-// include the fragment in server requests, so the backend cannot read it.
-// This page decodes the hash and calls the existing /api/auth/telegram/widget
-// POST endpoint, then handles the three possible outcomes:
-//   1. Success  → set access token, navigate home
-//   2. TOTP     → navigate to 2FA challenge page
-//   3. Merge    → navigate to merge confirmation page
+//
+// Симптом 2026-08-21: «первый вход падал, второй проходил» — oauth.telegram.org
+// возвращает данные ТРЕМЯ способами (hash-фрагмент, query tgAuthResult,
+// плоский query id+hash), а страница читала только hash. Разбор всех трёх
+// форматов — telegramAuthResult.ts (чистая функция, тест отдельно от React).
+//
+// Три исхода ответа /api/auth/telegram/widget: success (токен, домой или в
+// мини-апп — см. ниже), TOTP (/auth/2fa), merge (/account/merge).
 export function TelegramWidgetCallback() {
   const { setAccessToken } = useAuth();
   const navigate = useNavigate();
+  // Стражит от повторного запуска эффекта — раньше history.replaceState
+  // стирал URL ДО fetch, второй прогон читал уже пустой URL (тот же симптом).
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     void (async () => {
       try {
-        // 1. Read tgAuthResult from the hash fragment
-        const hash = window.location.hash.slice(1);
-        const params = new URLSearchParams(hash);
-        const tgAuthResult = params.get('tgAuthResult');
-        if (!tgAuthResult) {
+        // Разобрать данные Telegram по всем трём форматам возврата.
+        const outcome = parseTelegramAuthResult(window.location.hash, window.location.search);
+        if (outcome.kind === 'none') {
           navigate('/auth/error?reason=telegram_no_data', { replace: true });
           return;
         }
-
-        // 2. Decode base64url JSON → flat fields
-        let fields: Record<string, string>;
-        try {
-          const decoded = JSON.parse(
-            atob(tgAuthResult.replace(/-/g, '+').replace(/_/g, '/'))
-          ) as Record<string, unknown>;
-          fields = Object.fromEntries(
-            Object.entries(decoded)
-              .filter(([, v]) => v != null)
-              .map(([k, v]) => [k, String(v)])
-          );
-        } catch {
+        if (outcome.kind === 'error') {
           navigate('/auth/error?reason=telegram_decode_error', { replace: true });
           return;
         }
 
-        // 3. Clear the hash so auth data doesn't sit in browser history
-        window.history.replaceState(null, '', '/auth/telegram');
-
-        // 4. POST to the widget endpoint (same endpoint used by the inline widget)
+        // POST на widget-эндпоинт (тот же, что у инлайн-виджета)
         const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
           method: 'POST',
           credentials: 'include',
@@ -57,8 +47,12 @@ export function TelegramWidgetCallback() {
             'Content-Type': 'application/json',
             'x-requested-with': 'webapp',
           },
-          body: JSON.stringify(fields),
+          body: JSON.stringify(outcome.fields),
         });
+
+        // Чистим адрес ТОЛЬКО ПОСЛЕ ответа (данные уже в outcome.fields) —
+        // чистка до fetch теряла auth-данные при перезагрузке во время ожидания.
+        window.history.replaceState(null, '', '/auth/telegram');
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({})) as { message?: string };
@@ -99,6 +93,12 @@ export function TelegramWidgetCallback() {
           const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
           sessionStorage.removeItem('auth_return_to');
           flushSync(() => setAccessToken(data.accessToken!, data.expiresIn ?? 900));
+          // returnTo может вести на мини-апп (/app/…) — у сайта нет такого
+          // роута, нужен полный переход (симметрично AuthCallback.tsx).
+          if (returnTo.startsWith('/app')) {
+            window.location.replace(returnTo);
+            return;
+          }
           navigate(returnTo, { replace: true });
           return;
         }

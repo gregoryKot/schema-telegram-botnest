@@ -1,10 +1,96 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [react()],
+  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба
+  // miniapp пересобирает его для сверки байт-в-байт — любой new Date()
+  // в бандле роняет её (поймано на PR #431). Метка версии для BuildInfoLine
+  // берётся в рантайме из document.lastModified (HTTP Last-Modified).
+  plugins: [
+    react(),
+    // PWA-каркас (docs/PWA_PLAN.md фаза 1, docs/MULTI_HOST_PLAN.md шаг 3).
+    // injectManifest, не generateSW — фаза 4 добавит свой push-handler в
+    // sw.ts, переезд стратегии посреди пути был бы лишней переделкой.
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: 'autoUpdate',
+      // Регистрирует schema-miniapp/src/registerServiceWorker.ts (только в
+      // web-хосте, см. её же комментарий) — не сгенерированный клиент плагина.
+      injectRegister: false,
+      manifest: {
+        name: 'Всё по схеме',
+        short_name: 'Всё по схеме',
+        description:
+          'Дневник состояний, тест по схемам и практики между сессиями.',
+        lang: 'ru',
+        display: 'standalone',
+        // Scope как у корневого манифеста сайта (webapp/public/manifest.webmanifest,
+        // оба описывают ОДНО приложение: id = start_url = /app/). Разные scope
+        // давали два вида установки: у поставленной из /app/ переходы на сайт
+        // открывались out-of-scope браузерной вкладкой, display-mode: standalone
+        // там не матчился — и баннер «поставь приложение» показывался внутри
+        // уже установленного. Сверка — webapp/src/pwaManifest.test.ts.
+        scope: '/',
+        start_url: '/app/',
+        // Светлая тема мини-аппа (src/index.css, html[data-theme="light"]) —
+        // манифест один, тёмную отрабатывает meta theme-color в index.html.
+        theme_color: '#faf7f3',
+        background_color: '#faf7f3',
+        icons: [
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      injectManifest: {
+        // Только оболочка сборки — html/js/css. /api/* НИКОГДА не кэшируется
+        // (терапевтические данные — правило PWA_PLAN 1.1/CLAUDE.md): прекэш
+        // строится из билд-ассетов (self.__WB_MANIFEST), путей API тут нет
+        // и быть не может — этот glob их физически не видит.
+        globPatterns: ['**/*.{js,css,html}'],
+        // Имена ассетов без контент-хеша (см. build ниже), поэтому дефолт
+        // здесь опасен: workbox писал бы в прекэш `revision: null` и считал
+        // бандл неизменяемым — PWA навсегда осталась бы на первой версии.
+        // Паттерн ни с чем не совпадает ⇒ revision считается по содержимому.
+        dontCacheBustURLsMatching: /(?!)/,
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   base: '/app/',
+  // Имена ассетов БЕЗ контент-хеша: бастить нечего (ServeStaticModule отдаёт
+  // статику с max-age=0 и ETag), а платили за хеш конфликтами — dist в git,
+  // поэтому у каждой пары параллельных PR имя расходилось и git ловил
+  // rename/rename, который merge-драйвер не чинит. Инварианты под тестом:
+  // src/test-support/gates/miniapp-dist.spec.ts.
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      },
+    },
+  },
   // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
   // node_modules → два инстанса React (hooks dispatcher = null).
   resolve: { dedupe: ['react', 'react-dom'] },
@@ -24,6 +110,9 @@ export default defineConfig({
         'src/**/*.test.tsx',
         'src/main.tsx',
         'src/vite-env.d.ts',
+        // Воркер-скрипт: выполняется в SW-контексте, не в jsdom. Логика —
+        // три строчки precache + message-listener, тестировать нечего.
+        'src/sw.ts',
       ],
     },
   },

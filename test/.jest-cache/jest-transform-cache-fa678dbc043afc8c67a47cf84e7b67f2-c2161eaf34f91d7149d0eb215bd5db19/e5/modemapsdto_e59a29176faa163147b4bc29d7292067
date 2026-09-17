@@ -1,0 +1,81 @@
+e00ebbed404fa4f4b652e6e5d9379f0d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateModeMapDto = exports.CreateModeMapDto = exports.CustomModeDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для карт режимов и кастомных режимов терапевта (аудит 2026-07, 2г /
+ * правило №6 CLAUDE.md). `nodeType`/`kind` — сервис сам подставляет
+ * дефолт при неизвестном значении (не отклоняет запрос), поэтому здесь
+ * оставлены слабой строкой, а не `@IsIn(...)`, чтобы не менять поведение
+ * с «тихого фолбэка» на «400».
+ */
+class CustomModeDto {
+    name;
+    emoji;
+    nodeType;
+}
+exports.CustomModeDto = CustomModeDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CustomModeDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CustomModeDto.prototype, "emoji", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CustomModeDto.prototype, "nodeType", void 0);
+class CreateModeMapDto {
+    title;
+    kind;
+}
+exports.CreateModeMapDto = CreateModeMapDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateModeMapDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateModeMapDto.prototype, "kind", void 0);
+class UpdateModeMapDto {
+    title;
+    nodes;
+    edges;
+}
+exports.UpdateModeMapDto = UpdateModeMapDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateModeMapDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(200),
+    __metadata("design:type", Array)
+], UpdateModeMapDto.prototype, "nodes", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(500),
+    __metadata("design:type", Array)
+], UpdateModeMapDto.prototype, "edges", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vbW9kZS1tYXBzLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFBOEU7QUFFOUU7Ozs7OztHQU1HO0FBQ0gsTUFBYSxhQUFhO0lBR3hCLElBQUksQ0FBVTtJQUlkLEtBQUssQ0FBVTtJQUlmLFFBQVEsQ0FBVTtDQUNuQjtBQVpELHNDQVlDO0FBVEM7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OzJDQUNHO0FBSWQ7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OzRDQUNJO0FBSWY7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OytDQUNPO0FBR3BCLE1BQWEsZ0JBQWdCO0lBRzNCLEtBQUssQ0FBVTtJQUlmLElBQUksQ0FBVTtDQUNmO0FBUkQsNENBUUM7QUFMQztJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7K0NBQ0k7QUFJZjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7OENBQ0c7QUFHaEIsTUFBYSxnQkFBZ0I7SUFHM0IsS0FBSyxDQUFVO0lBS2YsS0FBSyxDQUFhO0lBS2xCLEtBQUssQ0FBYTtDQUNuQjtBQWRELDRDQWNDO0FBWEM7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OytDQUNJO0FBS2Y7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLDhCQUFZLEVBQUMsR0FBRyxDQUFDOzsrQ0FDQTtBQUtsQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxHQUFHLENBQUM7OytDQUNBIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3RoZXJhcHkvZHRvL21vZGUtbWFwcy5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgQXJyYXlNYXhTaXplLCBJc0FycmF5LCBJc09wdGlvbmFsLCBJc1N0cmluZyB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICogRFRPINC00LvRjyDQutCw0YDRgiDRgNC10LbQuNC80L7QsiDQuCDQutCw0YHRgtC+0LzQvdGL0YUg0YDQtdC20LjQvNC+0LIg0YLQtdGA0LDQv9C10LLRgtCwICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvXG4gKiDQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZCkuIGBub2RlVHlwZWAvYGtpbmRgIOKAlCDRgdC10YDQstC40YEg0YHQsNC8INC/0L7QtNGB0YLQsNCy0LvRj9C10YJcbiAqINC00LXRhNC+0LvRgiDQv9GA0Lgg0L3QtdC40LfQstC10YHRgtC90L7QvCDQt9C90LDRh9C10L3QuNC4ICjQvdC1INC+0YLQutC70L7QvdGP0LXRgiDQt9Cw0L/RgNC+0YEpLCDQv9C+0Y3RgtC+0LzRgyDQt9C00LXRgdGMXG4gKiDQvtGB0YLQsNCy0LvQtdC90Ysg0YHQu9Cw0LHQvtC5INGB0YLRgNC+0LrQvtC5LCDQsCDQvdC1IGBASXNJbiguLi4pYCwg0YfRgtC+0LHRiyDQvdC1INC80LXQvdGP0YLRjCDQv9C+0LLQtdC00LXQvdC40LVcbiAqINGBIMKr0YLQuNGF0L7Qs9C+INGE0L7Qu9Cx0Y3QutCwwrsg0L3QsCDCqzQwMMK7LlxuICovXG5leHBvcnQgY2xhc3MgQ3VzdG9tTW9kZUR0byB7XG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgbmFtZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIGVtb2ppPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgbm9kZVR5cGU/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBDcmVhdGVNb2RlTWFwRHRvIHtcbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICB0aXRsZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIGtpbmQ/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBVcGRhdGVNb2RlTWFwRHRvIHtcbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICB0aXRsZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0FycmF5KClcbiAgQEFycmF5TWF4U2l6ZSgyMDApXG4gIG5vZGVzPzogdW5rbm93bltdO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzQXJyYXkoKVxuICBAQXJyYXlNYXhTaXplKDUwMClcbiAgZWRnZXM/OiB1bmtub3duW107XG59XG4iXSwidmVyc2lvbiI6M30=

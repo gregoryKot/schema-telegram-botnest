@@ -82,8 +82,14 @@ export class PaymentController {
       try {
         await this.subscription.markChargePaidByInvId(id, paid);
       } catch (e) {
+        // Same asymmetry as booking below: the client PAID, but the charge
+        // didn't get recorded. Without this alert it was invisible — only
+        // this.logger.error, which nobody reads until a person complains.
         this.logger.error(
-          `Subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+          `PAID but subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+        );
+        await this.notify.alertAdmin(
+          `🚨 <b>Оплата прошла, но подписка (InvId ${id}) не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
         );
         return `FAIL${invId}`;
       }
@@ -94,7 +100,10 @@ export class PaymentController {
         await this.donation.markPaidByInvId(id, paid);
       } catch (e) {
         this.logger.error(
-          `Donation mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+          `PAID but donation mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+        );
+        await this.notify.alertAdmin(
+          `🚨 <b>Оплата прошла, но донат (InvId ${id}) не подтвердился</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
         );
         return `FAIL${invId}`;
       }

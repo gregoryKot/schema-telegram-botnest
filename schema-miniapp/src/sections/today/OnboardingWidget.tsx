@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserProfile } from '../../types';
 import { pressable } from '../../utils/a11y';
+import { hitboxStyle } from '../../utils/hitbox';
 import { Props } from './types';
 import {
   STEPS,
@@ -83,6 +84,8 @@ export function OnboardingWidget({
   const current =
     (selectedId ? STEPS.find((s) => s.id === selectedId) : null) ?? autoStep;
   const isCurrentDone = current.isDone(profile, ctx);
+  // Номер шага вместо картинки: он сам сообщает, где человек в цепочке.
+  const currentNo = STEPS.findIndex((s) => s.id === current.id) + 1;
   const isCurrentSkipped = skipped.includes(current.id) && !isCurrentDone;
 
   function handleAction() {
@@ -115,17 +118,10 @@ export function OnboardingWidget({
   }
 
   return (
-    <div
-      style={{
-        background: 'rgba(var(--fg-rgb),0.04)',
-        border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 20,
-        padding: '16px 18px',
-        overflow: 'hidden',
-      }}
-    >
+    // .card (--surface) вместо своего rgba(var(--fg-rgb),0.04) — единый
+    // ритм плотностей с карточками ниже (полировка 2026-08, п.4).
+    <div className="card" style={{ padding: '16px 18px', overflow: 'hidden' }}>
       <style>{`@keyframes obSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }`}</style>
-
       {/* Progress counter */}
       <div
         style={{
@@ -145,7 +141,7 @@ export function OnboardingWidget({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 10,
           }}
         >
@@ -153,7 +149,7 @@ export function OnboardingWidget({
             style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
@@ -163,7 +159,7 @@ export function OnboardingWidget({
               border: `1.5px solid color-mix(in srgb, ${current.color} 24%, transparent)`,
             }}
           >
-            {isCurrentDone ? '✓' : current.emoji}
+            {isCurrentDone ? '✓' : currentNo}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -201,13 +197,13 @@ export function OnboardingWidget({
       </div>
 
       {/* Buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 14 }}>
         {isCurrentDone ? (
           <div
             style={{
               flex: 1,
               padding: '11px 0',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               textAlign: 'center',
               background:
                 'color-mix(in srgb, var(--accent-green) 10%, transparent)',
@@ -226,11 +222,13 @@ export function OnboardingWidget({
             style={{
               flex: 1,
               padding: '11px 0',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: current.color,
-              color: '#fff',
+              // var(--on-accent): буквальный '#fff' в тёмной теме давал 2.6–3.2:1
+              // на всех пяти цветах категории (не проходит WCAG 4.5:1).
+              color: 'var(--on-accent)',
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',
@@ -244,7 +242,7 @@ export function OnboardingWidget({
             onClick={handleSkip}
             style={{
               padding: '11px 14px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.06)',
@@ -258,26 +256,29 @@ export function OnboardingWidget({
         )}
       </div>
 
-      {/* Step dots */}
+      {/* Step dots: зелёный «выполнено» — намеренно тот же --accent-green,
+          что и checkmark TodayFocusCard/«✓ Выполнено» выше (аудит 2026-08,
+          п.2 полировки: разобрано, не тронуто — см. prM-notes.md). */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
         {STEPS.map((s) => {
           const d = s.isDone(profile, ctx);
           const sk = skipped.includes(s.id) && !d;
           const cur = s.id === current.id;
+          const dotHitbox = hitboxStyle(cur ? 20 : 8, 8, 24);
           return (
             <div
               key={s.id}
+              aria-label={`Шаг «${s.title}»${d ? ', выполнен' : sk ? ', отложен' : ''}`}
               {...pressable(() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
               })}
-              style={{ cursor: 'pointer' }}
+              style={dotHitbox.outer}
             >
               <div
                 style={{
-                  width: cur ? 20 : 8,
-                  height: 8,
-                  borderRadius: 4,
+                  ...dotHitbox.inner,
+                  borderRadius: 'var(--r-4)',
                   transition: 'all 0.25s ease',
                   background: d
                     ? 'color-mix(in srgb, var(--accent-green) 65%, transparent)'

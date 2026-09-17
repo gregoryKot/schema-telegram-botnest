@@ -27,14 +27,14 @@ export function ViewCard({ viewing, modes, onClose }: ViewCardProps) {
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '16px',
           }}
         >
           {[
             {
               label: 'Режим',
-              value: `${modeInfo?.emoji ?? '🧩'} ${modeInfo?.label ?? viewing.mode}`,
+              value: modeInfo?.label ?? viewing.mode,
             },
             viewing.reflection
               ? { label: 'Рефлексия', value: viewing.reflection }
@@ -42,7 +42,7 @@ export function ViewCard({ viewing, modes, onClose }: ViewCardProps) {
             needInfo
               ? {
                   label: 'Потребность',
-                  value: `${needInfo.emoji} ${needInfo.label}`,
+                  value: needInfo.label,
                 }
               : null,
             viewing.action ? { label: 'Шаг', value: viewing.action } : null,

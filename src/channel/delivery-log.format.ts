@@ -11,6 +11,8 @@ export interface DeliveryRow {
   destination: string;
   ok: boolean;
   reason: string | null;
+  /** Фраза публикации — по ней повтор досылает то же самое. */
+  text?: string | null;
   createdAt: Date;
 }
 

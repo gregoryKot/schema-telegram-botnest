@@ -45,6 +45,15 @@ describe('BeliefCheckDto', () => {
     ).resolves.toContain('evidenceAgainst');
   });
 
+  it('evidenceFor: больше 50 элементов — отказ (L5, ArrayMaxSize)', async () => {
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        ...VALID,
+        evidenceFor: Array.from({ length: 51 }, (_, i) => `e${i}`),
+      }),
+    ).resolves.toContain('evidenceFor');
+  });
+
   it('пустое belief — отказ', async () => {
     await expect(
       errorsFor(BeliefCheckDto, { ...VALID, belief: '' }),

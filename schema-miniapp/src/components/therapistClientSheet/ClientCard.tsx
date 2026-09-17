@@ -26,12 +26,12 @@ export function ClientCard({
     .join('')
     .toUpperCase();
   const avatarColors = [
-    '#a78bfa',
-    '#60a5fa',
-    '#f472b6',
-    '#34d399',
-    '#fb923c',
-    '#facc15',
+    'var(--accent)',
+    'var(--accent-blue)',
+    'var(--accent-pink)',
+    'var(--accent-green)',
+    'var(--accent-orange)',
+    'var(--accent-yellow)',
   ];
   const avatarColor =
     avatarColors[Math.abs(c.telegramId) % avatarColors.length];
@@ -40,13 +40,13 @@ export function ClientCard({
       {...pressable(() => onOpen(c))}
       className="card"
       style={{
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         marginBottom: 8,
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
       }}
     >
       {/* Avatar */}

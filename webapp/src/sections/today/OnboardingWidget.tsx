@@ -10,7 +10,6 @@ const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
 
 interface StepDef {
   id: string;
-  emoji: string;
   color: string;
   title: string;
   description: string;
@@ -20,31 +19,31 @@ interface StepDef {
 }
 
 const STEPS: StepDef[] = [
-  { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
+  { id: 'ysq', color: 'var(--accent)',
     title: 'Тест на схемы',
     description: '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
-    isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },
-  { id: 'tracker', emoji: '📊', color: 'var(--c-slate)',
+    isDone: (p, ctx) => !!(p?.ysq?.completedAt) || !!(ctx?.hasSchemas) },
+  { id: 'tracker', color: 'var(--c-slate)',
     title: 'Оценка потребностей сегодня',
     description: 'Пять оценок – и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
-    detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
+    detail: 'Привязанность · Автономия · Выражение · Спонтанность · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
-  { id: 'diary', emoji: '📔', color: 'var(--accent-indigo)',
+  { id: 'diary', color: 'var(--accent-indigo)',
     title: 'Первая запись в дневнике',
     description: 'Зафиксировать момент, когда схема сработала – главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
     actionLabel: 'Открыть дневник',
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
-  { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
+  { id: 'notify', color: 'var(--c-clay)',
     title: 'Ежедневное напоминание',
     description: 'Одно уведомление в выбранное время – чтобы практика не держалась на памяти.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },
-  { id: 'childhood', emoji: '🌀', color: 'var(--c-moss)',
+  { id: 'childhood', color: 'var(--c-moss)',
     title: 'Колесо детства',
     description: 'Как удовлетворялись потребности в детстве – откуда пришли нынешние паттерны.',
     detail: '5 областей · связь с активными схемами',
@@ -111,10 +110,10 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
     setSelectedId(null);
   }
 
-  // Pending steps in order (not done, not postponed)
+  // Pending steps in order (not done, not postponed). Все отложены → пусты — но это не «нечего показывать».
   const pendingSteps = STEPS.filter(s => !s.isDone(profile, ctx) && !skipped.includes(s.id));
-  const visibleStep  = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep;
-  if (!visibleStep) return null;
+  const visibleStep = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep ?? null;
+  if (!visibleStep && skipped.length === 0) return null;
 
   return (
     <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
@@ -127,12 +126,18 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
       {STEPS.map(s => {
         const isDone    = s.isDone(profile, ctx);
         const isSkipped = skipped.includes(s.id) && !isDone;
-        const isCurrent = s.id === visibleStep.id;
+        const isCurrent = s.id === visibleStep?.id;
         return (
+          // Контейнер строки НЕ role="button" (axe nested-interactive): внутри
+          // живут настоящие кнопки «отложить»/«вернуть», а вложенный интерактив
+          // ломает скринридер — непонятно, что именно нажимается. Клавиатурный
+          // вход в шаг даёт заголовок-кнопка ниже; клик по всей строке остаётся
+          // для мыши/тапа.
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
           <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
-               {...pressable(() => setSelectedId(s.id))}>
+               onClick={() => setSelectedId(s.id)}>
             <span style={{
-              width: 14, height: 14, borderRadius: 4,
+              width: 14, height: 14, borderRadius: 'var(--r-4)',
               border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
               background: isDone ? 'var(--c-moss)' : 'transparent',
               flexShrink: 0, marginTop: 4,
@@ -140,20 +145,30 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
               fontSize: 9, color: '#fff',
             }}>{isDone ? '✓' : ''}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.6 : 1 }}>{s.title}</div>
+              {/* Заголовок — единственный таб-стоп строки (см. комментарий у
+                  контейнера). Приглушение выполненного шага — цветом, а не
+                  opacity: 0.6 давала 4.41:1 при норме 4.5 (axe, WCAG 1.4.3). */}
+              <div
+                className="text-md"
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); setSelectedId(s.id); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(s.id); } }}
+                style={{ fontWeight: 600, cursor: 'pointer', color: isDone ? 'var(--text-sub)' : undefined }}
+              >{s.title}</div>
               {isCurrent && !isDone && (
                 <div className="text-sm muted" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.description}</div>
               )}
             </div>
             {isCurrent && !isDone ? (
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexShrink: 0 }}>
                 <span
                   className="link"
                   style={{ cursor: 'pointer' }}
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleSkip(s); }}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSkip(s); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleSkip(s); } }}
                 >
                   отложить
                 </span>
@@ -162,7 +177,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleAction(s); }}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(s); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleAction(s); } }}
                 >
                   начать →
                 </span>

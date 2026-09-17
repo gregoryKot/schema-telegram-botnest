@@ -23,7 +23,11 @@ export function DisclaimerPrivacyStep({
       </div>
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 16,
+        }}
       >
         <div
           style={{
@@ -64,7 +68,7 @@ export function DisclaimerPrivacyStep({
         <DisclaimerCheckbox
           checked={c2}
           onToggle={() => setC2((p) => !p)}
-          label="Мне есть 18 лет, и я согласен(на) на обработку персональных данных — включая сведения о моём психоэмоциональном состоянии, которые я добровольно вношу, — согласно Политике конфиденциальности"
+          label="Мне есть 18 лет, и я принимаю обработку персональных данных — включая сведения о моём психоэмоциональном состоянии, которые я добровольно вношу, — согласно Политике конфиденциальности"
         />
       </div>
     </div>
