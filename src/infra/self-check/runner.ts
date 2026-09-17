@@ -49,6 +49,7 @@ export async function runProbes(
         critical: p.critical,
         ok: r.ok,
         detail: r.detail,
+        reportInHealth: p.reportInHealth !== false,
       };
     }),
   );

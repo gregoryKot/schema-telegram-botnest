@@ -51,7 +51,14 @@ describe('SelfCheckService.run', () => {
     const { service } = makeService();
     await service.run('test');
     expect(selfCheckState.get().results).toEqual([
-      { id: 'db', title: 'Проба db', critical: false, ok: true, detail: 'ок' },
+      {
+        id: 'db',
+        title: 'Проба db',
+        critical: false,
+        ok: true,
+        detail: 'ок',
+        reportInHealth: true,
+      },
     ]);
     expect(mockedNotify).not.toHaveBeenCalled();
   });

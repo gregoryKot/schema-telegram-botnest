@@ -28,6 +28,7 @@ vi.mock('../components/AppSections', () => ({
   AppSections: (p: ComponentProps<typeof AppSectionsT>) => (
     <div
       data-testid="app-sections"
+      data-inert={String(p.inert)}
       data-therapist-mode={String(p.therapistMode)}
       data-section={p.section}
       data-user-role={p.userRole}
@@ -263,8 +264,7 @@ vi.mock('../components/TrackerHistoryOverlay', () => ({
 // в шапке файла и в webapp-хелпере).
 import App from '../App';
 
-/** Рендерит App с чистым web-хостом (id 'web' → shouldShowLoginScreen()===true,
- *  useSafeTop/insets детерминированы, backButton — история браузера). */
+/** Рендерит App с чистым web-хостом (id 'web' → shouldShowLoginScreen()===true, useSafeTop/insets детерминированы, backButton — история браузера). */
 export function renderApp() {
   setHost(createWebHost());
   return render(<App />);

@@ -261,3 +261,23 @@ describe('App — новая запись дневника, инициирова
     );
   });
 });
+
+describe('App — anyOverlayOpen доезжает до AppSections как inert (аудит 2026-09)', () => {
+  it('оверлей закрыт → inert=false; открыт (tracker) → inert=true; закрыт снова → false', async () => {
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByTestId('app-sections')).toBeTruthy(),
+    );
+    expect(screen.getByTestId('app-sections').dataset.inert).toBe('false');
+
+    fireEvent.click(screen.getByTestId('app-sections-open-tracker'));
+    await waitFor(() =>
+      expect(screen.getByTestId('app-sections').dataset.inert).toBe('true'),
+    );
+
+    fireEvent.click(screen.getByTestId('app-overlays-close-tracker-overlay'));
+    await waitFor(() =>
+      expect(screen.getByTestId('app-sections').dataset.inert).toBe('false'),
+    );
+  });
+});

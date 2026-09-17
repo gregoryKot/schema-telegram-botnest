@@ -21,6 +21,7 @@ describe('formatSelfCheck', () => {
           critical: true,
           ok: true,
           detail: 'отвечает',
+          reportInHealth: true,
         },
         {
           id: 'telegram',
@@ -28,6 +29,7 @@ describe('formatSelfCheck', () => {
           critical: false,
           ok: true,
           detail: 'выключено',
+          reportInHealth: true,
         },
       ],
     };
@@ -47,6 +49,7 @@ describe('formatSelfCheck', () => {
           critical: true,
           ok: true,
           detail: 'отвечает',
+          reportInHealth: true,
         },
         {
           id: 'caldav',
@@ -54,6 +57,7 @@ describe('formatSelfCheck', () => {
           critical: false,
           ok: false,
           detail: 'обнаружение не нашло ни одного календаря',
+          reportInHealth: true,
         },
       ],
     };

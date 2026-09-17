@@ -134,6 +134,7 @@ function makeSheets(open = vi.fn()): UseSheetsReturn {
 function baseProps(overrides: Partial<Parameters<typeof AppSections>[0]> = {}) {
   return {
     prerenderedSections: new Set<Section>(),
+    inert: false,
     therapistMode: false,
     section: 'today' as const,
     needs: [],
@@ -295,6 +296,31 @@ describe('AppSections — колбэки SchemasSection/HelpSection/ProfileSecti
     expect(open).toHaveBeenCalledWith('trackerOverlay', {
       trackerNeedId: null,
     });
+  });
+});
+
+// `inert` на контейнере секций (App.tsx: anyOverlayOpen) — аудит 2026-09:
+// фон не должен читаться табом/скринридером сквозь оверлей поверх него.
+// Оверлеи — сиблинги AppSections в App.tsx (не дети), поэтому здесь рядом
+// рендерится собственный «оверлей»-заглушка, а не только AppSections сам
+// по себе, — проверяем и что фон помечен, и что сосед не задет.
+describe('AppSections — inert на контейнере, пока открыт оверлей-сиблинг', () => {
+  it('inert=false — контейнер не inert', async () => {
+    render(<AppSections {...baseProps({ inert: false })} />);
+    const today = await screen.findByText('TodaySection');
+    expect(today.closest('[inert]')).toBeNull();
+  });
+
+  it('inert=true — контейнер inert, сосед-«оверлей» рядом — нет', async () => {
+    render(
+      <>
+        <AppSections {...baseProps({ inert: true })} />
+        <div data-testid="sibling-overlay">overlay</div>
+      </>,
+    );
+    const today = await screen.findByText('TodaySection');
+    expect(today.closest('[inert]')).not.toBeNull();
+    expect(screen.getByTestId('sibling-overlay').closest('[inert]')).toBeNull();
   });
 });
 
