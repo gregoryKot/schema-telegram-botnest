@@ -95,7 +95,7 @@ export function PlanSheet({
       {phase === 'pick' && (
         <>
           {practicesFailed && (
-            <div style={{ marginBottom: 16 }}>
+            <div className="u-mb16">
               <LoadErrorBanner
                 message={tr(
                   'Не удалось загрузить твои практики — ниже только готовые варианты',
@@ -105,7 +105,7 @@ export function PlanSheet({
             </div>
           )}
           {allOptions.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
+            <div className="u-mb20">
               <SectionLabel>Мои практики</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {allOptions.map(({ text, isUser, id }) => (
@@ -126,7 +126,7 @@ export function PlanSheet({
             </div>
           )}
 
-          <div style={{ marginBottom: 8 }}>
+          <div className="u-mb8">
             <SectionLabel>
               {allOptions.length > 0
                 ? 'Или своя'
@@ -200,9 +200,9 @@ export function PlanSheet({
           </div>
 
           {/* Reminder time */}
-          <div style={{ marginBottom: 24 }}>
+          <div className="u-mb24">
             <SectionLabel>Напомнить завтра</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="u-col6">
               {REMINDER_OPTIONS.map((opt, i) => (
                 <div
                   key={i}
@@ -280,7 +280,7 @@ export function PlanSheet({
           </div>
 
           {/* ICS download */}
-          <div style={{ marginBottom: 16 }}>
+          <div className="u-mb16">
             <div
               onClick={handleIcsDownload}
               role="button"
@@ -302,9 +302,7 @@ export function PlanSheet({
                 cursor: 'pointer',
               }}
             >
-              <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                Добавить в календарь (.ics)
-              </span>
+              <span className="u-sub13">Добавить в календарь (.ics)</span>
             </div>
           </div>
 

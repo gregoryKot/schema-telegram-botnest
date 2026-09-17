@@ -18,13 +18,13 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
   } = detail;
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+    <div className="page-inner-wide u-pt40">
       <div className="doc-grid">
         <div>
           {/* Therapy goals – shown as a quiet quote */}
           {(localConcept.goals || concept?.goals) && (
             <div className="section">
-              <div className="eyebrow" style={{ marginBottom: 14 }}>Цель терапии</div>
+              <div className="eyebrow u-mb14">Цель терапии</div>
               <div style={{ fontSize: 22, lineHeight: 1.45, color: 'var(--text)', letterSpacing: '-0.02em', maxWidth: 720, fontWeight: 400 }}>
                 {(localConcept.goals || concept?.goals) as string}
               </div>
@@ -37,7 +37,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           {/* Active schemas by domain */}
           {activeSchemaIds.length > 0 && (
             <div className="section">
-              <div className="section-head" style={{ marginBottom: 20 }}>
+              <div className="section-head u-mb20">
                 <h3>Активные схемы</h3>
                 <span className="hint">{activeSchemaIds.length} в работе</span>
               </div>
@@ -66,7 +66,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           {/* Mode map */}
           {activeModeIds.length > 0 && (
             <div className="section">
-              <div className="section-head" style={{ marginBottom: 20 }}>
+              <div className="section-head u-mb20">
                 <h3>Карта режимов</h3>
                 <span className="hint">{activeModeIds.length} в работе</span>
               </div>
@@ -77,7 +77,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     <div key={group.id}>
                       <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
                       {active.length === 0 ? (
-                        <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>–</div>
+                        <div className="u-faint13">–</div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                           {active.map(m => (
@@ -95,7 +95,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           {/* Last session note */}
           {notes.length > 0 && (
             <div className="section">
-              <div className="section-head" style={{ marginBottom: 16 }}>
+              <div className="section-head u-mb16">
                 <h3>Заметка сессии</h3>
                 <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('sessions')}>Все заметки →</button>
               </div>
@@ -107,11 +107,11 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           {/* Client diary entries preview */}
           {clientDiary.length > 0 && (
             <div className="section">
-              <div className="section-head" style={{ marginBottom: 16 }}>
+              <div className="section-head u-mb16">
                 <h3>Последние записи клиента</h3>
                 <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('client_notes')}>Все записи →</button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+              <div className="u-col8">
                 {clientDiary.slice(0, 5).map((entry, i) => {
                   let color: string;
                   let title: string;
@@ -138,10 +138,10 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                   }
                   return (
                     <div key={i} style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start', padding: '10px 14px', borderRadius: 'var(--r-10)', background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="u-fill">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 2 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{typeLabel}</span>
+                          <span className="u-h13">{title}</span>
+                          <span className="u-faint11">{typeLabel}</span>
                         </div>
                         {entry.excerpt && (
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 480 }}>

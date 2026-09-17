@@ -128,7 +128,7 @@ export function LinkAccountSection() {
 
 function Frame({ pad, children }: { pad: number; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ДАННЫЕ ИЗ ДРУГОГО АККАУНТА</SettingsLabel>
       <div
         className="card"

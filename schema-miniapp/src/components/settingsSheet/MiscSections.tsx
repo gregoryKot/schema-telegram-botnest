@@ -32,7 +32,7 @@ export function NameSection({
 }: NameProps) {
   const tr = useTr();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>{tr('КАК ТЕБЯ ЗОВУТ', 'КАК ВАС ЗОВУТ')}</SettingsLabel>
       <div
         className="card"
@@ -116,12 +116,9 @@ export function ShareSection({ setExportText }: ShareProps) {
   const [invite, setInvite] = useState(false);
   const exportAutoCopy = useCopyToClipboard();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
-      <div
-        className="card"
-        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-      >
+      <div className="card u-r16-clip">
         <Row
           label="Пригласить друга"
           sub="Карточка со ссылкой на бота"
@@ -169,12 +166,9 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
   const tr = useTr();
   const dataExport = useDataExport({ authedFetch });
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ДАННЫЕ</SettingsLabel>
-      <div
-        className="card"
-        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-      >
+      <div className="card u-r16-clip">
         <Row label="О данных и конфиденциальности" onClick={onPrivacy} />
         <Row
           label={

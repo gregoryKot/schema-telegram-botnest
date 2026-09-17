@@ -77,11 +77,9 @@ export function GratitudeEntrySheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div className="d-caps" style={{ marginBottom: 14 }}>
-          Дневник благодарности · {dateLabel}
-        </div>
-        <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+      <div className="u-pt4">
+        <div className="d-caps u-mb14">Дневник благодарности · {dateLabel}</div>
+        <div className="d-display u-e21">
           За что есть благодарность сегодня?
         </div>
         <div
@@ -151,7 +149,7 @@ export function GratitudeEntrySheet({
           </button>
         )}
 
-        <div style={{ marginTop: 12 }}>
+        <div className="u-mt12">
           <PrimaryAction
             label={saving ? 'Сохраняю…' : 'Сохранить'}
             hint={tr(

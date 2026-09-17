@@ -19,13 +19,13 @@ export function PhraseShareCard() {
     <>
     <hr className="hr-soft" style={{ margin: '28px 0' }} />
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div className="u-between-mb10">
         <div className="eyebrow">Фраза для себя</div>
         {phrase && <SharePillButton onClick={() => setShowShare(true)} label="Поделиться фразой" />}
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+        <div className="u-col8">
           <Skeleton width="100%" height={13} />
           <Skeleton width="75%" height={13} />
         </div>

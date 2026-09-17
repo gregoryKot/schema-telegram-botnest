@@ -31,7 +31,7 @@ export function PhraseRewriteStep({
   const verdict = buildVerdict(marks);
   return (
     <>
-      <div className="aside-card" style={{ marginBottom: 20 }}>
+      <div className="aside-card u-mb20">
         <div className="aside-card-eyebrow">Вердикт</div>
         <h3>{verdict.emoji} {verdict.title}</h3>
         <p className="body">{verdict.text}</p>

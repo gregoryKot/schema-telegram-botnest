@@ -18,9 +18,7 @@ export function PracticeOptionRow({
   onDelete: () => void;
 }) {
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
-    >
+    <div className="u-ac8">
       <div
         onClick={onSelect}
         role="button"

@@ -61,7 +61,7 @@ export function NeedDetailSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         {/* Header */}
         <div
           style={{
@@ -92,11 +92,7 @@ export function NeedDetailSheet({
             >
               {need.name}
             </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              {need.subtitle}
-            </div>
+            <div className="u-sub12-mt2">{need.subtitle}</div>
           </div>
         </div>
 
@@ -158,7 +154,7 @@ export function NeedDetailSheet({
 
         {/* Related schemas */}
         {relatedSchemas.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
+          <div className="u-mb16">
             <div
               style={{
                 fontSize: 11,
@@ -171,7 +167,7 @@ export function NeedDetailSheet({
             >
               Связанные схемы
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="u-col6">
               {relatedSchemas.map((s) => (
                 <div
                   key={s.id}
@@ -186,16 +182,8 @@ export function NeedDetailSheet({
                   }}
                 >
                   <IdentityDot color={s.domainColor} size={10} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                      }}
-                    >
-                      {s.name}
-                    </div>
+                  <div className="u-fill">
+                    <div className="u-h13">{s.name}</div>
                     <div
                       style={{
                         fontSize: 11,
@@ -229,13 +217,7 @@ export function NeedDetailSheet({
           >
             {level === 'low' ? 'Что поможет сейчас' : 'Практика'}
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-10)',
-            }}
-          >
+          <div className="u-col10">
             {tips.map((tip, i) => (
               <div
                 key={i}

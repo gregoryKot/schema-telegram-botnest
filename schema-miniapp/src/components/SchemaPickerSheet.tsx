@@ -48,7 +48,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -74,7 +74,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
         </div>
 
         {SCHEMA_DOMAINS.map((domain) => (
-          <div key={domain.id} style={{ marginBottom: 18 }}>
+          <div key={domain.id} className="u-mb18">
             <div
               style={{
                 fontSize: 11,
@@ -88,13 +88,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             >
               {domain.domain}
             </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-4)',
-              }}
-            >
+            <div className="u-col4">
               {domain.schemas.map((s) => {
                 const active = ids.includes(s.id);
                 return (
@@ -135,7 +129,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                         marginTop: 2,
                       }}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="u-fill">
                       <div
                         style={{
                           fontSize: 14,

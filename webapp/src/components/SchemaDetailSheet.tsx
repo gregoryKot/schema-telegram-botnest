@@ -121,7 +121,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
       {beliefs.length > 0 && (
         <div className="prompt">
           <div className="prompt-num">·</div>
-          <div style={{ width: '100%' }}>
+          <div className="u-w100">
             <div className="prompt-label">Типичные убеждения</div>
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
               {beliefs.map((b, i) => (

@@ -90,7 +90,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         {/* Progress */}
         <div style={{ display: 'flex', gap: 5, marginBottom: 6 }}>
           {STEP_ORDER.map((_, i) => (
@@ -161,16 +161,8 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
             🔍
           </div>
           <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Проверить убеждение
-            </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              Правда ли это на самом деле?
-            </div>
+            <div className="u-h17">Проверить убеждение</div>
+            <div className="u-sub12-mt2">Правда ли это на самом деле?</div>
           </div>
         </div>
 
@@ -233,7 +225,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
         )}
 
         {(step === 'reframe' || step === 'belief') && (
-          <div style={{ marginTop: 12 }}>
+          <div className="u-mt12">
             <TherapyNote compact />
           </div>
         )}

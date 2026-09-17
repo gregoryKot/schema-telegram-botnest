@@ -124,7 +124,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
               Тест на схемы
             </h1>
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+            <div className="u-sub14-lh15">
               Паттерны мышления и поведения, сложившиеся в детстве
             </div>
           </div>
@@ -137,7 +137,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             ].map(([title, desc]) => (
               <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-14)', padding: '12px 16px' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
+                  <div className="u-h14">{title}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 1 }}>{desc}</div>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
           {hasProgress ? (
             <>
-              <button onClick={handleContinue} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
+              <button onClick={handleContinue} className="ex-btn ex-btn-primary u-mb10">
                 Продолжить ({progressAnswered} из 116)
               </button>
               <button onClick={handleStartFresh} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 'var(--r-14)', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>
@@ -180,7 +180,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </button>
             </>
           ) : (
-            <button onClick={handleStartFresh} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
+            <button onClick={handleStartFresh} className="ex-btn ex-btn-primary u-mb10">
               Начать тест
             </button>
           )}
@@ -204,12 +204,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             <YsqResultTopBar tr={tr} onShare={() => setShowShare(true)} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
 
             {/* Header */}
-            <div style={{ marginBottom: 16 }}>
+            <div className="u-mb16">
               <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 4, lineHeight: 1.2 }}>
                 {activeLabel}
               </h1>
               {dateLabel && (
-                <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Пройдено {dateLabel}</div>
+                <div className="u-faint12">Пройдено {dateLabel}</div>
               )}
             </div>
 
@@ -221,8 +221,8 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
             {/* Active schemas grouped by domain */}
             {activeByDomain.map(domain => (
-              <div key={domain.needId} style={{ marginBottom: 20 }}>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>
+              <div key={domain.needId} className="u-mb20">
+                <div className="eyebrow u-mb10">
                   {domain.label}
                 </div>
                 {domain.schemas.map(schema => {
@@ -266,7 +266,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 'var(--r-10)', padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}</span>
+                        <span className="u-sub13-lh15">{ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}</span>
                       </div>
 
                       <div
@@ -304,7 +304,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                   <span style={{ fontSize: 12 }}>{inactiveExpanded ? '▲' : '▼'}</span>
                 </button>
                 {inactiveExpanded && (
-                  <div style={{ marginTop: 8 }}>
+                  <div className="u-mt8">
                     {inactiveSchemas.map(schema => {
                       const s = scores[schema.name];
                       // «На грани»: средний балл близок к порогу 4 — жёлтым.
@@ -340,11 +340,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
             {/* History timeline */}
             {history.length >= 2 && (
-              <div style={{ marginBottom: 20 }}>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>
+              <div className="u-mb20">
+                <div className="eyebrow u-mb10">
                   История прохождений
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+                <div className="u-col8">
                   {history.map((entry, idx) => {
                     const entryActive = countActiveInHistory(entry);
                     const prevEntryItem = history[idx + 1];
@@ -355,7 +355,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                     return (
                       <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-12)' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: idx === 0 ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)', flexShrink: 0 }} />
-                        <div style={{ flex: 1 }}>
+                        <div className="u-flex1">
                           <div style={{ fontSize: 13, color: idx === 0 ? 'var(--text)' : 'var(--text-sub)', fontWeight: idx === 0 ? 600 : 400 }}>
                             {entryActive} {entryActive === 1 ? 'схема' : entryActive < 5 ? 'схемы' : 'схем'}
                             {idx === 0 && <span style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 6 }}>сейчас</span>}
@@ -366,7 +366,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                             {entryDelta > 0 ? '+' : ''}{entryDelta}
                           </span>
                         )}
-                        <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{entryDate}</div>
+                        <div className="u-faint12">{entryDate}</div>
                       </div>
                     );
                   })}
@@ -374,14 +374,14 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
+            <button onClick={goBack} className="ex-btn ex-btn-primary u-mb10">
               Сохранить и закрыть
             </button>
 
             {retakeConfirm ? (
               <div style={{ background: 'rgba(255,100,100,0.08)', borderRadius: 'var(--r-12)', padding: '14px 16px' }}>
                 <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 12 }}>Результаты будут удалены. Точно начать заново?</div>
-                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                <div className="u-row8">
                   <button onClick={() => setRetakeConfirm(false)} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 'var(--r-10)', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>Отмена</button>
                   <button onClick={handleRetake} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 'var(--r-10)', background: 'rgba(255,100,100,0.2)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Начать заново</button>
                 </div>

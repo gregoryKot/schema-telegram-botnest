@@ -56,7 +56,7 @@ export function NeedTodaySheet({
       />
 
       {/* Section 5: Slider — at top for immediate access */}
-      <div style={{ marginBottom: 28 }}>
+      <div className="u-mb28">
         <div
           style={{
             display: 'flex',
@@ -102,7 +102,7 @@ export function NeedTodaySheet({
       )}
 
       {/* Section 1: Question */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="u-mb20">
         <SectionLabel>{tr('Спроси себя', 'Спросите себя')}</SectionLabel>
         <div
           style={{
@@ -175,11 +175,7 @@ export function NeedTodaySheet({
               <div style={{ fontSize: 14, fontWeight: 500, color }}>
                 Сделать завтра что-то для себя
               </div>
-              <div
-                style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-              >
-                Один шаг — и напомним
-              </div>
+              <div className="u-sub12-mt2">Один шаг — и напомним</div>
             </div>
             <div style={{ fontSize: 18, color: color + 'aa', flexShrink: 0 }}>
               ›
@@ -214,15 +210,7 @@ export function NeedTodaySheet({
                 >
                   Раздел Помощь
                 </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text-sub)',
-                    marginTop: 2,
-                  }}
-                >
-                  Инструменты прямо сейчас
-                </div>
+                <div className="u-sub12-mt2">Инструменты прямо сейчас</div>
               </div>
               <div
                 style={{

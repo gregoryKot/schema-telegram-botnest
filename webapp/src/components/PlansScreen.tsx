@@ -48,15 +48,15 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const completed = (plans ?? []).filter(p => p.done !== null);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div className="u-sheet">
       <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>
-              <span style={{ color: 'var(--accent)' }}>● </span>Планы
+            <div className="eyebrow u-mb8">
+              <span className="u-accent">● </span>Планы
             </div>
-            <h1 className="hub-title" style={{ marginBottom: 8 }}>История<br /><span className="it">планов</span></h1>
+            <h1 className="hub-title u-mb8">История<br /><span className="it">планов</span></h1>
             {plans !== null && plans.length > 0 && (
               <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
             )}
@@ -112,11 +112,11 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           <>
             {/* Pending plans */}
             {pending.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>
+              <div className="u-mb24">
+                <div className="eyebrow u-mb10">
                   Ожидают выполнения
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+                <div className="u-col10">
                   {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -125,10 +125,10 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             {/* Completed plans */}
             {completed.length > 0 && (
               <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>
+                <div className="eyebrow u-mb10">
                   Выполненные
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+                <div className="u-col10">
                   {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -164,14 +164,14 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
       overflow: 'hidden',
     }}>
       {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div className="u-between-mb10">
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           {needData && <IdentityDot id={plan.needId} size={12} />}
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>·</span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          <span className="u-faint11">·</span>
+          <span className="u-faint11">
             {formatDate(plan.scheduledDate)}
           </span>
         </div>
@@ -185,7 +185,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+        <div className="u-row8">
           <button onClick={() => checkin(true)} style={{
             flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
             background: 'rgba(52,211,153,0.12)', outline: '1px solid rgba(52,211,153,0.22)',

@@ -23,7 +23,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowNotesSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,

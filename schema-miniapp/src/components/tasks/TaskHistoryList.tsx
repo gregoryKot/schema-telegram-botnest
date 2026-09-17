@@ -69,7 +69,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             >
               {task.done === true ? '✓' : '×'}
             </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               <div
                 style={{
                   fontSize: full ? 13 : 12,

@@ -38,7 +38,7 @@ export function ModesTab() {
       </p>
 
       {MODES.map((g) => (
-        <div key={g.group} style={{ marginBottom: 24 }}>
+        <div key={g.group} className="u-mb24">
           <div className="eyebrow" style={{ color: g.color, marginBottom: 12 }}>{g.group}</div>
           {g.items.map((m) => (
             <div key={m.name} style={{ borderBottom: '1px solid var(--line)', padding: '16px 0' }}>
@@ -66,7 +66,7 @@ export function ModesTab() {
           <div className="page">
             <div className="page-inner" style={{ paddingTop: 48 }}>
               <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>Режим прямо сейчас</div>
-              <h1 className="hub-title" style={{ marginBottom: 8 }}>{tr('Как ты', 'Как вы')}<br /><span className="it">сейчас?</span></h1>
+              <h1 className="hub-title u-mb8">{tr('Как ты', 'Как вы')}<br /><span className="it">сейчас?</span></h1>
               <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 36 }}>{tr('Выбери самое близкое ощущение', 'Выберите самое близкое ощущение')}</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-10)' }}>
                 {MODE_CHECKIN.map((item) => (
@@ -107,7 +107,7 @@ export function ModesTab() {
                 {checkinMode.mode}
               </h1>
               <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)', background: 'color-mix(in srgb, var(--accent) 6%, transparent)', marginBottom: 32 }}>
-                <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Что помогает</div>
+                <div className="aside-card-eyebrow u-accent">Что помогает</div>
                 <p className="body" style={{ margin: 0 }}>{checkinMode.tip}</p>
               </div>
               <div className="ex-foot" style={{ padding: 0 }}>

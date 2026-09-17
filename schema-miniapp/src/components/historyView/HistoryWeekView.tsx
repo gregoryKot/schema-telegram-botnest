@@ -38,9 +38,7 @@ export function HistoryWeekView({
         gap: 'var(--space-8)',
       }}
     >
-      <div className="section-label" style={{ marginBottom: 4 }}>
-        За {days} дней
-      </div>
+      <div className="section-label u-mb4">За {days} дней</div>
 
       {needs.map((need) => (
         <SparklineRow
@@ -68,10 +66,8 @@ export function HistoryWeekView({
               marginBottom: 10,
             }}
           >
-            <strong style={{ color: 'var(--text)' }}>
-              {needsLow[0].chartLabel}
-            </strong>{' '}
-            остаётся низкой несколько дней
+            <strong className="u-fg">{needsLow[0].chartLabel}</strong> остаётся
+            низкой несколько дней
             {!isTherapist &&
               ' — разобраться с живым человеком рядом бывает легче'}
             .

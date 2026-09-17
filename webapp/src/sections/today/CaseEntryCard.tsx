@@ -27,8 +27,8 @@ export function CaseEntryCard({
 
   return (
     <div className="aside-card" style={{ margin: '0 0 32px' }}>
-      <h3 style={{ marginBottom: 8 }}>{started ? 'Что сегодня зацепило?' : 'Что это было'}</h3>
-      <p className="body" style={{ marginBottom: 20 }}>
+      <h3 className="u-mb8">{started ? 'Что сегодня зацепило?' : 'Что это было'}</h3>
+      <p className="body u-mb20">
         {started
           ? 'Крупное необязательно — хватит мелочи: сообщение, взгляд, тишина в ответ.'
           : tr(

@@ -40,12 +40,11 @@ export function SelfMapLane({
         lane.items.map((item) => (
           <div
             key={item.modeId}
-            className="list-line"
-            style={{ cursor: 'pointer' }}
+            className="list-line u-pointer"
             {...pressable(() => onPickMode(item.modeId))}
           >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-md" style={{ fontWeight: 600 }}>{item.name}</div>
+            <div className="u-fill">
+              <div className="text-md u-w600">{item.name}</div>
               <div className="text-sm muted" style={{ marginTop: 2 }}>
                 {item.dormant
                   ? `Не появлялся в записях ${item.daysSince} дней`

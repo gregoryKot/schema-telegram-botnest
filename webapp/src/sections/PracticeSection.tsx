@@ -90,8 +90,8 @@ function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onAdd }: {
       <div style={{ overflowY: 'auto', padding: '32px 24px 80px', maxWidth: 560, margin: '0 auto', width: '100%' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, marginBottom: 24 }}>Все цели</h1>
         {tasks.map(t => (
-          <div key={t.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => onOpen(t))}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div key={t.id} className="list-line u-pointer" {...pressable(() => onOpen(t))}>
+            <div className="u-fill">
               <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(t)}</div>
               {t.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(t.dueDate)}</div>}
             </div>
@@ -103,7 +103,7 @@ function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onAdd }: {
             <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
             {taskHistory.map(t => (
               <div key={t.id} className="list-line" style={{ opacity: 0.5 }}>
-                <div style={{ flex: 1 }}><div className="text-sm">{resolveText(t)}</div></div>
+                <div className="u-flex1"><div className="text-sm">{resolveText(t)}</div></div>
                 <span className="text-xs faint">{t.done === true ? 'готово' : 'отменено'}</span>
               </div>
             ))}
@@ -230,7 +230,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     );
   }
   if (introModeId) return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div className="u-sheet">
       <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
     </div>
   );
@@ -242,10 +242,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     <div className="page-inner-wide">
 
       {/* Header */}
-      <div className="eyebrow" style={{ marginBottom: 8 }}>
-        <span style={{ color: 'var(--accent)' }}>● </span>Практика
+      <div className="eyebrow u-mb8">
+        <span className="u-accent">● </span>Практика
       </div>
-      <h1 className="hub-title" style={{ marginBottom: 8 }}>
+      <h1 className="hub-title u-mb8">
         Упражнения<br /><span className="it">и задания</span>
       </h1>
       <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
@@ -254,7 +254,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {sessionBanner && (
         <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
           {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
-          {sessionBanner.partnerName && <span style={{ color: 'var(--text-faint)' }}> · с {sessionBanner.partnerName}</span>}
+          {sessionBanner.partnerName && <span className="u-faint"> · с {sessionBanner.partnerName}</span>}
         </div>
       )}
 
@@ -273,8 +273,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             </div>
           )}
           {therapistTasks.map(task => (
-            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div key={task.id} className="list-line u-pointer" {...pressable(() => openTask(task))}>
+              <div className="u-fill">
                 <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 4 }}>от терапевта</div>
                 <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
                 {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
@@ -287,7 +287,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       {/* Exercise library */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · {EXERCISES.length} упражнений</div>
+        <div className="eyebrow u-mb20">Библиотека · {EXERCISES.length} упражнений</div>
         <div className="ex-grid">
           {EXERCISES.map(ex => {
             const s = stats[ex.id];
@@ -347,8 +347,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           </div>
         ) : (
           myGoals.slice(0, 4).map(task => (
-            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div key={task.id} className="list-line u-pointer" {...pressable(() => openTask(task))}>
+              <div className="u-fill">
                 <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
                 {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
               </div>
@@ -359,7 +359,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div style={{ display: 'flex', gap: 18, marginTop: 16, alignItems: 'center' }}>
           <button className="btn btn-secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
           {(myGoals.length > 4 || taskHistory.length > 0) && (
-            <span className="link" style={{ cursor: 'pointer' }} {...pressable(() => setShowAllGoals(true))}>все цели →</span>
+            <span className="link u-pointer" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
           )}
         </div>
       </div>
@@ -371,10 +371,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
           { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
         ].map(item => (
-          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} {...pressable(item.onClick)}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div key={item.label} className="list-line u-pointer" {...pressable(item.onClick)}>
+            <div className="u-fill">
               <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
-              <div className="text-sm muted" style={{ marginTop: 3 }}>{item.sub}</div>
+              <div className="text-sm muted u-mt3">{item.sub}</div>
             </div>
             <span className="link">открыть →</span>
           </div>

@@ -22,7 +22,7 @@ export function NoteTagsPicker({ selectedTags, onToggle }: Props) {
   return (
     <div className="prompt">
       <div className="prompt-num">·</div>
-      <div style={{ width: '100%' }}>
+      <div className="u-w100">
         <div className="prompt-label">Темы дня</div>
         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
           {TAGS.map(t => {

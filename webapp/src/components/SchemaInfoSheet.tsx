@@ -29,7 +29,7 @@ function NeedsTab() {
             <IdentityDot id={NEED_ORDER[i]} size={16} />
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--text)' }}>{n.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{n.subtitle}</div>
+              <div className="u-sub12-mt2">{n.subtitle}</div>
             </div>
           </div>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{n.desc}</p>
@@ -58,7 +58,7 @@ function SchemasTab({ highlight }: { highlight?: string }) {
         20 ранних дезадаптивных схем сгруппированы в 5 доменов. Схема – не диагноз, а паттерн, который когда-то помогал выжить.
       </p>
       {SCHEMA_DOMAINS.map((d) => (
-        <div key={d.domain} style={{ marginBottom: 10 }}>
+        <div key={d.domain} className="u-mb10">
           <div
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
             role="button" tabIndex={0}
@@ -70,7 +70,7 @@ function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
+            <div className="u-ac12">
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
               <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{d.domain}</span>
             </div>
@@ -187,7 +187,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
                 borderRadius: 'var(--r-16)', padding: '16px 20px', marginBottom: 12, cursor: 'pointer',
               }}>
               <span style={{ fontSize: 22 }}>⏸</span>
-              <div style={{ flex: 1 }}>
+              <div className="u-flex1">
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--accent-yellow)' }}>Незаконченный тест</div>
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>{tr('Нажми, чтобы продолжить с места остановки', 'Нажмите, чтобы продолжить с места остановки')}</div>
               </div>

@@ -17,7 +17,7 @@ export function formatDt(iso: string) {
 
 export function Field({ label, text }: { label: string; text: string }) {
   return (
-    <div style={{ marginBottom: 10 }}>
+    <div className="u-mb10">
       <div
         style={{
           fontSize: 11,

@@ -8,7 +8,7 @@ export function PickerRail({
   color: string;
 }) {
   return (
-    <div style={{ width: '100%' }}>
+    <div className="u-w100">
       <div
         style={{
           display: 'grid',

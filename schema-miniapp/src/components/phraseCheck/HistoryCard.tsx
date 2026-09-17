@@ -29,10 +29,8 @@ export function PhraseCheckHistoryCard({
 
   return (
     <BottomSheet onClose={onClose} zIndex={220}>
-      <div style={{ paddingTop: 4 }}>
-        <div className="section-label" style={{ marginBottom: 8 }}>
-          Разбор фразы
-        </div>
+      <div className="u-pt4">
+        <div className="section-label u-mb8">Разбор фразы</div>
 
         <div
           style={{
@@ -51,7 +49,7 @@ export function PhraseCheckHistoryCard({
 
         <PhraseMarkPills labels={markLabels} />
 
-        <div className="section-label" style={{ marginBottom: 8 }}>
+        <div className="section-label u-mb8">
           {tr('Твой ответ себе', 'Ваш ответ себе')}
         </div>
         <textarea

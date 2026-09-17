@@ -16,14 +16,8 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
   if (!(showHistory && concept && (concept.history as unknown[])?.length > 0))
     return null;
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-10)',
-        }}
-      >
+    <div className="u-mb16">
+      <div className="u-col10">
         {concept.history.map((snap, i) => {
           const snapSchemas = (snap.schemaIds ?? [])
             .map((id) => {
@@ -129,7 +123,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                 </div>
               )}
               {(snap.modeIds ?? []).length > 0 && (
-                <div style={{ marginBottom: 6 }}>
+                <div className="u-mb6">
                   {MODE_GROUPS.map((group) => {
                     const gm = group.items.filter((m) =>
                       (snap.modeIds ?? []).includes(m.id),

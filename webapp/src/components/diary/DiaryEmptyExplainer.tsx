@@ -63,7 +63,7 @@ export function DiaryEmptyExplainer({ filter }: { filter: 'all' | DiaryType }) {
             }}
           >
             <div style={{ fontSize: 13.5, lineHeight: 1.65 }}>
-              <div style={{ color: 'var(--text)' }}>{ex.what}</div>
+              <div className="u-fg">{ex.what}</div>
               <div style={{ color: 'var(--text-sub)', marginTop: 8 }}>
                 {ex.why}
               </div>

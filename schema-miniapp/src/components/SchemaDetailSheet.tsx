@@ -118,7 +118,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               marginTop: 7,
             }}
           />
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <div
               style={{
                 fontSize: 9,
@@ -223,7 +223,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
         )}
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={toggleSchema}
             style={{

@@ -17,7 +17,7 @@ export function HomeScreenSection() {
   const platform = homeScreenPlatform(getHost().platform);
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
       <div
         className="card"

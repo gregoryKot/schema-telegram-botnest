@@ -20,16 +20,10 @@ export function NeedStep({
 }: NeedStepProps) {
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Что за этим стоит?
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 3 из 4 — нужда
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Что за этим стоит?</div>
+          <div className="u-faint12-mt2">Шаг 3 из 4 — нужда</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         <div
@@ -96,7 +90,7 @@ export function NeedStep({
         >
           ←
         </button>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

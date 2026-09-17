@@ -99,7 +99,7 @@ export function SchemaDiaryWizard({
 
   return (
     <div style={{ marginTop: 18 }}>
-      <div style={{ marginBottom: 8 }}>
+      <div className="u-mb8">
         <WizardProgress
           segments={progressSegments}
           active={step}

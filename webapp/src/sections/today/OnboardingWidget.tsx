@@ -82,7 +82,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
         <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
           Все инструменты изучены – теперь начинается настоящая работа.
         </div>
-        <div style={{ marginTop: 14 }}>
+        <div className="u-mt14">
           <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
                   onClick={() => { localStorage.setItem(ONBOARDING_DONE_KEY, '1'); setDone(true); }}>
             скрыть →
@@ -144,7 +144,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 9, color: '#fff',
             }}>{isDone ? '✓' : ''}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               {/* Заголовок — единственный таб-стоп строки (см. комментарий у
                   контейнера). Приглушение выполненного шага — цветом, а не
                   opacity: 0.6 давала 4.41:1 при норме 4.5 (axe, WCAG 1.4.3). */}
@@ -163,8 +163,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
             {isCurrent && !isDone ? (
               <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexShrink: 0 }}>
                 <span
-                  className="link"
-                  style={{ cursor: 'pointer' }}
+                  className="link u-pointer"
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleSkip(s); }}
@@ -192,8 +191,8 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
       })}
 
       {pendingSteps.length === 0 && skipped.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <span className="link" style={{ cursor: 'pointer' }}
+        <div className="u-mt14">
+          <span className="link u-pointer"
                 {...pressable(() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); })}>
             вернуть отложенные →
           </span>

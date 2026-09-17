@@ -46,28 +46,22 @@ export function GratitudeCard({
           </span>
         </div>
         {!open && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          <div className="u-wrap5">
             {entry.items.slice(0, 2).map((item, i) => (
-              <span key={i} style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              <span key={i} className="u-sub13">
                 {i > 0 && '· '}
                 {item.length > 40 ? item.slice(0, 40) + '…' : item}
               </span>
             ))}
             {entry.items.length > 2 && (
-              <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                +{entry.items.length - 2}
-              </span>
+              <span className="u-sub12">+{entry.items.length - 2}</span>
             )}
           </div>
         )}
-        {open && (
-          <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-            {entry.items.length} записи
-          </div>
-        )}
+        {open && <div className="u-sub12-mt2">{entry.items.length} записи</div>}
       </div>
       {open && (
-        <div style={{ marginTop: 10 }}>
+        <div className="u-mt10">
           {entry.items.map((item, i) => (
             <div
               key={i}

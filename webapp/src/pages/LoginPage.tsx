@@ -202,7 +202,7 @@ export function LoginPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleEmailSubmit} style={{ marginTop: 16 }}>
+            <form onSubmit={handleEmailSubmit} className="u-mt16">
               <input
                 type="email"
                 ref={emailInputRef}
@@ -253,7 +253,7 @@ export function LoginPage() {
         {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
         <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
           Проект бесплатный{' '}
-          <a href="/donate" style={{ color: 'var(--accent)', textDecoration: 'none' }}>поддержать</a>
+          <a href="/donate" className="u-link">поддержать</a>
         </p>
       </div>
 

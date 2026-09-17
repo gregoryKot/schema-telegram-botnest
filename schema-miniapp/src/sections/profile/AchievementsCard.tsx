@@ -43,8 +43,8 @@ export function AchievementsCard({
         >
           Достижения
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+        <div className="u-ac6">
+          <span className="u-sub12">
             {earnedList.length} из {achievements.length}
           </span>
           <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>›</span>

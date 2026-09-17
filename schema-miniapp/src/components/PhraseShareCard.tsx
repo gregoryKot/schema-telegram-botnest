@@ -17,14 +17,7 @@ export function PhraseShareCard() {
 
   return (
     <div className="card" style={{ padding: 18 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <div
           style={{
             fontSize: 10,
@@ -61,7 +54,7 @@ export function PhraseShareCard() {
               marginTop: 10,
             }}
           >
-            <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            <div className="u-faint11">
               Голос Здорового взрослого — тёплая опора в моменте
             </div>
             <button

@@ -28,7 +28,7 @@ export function SafePlaceSavedView({
   const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <SheetIconHeader
           title="Моё безопасное место"
           subtitle={tr('Прочти — и почувствуй', 'Прочтите — и почувствуйте')}

@@ -27,7 +27,7 @@ export function ModePickerSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -52,7 +52,7 @@ export function ModePickerSheet({
           )}
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           <div
             style={{
               fontSize: 11,
@@ -65,13 +65,7 @@ export function ModePickerSheet({
           >
             С чего начать
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-4)',
-            }}
-          >
+          <div className="u-col4">
             {POPULAR_MODE_IDS.map((id) => {
               const mode = ALL_MODES.find((m) => m.id === id);
               if (!mode) return null;
@@ -93,7 +87,7 @@ export function ModePickerSheet({
                     transition: 'all 0.15s',
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="u-fill">
                     <div
                       style={{
                         fontSize: 14,
@@ -150,7 +144,7 @@ export function ModePickerSheet({
         {MODE_GROUPS.map((group) => {
           const c = group.color; // CSS variable
           return (
-            <div key={group.id} style={{ marginBottom: 18 }}>
+            <div key={group.id} className="u-mb18">
               <div
                 style={{
                   fontSize: 11,
@@ -164,13 +158,7 @@ export function ModePickerSheet({
               >
                 {group.group}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-4)',
-                }}
-              >
+              <div className="u-col4">
                 {group.items
                   .filter((m) => !POPULAR_MODE_IDS.includes(m.id))
                   .map((m) => {
@@ -193,7 +181,7 @@ export function ModePickerSheet({
                           transition: 'all 0.15s',
                         }}
                       >
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="u-fill">
                           <div
                             style={{
                               fontSize: 14,

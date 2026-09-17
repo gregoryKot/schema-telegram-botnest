@@ -64,9 +64,7 @@ export function CaseCriterionScreen({
 
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        {intro.title}
-      </div>
+      <div className="d-display u-e21">{intro.title}</div>
       <div
         style={{
           fontSize: 14,
@@ -79,11 +77,11 @@ export function CaseCriterionScreen({
       </div>
 
       {questions.map((q) => (
-        <div key={q.key} style={{ marginBottom: 20 }}>
+        <div key={q.key} className="u-mb20">
           <div style={{ fontSize: 15, color: 'var(--text)', marginBottom: 10 }}>
             {q.text}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <YesNoButton
               active={criterion[q.key] === true}
               label="Да"

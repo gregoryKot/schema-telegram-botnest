@@ -58,7 +58,7 @@ export function DataSection() {
           ].map(b => (
             <div key={b.title} style={{ marginBottom: 10, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-8)', padding: '12px 14px' }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{b.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b.text}</div>
+              <div className="u-sub13-lh16">{b.text}</div>
             </div>
           ))}
           {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (<>
@@ -92,7 +92,7 @@ export function DataSection() {
           </div>
           {deleteError && !deleteConfirm && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 12 }}>{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
           {!deleteConfirm ? (
-            <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+            <div className="u-row10">
               <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
               <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'rgba(239,68,68,0.12)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
             </div>

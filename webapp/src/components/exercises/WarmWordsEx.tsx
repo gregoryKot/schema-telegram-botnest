@@ -42,7 +42,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
     >
       {items === null && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+        <div className="u-col12">
           {[0, 1, 2].map((i) => (
             <SkeletonCard key={i} height={92} />
           ))}
@@ -78,10 +78,10 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
 
       {items !== null && items.length > 0 && (
         <>
-          <div className="text-xs faint" style={{ marginBottom: 14 }}>
+          <div className="text-xs faint u-mb14">
             {items.length} {pluralEntries(items.length)}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+          <div className="u-col12">
             {items.map((item) => {
               const mode = getModeById(item.modeId);
               return (
@@ -94,7 +94,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
                       marginBottom: 8,
                     }}
                   >
-                    <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="text-sm u-ac6">
                       {mode && <IdentityDot color={mode.groupColor} />}
                       {mode ? mode.name : 'Режим'}
                     </span>

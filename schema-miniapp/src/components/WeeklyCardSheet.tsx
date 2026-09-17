@@ -37,7 +37,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   if (history.length === 0) {
     return (
       <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 8 }}>
+        <div className="u-pt8">
           <div
             style={{
               fontSize: 18,

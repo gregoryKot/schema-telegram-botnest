@@ -62,8 +62,8 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   };
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
+    <div className="u-mt24">
+      <div className="eyebrow u-mb8">Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
           {tr('Твоя заявка на рассмотрении. Рассмотрим её и напишем в боте.', 'Ваша заявка на рассмотрении. Рассмотрим её и напишем в боте.')}
@@ -93,7 +93,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
           <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2}
             placeholder="Сообщение админу (необязательно)"
             style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 'var(--r-10)', padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
             <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
           </div>

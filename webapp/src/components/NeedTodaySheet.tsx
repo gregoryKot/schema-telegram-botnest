@@ -109,7 +109,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
             <span>0</span>
             {typeof yesterdayValue === 'number' && yesterdayValue > 0 ? (
-              <span style={{ color: 'var(--text-faint)' }}>
+              <span className="u-faint">
                 вчера {yesterdayValue}
                 {value - yesterdayValue !== 0 && (
                   <span style={{ color, fontWeight: 600 }}>
@@ -141,20 +141,20 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       {/* Examples */}
       <div className="prompt">
         <div className="prompt-num">·</div>
-        <div style={{ width: '100%' }}>
+        <div className="u-w100">
           <button
             onClick={() => setShowExamples(v => !v)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             <div className="prompt-label" style={{ marginBottom: 0 }}>Как это выглядит в жизни</div>
-            <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>{showExamples ? '▴' : '▾'}</span>
+            <span className="u-faint13">{showExamples ? '▴' : '▾'}</span>
           </button>
           {showExamples && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
               {data.examples.map((ex, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.examples.length - 1 ? '1px solid var(--line)' : 'none' }}>
                   <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>›</span>
-                  <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ex}</span>
+                  <span className="u-sub14-lh15">{ex}</span>
                 </div>
               ))}
             </div>
@@ -166,20 +166,20 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       {data.reflection?.length > 0 && (
         <div className="prompt">
           <div className="prompt-num">·</div>
-          <div style={{ width: '100%' }}>
+          <div className="u-w100">
             <button
               onClick={() => setShowReflection(v => !v)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
               <div className="prompt-label" style={{ marginBottom: 0 }}>Вопросы для рефлексии</div>
-              <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>{showReflection ? '▴' : '▾'}</span>
+              <span className="u-faint13">{showReflection ? '▴' : '▾'}</span>
             </button>
             {showReflection && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
                 {data.reflection.map((q, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
                     <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>?</span>
-                    <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{q}</span>
+                    <span className="u-sub14-lh15">{q}</span>
                   </div>
                 ))}
               </div>
@@ -191,13 +191,13 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       {/* Ranges */}
       <div className="prompt">
         <div className="prompt-num">·</div>
-        <div style={{ width: '100%' }}>
+        <div className="u-w100">
           <button
             onClick={() => setShowRanges(v => !v)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             <div className="prompt-label" style={{ marginBottom: 0 }}>Как понять оценку</div>
-            <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>{showRanges ? '▴' : '▾'}</span>
+            <span className="u-faint13">{showRanges ? '▴' : '▾'}</span>
           </button>
           {showRanges && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -230,7 +230,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       {value <= 3 && (
         <div className="prompt">
           <div className="prompt-num">·</div>
-          <div style={{ width: '100%' }}>
+          <div className="u-w100">
             <div className="prompt-label">Что с этим сделать?</div>
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               <div

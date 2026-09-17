@@ -51,14 +51,7 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
     <>
       <BottomSheet onClose={onClose} zIndex={200}>
         <div style={{ paddingTop: 4, paddingBottom: 8 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 10,
-            }}
-          >
+          <div className="u-between-mb10">
             <div className="d-caps">Быстрое действие</div>
             <CustomizeButton
               label="Изменить"

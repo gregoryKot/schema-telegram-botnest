@@ -54,7 +54,7 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
             {emotionMetas.slice(0, 4).map(e => (
               <span key={e.id} className="emo">
                 <span className="emo-dot" style={{ background: 'var(--c-rose)' }} />
-                <span style={{ color: 'var(--text-sub)' }}>{e.label}</span>
+                <span className="u-sub">{e.label}</span>
               </span>
             ))}
           </div>
@@ -98,8 +98,8 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
         <div className="entry-text">{entry.situation}</div>
         {entry.actualNeed && !open && (
           <div className="entry-meta">
-            <span style={{ color: 'var(--text-faint)' }}>что было нужно ›</span>
-            <span style={{ color: 'var(--text-sub)' }}>{entry.actualNeed.slice(0, 80)}</span>
+            <span className="u-faint">что было нужно ›</span>
+            <span className="u-sub">{entry.actualNeed.slice(0, 80)}</span>
           </div>
         )}
         {open && (
@@ -169,7 +169,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
 
 export function ExpandField({ label, text, color }: { label: string; text: string; color?: string }) {
   return (
-    <div style={{ marginBottom: 10 }}>
+    <div className="u-mb10">
       <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: color ?? 'var(--text-faint)', marginBottom: 3 }}>{label}</div>
       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>{text}</div>
     </div>
@@ -193,11 +193,11 @@ export function DraftBanner({ type, color, title, onContinue, onDelete }: {
       {/* Colored left stripe */}
       <div style={{ width: 3, borderRadius: '10px 0 0 10px', background: color, flexShrink: 0, marginRight: 14 }} />
       {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>Черновик</span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{title} · {formatDraftAge(draft.startedAt)}</span>
-          <div style={{ flex: 1 }} />
+          <span className="u-faint11">{title} · {formatDraftAge(draft.startedAt)}</span>
+          <div className="u-flex1" />
           <button onClick={onContinue} style={{ fontSize: 12.5, fontWeight: 700, color, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', letterSpacing: '-0.01em' }}>Продолжить →</button>
           {!confirm
             ? <button onClick={() => setConfirm(true)} aria-label="Удалить черновик" style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-ghost)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>

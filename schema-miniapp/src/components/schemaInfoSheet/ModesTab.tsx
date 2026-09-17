@@ -96,7 +96,7 @@ export function ModesTab() {
       </p>
 
       {MODES.map((g) => (
-        <div key={g.group} style={{ marginBottom: 20 }}>
+        <div key={g.group} className="u-mb20">
           <div
             style={{
               fontSize: 11,
@@ -127,25 +127,9 @@ export function ModesTab() {
                   marginBottom: 6,
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {m.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-sub)',
-                      marginTop: 1,
-                    }}
-                  >
-                    Чувствуется как: {m.feel}
-                  </div>
+                <div className="u-fill">
+                  <div className="u-h14">{m.name}</div>
+                  <div className="u-sub11-mt1">Чувствуется как: {m.feel}</div>
                 </div>
                 <SharePill
                   compact

@@ -143,7 +143,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               WeeklyCardSheet (В10 аудита 2026-08). Этот экран не ходит через
               ShareCardSheet (собственный share-флоу с .ics-независимым
               фолбэком), поэтому TherapyNote вставлен напрямую. */}
-          <div style={{ marginTop: 16 }}>
+          <div className="u-mt16">
             <TherapyNote compact />
           </div>
         </>

@@ -116,11 +116,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="page-inner-wide">
 
       {/* ── Хедер ── */}
-      <div style={{ marginBottom: 40 }}>
-        <div className="eyebrow" style={{ marginBottom: 14 }}>
-          <span style={{ color: 'var(--accent)' }}>● </span>Профиль
+      <div className="u-mb40">
+        <div className="eyebrow u-mb14">
+          <span className="u-accent">● </span>Профиль
         </div>
-        <h1 className="hub-title" style={{ marginBottom: 10 }}>
+        <h1 className="hub-title u-mb10">
           {firstName || 'Мой'}<br /><span className="it">прогресс</span>
         </h1>
         {totalDays > 0 && (
@@ -150,7 +150,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <h3>Мой путь</h3>
               <span className="hint">→</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+            <div className="u-sub13">
               {tr(
                 'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
                 'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
@@ -206,14 +206,14 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               {/* Secondary stats */}
               <div style={{ display: 'flex', gap: 16, paddingBottom: 4 }}>
                 {longestStreak > 0 && (
-                  <div style={{ textAlign: 'center' }}>
+                  <div className="u-tc">
                     <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>{longestStreak}</div>
-                    <div className="eyebrow" style={{ marginTop: 3 }}>рекорд</div>
+                    <div className="eyebrow u-mt3">рекорд</div>
                   </div>
                 )}
-                <div style={{ textAlign: 'center' }}>
+                <div className="u-tc">
                   <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>{totalDays}</div>
-                  <div className="eyebrow" style={{ marginTop: 3 }}>всего</div>
+                  <div className="eyebrow u-mt3">всего</div>
                 </div>
               </div>
             </div>
@@ -360,7 +360,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                     minWidth: 64,
                   }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                    <span className="u-faint11">
                       ещё {achievements.filter(a => !a.earned).length}
                     </span>
                   </div>
@@ -399,7 +399,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             )}
 
             {/* Need bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+            <div className="u-col12">
               {insights?.weeklyStats.filter(s => s.avg !== null).map(s => {
                 const isUp = s.trend === '↑';
                 const isDown = s.trend === '↓';
@@ -408,7 +408,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 return (
                   <div key={s.needId}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{NEED_NAMES[s.needId]}</span>
+                      <span className="u-sub13">{NEED_NAMES[s.needId]}</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>{(s.avg ?? 0).toFixed(1)} <span style={{ fontSize: 11 }}>{s.trend}</span></span>
                     </div>
                     <div style={{ height: 6, borderRadius: 'var(--r-4)', background: 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
@@ -449,7 +449,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         </div>
 
         {/* ── Настройки и аккаунт (только мобайл, на десктопе есть в сайдбаре) ── */}
-        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div className="mobile-only section u-col4">
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
@@ -495,8 +495,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         >
         <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
-              <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
+              <span className="u-h17">Достижения</span>
+              <span className="u-sub13">{earnedList.length} из {achievements.length}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-8)' }}>
               {achievements.map(a => {
@@ -555,7 +555,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           onClick={() => setShowBestDayInfo(false)}
         >
           <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
-            <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
+            <div className="eyebrow u-mb16">Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>

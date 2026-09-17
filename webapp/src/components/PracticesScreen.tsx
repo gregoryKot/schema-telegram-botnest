@@ -83,18 +83,18 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
 
   return (
-    <div data-testid="practices-screen" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div data-testid="practices-screen" className="u-sheet">
       <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>
-              <span style={{ color: 'var(--accent)' }}>● </span>Каталог практик
+            <div className="eyebrow u-mb8">
+              <span className="u-accent">● </span>Каталог практик
             </div>
-            <h1 className="hub-title" style={{ marginBottom: 8 }}>Мои<br /><span className="it">практики</span></h1>
+            <h1 className="hub-title u-mb8">Мои<br /><span className="it">практики</span></h1>
             <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
               Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
@@ -105,7 +105,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         </div>
 
         {/* Need tabs – calm document style */}
-        <div className="tabs" style={{ marginBottom: 28 }}>
+        <div className="tabs u-mb28">
           {NEED_IDS.map((id, i) => {
             const active = i === needIdx;
             const score = ratings[id];
@@ -150,7 +150,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           ) : (
             practices.map(p => (
               <div key={p.id} className="list-line">
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-fill">
                   <div className="text-md" style={{ lineHeight: 1.5 }}>{p.text}</div>
                 </div>
                 <button
@@ -167,7 +167,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
 
         {/* Add input */}
         <div className="section">
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Новая практика</div>
+          <div className="eyebrow u-mb10">Новая практика</div>
           <div className="text-sm muted" style={{ marginBottom: 12, maxWidth: 600 }}>
             Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>

@@ -139,9 +139,9 @@ export function TaskCreateSheet({
       <TaskTypeSelector type={type} onPick={setType} />
       {/* Streak day picker */}
       {selected.hasStreak && (
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           <SectionLabel mb={8}>Цель в днях</SectionLabel>
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             {STREAK_OPTIONS.map((d) => (
               <div
                 key={d}
@@ -195,7 +195,7 @@ export function TaskCreateSheet({
 
       {/* Custom text */}
       {type === 'custom' && (
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           <SectionLabel mb={8}>Описание задания</SectionLabel>
           <textarea
             value={text}
@@ -221,7 +221,7 @@ export function TaskCreateSheet({
 
       {/* Due date */}
       {(type === 'custom' || clientId) && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <SectionLabel mb={8}>Срок (необязательно)</SectionLabel>
           <input
             type="date"

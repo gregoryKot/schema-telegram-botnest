@@ -76,7 +76,7 @@ export function CookieBanner() {
       >
         {/* Header row */}
         <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
               color: 'var(--text)', marginBottom: 6, letterSpacing: '0.01em',
@@ -93,7 +93,7 @@ export function CookieBanner() {
         </div>
 
         {/* Actions – equal prominence (GDPR 2026): same size, both solid */}
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button onClick={decline} className="cookie-btn cookie-btn-reject">
             Только необходимые
           </button>

@@ -86,7 +86,7 @@ export function AppOverlays({
       </Suspense>
     )}
     {ov.showChildhoodWheel && (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div className="u-sheet">
         <Suspense fallback={null}>
           <ChildhoodWheelEx
             onBack={() => ov.setShowChildhoodWheel(false)}

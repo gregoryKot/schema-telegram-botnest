@@ -69,7 +69,7 @@ export function NoteSheet({ date, onClose }: Props) {
           background: 'color-mix(in srgb, var(--accent) 5%, transparent)',
           position: 'sticky', top: 40,
         }}>
-          <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Зачем это?</div>
+          <div className="aside-card-eyebrow u-accent">Зачем это?</div>
           <h3 style={{ fontSize: 18 }}>Рефлексия помогает</h3>
           <p className="body">Регулярные короткие записи помогают увидеть паттерны и понять, что происходит внутри.</p>
         </div>
@@ -81,7 +81,7 @@ export function NoteSheet({ date, onClose }: Props) {
       {/* Text */}
       <div className="prompt">
         <div className="prompt-num">·</div>
-        <div style={{ width: '100%' }}>
+        <div className="u-w100">
           <div className="prompt-label">Запись</div>
           <textarea
             value={text}

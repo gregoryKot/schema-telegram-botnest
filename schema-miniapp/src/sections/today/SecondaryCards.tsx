@@ -80,7 +80,7 @@ export function SecondaryCards({
         >
           <div style={capsLabel}>Потребности</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            <span className="u-faint11">
               {allRated ? 'Готово ✓' : `${ratedCount} / ${needs.length}`}
             </span>
             {onOpenTrackerHistory && (
@@ -176,7 +176,7 @@ export function SecondaryCards({
                     background: typeColor,
                   }}
                 />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-fill">
                   <div
                     style={{
                       fontSize: 13,

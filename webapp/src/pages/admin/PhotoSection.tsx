@@ -62,7 +62,7 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
         )}
       </div>
 
-      <div style={{ marginTop: 16 }}>
+      <div className="u-mt16">
         <input type="file" accept="image/*" onChange={onFile} />
       </div>
 
@@ -70,7 +70,7 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
       {saved && <p style={{ color: '#4a6335', fontSize: 13, margin: '10px 0 0' }}>Фото сохранено ✓</p>}
 
       {preview && (
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить фото'}</button>
         </div>
       )}

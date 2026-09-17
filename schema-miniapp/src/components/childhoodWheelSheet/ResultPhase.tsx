@@ -46,19 +46,13 @@ export function ResultPhase({
         >
           {tr('Твоё колесо детства', 'Ваше колесо детства')}
         </div>
-        <div
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className="u-sub13-lh15">
           Сравнение отобразится в разделе История поверх дневника
         </div>
       </div>
 
       {/* Wheel */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="u-mb20">
         <ChildhoodWheel ratings={ratings} />
       </div>
 
@@ -80,7 +74,7 @@ export function ResultPhase({
               style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
               <IdentityDot id={id} />
-              <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+              <span className="u-sub12">
                 {NEED_META[id].label.split(' ')[0]}
               </span>
               <span
@@ -104,7 +98,7 @@ export function ResultPhase({
 
       {/* Schema hints for low needs */}
       {lowNeeds.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <SectionLabel>Возможные активные схемы</SectionLabel>
           <div
             style={{
@@ -140,15 +134,7 @@ export function ResultPhase({
                   }}
                 >
                   <IdentityDot id={id} />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {meta.label}
-                  </span>
+                  <span className="u-h13">{meta.label}</span>
                   <span
                     style={{
                       fontSize: 12,
@@ -168,7 +154,7 @@ export function ResultPhase({
                 >
                   Домен: {hint.domain}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                <div className="u-wrap5">
                   {hint.schemas.map((s) => {
                     const schemaData = SCHEMA_DOMAINS.flatMap((d) =>
                       d.schemas.map((sc) => ({ ...sc, color: d.color })),
@@ -229,13 +215,7 @@ export function ResultPhase({
               >
                 Подробнее о схемах
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  marginTop: 2,
-                }}
-              >
+              <div className="u-sub12-mt2">
                 Что они значат и как с ними работать
               </div>
             </div>
@@ -266,24 +246,18 @@ export function ResultPhase({
           >
             Хорошее детство по всем зонам
           </div>
-          <div
-            style={{
-              fontSize: 13,
-              color: 'var(--text-sub)',
-              lineHeight: 1.6,
-            }}
-          >
+          <div className="u-sub13-lh16">
             Все потребности выше 4/10 — это редкость и ресурс. Если сейчас
             что-то низкое, скорее всего это ситуативное, а не схема.
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
+      <div className="u-mb16">
         <TherapyNote compact />
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+      <div className="u-row10">
         <button
           onClick={onEdit}
           style={{

@@ -136,7 +136,7 @@ export function ShareCardSheet({
           {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
         {therapyNote && (
-          <div style={{ marginTop: 12 }}>
+          <div className="u-mt12">
             <TherapyNote compact />
           </div>
         )}

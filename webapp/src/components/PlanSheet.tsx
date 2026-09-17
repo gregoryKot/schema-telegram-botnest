@@ -73,11 +73,11 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
           {allOptions.length > 0 && (
             <div className="prompt">
               <div className="prompt-num">·</div>
-              <div style={{ width: '100%' }}>
+              <div className="u-w100">
                 <div className="prompt-label">Готовые варианты</div>
                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   {allOptions.map(({ text, isUser, id }) => (
-                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                    <div key={text} className="u-ac8">
                       <div
                         onClick={() => selectText(text)}
                         role="button" tabIndex={0}
@@ -104,7 +104,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
 
           <div className="prompt">
             <div className="prompt-num">·</div>
-            <div style={{ width: '100%' }}>
+            <div className="u-w100">
               <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : tr('Что планируешь?', 'Что планируете?')}</div>
               <textarea
                 value={customText}
@@ -115,7 +115,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
                 className={'paper-input ' + (customText.trim() ? 'is-filled' : '')}
               />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
               {customText.trim() && (
-                <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary" style={{ marginTop: 8 }}>
+                <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary u-mt8">
                   Продолжить →
                 </button>
               )}
@@ -129,7 +129,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
           {/* Selected practice */}
           <div className="prompt">
             <div className="prompt-num">·</div>
-            <div style={{ width: '100%' }}>
+            <div className="u-w100">
               <div className="prompt-label">Практика</div>
               <div style={{ marginTop: 8, padding: '14px 16px', borderRadius: 'var(--r-12)', background: `${color}18`, border: `1px solid ${color}33`, fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
                 {selectedText}
@@ -140,7 +140,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
           {/* Reminder */}
           <div className="prompt">
             <div className="prompt-num">·</div>
-            <div style={{ width: '100%' }}>
+            <div className="u-w100">
               <div className="prompt-label">Напомнить завтра</div>
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {REMINDER_OPTIONS.map((opt, i) => (
@@ -171,7 +171,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
             onClick={handleIcsDownload}
             style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
           >
-            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавить в календарь (.ics)</span>
+            <span className="u-sub13">Добавить в календарь (.ics)</span>
           </button>
 
           {saveError && (

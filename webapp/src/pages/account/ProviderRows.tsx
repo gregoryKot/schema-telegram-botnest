@@ -78,7 +78,7 @@ export function ProviderRow({
           : {}),
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
+      <div className="u-ac12">
         {icon}
         <div>
           <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>

@@ -440,7 +440,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                       ['Esc', 'Снять выделение'],
                     ] as [string, string][]).map(([k, v]) => (
                       <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-14)', padding: '5px 10px', fontSize: 12 }}>
-                        <span style={{ color: 'var(--text-sub)' }}>{v}</span>
+                        <span className="u-sub">{v}</span>
                         <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 'var(--r-4)', whiteSpace: 'nowrap' }}>{k}</kbd>
                       </div>
                     ))}

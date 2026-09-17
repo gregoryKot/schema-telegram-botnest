@@ -50,7 +50,7 @@ export function LoginTicketWait({
       <div style={{ ...SUB, textAlign: 'center' }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>🛑</div>
         Вход отклонён. Доступ никто не получил.
-        <div style={{ marginTop: 12 }}>
+        <div className="u-mt12">
           <button type="button" onClick={onRetry} style={LINK}>
             Попробовать снова
           </button>
@@ -66,7 +66,7 @@ export function LoginTicketWait({
         {state.kind === 'expired'
           ? 'Время кода вышло.'
           : 'Не получилось начать вход.'}
-        <div style={{ marginTop: 12 }}>
+        <div className="u-mt12">
           <button type="button" onClick={onRetry} style={LINK}>
             Попробовать снова
           </button>
@@ -79,7 +79,7 @@ export function LoginTicketWait({
 
   const where = PROVIDER_NAMES[state.provider] ?? state.provider;
   return (
-    <div style={{ textAlign: 'center' }}>
+    <div className="u-tc">
       <div style={SUB}>
         {state.provider === 'telegram'
           ? `Подтвердите вход в ${where} — там появится этот код:`

@@ -16,7 +16,7 @@ export function TherapistBanner({ onOpen }: { onOpen: () => void }) {
         gap: 'var(--space-14)',
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{
             fontSize: 14,
@@ -27,9 +27,7 @@ export function TherapistBanner({ onOpen }: { onOpen: () => void }) {
         >
           Кабинет терапевта
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-          Клиенты · Задания · Концептуализация
-        </div>
+        <div className="u-faint11">Клиенты · Задания · Концептуализация</div>
       </div>
       <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>›</span>
     </div>

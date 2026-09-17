@@ -37,10 +37,8 @@ function ActionRow({
         cursor: 'pointer',
       }}
     >
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-          {label}
-        </div>
+      <div className="u-flex1">
+        <div className="u-h14">{label}</div>
         {sub && (
           <div
             style={{
@@ -77,13 +75,7 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
   const clientCards = clientSchemaNotesData.length + clientModeNotesData.length;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-8)',
-      }}
-    >
+    <div className="u-col8">
       <ActionRow
         label="Задания"
         sub={activeTasks > 0 ? `${activeTasks} активных` : undefined}

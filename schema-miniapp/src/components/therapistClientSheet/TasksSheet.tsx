@@ -28,7 +28,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowTasksSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -83,7 +83,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                 >
                   {taskMark(task)}
                 </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-fill">
                   <div
                     style={{
                       fontSize: 14,

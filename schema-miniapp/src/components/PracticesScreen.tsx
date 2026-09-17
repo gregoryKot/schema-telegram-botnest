@@ -225,13 +225,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             }}
           >
             <span style={{ fontSize: 18 }}>📍</span>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="u-sub12-lh15">
               Сегодня{' '}
               <span style={{ color: needColor, fontWeight: 600 }}>
                 {NEED_NAMES[needId]}
@@ -255,13 +249,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             }}
           >
             <span style={{ fontSize: 18 }}>💛</span>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="u-sub12-lh15">
               Сегодня {NEED_NAMES[needId]} — {todayScore}/10. Есть куда расти.
             </div>
           </div>
@@ -290,7 +278,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           Небольшое конкретное действие — например «позвонить другу» или
           «прогулка 20 минут»
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+        <div className="u-row8">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

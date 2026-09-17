@@ -50,13 +50,7 @@ export function SkeletonLines({
   widths?: (number | string)[];
 }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-8)',
-      }}
-    >
+    <div className="u-col8">
       {widths.map((w, i) => (
         <Skeleton key={i} w={w} h={12} radius={6} />
       ))}
@@ -98,7 +92,7 @@ export function TodayScreenSkeleton() {
             gap: 'var(--space-12)',
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <Skeleton w="62%" h={22} radius={8} />
             <Skeleton w="45%" h={12} radius={6} style={{ marginTop: 8 }} />
           </div>

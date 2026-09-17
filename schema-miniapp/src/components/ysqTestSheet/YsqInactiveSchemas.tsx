@@ -41,7 +41,7 @@ export function YsqInactiveSchemas({
         <span style={{ fontSize: 12 }}>{expanded ? '▲' : '▼'}</span>
       </button>
       {expanded && (
-        <div style={{ marginTop: 8 }}>
+        <div className="u-mt8">
           {schemas.map((schema) => {
             const s = scores[schema.name];
             // «На грани»: средний балл близок к порогу 4 —

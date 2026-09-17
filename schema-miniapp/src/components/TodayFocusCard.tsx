@@ -49,13 +49,7 @@ export function TodayFocusCard({
           animationDelay: '80ms',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-12)',
-          }}
-        >
+        <div className="u-ac12">
           <div
             style={{
               width: 44,
@@ -72,12 +66,8 @@ export function TodayFocusCard({
           >
             ✓
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}
-            >
-              На сегодня — всё
-            </div>
+          <div className="u-fill">
+            <div className="u-h15">На сегодня — всё</div>
             <div
               style={{
                 fontSize: 12,
@@ -115,9 +105,7 @@ export function TodayFocusCard({
             </button>
           )}
         </div>
-        {isTracker && shareSlot && (
-          <div style={{ marginTop: 14 }}>{shareSlot}</div>
-        )}
+        {isTracker && shareSlot && <div className="u-mt14">{shareSlot}</div>}
       </div>
     );
   }

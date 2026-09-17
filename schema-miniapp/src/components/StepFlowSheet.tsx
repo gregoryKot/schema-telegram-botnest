@@ -106,7 +106,7 @@ export function StepFlowSheet({
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+        <div className="u-row8">
           <button
             onClick={onClose}
             style={{
@@ -123,8 +123,7 @@ export function StepFlowSheet({
             Закрыть
           </button>
           <button
-            className="btn-primary"
-            style={{ flex: 1 }}
+            className="btn-primary u-flex1"
             onClick={() => (isDone ? setStep(0) : setStep((s) => s + 1))}
           >
             {isDone

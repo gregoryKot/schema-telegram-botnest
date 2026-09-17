@@ -116,7 +116,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
                 <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: d.color, marginTop: 10 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.1, color: 'var(--text)', marginBottom: 4 }}>{s.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.libraryDesc}</div>
+                  <div className="u-sub13-lh15">{s.libraryDesc}</div>
                 </div>
                 <span style={{ color: 'var(--text-ghost)', fontSize: 22, marginTop: 8 }}>›</span>
               </div>
@@ -173,7 +173,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
                 <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: g.color, marginTop: 8 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.15, color: 'var(--text)', marginBottom: 4 }}>{m.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{m.short}</div>
+                  <div className="u-sub13-lh15">{m.short}</div>
                 </div>
                 <span style={{ color: 'var(--text-ghost)', fontSize: 22, marginTop: 6 }}>›</span>
               </div>

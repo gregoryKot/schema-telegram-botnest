@@ -38,10 +38,8 @@ export function PortraitSheet({ aboutMe, onOpenPatterns, onClose }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-          Мой портрет
-        </div>
+      <div className="u-pt4">
+        <div className="u-h17">Мой портрет</div>
 
         {isEmpty && (
           <div

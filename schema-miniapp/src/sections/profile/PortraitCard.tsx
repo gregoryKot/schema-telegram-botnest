@@ -61,9 +61,7 @@ export function NeedBar({
   maxCount: number;
 }) {
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}
-    >
+    <div className="u-ac10">
       <div
         style={{
           width: 150,
@@ -180,9 +178,7 @@ export function PortraitCard({
 
       {!hasData && (
         <div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-          >
+          <div className="u-sub13-lh16">
             {tr(
               'Здесь соберётся твой портрет: какие схемы и режимы активны. Основа — тест на схемы и твои отметки.',
               'Здесь соберётся ваш портрет: какие схемы и режимы активны. Основа — тест на схемы и ваши отметки.',
@@ -209,13 +205,7 @@ export function PortraitCard({
       )}
 
       {hasData && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-10)',
-          }}
-        >
+        <div className="u-col10">
           {portrait.needs.map((n) => (
             <NeedBar key={n.id} n={n} maxCount={maxCount} />
           ))}
@@ -233,7 +223,7 @@ export function PortraitCard({
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          <span className="u-faint11">
             Тест на схемы · {fmtDate(ysqCompletedAt.slice(0, 10))}
           </span>
           {delta != null && delta !== 0 && (

@@ -29,7 +29,7 @@ export function NotificationsSection({
     settings.notifyTimezone;
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>УВЕДОМЛЕНИЯ</SectionHeader>
       {settings.notifyPausedUntil &&
         new Date(settings.notifyPausedUntil) > new Date() && (
@@ -45,7 +45,7 @@ export function NotificationsSection({
               gap: 'var(--space-10)',
             }}
           >
-            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+            <div className="u-sub13">
               ⏸ Уведомления на паузе до{' '}
               {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
             </div>
@@ -196,7 +196,7 @@ export function NotificationsSection({
             href={botUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--accent)', textDecoration: 'none' }}
+            className="u-link"
           >
             {botHandle}
           </a>

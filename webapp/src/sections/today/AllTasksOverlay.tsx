@@ -27,7 +27,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
               {taskStatusMark(task.done)}
             </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
               <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
               {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
@@ -46,7 +46,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             {taskHistory.map(task => (
               <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
                 <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{taskStatusMark(task.done)}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-fill">
                   <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
                   {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
                 </div>

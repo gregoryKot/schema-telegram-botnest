@@ -94,7 +94,7 @@ export function BeliefDoneScreen({
                   • {f}
                 </div>
               ))}
-              <div style={{ marginBottom: 10 }} />
+              <div className="u-mb10" />
             </>
           )}
           {againstList.length > 0 && (
@@ -121,7 +121,7 @@ export function BeliefDoneScreen({
                   • {a}
                 </div>
               ))}
-              <div style={{ marginBottom: 10 }} />
+              <div className="u-mb10" />
             </>
           )}
           {reframe && (

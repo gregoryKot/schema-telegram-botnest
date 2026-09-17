@@ -81,13 +81,7 @@ export function NotifySubView({
             Если напоминания будут оставаться без ответа, бот сам начнёт писать
             реже — а когда записи вернутся, вернётся к выбранной частоте.
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-4)',
-            }}
-          >
+          <div className="u-col4">
             {FREQ_LABELS.map((label, i) => {
               const active = i === (settings.notifyFrequency ?? 0);
               return (
@@ -143,13 +137,7 @@ export function NotifySubView({
           >
             В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-4)',
-            }}
-          >
+          <div className="u-col4">
             {QUIET_PRESETS.map((p) => {
               const active =
                 p.start === (settings.notifyQuietStart ?? 22) &&
@@ -201,13 +189,7 @@ export function NotifySubView({
 
       {/* ── TZ VIEW ── */}
       {view === 'tz' && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-4)',
-          }}
-        >
+        <div className="u-col4">
           {TIMEZONES.map((tz) => {
             const active = tz.iana === settings.notifyTimezone;
             return (

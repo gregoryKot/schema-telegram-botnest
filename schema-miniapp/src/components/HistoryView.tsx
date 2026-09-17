@@ -141,11 +141,7 @@ export function HistoryView({
           )}
         </div>
         {onGoToToday && (
-          <button
-            onClick={onGoToToday}
-            className="btn-primary"
-            style={{ width: '100%' }}
-          >
+          <button onClick={onGoToToday} className="btn-primary u-w100">
             Заполнить сегодня
           </button>
         )}
@@ -271,7 +267,7 @@ export function HistoryView({
                 >
                   📅
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="u-flex1">
                   <div
                     style={{
                       fontSize: 14,
@@ -283,13 +279,7 @@ export function HistoryView({
                       ? 'Заполнить этот день'
                       : `Дополнить оценки`}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-sub)',
-                      marginTop: 2,
-                    }}
-                  >
+                  <div className="u-sub12-mt2">
                     {ratedCount === 0
                       ? 'Оценки за этот день не заполнены'
                       : `Заполнено ${ratedCount} из ${needs.length}`}
@@ -332,9 +322,7 @@ export function HistoryView({
                     marginBottom: 10,
                   }}
                 >
-                  <strong style={{ color: 'var(--text)' }}>
-                    {needsLow[0].chartLabel}
-                  </strong>{' '}
+                  <strong className="u-fg">{needsLow[0].chartLabel}</strong>{' '}
                   остаётся низкой несколько дней подряд.
                   {!contact.isTherapist &&
                     ' Иногда за этим стоит что-то важное — терапевт поможет разобраться.'}

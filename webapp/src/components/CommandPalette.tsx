@@ -168,8 +168,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
               <span style={{ color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ color: 'var(--text)' }}>{row.label}</span>
+              <span className="u-fill">
+                <span className="u-fg">{row.label}</span>
                 {row.sub && (
                   <span style={{ marginLeft: 8, fontSize: 11, color: row.sub === 'Активен сегодня' ? 'var(--c-moss)' : 'var(--text-faint)' }}>
                     {row.sub}

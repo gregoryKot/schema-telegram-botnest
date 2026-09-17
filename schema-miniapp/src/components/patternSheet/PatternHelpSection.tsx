@@ -96,16 +96,12 @@ export function PatternHelpSection({ kind, id }: Props) {
       {schema?.tip && (
         <div style={TIP_ROW_STYLE}>
           <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-          <span
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
-          >
-            {schema.tip}
-          </span>
+          <span className="u-sub13-lh15">{schema.tip}</span>
         </div>
       )}
 
       {needText && (
-        <div style={{ marginBottom: 14 }}>
+        <div className="u-mb14">
           <div
             style={{
               fontSize: 11,
@@ -117,11 +113,7 @@ export function PatternHelpSection({ kind, id }: Props) {
           >
             Что на самом деле нужно
           </div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
-          >
-            {needText}
-          </div>
+          <div className="u-sub13-lh15">{needText}</div>
         </div>
       )}
 

@@ -20,9 +20,9 @@ export function TaskEntityPicker({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div ref={containerRef} style={{ marginBottom: 20 }}>
+    <div ref={containerRef} className="u-mb20">
       <SectionLabel mb={10}>{label}</SectionLabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="u-col6">
         {items.map((s) => (
           <div
             key={s.id}

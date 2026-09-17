@@ -58,7 +58,7 @@ export function InvitePanel({ addClient }: { addClient: AddClient }) {
               fontFamily: 'monospace',
             }}
           />
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <button
               onClick={copyInvite}
               style={{

@@ -97,7 +97,7 @@ export function GroundingStep({
               >
                 {i + 1}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{t}</div>
+              <div className="u-sub13">{t}</div>
             </div>
           ))}
         </div>

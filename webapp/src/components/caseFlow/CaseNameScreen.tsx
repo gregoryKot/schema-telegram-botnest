@@ -81,7 +81,7 @@ export function CaseNameScreen({
         {saving ? 'Сохраняю…' : 'Назвать'}
       </button>
 
-      <div style={{ marginTop: 8 }}>
+      <div className="u-mt8">
         <TertiaryLink label="Пропустить →" onClick={() => onConfirm('', 'skipped')} />
       </div>
 

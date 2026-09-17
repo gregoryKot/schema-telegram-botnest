@@ -126,7 +126,7 @@ export function SubscribePage() {
                 background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
               }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{p === 'year' ? 'Год' : 'Месяц'}</div>
+                <div className="u-h15">{p === 'year' ? 'Год' : 'Месяц'}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>{o ? `${o.price.toLocaleString('ru-RU')} ₽` : '…'}</div>
               </button>
             );
@@ -138,7 +138,7 @@ export function SubscribePage() {
 
         <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
-          <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+          <span className="u-sub13-lh16">
             Согласен на <b>регулярные автосписания</b> раз в {periodLabel(period)}. Отменить можно в любой момент.
           </span>
         </label>

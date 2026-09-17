@@ -75,7 +75,7 @@ export function NeedRatingBar({
       >
         <span>мало</span>
         {yesterday > 0 ? (
-          <span style={{ color: 'var(--text-sub)' }}>
+          <span className="u-sub">
             вчера {yesterday}
             {delta !== 0 && (
               <span style={{ color, fontWeight: 600 }}>

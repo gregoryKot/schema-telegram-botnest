@@ -17,7 +17,7 @@ export function ClientConceptTab({ detail }: Props) {
   } = detail;
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+    <div className="page-inner-wide u-pt40">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Концептуализация</div>
@@ -39,7 +39,7 @@ export function ClientConceptTab({ detail }: Props) {
         <div>
           {/* Goals */}
           <div className="section">
-            <div className="eyebrow" style={{ marginBottom: 12 }}>Цели схема-терапии</div>
+            <div className="eyebrow u-mb12">Цели схема-терапии</div>
             <textarea
               className="textarea"
               value={(localConcept.goals as string) ?? ''}
@@ -52,7 +52,7 @@ export function ClientConceptTab({ detail }: Props) {
 
           {/* Schema selection */}
           <div className="section">
-            <div className="section-head" style={{ marginBottom: 20 }}>
+            <div className="section-head u-mb20">
               <h3>Актуальные схемы</h3>
               <span className="hint">{activeSchemaIds.length} активны из 20</span>
             </div>
@@ -60,7 +60,7 @@ export function ClientConceptTab({ detail }: Props) {
               {SCHEMA_DOMAINS.map(domain => (
                 <div key={domain.id}>
                   <div className="eyebrow" style={{ color: domain.color, marginBottom: 10 }}>{domain.domain}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
+                  <div className="u-wrap8">
                     {domain.schemas.map(s => {
                       const active = activeSchemaIds.includes(s.id);
                       return (
@@ -77,7 +77,7 @@ export function ClientConceptTab({ detail }: Props) {
 
           {/* Mode selection */}
           <div className="section">
-            <div className="section-head" style={{ marginBottom: 20 }}>
+            <div className="section-head u-mb20">
               <h3>Карта режимов</h3>
               <span className="hint">{activeModeIds.length} в работе</span>
             </div>
@@ -85,7 +85,7 @@ export function ClientConceptTab({ detail }: Props) {
               {MODE_GROUPS.map(group => (
                 <div key={group.id}>
                   <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
+                  <div className="u-wrap8">
                     {group.items.map(m => {
                       const active = activeModeIds.includes(m.id);
                       return (
@@ -103,7 +103,7 @@ export function ClientConceptTab({ detail }: Props) {
           {/* Text fields */}
           {CONCEPT_FIELDS.map(field => (
             <div key={String(field.key)} className="section">
-              <div className="eyebrow" style={{ marginBottom: 12 }}>{field.label}</div>
+              <div className="eyebrow u-mb12">{field.label}</div>
               <textarea
                 className="textarea"
                 value={(localConcept[field.key as keyof ClientConceptualization] as string) ?? ''}
@@ -117,8 +117,8 @@ export function ClientConceptTab({ detail }: Props) {
 
         {/* Right sidebar */}
         <aside>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Что заполнено</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+          <div className="eyebrow u-mb16">Что заполнено</div>
+          <div className="u-col10">
             {([
               ['Цели терапии', !!(localConcept.goals || concept?.goals)],
               ['Ранний опыт', !!(localConcept.earlyExperience || concept?.earlyExperience)],
@@ -128,7 +128,7 @@ export function ClientConceptTab({ detail }: Props) {
               ['Переходы режимов', !!(localConcept.modeTransitions || concept?.modeTransitions)],
               ['Актуальные проблемы', !!(localConcept.currentProblems || concept?.currentProblems)],
             ] as [string, boolean][]).map(([label, has]) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+              <div key={label} className="u-ac8">
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: has ? 'var(--accent)' : 'var(--text-ghost)', flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: has ? 'var(--text)' : 'var(--text-faint)' }}>{label}</span>
               </div>
@@ -139,13 +139,13 @@ export function ClientConceptTab({ detail }: Props) {
           {ysqSchemaIds.length > 0 && (
             <>
               <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-              <div className="eyebrow" style={{ marginBottom: 14 }}>Сверка с YSQ</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+              <div className="eyebrow u-mb14">Сверка с YSQ</div>
+              <div className="u-col8">
                 {ysqSchemaIds.slice(0, 6).map(id => {
                   const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                   const inConcept = activeSchemaIds.includes(id);
                   return (
-                    <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                    <div key={id} className="u-ac8">
                       <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
                       {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
                     </div>
@@ -159,8 +159,8 @@ export function ClientConceptTab({ detail }: Props) {
           {concept?.history && concept.history.length > 0 && (
             <>
               <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-              <div className="eyebrow" style={{ marginBottom: 12 }}>История версий · {concept.history.length}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="eyebrow u-mb12">История версий · {concept.history.length}</div>
+              <div className="u-col6">
                 {concept.history.slice(0, 5).map((h, i: number) => {
                   const vNum = concept.history.length - i;
                   const isOpen = expandedSnapshot === i;
@@ -181,15 +181,15 @@ export function ClientConceptTab({ detail }: Props) {
                       >
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
                         <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {vNum}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{fmtDate(h.savedAt.slice(0, 10))}</span>
+                        <span className="u-faint11">{fmtDate(h.savedAt.slice(0, 10))}</span>
                         <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
                       </button>
                       {isOpen && (
                         <div style={{ padding: '12px 14px', borderTop: '1px solid var(--line)', background: 'var(--surface-2)' }}>
                           {/* Schema chips */}
                           {h.schemaIds.length > 0 && (
-                            <div style={{ marginBottom: 10 }}>
-                              <div className="eyebrow" style={{ marginBottom: 6 }}>Схемы</div>
+                            <div className="u-mb10">
+                              <div className="eyebrow u-mb6">Схемы</div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
                                 {h.schemaIds.map((id: string) => {
                                   const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
@@ -206,8 +206,8 @@ export function ClientConceptTab({ detail }: Props) {
                           )}
                           {/* Mode chips */}
                           {h.modeIds.length > 0 && (
-                            <div style={{ marginBottom: 10 }}>
-                              <div className="eyebrow" style={{ marginBottom: 6 }}>Режимы</div>
+                            <div className="u-mb10">
+                              <div className="eyebrow u-mb6">Режимы</div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
                                 {h.modeIds.map((id: string) => {
                                   const m = getModeById(id);
@@ -224,7 +224,7 @@ export function ClientConceptTab({ detail }: Props) {
                           )}
                           {/* Text fields */}
                           {textFields.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+                            <div className="u-col8">
                               {textFields.map(f => (
                                 <div key={f.label}>
                                   <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
@@ -234,7 +234,7 @@ export function ClientConceptTab({ detail }: Props) {
                             </div>
                           )}
                           {h.schemaIds.length === 0 && h.modeIds.length === 0 && textFields.length === 0 && (
-                            <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет данных</div>
+                            <div className="u-faint12">Нет данных</div>
                           )}
                         </div>
                       )}

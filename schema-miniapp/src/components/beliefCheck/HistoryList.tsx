@@ -4,7 +4,7 @@ import type { BeliefEntry } from './storage';
 // (правило №10).
 export function HistoryList({ history }: { history: BeliefEntry[] }) {
   return (
-    <div style={{ marginTop: 20 }}>
+    <div className="u-mt20">
       <div
         style={{
           fontSize: 10,

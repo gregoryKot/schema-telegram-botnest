@@ -33,9 +33,7 @@ export function ActionRow({
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-          {label}
-        </div>
+        <div className="u-h16">{label}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
           {sub}
         </div>

@@ -47,11 +47,7 @@ export function NeedsTab() {
               </div>
             </div>
           </div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-          >
-            {n.desc}
-          </div>
+          <div className="u-sub13-lh16">{n.desc}</div>
         </div>
       ))}
     </div>

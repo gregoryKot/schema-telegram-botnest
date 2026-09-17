@@ -13,7 +13,7 @@ export function ViewCard({ viewing, modes, onClose }: ViewCardProps) {
   const needInfo = NEEDS.find((n) => n.id === viewing.needId);
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 11,

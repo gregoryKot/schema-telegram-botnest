@@ -47,7 +47,7 @@ export function WebBanner({
         alignItems: 'flex-start',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div
           style={{
             fontSize: 14,

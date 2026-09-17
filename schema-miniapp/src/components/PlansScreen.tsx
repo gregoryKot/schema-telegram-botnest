@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, PracticePlan } from '../api';
 import { SkeletonList } from './Skeleton';
 import { LoadErrorBanner } from './LoadErrorBanner';
@@ -10,6 +10,44 @@ import { hitboxStyle } from '../utils/hitbox';
 interface Props {
   onClose: () => void;
   onOpenTracker?: () => void;
+}
+
+/** Группа планов с заголовком-рубрикой. Два вызова вместо двух одинаковых
+ *  блоков разметки: после перевода инлайновых стилей в классы блоки стали
+ *  различаться только подписью и списком, и jscpd справедливо увидел дубль. */
+function PlanGroup({
+  label,
+  plans,
+  onUpdate,
+  spaced,
+}: {
+  label: string;
+  plans: PracticePlan[];
+  onUpdate: React.Dispatch<React.SetStateAction<PracticePlan[] | null>>;
+  spaced?: boolean;
+}) {
+  if (plans.length === 0) return null;
+  return (
+    <div className={spaced ? 'u-mb24' : undefined}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.10em',
+          textTransform: 'uppercase',
+          color: 'var(--text-faint)',
+          marginBottom: 10,
+        }}
+      >
+        {label}
+      </div>
+      <div className="u-col10">
+        {plans.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} onUpdate={onUpdate} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
@@ -60,13 +98,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           padding: '16px 20px 14px',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-12)',
-          }}
-        >
+        <div className="u-ac12">
           <button
             onClick={onClose}
             aria-label="Назад"
@@ -180,63 +212,17 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           </div>
         ) : (
           <>
-            {/* Pending plans */}
-            {pending.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.10em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-faint)',
-                    marginBottom: 10,
-                  }}
-                >
-                  Ожидают выполнения
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-10)',
-                  }}
-                >
-                  {pending.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Completed plans */}
-            {completed.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.10em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-faint)',
-                    marginBottom: 10,
-                  }}
-                >
-                  Выполненные
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-10)',
-                  }}
-                >
-                  {completed.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />
-                  ))}
-                </div>
-              </div>
-            )}
+            <PlanGroup
+              label="Ожидают выполнения"
+              plans={pending}
+              onUpdate={setPlans}
+              spaced
+            />
+            <PlanGroup
+              label="Выполненные"
+              plans={completed}
+              onUpdate={setPlans}
+            />
           </>
         )}
       </div>

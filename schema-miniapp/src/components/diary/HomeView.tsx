@@ -42,7 +42,7 @@ function StreakChip({ streak }: { streak: number }) {
       <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--accent)' }}>
         {streak}
       </span>
-      <span className="d-caps" style={{ color: 'var(--accent)' }}>
+      <span className="d-caps u-accent">
         {plural(streak, 'день', 'дня', 'дней')}
       </span>
     </div>
@@ -118,7 +118,7 @@ export function HomeView({
             ‹
           </span>
         )}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="u-fill">
           <h1 className="d-display" style={{ fontSize: 27, margin: 0 }}>
             Мои дневники
           </h1>
