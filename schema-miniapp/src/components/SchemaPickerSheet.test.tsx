@@ -124,6 +124,61 @@ describe('SchemaPickerSheet — автосохранение (баг PR #237)', 
   });
 });
 
+describe('SchemaPickerSheet — клавиатура', () => {
+  function getCard(schemaName: string): HTMLElement {
+    const label = screen.getByText(schemaName);
+    const card = label.closest('[role="button"]');
+    if (!card) throw new Error(`card not found for ${schemaName}`);
+    return card as HTMLElement;
+  }
+
+  it('Enter отмечает схему — счётчик растёт', () => {
+    render(
+      <SchemaPickerSheet selected={[]} onSave={() => {}} onClose={() => {}} />,
+    );
+    const card = getCard('Покинутость / Нестабильность');
+    fireEvent.keyDown(card, { key: 'Enter' });
+    expect(screen.getByText('Готово (1)')).toBeTruthy();
+  });
+
+  it('Пробел снимает отметку у уже выбранной схемы', () => {
+    render(
+      <SchemaPickerSheet
+        selected={['abandonment']}
+        onSave={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const card = getCard('Покинутость / Нестабильность');
+    fireEvent.keyDown(card, { key: ' ' });
+    expect(screen.getByText('Готово')).toBeTruthy();
+    expect(screen.queryByText(/Готово \(/)).toBeNull();
+  });
+
+  it('прочие клавиши ничего не меняют', () => {
+    render(
+      <SchemaPickerSheet selected={[]} onSave={() => {}} onClose={() => {}} />,
+    );
+    const card = getCard('Покинутость / Нестабильность');
+    fireEvent.keyDown(card, { key: 'a' });
+    expect(screen.getByText('Готово')).toBeTruthy();
+    expect(screen.queryByText(/Готово \(/)).toBeNull();
+  });
+
+  it('Enter с клавиатуры сохраняет так же, как клик — после дебаунса onSave вызван с id', () => {
+    const onSave = vi.fn();
+    render(
+      <SchemaPickerSheet selected={[]} onSave={onSave} onClose={() => {}} />,
+    );
+    const card = getCard('Покинутость / Нестабильность');
+    fireEvent.keyDown(card, { key: 'Enter' });
+    expect(onSave).not.toHaveBeenCalled();
+    void act(() => vi.advanceTimersByTime(700));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith(['abandonment']);
+  });
+});
+
 describe('SchemaPickerSheet — обращение ты/вы', () => {
   it('форма «ты»', () => {
     renderWithForm(
