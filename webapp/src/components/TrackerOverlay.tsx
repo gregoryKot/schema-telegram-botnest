@@ -5,7 +5,7 @@ import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
@@ -86,8 +86,14 @@ export function TrackerOverlay({
           try {
             await api.saveRating(needId, v, date);
             setLastSavedAt(new Date());
-          } catch {
-            /* best-effort: ошибку намеренно игнорируем */
+          } catch (e) {
+            // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
+            // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
+            console.error('saveRating failed', e);
+            reportClientError({
+              message: 'tracker backfill rating save failed',
+              section: 'tracker',
+            });
           }
         }, 500);
         return;
@@ -101,8 +107,13 @@ export function TrackerOverlay({
           const res = await api.saveRating(needId, v);
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
-        } catch {
-          /* best-effort: ошибку намеренно игнорируем */
+        } catch (e) {
+          // См. бэкафилл-ветку выше: здесь только ошибка запроса.
+          console.error('saveRating failed', e);
+          reportClientError({
+            message: 'tracker rating save failed',
+            section: 'tracker',
+          });
         }
       }, 500);
     },
@@ -202,7 +213,7 @@ export function TrackerOverlay({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           background: 'none',
           border: 'none',
           color: 'var(--text-sub)',
@@ -234,7 +245,7 @@ export function TrackerOverlay({
             style={{
               width: 30,
               height: 30,
-              borderRadius: 6,
+              borderRadius: 'var(--r-6)',
               display: 'grid',
               placeItems: 'center',
               background: 'none',
@@ -267,7 +278,7 @@ export function TrackerOverlay({
             style={{
               width: 30,
               height: 30,
-              borderRadius: 6,
+              borderRadius: 'var(--r-6)',
               display: 'grid',
               placeItems: 'center',
               background: 'none',
@@ -303,7 +314,7 @@ export function TrackerOverlay({
         alignItems: 'center',
         borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
         flexShrink: 0,
-        gap: 8,
+        gap: 'var(--space-8)',
       }}
     >
       {/* Left: previous need */}
@@ -314,7 +325,7 @@ export function TrackerOverlay({
           style={{
             display: 'inline-flex',
             alignItems: 'baseline',
-            gap: 8,
+            gap: 'var(--space-8)',
             background: 'none',
             border: 'none',
             cursor: idx === 0 ? 'default' : 'pointer',
@@ -362,7 +373,7 @@ export function TrackerOverlay({
             onClick={() => setShowCompletion(true)}
             style={{
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: 'none',
               background: 'var(--text)',
               color: 'var(--bg)',
@@ -379,9 +390,9 @@ export function TrackerOverlay({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: 'none',
               background: 'var(--text)',
               color: 'var(--bg)',
@@ -412,7 +423,7 @@ export function TrackerOverlay({
             }}
             style={{
               padding: '10px 20px',
-              borderRadius: 8,
+              borderRadius: 'var(--r-8)',
               border: '1px solid rgba(var(--fg-rgb),0.12)',
               background: 'transparent',
               color: 'var(--text-sub)',

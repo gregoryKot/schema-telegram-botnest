@@ -17,9 +17,20 @@ export function HomeScreenOfferCard() {
   return (
     <div
       className="card"
-      style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}
+      style={{
+        padding: 18,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-12)',
+      }}
     >
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--space-12)',
+          alignItems: 'flex-start',
+        }}
+      >
         <span style={{ fontSize: 24, lineHeight: '28px', flexShrink: 0 }}>
           📲
         </span>
@@ -58,7 +69,7 @@ export function HomeScreenOfferCard() {
         Добавить значок
       </AddHomeScreenButton>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
         <button
           onClick={offer.later}
           style={{

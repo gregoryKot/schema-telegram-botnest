@@ -32,7 +32,7 @@ export function SheetHeader({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: 'var(--space-10)',
         paddingBottom: 18,
       }}
     >
@@ -64,7 +64,7 @@ export function SheetHeader({
             flexShrink: 0,
             minHeight: 44,
             padding: '11px 16px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             fontSize: 14,
@@ -95,11 +95,11 @@ export function SummaryBlock({
     <div
       style={{
         background: 'var(--surface-2)',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         padding: '12px 14px',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         marginBottom: 18,
       }}
     >

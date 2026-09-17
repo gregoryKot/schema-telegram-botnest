@@ -9,6 +9,8 @@ import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { setHost, type HostBridge } from '../../../shared/src/host';
 
 vi.mock('../api', () => ({
   api: {
@@ -17,6 +19,7 @@ vi.mock('../api', () => ({
     addPractice: vi.fn().mockResolvedValue(undefined),
     createPlan: vi.fn().mockResolvedValue(undefined),
     deletePractice: vi.fn().mockResolvedValue(undefined),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -55,7 +58,7 @@ beforeEach(() => {
   mockApi.deletePractice.mockResolvedValue(undefined);
 });
 
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); setHost(null); });
 
 describe('PlanSheet — выбор готового варианта', () => {
   it('клик по готовой практике переводит в подтверждение с текстом практики', async () => {
@@ -195,6 +198,40 @@ describe('PlanSheet — удаление своей практики', () => {
   });
 });
 
+describe('PlanSheet — .ics-экспорт (паритет с мини-аппом, правило №16)', () => {
+  it('клик «Добавить в календарь» зовёт host.saveFile с .ics файлом', async () => {
+    const saveFile = vi.fn();
+    setHost({ id: 'web', saveFile } as unknown as HostBridge);
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'Своя практика' } });
+    fireEvent.click(screen.getByText('Продолжить →'));
+
+    fireEvent.click(screen.getByText('Добавить в календарь (.ics)'));
+    expect(saveFile).toHaveBeenCalledWith(
+      expect.stringContaining('text/calendar'),
+      'practice.ics',
+    );
+  });
+});
+
+describe('PlanSheet — кризисная детекция (правило №7)', () => {
+  it('кризисный маркер в свободном тексте плана показывает CrisisCard с телефоном доверия', async () => {
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  it('нейтральный текст плана не показывает CrisisCard', async () => {
+    await act(async () => renderSheet());
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    fireEvent.change(textarea, { target: { value: 'Погулять в парке 20 минут' } });
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
 describe('PlanSheet — useHistorySheet (браузерная «Назад»)', () => {
   it('кнопка «Назад» на шаге выбора закрывает лист через goBack (не оставляет висящую историю)', async () => {
     const { onClose } = renderSheet();
@@ -212,5 +249,28 @@ describe('PlanSheet — useHistorySheet (браузерная «Назад»)', 
     fireEvent.click(screen.getByText('← Выбрать другое'));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByPlaceholderText('Что-то конкретное, маленькое...')).toBeTruthy();
+  });
+});
+
+describe('PlanSheet — сбой загрузки своих практик (сбой ≠ пусто)', () => {
+  // Регрессия: отказ getPractices глушился — свои практики молча пропадали
+  // из выбора, человек видел только готовый список, как будто своих нет.
+  it('отказ getPractices — видна строка отказа, готовые варианты остаются', async () => {
+    mockApi.getPractices.mockRejectedValue(new Error('offline'));
+    renderSheet();
+    await act(async () => {});
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Не удалось загрузить твои практики',
+    );
+    // Кураторский список работает — деградация, не пустота.
+    expect(screen.getByText('Готовые варианты')).toBeTruthy();
+  });
+
+  it('успешная загрузка — строки отказа нет', async () => {
+    mockApi.getPractices.mockResolvedValue([]);
+    renderSheet();
+    await act(async () => {});
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

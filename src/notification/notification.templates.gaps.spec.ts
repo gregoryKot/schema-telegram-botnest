@@ -233,9 +233,16 @@ describe('renderTemplate — pair_activity / ysq_requested', () => {
     expect(result.text).toContain('Терапевт Иванова А.С. просит');
   });
 
-  it('ysq_requested без имени терапевта — нейтральная формулировка', () => {
-    const result = renderTemplate('ysq_requested', {})!;
-    expect(result.text).toContain('Ваш терапевт просит');
+  it('ysq_requested без имени терапевта — форма "ты"', () => {
+    const result = renderTemplate('ysq_requested', {}, 'ty')!;
+    expect(result.text).toContain('Твой терапевт просит тебя');
+    expect(result.text).toContain('твои схемы');
+  });
+
+  it('ysq_requested без имени терапевта — форма "вы"', () => {
+    const result = renderTemplate('ysq_requested', {}, 'vy')!;
+    expect(result.text).toContain('Ваш терапевт просит вас');
+    expect(result.text).toContain('ваши схемы');
   });
 });
 

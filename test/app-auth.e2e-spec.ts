@@ -21,7 +21,10 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
-import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
   let app: INestApplication;
@@ -36,6 +39,8 @@ describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
     await cleanupOwnershipFixtures(prisma, [USER_GUARDED, USER_PIPE]);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, [USER_GUARDED, USER_PIPE]);
   });
 
   afterAll(async () => {

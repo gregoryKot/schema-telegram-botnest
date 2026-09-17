@@ -5,6 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Ярлык/установка с любой страницы сайта ставит приложение: start_url
+         ведёт в мини-апп /app/ (docs/PWA_PLAN.md — база установки именно он).
+         На персональном домене ссылка убирается в applyPersonalSiteChrome. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Apply theme BEFORE any rendering to prevent white flash -->
@@ -25,7 +29,7 @@
 
     <!-- ── Primary SEO ──────────────────────────────────────────────────────── -->
     <title>Григорий Котляревский – схема-терапия онлайн | schemehappens.ru</title>
-    <meta name="description" content="Индивидуальные онлайн-консультации в подходе схема-терапии и КПТ. Работа с тем, что мешает жить – тревогой, самооценкой, отношениями. Первая встреча – бесплатно." />
+    <meta name="description" content="Индивидуальные онлайн-консультации в подходе схема-терапии и КПТ. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча – бесплатно." />
     <meta name="keywords" content="схема-терапия онлайн, когнитивно-поведенческая терапия, КПТ онлайн, психологическое консультирование онлайн, работа с паттернами, тревога, самооценка, отношения" />
     <meta name="author" content="Котляревский Григорий Юрьевич" />
     <link rel="canonical" href="https://schemehappens.ru/" />
@@ -36,7 +40,7 @@
     <meta property="og:url"         content="https://schemehappens.ru/" />
     <meta property="og:site_name"   content="Григорий Котляревский" />
     <meta property="og:title"       content="Григорий Котляревский – схема-терапия онлайн" />
-    <meta property="og:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить – тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
+    <meta property="og:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
     <meta property="og:image"       content="https://cdn.jsdelivr.net/gh/gregoryKot/schema-telegram-botnest@main/webapp/public/og-cover-v2.jpg" />
     <meta property="og:image:type"  content="image/jpeg" />
     <meta property="og:image:width"  content="1200" />
@@ -46,7 +50,7 @@
     <!-- ── Twitter / X Card ────────────────────────────────────────────────── -->
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content="Григорий Котляревский – схема-терапия онлайн" />
-    <meta name="twitter:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить – тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
+    <meta name="twitter:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
     <meta name="twitter:image"       content="https://cdn.jsdelivr.net/gh/gregoryKot/schema-telegram-botnest@main/webapp/public/og-cover-v2.jpg" />
 
     <!-- ── Robots / Crawl hints ────────────────────────────────────────────── -->
@@ -129,7 +133,7 @@
               "name": "Что такое схема-терапия?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Схема-терапия – интегративный подход, разработанный Джеффри Янгом. Он объединяет элементы КПТ, психоанализа и гештальт-терапии и работает с глубинными убеждениями (схемами), которые формируются в детстве и управляют нашими реакциями во взрослом возрасте. Особенно эффективна при хронических паттернах в отношениях, самооценке и эмоциональной регуляции."
+                "text": "Схема-терапия – интегративный подход, разработанный Джеффри Янгом. Он объединяет элементы КПТ, психоанализа и гештальт-терапии и работает с глубинными убеждениями (схемами), которые формируются в детстве и управляют нашими реакциями во взрослом возрасте. Сильнее всего изучена при хронических паттернах в отношениях, самооценке и эмоциональной регуляции."
               }
             },
             {
@@ -137,7 +141,7 @@
               "name": "Кому подходит схема-терапия?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Схема-терапия подходит людям, которые замечают повторяющиеся паттерны – в отношениях, самооценке, тревоге, хронической неудовлетворённости. Она особенно эффективна, когда «обычные» подходы не давали устойчивого результата, и когда человек хочет понять глубинные причины своих реакций, а не только снять симптом."
+                "text": "Схема-терапия подходит людям, которые замечают повторяющиеся паттерны – в отношениях, самооценке, тревоге, хронической неудовлетворённости. Она к месту, когда «обычные» подходы не давали устойчивого результата, и когда человек хочет понять глубинные причины своих реакций, а не только снять симптом."
               }
             },
             {
@@ -161,7 +165,7 @@
               "name": "Это то же самое, что психотерапия?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Нет. Услуги являются психологическим консультированием, а не медицинской психотерапией в смысле ФЗ-323. Это означает, что они не требуют медицинского образования и не заменяют работу с врачом-психиатром. При наличии симптомов психических расстройств рекомендуется обратиться к медицинскому специалисту."
+                "text": "Нет. Это психологическое консультирование, а не медицинская психотерапия в смысле ФЗ-323. Такая работа не требует медицинского образования и не заменяет врача-психиатра. При наличии симптомов психических расстройств рекомендуется обратиться к медицинскому специалисту."
               }
             },
             {
@@ -178,10 +182,19 @@
     }
     </script>
 
-    <!-- ── Fonts (self-hosted – no Google dependency) ───────────────────────── -->
-    <link rel="preload" href="/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- ── Fonts (self-hosted – no Google dependency) ─────────────────────────
+         Manrope/Spectral — единая пара продукта (shared/src/theme/tokens.css),
+         нужна каждому визитору, поэтому в preload вместо Instrument Serif
+         (теперь используется только изолированной личной страницей
+         терапевта, .landing-personal-brand — не стоит преференса всем). -->
+    <link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/spectral-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <script src="/telegram-web-app.js" async></script>
+    <!-- Google Identity Services: нативная всплывашка One Tap на экране входа
+         (webapp/src/hooks/useGoogleOneTap.ts). Грузится и работает, только если
+         задан VITE_GOOGLE_CLIENT_ID и origin разрешён в Google Cloud Console —
+         иначе тихо не показывается, остаются обычные кнопки входа. -->
+    <script src="https://accounts.google.com/gsi/client" async></script>
   </head>
   <body>
     <div id="root"></div>

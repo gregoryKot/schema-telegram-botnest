@@ -88,7 +88,7 @@ export function GratitudeCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 8,
+              gap: 'var(--space-8)',
             }}
           >
             <DeleteBtn color={color} onClick={onDelete} />

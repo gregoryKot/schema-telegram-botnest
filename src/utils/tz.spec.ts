@@ -168,10 +168,16 @@ describe('zoneFormatter — кэш форматтера по зоне', () => {
     // словить чужой прогрев кэша (formatterCache общий на модуль).
     const constructorSpy = jest.spyOn(Intl, 'DateTimeFormat');
     try {
-      localMidnightUTC('2026-05-01', 'Asia/Tokyo');
-      localMidnightUTC('2026-05-02', 'Asia/Tokyo');
-      localMidnightUTC('2026-05-03', 'Asia/Tokyo');
+      const first = localMidnightUTC('2026-05-01', 'Asia/Tokyo');
+      const second = localMidnightUTC('2026-05-01', 'Asia/Tokyo');
+      const third = localMidnightUTC('2026-05-03', 'Asia/Tokyo');
       expect(constructorSpy).toHaveBeenCalledTimes(1);
+      // Не только «конструктор звался один раз» — переиспользованный
+      // форматтер обязан считать те же стенные часы, а не что попало.
+      // Токио без DST: полночь = UTC-15:00 предыдущего дня.
+      expect(second.toISOString()).toBe(first.toISOString());
+      expect(first.toISOString()).toBe('2026-04-30T15:00:00.000Z');
+      expect(third.toISOString()).toBe('2026-05-02T15:00:00.000Z');
     } finally {
       constructorSpy.mockRestore();
     }

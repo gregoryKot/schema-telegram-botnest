@@ -40,13 +40,13 @@ export function ClientCard({
       {...pressable(() => onOpen(c))}
       className="card"
       style={{
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         marginBottom: 8,
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
       }}
     >
       {/* Avatar */}

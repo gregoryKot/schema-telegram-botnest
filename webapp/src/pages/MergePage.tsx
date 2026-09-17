@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { useAuth } from '../auth/authContext';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels'; import { useTr } from '../utils/addressForm';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -10,7 +11,7 @@ export function MergePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { setAccessToken } = useAuth();
-  const [busy, setBusy] = useState(false);
+  const tr = useTr(); const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -43,6 +44,9 @@ export function MergePage() {
       }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
+      // Данные другого аккаунта переехали на текущий userId — старый кеш
+      // (списки без перенесённых записей) обязан уйти вместе с ним.
+      clearApiCache();
       navigate('/account', { replace: true });
     } catch (e) {
       setError(String(e));
@@ -57,7 +61,7 @@ export function MergePage() {
         Объединить аккаунты?
       </h1>
       <div className="text-md muted" style={{ maxWidth: 600, lineHeight: 1.6, marginBottom: 36 }}>
-        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными. Если объединить – все они переедут в твой текущий аккаунт.
+        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
       </div>
 
       <div className="section">
@@ -89,7 +93,7 @@ export function MergePage() {
         </div>
       )}
 
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
+      <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
         <input
           type="checkbox"
           checked={acknowledged}
@@ -102,10 +106,10 @@ export function MergePage() {
         </span>
       </label>
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 20 }}>
         <button disabled={busy || !acknowledged} onClick={confirm} className="btn btn-primary">
           {busy ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)' }}>
               <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
               Объединяю…
             </span>

@@ -38,7 +38,7 @@ export function PastLetters({
             padding: '11px 14px',
             background: 'rgba(var(--fg-rgb),0.03)',
             border: '1px solid rgba(var(--fg-rgb),0.06)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             marginBottom: 7,
             cursor: 'pointer',
           }}

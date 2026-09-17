@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 // Тесты HTTP-слоя webapp (api.ts) — TEST_COVERAGE_PLAN этап 2 п.10.
 //
-// ВАЖНО: в api.ts НЕТ логики refresh/retry при 401. Обновление access-токена
-// живёт отдельно, в src/auth/AuthContext.tsx (doRefresh по таймеру, за 60с до
-// истечения expiresIn) — api.ts просто использует то, что вернёт
-// setTokenProvider(), и при 401 бросает обычный Error, без похода на
-// /api/auth/refresh и без повторного запроса. Тесты ниже фиксируют это
-// РЕАЛЬНОЕ поведение, а не предполагаемый interceptor-паттерн.
+// Сетевая инфраструктура (get/post/authedFetch/401-retry) переехала в
+// apiClient.ts (правило №10 — api.ts не имеет права расти сверх бейслайна;
+// правило №3 — зеркало schema-miniapp/src/apiClient.ts). api.ts зовёт
+// setRefreshHandler() только через TokenBridge (App.tsx) в реальном
+// приложении — по умолчанию, пока его никто не вызвал, _refresh === null и
+// 401 ведёт себя как раньше: единственный запрос, без похода на
+// /api/auth/refresh. Тесты ниже фиксируют оба режима — «хэндлера нет» (по
+// умолчанию) и «хэндлер есть» (диагностика «постоянно нужно логиниться
+// заново», 2026-08-21, пункт 4).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api, setTokenProvider, reportClientError } from './api';
+import { api, ApiError, setTokenProvider, setRefreshHandler, reportClientError } from './api';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -31,7 +35,16 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
+  // Кеш GET-ответов (apiCache.ts) живёт в памяти модуля — без сброса каждый
+  // повторный api.getSettings() в этом файле отвечал бы из кеша предыдущего
+  // теста, а не бил mock fetch заново.
+  clearApiCache();
   setTokenProvider(() => null);
+  // По умолчанию — режим «хэндлера нет» (как в проде до маунта TokenBridge):
+  // refresh не удался, authedFetch отдаёт исходный 401 без второго запроса.
+  // Это сохраняет старое поведение всех тестов ниже, кроме тех, что явно
+  // регистрируют свой хэндлер (describe «setRefreshHandler» в конце файла).
+  setRefreshHandler(() => Promise.resolve(false));
 });
 
 afterEach(() => {
@@ -72,6 +85,9 @@ describe('authHeaders — формат заголовка авторизации
     );
 
     current = 'second';
+    // Второй вызов обязан реально дойти до сети (а не отдаться из свежего
+    // кеша apiCache.ts) — тест проверяет именно чтение токена ПЕРЕД отправкой.
+    clearApiCache();
     await api.getSettings();
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe(
       'Bearer second',
@@ -115,10 +131,16 @@ describe('запросы всегда идут с credentials: "include"', () =>
 
 // ── 401 ──────────────────────────────────────────────────────────────────────
 describe('401 Unauthorized', () => {
-  it('get<T>: бросает Error("API error: 401"), НЕ обращается к /api/auth/refresh, НЕ ретраит', async () => {
+  it('get<T>: бросает ApiError со status=401 и серверным message, НЕ обращается к /api/auth/refresh, НЕ ретраит', async () => {
     fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
 
-    await expect(api.getSettings()).rejects.toThrow('API error: 401');
+    // Ветвление потребителей — по полю status (ArticlePage: 404 ≠ сеть),
+    // текст message приходит с сервера и может меняться свободно.
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401, message: 'Unauthorized' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
+    await expect(api.getSettings()).rejects.toBeInstanceOf(ApiError);
 
     // Один вызов на исходный запрос — ни ретрая, ни рефреша.
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -162,16 +184,19 @@ describe('401 Unauthorized', () => {
 
 // ── Проброс не-401 ошибок ────────────────────────────────────────────────────
 describe('проброс ошибок для не-401 статусов', () => {
-  it('get<T>: любой !ok статус даёт "API error: <status>" (тело ответа не парсится)', async () => {
-    const res = brokenJsonResponse(500); // res.json() всегда падает — get не должен его дёргать
+  it('get<T>: непарсибельное тело — фолбэк "API error: <status>", status полем сохранён', async () => {
+    const res = brokenJsonResponse(500); // res.json() падает — остаётся код статуса
     fetchMock.mockResolvedValue(res);
 
-    await expect(api.getSettings()).rejects.toThrow('API error: 500');
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 500, message: 'API error: 500' });
   });
 
-  it('del: любой !ok статус даёт "API error: <status>" без парсинга тела', async () => {
+  it('del: непарсибельное тело — фолбэк "API error: <status>"; message из тела пробрасывается, когда есть', async () => {
     fetchMock.mockResolvedValue(brokenJsonResponse(403));
-    await expect(api.deletePractice(1)).rejects.toThrow('API error: 403');
+    await expect(api.deletePractice(1)).rejects.toMatchObject({ status: 403, message: 'API error: 403' });
+
+    fetchMock.mockResolvedValue(jsonResponse(409, { message: 'Уже удалено' }));
+    await expect(api.deletePractice(1)).rejects.toMatchObject({ status: 409, message: 'Уже удалено' });
   });
 
   it('postJson: при строковом message из тела бросает именно это сообщение', async () => {
@@ -378,8 +403,21 @@ describe('adminReq — успешный статус без валидного J
   });
 });
 
-// ── saveRating — ручной fetch (не через get/post) ────────────────────────────
+// ── saveRating — оффлайн-надёжность (правило №3 CLAUDE.md) ───────────────────
+// До 2026-08 сетевой сбой saveRating терялся молча: голый fetch без outbox,
+// а TrackerOverlay глушил отказ `catch {}` — центральное ежедневное действие
+// продукта было надёжным только в мини-аппе. Теперь тот же контракт, что там
+// (schema-miniapp/src/api.ts): 4xx — реальная ошибка запроса, пробрасывается;
+// сеть/таймаут/5xx — оценка уходит в общую (shared) outbox-очередь и ответ
+// приходит успешным (сервер upsert-ит по (userId, date, needId), повтор
+// безопасен).
+const OUTBOX_KEY = 'rating_outbox_v1';
+
 describe('saveRating — прямой fetch-вызов', () => {
+  beforeEach(() => {
+    localStorage.removeItem(OUTBOX_KEY);
+  });
+
   it('успех: тело запроса содержит needId/value/date, возвращает распарсенный JSON', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, {
@@ -403,9 +441,90 @@ describe('saveRating — прямой fetch-вызов', () => {
     });
   });
 
-  it('!ok статус: бросает Error("API error: <status>"), ошибка видна вызывающему', async () => {
+  it('4xx: бросает Error("API error: <status>"), НЕ кладёт оценку в outbox', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(404, {}));
+    await expect(
+      api.saveRating('safety', 7, '2026-01-15'),
+    ).rejects.toThrow('API error: 404');
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+  });
+
+  it('5xx: НЕ бросает — оценка уходит в outbox, ответ успешен (allDone: false)', async () => {
     fetchMock.mockResolvedValue(jsonResponse(500, {}));
-    await expect(api.saveRating('safety', 7)).rejects.toThrow('API error: 500');
+    const result = await api.saveRating('safety', 7, '2026-01-15');
+
+    expect(result).toEqual({ ok: true, allDone: false });
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      { needId: 'safety', value: 7, date: '2026-01-15' },
+    ]);
+  });
+
+  it('сетевой сбой (fetch реджектится): НЕ бросает — оценка уходит в outbox, ответ успешен', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const result = await api.saveRating('safety', 7, '2026-01-15');
+
+    expect(result).toEqual({ ok: true, allDone: false });
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      { needId: 'safety', value: 7, date: '2026-01-15' },
+    ]);
+  });
+
+  it('без явной даты — в outbox уходит today() (upsert должен видеть "сегодня по мнению юзера")', async () => {
+    fetchMock.mockRejectedValue(new TypeError('offline'));
+    await api.saveRating('safety', 7);
+
+    const queued = JSON.parse(localStorage.getItem(OUTBOX_KEY)!);
+    expect(queued).toHaveLength(1);
+    expect(queued[0].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// ── flushOutbox — read-after-write: сохранил при упавшей сети → флаш при
+// следующем старте дошивает очередь и чистит её (см. useBootstrapLoad.ts).
+describe('flushOutbox — связка сохранение→отправка', () => {
+  beforeEach(() => {
+    localStorage.removeItem(OUTBOX_KEY);
+  });
+
+  it('доотправляет накопленную оценку и очищает очередь', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await api.saveRating('safety', 6, '2026-01-15');
+    expect(localStorage.getItem(OUTBOX_KEY)).not.toBeNull();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true, allDone: false }));
+    await api.flushOutbox();
+
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+    const [, init] = fetchMock.mock.calls[1];
+    expect(JSON.parse(init.body)).toEqual({
+      needId: 'safety',
+      value: 6,
+      date: '2026-01-15',
+    });
+  });
+
+  it('шлёт outbox_flush в аналитику, только если реально что-то доехало', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('offline'));
+    await api.saveRating('safety', 6, '2026-01-15');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true, allDone: false }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true })); // /api/event
+    await api.flushOutbox();
+
+    const eventCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/api/event'),
+    );
+    expect(eventCall).toBeDefined();
+    const [, init] = eventCall!;
+    expect(JSON.parse(init.body)).toEqual({
+      name: 'outbox_flush',
+      meta: { count: 1 },
+    });
+  });
+
+  it('пустая очередь — ничего не отправляет', async () => {
+    await api.flushOutbox();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -667,6 +786,32 @@ describe('личный контент — URL, метод, тело запрос
     fetchMock.mockResolvedValue(jsonResponse(200, []));
     await api.getPhraseChecks();
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/phrase-checks');
+  });
+
+  it('createPhraseCheck: POST /api/phrase-checks с телом разбора', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createPhraseCheck({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+  });
+
+  it('updatePhraseCheck: PATCH /api/phrase-checks/:id с rewrite', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 5, rewrite: 'новый ответ' }));
+    await api.updatePhraseCheck(5, 'новый ответ');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ rewrite: 'новый ответ' });
+  });
+
+  it('deletePhraseCheck: DELETE по id', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deletePhraseCheck(5);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('DELETE');
   });
 
   it('getBeliefChecks: GET /api/belief-checks', async () => {
@@ -947,5 +1092,62 @@ describe('админские эндпоинты — оставшиеся мет�
     fetchMock.mockResolvedValue(jsonResponse(200, {}));
     await api.getMyModeMap(99);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/api/therapy/my-mode-maps/99');
+  });
+});
+
+// ── setRefreshHandler — 401 перевыпускает сессию и повторяет запрос ──────────
+// Диагностика «постоянно нужно логиниться заново» (2026-08-21, пункт 4): у
+// сайта не было НИ ОДНОЙ попытки перевыпустить сессию на 401 обычного
+// запроса — мини-апп это уже умел (apiClient.ts:authedFetch), сайт просто
+// бросал ошибку. В проде хэндлер кладёт TokenBridge (App.tsx), здесь —
+// напрямую через setRefreshHandler (зеркало schema-miniapp/src/apiClient.test.ts).
+describe('setRefreshHandler — 401 → перевыпуск сессии → повтор запроса', () => {
+  it('успешный refresh повторяет запрос и получает данные', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(401, {})) // исходный запрос: токен истёк
+      .mockResolvedValueOnce(jsonResponse(200, { addressForm: 'ty' })); // повтор — уже с новым токеном
+
+    await expect(api.getSettings()).resolves.toEqual({ addressForm: 'ty' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('POST/postJson тоже повторяется — действие не теряется из-за истёкшей сессии', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(401, {}))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    await expect(api.updateName('Аня')).resolves.toEqual({ ok: true });
+    const [, retryInit] = fetchMock.mock.calls[1];
+    expect(JSON.parse(retryInit.body)).toEqual({ name: 'Аня' });
+  });
+
+  it('refresh не удался (сессия мертва) — единственный запрос, ошибка исходного 401 долетает как есть', async () => {
+    setRefreshHandler(() => Promise.resolve(false));
+    fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
+
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('успешный запрос не трогает refresh-хэндлер — лишних вызовов нет', async () => {
+    const refresh = vi.fn().mockResolvedValue(true);
+    setRefreshHandler(refresh);
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+
+    await api.getSettings();
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('повторный запрос всё равно 401 — второй раз не рефрешит, ошибка долетает', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock.mockResolvedValue(jsonResponse(401, {})); // и исходный, и повтор — 401
+
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401 });
+    // Один поход к refresh-хэндлеру, два похода к самому эндпоинту (исходный + повтор).
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

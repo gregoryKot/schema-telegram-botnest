@@ -50,10 +50,27 @@ afterEach(() => {
 });
 
 describe('TrackerOverlay — debounce сохранения оценки (обычный режим, не бэкафилл)', () => {
-  it('не отправляет запрос сразу — только после паузы 500мс', () => {
+  it('не отправляет запрос сразу — только после паузы', () => {
     render(<TrackerOverlay {...baseProps()} />);
     fireEvent.click(screen.getByLabelText('Поставить 3'));
     expect(mockApi.saveRating).not.toHaveBeenCalled();
+  });
+
+  // Замер 2026-08-22: пауза была 500мс, и подтверждение сохранения (а с ним
+  // серия и празднование) появлялось через 710-1130мс — половину этого
+  // времени человек ждал не сеть, а нас. Тест держит границу: пауза
+  // существует (склеивает протаскивание пальцем), но она короткая.
+  it('пауза короткая: до 180мс запроса нет, сразу после — уходит', async () => {
+    render(<TrackerOverlay {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText('Поставить 3'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(170);
+    });
+    expect(mockApi.saveRating).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20);
+    });
+    expect(mockApi.saveRating).toHaveBeenCalledWith('safety', 3);
   });
 
   it('НЕ БАГ: серия быстрых тапов по одной потребности — сохраняется ПОСЛЕДНЕЕ значение, один вызов api', async () => {

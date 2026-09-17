@@ -15,9 +15,18 @@ import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExp
 export function ModeStateStep({
   onPickGroup,
   onPickMode,
+  showDiaryExplainer = true,
 }: {
   onPickGroup: (groupId: string) => void;
   onPickMode: (modeId: string) => void;
+  /**
+   * Абзац «Дневник — про вчерашний вечер…» написан для дневника режимов —
+   * он противопоставляет дневник карточке. В разборе случая (CaseFlowSheet)
+   * тот же шаг работает про ТЕКУЩИЙ момент, и абзац там сбивает («при чём
+   * тут вчерашний вечер?») да ещё и произносит слово «режим» до экрана,
+   * который его вводит. Фидбек владельца 2026-08-31.
+   */
+  showDiaryExplainer?: boolean;
 }) {
   const tr = useTr();
   const [showList, setShowList] = useState(false);
@@ -41,16 +50,18 @@ export function ModeStateStep({
         )}
       </div>
 
-      <div
-        style={{
-          fontSize: 13,
-          color: 'var(--faint)',
-          lineHeight: 1.5,
-          marginBottom: 18,
-        }}
-      >
-        {buildModeDiaryExplainer(tr)}
-      </div>
+      {showDiaryExplainer && (
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--faint)',
+            lineHeight: 1.5,
+            marginBottom: 18,
+          }}
+        >
+          {buildModeDiaryExplainer(tr)}
+        </div>
+      )}
 
       <DiaryPanel>
         {MODE_PICKER_GROUPS.map((g) => (

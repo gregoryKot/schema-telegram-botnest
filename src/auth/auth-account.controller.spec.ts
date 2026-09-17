@@ -31,6 +31,7 @@ const FAKE_TOKENS: TokenPair = {
   accessToken: 'access-abc',
   refreshToken: 'refresh-abc',
   expiresIn: 900,
+  rotated: true,
 };
 
 type AuthMock = Pick<
@@ -135,9 +136,10 @@ function makeReq(
   opts: {
     csrf?: boolean;
     webUser?: { userId: bigint };
+    headers?: Record<string, string>;
   } = {},
 ): Request {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...opts.headers };
   if (opts.csrf !== false) headers['x-requested-with'] = 'XMLHttpRequest';
   return {
     headers,
@@ -147,11 +149,20 @@ function makeReq(
   } as unknown as Request;
 }
 
-function makeRes(): Response & { cookie: jest.Mock; redirect: jest.Mock } {
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  clearCookie: jest.Mock;
+  redirect: jest.Mock;
+} {
   return {
     cookie: jest.fn(),
+    clearCookie: jest.fn(),
     redirect: jest.fn(),
-  } as unknown as Response & { cookie: jest.Mock; redirect: jest.Mock };
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    clearCookie: jest.Mock;
+    redirect: jest.Mock;
+  };
 }
 
 function makeController(opts: { providers?: ProvidersMock } = {}) {
@@ -192,7 +203,7 @@ describe('AuthAccountController.emailLoginLink', () => {
   it('валидный запрос → делегирует в auth.requestEmailLogin', async () => {
     const { controller, auth } = makeController();
     const res = await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
-    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru');
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', undefined);
     expect(res).toEqual({ ok: true });
   });
 });
@@ -207,7 +218,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       FAKE_TOKENS.refreshToken,
@@ -227,7 +238,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/account?linked=email`,
     );
@@ -244,7 +255,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', makeReq(), res);
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
@@ -256,7 +267,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
     emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
-      controller.emailLoginCallback('bad-tok', makeReq(), res),
+      controller.emailLoginCallback('bad-tok', '', makeReq(), res),
     ).resolves.toBeUndefined();
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith(
@@ -326,6 +337,22 @@ describe('AuthAccountController.telegramWebApp', () => {
       accessToken: FAKE_TOKENS.accessToken,
       expiresIn: FAKE_TOKENS.expiresIn,
     });
+  });
+
+  // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
+  // MAX — Strict-кука там не продлевается (2026-08-21, «постоянно нужно
+  // логиниться заново»). Нативное вебвью Telegram не шлёт Sec-Fetch-Site —
+  // остаётся строгим (тест выше, без заголовка → sameSite:strict).
+  it('Sec-Fetch-Site: cross-site (Telegram Web в iframe) → кука SameSite=none', async () => {
+    const { controller } = makeController();
+    const req = makeReq({ headers: { 'sec-fetch-site': 'cross-site' } });
+    const res = makeRes();
+    await controller.telegramWebApp({ initData: 'init-data' }, req, res);
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ sameSite: 'none' }),
+    );
   });
 });
 
@@ -512,5 +539,47 @@ describe('AuthAccountController.unlink', () => {
       ip: '198.51.100.1',
     });
     expect(res).toEqual({ ok: true });
+  });
+});
+
+// Вход по email из установленного приложения. Письмо часто открывают на
+// ДРУГОМ устройстве — раньше сессия доставалась тому браузеру, а исходный
+// экран навсегда оставался с надписью «письмо отправлено».
+describe('AuthAccountController — билет входа в email-флоу', () => {
+  it('код билета доезжает до сервиса при запросе письма', async () => {
+    const { controller, auth } = makeController();
+    await controller.emailLoginLink(
+      { email: 'a@b.ru', ticket: 'K7M2QX94' },
+      makeReq(),
+    );
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
+  });
+
+  it('переход по ссылке с билетом уводит на сверку, а НЕ одобряет молча', async () => {
+    // Фикс device-code phishing (разбор 2026-08-31): код в письме мог
+    // подставить кто угодно, поэтому билет подтверждает человек на
+    // /auth/confirm, а не сервер в callback.
+    const { controller } = makeController();
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
+    const url = (res.redirect as jest.Mock).mock.calls[0][0];
+    expect(url).toContain('/auth/confirm?code=K7M2QX94');
+    // Сессия для браузера всё равно выдана — вход по ссылке состоялся.
+    expect(url).toContain(`access_token=${FAKE_TOKENS.accessToken}`);
+    expect(url).not.toContain('/auth/callback');
+  });
+
+  it('без билета — обычный приём сессии на /auth/callback', async () => {
+    const { controller } = makeController();
+    const res = makeRes();
+    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true }),
+    );
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
+    );
   });
 });

@@ -40,17 +40,23 @@ export function NeedRow({
           : undefined
       }
       style={{
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '12px 14px',
         cursor: onTap ? 'pointer' : 'default',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-12)',
+        }}
+      >
         <div
           style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             flexShrink: 0,
             background: `color-mix(in srgb, ${color} 15%, transparent)`,
             display: 'flex',
@@ -97,7 +103,7 @@ export function NeedRow({
             style={{
               height: 4,
               background: 'rgba(var(--fg-rgb),0.07)',
-              borderRadius: 4,
+              borderRadius: 'var(--r-4)',
               overflow: 'hidden',
             }}
           >
@@ -106,7 +112,7 @@ export function NeedRow({
                 width: `${pct}%`,
                 height: '100%',
                 background: color,
-                borderRadius: 4,
+                borderRadius: 'var(--r-4)',
                 transition: 'width 0.3s ease',
               }}
             />

@@ -105,6 +105,29 @@ describe('OnboardingOverlay — «Пропустить»', () => {
   });
 });
 
+// Свод 2026-08-31: шаг визарда needs_what («откуда эти пять потребностей»)
+// снят — визард дублировал онбординг трекера. Контент не потерян: строка про
+// происхождение потребностей переехала сюда и видна ВСЕГДА, над тремя
+// шагами, а не только на первом.
+describe('OnboardingOverlay — происхождение потребностей (снятый шаг needs_what)', () => {
+  it('строка про схема-терапию видна на каждом из трёх шагов', () => {
+    for (const onbStep of [0, 1, 2] as const) {
+      render(
+        <OnboardingOverlay
+          onbStep={onbStep}
+          setOnbStep={vi.fn()}
+          dismissOnb={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText(/Пять базовых эмоциональных потребностей/),
+      ).toBeTruthy();
+      expect(screen.getByText(/из схема-терапии/)).toBeTruthy();
+      cleanup();
+    }
+  });
+});
+
 describe('OnboardingOverlay — ты/вы', () => {
   it('форма «ты»: заголовки первых двух шагов на «ты»', () => {
     renderWithForm(

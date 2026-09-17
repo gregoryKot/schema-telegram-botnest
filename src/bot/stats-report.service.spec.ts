@@ -23,11 +23,23 @@ describe('StatsReportService.render', () => {
     const plus = {
       render: jest.fn().mockResolvedValue('кнопка плюс: 4'),
     };
+    const webBanner = {
+      render: jest.fn().mockResolvedValue('баннеры-переходы: 6'),
+    };
+    const siteInstall = {
+      render: jest.fn().mockResolvedValue('установка с сайта: 8'),
+    };
     const screen = {
       render: jest.fn().mockResolvedValue('настройка экранов: 1'),
     };
+    const profilePattern = {
+      render: jest.fn().mockResolvedValue('паттерны со вкладки «Я»: 4'),
+    };
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
+    };
+    const loginTicket = {
+      render: jest.fn().mockResolvedValue('вход по коду: 74 из 74'),
     };
     const clientErrors = {
       render: jest.fn().mockResolvedValue('поломки на клиенте: не было'),
@@ -38,15 +50,27 @@ describe('StatsReportService.render', () => {
     const signupSource = {
       render: jest.fn().mockResolvedValue('новенькие по ссылкам: 5'),
     };
+    const game = {
+      render: jest.fn().mockResolvedValue('игра: открыли 12'),
+    };
+    const dataExport = {
+      render: jest.fn().mockResolvedValue('забирают свои данные: 7'),
+    };
     return {
       blocks: {
         accountLink,
         plus,
+        webBanner,
+        siteInstall,
         screen,
+        profilePattern,
         authHealth,
+        loginTicket,
         clientErrors,
         money,
         signupSource,
+        game,
+        dataExport,
       },
       service: new StatsReportService(
         product as never,
@@ -56,11 +80,17 @@ describe('StatsReportService.render', () => {
         phraseChecks as never,
         accountLink as never,
         plus as never,
+        webBanner as never,
+        siteInstall as never,
         screen as never,
+        profilePattern as never,
         authHealth as never,
+        loginTicket as never,
         clientErrors as never,
         money as never,
         signupSource as never,
+        game as never,
+        dataExport as never,
       ),
     };
   };
@@ -73,11 +103,17 @@ describe('StatsReportService.render', () => {
       out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
     ).toBe(true);
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5',
+      'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
+    );
+    expect(out).toContain(
+      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
+    );
+    expect(out).toContain(
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7',
     );
     // Блок «Настройки» (щит, волна 8) — считается из process.env напрямую
     // (не мокается через blocks), но обязан приезжать последним куском
-    // отчёта, сразу после блока «Деньги».
+    // отчёта, сразу после блока «Игра».
     const capabilityIndex = out.indexOf('⚙️ <b>Настройки</b>');
     expect(capabilityIndex).toBeGreaterThan(-1);
     expect(out.slice(capabilityIndex)).toBe(
@@ -92,17 +128,29 @@ describe('StatsReportService.render', () => {
     const out = await service.render();
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
+    expect(blocks.webBanner.render).toHaveBeenCalledTimes(1);
+    expect(blocks.siteInstall.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
+    expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
+    expect(blocks.loginTicket.render).toHaveBeenCalledTimes(1);
     expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
     expect(blocks.money.render).toHaveBeenCalledTimes(1);
     expect(blocks.signupSource.render).toHaveBeenCalledTimes(1);
+    expect(blocks.game.render).toHaveBeenCalledTimes(1);
+    expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
+    expect(out).toContain('баннеры-переходы: 6');
+    expect(out).toContain('установка с сайта: 8');
     expect(out).toContain('настройка экранов: 1');
+    expect(out).toContain('паттерны со вкладки «Я»: 4');
     expect(out).toContain('вход в мессенджере: всё хорошо');
+    expect(out).toContain('вход по коду: 74 из 74');
     expect(out).toContain('поломки на клиенте: не было');
     expect(out).toContain('деньги: поддержали 3 раза');
     expect(out).toContain('новенькие по ссылкам: 5');
+    expect(out).toContain('игра: открыли 12');
+    expect(out).toContain('забирают свои данные: 7');
   });
 });

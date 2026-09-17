@@ -18,13 +18,16 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 'var(--space-12)',
       }}
     >
       <div>
-        <div className="d-display" style={{ fontSize: 27, lineHeight: 1.15 }}>
+        <h1
+          className="d-display"
+          style={{ fontSize: 27, lineHeight: 1.15, margin: 0 }}
+        >
           Паттерны
-        </div>
+        </h1>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>
           Привычные реакции родом из детства
         </div>
@@ -33,7 +36,7 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexShrink: 0,
         }}
       >
@@ -44,7 +47,7 @@ export function PatternsHeader({ onOpenSchema, onCustomize }: Props) {
           style={{
             minHeight: 48,
             padding: '0 14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'var(--surface-2)',
             color: 'var(--accent)',

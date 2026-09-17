@@ -65,6 +65,13 @@ afterEach(() => cleanup());
 beforeEach(() => vi.clearAllMocks());
 
 describe('HistorySheet', () => {
+  // К4 дизайн-аудита 2026-08: оверлей размечен как диалог (useDialogA11y).
+  it('размечен как диалог', () => {
+    renderSheet();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('пока historyLoading=true — скелетон по форме колеса потребностей, а не спиннер/пустота', () => {
     const { container } = renderSheet({ historyLoading: true });
     expect(screen.queryByText('Пусто.')).toBeNull();

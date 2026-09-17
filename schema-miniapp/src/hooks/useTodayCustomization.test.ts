@@ -70,3 +70,67 @@ describe('useTodayCustomization — переключение блоков (read-
     });
   });
 });
+
+describe('useTodayCustomization — порядок блоков (screen_order_today)', () => {
+  it('дефолтный порядок band — как в реестре SCREEN_BLOCK_ORDER.today', () => {
+    const { result } = renderHook(() => useTodayCustomization());
+    expect(result.current.orderedIds).toEqual([
+      'therapist_banner',
+      'streak',
+      'focus',
+      'phrase',
+      'secondary',
+    ]);
+  });
+
+  it('сохранённый порядок применяется при следующем рендере хука', () => {
+    localStorage.setItem(
+      'screen_order_today',
+      JSON.stringify(['phrase', 'focus']),
+    );
+    const { result } = renderHook(() => useTodayCustomization());
+    // Из порядка — первыми, остальные следом в порядке реестра (stable).
+    expect(result.current.orderedIds).toEqual([
+      'phrase',
+      'focus',
+      'therapist_banner',
+      'streak',
+      'secondary',
+    ]);
+  });
+
+  it('reorder перса порядок (read-after-write) и шлёт screen_block_move с screen=today', () => {
+    const { result, unmount } = renderHook(() => useTodayCustomization());
+    let moved = false;
+    act(() => {
+      moved = result.current.reorder('phrase', 0);
+    });
+    expect(moved).toBe(true);
+    expect(result.current.orderedIds[0]).toBe('phrase');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('screen_block_move', {
+      screen: 'today',
+      block: 'phrase',
+      dir: 'up',
+    });
+    unmount();
+    const { result: second } = renderHook(() => useTodayCustomization());
+    expect(second.current.orderedIds[0]).toBe('phrase');
+  });
+
+  it('reorder по видимому подмножеству (без баннера терапевта) не ломает порядок', () => {
+    const { result } = renderHook(() => useTodayCustomization());
+    // Не-терапевт: строка therapist_banner в листе не показана.
+    const visible = result.current.orderedIds.filter(
+      (id) => id !== 'therapist_banner',
+    );
+    let moved = false;
+    act(() => {
+      // streak (индекс 0 среди видимых) — в конец видимых.
+      moved = result.current.reorder('streak', visible.length - 1, visible);
+    });
+    expect(moved).toBe(true);
+    expect(result.current.orderedIds.indexOf('streak')).toBeGreaterThan(
+      result.current.orderedIds.indexOf('secondary'),
+    );
+  });
+});

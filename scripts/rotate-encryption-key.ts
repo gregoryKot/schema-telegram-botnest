@@ -52,7 +52,17 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
   },
   {
     name: 'userModeNote',
-    fields: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
+    fields: [
+      'triggers',
+      'feelings',
+      'thoughts',
+      'needs',
+      'behavior',
+      'modeFunction',
+      'needsMet',
+      'alias',
+      'fear',
+    ],
   },
   {
     name: 'userBeliefCheck',

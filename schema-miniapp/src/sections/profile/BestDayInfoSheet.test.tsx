@@ -23,7 +23,9 @@ describe('BestDayInfoSheet', () => {
   it('клик по фону закрывает шит', () => {
     const onClose = vi.fn();
     render(<BestDayInfoSheet onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    // BottomSheet рисует и бэкдроп, и кнопку-полоску под тем же aria-label
+    // «Закрыть» — бэкдроп идёт первым в DOM.
+    fireEvent.click(screen.getAllByLabelText('Закрыть')[0]);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

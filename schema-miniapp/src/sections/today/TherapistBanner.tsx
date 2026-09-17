@@ -13,7 +13,7 @@ export function TherapistBanner({ onOpen }: { onOpen: () => void }) {
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: 14,
+        gap: 'var(--space-14)',
       }}
     >
       <div style={{ flex: 1 }}>

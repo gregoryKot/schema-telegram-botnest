@@ -43,7 +43,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
         background:
           'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
         border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '16px 18px',
         marginBottom: 20,
       }}
@@ -72,7 +72,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           width: '100%',
           background: 'rgba(var(--fg-rgb),0.06)',
           border: '1px solid rgba(var(--fg-rgb),0.1)',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           padding: '10px 12px',
           color: 'var(--text)',
           fontSize: 13,
@@ -91,14 +91,14 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           vy="Не сохранилось, попробуйте ещё раз"
         />
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
         <button
           onClick={handleSkip}
           style={{
             flex: 1,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'rgba(var(--fg-rgb),0.06)',
             color: 'var(--text-sub)',
             fontSize: 12,
@@ -114,7 +114,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
             flex: 2,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
             color: 'var(--accent)',
             fontSize: 12,

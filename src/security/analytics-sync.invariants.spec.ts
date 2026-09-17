@@ -15,7 +15,16 @@ const ROOT = join(__dirname, '..', '..');
 
 // Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
-const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+// 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
+// ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
+// POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
+// как и у двух остальных фронтендов.
+const FRONTEND_DIRS = [
+  'webapp/src',
+  'schema-miniapp/src',
+  'shared/src',
+  'game/src',
+];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
@@ -131,6 +140,24 @@ const BACKEND_ONLY: Record<string, string> = {
     'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
     'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
     'подделать через POST /api/event',
+  profile_pattern_open:
+    'константа PROFILE_PATTERN_OPEN_EVENT (shared/src/share/analytics.ts) — ' +
+    'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
+    'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
+    'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  login_ticket_step:
+    'серверное событие: пишет единственный шов LoginTicketReport ' +
+    '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
+    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'должен: шаги воронки входа известны только серверу (подтверждение ' +
+    'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
+    'просил билет), и отчёт /stats считает строки с userId IS NULL',
+  data_export:
+    'серверное событие: пишет только эндпоинт выгрузки данных ' +
+    '(GET /api/account/export, право на доступ по 152-ФЗ/GDPR), с реальным ' +
+    'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
+    'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
+    'том же обработчике, что формирует файл',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -167,7 +194,18 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
     // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
-    // /start, тот же приём (серверное событие, фронт не шлёт).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(24);
+    // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
+    // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
+    // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
+    // 26 — login_ticket_step (путь входа по билету, 2026-08): четвёртое
+    // серверное событие подряд, к фронту не относится по устройству механизма.
+    // Билет подтверждают ВНЕ контейнера, который его просил (бот или внешний
+    // браузер), поэтому шаги воронки видит только сервер; отправить их с
+    // фронта было бы не «удобнее», а неверно — и открыло бы отчёт о здоровье
+    // входа для накрутки через POST /api/event. 27 — data_export (право на
+    // доступ по 152-ФЗ/GDPR): пятое серверное событие подряд, тот же приём —
+    // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
+    // нечего.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(27);
   });
 });

@@ -1,6 +1,4 @@
-// TodaySection.tsx — Redesigned Today screen
-// Place at: src/sections/TodaySection.tsx
-// Replaces the existing TodaySection.
+// TodaySection.tsx — Redesigned Today screen.
 //
 // Key differences from original:
 //  – NeedMini grid with fill-bar indicators (tap opens tracker at that need)
@@ -17,24 +15,17 @@ import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { fmtDate, todayStr } from '../utils/format';
-import { TodayFocusCard } from '../components/TodayFocusCard';
-import { PhraseShareCard } from '../components/PhraseShareCard';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
-import { DayShareButton } from '../share/DayShareButton';
 import { Props } from './today/types';
-import {
-  TODAY_MORE_KEY,
-  formatGreetingDate,
-  readLocalIds,
-} from './today/helpers';
+import { CaseEntryCard } from './today/CaseEntryCard';
+import { formatGreetingDate, readLocalIds } from './today/helpers';
 import { OnboardingWidget } from './today/OnboardingWidget';
-import { SecondaryCards } from './today/SecondaryCards';
-import { StreakCard } from './today/StreakCard';
-import { TherapistBanner } from './today/TherapistBanner';
+import { isOnboardingWidgetVisible } from './today/onboardingSteps';
+import { TodayBlocks } from './today/TodayBlocks';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -55,6 +46,9 @@ export function TodaySection({
   userRole,
   onOpenTherapistCabinet,
   onNewDiaryEntry,
+  onStartCase,
+  onOpenMap,
+  onSteadyDay,
 }: Props) {
   const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -67,24 +61,15 @@ export function TodaySection({
   const [diariesLoaded, setDiariesLoaded] = useState(false);
   const [showDiaryTask, setShowDiaryTask] = useState(false);
   const today = useTodayCustomization();
+  // Разборов всего — берём из уже загружаемого дневника режимов: разбор
+  // сохраняется обычной записью, отдельного хранилища у него нет.
+  const [caseCount, setCaseCount] = useState(0);
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
     gratitude: false,
   });
-  const [moreOpen, setMoreOpen] = useState(
-    () => localStorage.getItem(TODAY_MORE_KEY) === '1',
-  );
   const safeTop = useSafeTop();
-
-  function toggleMore() {
-    setMoreOpen((prev) => {
-      const next = !prev;
-      if (next) localStorage.setItem(TODAY_MORE_KEY, '1');
-      else localStorage.removeItem(TODAY_MORE_KEY);
-      return next;
-    });
-  }
 
   const firstName = getHost().user()?.firstName ?? '';
 
@@ -143,6 +128,7 @@ export function TodaySection({
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
+        setCaseCount(mode.length);
         setTodayDone({
           schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
           mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
@@ -159,6 +145,7 @@ export function TodaySection({
     };
   }, [refreshKey]);
 
+  const onboardingVisible = isOnboardingWidgetVisible(profile);
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
   const allRated = needs.length > 0 && ratedCount === needs.length;
@@ -166,7 +153,7 @@ export function TodaySection({
     ? (needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length).toFixed(1)
     : null;
   const hasSchemas =
-    [...new Set([...(profile?.ysq.activeSchemaIds ?? []), ...manualSchemaIds])]
+    [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])]
       .length > 0;
 
   return (
@@ -185,18 +172,19 @@ export function TodaySection({
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
-          <div
+          <h1
             className="d-display"
             style={{
               fontSize: 26,
               lineHeight: 1.15,
+              margin: 0,
             }}
           >
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
-          </div>
+          </h1>
           <div style={{ marginTop: -6, flexShrink: 0 }}>
             <GearButton
               onClick={today.openByGear}
@@ -221,114 +209,58 @@ export function TodaySection({
           padding: '16px 20px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
-        {/* ── Therapist cabinet banner ── */}
-        {userRole === 'THERAPIST' &&
-          onOpenTherapistCabinet &&
-          !today.therapistBannerHidden && (
-            <TherapistBanner onOpen={onOpenTherapistCabinet} />
-          )}
-
-        {/* ── Onboarding widget ── */}
-        <OnboardingWidget
-          profile={profile}
-          hasSchemas={hasSchemas}
-          onOpenSchema={onOpenSchema}
-          onOpenAdvanced={onOpenAdvanced}
-          onOpenTracker={onOpenTracker}
-          onOpenDiaries={onOpenDiaries}
-          onOpenChildhoodWheel={onOpenChildhoodWheel}
+        {/* ── Точка входа: одно главное действие экрана ── */}
+        <CaseEntryCard
+          caseCount={caseCount}
+          onStart={onStartCase}
+          onSteadyDay={onSteadyDay}
+          onOpenMap={onOpenMap}
         />
 
-        {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
-        {!today.streakHidden && streak > 0 && (
-          <div {...today.holdStreak}>
-            <StreakCard streak={streak} />
-          </div>
-        )}
-
-        {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
-        <div {...today.holdFocus}>
-          <TodayFocusCard
-            practice={today.practice}
-            ratedCount={ratedCount}
-            total={needs.length}
-            avgScore={avgScore}
-            practiceDoneToday={
-              today.practice !== 'tracker' && todayDone[today.practice]
-            }
-            onAction={() =>
-              today.practice === 'tracker'
-                ? onOpenTracker()
-                : onNewDiaryEntry?.(today.practice)
-            }
-            onOpenHistory={onOpenTrackerHistory}
-            shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
-          />
-        </div>
-
-        {/* ── Фраза Здорового взрослого (перенесена с «Помощи») ── */}
-        {!today.phraseHidden && (
-          <div {...today.holdPhrase}>
-            <PhraseShareCard />
-          </div>
-        )}
-
-        {/* ── Значок на экран: тем, кто продолжает заходить ── */}
-        <HomeScreenOfferCard />
-
-        {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
-        {today.secondaryHidden && (
-          <button
-            onClick={toggleMore}
-            aria-expanded={moreOpen}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              color: 'var(--text-sub)',
-              fontSize: 13,
-              fontWeight: 600,
-              padding: '6px 0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
-            <span
-              style={{
-                display: 'inline-block',
-                transition: 'transform 0.2s',
-                transform: moreOpen ? 'rotate(180deg)' : 'none',
-              }}
-            >
-              ⌄
-            </span>
-          </button>
-        )}
-
-        {(!today.secondaryHidden || moreOpen) && (
-          <SecondaryCards
-            needs={needs}
-            ratings={ratings}
-            yesterdayRatings={yesterdayRatings}
-            ratedCount={ratedCount}
-            allRated={allRated}
-            diariesLoaded={diariesLoaded}
-            recentDiaries={recentDiaries}
-            onOpenTrackerHistory={onOpenTrackerHistory}
-            onOpenTrackerAt={onOpenTrackerAt}
+        {/* Воронка новичка появляется ПОСЛЕ первого разбора: два «начни
+            отсюда» рядом возвращают ровно ту растерянность, из-за которой
+            затевался редизайн входа. */}
+        {caseCount > 0 && (
+          <OnboardingWidget
+            profile={profile}
+            hasSchemas={hasSchemas}
+            onOpenSchema={onOpenSchema}
+            onOpenAdvanced={onOpenAdvanced}
             onOpenTracker={onOpenTracker}
             onOpenDiaries={onOpenDiaries}
-            onSetDiaryTask={() => setShowDiaryTask(true)}
+            onOpenChildhoodWheel={onOpenChildhoodWheel}
           />
         )}
+
+        {/* ── Band переставляемых блоков (screen_order_today) ── */}
+        <TodayBlocks
+          today={today}
+          onboardingVisible={onboardingVisible}
+          userRole={userRole}
+          onOpenTherapistCabinet={onOpenTherapistCabinet}
+          streak={streak}
+          needs={needs}
+          ratings={ratings}
+          yesterdayRatings={yesterdayRatings}
+          ratedCount={ratedCount}
+          allRated={allRated}
+          avgScore={avgScore}
+          todayDone={todayDone}
+          diariesLoaded={diariesLoaded}
+          recentDiaries={recentDiaries}
+          onOpenTracker={onOpenTracker}
+          onNewDiaryEntry={onNewDiaryEntry}
+          onOpenTrackerHistory={onOpenTrackerHistory}
+          onOpenTrackerAt={onOpenTrackerAt}
+          onOpenDiaries={onOpenDiaries}
+          onSetDiaryTask={() => setShowDiaryTask(true)}
+        />
+
+        {/* Значок — не третий CTA подряд поверх онбординга (полировка, п.1). */}
+        {!onboardingVisible && <HomeScreenOfferCard />}
       </div>
 
       {today.sheet && (
@@ -342,6 +274,8 @@ export function TodaySection({
           showTherapistToggle={
             userRole === 'THERAPIST' && !!onOpenTherapistCabinet
           }
+          orderedIds={today.orderedIds}
+          reorder={today.reorder}
           onPractice={today.choosePractice}
           onToggleStreak={today.toggleStreak}
           onTogglePhrase={today.togglePhrase}

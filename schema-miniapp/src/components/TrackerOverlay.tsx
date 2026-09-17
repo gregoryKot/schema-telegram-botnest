@@ -15,6 +15,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { pressable } from '../utils/a11y';
+import { hitboxStyle } from '../utils/hitbox';
 import { SkeletonList } from './Skeleton';
 import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
@@ -24,6 +25,7 @@ import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
 import { OnboardingOverlay } from './trackerOverlay/OnboardingOverlay';
 import { TrackerDoneSummary } from './trackerOverlay/TrackerDoneSummary';
+import { SAVE_DEBOUNCE_MS } from './trackerOverlay/saveDebounce';
 
 interface Props {
   needs: Need[];
@@ -150,7 +152,7 @@ export function TrackerOverlay({
           } catch (e) {
             console.error('saveRating failed', e); // сеть/5xx — уже в outbox
           }
-        }, 500);
+        }, SAVE_DEBOUNCE_MS);
         return;
       }
       onChange(needId, v);
@@ -174,7 +176,7 @@ export function TrackerOverlay({
         } catch (e) {
           console.error('saveRating failed', e);
         }
-      }, 500);
+      }, SAVE_DEBOUNCE_MS);
     },
     [onChange, onSaved, isOffline, isBackfill, date],
   );
@@ -215,7 +217,7 @@ export function TrackerOverlay({
             padding: '0 20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <SkeletonList rows={5} h={56} />
@@ -250,30 +252,31 @@ export function TrackerOverlay({
         <button
           onClick={onClose}
           aria-label="Закрыть"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: 'none',
-            cursor: 'pointer',
-            background: 'var(--surface-2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-sub)',
-          }}
+          style={hitboxStyle(34, 34).outer}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
+          <span
+            style={{
+              ...hitboxStyle(34, 34).inner,
+              borderRadius: 'var(--r-10)',
+              background: 'var(--surface-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-sub)',
+            }}
           >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </span>
         </button>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
@@ -287,35 +290,37 @@ export function TrackerOverlay({
         </div>
         {/* Карандаш + история */}
         {!isBackfill ? (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             {onOpenNote && (
               <button
                 onClick={onOpenNote}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--surface-2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-sub)',
-                }}
+                aria-label="Заметка"
+                style={hitboxStyle(34, 34).outer}
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  style={{
+                    ...hitboxStyle(34, 34).inner,
+                    borderRadius: 'var(--r-10)',
+                    background: 'var(--surface-2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-sub)',
+                  }}
                 >
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                </svg>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
+                </span>
               </button>
             )}
             {onOpenHistory && (
@@ -324,31 +329,33 @@ export function TrackerOverlay({
                   onClose();
                   onOpenHistory();
                 }}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--surface-2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-sub)',
-                }}
+                aria-label="История"
+                style={hitboxStyle(34, 34).outer}
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <span
+                  style={{
+                    ...hitboxStyle(34, 34).inner,
+                    borderRadius: 'var(--r-10)',
+                    background: 'var(--surface-2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-sub)',
+                  }}
                 >
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </span>
               </button>
             )}
           </div>
@@ -379,10 +386,10 @@ export function TrackerOverlay({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             cursor: 'pointer',
             padding: '6px 16px',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
           }}
@@ -408,7 +415,7 @@ export function TrackerOverlay({
                   delta > 0
                     ? 'color-mix(in srgb, var(--accent-green) 12%, transparent)'
                     : 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '1px 7px',
               }}
             >
@@ -549,7 +556,7 @@ export function TrackerOverlay({
           paddingBottom: 'max(20px, var(--safe-bottom))',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexShrink: 0,
         }}
       >
@@ -567,13 +574,13 @@ export function TrackerOverlay({
         )}
 
         {/* Nav */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={() => idx > 0 && setIdx(idx - 1)}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: idx === 0 ? 'var(--surface)' : 'var(--surface-2)',
@@ -590,11 +597,11 @@ export function TrackerOverlay({
               style={{
                 flex: 2,
                 padding: '13px',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 fontFamily: 'inherit',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',

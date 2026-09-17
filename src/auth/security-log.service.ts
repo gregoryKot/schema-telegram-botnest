@@ -31,6 +31,7 @@ export type SecurityEvent =
   | 'login_failed'
   | 'merge_initiated'
   | 'merge_confirmed'
+  | 'merge_subscription_conflict'
   | 'provider_linked'
   | 'provider_unlinked'
   | 'role_changed'
@@ -44,12 +45,21 @@ export type SecurityEvent =
   // пользователей Telegram, и на сервере это было неотличимо от фонового шума
   // неавторизованных запросов).
   | 'empty_signature'
-  | 'refresh_token_reuse';
+  | 'refresh_token_reuse'
+  // «Это не я» при сверке кода входа, а также перебор кодов через чат бота.
+  // Намеренно НЕ в ALERT_EVENTS: одиночный промах по кнопке — фоновый шум, а
+  // шквал одинаковых DM = замьюченный чат = ноль алертов (урок 2026-07-29).
+  // Картину даёт не отдельное событие, а счётчик в /stats.
+  | 'login_ticket_denied';
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.
 const ALERT_EVENTS = new Set<SecurityEvent>([
   'merge_confirmed',
+  // Живые подписки с обеих сторон слияния: деньги, разбирается руками.
+  // Порождается живым подтверждением человека, но бюджет всё равно нужен —
+  // правило №14: сигнализация без троттлинга мьютит чат в аварии.
+  'merge_subscription_conflict',
   'role_changed',
   'therapist_request_submitted',
   'csrf_blocked',
@@ -86,7 +96,17 @@ export class SecurityLogService {
     this.logger.log(line);
     if (ALERT_EVENTS.has(event)) {
       const { allow, suppressed } = this.budget.take(event, this.now());
-      if (allow) this.alertAdmin(event, data, suppressed).catch(() => null);
+      // Недоставленный DM обязан быть виден хоть где-то: структурный лог
+      // выше не говорит, дошло ли предупреждение до админа — тишина здесь
+      // и есть урок инцидента 2026-08-08 (обработанная авария невидимее
+      // необработанной). Рекурсии в admin-alert.ts не создаём: logger.warn
+      // не уходит в DM/e-mail, в отличие от AlertLogger.
+      if (allow)
+        this.alertAdmin(event, data, suppressed).catch((err) =>
+          this.logger.warn(
+            `не удалось отправить DM админу про ${event}: ${(err as Error)?.message}`,
+          ),
+        );
     }
   }
 

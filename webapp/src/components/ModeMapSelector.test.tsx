@@ -8,12 +8,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
   screen,
+  within,
   fireEvent,
   cleanup,
   waitFor,
   act,
 } from '@testing-library/react';
 import { ModeMapSelector } from './ModeMapSelector';
+import { AddressFormContext } from '../utils/addressForm';
 import type { ModeMapMeta, ModeMapFull } from '../api';
 
 const listModeMaps = vi.fn();
@@ -73,6 +75,29 @@ describe('ModeMapSelector — пустое состояние', () => {
     expect(screen.getByText('Карта личности')).toBeTruthy();
     expect(screen.getByText('Карта ситуации')).toBeTruthy();
     expect(screen.getByText('Карта пары')).toBeTruthy();
+  });
+
+  it('подсказка «Выбери тип первой карты» звучит на «ты»/«вы»', async () => {
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выбери тип первой карты')).toBeTruthy();
+    cleanup();
+
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выберите тип первой карты')).toBeTruthy();
   });
 
   it('клик по типу карты в пустом состоянии создаёт и открывает её', async () => {
@@ -169,18 +194,24 @@ describe('ModeMapSelector — переименование и удаление �
     expect(screen.getByText('Новое имя')).toBeTruthy();
   });
 
+  // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
+  // клик по «Удалить карту» открывает диалог, удаление подтверждается его
+  // собственной кнопкой «Удалить».
   it('удаление подтверждённой картой убирает её из списка и открывает следующую', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap
       .mockResolvedValueOnce(full(1, 'Карта А'))
       .mockResolvedValueOnce(full(2, 'Карта Б'));
     deleteModeMap.mockResolvedValue(undefined);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByText('Удалить'));
     expect(deleteModeMap).toHaveBeenCalledWith(1);
     await waitFor(() =>
       expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
@@ -190,17 +221,30 @@ describe('ModeMapSelector — переименование и удаление �
     expect(screen.queryByText('Карта А')).toBeNull();
   });
 
-  it('отказ от подтверждения не удаляет карту', async () => {
+  it('отмена в диалоге не удаляет карту', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
+    fireEvent.click(screen.getByText('Отмена'));
     expect(deleteModeMap).not.toHaveBeenCalled();
     expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Escape в диалоге закрывает его без удаления', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    fireEvent.click(screen.getByLabelText('Удалить карту'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('единственная карта не показывает кнопку удаления', async () => {

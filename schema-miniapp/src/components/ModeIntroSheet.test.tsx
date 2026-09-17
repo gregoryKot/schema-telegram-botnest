@@ -96,7 +96,7 @@ describe('ModeIntroSheet — сохранение карточки видно п
   async function fillAndSave(onClose: () => void = () => {}) {
     const textarea = await openFirstQuestion(onClose);
     fireEvent.change(textarea, { target: { value: 'Когда меня оставляют' } });
-    for (let i = 0; i < 6; i++)
+    for (let i = 0; i < 8; i++)
       fireEvent.click(screen.getByText('Следующий →'));
     fireEvent.click(screen.getByText('Сохранить карточку'));
     await act(async () => {});
@@ -134,7 +134,7 @@ describe('ModeIntroSheet — сохранение карточки видно п
 
   it('пустая карточка: кнопка выключена и сказано, чего не хватает', async () => {
     await openFirstQuestion();
-    for (let i = 0; i < 6; i++)
+    for (let i = 0; i < 8; i++)
       fireEvent.click(screen.getByText('Следующий →'));
     const save = screen.getByText('Сохранить карточку');
     expect(save.hasAttribute('disabled')).toBe(true);

@@ -94,12 +94,12 @@ function ModeDoubtSheet({
             style={{
               background: 'color-mix(in srgb, var(--accent-blue) 10%, transparent)',
               border: '1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '10px 14px',
               marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
               {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
@@ -109,7 +109,7 @@ function ModeDoubtSheet({
           <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 28 }}>
             Вот с чем его чаще всего путают — и как отличить.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
             {doubts.map((d) => {
               const other = getModeById(d.otherId);
               const leafLabel = getModeLeafLabel(d.otherId);
@@ -119,7 +119,7 @@ function ModeDoubtSheet({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
+                      gap: 'var(--space-8)',
                       fontSize: 14.5,
                       fontWeight: 600,
                       color: 'var(--text)',
@@ -135,7 +135,7 @@ function ModeDoubtSheet({
                   <div
                     style={{
                       background: 'color-mix(in srgb, var(--accent-blue) 8%, transparent)',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       padding: '8px 10px',
                       marginBottom: 10,
                     }}
@@ -175,7 +175,7 @@ function ModeDoubtSheet({
               width: '100%',
               marginTop: 20,
               padding: 14,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               minHeight: 48,
               background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))',

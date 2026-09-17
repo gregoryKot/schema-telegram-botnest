@@ -25,7 +25,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           ) : (
             <>
               <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест – клиент получит уведомление в боте</div>
-              <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '9px 20px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '9px 20px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>
               {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
@@ -34,7 +34,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           {selfSchemaIds.length > 0 && (
             <div style={{ marginTop: 48, textAlign: 'left', maxWidth: 640, margin: '48px auto 0' }}>
               <div className="eyebrow" style={{ marginBottom: 16 }}>Схемы, отмеченные клиентом самостоятельно</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
                 {selfSchemaIds.map(id => {
                   const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                   const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
@@ -75,12 +75,12 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
             {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '–'}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleExport} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <button onClick={handleExport} style={{ padding: '8px 16px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}
           </button>
           {selectedClient.telegramId >= 0 && (
-            <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               {ysqRequested ? '✓ Запрос отправлен' : 'Запросить повтор'}
             </button>
           )}
@@ -127,7 +127,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
               const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
               return (
                 <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
+                  <span style={{ width: 10, height: 10, borderRadius: 'var(--r-2)', background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
                   <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{s?.name ?? id}</span>
                 </div>
               );
@@ -153,8 +153,8 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           const isTop5 = top5Ids.has(score.id);
           return (
             <div key={score.id} style={{ display: 'grid', gridTemplateColumns: `1fr repeat(${prev ? 3 : 1}, 80px)`, gap: '0 8px', padding: '11px 0', borderBottom: '1px solid var(--line)', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 3, height: 18, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                <span style={{ width: 3, height: 18, borderRadius: 'var(--r-2)', background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
                 <span style={{ fontSize: 13, fontWeight: isTop5 ? 600 : 400, color: isTop5 ? 'var(--text)' : 'var(--text-sub)' }}>{s?.name ?? score.id}</span>
               </div>
               <span style={{ textAlign: 'right', fontSize: 13, fontWeight: 500, color: score.pct5plus > 65 ? 'var(--c-rose)' : score.pct5plus > 50 ? 'var(--c-clay)' : 'var(--text-sub)' }}>

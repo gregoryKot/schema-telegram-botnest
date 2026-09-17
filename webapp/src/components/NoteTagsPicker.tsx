@@ -35,7 +35,7 @@ export function NoteTagsPicker({ selectedTags, onToggle }: Props) {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(t.id); } }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
+                  padding: '7px 14px', borderRadius: 'var(--r-20)', cursor: 'pointer',
                   background: on
                     ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                     : 'rgba(var(--fg-rgb),0.05)',

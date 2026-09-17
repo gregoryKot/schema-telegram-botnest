@@ -17,7 +17,7 @@ export function TestsPage() {
 
   return (
     <TestsFrame>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 100, background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, fontSize: 12.5, fontWeight: 700, color: SUB, marginBottom: 20 }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)', padding: '7px 15px', borderRadius: 100, background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, fontSize: 12.5, fontWeight: 700, color: SUB, marginBottom: 20 }}>
         🎲 Без регистрации · результат сразу
       </div>
       <h1 style={{ fontSize: 'clamp(34px, 6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.05, margin: '0 0 14px' }}>

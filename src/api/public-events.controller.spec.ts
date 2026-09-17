@@ -14,13 +14,28 @@ describe('PublicEventDto', () => {
     return errs.map((e) => e.property);
   };
 
-  it('quiz_started / quiz_completed / practice_link_click проходят', async () => {
+  it('quiz_started / quiz_completed / practice_link_click / home_screen_offer проходят', async () => {
     await expect(
       errorsFor({ name: 'quiz_started', meta: { quiz: 'drives' } }),
     ).resolves.toEqual([]);
     await expect(errorsFor({ name: 'quiz_completed' })).resolves.toEqual([]);
     await expect(
       errorsFor({ name: 'practice_link_click', meta: { place: 'author' } }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({
+        name: 'home_screen_offer',
+        meta: { action: 'add', surface: 'site_landing' },
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('события игры проходят — она вообще не авторизует пользователя', async () => {
+    await expect(
+      errorsFor({ name: 'game_open', meta: { src: 'site' } }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ name: 'game_chapter_start', meta: { chapter: 'chapter1' } }),
     ).resolves.toEqual([]);
   });
 
@@ -133,5 +148,115 @@ describe('PublicEventsController', () => {
       ).resolves.toEqual({ ok: true });
     }
     expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer с лендинга пишется анонимно (surface site_landing)', async () => {
+    await controller.track({
+      name: 'home_screen_offer',
+      meta: { action: 'add', surface: 'site_landing' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
+      action: 'add',
+      surface: 'site_landing',
+    });
+  });
+
+  it('home_screen_offer с валидным action, но не-лендинговой surface — дропается', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'shown', surface: 'today' },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer: added с site_landing проходит', async () => {
+    await controller.track({
+      name: 'home_screen_offer',
+      meta: { action: 'added', surface: 'site_landing' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
+      action: 'added',
+      surface: 'site_landing',
+    });
+  });
+
+  it("home_screen_offer: 'shown'/'later'/'never' с site_landing дропаются — аноним не пишет состояния воронки, только add/added", async () => {
+    for (const action of ['shown', 'later', 'never']) {
+      await expect(
+        controller.track({
+          name: 'home_screen_offer',
+          meta: { action, surface: 'site_landing' },
+        }),
+      ).resolves.toEqual({ ok: true });
+    }
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('home_screen_offer с мусорным action молча дропается', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'bogus', surface: 'site_landing' },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_open пишется анонимно с известным src', async () => {
+    await controller.track({ name: 'game_open', meta: { src: 'site' } });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'site' });
+  });
+
+  it('game_open с незнакомым src сворачивается в other, а не дропается', async () => {
+    await controller.track({ name: 'game_open', meta: { src: 'вк' } });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'other' });
+  });
+
+  it('game_open без meta тоже пишется с src=other', async () => {
+    await controller.track({ name: 'game_open' });
+    expect(track).toHaveBeenCalledWith(null, 'game_open', { src: 'other' });
+  });
+
+  it('game_chapter_done: PII и чужой userId отрезаются, остаётся только chapter', async () => {
+    await controller.track({
+      name: 'game_chapter_done',
+      meta: { chapter: 'chapter2', userId: 7, note: 'PII' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_chapter_done', {
+      chapter: 'chapter2',
+    });
+  });
+
+  it('game_over с неизвестной главой не пишется, но ответ ok', async () => {
+    await expect(
+      controller.track({ name: 'game_over', meta: { chapter: 'chapter9' } }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_cta_click: известное место пишется, незнакомое — нет', async () => {
+    await controller.track({
+      name: 'game_cta_click',
+      meta: { from: 'act1' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_cta_click', {
+      from: 'act1',
+    });
+
+    track.mockClear();
+    await expect(
+      controller.track({ name: 'game_cta_click', meta: { from: 'menu' } }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('game_start пишется с пустой meta вне зависимости от присланных полей', async () => {
+    await controller.track({
+      name: 'game_start',
+      meta: { anything: 'x' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'game_start', {});
   });
 });

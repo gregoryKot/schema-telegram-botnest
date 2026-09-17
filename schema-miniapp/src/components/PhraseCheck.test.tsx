@@ -16,6 +16,7 @@ import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { PhraseCheck } from './PhraseCheck';
 import { PHRASE_CRITERIA } from '../../../shared/src/phraseCheck/criteria';
 import { api } from '../api';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('../api', () => ({
   api: {
@@ -225,7 +226,7 @@ describe('PhraseCheck', () => {
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'не хочу жить' },
     });
-    expect(screen.getByText(/8-800-2000-122/)).toBeTruthy();
+    expect(screen.getByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeTruthy();
   });
 
   it('форма «вы»: обращение на «вы» и без «ты»-форм', () => {

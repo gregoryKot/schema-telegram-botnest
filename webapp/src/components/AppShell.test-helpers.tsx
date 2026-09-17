@@ -208,6 +208,7 @@ vi.mock('../api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     recordActivity: vi.fn().mockResolvedValue(undefined),
+    flushOutbox: vi.fn().mockResolvedValue(undefined),
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
     needs: vi.fn().mockResolvedValue([]),
@@ -219,6 +220,7 @@ vi.mock('../api', () => ({
     getProfile: vi.fn().mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] }),
     getTherapyClients: vi.fn().mockResolvedValue([]),
     getTherapyRelation: vi.fn().mockResolvedValue(null),
+    getUserFlags: vi.fn().mockResolvedValue({}),
     setTherapistView: vi.fn().mockResolvedValue({ ok: true }),
     resignTherapist: vi.fn().mockResolvedValue(undefined),
     history: vi.fn().mockResolvedValue([]),

@@ -1,6 +1,7 @@
 import { COLORS } from '../../types';
 import { pressable } from '../../utils/a11y';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { AnchorCard } from './AnchorCard';
 import { Slider } from './Slider';
 import type { NeedId, NeedMetaEntry } from './types';
 
@@ -32,7 +33,7 @@ export function NeedFillRow({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 8,
         }}
       >
@@ -40,7 +41,7 @@ export function NeedFillRow({
           style={{
             width: 36,
             height: 36,
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: color + '1f',
             display: 'flex',
             alignItems: 'center',
@@ -76,7 +77,7 @@ export function NeedFillRow({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             flexShrink: 0,
           }}
         >
@@ -131,85 +132,38 @@ export function NeedFillRow({
           </div>
         </div>
       </div>
-      <Slider value={value} color={color} onChange={onChange} />
+      <Slider
+        value={value}
+        color={color}
+        onChange={onChange}
+        label={meta.label}
+      />
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: 8,
+          gap: 'var(--space-8)',
           marginTop: 6,
         }}
       >
-        <div
-          style={{
-            fontSize: 11,
-            lineHeight: 1.55,
-            padding: '7px 9px',
-            borderRadius: 10,
-            background:
-              showLow && value <= 4
-                ? 'color-mix(in srgb, var(--accent-red) 10%, transparent)'
-                : 'rgba(var(--fg-rgb),0.03)',
-            color:
-              showLow && value <= 4
-                ? 'color-mix(in srgb, var(--accent-red) 75%, transparent)'
-                : 'rgba(var(--fg-rgb),0.25)',
-            border:
-              showLow && value <= 4
-                ? '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)'
-                : '1px solid transparent',
-            transition: 'all 0.2s',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              display: 'block',
-              marginBottom: 2,
-            }}
-          >
-            0 — дефицит
-          </span>
-          {meta.anchorLow}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            lineHeight: 1.55,
-            padding: '7px 9px',
-            borderRadius: 10,
-            background:
-              showHigh && value >= 8
-                ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                : 'rgba(var(--fg-rgb),0.03)',
-            color:
-              showHigh && value >= 8
-                ? 'color-mix(in srgb, var(--accent-green) 75%, transparent)'
-                : 'rgba(var(--fg-rgb),0.25)',
-            border:
-              showHigh && value >= 8
-                ? '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                : '1px solid transparent',
-            transition: 'all 0.2s',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              display: 'block',
-              marginBottom: 2,
-            }}
-          >
-            10 — насыщение
-          </span>
-          {meta.anchorHigh}
-        </div>
+        <AnchorCard
+          active={showLow && value <= 4}
+          color="var(--accent-red)"
+          title="0 — дефицит"
+          text={meta.anchorLow}
+        />
+        <AnchorCard
+          active={showHigh && value >= 8}
+          color="var(--accent-green)"
+          title="10 — насыщение"
+          text={meta.anchorHigh}
+        />
       </div>
       {openExampleId === id && (
         <div
           style={{
             marginTop: 10,
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             overflow: 'hidden',
             border:
               '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
@@ -252,7 +206,7 @@ export function NeedFillRow({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 'var(--space-8)',
                   }}
                 >
                   <span
@@ -260,7 +214,7 @@ export function NeedFillRow({
                       fontSize: 10,
                       fontWeight: 700,
                       padding: '2px 7px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       background: badgeColor + '22',
                       color: badgeColor,
                       flexShrink: 0,

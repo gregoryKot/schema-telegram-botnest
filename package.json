@@ -21,7 +21,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "rotate-encryption": "ts-node scripts/rotate-encryption-key.ts",
     "mutation": "stryker run",
-    "smoke": "playwright test"
+    "smoke": "playwright test",
+    "mutation:golden-auth": "stryker run stryker.golden-auth.config.json",
+    "mutation:golden-payments": "stryker run stryker.golden-payments.config.json",
+    "mutation:crisis": "stryker run stryker.crisis.config.json",
+    "mutation:outbox": "stryker run stryker.outbox.config.json",
+    "check-phrases": "ts-node scripts/check-db-phrases.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.3",
@@ -55,6 +60,7 @@
     "undici": "^8.9.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^11.0.24",
@@ -93,7 +99,10 @@
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
     },
-    "fast-uri": "^3.1.5"
+    "fast-uri": "^3.1.7",
+    "mysql2": "^3.24.3",
+    "deepmerge-ts": "^8.0.1",
+    "multer": "^2.3.0"
   },
   "jest": {
     "moduleFileExtensions": [

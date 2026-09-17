@@ -5,6 +5,7 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
+import { Skeleton, SkeletonList } from './Skeleton';
 import { api } from '../api';
 import { getModeById, getSchemaById } from '../schemaTherapyData';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
@@ -67,7 +68,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               ← Назад
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
               <h1
                 style={{
                   fontSize: 24,
@@ -88,7 +89,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                     gap: 7,
                     minHeight: 40,
                     padding: '0 16px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     border:
                       '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
                     background:
@@ -113,21 +114,16 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
               skeleton={
+                // Форма — как у реального JourneyView: hero-итог + счётчик +
+                // строки ленты (JourneyTimeline минимальная высота строки —
+                // 52px, shared/src/journey/JourneyTimeline.tsx). Парно с
+                // schema-miniapp/src/components/JourneySheet.tsx.
                 <>
-                  {[96, 64, 56, 56, 56, 56].map((h, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        height: h,
-                        borderRadius: 16,
-                        marginBottom: 8,
-                        background:
-                          'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
-                        backgroundSize: '200% auto',
-                        animation: 'shimmer 1.5s linear infinite',
-                      }}
-                    />
-                  ))}
+                  <Skeleton height={96} radius={16} />
+                  <div style={{ height: 8 }} />
+                  <Skeleton height={64} radius={16} />
+                  <div style={{ height: 8 }} />
+                  <SkeletonList rows={5} height={52} radius={16} />
                 </>
               }
             />

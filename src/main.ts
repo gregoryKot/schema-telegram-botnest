@@ -10,6 +10,9 @@ import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
 import { logCapabilityReport } from './infra/capability-boot-log';
+import { checkEnv } from './infra/env-check';
+import { logEnvCheck } from './infra/env-check-boot-log';
+import { canonicalRedirectTarget } from './infra/canonical-host';
 import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
@@ -35,18 +38,16 @@ async function bootstrap() {
   // доказательство прокси, так что доверие к XFF от того же хопа консистентно.
   app.set('trust proxy', 1);
 
-  // Domain + protocol redirects (production only). Amvera's reverse proxy sets
-  // x-forwarded-proto, so we can detect the original protocol.
-  //   • Legacy domain schemalab.ru → 301 to schemehappens.ru (keeps old links/SEO)
-  //   • www.schemehappens.ru → 301 to apex schemehappens.ru (single canonical host)
-  //   • everything else (incl. kotlarewski.ru/.gr aliases) → just force HTTPS
+  // Domain + protocol redirects (production only) — host list lives in
+  // src/infra/canonical-host.ts (правило «одна механика — один компонент»,
+  // инцидент 2026-09-16: OAuth редиректил на хост, который эта же логика
+  // редиректила обратно — цикл). Everything else (incl. kotlarewski.ru/.gr
+  // aliases) → just force HTTPS via x-forwarded-proto (Amvera's proxy).
   if (process.env.NODE_ENV === 'production') {
-    const LEGACY_HOSTS = new Set(['schemalab.ru', 'www.schemalab.ru']);
     app.use((req: Request, res: Response, next: NextFunction) => {
       const host = (req.headers.host ?? '').toLowerCase();
-      if (LEGACY_HOSTS.has(host) || host === 'www.schemehappens.ru') {
-        return res.redirect(301, `https://schemehappens.ru${req.url}`);
-      }
+      const target = canonicalRedirectTarget(host, req.url);
+      if (target) return res.redirect(301, target);
       if (req.headers['x-forwarded-proto'] === 'http') {
         return res.redirect(301, `https://${host}${req.url}`);
       }
@@ -71,11 +72,15 @@ async function bootstrap() {
             'https://telegram.org',
             'https://mc.yandex.ru',
             'https://st.max.ru',
+            // Google Identity Services (One Tap) грузит свой клиент отсюда.
+            'https://accounts.google.com',
           ],
           connectSrc: [
             "'self'",
             'https://mc.yandex.ru',
             'https://oauth.telegram.org',
+            // One Tap ходит на accounts.google.com за конфигом/статусом сессии.
+            'https://accounts.google.com',
           ],
           imgSrc: [
             "'self'",
@@ -84,8 +89,12 @@ async function bootstrap() {
             'https://t.me',
             'https://cdn.jsdelivr.net',
           ],
-          // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
-          frameSrc: ['https://oauth.telegram.org'],
+          // oauth.telegram.org — iframe кнопки Telegram Login Widget;
+          // accounts.google.com — iframe всплывашки Google One Tap.
+          frameSrc: [
+            'https://oauth.telegram.org',
+            'https://accounts.google.com',
+          ],
           // Кто имеет право встроить нас в свой iframe. MAX открывает
           // мини-приложение именно так, поэтому одного 'self' мало: без его
           // домена вебвью показывает «refused to connect». Telegram сюда не
@@ -156,6 +165,13 @@ async function bootstrap() {
   // старте видно, что выключено и почему — мёртвая сигнализация (оба канала
   // admin-alert.ts) отдельной ERROR-строкой, остальное — info.
   logCapabilityReport(new Logger('CapabilityReport'));
+
+  // Реестр env-переменных (щит, инциденты 2026-09-15/16): переменная
+  // ПРИСУТСТВУЕТ, но неверна (чужой хост, опечатка, пустая ADMIN_EMAIL) — не
+  // валит процесс (падение — крашлуп, хуже деградации), кроме уже
+  // существующих исключений ENCRYPTION_KEY/DATABASE_URL, которые падают
+  // раньше и отдельно (src/utils/crypto.ts, PrismaService).
+  logEnvCheck(new Logger('EnvCheck'), checkEnv());
 
   // Run after listen so PrismaService.onModuleInit has already connected.
   // Idempotent — skips rows already encrypted. Doesn't block startup.

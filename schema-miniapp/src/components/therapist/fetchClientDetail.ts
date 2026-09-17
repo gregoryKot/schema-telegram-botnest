@@ -24,6 +24,10 @@ export interface ClientModeNoteRow {
   thoughts: string;
   needs: string;
   behavior: string;
+  origins: string;
+  healthyView: string;
+  modeFunction: string;
+  needsMet: string;
 }
 
 export interface ClientDetailFetchResult {

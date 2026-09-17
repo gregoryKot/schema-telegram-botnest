@@ -188,7 +188,7 @@ export function Row({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '13px 16px',
         cursor: onClick ? 'pointer' : 'default',
         borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,

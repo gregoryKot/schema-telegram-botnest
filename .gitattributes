@@ -22,11 +22,20 @@ scripts/jscpd-baseline.json               merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
 scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/silent-catch-baseline.json        merge=ratchet-min
+scripts/tiny-fonts-baseline.json          merge=ratchet-min
+scripts/scale-drift-baseline.json         merge=ratchet-min
+scripts/bundle-size-baseline.json         merge=ratchet-min
+scripts/render-poison-baseline.json       merge=ratchet-min
+e2e-browser/a11y-baseline.json            merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max
 scripts/frontend-coverage-baseline.json   merge=ratchet-max
 scripts/mutation-baseline.json            merge=ratchet-max
+scripts/mutation-crisis-baseline.json     merge=ratchet-max
+scripts/mutation-outbox-baseline.json     merge=ratchet-max
+scripts/mutation-golden-auth-baseline.json     merge=ratchet-max
+scripts/mutation-golden-payments-baseline.json merge=ratchet-max
 
 # ── Сборка мини-аппа ─────────────────────────────────────────────────────────
 # dist коммитится в git (Dockerfile его только копирует), поэтому конфликтует

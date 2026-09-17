@@ -16,7 +16,7 @@ export function QuoteCard({
       style={{
         background: `color-mix(in srgb, ${color} 6%, transparent)`,
         border: `1px solid color-mix(in srgb, ${color} ${bright ? 16 : 14}%, transparent)`,
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '13px 15px',
         textAlign: 'left',
         marginBottom: bright ? 16 : 10,

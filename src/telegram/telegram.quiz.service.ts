@@ -11,6 +11,7 @@ import {
 import { Context, Markup, Telegraf } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import {
   normalizeAddressForm,
@@ -40,6 +41,9 @@ export class TelegramQuizService implements OnModuleInit {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analytics: AnalyticsService,
+    // Адрес в Telegram и номер аккаунта расходятся после слияния: писать в БД
+    // по сырому ctx.from.id нельзя, сначала спрашиваем владельца привязки.
+    private readonly accountService: AccountService,
   ) {}
 
   onModuleInit(): void {
@@ -104,7 +108,9 @@ export class TelegramQuizService implements OnModuleInit {
         if (!isValidPicks(quiz, picks)) return this.stale(ctx);
 
         if (n === 0 && rawId) {
-          void this.analytics.track(BigInt(rawId), 'quiz_started', {
+          // Резолвер ждём, а саму отправку события — нет (fire-and-forget).
+          const userId = await this.accountService.canonicalUserId(rawId);
+          void this.analytics.track(userId, 'quiz_started', {
             quiz: quiz.id,
             src: 'bot',
           });
@@ -144,7 +150,8 @@ export class TelegramQuizService implements OnModuleInit {
     const r = computeQuizResult(quiz, picks);
     if (!r) return this.stale(ctx);
     if (rawId) {
-      void this.analytics.track(BigInt(rawId), 'quiz_completed', {
+      const userId = await this.accountService.canonicalUserId(rawId);
+      void this.analytics.track(userId, 'quiz_completed', {
         quiz: quiz.id,
         result: r.id,
         src: 'bot',
@@ -211,8 +218,11 @@ export class TelegramQuizService implements OnModuleInit {
 
   private async getForm(rawId: number | undefined): Promise<AddressForm> {
     if (!rawId) return 'ty';
+    // Форму обращения читаем у аккаунта-владельца привязки: после слияния
+    // настройки лежат под веб-номером, а сырой telegramId ведёт в пустоту.
+    const userId = await this.accountService.canonicalUserId(rawId);
     const settings = await this.botService
-      .getUserSettings(BigInt(rawId))
+      .getUserSettings(userId)
       .catch((e) => (this.logger.warn('quiz getForm failed', e), null));
     return normalizeAddressForm(settings?.addressForm);
   }

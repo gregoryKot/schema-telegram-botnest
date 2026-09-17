@@ -21,7 +21,7 @@ export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
       <div style={{
         position: 'fixed', left: x, top: y, zIndex: 1000,
         background: 'var(--bg-elev)', border: '1px solid var(--line)',
-        borderRadius: 8, padding: 4, minWidth: 170,
+        borderRadius: 'var(--r-8)', padding: 4, minWidth: 170,
         boxShadow: 'var(--shadow-2)',
       }}>
         {items.map((it, i) => (

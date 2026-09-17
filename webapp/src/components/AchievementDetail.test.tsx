@@ -24,6 +24,13 @@ function renderDetail(onClose = vi.fn()) {
 }
 
 describe('AchievementDetail — контент', () => {
+  // К4 дизайн-аудита 2026-08: панель — role="dialog"/aria-modal.
+  it('панель размечена как диалог', () => {
+    renderDetail();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('рендерит заголовок и описание достижения', () => {
     renderDetail();
     expect(screen.getByText('Неделя подряд')).toBeTruthy();

@@ -6,40 +6,33 @@ export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
-import { telemetryUrl } from './utils/telemetryUrl';
+import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
+import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
+import {
+  BASE,
+  ApiError,
+  fetchWithTimeout,
+  authedFetch,
+  get,
+  post,
+  postJson,
+  patchJson,
+  del,
+  setTokenProvider,
+  setRefreshHandler,
+} from './apiClient';
 
-const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
-const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
+export { ApiError, setTokenProvider, setRefreshHandler };
 
-let _getToken: (() => string | null) | null = null;
+// Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
+export const reportClientError = createClientErrorReporter(BASE, 'webapp');
 
-export function setTokenProvider(fn: () => string | null) {
-  _getToken = fn;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = _getToken?.();
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'Content-Type': 'application/json',
-  };
-}
-
-async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(input, { ...init, signal: ctrl.signal, credentials: 'include' });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-// Текст ошибки — из поля `message` тела, если распарсилось, иначе код статуса.
-// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
-// остаётся код статуса; глушим только попытку его прочитать, не саму ошибку.
-async function apiError(res: Response): Promise<Error> {
+// Ошибку сервера показываем как есть — apiError() (apiClient.ts) уже вытащила
+// message из тела; глушим только попытку прочитать тело admin-ответа, не саму
+// ошибку (502 от прокси, оборванное соединение — тело может прийти не-JSON).
+async function adminApiError(res: Response): Promise<ApiError> {
   let msg = `API error: ${res.status}`;
   try {
     const j = await res.json();
@@ -47,99 +40,24 @@ async function apiError(res: Response): Promise<Error> {
   } catch {
     /* тело не распарсилось как JSON — остаётся код статуса */
   }
-  return new Error(msg);
-}
-
-async function get<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
-}
-
-async function post(path: string, body: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-}
-
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-  return res.json();
-}
-
-// Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
-// прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
-// если краш случился на выгрузке. Никогда не бросает: телеметрия не мешает UI.
-export function reportClientError(payload: {
-  message: string;
-  section: string;
-  stack?: string;
-  componentStack?: string;
-}): void {
-  try {
-    void fetch(`${BASE}/api/client-errors`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: payload.message.slice(0, 500),
-        section: payload.section.slice(0, 120),
-        stack: payload.stack?.slice(0, 4000),
-        componentStack: payload.componentStack?.slice(0, 4000),
-        source: 'webapp',
-        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment. После логина
-        // вебапп попадает на `/auth/callback#access_token=<JWT>` (TTL 15 мин),
-        // а хеш чистится лишь в useEffect — краш на фазе рендера успевал
-        // отправить токен в логи сервера и в DM админа.
-        url:
-          typeof location !== 'undefined'
-            ? telemetryUrl(location.href)
-            : undefined,
-      }),
-      keepalive: true,
-    }).catch(() => {});
-  } catch {
-    /* best-effort */
-  }
-}
-
-async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-  return res.json();
-}
-
-async function del(path: string, body?: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders(), ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return new ApiError(res.status, msg);
 }
 
 // Admin booking requests: the admin key goes in the x-admin-key header so it
-// never appears in URLs or server access logs.
+// never appears in URLs or server access logs (не через JWT-транспорт
+// apiClient.ts — свой ключ, свой заголовок, свой 401-путь не нужен).
 async function adminReq<T>(method: string, path: string, key: string, body?: unknown): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  if (!res.ok) throw await apiError(res);
+  if (!res.ok) throw await adminApiError(res);
   if (res.status === 204) return undefined as T;
   return res.json().catch(() => undefined as T);
 }
 
 import type {
-  StreakData,
   BookingSlot,
   SessionOption,
   AvailabilityRule,
@@ -150,8 +68,10 @@ import type {
   Article,
   ArticleDto,
   MarqueeTopic,
+  AuditedPhrase,
   HealthyAdultPhrase,
   HealthyAdultPoolStatus,
+  PhraseIssue,
   SiteContent,
   UserTask,
   TherapistCustomMode,
@@ -162,6 +82,7 @@ import type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
 } from './api.types';
 export type {
   UserSettings,
@@ -177,8 +98,10 @@ export type {
   Article,
   ArticleDto,
   MarqueeTopic,
+  AuditedPhrase,
   HealthyAdultPhrase,
   HealthyAdultPoolStatus,
+  PhraseIssue,
   SiteContent,
   UserPractice,
   PartnerInfo,
@@ -202,6 +125,7 @@ export type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
   Insights,
 } from './api.types';
 // ─── API object (identical endpoints, different auth header) ──────────────────
@@ -209,26 +133,32 @@ export type {
 // Единый транспорт: общие методы приезжают из shared-фабрики (правило №3).
 const transport: ApiTransport = { get, post, postJson, del };
 
+// Оффлайн-надёжность оценки — shared/src/api/ratingApi.ts (единая реализация для обоих фронтендов, правило №3); `api.trackEvent` внутри — лениво (TDZ: `api` определится ниже, замыкание исполнится позже).
+// authedFetch (не голый fetchWithTimeout) — оценка теперь тоже переживает 401 (пункт 4 диагностики 2026-08-21), а не только сеть/5xx.
+const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta));
+
 export const api = {
   // Общие с мини-аппом методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
+  ...ratingApi,
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
-  saveRating:     async (needId: string, value: number, date?: string): Promise<{ ok: boolean; allDone: boolean; streak?: StreakData }> => {
-    const res = await fetch(`${BASE}/api/rating`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ needId, value, date }), credentials: 'include' });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
-  },
   getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
   getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
   saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
-  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
-  // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
-  getPhraseChecks:      () => get<Array<{ id: number; rewrite: string | null; inWarmWords: boolean; createdAt: string }>>('/api/phrase-checks'),
+  // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
+  // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
+  // Случайная фраза Здорового Взрослого для карточки шаринга («Фраза для
+  // себя», PhraseShareCard.tsx) — паритет с мини-аппом, правило №16.
+  getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
+  getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
+  createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
+  updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),
+  deletePhraseCheck:    (id: number) => del(`/api/phrase-checks/${id}`),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
@@ -295,6 +225,8 @@ export const api = {
   adminTestPhrasePost: (key: string) => adminReq<{ ok: boolean; message: string }>('POST', '/api/healthy-adult/admin/test-post', key, {}),
   adminImportPhrases: (key: string, text: string) => adminReq<{ created: HealthyAdultPhrase[]; message: string }>('POST', '/api/healthy-adult/admin/import', key, { text }),
   adminPhrasePoolStatus: (key: string) => adminReq<HealthyAdultPoolStatus>('GET', '/api/healthy-adult/admin/pool-status', key),
+  adminCheckPhrase:  (key: string, text: string) => adminReq<{ issues: PhraseIssue[] }>('POST', '/api/healthy-adult/admin/check', key, { text }),
+  adminAuditPhrases: (key: string) => adminReq<AuditedPhrase[]>('GET', '/api/healthy-adult/admin/audit', key),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

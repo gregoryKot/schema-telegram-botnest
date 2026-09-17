@@ -33,7 +33,7 @@ export function DiaryWizardFoot({
         className="ex-btn ex-btn-ghost"
         disabled={backDisabled}
         onClick={onBack}
-        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
       >
         <GlyphArrowLeft /> {backLabel}
       </button>
@@ -43,7 +43,7 @@ export function DiaryWizardFoot({
           className="ex-btn ex-btn-ghost"
           disabled={saving}
           onClick={onSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {saving ? 'Сохраняю…' : 'Сохранить'} {!saving && <GlyphCheck />}
         </button>
@@ -53,7 +53,7 @@ export function DiaryWizardFoot({
           className="ex-btn ex-btn-primary"
           disabled={!canSave || saving}
           onClick={onSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
         </button>
@@ -62,7 +62,7 @@ export function DiaryWizardFoot({
           className="ex-btn ex-btn-primary"
           disabled={curRequired && !curFilled}
           onClick={onNext}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
         >
           {curFilled || curRequired ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
         </button>

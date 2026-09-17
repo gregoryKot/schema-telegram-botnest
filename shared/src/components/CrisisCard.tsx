@@ -3,10 +3,7 @@
 // Ничего не отправляет и не блокирует сохранение — только предлагает помощь.
 // Единственная копия (правило №3): фронтенды дают тонкую обёртку, прокидывая
 // свой tr (ты/вы) и track (аналитика). Показ/нажатие — useCrisisCardTracking.
-import {
-  CRISIS_HOTLINE_DISPLAY,
-  CRISIS_HOTLINE_TEL,
-} from '../utils/crisisMarkers';
+import { CRISIS_HOTLINES } from '../utils/crisisMarkers';
 import { useCrisisCardTracking } from '../analytics/useCrisisCardTracking';
 
 type Tr = (ty: string, vy: string) => string;
@@ -51,22 +48,36 @@ export function CrisisCardView({
           'Вы не обязаны справляться с этим в одиночку. Если тяжело прямо сейчас — позвоните на бесплатный телефон доверия:',
         )}
       </div>
-      <a
-        href={CRISIS_HOTLINE_TEL}
-        onClick={onHotlineTap}
-        aria-label={`Позвонить на телефон доверия ${CRISIS_HOTLINE_DISPLAY}`}
-        style={{
-          display: 'inline-block',
-          fontSize: 17,
-          fontWeight: 700,
-          color: 'var(--accent)',
-          textDecoration: 'none',
-          marginBottom: 6,
-        }}
-      >
-        {CRISIS_HOTLINE_DISPLAY}
-      </a>
-      <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+      {CRISIS_HOTLINES.map((hotline) => (
+        <div key={hotline.tel} style={{ marginBottom: 4 }}>
+          <a
+            href={hotline.tel}
+            onClick={onHotlineTap}
+            aria-label={`Позвонить на телефон доверия ${hotline.display}`}
+            style={{
+              display: 'inline-block',
+              fontSize: hotline.audienceNote ? 14 : 17,
+              fontWeight: 700,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+            }}
+          >
+            {hotline.display}
+          </a>
+          {hotline.audienceNote && (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--text-faint)',
+                marginLeft: 6,
+              }}
+            >
+              {hotline.audienceNote}
+            </span>
+          )}
+        </div>
+      ))}
+      <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6 }}>
         Круглосуточно, бесплатно, анонимно. Запись сохранится как обычно — эта
         карточка ничего никуда не отправляет.
       </div>

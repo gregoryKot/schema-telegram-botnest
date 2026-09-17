@@ -1,6 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
+  HttpCode,
   Req,
   Res,
   Query,
@@ -9,6 +12,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
@@ -16,7 +20,20 @@ import type { Request, Response } from 'express';
 import { VkProvider } from './providers/vk.provider';
 import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { AuthFlowService } from './auth-flow.service';
-import { getCookie } from './auth-http.util';
+import {
+  GoogleOneTapService,
+  type OneTapLoginResult,
+} from './google-one-tap.service';
+import { GoogleOneTapDto } from './dto/google-one-tap.dto';
+import { getCookie, requireCsrf } from './auth-http.util';
+import { SecurityLogService } from './security-log.service';
+import {
+  OAUTH_COOKIE_PATH,
+  OAUTH_STATE_COOKIE,
+  setOAuthCookie,
+  redirectToCallbackHost,
+  assertOAuthStateMatches,
+} from './oauth-host';
 
 @Controller('api/auth')
 export class AuthOauthController {
@@ -26,6 +43,8 @@ export class AuthOauthController {
     private readonly config: ConfigService,
     private readonly providers: AuthProviderRegistry,
     private readonly flow: AuthFlowService,
+    private readonly oneTap: GoogleOneTapService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   // ─── Google OAuth ─────────────────────────────────────────────────────────
@@ -47,6 +66,32 @@ export class AuthOauthController {
     @Res() res: Response,
   ): Promise<void> {
     return this.flow.oauthCallback('google', code, state, error, req, res);
+  }
+
+  // Google One Tap: нативная всплывашка Google отдаёт id_token прямо в браузер
+  // (без редиректа). Фронт постит его сюда, мы проверяем токен тем же
+  // верификатором, что и обмен кода, и выдаём свою сессию. Анонимный роут (у
+  // человека сессии ещё нет), но с CSRF-заголовком — токен присылает JS нашего
+  // origin, а не сторонний сайт, — и с троттлингом. Только сайт (host 'web'):
+  // внутри мессенджеров One Tap не работает, там вход по initData.
+  @Post('google/one-tap')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 40, ttl: 3_600_000 },
+  })
+  @HttpCode(200)
+  async googleOneTap(
+    @Body() body: GoogleOneTapDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<OneTapLoginResult> {
+    requireCsrf(req, 'google/one-tap', this.securityLog);
+    return this.oneTap.login(
+      body.credential,
+      res,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   // ─── VK OAuth ─────────────────────────────────────────────────────────────
@@ -75,10 +120,8 @@ export class AuthOauthController {
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      assertOAuthStateMatches(req, state, vk.callbackOrigin());
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
@@ -89,7 +132,13 @@ export class AuthOauthController {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      this.flow.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
+      this.flow.finishOAuthRedirect(
+        outcome,
+        'vk',
+        res,
+        frontendBase,
+        this.flow.ticketFromState(state),
+      );
     } catch (err) {
       this.logger.error(`vk callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
@@ -104,24 +153,20 @@ export class AuthOauthController {
     const provider = this.providers.get(
       'telegram-oidc',
     ) as TelegramOidcProvider;
+    // Алиас-домен: кука, поставленная здесь, обязана жить на хосте колбэка —
+    // иначе колбэк её не увидит (2026-09-08). Только для анонимного входа:
+    // привязка редиректом на другой хост стала бы входом под другим аккаунтом.
+    if (
+      req.webUser?.userId == null &&
+      redirectToCallbackHost(req, res, provider.callbackOrigin())
+    )
+      return;
     // Подписанный state (C1): linkUserId нельзя подделать, иначе привязка чужого
     // провайдера к аккаунту жертвы = захват. Единая точка — flow.buildLinkState.
     const state = this.flow.buildLinkState(req.webUser?.userId ?? null);
     const { verifier, challenge } = provider.generatePkce();
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.cookie('tg_pkce_verifier', verifier, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
+    setOAuthCookie(res, OAUTH_STATE_COOKIE, state);
+    setOAuthCookie(res, 'tg_pkce_verifier', verifier);
     res.redirect(provider.buildAuthUrl(state, challenge));
   }
 
@@ -140,19 +185,17 @@ export class AuthOauthController {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      const provider = this.providers.get(
+        'telegram-oidc',
+      ) as TelegramOidcProvider;
+      assertOAuthStateMatches(req, state, provider.callbackOrigin());
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
 
       const codeVerifier = getCookie(req, 'tg_pkce_verifier');
       if (!codeVerifier)
         throw new UnauthorizedException('Missing PKCE verifier');
-      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
+      res.clearCookie('tg_pkce_verifier', { path: OAUTH_COOKIE_PATH });
 
-      const provider = this.providers.get(
-        'telegram-oidc',
-      ) as TelegramOidcProvider;
       const identity = await provider.exchangeCodePkce(code, codeVerifier);
 
       const linkUserId = this.flow.linkUserIdFromState(state);
@@ -171,6 +214,7 @@ export class AuthOauthController {
         'telegram-oidc',
         res,
         frontendBase,
+        this.flow.ticketFromState(state),
       );
     } catch (err) {
       this.logger.error(

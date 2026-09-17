@@ -107,10 +107,10 @@ export function JoinConfirmSheet({
           style={{
             width: '100%',
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--on-accent)',
             fontSize: 15,
             fontWeight: 600,
             cursor: busy ? 'default' : 'pointer',
@@ -126,7 +126,7 @@ export function JoinConfirmSheet({
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             border: 'none',
             background: 'rgba(var(--fg-rgb),0.08)',
             color: 'var(--text)',

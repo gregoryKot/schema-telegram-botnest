@@ -14,9 +14,12 @@ interface Props {
 export function SheetIconHeader({ title, subtitle }: Props) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <div className="d-display" style={{ fontSize: 21, color: 'var(--text)' }}>
+      <h2
+        className="d-display"
+        style={{ fontSize: 21, color: 'var(--text)', margin: 0 }}
+      >
         {title}
-      </div>
+      </h2>
       <div
         style={{
           fontSize: 13,

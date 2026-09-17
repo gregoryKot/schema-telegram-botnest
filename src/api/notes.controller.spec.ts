@@ -95,4 +95,21 @@ describe('NotesController.upsertModeNote', () => {
       expect.objectContaining({ needs: 'безопасность' }),
     );
   });
+
+  it('modeFunction/needsMet тримятся и передаются отдельными полями', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertModeNote(makeReq(7n), {
+      modeId: 'punitive_parent',
+      modeFunction: '  защищает от боли  ',
+      needsMet: '  на время — да, по сути — нет  ',
+    });
+    expect(notesService.upsertModeNote).toHaveBeenCalledWith(
+      7n,
+      'punitive_parent',
+      expect.objectContaining({
+        modeFunction: 'защищает от боли',
+        needsMet: 'на время — да, по сути — нет',
+      }),
+    );
+  });
 });

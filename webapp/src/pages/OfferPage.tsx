@@ -16,7 +16,7 @@ export function OfferPage() {
           кодекса Российской Федерации и содержит все существенные условия договора
           возмездного оказания консультационных услуг.
         </p>
-        <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 20px', marginTop: 24 }}>
+        <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '16px 20px', marginTop: 24 }}>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
             <strong style={{ color: 'var(--text)' }}>Важно.</strong> Услуги, описанные в настоящей оферте, являются
             консультационными и не относятся к медицинской деятельности, психиатрической помощи
@@ -288,7 +288,7 @@ function Chapter({ n, title, children }: { n: string; title: string; children: R
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{children}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>{children}</div>
     </section>
   );
 }
@@ -306,7 +306,7 @@ function Ul({ items }: { items: string[] }) {
 }
 function Table({ rows }: { rows: [string, string][] }) {
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-12)', overflow: 'hidden' }}>
       {rows.map(([label, value], i) => (
         <div key={i} style={{
           display: 'grid', gridTemplateColumns: '220px 1fr',

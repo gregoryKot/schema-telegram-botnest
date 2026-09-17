@@ -5,7 +5,7 @@
 import { sanitizeUiPrefs, SYNCED_PREF_KEYS } from './ui-prefs.sanitize';
 
 describe('sanitizeUiPrefs', () => {
-  it('реестр ключей — 13 штук, ровно как в зафиксированном контракте', () => {
+  it('реестр ключей — 14 штук, ровно как в зафиксированном контракте', () => {
     expect(SYNCED_PREF_KEYS).toEqual([
       'today_focus_practice',
       'today_streak_hidden',
@@ -20,6 +20,7 @@ describe('sanitizeUiPrefs', () => {
       'screen_hidden_patterns',
       'screen_order_profile',
       'screen_order_patterns',
+      'screen_order_today',
     ]);
   });
 
@@ -94,23 +95,66 @@ describe('sanitizeUiPrefs', () => {
     }
   });
 
-  it('screen_hidden_*/screen_order_*: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16', () => {
+  it('screen_hidden_*/screen_order_*: JSON-массив id ⊆ SCREEN_BLOCK_IDS, длина ≤ 16, неизвестные id тихо фильтруются', () => {
     for (const key of [
       'screen_hidden_profile',
       'screen_hidden_patterns',
       'screen_order_profile',
       'screen_order_patterns',
+      'screen_order_today',
     ] as const) {
       expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak']) })).toEqual({
         [key]: JSON.stringify(['streak']),
       });
-      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['nope']) })).toEqual({});
+      // Регрессия «удалили id из реестра блоков» (my_schemas/my_modes слились
+      // в лист «Мой портрет»): устройство, ещё не подтянувшее новый реестр,
+      // может прислать массив с чужим id вперемешку с валидными — ключ не
+      // отбрасывается целиком, невалидный элемент тихо выпадает, остальное
+      // (порядок валидных id) сохраняется как было.
+      expect(
+        sanitizeUiPrefs({
+          [key]: JSON.stringify(['portrait', 'my_schemas', 'warm_words']),
+        }),
+      ).toEqual({ [key]: JSON.stringify(['portrait', 'warm_words']) });
+      // Все элементы невалидны — фильтруется в пустой массив, ключ не
+      // отбрасывается (это не то же самое, что «отсутствие ключа» — сервер
+      // честно хранит «пользователь остался без кастомного порядка»).
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['nope']) })).toEqual({
+        [key]: '[]',
+      });
+      // Длина считается ДО фильтрации — не способ обойти лимит охапкой мусора.
       expect(
         sanitizeUiPrefs({
           [key]: JSON.stringify(Array.from({ length: 17 }, () => 'streak')),
         }),
       ).toEqual({});
+      // Структурно невалидное (не массив/не строки) — по-прежнему весь ключ.
+      expect(sanitizeUiPrefs({ [key]: 'not-json' })).toEqual({});
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify({ a: 1 }) })).toEqual({});
+      expect(sanitizeUiPrefs({ [key]: JSON.stringify(['streak', 5]) })).toEqual(
+        {},
+      );
     }
+  });
+
+  it('screen_order_today: валидный массив из блоков «Сегодня» проходит, не-массив/чужой id отбрасывается', () => {
+    const order = JSON.stringify([
+      'focus',
+      'streak',
+      'phrase',
+      'secondary',
+      'therapist_banner',
+    ]);
+    expect(sanitizeUiPrefs({ screen_order_today: order })).toEqual({
+      screen_order_today: order,
+    });
+    expect(
+      sanitizeUiPrefs({ screen_order_today: JSON.stringify(['мусор']) }),
+    ).toEqual({ screen_order_today: '[]' });
+    expect(
+      sanitizeUiPrefs({ screen_order_today: JSON.stringify({ a: 1 }) }),
+    ).toEqual({});
+    expect(sanitizeUiPrefs({ screen_order_today: 'not-json' })).toEqual({});
   });
 
   it('значение длиннее 2000 символов отбрасывается', () => {

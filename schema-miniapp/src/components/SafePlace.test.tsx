@@ -14,6 +14,7 @@ import {
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { SafePlace } from './SafePlace';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -57,19 +58,19 @@ describe('SafePlace — кризисная детекция (правило №7
   it('показывает карточку поддержки при кризисной фразе', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('карточка появляется от одного набора текста — ДО клика «Сохранить» и ДО любого сетевого запроса', async () => {
     const textarea = await renderSheet();
     fireEvent.change(textarea, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     expect(mockApi.saveSafePlace).not.toHaveBeenCalled();
   });
 });
@@ -144,6 +145,36 @@ describe('SafePlace — сохранение: read-after-write и видимая
     fireEvent.click(screen.getByText('Сохранить'));
     await waitFor(() =>
       expect(screen.getByText(/попробуйте ещё раз/)).toBeTruthy(),
+    );
+  });
+
+  it('подпись экрана просмотра («Прочти — и почувствуй») звучит в обеих формах', async () => {
+    const tyTextarea = renderWithForm(
+      <SafePlace onClose={() => {}} />,
+      'ty',
+    ).getByPlaceholderText(
+      'Это небольшой уютный лес недалеко от дома. Я слышу птиц...',
+    );
+    await act(async () => {});
+    fireEvent.change(tyTextarea, { target: { value: 'Тихий лес' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Прочти — и почувствуй')).toBeTruthy(),
+    );
+    cleanup();
+    localStorage.clear();
+
+    const vyTextarea = renderWithForm(
+      <SafePlace onClose={() => {}} />,
+      'vy',
+    ).getByPlaceholderText(
+      'Это небольшой уютный лес недалеко от дома. Я слышу птиц...',
+    );
+    await act(async () => {});
+    fireEvent.change(vyTextarea, { target: { value: 'Тихий лес' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Прочтите — и почувствуйте')).toBeTruthy(),
     );
   });
 });

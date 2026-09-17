@@ -23,7 +23,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
         {tasks.map(task => (
-          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
+          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
             <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
               {taskStatusMark(task.done)}
             </span>
@@ -34,7 +34,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             </div>
             {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
               <button onClick={() => onTaskDone(task.id as number)}
-                style={{ padding: '6px 12px', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                style={{ padding: '6px 12px', border: 'none', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
                 Готово
               </button>
             )}
@@ -44,7 +44,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
           <>
             <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
             {taskHistory.map(task => (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
                 <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{taskStatusMark(task.done)}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>

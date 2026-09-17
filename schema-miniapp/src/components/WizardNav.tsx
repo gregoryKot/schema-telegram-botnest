@@ -40,14 +40,14 @@ export function WizardNav({
       : accentColor;
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
       <button
         onClick={onBack}
         disabled={backDisabled}
         style={{
           width: 44,
           height: 44,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           fontFamily: 'inherit',
           background: backDisabled ? 'var(--surface)' : 'var(--surface-2)',
@@ -67,7 +67,7 @@ export function WizardNav({
         style={{
           flex: 1,
           padding: '13px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           fontFamily: 'inherit',
           background: primaryBg,

@@ -81,6 +81,31 @@ function makeDb() {
 }
 
 describe('HealthyAdultService', () => {
+  // Пул заполнялся через админку задолго до появления планки качества, и те
+  // фразы её не проходили. audit() — единственный способ их перебрать.
+  it('audit возвращает только фразы с претензиями и сами претензии', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.create('Сегодня можно закрыть ноутбук на час раньше.');
+    const db = (svc as unknown as { prisma: ReturnType<typeof makeDb> }).prisma;
+    // Мимо create(), иначе планка не даст сохранить — имитируем фразу,
+    // заведённую до её появления.
+    await db.healthyAdultPhrase.create({
+      data: { text: 'Ты был хорошим ребёнком.', sortOrder: 99 },
+    });
+
+    const bad = await svc.audit();
+
+    expect(bad).toHaveLength(1);
+    expect(bad[0].text).toBe('Ты был хорошим ребёнком.');
+    expect(bad[0].issues.some((i) => i.kind === 'род')).toBe(true);
+  });
+
+  it('audit на чистом пуле пуст', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.create('Сегодня можно закрыть ноутбук на час раньше.');
+    expect(await svc.audit()).toEqual([]);
+  });
+
   it('enabledTexts на пустой таблице фолбэчит на встроенный пул', async () => {
     const svc = new HealthyAdultService(makeDb());
     const texts = await svc.enabledTexts();

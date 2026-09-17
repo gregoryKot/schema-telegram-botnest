@@ -5,7 +5,13 @@
 // секция из URL/localStorage, офлайн-баннер по реальным browser-событиям.
 // Дочерние секции/оверлеи — заглушки (App.test-helpers.tsx).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import {
+  screen,
+  waitFor,
+  cleanup,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import {
   renderApp,
   setUrl,
@@ -13,6 +19,7 @@ import {
 } from './test-support/App.test-helpers';
 import { defaultFlags } from './test-support/App.test-fixtures';
 import { api } from './api';
+import { isSessionDead, lastRenewFailure } from './session';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -26,6 +33,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  // vi.clearAllMocks() (beforeEach) не откатывает mockReturnValue — тесты
+  // pickErrorScreen ниже переопределяют дефолт из App.test-fixtures.ts явно,
+  // возвращаем его, чтобы не утекало в соседние describe.
+  vi.mocked(isSessionDead).mockReturnValue(false);
+  vi.mocked(lastRenewFailure).mockReturnValue(null);
 });
 
 describe('App — состояние загрузки: скелетон по форме экрана, не спиннер', () => {
@@ -56,6 +68,34 @@ describe('App — ошибка начальной загрузки видна п
     );
     expect(screen.getByText('Повторить')).toBeTruthy();
     expect(screen.queryByTestId('app-sections')).toBeNull();
+  });
+});
+
+// Инцидент 31.08.2026: авария БД (каждый запрос отвечал 500, включая
+// refresh) показала владельцу ярлычного приложения «Не удалось войти» с
+// подсказкой про Telegram — хотя вход был ни при чём, сломан сервер.
+describe('App — 401 без Bearer, но refresh только что кончился transient — «нет связи», не «не удалось войти»', () => {
+  it('показывает ConnectionTrouble с кнопкой «Повторить», а не AppErrorScreen', async () => {
+    vi.mocked(isSessionDead).mockReturnValue(false);
+    vi.mocked(lastRenewFailure).mockReturnValue('transient');
+    mockApi.needs.mockRejectedValueOnce(new Error('API error: 401'));
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByText('Сервер не отвечает')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Не удалось войти')).toBeNull();
+    expect(screen.queryByText('Не удалось загрузить')).toBeNull();
+  });
+
+  it('контрольный: тот же 401, но lastFailure=null (реально не удалось войти) — auth-help, не connection', async () => {
+    vi.mocked(isSessionDead).mockReturnValue(false);
+    vi.mocked(lastRenewFailure).mockReturnValue(null);
+    mockApi.needs.mockRejectedValueOnce(new Error('API error: 401'));
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByText('Не удалось войти')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Сервер не отвечает')).toBeNull();
   });
 });
 
@@ -153,5 +193,35 @@ describe('App — офлайн-баннер по реальным browser-соб
         screen.queryByText('Нет подключения — данные не сохраняются'),
       ).toBeNull(),
     );
+  });
+});
+
+// Прогрев данных чужих вкладок обязан ждать данных первого экрана: на 3G
+// девять прогревочных запросов, ушедших с маунта, толкались за канал с
+// needs/ratings и чанком «Сегодня» (замер 2026-08-23, холодный старт
+// 4044 → 4398мс). Гейт — loading=false (см. эффект prefetchStarted в App.tsx).
+describe('прогрев данных чужих вкладок ждёт первый экран', () => {
+  it('prefetchOtherSectionsData/preloadDiarySheets не зовутся, пока needs висит', async () => {
+    const { prefetchOtherSectionsData } =
+      await import('./utils/prefetchSectionData');
+    const { preloadDiarySheets } = await import('./components/LazyDiarySheets');
+    let resolveNeeds: (v: never[]) => void = () => {};
+    mockApi.needs.mockReturnValueOnce(
+      new Promise<never[]>((r) => {
+        resolveNeeds = r;
+      }),
+    );
+    renderApp();
+    // Пока needs висит — App в состоянии загрузки, прогрев не стартует.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(prefetchOtherSectionsData).not.toHaveBeenCalled();
+    expect(preloadDiarySheets).not.toHaveBeenCalled();
+
+    resolveNeeds([]);
+    await waitFor(() => expect(prefetchOtherSectionsData).toHaveBeenCalled());
+    expect(preloadDiarySheets).toHaveBeenCalledTimes(1);
   });
 });

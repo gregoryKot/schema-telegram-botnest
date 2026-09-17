@@ -76,6 +76,17 @@ describe('OnboardingWidget', () => {
     expect(screen.getByText('0 из 5 шагов выполнено')).toBeTruthy();
   });
 
+  it('профиль без ysq (урезанный ответ сервера) не роняет виджет — шаг просто не засчитан', () => {
+    // Регрессия из браузерного смока #375: `p?.ysq.completedAt` защищал только
+    // profile, но не ysq — TypeError до первого рендера, белый экран «Сегодня».
+    const partial = {
+      ...profile(),
+      ysq: undefined,
+    } as unknown as ReturnType<typeof profile>;
+    render(<OnboardingWidget {...baseProps({ profile: partial })} />);
+    expect(screen.getByText('Тест на схемы')).toBeTruthy();
+  });
+
   it('клик «Начать тест» открывает тест на схемы через onOpenSchema', () => {
     const onOpenSchema = vi.fn();
     render(<OnboardingWidget {...baseProps({ onOpenSchema })} />);
@@ -166,5 +177,22 @@ describe('OnboardingWidget', () => {
     const dots = screen.getAllByRole('button').filter((el) => !el.textContent);
     fireEvent.click(dots[dots.length - 1]);
     expect(screen.getByText('Колесо детства')).toBeTruthy();
+  });
+
+  it('у каждой точки шага есть доступное имя (aria-command-name)', () => {
+    // Регрессия axe: точки-пагинаторы — 24×24 div[role="button"] без
+    // текста и без aria-label, скринридер их пропускал молча.
+    render(<OnboardingWidget {...baseProps()} />);
+    for (const title of [
+      'Тест на схемы',
+      'Оценка потребностей сегодня',
+      'Первая запись в дневнике',
+      'Ежедневное напоминание',
+      'Колесо детства',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: new RegExp(`Шаг «${title}»`) }),
+      ).toBeTruthy();
+    }
   });
 });

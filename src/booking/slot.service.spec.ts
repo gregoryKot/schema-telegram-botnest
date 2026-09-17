@@ -228,8 +228,14 @@ describe('SlotService.getSlots — занятость из внешнего ка
       rules: [RULE],
       blockBusy: false,
     });
-    await service.getSlots(MONDAY, MONDAY);
+    const slots = await service.getSlots(MONDAY, MONDAY);
     expect(calDav.getBusyTimes).not.toHaveBeenCalled();
+    // Без блокировки по календарю оба слота из правила остаются на месте —
+    // это не «пустой список из-за сломанного пути», а честный неотфильтрованный результат.
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
   });
 
   it('CALENDAR_BLOCK_SLOTS включён — занятый интервал из календаря вычёркивает пересекающийся слот', async () => {

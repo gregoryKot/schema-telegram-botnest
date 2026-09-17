@@ -7,6 +7,7 @@ const FILTER_CLASSES = ['react-flow__minimap', 'react-flow__controls', 'react-fl
 
 export function useModeMapExport(nodes: FlowNode[]) {
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(false);
 
   const renderPng = useCallback(async (): Promise<{ url: string; w: number; h: number } | null> => {
     if (nodes.length === 0) return null;
@@ -26,17 +27,19 @@ export function useModeMapExport(nodes: FlowNode[]) {
 
   const onExportPng = useCallback(async () => {
     setExporting(true);
+    setExportError(false);
     try {
       const png = await renderPng();
       if (!png) return;
       const a = document.createElement('a');
       a.download = `karta-rezhimov-${new Date().toISOString().slice(0, 10)}.png`;
       a.href = png.url; a.click();
-    } catch { /* ignore */ } finally { setExporting(false); }
+    } catch { setExportError(true); } finally { setExporting(false); }
   }, [renderPng]);
 
   const onExportPdf = useCallback(async () => {
     setExporting(true);
+    setExportError(false);
     try {
       const png = await renderPng();
       if (!png) return;
@@ -44,8 +47,8 @@ export function useModeMapExport(nodes: FlowNode[]) {
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [png.w, png.h] });
       pdf.addImage(png.url, 'PNG', 0, 0, png.w, png.h);
       pdf.save(`karta-rezhimov-${new Date().toISOString().slice(0, 10)}.pdf`);
-    } catch { /* ignore */ } finally { setExporting(false); }
+    } catch { setExportError(true); } finally { setExporting(false); }
   }, [renderPng]);
 
-  return { exporting, onExportPng, onExportPdf };
+  return { exporting, exportError, onExportPng, onExportPdf };
 }

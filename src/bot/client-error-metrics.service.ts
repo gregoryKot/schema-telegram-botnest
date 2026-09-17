@@ -35,6 +35,7 @@ export class ClientErrorMetricsService {
         total_week: bigint;
         auth_day: bigint;
         auth_week: bigint;
+        login_week: bigint;
         today_week: bigint;
         diary_week: bigint;
         schemas_week: bigint;
@@ -42,6 +43,7 @@ export class ClientErrorMetricsService {
         profile_week: bigint;
         help_week: bigint;
         cabinet_week: bigint;
+        booking_week: bigint;
         other_week: bigint;
         webapp_week: bigint;
         miniapp_week: bigint;
@@ -53,6 +55,7 @@ export class ClientErrorMetricsService {
         count(*) FILTER (WHERE meta->>'section' = 'auth'
                            AND "createdAt" >= ${since1})::bigint AS auth_day,
         count(*) FILTER (WHERE meta->>'section' = 'auth')::bigint AS auth_week,
+        count(*) FILTER (WHERE meta->>'section' = 'login')::bigint AS login_week,
         count(*) FILTER (WHERE meta->>'section' = 'today')::bigint AS today_week,
         count(*) FILTER (WHERE meta->>'section' = 'diary')::bigint AS diary_week,
         count(*) FILTER (WHERE meta->>'section' = 'schemas')::bigint AS schemas_week,
@@ -60,6 +63,7 @@ export class ClientErrorMetricsService {
         count(*) FILTER (WHERE meta->>'section' = 'profile')::bigint AS profile_week,
         count(*) FILTER (WHERE meta->>'section' = 'help')::bigint AS help_week,
         count(*) FILTER (WHERE meta->>'section' = 'cabinet')::bigint AS cabinet_week,
+        count(*) FILTER (WHERE meta->>'section' = 'booking')::bigint AS booking_week,
         count(*) FILTER (WHERE meta->>'section' = 'other')::bigint AS other_week,
         count(*) FILTER (WHERE meta->>'source' = 'webapp')::bigint AS webapp_week,
         count(*) FILTER (WHERE meta->>'source' = 'miniapp')::bigint AS miniapp_week
@@ -74,6 +78,7 @@ export class ClientErrorMetricsService {
       authDay: n(row?.auth_day),
       authWeek: n(row?.auth_week),
       bySection: {
+        login: n(row?.login_week),
         today: n(row?.today_week),
         diary: n(row?.diary_week),
         schemas: n(row?.schemas_week),
@@ -81,6 +86,7 @@ export class ClientErrorMetricsService {
         profile: n(row?.profile_week),
         help: n(row?.help_week),
         cabinet: n(row?.cabinet_week),
+        booking: n(row?.booking_week),
         other: n(row?.other_week),
       },
       bySource: {

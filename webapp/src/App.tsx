@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { telemetryUrl } from './utils/telemetryUrl';
+import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -17,9 +18,12 @@ function MetrikaTracker() {
 }
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/authContext';
-import { setTokenProvider } from './api';
+import { setTokenProvider, setRefreshHandler } from './api';
+import { ConnectionTrouble } from '../../shared/src/components/ConnectionTrouble';
 import { LoginPage } from './pages/LoginPage';
+import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
+import { AuthConfirmPage } from './pages/AuthConfirmPage';
 import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
@@ -38,7 +42,6 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-import { GamePage } from './pages/GamePage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
 // bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
@@ -52,16 +55,15 @@ if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', '
 
 // ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
-  const { accessToken } = useAuth();
-  useEffect(() => { setTokenProvider(() => accessToken); }, [accessToken]);
+  const { accessToken, refreshToken } = useAuth();
+  useEffect(() => { setTokenProvider(() => accessToken); setRefreshHandler(refreshToken); }, [accessToken, refreshToken]);
   return null;
 }
-
 // ── Auth guard as a layout route ───────────────────────────────────────────────
 function RequireAuth() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, authError, refreshToken } = useAuth();
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={() => void refreshToken()} /> : <Navigate to="/login" replace />;
   return (
     <AddressFormProvider>
       <AddressFormPicker />
@@ -73,7 +75,7 @@ function RequireAuth() {
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (
-    <AuthProvider>
+    <AuthProvider bootstrapSession={!isPersonalSite}>
       <TokenBridge />
       <MetrikaTracker />
       <Outlet />
@@ -83,20 +85,10 @@ function Root() {
 }
 
 // ── Domain detection ──────────────────────────────────────────────────────────
-const isPersonalSite = window.location.hostname.includes('kotlarewski')
+const isPersonalSite = isPracticeHost(window.location.hostname)
   || new URLSearchParams(window.location.search).get('site') === 'personal';
 
-if (isPersonalSite) {
-  document.querySelectorAll("link[rel='icon']").forEach((el) => {
-    const link = el as HTMLLinkElement;
-    if (link.sizes?.value === '96x96') {
-      link.href = '/favicon-personal-32.png';
-    } else {
-      link.type = 'image/png';
-      link.href = '/favicon-personal-32.png';
-    }
-  });
-}
+if (isPersonalSite) applyPersonalSiteChrome();
 
 // ── Router ─────────────────────────────────────────────────────────────────────
 const personalRoutes = [
@@ -104,7 +96,6 @@ const personalRoutes = [
   { path: '/articles',       element: <ArticlesListPage /> },
   { path: '/articles/:slug', element: <ArticlePage /> },
   { path: '/reviews',        element: <ReviewsPage /> },
-  { path: '/game',           element: <GamePage /> },
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
@@ -132,11 +123,12 @@ const appRoutes = [
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
+  { path: '/auth/confirm',   element: <AuthConfirmPage /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
   { path: '/auth/recovery',         element: <RecoveryPage /> },
   { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
-  { path: '/auth/error',     element: <AuthError /> },
+  { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },
   {
     element: <RequireAuth />,
@@ -168,36 +160,6 @@ const router = createBrowserRouter([
     children: isPersonalSite ? personalRoutes : appRoutes,
   },
 ]);
-
-function AuthError() {
-  const reason = new URLSearchParams(window.location.search).get('reason') ?? '';
-  return (
-    <div style={{ flex: 1, minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-      <div style={{ textAlign: 'center', maxWidth: 400 }}>
-        <div className="eyebrow" style={{ color: 'var(--c-rose)', marginBottom: 20 }}>Ошибка входа</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 42, fontWeight: 400, lineHeight: 1.15, color: 'var(--text)', margin: '0 0 16px' }}>
-          Что-то<br /><span style={{ fontStyle: 'italic' }}>пошло не так</span>
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 36px' }}>
-          Авторизация не удалась. Попробуй снова или обратись к нам в Telegram.
-        </p>
-        {reason && (
-          <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 24px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-            {reason}
-          </p>
-        )}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--text)', color: 'var(--bg)', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-            Попробовать снова
-          </a>
-          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '13px 28px', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', borderRadius: 12, fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
-            Написать
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   return <RouterProvider router={router} />;

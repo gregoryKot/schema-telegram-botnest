@@ -15,8 +15,11 @@ const ALL_CONFIGURED = {
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
   ZOOM_CLIENT_SECRET: 'z3',
+  APPLE_ID: 'me@icloud.com',
+  APPLE_APP_PASSWORD: 'app-pass',
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
+  JWT_SECRET: 'jwt-secret',
 };
 
 describe('logCapabilityReport', () => {
@@ -61,5 +64,29 @@ describe('logCapabilityReport', () => {
     expect(logger.log.mock.calls.length).toBeGreaterThan(0);
     const infoMessages = logger.log.mock.calls.map((c) => String(c[0]));
     expect(infoMessages.some((m) => m.includes('Выключено:'))).toBe(true);
+  });
+
+  // 2026-09-16: адрес возврата OAuth на legacy/www-хосте — не просто
+  // «выключенная фича», а готовый цикл редиректов при первом же входе.
+  it('адрес возврата OAuth на legacy-хосте — error при старте, не info', () => {
+    const logger = fakeLogger();
+    logCapabilityReport(logger, {
+      ...ALL_CONFIGURED,
+      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+    });
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(String(logger.error.mock.calls[0][0])).toContain('OAuth');
+    const infoMessages = logger.log.mock.calls.map((c) => String(c[0]));
+    expect(infoMessages.some((m) => m.includes('OAuth'))).toBe(false);
+  });
+
+  it('канонический адрес возврата OAuth — не мисконфиг, тихо (контроль)', () => {
+    const logger = fakeLogger();
+    logCapabilityReport(logger, {
+      ...ALL_CONFIGURED,
+      GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+    });
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.log.mock.calls[0][0]).toContain('всё подключено');
   });
 });

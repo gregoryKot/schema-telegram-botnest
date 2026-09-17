@@ -25,7 +25,7 @@ export function NotifySubView({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 8,
+            gap: 'var(--space-8)',
           }}
         >
           {HOURS.map((h) => {
@@ -48,7 +48,7 @@ export function NotifySubView({
                 }}
                 style={{
                   padding: '12px 0',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   textAlign: 'center',
                   background: active
                     ? 'var(--accent)'
@@ -81,7 +81,13 @@ export function NotifySubView({
             Если напоминания будут оставаться без ответа, бот сам начнёт писать
             реже — а когда записи вернутся, вернётся к выбранной частоте.
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+            }}
+          >
             {FREQ_LABELS.map((label, i) => {
               const active = i === (settings.notifyFrequency ?? 0);
               return (
@@ -102,7 +108,7 @@ export function NotifySubView({
                   }}
                   style={{
                     padding: '13px 16px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     background: active
                       ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                       : 'rgba(var(--fg-rgb),0.04)',
@@ -137,7 +143,13 @@ export function NotifySubView({
           >
             В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+            }}
+          >
             {QUIET_PRESETS.map((p) => {
               const active =
                 p.start === (settings.notifyQuietStart ?? 22) &&
@@ -166,7 +178,7 @@ export function NotifySubView({
                   }}
                   style={{
                     padding: '13px 16px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     background: active
                       ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                       : 'rgba(var(--fg-rgb),0.04)',
@@ -189,7 +201,13 @@ export function NotifySubView({
 
       {/* ── TZ VIEW ── */}
       {view === 'tz' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-4)',
+          }}
+        >
           {TIMEZONES.map((tz) => {
             const active = tz.iana === settings.notifyTimezone;
             return (
@@ -210,7 +228,7 @@ export function NotifySubView({
                 }}
                 style={{
                   padding: '13px 16px',
-                  borderRadius: 12,
+                  borderRadius: 'var(--r-12)',
                   background: active
                     ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
                     : 'rgba(var(--fg-rgb),0.04)',

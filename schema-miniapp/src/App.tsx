@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getHost } from '../../shared/src/host';
+import { shouldAskAddressForm } from '../../shared/src/settings/addressFormPrompt';
 import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
 import { syncMotionAttr } from './utils/reducedMotion';
@@ -9,16 +10,23 @@ import { Need, DayHistory } from './types';
 applyTheme(getTheme());
 syncMotionAttr();
 import { api, PracticePlan, PairsData, StreakData, UserTask } from './api';
-import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
+import { DEFAULT_SECTION_KEY } from './utils/defaultSectionKey';
 import { Section } from './components/BottomNav';
-import { TherapistClientSheet } from './components/TherapistClientSheet';
+import { LazyTherapistClientSheet as TherapistClientSheet } from './components/LazyTherapistClientSheet';
 import { TodayScreenSkeleton, ScreenSkeleton } from './components/Skeleton';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './components/YSQTestSheet';
 import { shouldShowWeeklyQuestion } from './components/WeeklyQuestion';
+// CHILDHOOD_DONE_KEY/shouldShowChildhoodWheel/YSQ_*_KEY — из общего реестра
+// ключей (утиль, не компонент), НЕ из ChildhoodWheelSheet.tsx/YSQTestSheet.tsx
+// (правка производительности 2026-08-22): те стали ленивыми (LazyOverlays.tsx),
+// и статический импорт значений из них держал бы весь их код в графе,
+// реально достижимом от entry — React.lazy не смог бы вынести компонент в
+// отдельный чанк (см. предупреждение сборки [INEFFECTIVE_DYNAMIC_IMPORT]).
 import {
   shouldShowChildhoodWheel,
   CHILDHOOD_DONE_KEY,
-} from './components/ChildhoodWheelSheet';
+  YSQ_PROGRESS_KEY,
+  YSQ_RESULT_KEY,
+} from './utils/storageKeys';
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
@@ -33,19 +41,19 @@ import {
 } from './utils/todayConstants';
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
-import { AppErrorScreen } from './components/AppErrorScreen';
-import { LoginScreen } from './components/LoginScreen';
-import { AmbientBackground } from './components/AmbientBackground';
+import { preloadOtherSections } from './utils/preloadSections';
+import { prefetchOtherSectionsData } from './utils/prefetchSectionData';
+import { usePrerenderSections } from './utils/usePrerenderSections';
+import { usePerfTapTracking } from './utils/usePerfTapTracking';
+import { preloadDiarySheets } from './components/LazyDiarySheets';
+import { AppErrorRouter } from './components/AppErrorRouter';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
-import { shouldShowLoginScreen } from './utils/loginScreenGate';
-import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
+import { ensureSession } from './session';
 import { syncFromServer } from './utils/uiPrefsSync';
 import { logErr } from './utils/logErr';
-
-type TrackerTab = 'today' | 'history';
 
 function getInitialSection(): Section {
   const params = new URLSearchParams(window.location.search);
@@ -62,8 +70,19 @@ function getInitialSection(): Section {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
-  const { flags: serverFlags, loaded: flagsLoaded } = useUserFlags();
+  const { flags: serverFlags, loadedFromServer: flagsLoaded } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
+  // Догружаем секции, которые пользователь не открыл первыми, в простое
+  // браузера — переключение вкладок остаётся мгновенным (см. preloadSections.ts,
+  // замер 2026-08-22: единый стартовый чанк — 1,26 МБ, 2,3 c до первого
+  // рендера на 3G). Только начальная секция важна — она уже грузится сама
+  // (React.lazy в AppSections.tsx), дальнейшая смена вкладки эту догрузку
+  // не перезапускает. Та же идея для ДАННЫХ чужих вкладок — prefetchSectionData.ts.
+  useEffect(() => {
+    preloadOtherSections(section);
+    // Только при маунте: начальная секция за жизнь компонента не меняется,
+    // повторный запуск плана на каждую смену вкладки не нужен.
+  }, []);
   // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
   // экран обязан сказать об этом, а не молча проглатывать 401 (правило
   // «никаких молча неработающих экранов», инцидент 2026-07-29).
@@ -74,10 +93,6 @@ export default function App() {
     flagsLoaded,
   );
   const historyDays = 30;
-  const _tabScrollPositions = useRef<Record<TrackerTab, number>>({
-    today: 0,
-    history: 0,
-  });
   const sheets = useSheets();
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(
     null,
@@ -98,6 +113,18 @@ export default function App() {
   );
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  // Вкладка «Паттернов» при явном переходе с карточки «Мой портрет». null =
+  // нет ожидающего перехода — SchemasSection сам берёт последнюю открытую
+  // (patternsTabStorage.ts). Эффект гасит запрос сразу после того, как
+  // SchemasSection его подхватил (initialTab читается один раз при
+  // монтировании) — иначе обычный заход через нижнюю навигацию снова
+  // приносил бы старую явную вкладку вместо реально последней.
+  const [patternsTab, setPatternsTab] = useState<'schemas' | 'modes' | null>(
+    null,
+  );
+  useEffect(() => {
+    if (patternsTab !== null) setPatternsTab(null);
+  }, [patternsTab]);
   const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(
     null,
   );
@@ -111,10 +138,19 @@ export default function App() {
   );
   // Роль нужна внутри switchTherapistMode (который объявлен раньше setUserRole).
   const userRoleRef = useRef<'CLIENT' | 'THERAPIST'>('CLIENT');
+  // true после первого ручного переключения режима — реконсиляция ниже
+  // тогда не смеет перетирать выбор серверным флагом.
+  const userToggledModeRef = useRef(false);
   // persist=true — запомнить режим на сервере (localStorage в Telegram WebView
   // стирается). Сервер принимает флаг только у THERAPIST — на клиенте лишний
   // 403-запрос не шлём.
   const switchTherapistMode = (on: boolean, persist = true) => {
+    // Ручной выбор сильнее поздней реконсиляции из серверного флага: без
+    // этого терапевт, включивший режим в первые секунды (пока флаги ещё
+    // едут по сети), получал молчаливый откат — поздний эффект ниже
+    // перетирал его клик значением с сервера (реальное падение CI
+    // 2026-08-24, гонка воспроизводима на медленной сети).
+    userToggledModeRef.current = true;
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
     if (persist && userRoleRef.current === 'THERAPIST') {
@@ -142,6 +178,9 @@ export default function App() {
   useEffect(() => {
     if (modeReconciledRef.current || !flagsLoaded || !roleLoaded) return;
     modeReconciledRef.current = true;
+    // Пользователь уже переключил режим руками за время загрузки флагов —
+    // его выбор не перетираем (см. switchTherapistMode выше).
+    if (userToggledModeRef.current) return;
     if (userRoleRef.current === 'THERAPIST') {
       const remembered = serverFlags.therapistMode;
       setTherapistMode(remembered);
@@ -180,6 +219,26 @@ export default function App() {
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Прогрев ДАННЫХ чужих вкладок и чанков дневниковых шитов — только когда
+  // данные первого экрана уже приехали (loading=false). Прогрев с маунта
+  // толкался с needs/ratings и чанком TodaySection за канал: замер
+  // 2026-08-23, холодный старт 3G 4044 → 4398мс. Idle-колбэк не защищает —
+  // он про простой ПРОЦЕССОРА, а узкое место здесь сеть.
+  // Третий ярус прогрева: скрытая сборка чужих вкладок в простое (код и
+  // данные уже тёплые — см. эффект ниже), чтобы и ПЕРВЫЙ тап по вкладке был
+  // переключением видимости, а не тяжёлым коммитом (usePrerenderSections).
+  const prerenderedSections = usePrerenderSections(!loading, section);
+  // Замер «тап по вкладке → отрисовка» для панели PerfHud (см. perfLog.ts).
+  usePerfTapTracking(section, prerenderedSections, loading);
+  const prefetchStarted = useRef(false);
+  useEffect(() => {
+    if (loading || prefetchStarted.current) return;
+    prefetchStarted.current = true;
+    prefetchOtherSectionsData(section, setHelpPracticeCount);
+    // Дневниковые шиты («+») ленивые (LazyDiarySheets.tsx) — их чанки
+    // догружаются той же idle-очередью, чтобы первое нажатие «+» не ждало сеть.
+    preloadDiarySheets();
+  }, [loading]);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -236,10 +295,8 @@ export default function App() {
         .catch(logErr('api.init'));
     }
     api.recordActivity().catch(logErr('recordActivity'));
-    const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
-    Promise.all(NEED_IDS.map((id) => api.getPractices(id)))
-      .then((r) => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0)))
-      .catch(() => setHelpPracticeCount(0));
+    // getPractices×5 (бейдж «Помощи») — не первому рендеру «Сегодня»,
+    // перенесён в prefetchOtherSectionsData (эффект выше).
     api
       .getPlanHistory(30)
       .then((p) => setHelpPlanCount(p.length))
@@ -278,9 +335,10 @@ export default function App() {
         else localStorage.removeItem('pair_card_dismissed');
         // uiPrefsSync: миграция/server-wins кастомизации (подхватится следующим маунтом вкладки).
         syncFromServer(s.uiPrefs);
-        // Форма обращения ещё не выбрана — спросить ДО онбординга (не чаще раза
-        // за сессию), чтобы весь онбординг звучал в выбранной форме.
-        if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
+        // Форма обращения ещё не выбрана — спросить ДО онбординга, чтобы весь
+        // онбординг звучал в выбранной форме. «Позже» откладывает на неделю
+        // (shared/settings/addressFormPrompt), а не на одну вкладку.
+        if (shouldAskAddressForm(s.addressForm)) {
           sheets.open('addressPicker');
         } else {
           onboarding.markAddressFormReady();
@@ -505,14 +563,9 @@ export default function App() {
     );
   }
 
+  // Экран входа / «нет связи» / ошибка — разбор в components/AppErrorRouter.
   if (error || sessionExpired) {
-    // В браузере отсутствие сессии значит «не входил», а не «истекла» —
-    // рисуем экран входа. В Telegram/MAX поведение прежнее (см.
-    // utils/loginScreenGate.ts).
-    if (sessionExpired && shouldShowLoginScreen()) return <LoginScreen />;
-    return (
-      <AppErrorScreen error={sessionExpired ? SESSION_EXPIRED_ERROR : error!} />
-    );
+    return <AppErrorRouter error={error} sessionExpired={sessionExpired} />;
   }
 
   return (
@@ -521,8 +574,6 @@ export default function App() {
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
-      {/* Ambient gradient blobs — colors adapt per theme via CSS vars */}
-      <AmbientBackground />
       <OfflineBanner isOffline={isOffline} />
 
       {/* ── Therapist app mode — full app replacement ── */}
@@ -550,6 +601,7 @@ export default function App() {
 
       {/* ── Main sections (hidden when therapistMode) ── */}
       <AppSections
+        prerenderedSections={prerenderedSections}
         therapistMode={therapistMode}
         section={section}
         needs={needs}
@@ -570,6 +622,18 @@ export default function App() {
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
         onNewDiaryEntry={setNewDiaryEntry}
+        onStartCase={() => sheets.open('caseFlow')}
+        onOpenMap={() => sheets.open('selfMap')}
+        // «Ровный день» ведёт в трекер потребностей: спокойный день тоже
+        // отмечается, а не проваливается в пустоту.
+        onSteadyDay={() =>
+          sheets.open('trackerOverlay', { trackerNeedId: null })
+        }
+        patternsTab={patternsTab}
+        onOpenPatterns={(tab) => {
+          setPatternsTab(tab);
+          setSection('schemas');
+        }}
       />
 
       {/* ── История потребностей ── */}

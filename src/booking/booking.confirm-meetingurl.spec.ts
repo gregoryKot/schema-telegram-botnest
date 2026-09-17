@@ -16,7 +16,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
 
   function makeService() {
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         // Симулируем бронь, у которой meetingUrl уже проставлен (реалистичный
@@ -47,6 +47,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
       robokassa as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     return { service };
   }
@@ -79,7 +80,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
 
   it('нет meetingUrl на строке → возвращается ровно null (не undefined)', async () => {
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: 100, ...data })),
@@ -104,6 +105,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
       robokassa as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     const res = await service.book({
       clientName: 'Мария',
@@ -148,6 +150,7 @@ describe('BookingService.confirm — paidAmount не передан → свер
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(9)).resolves.toEqual({ ok: true });
     expect(state.row.status).toBe(BookingStatus.CONFIRMED);
@@ -174,6 +177,7 @@ describe('BookingService.confirm — повторный findUnique в CAS-рет
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(3, 4000)).resolves.toEqual({ ok: true });
     const secondCallArgs = prisma.booking.findUnique.mock.calls[1][0];

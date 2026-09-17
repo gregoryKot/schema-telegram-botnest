@@ -27,9 +27,9 @@ export function DayShareButton({ needs, ratings, date }: Props) {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           padding: '13px 28px',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           border: '1px solid var(--line)',
           background: 'transparent',
           color: 'var(--text)',
@@ -43,7 +43,7 @@ export function DayShareButton({ needs, ratings, date }: Props) {
         Поделиться днём
       </button>
 
-      {open && <ShareCardSheet {...share} onClose={() => setOpen(false)} />}
+      {open && <ShareCardSheet {...share} onClose={() => setOpen(false)} therapyNote />}
     </>
   );
 }

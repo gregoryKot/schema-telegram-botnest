@@ -26,6 +26,7 @@ const TTL_S = 10 * 60; // окно редиректа
 export function signOAuthState(
   secret: string,
   linkUserId: bigint | null,
+  ticketCode: string | null = null,
 ): string {
   return jwt.sign(
     {
@@ -34,6 +35,11 @@ export function signOAuthState(
       // редирект (значение double-submit-куки не переиспользуется).
       nonce: randomBytes(12).toString('hex'),
       link: linkUserId != null ? String(linkUserId) : null,
+      // Код билета входа: вход начат в установленном приложении, а Google
+      // требует системный браузер — сессия иначе осталась бы там. Едет ВНУТРИ
+      // подписи по той же причине, что и link: подменяемый код позволил бы
+      // направить чужую свежую сессию в свой билет.
+      tkt: ticketCode,
     },
     secret,
     {
@@ -53,15 +59,40 @@ export function readOAuthState(
   secret: string,
   state: string | null | undefined,
 ): bigint | null {
+  const p = verifyState(secret, state);
+  return p?.link ? BigInt(p.link) : null;
+}
+
+/**
+ * Код билета из того же носителя. Отдельная функция, а не расширение
+ * возвращаемого типа: `readOAuthState` зовут ещё и для `tg_link_user`-куки,
+ * где билета нет вовсе, и менять там форму ответа не за чем.
+ */
+export function readOAuthTicket(
+  secret: string,
+  state: string | null | undefined,
+): string | null {
+  return verifyState(secret, state)?.tkt ?? null;
+}
+
+interface StatePayload {
+  kind?: string;
+  link?: string | null;
+  tkt?: string | null;
+}
+
+function verifyState(
+  secret: string,
+  state: string | null | undefined,
+): StatePayload | null {
   if (!state) return null;
   try {
     const p = jwt.verify(state, secret, {
       algorithms: ['HS256'],
       issuer: ISSUER,
       audience: AUDIENCE,
-    }) as { kind?: string; link?: string | null };
-    if (p.kind !== KIND) return null;
-    return p.link ? BigInt(p.link) : null;
+    }) as StatePayload;
+    return p.kind === KIND ? p : null;
   } catch {
     return null;
   }

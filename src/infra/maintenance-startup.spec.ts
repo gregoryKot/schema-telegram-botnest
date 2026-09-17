@@ -6,6 +6,8 @@
 import { spawn, ChildProcess } from 'child_process';
 import { createServer } from 'net';
 import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
 
 const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 
@@ -27,9 +29,22 @@ async function freePort(): Promise<number> {
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
+//
+// detached: true — entrypoint.mjs сам ловит только SIGTERM/SIGINT и не
+// пробрасывает SIGKILL своим детям (RECOVER_CMD/MIGRATE_CMD/APP_CMD) — их
+// нельзя перехватить, поэтому они и не должны требовать этого от родителя.
+// Без своей группы процессов afterEach ниже убивал бы только entrypoint.mjs,
+// а `node -e "...listen(...)"` из последнего теста (нарочно вечный «апп»)
+// оставался сиротой: он держит унаследованный (stdio по умолчанию 'pipe')
+// файловый дескриptor stderr, и жест жив в этой строке пока другой конец не
+// закрыт — Jest-процесс висел на этом хендле под --detectOpenHandles
+// --forceExit=false (nightly.yml, джоба backend-flaky), а обычный `npx jest`
+// это маскировал принудительным выходом воркера. detached: true делает
+// entrypoint.mjs лидером своей группы — её и убиваем целиком.
 function launch(env: Record<string, string>) {
   const proc: ChildProcess = spawn('node', [ENTRY], {
     env: { ...process.env, PORT: '0', ...env },
+    detached: true,
   });
   const frontPort = new Promise<number>((resolve, reject) => {
     const timer = setTimeout(
@@ -72,7 +87,19 @@ async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
 describe('entrypoint (супервизор старта)', () => {
   const alive: ChildProcess[] = [];
   afterEach(() => {
-    while (alive.length) alive.pop()?.kill('SIGKILL');
+    while (alive.length) {
+      const proc = alive.pop();
+      if (!proc) continue;
+      // -pid (не pid) — сигнал всей группе процессов (see launch(): detached:
+      // true делает entrypoint.mjs её лидером), иначе RECOVER_CMD/MIGRATE_CMD/
+      // APP_CMD-потомки переживают убитого родителя сиротами.
+      try {
+        if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
+        else proc.kill('SIGKILL');
+      } catch {
+        proc.kill('SIGKILL');
+      }
+    }
   });
 
   it('migrate deploy упал → front держит страницу техработ (200)', async () => {
@@ -86,6 +113,49 @@ describe('entrypoint (супервизор старта)', () => {
     const res = await fetch(`http://127.0.0.1:${port}/`);
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('технические работы');
+  }, 10000);
+
+  // Щит, волна 3: DB-wait (deploy/wait-for-db.mjs) до этого теста был проверен
+  // только как отдельная функция (wait-for-db.spec.ts) — а то, что САМ
+  // entrypoint реально ждёт БД перед RECOVER_CMD/MIGRATE_CMD (а не просто
+  // импортирует функцию и забывает её позвать), не проверял никто. Маркер-файл
+  // — самый дешёвый способ доказать «RECOVER_CMD не выполнился», не разбирая
+  // stdout процесса.
+  it('БД недоступна → RECOVER_CMD/MIGRATE_CMD не запускаются, front держит техработы (DB-wait реально гейтит старт)', async () => {
+    const marker = join(
+      tmpdir(),
+      `entrypoint-recover-marker-${process.pid}-${Date.now()}`,
+    );
+    if (existsSync(marker)) unlinkSync(marker);
+    try {
+      const { proc, frontPort } = launch({
+        // Порт свободен и никто на нём не слушает — connect гарантированно
+        // отказывает быстро (ECONNREFUSED). Бюджет ожидания БД — короткий
+        // (150мс), а проверку маркера ниже делаем с большим запасом сверху,
+        // чтобы гонка таймингов не давала ложно-зелёный результат.
+        DATABASE_URL: `postgresql://u:p@127.0.0.1:${await freePort()}/db`,
+        DB_WAIT_TIMEOUT_MS: '150',
+        DB_WAIT_INTERVAL_MS: '50',
+        DB_WAIT_CONNECT_MS: '50',
+        RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
+        MIGRATE_CMD: 'true',
+        APP_PORT: String(await freePort()),
+      });
+      alive.push(proc);
+      const port = await frontPort;
+      const text = await poll(
+        `http://127.0.0.1:${port}/`,
+        /технические работы/,
+      );
+      expect(text).toContain('технические работы');
+      // Запас с большим отрывом от DB_WAIT_TIMEOUT_MS (150мс) — времени
+      // достаточно, чтобы RECOVER_CMD успел отработать, если бы DB-wait его
+      // не заблокировал.
+      await new Promise((r) => setTimeout(r, 800));
+      expect(existsSync(marker)).toBe(false);
+    } finally {
+      if (existsSync(marker)) unlinkSync(marker);
+    }
   }, 10000);
 
   it('приложение крашится → после лимита перезапусков front держит техработы', async () => {

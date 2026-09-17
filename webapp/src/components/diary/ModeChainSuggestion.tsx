@@ -23,7 +23,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
         marginTop: 20,
         padding: '14px 16px 12px',
         border: '1px solid var(--line)',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         background: 'var(--surface-2)',
       }}
     >

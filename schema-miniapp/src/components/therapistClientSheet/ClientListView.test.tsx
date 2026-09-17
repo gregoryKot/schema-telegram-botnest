@@ -99,6 +99,7 @@ function baseProps(
   return {
     clients: [] as TherapyClientSummary[],
     loading: false,
+    loadFailed: false,
     today: '2026-08-05',
     safeTop: 0,
     animKey: 0,
@@ -116,6 +117,29 @@ describe('ClientListView — загрузка', () => {
     render(<ClientListView {...baseProps({ loading: true })} />);
     expect(screen.queryByTestId('stat-cards')).toBeNull();
     expect(screen.queryByText('Нет подключённых клиентов.')).toBeNull();
+  });
+});
+
+describe('ClientListView — сбой загрузки', () => {
+  // Регрессия: сбой ≠ пусто. Раньше отказ getTherapyClients оставлял
+  // clients = [], и терапевт с полным ростером в офлайне видел онбординг
+  // «Нет подключённых клиентов. Нажми + чтобы добавить».
+  it('loadFailed — «не удалось загрузить», онбординга «нет клиентов» нет', () => {
+    const { container } = renderWithForm(
+      <ClientListView {...baseProps({ loadFailed: true })} />,
+      'ty',
+    );
+    expect(container.textContent).toContain('Не удалось загрузить клиентов.');
+    expect(container.textContent).toContain('Проверь подключение');
+    expect(container.textContent).not.toContain('Нет подключённых клиентов.');
+  });
+
+  it('loadFailed, форма «вы» — «Проверьте подключение»', () => {
+    const { container } = renderWithForm(
+      <ClientListView {...baseProps({ loadFailed: true })} />,
+      'vy',
+    );
+    expect(container.textContent).toContain('Проверьте подключение');
   });
 });
 

@@ -34,7 +34,7 @@ function StreakChip({ streak }: { streak: number }) {
         alignItems: 'center',
         gap: 2,
         padding: '8px 14px',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         background: 'var(--accent-bg)',
         border: '1px solid rgba(154,91,62,0.28)',
       }}
@@ -99,7 +99,7 @@ export function HomeView({
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 22,
         }}
       >
@@ -119,9 +119,9 @@ export function HomeView({
           </span>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="d-display" style={{ fontSize: 27 }}>
+          <h1 className="d-display" style={{ fontSize: 27, margin: 0 }}>
             Мои дневники
-          </div>
+          </h1>
           <div
             style={{
               fontSize: 14,

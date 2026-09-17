@@ -15,6 +15,7 @@ import {
 } from '@testing-library/react';
 import { PracticesScreen } from './PracticesScreen';
 import { AddressFormContext } from '../utils/addressForm';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 const getPractices = vi.fn();
 const addPractice = vi.fn();
@@ -65,6 +66,17 @@ describe('PracticesScreen — список практик', () => {
     ]);
     renderScreen();
     expect(await screen.findByText('Позвонить другу')).toBeTruthy();
+  });
+
+  it('провал загрузки практик показывает явную ошибку, а не «Пока пусто» (сбой ≠ пусто)', async () => {
+    // Регрессия: раньше .catch(() => setPractices([])) рисовал «Пока пусто —
+    // добавь первую практику» человеку, у которого практики есть, просто
+    // запрос отвалился (CLAUDE.md «сбой ≠ пусто»).
+    getPractices.mockRejectedValue(new Error('network'));
+    renderScreen();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить практики/);
+    expect(screen.queryByText(/Пока пусто/)).toBeNull();
   });
 
   it('переключение вкладки потребности перезапрашивает практики для новой потребности', async () => {
@@ -130,7 +142,9 @@ describe('PracticesScreen — добавление практики', () => {
 });
 
 describe('PracticesScreen — удаление практики', () => {
-  it('клик по × убирает практику из списка сразу (оптимистично) и шлёт запрос', async () => {
+  it('первый клик по × не удаляет (показывает подтверждение), второй убирает практику из списка (оптимистично) и шлёт запрос', async () => {
+    // Двухтапное подтверждение (аудит 2026-08, К3): один тап по маленькой
+    // кнопке больше не удаляет необратимо.
     getPractices.mockResolvedValue([
       { id: 5, needId: 'attachment', text: 'Медитация' },
     ]);
@@ -138,7 +152,11 @@ describe('PracticesScreen — удаление практики', () => {
     renderScreen();
     await screen.findByText('Медитация');
 
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByLabelText('Удалить практику'));
+    expect(deletePractice).not.toHaveBeenCalled();
+    expect(screen.queryByText('Медитация')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(screen.queryByText('Медитация')).toBeNull();
     expect(deletePractice).toHaveBeenCalledWith(5);
   });
@@ -154,7 +172,8 @@ describe('PracticesScreen — удаление практики', () => {
     renderScreen();
     await screen.findByText('Медитация');
 
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByLabelText('Удалить практику'));
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(screen.queryByText('Медитация')).toBeNull();
 
     expect(await screen.findByText('Медитация')).toBeTruthy();
@@ -169,7 +188,9 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'не хочу жить' },
     });
-    expect(await screen.findByText(/8-800-2000-122/)).toBeTruthy();
+    expect(
+      await screen.findByText(new RegExp(CRISIS_HOTLINE_DISPLAY)),
+    ).toBeTruthy();
   });
 
   it('нейтральный текст карточку не показывает', async () => {
@@ -178,7 +199,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
     fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
       target: { value: 'прогулка 20 минут' },
     });
-    expect(screen.queryByText(/8-800-2000-122/)).toBeNull();
+    expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();
   });
 });
 

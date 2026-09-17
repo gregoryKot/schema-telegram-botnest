@@ -29,10 +29,10 @@ function ActionRow({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         background: 'rgba(var(--fg-rgb),0.04)',
         border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         padding: '13px 16px',
         cursor: 'pointer',
       }}
@@ -77,7 +77,13 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
   const clientCards = clientSchemaNotesData.length + clientModeNotesData.length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-8)',
+      }}
+    >
       <ActionRow
         label="Задания"
         sub={activeTasks > 0 ? `${activeTasks} активных` : undefined}

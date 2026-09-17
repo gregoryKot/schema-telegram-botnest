@@ -61,6 +61,13 @@ export const buildSharedApi = (t: ApiTransport) => ({
   },
   getDisclaimer: () => t.get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => t.post('/api/disclaimer', {}),
+  // Только чтение: сервер отдаёт полный набор типизированных UI-флагов
+  // (см. UserFlagsDto), здесь типизирован только срез, который реально
+  // читает вызывающая сторона — миниапп держит свой богатый useUserFlags.ts
+  // (правило №3, это не дубль — он использует ЭТОТ же роут напрямую через
+  // authedFetch). therapistMode — сохранённое серверное предпочтение
+  // терапевта «кабинет vs клиент», source of truth для дефолтного роутинга.
+  getUserFlags: () => t.get<{ therapistMode?: boolean }>('/api/user-flags'),
   getYsqProgress: () =>
     t.get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
   saveYsqProgress: (answers: number[], page: number) =>

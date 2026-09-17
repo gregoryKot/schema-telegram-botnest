@@ -88,7 +88,7 @@ function makeFakePrisma() {
     defaults: { usedAt: null },
   });
   const webSession = createFakeTable(webSessions, {
-    defaults: { revokedAt: null },
+    defaults: { revokedAt: null, replacedByHash: null },
   });
   const authProvider = createFakeTable(authProviders);
   const user = createFakeTable(users);
@@ -183,7 +183,10 @@ describe('AuthService — refresh-token rotation', () => {
     const { svc, webSessions } = makeService();
     await svc.issueTokens(99n); // посторонний пользователь, своя family
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    // Цепочку надо ПРОДВИНУТЬ: кражей считается повтор, когда наследником уже
+    // воспользовались. Одна ротация делает наследника, вторая — использует его.
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     ); // reuse → theft-detection всей family
@@ -218,19 +221,109 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
-  it('повторное использование уже провёрнутого токена палит всю family (theft detection)', async () => {
+  // Регрессия на разбор 2026-08-28 «постоянно выкидывает». Кражу от
+  // потерянного ответа отличает НАСЛЕДНИК, а не время: пользовался ли токеном,
+  // выданным взамен, кто-нибудь ещё.
+  it('наследником воспользовались → повтор старого токена палит всю family (настоящая кража)', async () => {
     const { svc, webSessions, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    // Легитимный клиент продолжил цепочку — значит наследник дошёл до него.
+    await svc.rotateRefreshToken(second.refreshToken);
+
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     );
-    // вся family отозвана, включая токен, честно выданный на шаге выше
     expect(webSessions.every((s) => s.revokedAt !== null)).toBe(true);
     expect(securityLog.log).toHaveBeenCalledWith(
       'refresh_token_reuse',
       expect.objectContaining({ userId: 1n }),
     );
+  });
+
+  // Разбор 2026-09-03: владелец получал DM refresh_token_reuse десятки раз с
+  // одной и той же family — вердикт «кража» не был идемпотентен. Мёртвая
+  // кука в телефоне живёт до 30 дней и предъявляется снова при каждом
+  // открытии приложения; после первого revokeFamilyExcept семья уже мертва,
+  // и повтор не должен слать второй DM.
+  it('первая кража → securityLog.log вызван РОВНО ОДИН раз с userId/family', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(securityLog.log).toHaveBeenCalledWith('refresh_token_reuse', {
+      userId: 1n,
+      family: expect.any(String),
+    });
+  });
+
+  it('повтор той же мёртвой куки после кражи → 401, но securityLog.log НЕ вызывается снова (эхо, не новое событие)', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+
+    // Та же мёртвая кука предъявлена ПОВТОРНО (телефон открыли снова).
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1); // не выросло
+  });
+
+  it('ответ ротации не доехал — СПУСТЯ СУТКИ старый токен всё ещё впускает', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    // Ротация прошла на сервере, но Set-Cookie не доехал: ОС усыпила
+    // приложение. У клиента остался ПРЕЖНИЙ токен.
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Человек возвращается на следующий день — раньше здесь его выкидывало и
+    // отзывало все его сессии разом.
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 24 * 3600 * 1000));
+    const recovered = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(recovered.accessToken).toBeTruthy();
+    expect(recovered.rotated).toBe(true);
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'refresh_token_reuse',
+      expect.anything(),
+    );
+  });
+
+  it('ответ не доехал ДВАЖДЫ подряд — вход всё равно не теряется', async () => {
+    const { svc } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 7200_000));
+
+    // Без перенацеливания replacedByHash второй повтор выглядел бы кражей:
+    // прежний наследник к этому моменту уже отозван восстановлением.
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).resolves.toEqual(
+      expect.objectContaining({ rotated: true }),
+    );
+  });
+
+  it('восстановление оставляет в семье ровно один живой токен', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Иначе детекция перестала бы что-либо значить: два живых токена в одной
+    // цепочке — это ровно то состояние, которое она обязана ловить.
+    expect(webSessions.filter((s) => s.revokedAt === null)).toHaveLength(1);
   });
 
   it.each<[string, (svc: AuthService) => Promise<string>]>([
@@ -259,6 +352,49 @@ describe('AuthService — refresh-token rotation', () => {
     await expect(svc.rotateRefreshToken(token)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+});
+
+// Пункт 2 диагностики 2026-08-21 «постоянно нужно логиниться заново»: каждая
+// загрузка страницы дёргала refresh и ротировала куку — само по себе источник
+// гонки reuse-детекции. shouldSkipRotation (refresh-rotation.ts) подавляет
+// повторную ротацию одной сессии в пределах REFRESH_ROTATE_MIN_INTERVAL_MS.
+describe('AuthService — rotateRefreshToken: интервал ротации', () => {
+  it('ротировали только что (< 5 мин назад) → access новый, refresh ТОТ ЖЕ, кука не меняется', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE; // сессия только что создана/ротирована
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 60_000)); // +1 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(false);
+    expect(result.refreshToken).toBe(issued.refreshToken); // не поменялся
+    expect(result.accessToken).not.toBe(''); // access всё равно свежий JWT
+    expect(webSessions).toHaveLength(1); // новая строка НЕ создана
+    expect(webSessions[0].revokedAt).toBeNull(); // старая НЕ отозвана
+  });
+
+  it('ротировали давно (≥ 5 мин назад) → обычная ротация, refresh новый', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE;
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 5 * 60_000)); // ровно 5 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(true);
+    expect(result.refreshToken).not.toBe(issued.refreshToken);
+    expect(webSessions).toHaveLength(2);
+    expect(webSessions[0].revokedAt).not.toBeNull(); // старая отозвана
+  });
+
+  it('createdAt отсутствует в строке сессии (fake-Prisma без @default) → всё равно ротирует (не падает)', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    expect(webSessions[0].createdAt).toBeUndefined(); // как и в проде до фикса
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(result.rotated).toBe(true);
   });
 });
 
@@ -638,6 +774,7 @@ describe('AuthService — requestEmailLogin', () => {
     expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
       'user@example.com',
       expect.stringContaining('/api/auth/email/callback?token='),
+      'ty',
     );
     // TTL магической ссылки — ровно 30 минут (EMAIL_TOKEN_TTL_MS), не 0.5мс
     // и не 1.8мс, как дала бы поломанная арифметика.

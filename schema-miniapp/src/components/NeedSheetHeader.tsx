@@ -32,7 +32,7 @@ export function NeedSheetHeader({
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 14,
+        gap: 'var(--space-14)',
         marginBottom: 24,
         cursor: 'pointer',
       }}
@@ -41,7 +41,7 @@ export function NeedSheetHeader({
         style={{
           width: 48,
           height: 48,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           flexShrink: 0,
           background: color + '26',
           display: 'flex',
@@ -52,17 +52,18 @@ export function NeedSheetHeader({
         <IdentityDot id={need.id} size={16} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div
+        <h2
           style={{
             fontSize: 20,
             fontWeight: 600,
             color: 'var(--text)',
             lineHeight: 1.2,
             marginBottom: 8,
+            marginTop: 0,
           }}
         >
           {need.chartLabel}
-        </div>
+        </h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {data.tags.map((tag) => (
             <span
@@ -70,7 +71,7 @@ export function NeedSheetHeader({
               style={{
                 fontSize: 11,
                 padding: '3px 8px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 background: color + '1f',
                 color,
               }}

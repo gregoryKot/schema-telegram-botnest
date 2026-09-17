@@ -60,7 +60,7 @@ export function ClientDetailView({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             marginBottom: 4,
           }}
         >

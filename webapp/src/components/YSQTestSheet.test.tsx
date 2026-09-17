@@ -127,13 +127,13 @@ describe('YSQTestSheet — результат: реальный подсчёт �
   it('все ответы «Совсем не про меня» (1) → «Выраженных схем нет», без хардкод-чисел', async () => {
     seedResult(1);
     renderSheet();
-    await waitFor(() => expect(screen.getByText('Выраженных схем нет – отличный результат.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Выраженных схем нет — отличный результат.')).toBeTruthy());
   });
 
   it('все ответы «Полностью про меня» (6) → показывает активные схемы со РЕАЛЬНЫМ средним баллом', async () => {
     seedResult(6);
     renderSheet();
-    await waitFor(() => expect(screen.queryByText('Выраженных схем нет – отличный результат.')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Выраженных схем нет — отличный результат.')).toBeNull());
     // Средний балл 6.0 из 6 у каждой активной схемы — считается из ответов,
     // а не подставляется константой.
     expect(screen.getAllByText('6').length).toBeGreaterThan(0);

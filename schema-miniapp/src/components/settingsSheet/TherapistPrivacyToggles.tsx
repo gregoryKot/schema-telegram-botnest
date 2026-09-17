@@ -11,7 +11,7 @@ export function TherapistPrivacyToggles({ settings, patch }: Props) {
       style={{
         marginBottom: 12,
         background: 'rgba(var(--fg-rgb),0.04)',
-        borderRadius: 12,
+        borderRadius: 'var(--r-12)',
         overflow: 'hidden',
       }}
     >

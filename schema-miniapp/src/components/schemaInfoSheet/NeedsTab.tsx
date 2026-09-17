@@ -23,7 +23,7 @@ export function NeedsTab() {
           key={n.title}
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             marginBottom: 10,
           }}
@@ -32,7 +32,7 @@ export function NeedsTab() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
               marginBottom: 8,
             }}
           >

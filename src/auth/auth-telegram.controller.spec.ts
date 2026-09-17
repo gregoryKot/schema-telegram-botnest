@@ -1,6 +1,6 @@
 // Покрытие AuthTelegramController (был 0%): telegram/widget (POST + CSRF),
-// telegram/redirect, telegram/widget-redirect. Контроллер инстанцируется
-// напрямую с typed test doubles (без TestingModule) — стиль auth.service.spec.ts.
+// telegram/redirect. Контроллер инстанцируется напрямую с typed test doubles
+// (без TestingModule) — стиль auth.service.spec.ts.
 // telegram/widget — единственный CSRF-защищённый роут в auth/*: тестируем
 // requireCsrf() отдельно как «гейт до БД» (см. CLAUDE.md «Обработка ошибок» —
 // answerCbQuery/эквивалент до сайд-эффектов), плюс happy path и main guard-ветку
@@ -13,11 +13,7 @@
 // telegram.provider.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
-import {
-  BadRequestException,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthTelegramController } from './auth-telegram.controller';
@@ -45,8 +41,6 @@ interface ResMocks {
   redirect: jest.Mock;
   cookie: jest.Mock;
   clearCookie: jest.Mock;
-  type: jest.Mock;
-  send: jest.Mock;
 }
 
 interface TelegramProviderMocks {
@@ -104,8 +98,6 @@ function makeRes(): { res: Response; mocks: ResMocks } {
   mocks.redirect = jest.fn();
   mocks.cookie = jest.fn();
   mocks.clearCookie = jest.fn();
-  mocks.send = jest.fn();
-  mocks.type = jest.fn(() => mocks as unknown as Response);
   return { res: mocks as unknown as Response, mocks };
 }
 
@@ -379,147 +371,7 @@ describe('AuthTelegramController.telegramRedirect', () => {
   });
 });
 
-describe('AuthTelegramController.telegramWidgetRedirect', () => {
-  it('пустой query → отдаёт HTML-трамплин без обращения к провайдеру/flow', async () => {
-    const telegram = makeTelegramProvider();
-    const { flow, mocks: flowMocks } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({}, req, res);
-
-    expect(resMocks.type).toHaveBeenCalledWith('text/html');
-    expect(resMocks.send).toHaveBeenCalledWith(
-      expect.stringContaining('tgAuthResult'),
-    );
-    expect(telegram.verifyClientData).not.toHaveBeenCalled();
-    expect(flowMocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
-  });
-
-  it('query с tgAuthResult (base64url JSON) → декодируется в плоские поля перед verifyClientData', async () => {
-    const telegram = makeTelegramProvider();
-    const identity: ProviderIdentity = {
-      providerId: '555',
-      displayName: 'Грег',
-    };
-    telegram.verifyClientData.mockReturnValue(identity);
-    const { flow, mocks: flowMocks } = makeFlow();
-    flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-
-    const payload = { id: 555, first_name: 'Грег', hash: 'deadbeef' };
-    const tgAuthResult = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url',
-    );
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({ tgAuthResult }, req, res);
-
-    expect(telegram.verifyClientData).toHaveBeenCalledWith({
-      id: '555',
-      first_name: 'Грег',
-      hash: 'deadbeef',
-    });
-    expect(flowMocks.finishOAuthRedirect).toHaveBeenCalledWith(
-      TOKENS_OUTCOME,
-      'telegram',
-      res,
-      WEBAPP_URL,
-    );
-    expect(resMocks.type).not.toHaveBeenCalled();
-  });
-
-  it('плоский query (без tgAuthResult) → verifyClientData получает query как есть', async () => {
-    const telegram = makeTelegramProvider();
-    const identity: ProviderIdentity = { providerId: '555' };
-    telegram.verifyClientData.mockReturnValue(identity);
-    const { flow, mocks: flowMocks } = makeFlow();
-    flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const query = { id: '555', hash: 'deadbeef' };
-    const req = makeReq();
-    const { res } = makeRes();
-
-    await controller.telegramWidgetRedirect(query, req, res);
-
-    expect(telegram.verifyClientData).toHaveBeenCalledWith(query);
-  });
-
-  it('битый (не-JSON) tgAuthResult → редирект на /auth/error с причиной, verifyClientData не вызывается', async () => {
-    const telegram = makeTelegramProvider();
-    const { flow } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect(
-      { tgAuthResult: 'not-valid-base64url-json!!!' },
-      req,
-      res,
-    );
-
-    expect(telegram.verifyClientData).not.toHaveBeenCalled();
-    const url = resMocks.redirect.mock.calls[0][0] as string;
-    expect(url).toContain(`${WEBAPP_URL}/auth/error?reason=`);
-  });
-
-  it('провайдер без verifyClientData → редирект на /auth/error, flow не трогается', async () => {
-    const telegram = { verifyClientData: undefined };
-    const { flow, mocks: flowMocks } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({ id: '555' }, req, res);
-
-    expect(flowMocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      expect.stringContaining(`${WEBAPP_URL}/auth/error?reason=`),
-    );
-  });
-
-  it('M4: первый аргумент logger.error постоянен — имена query-параметров и текст ошибки уходят ВТОРЫМ аргументом (в лог, не в DM админу)', async () => {
-    // GET без auth/throttle: имена query-параметров подконтрольны анониму.
-    // AlertLogger троттлит по СОДЕРЖИМОМУ первого аргумента — держим его
-    // постоянным, иначе варьируемые буквами ключи заливают чат админа (M4).
-    const errSpy = jest
-      .spyOn(Logger.prototype, 'error')
-      .mockImplementation(() => undefined);
-    try {
-      const telegram = makeTelegramProvider();
-      telegram.verifyClientData.mockImplementation(() => {
-        throw new Error('signature mismatch');
-      });
-      const { flow } = makeFlow();
-      const providers = makeProviders({ telegram });
-      const controller = makeController({ providers, flow });
-      const req = makeReq();
-      const { res } = makeRes();
-
-      await controller.telegramWidgetRedirect(
-        { id: '555', hash: 'x', evil_param_name_zzz: '1' },
-        req,
-        res,
-      );
-
-      const lastCall = errSpy.mock.calls.at(-1);
-      expect(lastCall).toBeDefined();
-      const [firstArg, secondArg] = lastCall as unknown[];
-      // Первый аргумент — единственное, что уходит админу в DM — постоянен.
-      expect(firstArg).toBe('telegram widget-redirect error (детали в логах)');
-      expect(String(firstArg)).not.toContain('evil_param_name_zzz');
-      // Переменное (имена ключей + текст ошибки) — вторым аргументом, только в лог.
-      expect(String(secondArg)).toContain('evil_param_name_zzz');
-      expect(String(secondArg)).toContain('signature mismatch');
-    } finally {
-      errSpy.mockRestore();
-    }
-  });
-});
+// telegramWidgetRedirect (GET /api/auth/telegram/widget-redirect) удалён —
+// был мёртвым кодом, дублирующим TelegramWidgetCallback.tsx (правило №11
+// CLAUDE.md). return_to (telegram-oauth-url.ts) давно вёл на фронтовую
+// страницу, серверный обработчик никогда не вызывался.

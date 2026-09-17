@@ -3,15 +3,16 @@ import { api } from '../api';
 import { BookingPicker } from '../components/BookingPicker';
 import { Btn, ThemeIcon } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
-import { botUrl } from '../utils/botConfig';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import {
   TG_URL, PRACTICE_BOOKING_URL, menuBtnStyle, burgerLine,
-  TOPICS_A, TOPICS_B, APP_FEATURES,
+  TOPICS_A, TOPICS_B,
 } from './landing/constants';
+import { isPracticeHost } from '../utils/domainChrome';
 import { TgLink, SectionNav, MobileMenu } from './landing/nav';
 import { MarqueeStrip } from './landing/MarqueeStrip';
 import { BookingForm } from './landing/BookingForm';
-import { AppFeatureCard, FaqList } from './landing/cards';
+import { FaqList } from './landing/cards';
 import { LandingStyles } from './landing/LandingStyles';
 import {
   WorkSection,
@@ -54,16 +55,16 @@ export function LandingPage() {
   // Запись живёт на сайте практики (kotlarewski). На самом kotlarewski —
   // плавно скроллим к форме; на schemehappens и прочих — уводим на практику.
   const scrollToBooking = useCallback(() => {
-    const onPractice = /(^|\.)kotlarewski\./.test(window.location.hostname);
+    const onPractice = isPracticeHost();
     if (onPractice) {
-      bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollIntoViewSafe(bookingRef.current, { block: 'start' });
     } else {
       window.location.href = PRACTICE_BOOKING_URL;
     }
   }, []);
 
   useEffect(() => {
-    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'app', 'faq'];
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'faq'];
     let ticking = false;
     let firstRun = true;
     const fn = () => {
@@ -114,7 +115,14 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
+    // landing-personal-brand изолирует эту страницу от продуктового акцента
+    // (терракота, shared/src/theme/tokens.css) — личный сайт терапевта
+    // сознательно остаётся на прежних индиго + Instrument Serif, см. блок
+    // .landing-personal-brand в webapp/src/index.css.
+    // alignSelf: flex-start обязателен: #root — flex-контейнер высотой 100vh, и
+    // растянутая обёртка с overflowX: hidden становилась внутренним скроллером —
+    // window.scrollY всегда 0, липкая панель «Записаться» и scrollspy не включались.
+    <div className="landing-personal-brand" style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden', flex: '1 1 0%', minWidth: 0, alignSelf: 'flex-start' }}>
 
       {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
       {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
@@ -130,24 +138,24 @@ export function LandingPage() {
       }} />
 
       {/* ── STICKY BAR ──────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="sticky-bar" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px',
-        background: 'var(--nav-bg)', backdropFilter: 'blur(20px)',
+        height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 32px',
+        background: 'var(--nav-bg)', // см. index.css/.mobile-nav
         borderBottom: '1px solid var(--line)',
         transform: showBar ? 'translateY(0)' : 'translateY(-100%)',
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
             <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           </div>
-          <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
+          {/* Узкий экран: имя ужимается с многоточием, кнопка и бургер не сжимаются. */}
+          <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
         </div>
         <SectionNav className="sticky-nav" active={activeSection} />
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="https://schemehappens.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
           <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
             <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
@@ -207,7 +215,7 @@ export function LandingPage() {
 
           {/* ── Eyebrow ── */}
           <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)', margin: '20px 0 20px', animation: 'hero-in .6s .15s both' }}>
-            Схема-терапевт · Онлайн
+            Схема-терапия · Онлайн
           </p>
 
           {/* ── Full-width headline – the centrepiece ── */}
@@ -261,7 +269,7 @@ export function LandingPage() {
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский – схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -286,7 +294,7 @@ export function LandingPage() {
               Работаю с тем,<br /><span style={{ fontStyle: 'italic' }}>что важно для вас</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
-              Я Григорий Котляревский – схема-терапевт. Ко мне приходят, когда привычные сценарии в отношениях, самооценке или тревоге повторяются годами, а справиться с ними в одиночку не выходит.
+              Я Григорий Котляревский, работаю в подходе схема-терапия. Ко мне приходят, когда привычные сценарии в отношениях, самооценке или тревоге повторяются годами, а справиться с ними в одиночку не выходит.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
               Меня интересует «что» происходит с человеком и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
@@ -384,33 +392,6 @@ export function LandingPage() {
         </section>
       </section>
 
-      {/* ── ВСЁ ПО СХЕМЕ ────────────────────────────────────────────────── */}
-      <section id="app" style={{ borderTop: '1px solid var(--line)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
-          <div className="app-grid">
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, marginBottom: 22 }}>
-                <span style={{ fontSize: 14 }}>🧠</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Всё по схеме</span>
-              </div>
-              <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 18px', lineHeight: 1.1, letterSpacing: '-.01em' }}>
-Помогите себе сами.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
-              </h2>
-              <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-                «Всё по схеме» – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии: дневник состояний, оценка потребностей, практические упражнения. Всё сохраняется – динамика всегда перед глазами.
-              </p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn href="https://schemehappens.ru" newTab={false}>Попробовать бесплатно</Btn>
-                <Btn variant="ghost" href={botUrl}>Telegram-бот</Btn>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {APP_FEATURES.map((f, i) => <AppFeatureCard key={i} f={f} accent={i === 0} />)}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" style={{ maxWidth: 780, margin: '0 auto', padding: '88px 40px' }}>
         <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Частые вопросы</p>
@@ -445,7 +426,6 @@ export function LandingPage() {
             <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
             <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
             <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
-            <a href="https://schemehappens.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть «Всё по схеме» →</a>
           </div>
         </div>
       </footer>

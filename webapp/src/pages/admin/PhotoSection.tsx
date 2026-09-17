@@ -52,12 +52,12 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>Сейчас на сайте</p>
-          <img src={current ?? '/gregory.jpg'} alt="Текущее фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 14, border: '1px solid var(--line)' }} />
+          <img src={current ?? '/gregory.jpg'} alt="Текущее фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 'var(--r-14)', border: '1px solid var(--line)' }} />
         </div>
         {preview && (
           <div>
             <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>Новое (превью)</p>
-            <img src={preview} alt="Новое фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 14, border: '1px solid var(--accent)' }} />
+            <img src={preview} alt="Новое фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 'var(--r-14)', border: '1px solid var(--accent)' }} />
           </div>
         )}
       </div>

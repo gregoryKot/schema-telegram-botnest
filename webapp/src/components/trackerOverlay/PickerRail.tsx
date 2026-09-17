@@ -13,7 +13,7 @@ export function PickerRail({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(11, 1fr)',
-          gap: 4,
+          gap: 'var(--space-4)',
         }}
       >
         {Array.from({ length: 11 }, (_, i) => {
@@ -26,7 +26,7 @@ export function PickerRail({
               style={{
                 aspectRatio: '1 / 1.2',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 'var(--r-8)',
                 padding: 0,
                 background: active
                   ? color

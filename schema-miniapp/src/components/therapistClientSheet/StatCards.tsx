@@ -14,7 +14,7 @@ export function StatCards({
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 10,
+        gap: 'var(--space-10)',
         marginBottom: 20,
       }}
     >
@@ -33,7 +33,7 @@ export function StatCards({
           key={label}
           className="card"
           style={{
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 12px',
             textAlign: 'center',
           }}
