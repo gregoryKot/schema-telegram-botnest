@@ -167,7 +167,7 @@ export function BecomeTherapistSection({
               label: 'Квалификация',
               val: reqQual,
               set: setReqQual,
-              placeholder: 'Схема-терапевт, КПТ, 5 лет практики',
+              placeholder: 'Психолог, схема-терапия и КПТ, 5 лет практики',
             },
             {
               label: 'Контакты',

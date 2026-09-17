@@ -20,7 +20,7 @@ function makeService(
     : [];
   let nextId = 100;
   const tx = {
-    $queryRaw: jest.fn(async () => undefined),
+    $executeRaw: jest.fn(async () => undefined),
     booking: {
       findMany: jest.fn(async ({ where }: any) => {
         const endsAt: Date = where.startsAt.lt;

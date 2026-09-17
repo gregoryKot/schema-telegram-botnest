@@ -17,7 +17,7 @@ const FIXED_NOW = new Date('2026-07-13T00:00:00Z');
 const INSIDE_WINDOW = new Date(FIXED_NOW.getTime() + 13 * 3_600_000);
 // Приватная константа booking.service.ts (advisory-lock ключ) — дублируем
 // намеренно, тест ловит именно СОДЕРЖИМОЕ SQL-шаблона, не саму константу.
-const LOCK_KEY_FOR_TEST = 911_001;
+import { BOOKING_SLOT_LOCK_KEY as LOCK_KEY_FOR_TEST } from './booking-slot-lock';
 
 describe('BookingService.book — if(isFree) реально короткозамыкает платный путь', () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('BookingService.book — if(isFree) реально короткозам
   it('INTRO_15 с ВКЛЮЧЁННОЙ Robokassa — pricing/buildPaymentUrl НЕ вызываются вовсе', async () => {
     let nextId = 100;
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: nextId++, ...data })),
@@ -110,10 +110,10 @@ describe('BookingService.book — advisory-lock реально блокируе�
   });
   afterEach(() => jest.useRealTimers());
 
-  it('$queryRaw уходит с pg_advisory_xact_lock и правильным числовым ключом (не пустой запрос)', async () => {
+  it('$executeRaw уходит с pg_advisory_xact_lock и правильным числовым ключом (не пустой запрос)', async () => {
     let nextId = 100;
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: nextId++, ...data })),
@@ -142,7 +142,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
       durationMin: 15,
       type: SessionType.INTRO_15,
     });
-    const [strings, ...values] = tx.$queryRaw.mock.calls[0];
+    const [strings, ...values] = tx.$executeRaw.mock.calls[0];
     expect(strings.join('')).toContain('pg_advisory_xact_lock');
     expect(values[0]).toBe(LOCK_KEY_FOR_TEST);
   });

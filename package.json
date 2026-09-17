@@ -22,6 +22,8 @@
     "rotate-encryption": "ts-node scripts/rotate-encryption-key.ts",
     "mutation": "stryker run",
     "smoke": "playwright test",
+    "mutation:golden-auth": "stryker run stryker.golden-auth.config.json",
+    "mutation:golden-payments": "stryker run stryker.golden-payments.config.json",
     "mutation:crisis": "stryker run stryker.crisis.config.json",
     "mutation:outbox": "stryker run stryker.outbox.config.json",
     "check-phrases": "ts-node scripts/check-db-phrases.ts"

@@ -1,19 +1,17 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { getCookie } from './auth-http.util';
+import { isRedirectedHost } from '../infra/canonical-host';
+import { hasLoopGuardMarker, withLoopGuardMarker } from './oauth-loop-guard';
 
-// 2026-09-08: вход через Google падал с «OAuth state mismatch». Причина —
-// сайт целиком (включая /login и /api/auth/*) обслуживается ещё и с
-// домена-алиаса (kotlarewski.gr, см. ALIAS_DOMAINS в app.module.ts), а
-// провайдер всегда возвращает колбэк на КАНОНИЧЕСКИЙ хост (redirect_uri).
-// Кука oauth_state ставится на хосте, где открыт /api/auth/<provider> — если
-// это алиас, колбэк на каноническом хосте её просто не увидит. Решение —
-// редиректить на хост колбэка ДО того, как кука выставлена (см. ниже). Заодно
-// отказ входа теперь классифицирован: раньше «mismatch» не говорил, кука
-// отсутствовала или отличалась и на каком хосте пришёл колбэк.
+// 2026-09-08: кука oauth_state должна жить на хосте КОЛБЭКА — редиректим на
+// него ДО куки (ниже), причину mismatch классифицируем. 2026-09-16: если сам
+// колбэк ведёт на редиректуемый хост (legacy/www) — цикл с main.ts, гард ниже.
 
 export const OAUTH_STATE_COOKIE = 'oauth_state';
 export const OAUTH_COOKIE_PATH = '/api/auth';
+
+const logger = new Logger('OAuthHost');
 
 /** Единые опции куки шага OAuth-редиректа (oauth_state, tg_pkce_verifier). */
 export function setOAuthCookie(
@@ -36,9 +34,8 @@ export function requestHost(req: Request): string {
 }
 
 /**
- * Если запрос пришёл НЕ на хост колбэка (origin redirect_uri провайдера) —
- * 302 на тот же путь+query на каноническом origin и вернуть true. Иначе
- * false, ничего не делает. Пустой Host → false (не редиректить в никуда).
+ * Не на хосте колбэка → 302 туда же, true; на хосте/без Host → false. Хост
+ * колбэка сам подлежит редиректу (была бы петля) → false + error-лог.
  */
 export function redirectToCallbackHost(
   req: Request,
@@ -47,18 +44,20 @@ export function redirectToCallbackHost(
 ): boolean {
   const host = requestHost(req);
   if (!host) return false;
-  const callbackHost = new URL(callbackOrigin).host;
-  if (host === callbackHost.toLowerCase()) return false;
-  res.redirect(302, `${callbackOrigin}${req.originalUrl}`);
+  const callbackHost = new URL(callbackOrigin).host.toLowerCase();
+  if (host === callbackHost) return false;
+  if (isRedirectedHost(callbackHost)) {
+    logger.error(
+      `адрес возврата OAuth ведёт на перенаправляемый хост ${callbackHost} — вход зациклился бы: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI указывают не на канонический хост`,
+    );
+    return false;
+  }
+  if (hasLoopGuardMarker(req.originalUrl)) return false;
+  res.redirect(302, withLoopGuardMarker(`${callbackOrigin}${req.originalUrl}`));
   return true;
 }
 
-/**
- * Double-submit-проверка state. Совпало — ничего не делает. Не совпало —
- * бросает UnauthorizedException с классифицированным сообщением (см.
- * инвариант первого аргумента лога в client-errors.controller.ts — сюда
- * попадают только фиксированные строки ниже, никакого текста клиента).
- */
+/** Double-submit-проверка state; не совпало — throw с классифицированной причиной. */
 export function assertOAuthStateMatches(
   req: Request,
   state: string,

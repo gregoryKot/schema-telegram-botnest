@@ -49,13 +49,14 @@ test.describe('браузерный smoke: кризисная детекция �
     page,
   }) => {
     const input = await openPracticesCatalog(page);
+    const overlay = page.getByTestId('practices-screen');
 
     // Проверка происходит на вводе, без нажатия «+Добавить» — правило №7:
     // детекция обязана срабатывать на клиенте до отправки/шифрования, а не
     // после условного сохранения.
     await input.fill(CRISIS_TEXT);
 
-    const card = page.getByRole('status');
+    const card = overlay.getByRole('status');
     await expect(card).toBeVisible();
     await expect(card).toContainText(CRISIS_HOTLINE_DISPLAY);
     await expect(card.locator(`a[href="${CRISIS_HOTLINE_TEL}"]`)).toBeVisible();
@@ -63,10 +64,19 @@ test.describe('браузерный smoke: кризисная детекция �
 
   test('нейтральный текст карточку не показывает', async ({ page }) => {
     const input = await openPracticesCatalog(page);
+    const overlay = page.getByTestId('practices-screen');
     await input.fill(NEUTRAL_TEXT);
 
     // «Карточка всегда висит» тоже был бы багом — теряется сигнальная
-    // ценность. role="status" уникален на этом экране (см. CrisisCardView).
-    await expect(page.getByRole('status')).toHaveCount(0);
+    // ценность. Раньше здесь проверялся role="status" на всей странице — но
+    // он не уникален для страницы: PracticeSection (родительский экран
+    // «Практика», из которого открыт каталог) безусловно рисует постоянную
+    // карточку «Помощь рядом» (CrisisBlock, sections/practice/CrisisBlock.tsx)
+    // — она не реагирует на текст и не обязана пропадать. PracticesScreen —
+    // fixed-оверлей поверх, а не замена дерева: PracticeSection остаётся
+    // смонтированным под ним, поэтому getByRole('status') на всей странице
+    // всегда находит ≥1 элемент. Проверяем реактивную карточку именно
+    // каталога — в границах его оверлея (data-testid="practices-screen").
+    await expect(overlay.getByRole('status')).toHaveCount(0);
   });
 });

@@ -29,9 +29,22 @@ async function freePort(): Promise<number> {
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
+//
+// detached: true — entrypoint.mjs сам ловит только SIGTERM/SIGINT и не
+// пробрасывает SIGKILL своим детям (RECOVER_CMD/MIGRATE_CMD/APP_CMD) — их
+// нельзя перехватить, поэтому они и не должны требовать этого от родителя.
+// Без своей группы процессов afterEach ниже убивал бы только entrypoint.mjs,
+// а `node -e "...listen(...)"` из последнего теста (нарочно вечный «апп»)
+// оставался сиротой: он держит унаследованный (stdio по умолчанию 'pipe')
+// файловый дескриptor stderr, и жест жив в этой строке пока другой конец не
+// закрыт — Jest-процесс висел на этом хендле под --detectOpenHandles
+// --forceExit=false (nightly.yml, джоба backend-flaky), а обычный `npx jest`
+// это маскировал принудительным выходом воркера. detached: true делает
+// entrypoint.mjs лидером своей группы — её и убиваем целиком.
 function launch(env: Record<string, string>) {
   const proc: ChildProcess = spawn('node', [ENTRY], {
     env: { ...process.env, PORT: '0', ...env },
+    detached: true,
   });
   const frontPort = new Promise<number>((resolve, reject) => {
     const timer = setTimeout(
@@ -74,7 +87,19 @@ async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
 describe('entrypoint (супервизор старта)', () => {
   const alive: ChildProcess[] = [];
   afterEach(() => {
-    while (alive.length) alive.pop()?.kill('SIGKILL');
+    while (alive.length) {
+      const proc = alive.pop();
+      if (!proc) continue;
+      // -pid (не pid) — сигнал всей группе процессов (see launch(): detached:
+      // true делает entrypoint.mjs её лидером), иначе RECOVER_CMD/MIGRATE_CMD/
+      // APP_CMD-потомки переживают убитого родителя сиротами.
+      try {
+        if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
+        else proc.kill('SIGKILL');
+      } catch {
+        proc.kill('SIGKILL');
+      }
+    }
   });
 
   it('migrate deploy упал → front держит страницу техработ (200)', async () => {

@@ -94,14 +94,29 @@ jobs:
   # на каждом — это минуты, неприемлемые на каждый пуш. Ночью же вопрос
   # «а поймают ли тесты, если сломать шифрование/подпись платежа?» проверяется
   # честно, и просадка счёта роняет ночной ран.
-  mutation:
+  #
+  # Раньше это была ОДНА джоба на все 15 файлов (`stryker.config.json`,
+  # ~90 минут таймаут) — 6 из 7 ночных ранов с 2026-09-10 падали по таймауту
+  # (список файлов вырос с 7 «волны А», под которую считался бюджет 45 минут,
+  # до 15, без пересчёта). Возврат к историческим волнам A/Б
+  # (docs/TEST_TRUST_PLAN.md), но теперь КАЖДАЯ — отдельная GitHub Actions
+  # джоба: они выполняются параллельно на разных раннерах (а не последовательно
+  # внутри одной), поэтому суммарное время падения таймаута вдвое НЕ
+  # складывается — каждая волна укладывается в собственный бюджет независимо
+  # от соседней. У каждой волны свой бейслайн (scripts/mutation-golden-*-baseline.json)
+  # — сумма реальных счётов по файлам из старого scripts/mutation-baseline.json,
+  # не новый замер: --update здесь не запускали, числа не выдуманы.
+  mutation-golden-auth:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
-    # 12 файлов, ~1900 мутантов: каждый — отдельный прогон покрывающих его
-    # тестов. 45 минут хватало на 7 файлов волны А, на волну Б уже нет.
-    timeout-minutes: 90
+    # Волна А (docs/TEST_TRUST_PLAN.md) — 6 файлов входа/шифрования/приватности
+    # (crypto, auth.service, merge.service, telegram-auth.guard,
+    # security-log.service, therapy-relations.service), ~1700 строк. Историческая
+    # оценка «7 файлов за 45 минут» — здесь файлов чуть меньше и они легче
+    # (без крупных booking/notification), запас до 60 минут оставлен на рост.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -110,21 +125,47 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      # ignoreStatic в stryker.config.json — не «послабление», а условие
-      # выполнимости: статические мутанты (код уровня модуля) заставляют
-      # перегонять ВЕСЬ набор тестов на каждого, и 9% таких мутантов съедали
-      # 86% времени прогона — счёт при этом не уточняли.
-      - name: Stryker по золотым зонам (шифрование/вход/платежи/напоминания)
-        run: npm run mutation
-      # Храповик: счёт не может просесть ниже scripts/mutation-baseline.json
-      # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
-      - name: mutation-храповик
-        run: node scripts/check-mutation-ratchet.mjs
+      # ignoreStatic — не «послабление», а условие выполнимости: статические
+      # мутанты (код уровня модуля) заставляют перегонять ВЕСЬ набор тестов на
+      # каждого, и 9% таких мутантов съедали 86% времени прогона (счёт при
+      # этом не уточняли) — см. stryker.golden-auth.config.json.
+      - name: Stryker — волна А (вход/шифрование/приватность)
+        run: npm run mutation:golden-auth
+      - name: mutation-храповик волны А
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
+      # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-golden-auth
+          path: reports/mutation/
+          retention-days: 14
+
+  mutation-golden-payments:
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-latest
+    # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
+    # booking, subscription, slot, pricing, payment.controller, donation,
+    # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker — волна Б (платежи/бронирования/напоминания)
+        run: npm run mutation:golden-payments
+      - name: mutation-храповик волны Б
+        run: node scripts/check-mutation-ratchet.mjs --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
       # Кризисная детекция (правило №7) — отдельный прогон command-раннером
       # (файл в shared, тесты у него vitest'овые; jest-раннер Stryker её
       # мутантов убить не может). Первый же замер 16.08.2026 нашёл живую
-      # дыру: «покончу с собой» не ловился.
-      # commandRunner гоняет vitest шареда — нужны его зависимости.
+      # дыру: «покончу с собой» не ловился. Висит на этой джобе (а не на
+      # golden-auth) — обе лёгкие command-runner цели, бюджет минут, не часов.
       - run: npm ci --prefix shared
       - name: Stryker по кризисной детекции
         run: npm run mutation:crisis
@@ -143,7 +184,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mutation-report
+          name: mutation-report-golden-payments
           path: reports/mutation/
           retention-days: 14
 
@@ -342,3 +383,108 @@ jobs:
           name: mutation-bot-report
           path: reports/mutation/
           retention-days: 14
+
+  # Сигнализация (щит): красный nightly раньше был виден только тому, кто сам
+  # зашёл во вкладку Actions — 6 из 7 ночных ранов с 2026-09-10 были красными,
+  # и никто не заметил. Эта джоба — единственный наблюдатель после самих
+  # тестов: заводит/обновляет issue (одну открытую на воркфлоу, не плодит
+  # дубли) и, если настроены секреты бота, шлёт короткое DM владельцу.
+  alarm:
+    needs:
+      - backend-flaky
+      - frontend-flaky
+      - mutation-golden-auth
+      - mutation-golden-payments
+      - browser-smoke
+      - backup-restore
+      - mutation-bot
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      # needs.*.result — 'success'/'failure'/'cancelled'/'skipped'. Джобы,
+      # пропущенные штатно (воскресный if: github.event.schedule != '0 4 * * 0'
+      # /будний if у mutation-bot) — 'skipped', не авария, в алярм не идут.
+      - name: собрать список упавших джоб
+        id: collect
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          node -e '
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const failed = Object.entries(needs)
+              .filter(([, v]) => v.result === "failure" || v.result === "cancelled")
+              .map(([name]) => name);
+            require("fs").appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              `failed=${failed.join(",")}\nhas_failures=${failed.length > 0}\n`,
+            );
+          '
+      - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на воркфлоу)
+        uses: actions/github-script@v7
+        env:
+          FAILED: ${{ steps.collect.outputs.failed }}
+        with:
+          script: |
+            const title = 'Ночная flaky-детекция — красный прогон';
+            const label = 'ci-alarm';
+            const failed = (process.env.FAILED || '').split(',').filter(Boolean);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const existing = openIssues.find((i) => i.title === title);
+            if (failed.length > 0) {
+              const body = `Упали джобы: ${failed.join(', ')}.\n\nСсылка на прогон: ${runUrl}`;
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels: [label],
+                });
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Снова зелёный: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+            }
+      - name: DM владельцу в Telegram (только если есть провалы и настроены секреты)
+        if: steps.collect.outputs.has_failures == 'true'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+          FAILED: ${{ steps.collect.outputs.failed }}
+        run: |
+          if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
+            echo "DM не отправлен: нет секретов BOT_TOKEN/ADMIN_ID"
+            exit 0
+          fi
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          TEXT=$(printf 'Ночная проверка упала: %s.\nСмотреть: %s' "${FAILED//,/, }" "$RUN_URL")
+          curl -sS --max-time 10 \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${ADMIN_ID}" \
+            --data-urlencode "text=${TEXT}" > /dev/null

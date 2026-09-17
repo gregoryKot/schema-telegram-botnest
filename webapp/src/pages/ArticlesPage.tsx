@@ -6,7 +6,7 @@ import type { ArticleSummary, Article } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
-
+import { siteTitleSuffix } from '../utils/domainChrome';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -15,7 +15,7 @@ export function ArticlesListPage() {
   const { data: articles, reload, failed } = useAsyncData<ArticleSummary[] | null>(listFetcher, null);
 
   useEffect(() => {
-    document.title = 'Статьи о схема-терапии | schemehappens.ru';
+    document.title = `Статьи о схема-терапии | ${siteTitleSuffix()}`;
   }, []);
 
   return (
@@ -123,7 +123,7 @@ export function ArticlePage() {
   const { data: article, reload, failed } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
 
   useEffect(() => {
-    if (article) document.title = `${article.title} | schemehappens.ru`;
+    if (article) document.title = `${article.title} | ${siteTitleSuffix()}`;
   }, [article]);
 
   if (failed) {

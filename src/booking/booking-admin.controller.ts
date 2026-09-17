@@ -18,6 +18,7 @@ import { AvailabilityService } from './availability.service';
 import { RobokassaService } from './robokassa.service';
 import { MeetingService } from './meeting.service';
 import { CalDavService } from './caldav.service';
+import { buildCalendarStatus } from './booking-admin.calendar';
 import { PricingService } from './pricing.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { assertAdminKey } from './admin-key.util';
@@ -73,22 +74,8 @@ export class BookingAdminController {
   async status(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
     const meeting = this.meeting.status;
-    // How many busy intervals CalDAV returns for the next 14 days (diagnoses
-    // over-blocking of slots). Fail-open inside getBusyTimes.
-    let calendarBusyCount: number | null = null;
-    let calendarNames: string[] = [];
-    if (this.calDav.enabled) {
-      const now = new Date();
-      const [busy, names] = await Promise.all([
-        this.calDav.getBusyTimes(
-          now,
-          new Date(now.getTime() + 14 * 86_400_000),
-        ),
-        this.calDav.debugCalendars(),
-      ]);
-      calendarBusyCount = busy.length;
-      calendarNames = names;
-    }
+    // Fail-open inside buildCalendarStatus/getBusyTimes.
+    const cal = await buildCalendarStatus(this.calDav);
     return {
       siteUrl:
         this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
@@ -99,9 +86,7 @@ export class BookingAdminController {
       zoom: meeting.zoom,
       zoomVars: meeting.zoomVars,
       meetingStaticUrl: meeting.staticUrl,
-      appleCalendar: this.calDav.enabled,
-      calendarBusyCount,
-      calendarNames,
+      ...cal,
       calendarBlocking:
         this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
       emailFallback:

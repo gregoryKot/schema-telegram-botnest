@@ -16,11 +16,9 @@ import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import {
-  assertWithinAvailability,
-  assertSlotFree,
-} from './booking.availability';
+import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
+import { createBookingGuarded } from './booking.create';
 import {
   listBookings,
   getBookingById,
@@ -49,10 +47,6 @@ const SCHEMA: EncryptSchema = {
 };
 
 const HOLD_MINUTES = 15;
-// Ключ pg_advisory_xact_lock для сериализации «проверить слот → создать бронь».
-// Один глобальный лок на все брони: трафик записи низкий, сериализация дешевле,
-// чем exclusion constraint по времени (P-1, аудит 2026-07).
-const BOOKING_SLOT_LOCK_KEY = 911_001;
 
 /**
  * Thrown by confirm() specifically when the webhook-reported paid amount
@@ -141,15 +135,13 @@ export class BookingService {
       SCHEMA,
     );
 
-    // P-1 (аудит 2026-07): проверка занятости и создание — в одной транзакции
-    // под advisory-lock, иначе два клиента, кликнувшие одновременно, оба
-    // проходили findMany-проверку и бронировали один слот (TOCTOU).
-    // Lock — xact-scoped: снимается автоматически на commit/rollback.
-    const booking = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${BOOKING_SLOT_LOCK_KEY})`;
-      await assertSlotFree(tx, dto.startsAt, dto.durationMin);
-      return tx.booking.create({ data });
-    });
+    // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
+    // случай падения (лид уходит админу) — см. booking.create.ts.
+    const booking = await createBookingGuarded(
+      { prisma: this.prisma, notify: this.notify, logger: this.logger },
+      data,
+      dto,
+    );
     this.logger.log(
       `Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`,
     );

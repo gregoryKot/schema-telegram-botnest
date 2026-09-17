@@ -83,7 +83,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div data-testid="practices-screen" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
       <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>

@@ -35,6 +35,7 @@ function statusFixture(overrides: Record<string, unknown> = {}) {
     appleCalendar: false,
     calendarBusyCount: 0,
     calendarNames: [],
+    calendarReadError: null,
     calendarBlocking: false,
     emailFallback: true,
     siteUrl: 'https://schemehappens.ru',
@@ -97,6 +98,28 @@ describe('BookingSection — статус интеграций', () => {
     }));
     render(<BookingSection adminKey="k" />);
     await screen.findByText('Блокировка слотов по календарю включена — занятое время скрывается из записи.');
+  });
+
+  // Регресс 2026-09-13: appleCalendar:true читался как «связь есть», хотя
+  // чтение занятости падало — слоты шли поверх личных встреч молча.
+  it('calendarReadError — красная пометка «чтение не работает», а не «вкл · занято»', async () => {
+    mockApi.adminStatus.mockResolvedValue(statusFixture({
+      appleCalendar: true, calendarBusyCount: 4, calendarBlocking: true,
+      calendarReadError: 'REPORT 403 for https://x/calendars/',
+    }));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/чтение не работает: REPORT 403 for/);
+    expect(screen.queryByText(/вкл · занято: 4/)).toBeNull();
+  });
+
+  it('без calendarReadError — обычный статус «вкл · занято», без красной пометки', async () => {
+    mockApi.adminStatus.mockResolvedValue(statusFixture({
+      appleCalendar: true, calendarBusyCount: 4, calendarBlocking: true,
+      calendarReadError: null,
+    }));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/вкл · занято: 4/);
+    expect(screen.queryByText(/чтение не работает/)).toBeNull();
   });
 });
 

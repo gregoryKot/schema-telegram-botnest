@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { api } from '../api';
-import type { BookingSlot, SessionOption } from '../api';
+import { api, type BookingSlot, type SessionOption } from '../api';
+import { BookingErrorNote } from './BookingErrorNote';
+import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 
@@ -9,8 +10,7 @@ const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numer
 const dayLblFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, weekday: 'short', day: 'numeric', month: 'short' });
 const timeFmt   = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, hour: '2-digit', minute: '2-digit' });
 
-const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
-const timeLabel = (iso: string) => timeFmt.format(new Date(iso));
+const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso)), timeLabel = (iso: string) => timeFmt.format(new Date(iso));
 
 function dayLabel(iso: string): string {
   const todayKey = dayKeyFmt.format(new Date());
@@ -55,7 +55,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
     // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
     // setState в эффекте (react-hooks/set-state-in-effect). Чистка URL —
     // в эффекте ниже (побочный эффект).
@@ -198,7 +198,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
     } catch (err) {
-      setStatus(err instanceof Error && err.message === 'CLIENT_NOT_FOUND' ? 'not_found' : 'error');
+      setStatus(handleBookingFailure(err));
     }
   };
 
@@ -282,7 +282,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             </span>
           </label>
           {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
-          {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не удалось забронировать — возможно, время только что заняли. Обновите страницу или напишите в Telegram: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+          {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
           <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent}
             style={{
               alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',

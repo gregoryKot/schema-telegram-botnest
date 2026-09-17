@@ -3,6 +3,10 @@
     "status": "exempt",
     "reason": "deleteMany идемпотентен, второй инстанс удалит 0 строк, дублирования наружу нет."
   },
+  "src/api/throttle-hit.cleanup.ts::cleanup": {
+    "status": "exempt",
+    "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
+  },
   "src/auth/telegram-domain-watchdog.service.ts::handleCron": {
     "status": "leader",
     "reason": "Проверка домена бота шлёт DM админу при расхождении — на двух инстансах дубль DM."
@@ -34,6 +38,10 @@
   "src/infra/db-outage.service.ts::probe": {
     "status": "exempt",
     "reason": "Это пер-инстансовая проверка соединения, она обязана идти на каждом инстансе, лидер бы её сломал."
+  },
+  "src/infra/self-check/self-check.service.ts::hourly": {
+    "status": "leader",
+    "reason": "Часовая самопроверка прода шлёт DM владельцу при сбоях — на двух инстансах дубль DM и двойная нагрузка на живые проверки (getMe, CalDAV discovery, запись в ThrottleHit)."
   },
   "src/subscription/subscription.service.ts::chargeDue": {
     "status": "exempt",

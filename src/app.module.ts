@@ -18,6 +18,9 @@ import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { PrismaService } from './prisma/prisma.service';
+import { throttlerOptions } from './api/throttler-module-options';
+import { ThrottleHitModule } from './api/throttle-hit.module';
 import { CronLeaderModule } from './infra/cron-leader.module';
 import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
@@ -29,6 +32,7 @@ import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
 import { practiceDomainMiddleware } from './practice-domain.middleware';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
+import { SelfCheckService } from './infra/self-check/self-check.service';
 
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
@@ -39,25 +43,19 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000, limit: 10 },
-      { name: 'long', ttl: 60000, limit: 200 },
-    ]),
-    // Single ServeStatic for everything.
-    // webapp/dist serves the website at /
-    // webapp/dist/app/ contains the Telegram mini app (schema-miniapp build)
-    // renderPath: '/*' makes it SPA-friendly — serves index.html for all
-    // non-file paths so HTML5 history routing (/diary, /schemas, etc.) works.
-    // API routes are excluded so /api/* still hits NestJS handlers.
+    ThrottlerModule.forRootAsync({
+      inject: [PrismaService],
+      useFactory: throttlerOptions,
+    }),
+    // Single ServeStatic: site at / (webapp/dist), mini-app at /app/. SPA
+    // renderPath serves index.html for non-file paths; /api excluded.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
       // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
       renderPath: '/*path',
       exclude: ['/api/{*path}'],
-      // Cache-Control по типу файла (src/infra/static-cache.ts): иммутабельным
-      // объявляем только то, чьё имя меняется вместе с содержимым. Раньше вся
-      // статика шла с max-age=0, и каждый запуск начинался с круга ревалидации
-      // (замер 2026-08-22: 857мс до первой строчки JS даже с тёплым кэшем).
+      // Cache-Control по типу файла (immutable — только то, чьё имя меняется
+      // вместе с содержимым; иначе max-age=0, замер 2026-08-22: 857мс).
       serveStaticOptions: {
         setHeaders: (res: ServerResponse, filePath: string) => {
           res.setHeader('Cache-Control', cacheControlFor(filePath));
@@ -65,6 +63,7 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
       },
     }),
     PrismaModule,
+    ThrottleHitModule,
     CronLeaderModule,
     NotificationModule,
     AuthModule,
@@ -79,6 +78,7 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
   providers: [
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
     DbOutageMonitorService,
+    SelfCheckService,
   ],
 })
 export class AppModule implements NestModule {

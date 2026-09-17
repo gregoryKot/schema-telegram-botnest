@@ -10,7 +10,7 @@ import type { ContactCta } from '../../../shared/src/utils/therapistContact';
 
 const CTA: ContactCta = {
   isSelf: false,
-  label: 'Поговорить с психологом →',
+  label: 'Записаться на консультацию →',
   url: 'https://kotlarewski.gr/#booking',
 };
 
@@ -22,7 +22,7 @@ describe('YsqTherapyCta', () => {
   it('рендерит вы-форму заголовка и метку ссылки', () => {
     render(<YsqTherapyCta cta={CTA} tr={trVy} onLinkClick={() => {}} />);
     expect(screen.getByText('Хотите разобраться глубже?')).toBeTruthy();
-    expect(screen.getByText('Поговорить с психологом →')).toBeTruthy();
+    expect(screen.getByText('Записаться на консультацию →')).toBeTruthy();
   });
 
   it('ссылка ведёт на сайт практики и открывается в новой вкладке', () => {

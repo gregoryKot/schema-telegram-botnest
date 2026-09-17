@@ -169,6 +169,7 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      - run: node scripts/check-raw-sql-live.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -229,6 +230,29 @@ jobs:
       # src/infra/capability-report.ts (видно в /stats и в логе старта), либо
       # в бейслайне с причиной.
       - run: node scripts/check-capability-registry.mjs
+      # Реестр env-переменных (щит, инциденты 2026-09-15/16: пустой
+      # ADMIN_EMAIL молчал; GOOGLE_REDIRECT_URI указывал на хост, который
+      # сервер сам редиректит дальше — вход зацикливался). Дополняет гейт
+      # выше: тот про «переменной НЕТ — фича молча выключена», этот — про
+      # «переменная ЕСТЬ, но неверна» (опечатка, чужой хост, пустая строка).
+      # Каждое чтение process.env.X/config.get('X') в src/** обязано
+      # ссылаться на запись src/infra/env-registry.entries*.ts, и каждая
+      # запись обязана реально читаться — иначе протухла. Классификация, не
+      # счётчик долга: флага --update нет.
+      - run: node scripts/check-env-registry.mjs
+      # Правило №14: «фикстура как у настоящей площадки». Два из трёх
+      # последних инцидентов CalDAV (PR #491, PR #494) — один класс: парсер
+      # внешнего формата (PROPFIND-ответ iCloud) тестировался на фикстуре,
+      # которую выдумал сам автор кода, а не на том, что реально присылает
+      # площадка. Гейт находит каждый парсер внешнего формата в src/** (явные
+      # пути — caldav-*.ts, *init-data*.ts, auth/providers/*.ts,
+      # channel/targets/*.ts — и content-эвристика: fetch(+разбор ответа или
+      # проверка подписи/токена извне) и требует классификации в
+      # scripts/recorded-fixtures-baseline.json: recorded — реально
+      # записанная фикстура в test/fixtures/recorded/, которую спек читает
+      # по имени, либо честный exempt (записи с площадки нет — долг, а не
+      # нарушение). Флага --update нет: это классификация, не счётчик.
+      - run: node scripts/check-recorded-fixtures.mjs
       # Правило №15: «гейт про гейты». Список исключений (ALLOW/EXCLUDE/
       # EXEMPT/EXCLUDED) внесли в храповик — а тест на то, что он гасит
       # именно законный случай и не шире, никто не написал: замер на каждый
@@ -318,6 +342,24 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
+      # advisory-lock через $queryRaw, а Prisma 7 не читает колонку типа `void`.
+      # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
+      # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
+      - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
+      # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
+      # удаления аккаунта, захват списания подписки. Состав держит гейт
+      # check-raw-sql-live.mjs (джоба checks).
+      - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+      # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
+      # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
+      - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/throttle-storage.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
       # (test/e2e-support/fake-prisma.ts) — он трижды расходился с настоящей

@@ -125,11 +125,19 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
    * файла уже могли исчерпать окно к моменту, когда доходит очередь до
    * сценария ниже. Сброс общего in-memory стораджа троттлера не трогает
    * прод-код — только тестовую изоляцию одного сценария от соседних.
+   *
+   * Инцидент 2026-09-13: `ThrottlerStorage` в DI теперь `HybridThrottleStorage`
+   * — немаркированные ключи (у `/api/auth/refresh` нет `@PersistentThrottle()`)
+   * по-прежнему живут в памяти, но во вложенном `.memory`, а не в самом
+   * сторадже. Старую форму (плоский `.storage`) держим как фолбэк на случай
+   * прямой `ThrottlerStorageService` в других сборках теста.
    */
   function resetRefreshThrottle(): void {
-    const storage: { storage: Map<string, unknown> } =
-      app.get(ThrottlerStorage);
-    storage.storage.clear();
+    const storage: {
+      storage?: Map<string, unknown>;
+      memory?: { storage: Map<string, unknown> };
+    } = app.get(ThrottlerStorage);
+    (storage.memory?.storage ?? storage.storage)?.clear();
   }
 
   afterAll(async () => {

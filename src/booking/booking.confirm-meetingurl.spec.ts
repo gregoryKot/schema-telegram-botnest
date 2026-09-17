@@ -16,7 +16,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
 
   function makeService() {
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         // Симулируем бронь, у которой meetingUrl уже проставлен (реалистичный
@@ -80,7 +80,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
 
   it('нет meetingUrl на строке → возвращается ровно null (не undefined)', async () => {
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: 100, ...data })),
