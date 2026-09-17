@@ -74,7 +74,7 @@ describe('BookingPaidPage — с токеном', () => {
     getBookingByToken.mockResolvedValue({ ...BOOKING, meetingUrl: null });
     render(<BookingPaidPage />);
     await screen.findByText('Оплата прошла');
-    expect(screen.getByText(/Ссылку на видеовстречу готовим/)).toBeTruthy();
+    expect(screen.getByText(/Ссылку на видеовстречу готовлю/)).toBeTruthy();
     expect(screen.queryByText('Подключиться к встрече')).toBeNull();
   });
 
