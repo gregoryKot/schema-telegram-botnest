@@ -51,7 +51,7 @@ export interface AdminBookingStatus {
   appleCalendar: boolean;
   calendarBusyCount: number | null;
   calendarNames: string[];
-  calendarBlocking: boolean;
+  calendarReadError: string | null; calendarBlocking: boolean;
   emailFallback: boolean;
 }
 export interface ArticleSummary {

@@ -15,7 +15,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
         'Вы специалист — клиенты могут обратиться',
       )
     : contact.name === 'автору'
-      ? 'Поговорить с психологом →'
+      ? 'Записаться на консультацию →'
       : `Написать ${contact.name} →`;
 
   if (compact) {

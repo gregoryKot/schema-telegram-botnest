@@ -142,6 +142,24 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('исход формы записи (BookingErrorNote — та же зона, что BookingPicker) исключён', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingErrorNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('КОНТРОЛЬ: соседний компонент с тем же императивом — по-прежнему exit 1', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingSummaryNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
   // ── Калибровка 2026-08: зоны вне addressForm ──────────────────────────
   it('статьи сайта (единая форма «вы», не привязаны к addressForm) исключены', () => {
     const res = runGate('check-second-person.mjs', {
@@ -162,6 +180,21 @@ describe('check-second-person.mjs', () => {
       'scripts/second-person-baseline.json': JSON.stringify({}),
       'src/channel/targets/vk.target.ts':
         "export function explain() { return 'Проверь ключ доступа сообщества'; }\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
+  it('владелец-only здоровье CalDAV (KIND_TEXT/DM-алерт) исключено', () => {
+    // src/booking/caldav-health.ts — текст сбоя чтения календаря уходит DM
+    // владельцу (calDavHealth.noteFailure → logger.error) и в /stats, не
+    // пользователю с addressForm (2026-09-16, kind 'empty').
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/caldav-health.ts':
+        "export const msg = 'Проверьте APPLE_CALENDAR_NAME/APPLE_CALDAV_URL или права пароля приложения';\n",
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain(
@@ -379,6 +412,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // Публичный лендинг психолога / виджет записи до входа.
       'webapp/src/pages/landing/BookingForm.tsx',
       'webapp/src/components/BookingPicker.tsx',
+      'webapp/src/components/BookingErrorNote.tsx',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',
@@ -400,6 +434,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'src/telegram/telegram-channel.target.ts',
       'src/bot/healthy-adult.pool-alert.ts',
       'src/bot/auth-health-metrics.format.ts',
+      'src/booking/caldav-health.ts',
       // Мета-код детектора и нейтральная CTA-подпись к третьему лицу.
       'shared/src/utils/tyFormsSweep.ts',
       'shared/src/utils/therapistContact.ts',

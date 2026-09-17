@@ -37,10 +37,10 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('TherapyNote', () => {
-  it('полный вид, клиент: дисклеймер + «Поговорить с психологом», без эмодзи', () => {
+  it('полный вид, клиент: дисклеймер + «Записаться на консультацию», без эмодзи', () => {
     const { container } = withForm(<TherapyNote />);
     expect(container.textContent).toContain('инструмент самоисследования');
-    expect(container.textContent).toContain('Поговорить с психологом');
+    expect(container.textContent).toContain('Записаться на консультацию');
     expect(container.textContent).not.toContain('💬');
   });
 

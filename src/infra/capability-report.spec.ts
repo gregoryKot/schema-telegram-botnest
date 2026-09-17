@@ -11,6 +11,8 @@ const ALL_CONFIGURED = {
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
   ZOOM_CLIENT_SECRET: 'z3',
+  APPLE_ID: 'me@icloud.com',
+  APPLE_APP_PASSWORD: 'app-pass',
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
@@ -23,9 +25,12 @@ describe('buildCapabilityReport', () => {
     expect(report.every((c) => !c.critical)).toBe(true);
   });
 
-  it('пустой env — все возможности выключены', () => {
+  it('пустой env — все возможности выключены (кроме oauthRedirectSane — у неё инверсная семантика: нечего проверять = on)', () => {
     const report = buildCapabilityReport({});
-    expect(report.every((c) => !c.on)).toBe(true);
+    expect(
+      report.filter((c) => c.id !== 'oauthRedirectSane').every((c) => !c.on),
+    ).toBe(true);
+    expect(report.find((c) => c.id === 'oauthRedirectSane')!.on).toBe(true);
   });
 
   it('оба алерт-канала не настроены — обе записи критичны', () => {
@@ -71,5 +76,24 @@ describe('buildCapabilityReport', () => {
       expect(c.offReason.length).toBeGreaterThan(10);
       expect(c.files.length).toBeGreaterThan(0);
     }
+  });
+
+  // 2026-09-16: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI на legacy/www-хосте
+  // зацикливали редирект колбэка с хостовым мидлваром main.ts — отдельная
+  // запись реестра ловит это до первой жалобы пользователя.
+  it('oauthRedirectSane: канонический адрес возврата — on (контроль)', () => {
+    const report = buildCapabilityReport({
+      GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+    });
+    expect(report.find((c) => c.id === 'oauthRedirectSane')!.on).toBe(true);
+  });
+
+  it('oauthRedirectSane: адрес возврата на legacy-хосте — off, не критично', () => {
+    const report = buildCapabilityReport({
+      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+    });
+    const cap = report.find((c) => c.id === 'oauthRedirectSane')!;
+    expect(cap.on).toBe(false);
+    expect(cap.critical).toBe(false);
   });
 });

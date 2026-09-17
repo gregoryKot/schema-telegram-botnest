@@ -1,0 +1,100 @@
+{
+  "src/api/health.controller.ts": {
+    "spec": "test/raw-sql-live-infra.e2e-spec.ts"
+  },
+  "src/api/postgres-throttle-storage.ts": {
+    "spec": "test/throttle-storage.e2e-spec.ts"
+  },
+  "src/auth/merge-subscriptions.ts": {
+    "spec": "test/notify-address.e2e-spec.ts",
+    "via": "src/auth/merge.service.ts"
+  },
+  "src/auth/merge-user-fields.ts": {
+    "spec": "test/notify-address.e2e-spec.ts",
+    "via": "src/auth/merge.service.ts"
+  },
+  "src/auth/merge.service.ts": {
+    "spec": "test/notify-address.e2e-spec.ts"
+  },
+  "src/booking/booking-slot-lock.ts": {
+    "spec": "test/booking-slot-lock.e2e-spec.ts"
+  },
+  "src/bot/account-link-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/account.delete.ts": {
+    "spec": "test/raw-sql-live-infra.e2e-spec.ts"
+  },
+  "src/bot/auth-health-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/bot.admin-stats.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/bot.product-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/case-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/client-error-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/data-export-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/game-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/login-ticket-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/mode-card-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/mode-diary-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/phrase-check-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/plus-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/practice-link-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/practice-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/profile-pattern-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/quiz-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/screen-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/signup-source-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/site-install-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/warm-words-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/bot/web-banner-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
+  "src/infra/cron-leader.service.ts": {
+    "spec": "test/cron-leader.e2e-spec.ts"
+  },
+  "src/infra/db-outage.service.ts": {
+    "spec": "test/raw-sql-live-infra.e2e-spec.ts"
+  },
+  "src/subscription/subscription.charges.ts": {
+    "spec": "test/raw-sql-live-infra.e2e-spec.ts"
+  }
+}

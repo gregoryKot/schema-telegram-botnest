@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "jest",
+  "jest": {
+    "projectType": "custom",
+    "configFile": "package.json"
+  },
+  "mutate": [
+    "src/utils/crypto.ts",
+    "src/auth/auth.service.ts",
+    "src/auth/merge.service.ts",
+    "src/api/telegram-auth.guard.ts",
+    "src/auth/security-log.service.ts",
+    "src/therapy/therapy-relations.service.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html",
+    "json"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/golden-auth.html"
+  },
+  "concurrency": 2,
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  },
+  "timeoutMS": 60000,
+  "jsonReporter": {
+    "fileName": "reports/mutation/golden-auth.json"
+  }
+}

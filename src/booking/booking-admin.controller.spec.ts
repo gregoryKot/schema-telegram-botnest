@@ -6,6 +6,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { SessionType } from '@prisma/client';
 import { BookingAdminController } from './booking-admin.controller';
+import { calDavHealth } from './caldav-health';
 
 const ADMIN_KEY = 'super-secret-key';
 
@@ -172,6 +173,26 @@ describe('BookingAdminController.status', () => {
     expect(status.calendarBusyCount).toBe(1);
     expect(status.calendarNames).toEqual(['Основной']);
     expect(status.appleCalendar).toBe(true);
+    expect(status.calendarReadError).toBeNull();
+  });
+
+  // Регресс 2026-09-13: раньше status не сообщал, что чтение календаря
+  // падает — «appleCalendar: true» выглядело как «связь есть».
+  it('авария чтения открыта — calendarReadError несёт подробность, а не молчит', async () => {
+    const { controller, calDav } = makeController();
+    calDav.enabled = true;
+    calDav.getBusyTimes.mockResolvedValue([]);
+    calDav.debugCalendars.mockResolvedValue([]);
+    calDavHealth.reset();
+    calDavHealth.noteFailure('auth', 'REPORT 403 for https://x/calendars/');
+
+    const status = await controller.status(ADMIN_KEY);
+
+    expect(status.appleCalendar).toBe(true);
+    expect(status.calendarReadError).toBe(
+      'REPORT 403 for https://x/calendars/',
+    );
+    calDavHealth.reset();
   });
 
   it('отражает конфиг robokassaTest/emailFallback из ConfigService', async () => {
