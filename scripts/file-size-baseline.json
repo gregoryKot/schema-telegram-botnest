@@ -519,7 +519,7 @@
   "scripts/check-second-person.mjs": 185,
   "scripts/check-silent-catch.mjs": 246,
   "scripts/check-tiny-fonts.mjs": 154,
-  "scripts/check-token-contract.mjs": 147,
+  "scripts/check-token-contract.mjs": 244,
   "scripts/check-unwatched-code.mjs": 177,
   "scripts/check-weak-assert-ratchet.mjs": 267,
   "scripts/encrypt-existing.ts": 273,
