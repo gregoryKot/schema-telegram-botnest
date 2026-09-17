@@ -109,6 +109,11 @@
     "status": "exempt",
     "reason": "Форма ошибки VK («200 OK, error в теле», error_code/error_msg) в спеке — авторская, по документации VK API wall.post, не захваченный с прода ответ."
   },
+  "src/infra/self-check/probe-ci-runs.ts": {
+    "status": "recorded",
+    "fixtures": ["github-workflow-runs.json"],
+    "spec": "src/infra/self-check/probe-ci-runs.spec.ts"
+  },
   "src/infra/self-check/probe-telegram.ts": {
     "status": "exempt",
     "reason": "Ответ Telegram Bot API getMe (ok/result.username) — синтетическое тело по документации Bot API в спеке, не захваченный с прода ответ площадки."

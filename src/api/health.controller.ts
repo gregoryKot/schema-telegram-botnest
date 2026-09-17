@@ -43,7 +43,9 @@ export class HealthController {
       builtAt: builtAt()?.toISOString() ?? null,
       selfCheck: {
         ranAt: snap.ranAt === null ? null : new Date(snap.ranAt).toISOString(),
-        failed: snap.results.filter((r) => !r.ok).map((r) => r.id),
+        failed: snap.results
+          .filter((r) => !r.ok && r.reportInHealth)
+          .map((r) => r.id),
       },
     };
   }

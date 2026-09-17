@@ -73,6 +73,7 @@ jest `rootDir`. См. `src/booking/caldav-discovery.spec.ts` и
 | `icloud-propfind-principal.xml` | iCloud CalDAV, PROPFIND шаг 1 (`current-user-principal`) | Форма, на которой держится `caldav-discovery.ts`; см. PR #494 |
 | `icloud-propfind-home.xml` | iCloud CalDAV, PROPFIND шаг 2 (`calendar-home-set`) | Та же форма PR #494 |
 | `icloud-propfind-calendars.xml` | iCloud CalDAV, PROPFIND Depth 1 шаг 3 (список календарей) | Корень первым, без `<calendar/>` (инцидент #491) + календарь тегом `<C:calendar xmlns:C="…"/>` С АТРИБУТАМИ (инцидент/регресс #494) — та самая форма, на которой дважды ловили баг |
+| `github-workflow-runs.json` | GitHub REST, `GET /repos/{owner}/{repo}/actions/workflows/{file}/runs?status=completed&per_page=1` | Форма ответа для пробы `ciRuns` (`src/infra/self-check/probe-ci-runs.ts`) — наблюдатель за CI переехал в приложение, т.к. GitHub-джоба `alarm` не может слать DM без секретов, заведённых только на Amvera |
 
 Новый парсер внешнего формата → см. `scripts/check-recorded-fixtures.mjs`
 (требует записи в `scripts/recorded-fixtures-baseline.json`) прежде, чем PR
