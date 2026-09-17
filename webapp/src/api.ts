@@ -1,5 +1,4 @@
-// Shared API client for the web app.
-// Uses Authorization: Bearer <token> instead of x-telegram-init-data.
+// Shared API client for the web app (Authorization: Bearer <token> вместо x-telegram-init-data).
 // Единственная фронтовая копия типов — в shared (правило №3); методы, которые
 // их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
@@ -9,6 +8,7 @@ export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types'
 import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import {
   BASE,
@@ -128,7 +128,6 @@ export type {
   PhraseCheckEntry,
   Insights,
 } from './api.types';
-// ─── API object (identical endpoints, different auth header) ──────────────────
 
 // Единый транспорт: общие методы приезжают из shared-фабрики (правило №3).
 const transport: ApiTransport = { get, post, postJson, del };
@@ -138,9 +137,10 @@ const transport: ApiTransport = { get, post, postJson, del };
 const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta));
 
 export const api = {
-  // Общие с мини-аппом методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
   ...ratingApi,
+  // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
+  ...createPracticeSessionsApi(transport),
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).

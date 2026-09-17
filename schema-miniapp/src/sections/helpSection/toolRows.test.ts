@@ -70,9 +70,24 @@ describe('buildToolRows — динамические sub', () => {
     expect(rows.find((r) => r.id === 'practices')?.sub).toBe('Нет практик');
   });
 
+  it('practiceCount=5 → «5 практик» (форма множественного числа)', () => {
+    const rows = buildToolRows({ ...BASE_PROPS, practiceCount: 5 });
+    expect(rows.find((r) => r.id === 'practices')?.sub).toBe('5 практик');
+  });
+
   it('planCount=0 → «История пуста»', () => {
     const rows = buildToolRows({ ...BASE_PROPS, planCount: 0 });
     expect(rows.find((r) => r.id === 'plans')?.sub).toBe('История пуста');
+  });
+
+  it('planCount=null → sub отсутствует (не выдуманный 0)', () => {
+    const rows = buildToolRows({ ...BASE_PROPS, planCount: null });
+    expect(rows.find((r) => r.id === 'plans')?.sub).toBeUndefined();
+  });
+
+  it('planCount=2 → «2 плана» (форма множественного числа)', () => {
+    const rows = buildToolRows({ ...BASE_PROPS, planCount: 2 });
+    expect(rows.find((r) => r.id === 'plans')?.sub).toBe('2 плана');
   });
 
   // Правило №4: два места, обязанных совпадать, фиксируются тестом. Подписи

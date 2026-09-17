@@ -38,6 +38,14 @@ describe('QuickActionOverlays — маршрутизация', () => {
     expect(screen.getByText('QuickPracticeSheet:grounding')).toBeTruthy();
   });
 
+  // Из «плюса» дыхание открывается пошаговым листом, а не карточкой
+  // BreathingCard (та живёт только в блоке «Здесь и сейчас») — ветка легко
+  // теряется при правке switch, поэтому проверяется отдельно.
+  it('breathing → тот же лист, а не карточка дыхания', () => {
+    render(<QuickActionOverlays active="breathing" onClose={vi.fn()} />);
+    expect(screen.getByText('QuickPracticeSheet:breathing')).toBeTruthy();
+  });
+
   it('onClose прокидывается в закрытие практики', () => {
     const onClose = vi.fn();
     render(<QuickActionOverlays active="stop" onClose={onClose} />);
