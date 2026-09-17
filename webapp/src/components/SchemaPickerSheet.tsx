@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 
 interface Props {
   selected: string[];
@@ -36,10 +36,7 @@ const SCHEMA_DESC: Record<string, string> = {
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const [ids, setIds] = useState<string[]>(selected);
-
-  const toggle = (id: string) =>
-    setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const { ids, toggle } = useAutosavedSelection(selected, onSave);
 
   return (
     <ExScreen
@@ -48,7 +45,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       eyebrow="Схемы"
       eyebrowColor="var(--accent)"
       title={<>Мои<br /><span className="it">схемы</span></>}
-      lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои.')}
+      lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои. Выбор сохраняется сразу.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои. Выбор сохраняется сразу.')}
     >
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} className="u-mb28">
@@ -87,9 +84,9 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
         <span className="spacer" />
         <button
           className="ex-btn ex-btn-primary"
-          onClick={() => { onSave(ids); goBack(); }}
+          onClick={goBack}
         >
-          {ids.length > 0 ? `Сохранить (${ids.length})` : 'Сохранить'}
+          Готово
         </button>
       </div>
     </ExScreen>

@@ -1,14 +1,11 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import {
-  MODE_DESC,
-  POPULAR_MODE_IDS,
-} from '../../../shared/src/mode/modePickerDesc';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { useNeedData, NEED_ORDER } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
+import { ModePickerSheet } from '../components/ModePickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
@@ -511,88 +508,6 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
         <Suspense fallback={null}><ModeMapViewer /></Suspense>
-      </div>
-    </div>
-  );
-}
-
-// ── Mode picker sheet ──────────────────────────────────────────────────────────
-
-function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
-  const tr = useTr();
-  const goBack = useHistorySheet(onClose);
-  const [ids, setIds] = useState<string[]>(selected);
-  const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-        <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
-          Сохранить{ids.length > 0 ? ` · ${ids.length}` : ''}
-        </button>
-      </div>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои режимы</h1>
-        <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
-          {tr('Выбери режимы которые ты замечаешь у себя.', 'Выберите режимы которые вы замечаете у себя.')}
-        </p>
-
-        <div className="u-mb20">
-          <div className="eyebrow u-mb8">
-            С чего начать
-          </div>
-          <div className="u-col4">
-            {POPULAR_MODE_IDS.map(id => {
-              const mode = ALL_MODES.find(m => m.id === id);
-              if (!mode) return null;
-              const active = ids.includes(id);
-              const c = mode.groupColor; // CSS variable
-              return (
-                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
-                  <IdentityDot color={c} />
-                  <div className="u-fill">
-                    <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
-                    {MODE_DESC[id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[id]}</div>}
-                  </div>
-                  {active && <span style={{ color: c, fontSize: 14, flexShrink: 0 }}>✓</span>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ height: 1, background: 'rgba(var(--fg-rgb),0.06)', marginBottom: 18 }} />
-        <div className="eyebrow u-mb14">Все режимы</div>
-
-        {MODE_GROUPS.map(group => {
-          const c = group.color; // CSS variable
-          return (
-            <div key={group.id} className="u-mb18">
-              <div className="eyebrow" style={{ color: c, marginBottom: 8, opacity: 0.8 }}>
-                {group.group}
-              </div>
-              <div className="u-col4">
-                {group.items.filter(m => !POPULAR_MODE_IDS.includes(m.id)).map(m => {
-                  const active = ids.includes(m.id);
-                  return (
-                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
-                      <IdentityDot color={c} />
-                      <div className="u-fill">
-                        <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>
-                        {MODE_DESC[m.id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[m.id]}</div>}
-                      </div>
-                      {active && <span style={{ color: c, fontSize: 14, flexShrink: 0 }}>✓</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
+import { PickerStickyHeader } from './PickerStickyHeader';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 
 interface Props {
   selected: string[];
@@ -39,26 +40,17 @@ const SCHEMA_DESC: Record<string, string> = {
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   const tr = useTr();
-  const [ids, setIds] = useState<string[]>(selected);
-
-  const toggle = (id: string) =>
-    setIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const { ids, toggle } = useAutosavedSelection(selected, onSave);
 
   return (
     <BottomSheet onClose={onClose}>
       <div className="u-pt4">
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Мои схемы
-        </div>
+        <PickerStickyHeader
+          title="Мои схемы"
+          hint="Выбор сохраняется сразу"
+          count={ids.length}
+          onDone={onClose}
+        />
         <div
           style={{
             fontSize: 13,
@@ -171,28 +163,6 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             </div>
           </div>
         ))}
-
-        <button
-          onClick={() => {
-            onSave(ids);
-            onClose();
-          }}
-          style={{
-            marginTop: 8,
-            width: '100%',
-            padding: '14px',
-            borderRadius: 'var(--r-14)',
-            border: 'none',
-            background:
-              'linear-gradient(135deg, var(--accent), var(--accent-hi))',
-            color: 'var(--text)',
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
     </BottomSheet>
   );
