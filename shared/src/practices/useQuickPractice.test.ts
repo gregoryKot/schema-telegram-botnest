@@ -7,12 +7,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useQuickPractice } from './useQuickPractice';
+import type { QuickPracticeApi } from './useQuickPractice';
 
-vi.mock('../api', () => ({
-  api: { getPracticeSessions: vi.fn(), recordPracticeSession: vi.fn() },
-}));
-import { api } from '../api';
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+// api площадки приходит инъекцией (webapp — JWT, мини-апп — initData), так
+// что мокать модуль больше нечего: подставляем сам срез. Ссылка на объект
+// стабильная — иначе эффект загрузки перезапускался бы на каждом рендере.
+const mockApi = {
+  getPracticeSessions: vi.fn(),
+  recordPracticeSession: vi.fn(),
+};
+const fakeApi = mockApi as unknown as QuickPracticeApi;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -32,7 +36,7 @@ describe('useQuickPractice — загрузка счётчика', () => {
       grounding: 2,
       stop: 5,
     });
-    const { result } = renderHook(() => useQuickPractice('stop'));
+    const { result } = renderHook(() => useQuickPractice('stop', fakeApi));
     expect(result.current.count).toBeNull(); // до ответа — не выдуманный 0
     await flush();
     expect(result.current.count).toBe(5);
@@ -40,7 +44,7 @@ describe('useQuickPractice — загрузка счётчика', () => {
 
   it('GET упал → count остаётся null, а не превращается в 0', async () => {
     mockApi.getPracticeSessions.mockRejectedValue(new Error('network'));
-    const { result } = renderHook(() => useQuickPractice('breathing'));
+    const { result } = renderHook(() => useQuickPractice('breathing', fakeApi));
     await flush();
     expect(result.current.count).toBeNull();
   });
@@ -54,7 +58,7 @@ describe('useQuickPractice — complete()', () => {
       stop: 2,
     });
     mockApi.recordPracticeSession.mockResolvedValue({ ok: true, count: 3 });
-    const { result } = renderHook(() => useQuickPractice('stop'));
+    const { result } = renderHook(() => useQuickPractice('stop', fakeApi));
     await flush();
 
     await act(async () => {
@@ -74,7 +78,7 @@ describe('useQuickPractice — complete()', () => {
       stop: 0,
     });
     mockApi.recordPracticeSession.mockResolvedValue({ ok: true, count: 1 });
-    const { result } = renderHook(() => useQuickPractice('stop'));
+    const { result } = renderHook(() => useQuickPractice('stop', fakeApi));
     await flush();
 
     await act(async () => {
@@ -93,7 +97,7 @@ describe('useQuickPractice — complete()', () => {
       stop: 0,
     });
     mockApi.recordPracticeSession.mockRejectedValue(new Error('offline'));
-    const { result } = renderHook(() => useQuickPractice('stop'));
+    const { result } = renderHook(() => useQuickPractice('stop', fakeApi));
     await flush();
 
     await act(async () => {

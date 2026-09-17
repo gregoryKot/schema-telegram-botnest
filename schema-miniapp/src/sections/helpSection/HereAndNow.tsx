@@ -1,6 +1,6 @@
 import { ToolRow } from '../../components/ToolRow';
 import { BreathingCard } from '../../components/BreathingCard';
-import { practiceCountLabel } from '../../components/PracticeDoneFooter';
+import { practiceCountLabel } from '../../../../shared/src/practices/PracticeDoneFooter';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import type { HelpOverlaysState } from './useHelpOverlays';
 

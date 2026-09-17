@@ -1,4 +1,3 @@
-import type { QuickPracticeId } from '../../shared/src/practices/quickPractices';
 // Типы, чьи методы переехали в shared-фабрику, здесь остались только ре-экспортом.
 export type {
   UserSchemaNote,
@@ -10,6 +9,7 @@ import {
   type ApiTransport,
 } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import { BASE, authedFetch, get, post, postJson, del } from './apiClient';
 import type { UiPrefsPatch } from './utils/uiPrefsSync';
@@ -37,6 +37,8 @@ export const api = {
   // Общие с webapp методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
   ...ratingApi,
+  // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
+  ...createPracticeSessionsApi(transport),
 
   // uiPrefs — только мини-апп (utils/uiPrefsSync.ts), тип локальный поверх shared.
   getSettings: () =>
@@ -76,14 +78,6 @@ export const api = {
       body,
     ),
   ...exercisesApi,
-  // ─── Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») ─────────────
-  recordPracticeSession: (tool: QuickPracticeId) =>
-    postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
-  // Форма ответа выражена через QuickPracticeId — отдельный интерфейс в
-  // apiTypes.ts не заводим: тот файл потокенно зеркалит api.ts и уже висит
-  // в jscpd-храповике как клон, каждая новая строка удлиняет дубль.
-  getPracticeSessions: () =>
-    get<Record<QuickPracticeId, number>>('/api/practice-sessions'),
   // saveRating/flushOutbox (outbox — см. ../../shared/src/utils/ratingOutbox.ts)
   // приезжают через ...ratingApi выше. Вызывается при старте приложения и
   // при возврате online — см. App.tsx.

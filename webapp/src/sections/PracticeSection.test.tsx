@@ -34,6 +34,14 @@ vi.mock('../api', () => ({
   },
   reportClientError: vi.fn(),
 }));
+// Блок «Здесь и сейчас» ходит в api за счётчиком прохождений и проверяется
+// своим тестом (sections/practice/HereAndNowBlock.test.tsx) — здесь заглушка,
+// как BreathingCard в HelpSection.test.tsx мини-аппа: тесты экрана «Практика»
+// про библиотеку упражнений и задания, а не про быстрые практики.
+vi.mock('./practice/HereAndNowBlock', () => ({
+  HereAndNowBlock: () => <div data-testid="here-and-now-block" />,
+}));
+
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
