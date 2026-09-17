@@ -90,7 +90,7 @@ export function JoinConfirmSheet({
           <p
             style={{
               fontSize: 14,
-              color: 'var(--danger, #c0392b)',
+              color: 'var(--accent-red)',
               lineHeight: 1.6,
               marginBottom: 16,
             }}

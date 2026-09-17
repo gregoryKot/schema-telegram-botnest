@@ -26,7 +26,7 @@ export function UpdateToast() {
         left: 16,
         right: 16,
         // Выше нижней навигации (60px + safe-area) — не перекрывает её.
-        bottom: 'calc(76px + var(--safe-bottom, 0px))',
+        bottom: 'calc(76px + var(--safe-bottom))',
         zIndex: 60,
         display: 'flex',
         alignItems: 'center',
