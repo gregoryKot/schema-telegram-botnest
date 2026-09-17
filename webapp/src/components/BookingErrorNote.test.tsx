@@ -16,7 +16,7 @@ describe('classifyBookingFailure', () => {
     expect(classifyBookingFailure(new ApiError(409, 'Slot already taken'))).toBe('taken');
     expect(classifyBookingFailure(new ApiError(400, 'TOO_SOON'))).toBe('taken');
   });
-  it('5xx, сетевой отказ, неизвестное — сбой на нашей стороне', () => {
+  it('5xx, сетевой отказ, неизвестное — сбой на моей стороне', () => {
     expect(classifyBookingFailure(new ApiError(500, 'boom'))).toBe('error');
     expect(classifyBookingFailure(new ApiError(502, 'bad gateway'))).toBe('error');
     expect(classifyBookingFailure(new TypeError('Failed to fetch'))).toBe('error');

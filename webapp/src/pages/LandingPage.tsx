@@ -242,7 +242,7 @@ export function LandingPage() {
           {/* ── Below divider: single editorial column, generous whitespace ── */}
           <div style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
             <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
-              Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
+              Одни и те же сценарии повторяются – в отношениях, в самооценке, в тревоге. Схема-терапия помогает понять, почему так, – и найти выход.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
               <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
@@ -294,13 +294,13 @@ export function LandingPage() {
               Работаю с тем,<br /><span style={{ fontStyle: 'italic' }}>что важно для вас</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
-              Я Григорий Котляревский, работаю в подходе схема-терапия. Ко мне приходят, когда привычные сценарии в отношениях, самооценке или тревоге повторяются годами, а справиться с ними в одиночку не выходит.
+              Я – Григорий Котляревский, работаю в подходе схема-терапия. Ко мне приходят, когда одни и те же сценарии – в отношениях, в самооценке, в тревоге – повторяются годами, а справиться с ними в одиночку не выходит.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
               Меня интересует «что» происходит с человеком и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-              Веду практику под супервизией – мой супервизор подтвердил готовность к самостоятельной работе. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
+              Работаю самостоятельно и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
@@ -383,7 +383,7 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Выберите удобное время – забронирую слот сразу, пришлю подтверждение и ссылку на встречу.</p>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Выберите удобное время – забронирую его сразу, пришлю подтверждение и ссылку на встречу.</p>
           <BookingPicker fallback={<BookingForm />} />
           <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
