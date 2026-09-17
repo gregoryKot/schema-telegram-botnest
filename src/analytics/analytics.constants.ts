@@ -86,39 +86,10 @@
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //                         Единственное из трёх screen_*-событий, которое
 //                         реально шлётся с meta.screen='today'.
-//   auth_rejected       — СЕРВЕРНОЕ событие: мини-апп пришёл с пустой
-//                         подписью (meta.reason + meta.host). Пишется только
-//                         guard'ом и всегда с userId = null — по этому
-//                         признаку отчёт и отличает настоящие отказы от
-//                         возможной подделки с клиента. Инцидент 2026-08-08:
-//                         вход был сломан у всех пользователей Telegram, а
-//                         отказ не считал никто.
-//   auth_success        — СЕРВЕРНОЕ событие: guard подтвердил вход по JWT,
-//                         Telegram или MAX initData (meta.host:
-//                         telegram|max|web). Пишется только guard'ом
-//                         (src/api/auth-success.report.ts), всегда с
-//                         userId = null (тот же приём, что у auth_rejected)
-//                         и с троттлингом раз в 5 минут на userId+площадку —
-//                         это счётчик СЕССИЙ входа, не запросов. Пара к
-//                         auth_rejected для блока «Вход в мессенджере»:
-//                         падение входа не всегда выглядит ростом отказов,
-//                         иногда клиент просто перестаёт доезжать до
-//                         сервера — тогда виден провал именно этого счётчика.
-//   client_error        — СЕРВЕРНОЕ: посчитанная поломка фронтенда,
-//                         meta.source + meta.section (бакет, см.
-//                         client-error-section.ts). Пишет только
-//                         ClientErrorsController, userId = null, троттлинг
-//                         по source+section+ip — счётчик, не лог.
-//   signup_source        — СЕРВЕРНОЕ: атрибуция посева, meta.src — слаг из
-//                         SIGNUP_SOURCES. Пишет только бот в /start, когда
-//                         payload — deep-link `src_<slug>` (parseSourceSlug,
-//                         src/telegram/start-source.ts), и ровно один раз —
-//                         при первом касании нового юзера (до гейта
-//                         согласия, чтобы видеть и конверсию в «принял
-//                         соглашение»). Возвращающийся по той же ссылке
-//                         повторно не считается.
-//   data_export          — СЕРВЕРНОЕ: выгрузка своих данных (152-ФЗ/GDPR,
-//                         GET /api/account/export); meta.tables/meta.rows.
+//   auth_rejected/auth_success/client_error/signup_source/data_export —
+//                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
+//                         — реестр и описания каждого в server-events.constants.ts
+//                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   desktop_app_open     — запустил установленное приложение на компьютере,
@@ -127,8 +98,15 @@
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
+//   entry_deleted        — удалил свою запись из архива «Мой путь» (проверка
+//                         убеждения / письмо себе / кризисная карточка,
+//                         meta.type — ENTRY_DELETE_TYPES). Записи там несут
+//                         очень личный текст — важно видеть, что удаление
+//                         вообще находят и им пользуются, а не считать это
+//                         само собой разумеющимся.
 import { CASE_EVENTS } from './case-steps.constants';
 import { GAME_EVENTS } from './game-events.constants';
+import { SERVER_EVENTS } from './server-events.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -168,11 +146,8 @@ export const ANALYTICS_EVENTS = [
   'screen_customize_open',
   'screen_block_toggle',
   'screen_block_move',
-  'auth_rejected',
-  'auth_success',
-  'client_error',
-  'signup_source',
-  'data_export',
+  // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
+  ...SERVER_EVENTS,
   'profile_pattern_open',
   'desktop_app_open',
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
@@ -181,6 +156,8 @@ export const ANALYTICS_EVENTS = [
   ...CASE_EVENTS,
   // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
   ...GAME_EVENTS,
+  // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
+  'entry_deleted',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -358,3 +335,10 @@ export {
 // SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts
 // (правило №10, тот же приём, что и с CRISIS_SURFACES выше).
 export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';
+
+// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts
+// (правило №10, тот же приём, что и с SHARE_CARD_KINDS выше).
+export {
+  ENTRY_DELETE_TYPES,
+  type EntryDeleteType,
+} from './entry-delete.constants';

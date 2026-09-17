@@ -16,10 +16,9 @@ import {
 } from '../../../shared/src/journey/useJourney';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
-import {
-  JourneyItemDetail,
-  useJourneyDetail,
-} from '../../../shared/src/journey/JourneyItemDetail';
+import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
+import { JourneyDetailPane } from '../../../shared/src/journey/JourneyDetailPane';
+import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
 
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
@@ -29,15 +28,21 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const j = useJourney(jp.deps);
   const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
   const detail = useJourneyDetail(jp.fetchDetail);
+  const del = useJourneyDelete(api, () => {
+    detail.close();
+    j.reload();
+  });
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4, minHeight: '55vh' }}>
         {detail.item ? (
-          <JourneyItemDetail
+          <JourneyDetailPane
             detail={detail}
             subtitle={jp.subtitle}
-            onShare={() => detail.item && sh.shareItem(detail.item)}
+            tr={tr}
+            onShare={sh.shareItem}
+            del={del}
           />
         ) : (
           <>
