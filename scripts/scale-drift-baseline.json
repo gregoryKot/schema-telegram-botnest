@@ -206,7 +206,7 @@
   "webapp/src/sections/diary/EntryCards.tsx": 1,
   "webapp/src/sections/PracticeSection.tsx": 3,
   "webapp/src/sections/ProfileSection.tsx": 17,
-  "webapp/src/sections/SchemasSection.tsx": 11,
+  "webapp/src/sections/SchemasSection.tsx": 8,
   "webapp/src/sections/TherapistTodaySection.tsx": 3,
   "webapp/src/sections/today/AllTasksOverlay.tsx": 2,
   "webapp/src/sections/TodaySection.tsx": 5,
