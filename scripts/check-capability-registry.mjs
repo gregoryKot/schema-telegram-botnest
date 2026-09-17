@@ -39,6 +39,7 @@ export const REGISTERED_FILES = new Set([
   'src/prisma/encryption-wave2.service.ts',
   'src/utils/encrypt-migration.ts',
   'src/channel/targets/threads-token.service.ts',
+  'src/api/throttler-identity.ts',
 ]);
 
 const TEST = /\.(spec|test)\.tsx?$/;

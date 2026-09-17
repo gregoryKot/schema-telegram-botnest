@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
+import { TherapyNote } from './TherapyNote';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
 import {
@@ -17,6 +18,7 @@ import {
 } from '../../../shared/src/share/analytics';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../utils/botConfig';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   needs: Need[];
@@ -26,6 +28,7 @@ interface Props {
 
 export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streak, setStreak] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -86,7 +89,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
           <span className="it">для поделиться</span>
         </>
       }
-      lede="Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту."
+      lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
         <div
@@ -103,7 +106,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         <>
           <div
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               overflow: 'hidden',
               border: '1px solid var(--line)',
               marginBottom: 24,
@@ -134,6 +137,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   ? 'Подготовка...'
                   : 'Поделиться'}
             </button>
+          </div>
+
+          {/* Заход на терапию после «Поделиться» — паритет с miniapp
+              WeeklyCardSheet (В10 аудита 2026-08). Этот экран не ходит через
+              ShareCardSheet (собственный share-флоу с .ics-независимым
+              фолбэком), поэтому TherapyNote вставлен напрямую. */}
+          <div style={{ marginTop: 16 }}>
+            <TherapyNote compact />
           </div>
         </>
       )}
@@ -167,7 +178,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               style={{
                 width: 36,
                 height: 4,
-                borderRadius: 2,
+                borderRadius: 'var(--r-2)',
                 background: 'var(--surface-3)',
                 margin: '0 auto 20px',
               }}
@@ -188,7 +199,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                 color: 'var(--text-sub)',
                 lineHeight: 1.6,
                 background: 'var(--surface-2)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 14px',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
@@ -206,7 +217,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 background: fallbackCopied
                   ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
                   : 'var(--surface-2)',

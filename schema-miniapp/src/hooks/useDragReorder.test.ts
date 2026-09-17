@@ -273,7 +273,12 @@ describe('useDragReorder — страховка от жеста хоста (св
     });
   });
 
-  it('pointerup возвращает свайпы и снимает тот же touchmove-листенер', () => {
+  // Регресс волны 2026-08 (главная цель: убрать конфликт вертикального
+  // драга с жестом Telegram «свернуть мини-апп»): setVerticalSwipes(true)
+  // после драга оживлял жест хоста, хотя политика приложения (App.tsx
+  // expand()) держит свайпы выключенными всегда. Guard теперь только
+  // выключает их на страховку — обратно не включает никогда.
+  it('pointerup НЕ включает свайпы обратно, но снимает touchmove-листенер', () => {
     const addSpy = vi.spyOn(document, 'addEventListener');
     const removeSpy = vi.spyOn(document, 'removeEventListener');
     const { result } = renderHook(() =>
@@ -281,6 +286,7 @@ describe('useDragReorder — страховка от жеста хоста (св
     );
     down(result);
     const attached = addSpy.mock.calls[0][1];
+    mockSetVerticalSwipes.mockClear();
     act(() =>
       result.current.handleProps('a', 'A', { min: 0, max: 2 }).onPointerUp({
         clientY: 0,
@@ -288,26 +294,27 @@ describe('useDragReorder — страховка от жеста хоста (св
         stopPropagation: vi.fn(),
       } as never),
     );
-    expect(mockSetVerticalSwipes).toHaveBeenLastCalledWith(true);
+    expect(mockSetVerticalSwipes).not.toHaveBeenCalled();
     expect(removeSpy).toHaveBeenCalledWith('touchmove', attached);
   });
 
-  it('pointercancel тоже возвращает свайпы и снимает листенер', () => {
+  it('pointercancel тоже НЕ включает свайпы обратно, но снимает листенер', () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener');
     const { result } = renderHook(() =>
       useDragReorder({ ids, onReorder: vi.fn() }),
     );
     down(result);
+    mockSetVerticalSwipes.mockClear();
     act(() =>
       result.current
         .handleProps('a', 'A', { min: 0, max: 2 })
         .onPointerCancel({ stopPropagation: vi.fn() } as never),
     );
-    expect(mockSetVerticalSwipes).toHaveBeenLastCalledWith(true);
+    expect(mockSetVerticalSwipes).not.toHaveBeenCalled();
     expect(removeSpy).toHaveBeenCalledWith('touchmove', expect.any(Function));
   });
 
-  it('размонтирование посреди драга возвращает свайпы и снимает листенер (не остаётся висящим)', () => {
+  it('размонтирование посреди драга НЕ включает свайпы обратно, но снимает листенер (не остаётся висящим)', () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener');
     const { result, unmount } = renderHook(() =>
       useDragReorder({ ids, onReorder: vi.fn() }),
@@ -315,7 +322,7 @@ describe('useDragReorder — страховка от жеста хоста (св
     down(result);
     mockSetVerticalSwipes.mockClear();
     unmount();
-    expect(mockSetVerticalSwipes).toHaveBeenCalledWith(true);
+    expect(mockSetVerticalSwipes).not.toHaveBeenCalled();
     expect(removeSpy).toHaveBeenCalledWith('touchmove', expect.any(Function));
   });
 

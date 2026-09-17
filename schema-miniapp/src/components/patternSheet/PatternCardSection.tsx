@@ -29,11 +29,11 @@ export function PatternCardSection({
         <div
           className="card"
           style={{
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 14,
+            gap: 'var(--space-14)',
           }}
         >
           {fields.map((f) => (
@@ -63,7 +63,7 @@ export function PatternCardSection({
           style={{
             background: 'var(--surface-2)',
             border: '1px solid var(--border-color)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             fontSize: 13,
             color: 'var(--text-sub)',
@@ -73,13 +73,13 @@ export function PatternCardSection({
           {explainer}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 12 }}>
         <button
           onClick={onEdit}
           style={{
             flex: 1,
             minHeight: 44,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: fields ? 'var(--surface-2)' : color,

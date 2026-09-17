@@ -8,6 +8,7 @@
 // всё незнакомое — в 'other'.
 export const CLIENT_ERROR_SECTIONS = [
   'auth',
+  'login',
   'today',
   'diary',
   'schemas',
@@ -15,6 +16,7 @@ export const CLIENT_ERROR_SECTIONS = [
   'profile',
   'help',
   'cabinet',
+  'booking',
   'other',
 ] as const;
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
@@ -25,6 +27,10 @@ export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
 // список стоит, когда 'other' в /stats станет заметной долей.
 const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   auth: 'auth', // AUTH_FAILURE_SECTION, shared/src/host/authFailureReport.ts
+  // Своя секция, а не 'auth': тот бакет заведён под инцидент 2026-08-08 как
+  // единственный свидетель «подпись пустая, экран-тупик», и подмешивать к
+  // нему сбои выписки билета значило бы сделать ту метрику тише, а не громче.
+  'login.ticket': 'login', // LOGIN_TICKET_SECTION, shared/src/auth/useLoginTicket.ts
   'today.tasks': 'today', // webapp/src/sections/today/useTaskActions.ts
   'practice.tasks': 'practice', // webapp/src/sections/PracticeSection.tsx (useTaskActions)
   Сегодня: 'today', // schema-miniapp/src/components/AppSections.tsx
@@ -35,6 +41,14 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   Профиль: 'profile', // schema-miniapp/src/components/AppSections.tsx
   Помощь: 'help', // schema-miniapp/src/components/AppSections.tsx
   Кабинет: 'cabinet', // webapp/src/components/AppShell.tsx
+  // 'today' — в момент флаша человек на главном экране; упавшие источники видны в тексте.
+  'appshell.bootstrap': 'today', // webapp/src/components/appShell/useBootstrapLoad.ts
+  'therapist.clients': 'cabinet', // оба TherapistClientSheet.tsx — сбой загрузки ростера
+  addressForm: 'profile', // shared/src/settings/useAddressFormChoice.ts, оба AddressFormPicker.tsx
+  tracker: 'today', // webapp/src/components/TrackerOverlay.tsx — сбой сохранения оценки (не-сетевой)
+  // Сбой отправки заявки на запись (инцидент 2026-09-13): сервер видит только
+  // те заявки, что до него дошли; сетевой отказ виден лишь отсюда.
+  booking: 'booking', // webapp/src/components/bookingFailure.ts
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

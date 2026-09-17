@@ -83,12 +83,15 @@ describe('SchemasSection — скелетон загрузки', () => {
     mockApi.getProfile.mockReturnValue(new Promise(r => { resolveProfile = r; }));
     const { container } = renderSection();
 
-    // Скелетон — блок мерцающих плашек (animation: shimmer), а не готовый текст.
-    expect(container.querySelectorAll('[style*="shimmer"]').length).toBeGreaterThan(0);
+    // Скелетон — блок мерцающих плашек (примитив Skeleton, класс .skel), а не
+    // готовый текст. Раньше плашка была инлайновым `animation: shimmer` —
+    // теперь цвет/анимация приезжают из общего класса, не из инлайн-стиля
+    // (переезд на примитив, скрин владельца 2026-08-23).
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
 
     resolveProfile(profile());
-    await waitFor(() => expect(container.querySelectorAll('[style*="shimmer"]').length).toBe(0));
+    await waitFor(() => expect(container.querySelectorAll('.skel').length).toBe(0));
   });
 });
 

@@ -18,11 +18,17 @@ import {
   clickToolbarButton,
 } from '../test-support/renderWithFlow';
 
+// DownloadMenu → useModeMapExport рендерит карту через html-to-image — в jsdom
+// нет canvas/рендерера, мокаем саму библиотеку (как в useModeMapExport.test.ts).
+const toPng = vi.fn();
+vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }));
+
 beforeEach(() => {
   installFlowTestPolyfills();
   localStorage.clear();
   getConceptualization.mockReset();
   getConceptualization.mockResolvedValue(null);
+  toPng.mockReset();
 });
 afterEach(() => cleanup());
 
@@ -242,6 +248,84 @@ describe('ModeMapCanvas — схемы клиента', () => {
       screen.getByText('У клиента пока нет отмеченных схем'),
     ).toBeTruthy();
   });
+
+  // Сбой загрузки раньше подставлял пустой список, и панель уверяла терапевта,
+  // что у клиента не отмечено ни одной схемы. Это не «пусто», это «неизвестно»:
+  // терапевт видит клиническую неправду о своём клиенте и не может отличить её
+  // от настоящего пустого списка (CLAUDE.md: никаких заглушек вместо данных).
+  it('сбой загрузки схем клиента — говорит «не удалось», а не «схем нет»', async () => {
+    getConceptualization.mockRejectedValue(new Error('offline'));
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Не удалось загрузить схемы клиента')).toBeTruthy();
+    expect(screen.queryByText('У клиента пока нет отмеченных схем')).toBeNull();
+  });
+
+  it('подсказка без выбранного узла звучит на «ты»/«вы»', async () => {
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger')] },
+      'ty',
+    );
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Сначала выбери режим на холсте')).toBeTruthy();
+    cleanup();
+
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container: container2 } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger')] },
+      'vy',
+    );
+    clickToolbarButton(
+      container2,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(screen.getByText('Сначала выберите режим на холсте')).toBeTruthy();
+  });
+
+  it('подсказка с выбранным узлом звучит на «ты»/«вы»', async () => {
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'ty',
+    );
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    clickToolbarButton(
+      container,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(
+      screen.getByText('Нажми, чтобы привязать к выбранному режиму'),
+    ).toBeTruthy();
+    cleanup();
+
+    getConceptualization.mockResolvedValue({ schemaIds: [] });
+    const { container: container2 } = renderCanvas(
+      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
+      'vy',
+    );
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    clickToolbarButton(
+      container2,
+      'Схемы клиента — привязать к выбранному режиму',
+    );
+    await act(async () => {});
+    expect(
+      screen.getByText('Нажмите, чтобы привязать к выбранному режиму'),
+    ).toBeTruthy();
+  });
 });
 
 describe('ModeMapCanvas — скачивание карты', () => {
@@ -259,6 +343,34 @@ describe('ModeMapCanvas — скачивание карты', () => {
     clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
     expect(screen.getByText('Картинка PNG')).toBeTruthy();
     expect(screen.getByText('Документ PDF')).toBeTruthy();
+  });
+
+  // Регресс: onExportPng/onExportPdf раньше глушили сбой (`catch { /* ignore */ }`) —
+  // рендер карты падал молча, ни файла, ни объяснения (карта режимов, три молчания).
+  it('сбой рендера PNG — в меню видна строка «Не удалось подготовить файл», exporting снят', async () => {
+    toPng.mockRejectedValue(new Error('canvas boom'));
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
+    const pngBtn = screen.getByText('Картинка PNG');
+    await act(async () => { fireEvent.click(pngBtn); });
+    expect(
+      screen.getByText('Не удалось подготовить файл. Попробовать ещё раз'),
+    ).toBeTruthy();
+    expect((pngBtn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('успешный экспорт PNG — строки отказа нет', async () => {
+    toPng.mockResolvedValue('data:image/png;base64,AAA');
+    const { container } = renderCanvas({
+      initialNodes: [mmNode('n1', 'trigger')],
+    });
+    clickToolbarButton(container, 'Скачать карту (PNG / PDF)');
+    await act(async () => { fireEvent.click(screen.getByText('Картинка PNG')); });
+    expect(
+      screen.queryByText('Не удалось подготовить файл. Попробовать ещё раз'),
+    ).toBeNull();
   });
 });
 

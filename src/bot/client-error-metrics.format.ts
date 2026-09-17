@@ -19,6 +19,7 @@ export interface ClientErrorMetrics {
   authDay: number;
   authWeek: number;
   bySection: {
+    login: number;
     today: number;
     diary: number;
     schemas: number;
@@ -26,12 +27,14 @@ export interface ClientErrorMetrics {
     profile: number;
     help: number;
     cabinet: number;
+    booking: number;
     other: number;
   };
   bySource: { webapp: number; miniapp: number };
 }
 
 const SECTION_LABELS: Record<keyof ClientErrorMetrics['bySection'], string> = {
+  login: 'Вход по коду',
   today: 'Сегодня',
   diary: 'Дневник',
   schemas: 'Паттерны',
@@ -39,6 +42,7 @@ const SECTION_LABELS: Record<keyof ClientErrorMetrics['bySection'], string> = {
   profile: 'Профиль',
   help: 'Помощь',
   cabinet: 'Кабинет',
+  booking: 'Запись на консультацию',
   other: 'другое',
 };
 

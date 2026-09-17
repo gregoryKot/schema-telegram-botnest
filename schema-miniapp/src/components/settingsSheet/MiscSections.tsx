@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { authedFetch } from '../../apiClient';
 import { botShortUrl } from '../../utils/botConfig';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useDataExport } from '../../../../shared/src/account/useDataExport';
+import { useTr } from '../../utils/addressForm';
 import { Row, SettingsLabel } from './ui';
 
 interface NameProps {
@@ -27,23 +30,24 @@ export function NameSection({
   onNameChanged,
   setSavedToast,
 }: NameProps) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
-      <SettingsLabel>КАК ТЕБЯ ЗОВУТ</SettingsLabel>
+      <SettingsLabel>{tr('КАК ТЕБЯ ЗОВУТ', 'КАК ВАС ЗОВУТ')}</SettingsLabel>
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '12px 16px',
           display: 'flex',
-          gap: 8,
+          gap: 'var(--space-8)',
           alignItems: 'center',
         }}
       >
         <input
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
-          placeholder="Твоё имя"
+          placeholder={tr('Твоё имя', 'Ваше имя')}
           maxLength={50}
           style={{
             flex: 1,
@@ -75,7 +79,7 @@ export function NameSection({
             style={{
               background: 'color-mix(in srgb, var(--accent) 20%, transparent)',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '6px 14px',
               color: 'var(--accent)',
               fontSize: 13,
@@ -114,7 +118,10 @@ export function ShareSection({ setExportText }: ShareProps) {
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <Row
           label="Пригласить друга"
           sub="Карточка со ссылкой на бота"
@@ -159,11 +166,31 @@ interface DataProps {
 }
 
 export function DataSection({ onPrivacy, onDelete }: DataProps) {
+  const tr = useTr();
+  const dataExport = useDataExport({ authedFetch });
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ДАННЫЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <Row label="О данных и конфиденциальности" onClick={onPrivacy} />
+        <Row
+          label={
+            dataExport.status === 'loading' ? 'Собираю…' : 'Скачать мои данные'
+          }
+          sub={tr(
+            'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачай, если хочешь сохранить копию себе или показать терапевту',
+            'Дневники, оценки, заметки, настройки — всё, что храним, соберётся в файл. Скачайте, если хотите сохранить копию себе или показать терапевту',
+          )}
+          divider
+          onClick={
+            dataExport.status === 'loading'
+              ? undefined
+              : () => void dataExport.exportData()
+          }
+        />
         <Row
           label="Удалить все данные"
           divider
@@ -171,6 +198,56 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
           onClick={onDelete}
         />
       </div>
+      {dataExport.status === 'done' && (
+        <div
+          role="status"
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            marginTop: 6,
+            padding: '0 4px',
+            lineHeight: 1.5,
+          }}
+        >
+          {tr(
+            'Файл ушёл в загрузки. Если его там нет — открой schemehappens.ru в браузере и попробуй оттуда',
+            'Файл ушёл в загрузки. Если его там нет — откройте schemehappens.ru в браузере и попробуйте оттуда',
+          )}
+        </div>
+      )}
+      {dataExport.status === 'error' && (
+        <div
+          role="alert"
+          style={{
+            fontSize: 11,
+            color: 'var(--accent-red)',
+            marginTop: 6,
+            padding: '0 4px',
+          }}
+        >
+          {tr(
+            'Не удалось скачать файл. Проверь связь и попробуй ещё раз',
+            'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз',
+          )}
+        </div>
+      )}
+      {dataExport.status === 'unsupported' && (
+        <div
+          role="alert"
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            marginTop: 6,
+            padding: '0 4px',
+            lineHeight: 1.5,
+          }}
+        >
+          {tr(
+            'Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там',
+            'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там',
+          )}
+        </div>
+      )}
     </div>
   );
 }

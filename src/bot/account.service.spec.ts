@@ -40,7 +40,7 @@ function makePrisma() {
     'diaryDraft',
     'emailToken',
     'analyticsEvent',
-    'deviceLinkRequest',
+    'loginTicket',
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',
@@ -63,6 +63,9 @@ function makePrisma() {
     _calls: calls,
   };
   for (const t of tables) prisma[t] = { deleteMany: deleteMany(t) };
+  // Адрес в Telegram спрашивают перед удалением подписки: она привязана к
+  // telegramId, а не к userId, и после слияния аккаунтов эти номера разные.
+  prisma.authProvider.findFirst = jest.fn(async () => null);
   return prisma;
 }
 
@@ -132,5 +135,35 @@ describe('AccountService — режим/роль терапевта', () => {
     });
     // Заявка удаляется, иначе status 'approved' заблокирует повторную подачу.
     expect(reqDeleteMany).toHaveBeenCalledWith({ where: { userId: uid } });
+  });
+});
+
+// Разбор 2026-08-29. Подписка привязана к telegramId, а не к userId, и до
+// правки удалялась запросом `telegramId: userId` с пояснением «у
+// телеграм-пользователей это одно и то же». После слияния аккаунтов это
+// перестаёт быть правдой: удаление веб-аккаунта не отменяло подписку, и
+// списания продолжались с человека, который аккаунт удалил.
+describe('deleteAllUserData — подписка ищется по адресу в Telegram', () => {
+  it('слитый аккаунт: снимает подписку по telegramId из привязки', async () => {
+    const prisma = makePrisma();
+    (prisma.authProvider.findFirst as jest.Mock).mockResolvedValue({
+      providerId: '42',
+    });
+    const service = new AccountService(prisma);
+
+    await service.deleteAllUserData(1_000_000_000_000_777n);
+
+    const args = prisma._calls['subscription']?.[0];
+    expect(args.where.telegramId.in).toContain(42n);
+  });
+
+  it('без привязки ищет по самому номеру — старый пользователь бота', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+
+    await service.deleteAllUserData(12345n);
+
+    const args = prisma._calls['subscription']?.[0];
+    expect(args.where.telegramId.in).toEqual([12345n]);
   });
 });

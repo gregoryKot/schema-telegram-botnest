@@ -1,6 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
 import { SheetIconHeader } from '../SheetIconHeader';
+import { useTr } from '../../utils/addressForm';
 
 interface SafePlaceData {
   text: string;
@@ -24,12 +25,13 @@ export function SafePlaceSavedView({
   onClose,
   onEdit,
 }: Props) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
           title="Моё безопасное место"
-          subtitle="Прочти — и почувствуй"
+          subtitle={tr('Прочти — и почувствуй', 'Прочтите — и почувствуйте')}
         />
 
         <div
@@ -38,7 +40,7 @@ export function SafePlaceSavedView({
               'color-mix(in srgb, var(--accent-green) 6%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '16px',
             marginBottom: 16,
           }}
@@ -66,13 +68,15 @@ export function SafePlaceSavedView({
           {justSaved ? '✓ Сохранено' : `Обновлено ${saved.savedAt}`}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div
+          style={{ display: 'flex', gap: 'var(--space-10)', marginBottom: 16 }}
+        >
           <button
             onClick={onEdit}
             style={{
               flex: 1,
               padding: '13px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: '1px solid rgba(var(--fg-rgb),0.1)',
               background: 'transparent',
               color: 'var(--text-sub)',
@@ -88,7 +92,7 @@ export function SafePlaceSavedView({
             style={{
               flex: 1,
               padding: '13px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               background:
                 'color-mix(in srgb, var(--accent-green) 15%, transparent)',

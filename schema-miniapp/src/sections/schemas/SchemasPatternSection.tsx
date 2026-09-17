@@ -11,7 +11,7 @@ import {
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { usePatternStatus } from '../../components/patternSheet/usePatternStatus';
 import { schemaEntryCounts } from '../../components/patternSheet/patternStatus';
-import { ChipsSkeleton } from './CatalogParts';
+import { PatternListSkeleton } from './CatalogParts';
 import { shortName } from './utils';
 import { WeekTopSummary } from '../../utils/patternsSummary';
 import type { SchemaDiaryEntry } from '../../types';
@@ -61,7 +61,7 @@ export function SchemasPatternSection({
     <>
       {hasSchemas &&
         (profileLoading ? (
-          <ChipsSkeleton widths={[80, 100, 90, 110]} />
+          <PatternListSkeleton rows={allSchemaIds.length} />
         ) : groups.length > 0 ? (
           <PatternFrequencyList
             groups={groups}
@@ -80,7 +80,7 @@ export function SchemasPatternSection({
               padding: 15,
               background: 'transparent',
               border: '1.5px dashed var(--border-color)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               color: 'var(--text-sub)',
               fontSize: 14,
               fontWeight: 600,

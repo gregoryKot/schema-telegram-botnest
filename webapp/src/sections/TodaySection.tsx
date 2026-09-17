@@ -4,7 +4,7 @@ import type { Need, UserProfile } from '../types';
 import { useNeedData } from '../needData';
 import { api, reportClientError } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import type { Section } from '../components/BottomNav';
+import type { Section } from '../components/appShell/navigation';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { hasDraft } from '../utils/drafts';
@@ -17,8 +17,9 @@ import { greeting, formatHeaderDate, readLocalIds, resolveTaskText } from './tod
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { Sparkline } from './today/Sparkline';
 import { SkeletonLines } from './today/SkeletonLines';
-import { OnboardingWidget } from './today/OnboardingWidget';
+import { CaseEntryBlock } from './today/CaseEntryBlock';
 import { useTaskActions } from './today/useTaskActions';
+import { PhraseShareCard } from '../components/PhraseShareCard';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -158,7 +159,7 @@ export function TodaySection({
   const allRated   = needs.length > 0 && ratedCount === needs.length;
   const avgRaw     = allRated ? needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length : 0;
   const avgScore   = allRated ? avgRaw.toFixed(1) : null;
-  const hasSchemas = [...new Set([...(profile?.ysq.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
+  const hasSchemas = [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])].length > 0;
 
   // Week delta for index: compare last 7 days avg vs previous 7 days avg
   const weekDelta = (() => {
@@ -223,8 +224,8 @@ export function TodaySection({
             </div>
           )}
 
-          {/* Onboarding */}
-          <OnboardingWidget
+          {/* Точка входа «Что это было» + онбординг после первого разбора */}
+          <CaseEntryBlock
             profile={profile}
             hasSchemas={hasSchemas}
             onOpenSchema={onOpenSchema}
@@ -291,7 +292,7 @@ export function TodaySection({
                 return (
                   <div key={task.id} className="list-line">
                     <span style={{
-                      width: 14, height: 14, borderRadius: 4,
+                      width: 14, height: 14, borderRadius: 'var(--r-4)',
                       border: `1.5px solid ${isDone ? 'var(--text)' : 'var(--line-strong)'}`,
                       background: isDone ? 'var(--text)' : 'transparent',
                       flexShrink: 0, marginTop: 4,
@@ -411,8 +412,7 @@ export function TodaySection({
           {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
             <>
               <div className="eyebrow" style={{ marginBottom: 8 }}>Терапевт</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{therapyRelation.partnerName}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Схема-терапевт</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{therapyRelation.partnerName}</div>
               {nextSessionLabel && (
                 <>
                   <div className="eyebrow" style={{ marginBottom: 6 }}>Следующая встреча</div>
@@ -436,6 +436,8 @@ export function TodaySection({
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
             {streak === 0 ? tr('Оцени потребности – начнётся стрик', 'Оцените потребности – начнётся стрик') : 'дней подряд'}
           </div>
+
+          <PhraseShareCard />
 
         </aside>
       </div>

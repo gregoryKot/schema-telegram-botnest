@@ -1,0 +1,54 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Шрифты продукта — Manrope (интерфейс) + Spectral (заголовки).
+   Единый источник для webapp и schema-miniapp (дизайн-аудит 2026-08, В11):
+   раньше эти @font-face жили только в schema-miniapp/src/index.css и
+   дублировались бы построчно при переводе webapp на ту же пару — jscpd
+   посчитал бы это клоном. Импортируется из tokens.css, отдельными руками не
+   импортировать.
+
+   Свои файлы, не CDN Google: CSP отдаёт defaultSrc 'self' (src/main.ts), так
+   что внешний fonts.gstatic.com был бы заблокирован — российский пользователь
+   получил бы системный фолбэк. Manrope вариативный: один файл на 400–700.
+   Кириллица и латиница разными подмножествами — грузится только нужное.
+   Файлы лежат в webapp/public/fonts (единственный корень статики, откуда
+   мини-апп при деплое тоже отдаёт шрифты — см. CLAUDE.md «Деплой webapp»,
+   мини-апп встраивается в webapp/dist/app/, но /fonts/* резолвится от корня
+   домена, поэтому второй копии файлов не нужно). */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-500-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}

@@ -1,5 +1,5 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
-import { YsqSyncErrorNote } from './YsqSyncErrorNote';
+import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import { YsqAnswerScalePreview } from './YsqAnswerScalePreview';
 
 interface Props {
@@ -52,7 +52,7 @@ export function YsqIntro({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 'var(--space-8)',
           marginBottom: 20,
         }}
       >
@@ -66,9 +66,9 @@ export function YsqIntro({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
+              gap: 'var(--space-14)',
               background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
             }}
           >
@@ -113,12 +113,7 @@ export function YsqIntro({
       {/* Прогресс мог остаться на другом устройстве — без баннера «Начать
           тест» выглядит безопасным, а ответ перезапишет его на сервере. */}
       {!hasProgress && resumeCheckFailed && onRetryResumeCheck && (
-        <YsqSyncErrorNote
-          ty="Не удалось проверить, есть ли на сервере сохранённый прогресс — если тест уже начат на другом устройстве, сначала попробуй проверить снова, иначе он будет перезаписан."
-          vy="Не удалось проверить, есть ли на сервере сохранённый прогресс — если тест уже начат на другом устройстве, сначала попробуйте проверить снова, иначе он будет перезаписан."
-          retryLabel="Проверить снова"
-          onRetry={onRetryResumeCheck}
-        />
+        <YsqSyncErrorNote variant="resume-check" onRetry={onRetryResumeCheck} />
       )}
 
       {hasProgress ? (
@@ -136,7 +131,7 @@ export function YsqIntro({
               width: '100%',
               padding: '14px 0',
               border: 'none',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',
               fontSize: 15,
@@ -164,7 +159,7 @@ export function YsqIntro({
           width: '100%',
           padding: '14px 0',
           border: 'none',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           background: 'rgba(var(--fg-rgb),0.07)',
           color: 'var(--text-sub)',
           fontSize: 15,

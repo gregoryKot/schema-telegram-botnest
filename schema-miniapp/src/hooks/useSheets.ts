@@ -22,6 +22,10 @@ export interface SheetsValues {
   trackerGoal: boolean;
   diaries: boolean;
   addressPicker: boolean;
+  // Разбор случая («Что это было») — новая точка входа, и карта себя, куда
+  // он складывается. Открываются с «Сегодня» и друг из друга.
+  caseFlow: boolean;
+  selfMap: boolean;
   // Экран-подтверждение присоединения по startParam (M1, аудит 2026-08):
   // pair_/therapy_ в ссылке НЕ джойнят молча на маунте, а сначала спрашивают
   // согласие. joinKind/joinCode — что именно подтверждаем.
@@ -44,6 +48,8 @@ export type SheetKey =
   | 'trackerGoal'
   | 'diaries'
   | 'addressPicker'
+  | 'caseFlow'
+  | 'selfMap'
   | 'joinConfirm';
 
 const initialState: SheetsValues = {
@@ -65,6 +71,8 @@ const initialState: SheetsValues = {
   trackerGoal: false,
   diaries: false,
   addressPicker: false,
+  caseFlow: false,
+  selfMap: false,
   joinConfirm: false,
   joinKind: null,
   joinCode: null,

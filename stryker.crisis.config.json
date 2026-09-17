@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "npm --prefix shared test -- src/utils/crisisMarkers.test.ts"
+  },
+  "mutate": ["shared/src/utils/crisisMarkers.ts"],
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/crisis.html"
+  },
+  "concurrency": 2,
+  "coverageAnalysis": "off",
+  "ignoreStatic": false,
+  "thresholds": {
+    "high": 90,
+    "low": 70,
+    "break": null
+  },
+  "timeoutMS": 60000,
+  "jsonReporter": {
+    "fileName": "reports/mutation/crisis.json"
+  }
+}

@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderApp, mockUseUserFlags } from './test-support/App.test-helpers';
+import App from './App';
 import { defaultFlags, mockProfile } from './test-support/App.test-fixtures';
 import { api } from './api';
 
@@ -113,6 +114,47 @@ describe('App — переключение режима терапевта: pers
     await waitFor(() =>
       expect(mockApi.setTherapistView).toHaveBeenCalledWith(true),
     );
+    // localStorage пишется отдельным эффектом, а не в обработчике клика:
+    // синхронная проверка успевает раньше записи и роняет тест под нагрузкой
+    // CI (реальное падение 2026-08 — «expected '0' to be '1'»).
+    await waitFor(() =>
+      expect(localStorage.getItem('therapist_mode')).toBe('1'),
+    );
+  });
+});
+
+describe('App — реконсиляция режима не перетирает ручной выбор (гонка CI 2026-08-24)', () => {
+  it('флаги приехали ПОСЛЕ клика терапевта — режим остаётся включённым', async () => {
+    // Гонка: терапевт включает режим в первые секунды, пока серверные флаги
+    // ещё едут по сети; поздняя реконсиляция перетирала клик значением с
+    // сервера (therapistMode:false из дефолтных флагов) — молчаливый откат.
+    mockApi.getProfile.mockResolvedValueOnce(THERAPIST_PROFILE);
+    localStorage.setItem('therapist_mode', '0');
+    // Пока флаги «не загружены» — реконсиляция не срабатывает.
+    mockUseUserFlags.mockReturnValue({
+      ...defaultFlags(),
+      loadedFromServer: false,
+    });
+    const view = renderApp();
+    await waitFor(() =>
+      expect(screen.getByTestId('app-sections').dataset.userRole).toBe(
+        'THERAPIST',
+      ),
+    );
+    fireEvent.click(screen.getByTestId('app-overlays-toggle-therapist'));
+    await waitFor(() =>
+      expect(localStorage.getItem('therapist_mode')).toBe('1'),
+    );
+
+    // Теперь флаги «доехали» (therapistMode:false с сервера) — ререндер
+    // запускает реконсиляцию. Она обязана уступить ручному выбору.
+    mockUseUserFlags.mockReturnValue(defaultFlags());
+    view.rerender(<App />);
+    await waitFor(() =>
+      expect(screen.getByTestId('app-overlays').dataset.therapistMode).toBe(
+        'true',
+      ),
+    );
     expect(localStorage.getItem('therapist_mode')).toBe('1');
   });
 });
@@ -147,7 +189,9 @@ describe('App — выход из роли терапевта (resignTherapist) 
       ),
     );
     expect(screen.queryByTestId('therapist-client-sheet')).toBeNull();
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    await waitFor(() =>
+      expect(localStorage.getItem('therapist_mode')).toBe('0'),
+    );
   });
 });
 

@@ -261,11 +261,30 @@ describe('ProductMetricsService.getMetrics', () => {
         distinctUsers: 0,
       })),
     } as never;
+    const caseMetrics = {
+      getMetrics: jest.fn(async () => ({
+        started: 0,
+        finished: 0,
+        sceneOwn: 0,
+        sceneFrame: 0,
+        verdictMode: 0,
+        verdictOrdinary: 0,
+        verdictBorderline: 0,
+        recognizedAgreed: 0,
+        recognizedDoubted: 0,
+        namedOwn: 0,
+        namedChip: 0,
+        namedSkipped: 0,
+        people: 0,
+        peopleReturned: 0,
+      })),
+    } as never;
     const service = new ProductMetricsService(
       {} as never,
       quizMetrics,
       practiceLink,
       practiceMetrics,
+      caseMetrics,
     );
     // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
     jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
@@ -279,6 +298,10 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(text).toContain('Новички проходят обучение');
     // Блок быстрых практик тоже подклеен.
     expect(text).toContain('Быстрые практики «Здесь и сейчас»');
+    // И блок разбора случая — на пустой БД он говорит честное «пока никто
+    // не начинал», а не показывает нули.
+    expect(text).toContain('Разбор случая');
+    expect(text).toContain('Пока никто не начинал');
   });
 });
 

@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTelegramHost } from './telegram';
 import { createMaxHost, resetMaxLaunchParams } from './max';
-import { createWebHost, isStandalone } from './web';
+import { createWebHost, isStandalone, webPlatform } from './web';
 import { detectHostId, getHost, setHost } from './index';
 
 type Listener = () => void;
@@ -909,5 +909,27 @@ describe('детект хоста при всегда загруженном SDK
       WebApp: { initData: 'user=%7B%22id%22%3A1%7D' },
     };
     expect(detectHostId()).toBe('telegram');
+  });
+});
+
+// webPlatform экспортирован для webapp (выбор шагов установки PWA,
+// правило №3: один UA-парсер платформы на оба потребителя).
+describe('webPlatform', () => {
+  const IPHONE =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15';
+  const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36';
+  const MAC =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+  const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
+  it('iPhone → ios, Android → android, Windows → web', () => {
+    expect(webPlatform(IPHONE, 5)).toBe('ios');
+    expect(webPlatform(ANDROID, 5)).toBe('android');
+    expect(webPlatform(WIN, 0)).toBe('web');
+  });
+
+  it('iPadOS прикидывается маком — отличаем по мультитачу', () => {
+    expect(webPlatform(MAC, 5)).toBe('ios');
+    expect(webPlatform(MAC, 0)).toBe('web');
   });
 });

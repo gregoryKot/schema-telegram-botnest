@@ -36,7 +36,7 @@ export function FillPhase({
         style={{
           background: 'rgba(251,191,36,0.08)',
           border: '1px solid rgba(251,191,36,0.2)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '12px 14px',
           marginBottom: 20,
         }}
@@ -116,7 +116,7 @@ export function FillPhase({
         style={{
           width: '100%',
           padding: '15px 0',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           background: saving
             ? 'rgba(var(--fg-rgb),0.1)'

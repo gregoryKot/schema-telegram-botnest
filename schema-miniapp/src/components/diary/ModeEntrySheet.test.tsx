@@ -11,6 +11,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { ModeEntrySheet } from './ModeEntrySheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -54,7 +55,7 @@ describe('ModeEntrySheet — кризисная детекция (правило
   it('показывает карточку поддержки при кризисной фразе в поле «ситуация»', () => {
     const situation = renderSheet();
     fireEvent.change(situation, { target: { value: 'хочу умереть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном тексте', () => {
@@ -62,7 +63,7 @@ describe('ModeEntrySheet — кризисная детекция (правило
     fireEvent.change(situation, {
       target: { value: 'сегодня гулял в парке' },
     });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 });
 

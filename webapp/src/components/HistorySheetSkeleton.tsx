@@ -17,7 +17,7 @@ export function HistorySheetSkeleton() {
       }}
     >
       <Skeleton width={220} height={220} radius={110} />
-      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
         <Skeleton width="60%" height={12} />
         <Skeleton width="100%" height={44} radius={14} />
         <Skeleton width="100%" height={44} radius={14} />

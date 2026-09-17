@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottle } from '../api/persistent-throttle.decorator';
 import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
 import { PricingService } from './pricing.service';
@@ -55,13 +56,11 @@ export class BookingController {
     }));
   }
 
-  /**
-   * POST /api/booking/book — book a slot (free intro confirms immediately).
-   * Anti-spam: per-IP rate limit (max 6/hour via the 'long' bucket) + honeypot.
-   */
+  /** POST /api/booking/book — book a slot; rate-limited + honeypot anti-spam. */
   @Post('book')
   @HttpCode(HttpStatus.OK)
   @Throttle({ long: { limit: 6, ttl: 3_600_000 } })
+  @PersistentThrottle()
   async bookSlot(@Body() dto: BookDto) {
     if (dto.website) throw new BadRequestException('rejected'); // honeypot tripped
     const payload: CreateBookingDto = {
@@ -92,6 +91,7 @@ export class BookingController {
   @Post('cancel/:token')
   @HttpCode(HttpStatus.OK)
   @Throttle({ long: { limit: 30, ttl: 3_600_000 } })
+  @PersistentThrottle()
   async cancelByToken(@Param('token') token: string) {
     return this.booking.cancel(token);
   }

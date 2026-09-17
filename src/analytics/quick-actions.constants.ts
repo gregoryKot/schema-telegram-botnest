@@ -5,6 +5,7 @@
 // src/security/quick-actions-sync.invariants.spec.ts. Вынесено из
 // analytics.constants.ts отдельным файлом (правило №10 — тот файл держим
 // минимальным).
+//   case             — разбор случая («Что это было»);
 //   tracker          — трекер потребностей;
 //   diary_schema     — дневник схем;
 //   diary_mode       — дневник режимов;
@@ -23,6 +24,7 @@
 //   practices        — практики;
 //   plans            — планы.
 export const QUICK_ACTION_IDS = [
+  'case',
   'tracker',
   'diary_schema',
   'diary_mode',

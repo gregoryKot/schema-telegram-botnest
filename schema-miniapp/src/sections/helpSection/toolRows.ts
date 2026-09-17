@@ -1,14 +1,14 @@
-import type { QuickActionId } from '../../utils/quickActions';
+import { getQuickAction, type QuickActionId } from '../../utils/quickActions';
 import { plural } from '../today/helpers';
 
 // Данные 10 строк блока «Инструменты» (ToolsList.tsx) — единственный источник
 // и для рендера списка, и для листа настройки видимости
-// (QuickActionCustomizeSheet, правило «одна механика — один компонент»:
-// новая строка тут автоматически попадает и в список, и в настройку).
-// Тексты/порядок (для id, пересекающихся с реестром «плюса» — belief_check,
-// phrase_check, flashcard, safe_place, letter_to_self, warm_words) — как
-// были в ToolsList/quickActions.ts раньше, не переписаны. Без эмодзи
-// (фидбек владельца): в листах настройки выбирают по смыслу.
+// (QuickActionCustomizeSheet, правило «одна механика — один компонент»).
+// Тексты (label/sub статичных строк) берутся из общего реестра
+// utils/quickActions.ts — здесь только порядок строк и динамические
+// счётчики (цели/практики/планы, «Займёт 2 минуты» колеса детства), которых
+// в реестре нет. Без эмодзи (фидбек владельца): в листах настройки выбирают
+// по смыслу.
 
 export interface ToolRowDef {
   id: QuickActionId;
@@ -23,75 +23,53 @@ export interface ToolRowsProps {
   childhoodDone: boolean;
 }
 
-export function buildToolRows({
-  tasksCount,
-  practiceCount,
-  planCount,
-  childhoodDone,
-}: ToolRowsProps): ToolRowDef[] {
-  return [
-    {
-      id: 'phrase_check',
-      label: 'Критик или забота?',
-      sub: 'Проверить фразу внутреннего голоса',
-    },
-    {
-      id: 'tasks',
-      label: 'Мои цели',
-      sub:
-        tasksCount === 0
-          ? 'Нет активных'
-          : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`,
-    },
-    {
-      id: 'practices',
-      label: 'Практики',
-      sub:
-        practiceCount == null
-          ? undefined
-          : practiceCount === 0
-            ? 'Нет практик'
-            : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`,
-    },
-    {
-      id: 'plans',
-      label: 'Планы',
-      sub:
-        planCount == null
-          ? undefined
-          : planCount === 0
-            ? 'История пуста'
-            : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`,
-    },
-    {
-      id: 'belief_check',
-      label: 'Проверка убеждений',
-      sub: 'Правда ли это?',
-    },
-    {
-      id: 'safe_place',
-      label: 'Безопасное место',
-      sub: 'Ресурс в тревожный момент',
-    },
-    {
-      id: 'letter_to_self',
-      label: 'Письмо себе',
-      sub: 'Уязвимому Ребёнку',
-    },
-    {
-      id: 'flashcard',
-      label: 'Схема включилась',
-      sub: '5 шагов чтобы разобраться',
-    },
-    {
-      id: 'childhood_wheel',
-      label: 'Колесо детства',
-      sub: childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты',
-    },
-    {
-      id: 'warm_words',
-      label: 'Тёплые слова',
-      sub: 'Слова поддержки себе',
-    },
-  ];
+// Порядок строк — как исторически зашит в ToolsList, сохранён 1:1.
+const TOOL_ROW_ORDER: QuickActionId[] = [
+  'phrase_check',
+  'tasks',
+  'practices',
+  'plans',
+  'belief_check',
+  'safe_place',
+  'letter_to_self',
+  'flashcard',
+  'childhood_wheel',
+  'warm_words',
+];
+
+function rowSub(
+  id: QuickActionId,
+  staticSub: string,
+  props: ToolRowsProps,
+): string | undefined {
+  switch (id) {
+    case 'tasks':
+      return props.tasksCount === 0
+        ? 'Нет активных'
+        : `${props.tasksCount} ${plural(props.tasksCount, 'цель', 'цели', 'целей')}`;
+    case 'practices':
+      return props.practiceCount == null
+        ? undefined
+        : props.practiceCount === 0
+          ? 'Нет практик'
+          : `${props.practiceCount} ${plural(props.practiceCount, 'практика', 'практики', 'практик')}`;
+    case 'plans':
+      return props.planCount == null
+        ? undefined
+        : props.planCount === 0
+          ? 'История пуста'
+          : `${props.planCount} ${plural(props.planCount, 'план', 'плана', 'планов')}`;
+    case 'childhood_wheel':
+      return props.childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты';
+    default:
+      return staticSub;
+  }
+}
+
+export function buildToolRows(props: ToolRowsProps): ToolRowDef[] {
+  return TOOL_ROW_ORDER.map((id) => {
+    const a = getQuickAction(id);
+    const staticSub = typeof a.sub === 'string' ? a.sub : '';
+    return { id, label: a.label, sub: rowSub(id, staticSub, props) };
+  });
 }

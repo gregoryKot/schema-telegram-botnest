@@ -35,7 +35,9 @@ function dayWord(n: number): string {
   return 'дней';
 }
 
-function FreqBar({ freq }: { freq: number }) {
+/** Полоска недельной частоты — переиспользуется карточками «Мои схемы»/«Мои
+ *  режимы» вкладки «Я» (правило «одна механика — один компонент»). */
+export function FreqBar({ freq }: { freq: number }) {
   const w = 8 + Math.round((Math.min(freq, FREQ_WINDOW) / FREQ_WINDOW) * 30);
   return (
     <span
@@ -110,7 +112,7 @@ export function PatternFrequencyList({
             </div>
             <div
               className="card"
-              style={{ borderRadius: 16, overflow: 'hidden' }}
+              style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
             >
               {items.map((it, i) => {
                 const active = it.id === selectedId;
@@ -124,7 +126,7 @@ export function PatternFrequencyList({
                       minHeight: 60,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--space-10)',
                       padding: '14px 16px',
                       border: 'none',
                       borderTop:
@@ -215,7 +217,7 @@ export function PatternFrequencyList({
           padding: 15,
           background: 'transparent',
           border: '1.5px dashed var(--border-color)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           color: 'var(--text-sub)',
           fontSize: 14,
           fontWeight: 600,

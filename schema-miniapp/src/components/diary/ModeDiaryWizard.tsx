@@ -71,7 +71,11 @@ export function ModeDiaryWizard({
       </div>
 
       {/* Вопрос */}
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+      <div
+        id="mode-diary-question"
+        className="d-display"
+        style={{ fontSize: 21, marginBottom: 8 }}
+      >
         {isHa
           ? tr(
               'Что бы сказал твой Здоровый Взрослый?',
@@ -99,7 +103,7 @@ export function ModeDiaryWizard({
         <div
           style={{
             background: 'var(--calm)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 12,
           }}
@@ -129,6 +133,7 @@ export function ModeDiaryWizard({
             : cur!.example
         }
         rows={isHa ? 3 : cur!.rows}
+        labelId="mode-diary-question"
       />
 
       <DiaryWizardNav

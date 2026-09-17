@@ -54,7 +54,7 @@ export function ReviewsPage() {
 
         <div style={{
           marginTop: 48, padding: '28px 32px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20,
+          background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)',
         }}>
           <p style={{ fontSize: 16, color: 'var(--text)', lineHeight: 1.75, margin: '0 0 8px', fontWeight: 600 }}>
             Как же тогда понять, подхожу ли я вам?
@@ -66,7 +66,7 @@ export function ReviewsPage() {
             порекомендую коллегу.
           </p>
           <a href={PRACTICE_BOOKING_URL} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)',
             padding: '13px 26px', background: 'var(--accent)', color: '#fff',
             borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
           }}>

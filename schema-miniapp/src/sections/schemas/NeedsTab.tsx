@@ -61,7 +61,13 @@ export function NeedsTab({
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-8)',
+        }}
+      >
         {NEED_IDS.map(({ id, color }) => {
           const d = NEED_DATA[id];
           if (!d) return null;
@@ -78,7 +84,7 @@ export function NeedsTab({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 14,
+                gap: 'var(--space-14)',
               }}
             >
               {/* Не иконка, а образец цвета: тот же цвет потребность носит на

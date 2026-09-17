@@ -24,7 +24,7 @@ export function DisclaimerWelcomeStep() {
             gap: 6,
             background: 'rgba(251,191,36,0.1)',
             border: '1px solid rgba(251,191,36,0.25)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '3px 12px',
             fontSize: 10,
             fontWeight: 700,
@@ -37,7 +37,11 @@ export function DisclaimerWelcomeStep() {
       </div>
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 12,
+        }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
           {tr(
@@ -46,13 +50,17 @@ export function DisclaimerWelcomeStep() {
           )}
         </div>
       </div>
-      <div className="card" style={{ borderRadius: 16, padding: '16px 18px' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: '16px 18px' }}
+      >
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.7 }}
         >
-          «Всё по схеме» — инструмент самопознания: трекер потребностей,
-          дневники схем и режимов, тесты, практики и пространство для работы с
-          терапевтом.
+          «Всё по схеме» — про схема-терапию. Начать можно с одного случая:
+          вспомнить момент, когда что-то задело, и разобрать по шагам. Три
+          минуты — и видно, что это было и чего в тот момент не хватило.
+          Дневники, трекер и практики открываются оттуда же, когда понадобятся.
           <br />
           <br />
           {tr(

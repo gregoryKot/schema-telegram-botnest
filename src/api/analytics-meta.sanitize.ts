@@ -9,14 +9,16 @@ import {
   CUSTOMIZE_ENTRY_SET,
   HOME_SCREEN_ACTION_SET,
   HOME_SCREEN_SURFACE_SET,
-  QUICK_ACTION_ID_SET,
-  QUICK_ACTION_SURFACE_SET,
-  QUICK_ACTION_MOVE_DIR_SET,
   ACCOUNT_LINK_HOST_SET,
   ACCOUNT_LINK_FAIL_REASON_SET,
   SIGNUP_SOURCE_SET,
+  PROFILE_PATTERN_KIND_SET,
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
+import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
+import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
+import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -153,13 +155,6 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'mode_test_completed') {
-    const modeId = meta.modeId;
-    if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
-      return { modeId };
-    }
-    return undefined;
-  }
   if (name === 'warm_words_open') {
     const count = meta.count;
     if (
@@ -186,51 +181,21 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'mode_doubt_opened') {
+  if (name === 'mode_doubt_opened' || name === 'mode_test_completed') {
     const modeId = meta.modeId;
     if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
       return { modeId };
     }
     return undefined;
   }
-  if (name === 'plus_action') {
-    const action = meta.action;
-    if (typeof action === 'string' && QUICK_ACTION_ID_SET.has(action)) {
-      return { action };
-    }
-    return undefined;
+  if (
+    name === 'plus_action' ||
+    name === 'quick_action_toggle' ||
+    name === 'quick_action_move'
+  ) {
+    return sanitizeQuickActionMeta(name, meta);
   }
-  if (name === 'quick_action_toggle') {
-    const action = meta.action;
-    const hidden = meta.hidden;
-    const surface = meta.surface;
-    if (
-      typeof action === 'string' &&
-      QUICK_ACTION_ID_SET.has(action) &&
-      typeof hidden === 'boolean' &&
-      typeof surface === 'string' &&
-      QUICK_ACTION_SURFACE_SET.has(surface)
-    ) {
-      return { action, hidden, surface };
-    }
-    return undefined;
-  }
-  if (name === 'quick_action_move') {
-    const action = meta.action;
-    const surface = meta.surface;
-    const dir = meta.dir;
-    if (
-      typeof action === 'string' &&
-      QUICK_ACTION_ID_SET.has(action) &&
-      typeof surface === 'string' &&
-      QUICK_ACTION_SURFACE_SET.has(surface) &&
-      typeof dir === 'string' &&
-      QUICK_ACTION_MOVE_DIR_SET.has(dir)
-    ) {
-      return { action, surface, dir };
-    }
-    return undefined;
-  }
+  if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
   if (name === 'account_link_started') {
     const host = meta.host;
     if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
@@ -294,6 +259,17 @@ export function sanitizeMeta(
       return { host };
     }
     return undefined;
+  }
+  if (name === 'data_export') return sanitizeDataExportMeta(meta);
+  if (name === 'profile_pattern_open') {
+    const kind = meta.kind;
+    if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
+      return { kind };
+    }
+    return undefined;
+  }
+  if (name.startsWith('case_') || name === 'mode_renamed') {
+    return sanitizeCaseMeta(name, meta);
   }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open —
   // без meta; поля отбрасываются.

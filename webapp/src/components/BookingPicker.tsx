@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { api } from '../api';
-import type { BookingSlot, SessionOption } from '../api';
+import { api, type BookingSlot, type SessionOption } from '../api';
+import { BookingErrorNote } from './BookingErrorNote';
+import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 
 const MSK = 'Europe/Moscow';
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
 const dayLblFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, weekday: 'short', day: 'numeric', month: 'short' });
 const timeFmt   = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, hour: '2-digit', minute: '2-digit' });
 
-const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
-const timeLabel = (iso: string) => timeFmt.format(new Date(iso));
+const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso)), timeLabel = (iso: string) => timeFmt.format(new Date(iso));
 
 function dayLabel(iso: string): string {
   const todayKey = dayKeyFmt.format(new Date());
@@ -23,7 +24,7 @@ function dayLabel(iso: string): string {
 const field: React.CSSProperties = {
   width: '100%', padding: '14px 16px', fontSize: 15,
   background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-  borderRadius: 12, color: 'var(--text)', outline: 'none',
+  borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none',
   fontFamily: 'inherit', boxSizing: 'border-box',
 };
 const labelSt: React.CSSProperties = {
@@ -54,7 +55,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
     // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
     // setState в эффекте (react-hooks/set-state-in-effect). Чистка URL —
     // в эффекте ниже (побочный эффект).
@@ -83,7 +84,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     api.getSlots()
       .then((s) => { setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
       .catch(() => setLoadFailed(true));
-    api.getBookingOptions().then(setOptions).catch(() => setOptions([]));
+    api.getBookingOptions().then(setOptions).catch(() => setLoadFailed(true)); // сбой ≠ пусто: без опций не собрать цену — та же loadFailed, что у слотов
   }, []);
 
   const chosen = options.find((o) => o.type === sessionType);
@@ -93,7 +94,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const resultRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (status === 'done' || status === 'payment_fail' || status === 'await_payment') {
-      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollIntoViewSafe(resultRef.current, { block: 'center' });
     }
   }, [status]);
 
@@ -127,7 +128,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
       </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 12, textDecoration: 'none', boxShadow: '0 8px 28px rgba(77,71,153,.28)' }}>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
         Перейти к оплате →
       </a>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
@@ -140,7 +141,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Слот был освобождён. Попробуйте выбрать время снова или напишите напрямую.</p>
-      <button type="button" onClick={() => setStatus('idle')} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer' }}>
+      <button type="button" onClick={() => setStatus('idle')} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer' }}>
         Выбрать другое время
       </button>
     </div>
@@ -157,7 +158,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         </p>
       )}
       {!cancelled && meetingUrl && (
-        <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 12 }}>
+        <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)' }}>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 6px' }}>Ваша персональная ссылка на встречу — она же для всех будущих сессий:</p>
           <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, wordBreak: 'break-all', textDecoration: 'none' }}>{meetingUrl}</a>
         </div>
@@ -197,7 +198,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
     } catch (err) {
-      setStatus(err instanceof Error && err.message === 'CLIENT_NOT_FOUND' ? 'not_found' : 'error');
+      setStatus(handleBookingFailure(err));
     }
   };
 
@@ -208,14 +209,14 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       {options.length > 1 && (
         <div>
           <div style={labelSt}>Формат встречи</div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
             {options.map((o) => {
               const active = o.type === sessionType;
               return (
                 <button key={o.type} type="button" onClick={() => setSessionType(o.type)} style={{
                   flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
-                  borderRadius: 12, fontFamily: 'inherit', transition: 'all .15s',
-                  background: active ? 'rgba(var(--accent-rgb,77,71,153),0.08)' : 'transparent',
+                  borderRadius: 'var(--r-12)', fontFamily: 'inherit', transition: 'all .15s',
+                  background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
                   border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
@@ -230,7 +231,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       )}
       <div>
         <div style={labelSt}>Выберите день</div>
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
           {dayList.map((k) => (
             <Chip key={k} active={k === day} onClick={() => { setDay(k); setSlot(null); }}>
               {dayLabel(days.get(k)![0].startsAt)}
@@ -241,7 +242,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
       <div>
         <div style={labelSt}>Время · МСК</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
           {(days.get(day) ?? []).map((s) => (
             <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => setSlot(s)}>
               {timeLabel(s.startsAt)}
@@ -259,7 +260,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input type="checkbox" checked={returning} onChange={(e) => { setReturning(e.target.checked); if (status === 'not_found') setStatus('idle'); }} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
               Мы уже занимались — это повторная встреча
@@ -274,20 +275,20 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
             <textarea id="bp-message" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
           </div>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
               Я принимаю условия <a href="/offer" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политики конфиденциальности</a>, даю согласие на обработку данных
             </span>
           </label>
           {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
-          {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не удалось забронировать — возможно, время только что заняли. Обновите страницу или напишите в Telegram: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+          {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
           <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent}
             style={{
               alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
-              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12,
+              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
               cursor: 'pointer', opacity: status === 'loading' || !name.trim() || !contact.trim() || !consent ? 0.4 : 1,
-              boxShadow: '0 8px 28px rgba(77,71,153,.28)',
+              boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px',
             }}>
             {status === 'loading'
               ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')

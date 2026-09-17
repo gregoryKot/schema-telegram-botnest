@@ -38,7 +38,7 @@ export function PartnerCard({
     <div
       style={{
         background: 'rgba(var(--fg-rgb),0.04)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         marginBottom: 12,
       }}
@@ -47,7 +47,7 @@ export function PartnerCard({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 10,
         }}
       >
@@ -95,7 +95,7 @@ export function PartnerCard({
             style={{
               padding: '8px 14px',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background:
                 'color-mix(in srgb, var(--accent-blue) 15%, transparent)',
               color: 'var(--accent-blue)',
@@ -114,7 +114,7 @@ export function PartnerCard({
         <div
           style={{
             display: 'flex',
-            gap: 4,
+            gap: 'var(--space-4)',
             alignItems: 'flex-end',
             height: 28,
             marginBottom: 10,
@@ -172,14 +172,14 @@ export function PartnerCard({
       </div>
 
       {confirmLeaveCode === partner.code ? (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button
             onClick={() => setConfirmLeaveCode(null)}
             style={{
               flex: 1,
               padding: '9px',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'rgba(var(--fg-rgb),0.08)',
               color: 'var(--text-sub)',
               fontSize: 13,
@@ -194,7 +194,7 @@ export function PartnerCard({
               flex: 1,
               padding: '9px',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'rgba(255,80,80,0.2)',
               color: 'var(--accent-red)',
               fontSize: 13,
@@ -212,7 +212,7 @@ export function PartnerCard({
             width: '100%',
             padding: '9px',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'rgba(255,80,80,0.08)',
             color: 'rgba(255,100,100,0.6)',
             fontSize: 13,

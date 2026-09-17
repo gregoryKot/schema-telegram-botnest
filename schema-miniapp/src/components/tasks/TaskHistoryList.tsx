@@ -34,7 +34,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             ? {
                 background: 'var(--surface)',
                 border: '1px solid var(--border-color)',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 overflow: 'hidden',
               }
             : undefined
@@ -46,7 +46,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: 'var(--space-12)',
               padding: full ? '11px 14px' : '9px 0',
               borderTop:
                 full && i > 0 ? '1px solid var(--border-color)' : undefined,

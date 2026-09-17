@@ -4,6 +4,7 @@ import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualiza
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useTr } from '../../utils/addressForm';
 
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
@@ -14,6 +15,7 @@ interface Params {
 }
 
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
+  const tr = useTr();
   const openClientIdRef = useRef<number | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
@@ -30,7 +32,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   }>>([]);
   const [clientModeNotesData, setClientModeNotesData] = useState<Array<{
     modeId: string; triggers: string; feelings: string; thoughts: string;
-    needs: string; behavior: string;
+    needs: string; behavior: string; origins: string; healthyView: string;
+    modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const [notes, setNotes] = useState<TherapistNote[]>([]);
@@ -82,9 +85,11 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
   });
 
-  // Delete
+  // Delete — Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog
+  // (рендерится в ClientHeader); confirmingDelete переключает его видимость.
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // UI
   const [tabLoading, setTabLoading] = useState(false);
@@ -154,10 +159,18 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────────
+  function requestDeleteClient() {
+    if (!selectedClient) return;
+    setConfirmingDelete(true);
+  }
+
+  function cancelDeleteClient() {
+    setConfirmingDelete(false);
+  }
+
   async function deleteClient() {
     if (!selectedClient) return;
-    const name = selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
-    if (!window.confirm(`Удалить ${name}? Связь будет разорвана, данные сохранятся.`)) return;
+    setConfirmingDelete(false);
     setDeleteLoading(true);
     setDeleteError('');
     try {
@@ -216,7 +229,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       setConceptError('');
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch { setSaveStatus('idle'); setConceptError('Не удалось сохранить изменения. Попробуйте ещё раз.'); } // БАГ (найден тестом): раньше не сообщал об ошибке
+    } catch { setSaveStatus('idle'); setConceptError(tr('Не удалось сохранить изменения. Попробуй ещё раз.', 'Не удалось сохранить изменения. Попробуйте ещё раз.')); } // БАГ (найден тестом): раньше не сообщал об ошибке
   }
 
   function toggleSchemaId(id: string) {
@@ -330,12 +343,12 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     aliasSaving, aliasError,
     ysqRequested, ysqError,
     exportCopied,
-    deleteLoading, deleteError,
+    deleteLoading, deleteError, confirmingDelete,
     tabLoading, clientTab, setClientTab,
     // Derived
     activeSchemaIds, activeModeIds, ysqSchemaIds, selfSchemaIds,
     // Handlers
-    openClient, deleteClient,
+    openClient, deleteClient, requestDeleteClient, cancelDeleteClient,
     addNote, removeNote,
     patchConcept, toggleSchemaId, toggleModeId,
     saveAlias, saveSessionInfo,

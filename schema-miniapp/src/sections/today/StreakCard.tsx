@@ -11,7 +11,7 @@ export function StreakCard({ streak }: { streak: number }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '12px 16px',
         borderRadius: 18,
         animation: 'slide-up 0.3s ease both',
@@ -22,7 +22,7 @@ export function StreakCard({ streak }: { streak: number }) {
         style={{
           width: 40,
           height: 40,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           flexShrink: 0,
           background: 'var(--accent-bg)',
           display: 'flex',

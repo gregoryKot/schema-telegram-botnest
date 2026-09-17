@@ -20,7 +20,10 @@ export function TherapistCabinetSection({
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <div
           onClick={onOpenTherapistCabinet}
           role="button"
@@ -75,7 +78,7 @@ export function TherapistCabinetSection({
               background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '8px 16px',
               color: 'var(--accent)',
               fontSize: 13,

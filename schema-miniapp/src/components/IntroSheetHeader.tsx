@@ -36,7 +36,7 @@ export function IntroSheetHeader({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 16,
         }}
       >
@@ -44,7 +44,7 @@ export function IntroSheetHeader({
           style={{
             width: 48,
             height: 48,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             flexShrink: 0,
             background: cm(accentColor, 9),
             border: `1px solid ${cm(accentColor, 16)}`,
@@ -57,16 +57,17 @@ export function IntroSheetHeader({
           {emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
+          <h2
             style={{
               fontSize: 18,
               fontWeight: 700,
               color: 'var(--text)',
               letterSpacing: '-0.3px',
+              margin: 0,
             }}
           >
             {title}
-          </div>
+          </h2>
           <div
             style={{
               fontSize: 12,
@@ -86,7 +87,7 @@ export function IntroSheetHeader({
           style={{
             background: cm(accentColor, 5),
             border: `1px solid ${cm(accentColor, 13)}`,
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '12px 14px',
             marginBottom: 16,
           }}
@@ -131,7 +132,7 @@ export function HeaderInfoButton({
         width: 44,
         height: 44,
         flexShrink: 0,
-        borderRadius: 12,
+        borderRadius: 'var(--r-12)',
         border: '1px solid var(--border-color)',
         background: 'var(--surface-2)',
         color: 'var(--text-sub)',

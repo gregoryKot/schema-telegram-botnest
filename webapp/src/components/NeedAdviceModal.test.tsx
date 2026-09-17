@@ -17,15 +17,22 @@ afterEach(() => {
 });
 
 describe('NeedAdviceModal', () => {
+  // К4 дизайн-аудита 2026-08: панель — role="dialog"/aria-modal (useDialogA11y).
+  it('панель размечена как диалог', () => {
+    render(<NeedAdviceModal onClose={vi.fn()} />);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
   it('рендерит объяснение назначения советов', () => {
     render(<NeedAdviceModal onClose={vi.fn()} />);
     expect(screen.getByText('О советах')).toBeTruthy();
     expect(screen.getByText(/Советы внутри — это приглашение к размышлению/)).toBeTruthy();
   });
 
-  it('обычный клиент видит CTA «Поговорить с психологом»', () => {
+  it('обычный клиент видит CTA «Записаться на консультацию»', () => {
     render(<NeedAdviceModal onClose={vi.fn()} />);
-    expect(screen.getByText('→ Поговорить с психологом')).toBeTruthy();
+    expect(screen.getByText('→ Записаться на консультацию')).toBeTruthy();
   });
 
   it('сам терапевт не видит CTA на самого себя', () => {
@@ -33,7 +40,7 @@ describe('NeedAdviceModal', () => {
     localStorage.setItem('therapy_contact_name', 'вам');
     localStorage.setItem('therapy_is_therapist', '1');
     render(<NeedAdviceModal onClose={vi.fn()} />);
-    expect(screen.queryByText('→ Поговорить с психологом')).toBeNull();
+    expect(screen.queryByText('→ Записаться на консультацию')).toBeNull();
   });
 
   it('клик по фону закрывает оверлей', () => {

@@ -3,16 +3,18 @@
 // переписать в самокоррекцию. Шаги — в подкомпонентах (правило №10),
 // вердикт — чистая функция (verdict.ts). Свободный текст проходит
 // кризисный гейт (правило №7), уезжает зашифрованным на сервер.
+// Состояние мастера (фраза/приметы/переписать) — общее с сайтом, живёт в
+// shared/src/phraseCheck/usePhraseCheckState (правило №3). done/saveError/
+// history/openHistoryId остаются здесь — они специфичны для вёрстки
+// мини-аппа. Новую копию этого стейта заводить не надо — расширяй хук.
 import { useEffect, useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { CrisisGate } from './CrisisGate';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
-import {
-  PHRASE_CRITERIA,
-  type PhraseMarkId,
-} from '../../../shared/src/phraseCheck/criteria';
+import { PHRASE_CRITERIA } from '../../../shared/src/phraseCheck/criteria';
+import { usePhraseCheckState } from '../../../shared/src/phraseCheck/usePhraseCheckState';
 import { MarksStep } from './phraseCheck/MarksStep';
 import { RewriteStep } from './phraseCheck/RewriteStep';
 import { PhraseDoneScreen } from './phraseCheck/DoneScreen';
@@ -29,12 +31,10 @@ interface Props {
 
 export function PhraseCheck({ onClose, onComplete }: Props) {
   const tr = useTr();
-  const [phrase, setPhrase] = useState('');
-  const [markIndex, setMarkIndex] = useState(-1); // -1 — ещё на вводе фразы
-  const [marks, setMarks] = useState<PhraseMarkId[]>([]);
-  const [rewrite, setRewrite] = useState('');
-  // Переписанную фразу предлагаем забрать в «Тёплые слова» — можно снять.
-  const [inWarmWords, setInWarmWords] = useState(true);
+  const phraseCheck = usePhraseCheckState();
+  const { phrase, setPhrase, markIndex, setMarkIndex, marks } = phraseCheck;
+  const { rewrite, setRewrite, inWarmWords, setInWarmWords, answer } =
+    phraseCheck;
   const [done, setDone] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [history, setHistory] = useState<PhraseCheckHistoryRow[]>([]);
@@ -57,11 +57,6 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   }, []);
 
   const openHistoryEntry = history.find((h) => h.id === openHistoryId);
-
-  function answer(id: PhraseMarkId, critic: boolean) {
-    if (critic) setMarks((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setMarkIndex((i) => i + 1);
-  }
 
   function save() {
     const body = {
@@ -109,7 +104,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           aria-valuemax={TOTAL_STEPS}
           style={{
             height: 3,
-            borderRadius: 2,
+            borderRadius: 'var(--r-2)',
             background: 'rgba(var(--fg-rgb),0.1)',
             marginBottom: 16,
             overflow: 'hidden',
@@ -119,7 +114,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             style={{
               width: `${progress}%`,
               height: '100%',
-              borderRadius: 2,
+              borderRadius: 'var(--r-2)',
               background: 'var(--accent-green)',
               transition: 'width 0.2s',
             }}
@@ -130,7 +125,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 18,
           }}
         >
@@ -138,7 +133,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               background:
                 'color-mix(in srgb, var(--accent-green) 12%, transparent)',
               border:
@@ -172,7 +167,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
               style={{
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.08)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 marginBottom: 14,
                 fontSize: 12.5,
@@ -195,7 +190,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
                 boxSizing: 'border-box',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: `1px solid ${phrase.trim() ? 'color-mix(in srgb, var(--accent-green) 30%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '13px 14px',
                 color: 'var(--text)',
                 fontSize: 14,

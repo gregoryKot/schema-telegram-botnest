@@ -6,16 +6,14 @@
 // безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
 // следа — это и есть позвоночник всех рантайм-наблюдателей щита.
 //
-// Чистая функция от env (по умолчанию process.env) — тестируется без мутации
-// глобалов. Используется и загрузочной сводкой (capability-boot-log.ts,
-// ВНЕ admin-alert.ts — тот файл намеренно не зовёт Logger, см. его шапку), и
-// блоком «Настройки» в /stats (src/bot/capability-metrics.format.ts).
+// Чистая функция от env — используется загрузочной сводкой
+// (capability-boot-log.ts) и блоком «Настройки» в /stats
+// (src/bot/capability-metrics.format.ts).
 //
-// Гейт scripts/check-capability-registry.mjs сверяет, что каждая
-// «if (!token/key/secret/process.env.X) return» ветка в src/** либо
-// перечислена здесь (`files`), либо в
-// scripts/capability-registry-baseline.json с причиной — REGISTERED_FILES в
-// гейте зеркалит `files` ниже, держи их в одном PR.
+// Гейт scripts/check-capability-registry.mjs сверяет силовую ветку
+// «if (!config) return» — файл либо в `files` ниже, либо в
+// capability-registry-baseline.json (REGISTERED_FILES там зеркалит `files`).
+import { buildOauthRedirectCapability } from '../auth/oauth-redirect-config';
 
 export interface CapabilityStatus {
   /** Слаг для тестов/сверки. */
@@ -109,6 +107,36 @@ export function buildCapabilityReport(
       critical: false,
     },
     {
+      // Не «фича выключена», а деградация в более строгую сторону: без
+      // секретов подпись проверить нечем, и лимит запросов считается по
+      // адресу. Обход этим не открывается — наоборот, закрывается; цену
+      // платят честные люди за общим NAT, деля один лимит на всех.
+      id: 'verifiedThrottleIdentity',
+      title: 'Лимит запросов по проверенной подписи',
+      on: has(env, 'JWT_SECRET') && has(env, 'BOT_TOKEN'),
+      envVars: ['JWT_SECRET', 'BOT_TOKEN'],
+      offReason:
+        'Лимит запросов считается только по адресу: без JWT_SECRET и ' +
+        'BOT_TOKEN подпись проверить нечем, и люди за общим NAT делят один ' +
+        'лимит на всех.',
+      files: ['src/api/throttler-identity.ts'],
+      critical: false,
+    },
+    {
+      // Найдено 2026-09-13 по логам: iCloud отвечал 403, warn без алерта,
+      // слоты шли поверх личных встреч. Здесь — «настроен ли»; «читается
+      // ли» — блок «Личный календарь» в /stats (caldav-health.ts).
+      id: 'appleCalendar',
+      title: 'Личный календарь (iCloud) в слотах записи',
+      on: has(env, 'APPLE_ID') && has(env, 'APPLE_APP_PASSWORD'),
+      envVars: ['APPLE_ID', 'APPLE_APP_PASSWORD'],
+      offReason:
+        'Личный календарь не подключён: слоты записи не учитывают встречи ' +
+        'владельца (не заданы APPLE_ID/APPLE_APP_PASSWORD).',
+      files: ['src/booking/caldav.service.ts'],
+      critical: false,
+    },
+    {
       id: 'threadsTokenRefresh',
       title: 'Автообновление токена Threads',
       on: has(env, 'HEALTHY_ADULT_THREADS_TOKEN'),
@@ -118,6 +146,8 @@ export function buildCapabilityReport(
       files: ['src/channel/targets/threads-token.service.ts'],
       critical: false,
     },
+    // Инцидент 2026-09-16: сама запись — в src/auth/oauth-redirect-config.ts.
+    buildOauthRedirectCapability(env),
   ];
 }
 

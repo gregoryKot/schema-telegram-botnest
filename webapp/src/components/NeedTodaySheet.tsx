@@ -6,6 +6,7 @@ import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { needColor } from '../../../shared/src/needs/needColors';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   need: Need;
@@ -17,8 +18,9 @@ interface Props {
   onOpenHelp?: () => void;
 }
 
-export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
+export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
@@ -80,9 +82,22 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
             onPointerMove={onPtrMove}
             style={{ position: 'relative', padding: '12px 0', cursor: 'pointer', touchAction: 'none', userSelect: 'none', marginBottom: 8 }}
           >
-            <div style={{ height: 6, borderRadius: 6, background: 'var(--surface-2)', overflow: 'hidden' }}>
-              <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 6, background: `linear-gradient(to right, ${color}55, ${color})` }} />
+            <div style={{ height: 6, borderRadius: 'var(--r-6)', background: 'var(--surface-2)', overflow: 'hidden' }}>
+              <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 'var(--r-6)', background: `linear-gradient(to right, ${color}55, ${color})` }} />
             </div>
+            {/* Маркер «вчера» на шкале — паритет с miniapp NeedRatingBar (В10 аудита 2026-08) */}
+            {typeof yesterdayValue === 'number' && yesterdayValue > 0 && (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', left: `${yesterdayValue * 10}%`, top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 2, height: 14, borderRadius: 1,
+                  background: 'var(--text-faint)',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             <div style={{
               position: 'absolute', left: `${value * 10}%`, top: '50%',
               transform: 'translate(-50%, -50%)',
@@ -91,17 +106,28 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
               pointerEvents: 'none',
             }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
-            <span>0</span><span>5</span><span>10</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
+            <span>0</span>
+            {typeof yesterdayValue === 'number' && yesterdayValue > 0 ? (
+              <span style={{ color: 'var(--text-faint)' }}>
+                вчера {yesterdayValue}
+                {value - yesterdayValue !== 0 && (
+                  <span style={{ color, fontWeight: 600 }}>
+                    {' '}{value - yesterdayValue > 0 ? `+${value - yesterdayValue}` : value - yesterdayValue}
+                  </span>
+                )}
+              </span>
+            ) : <span>5</span>}
+            <span>10</span>
           </div>
           {rangeIdx === 2 && (
-            <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
-              Хороший день – заметь это
+            <div style={{ padding: '10px 12px', borderRadius: 'var(--r-8)', background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
+              {tr('Хороший день – заметь это', 'Хороший день – заметьте это')}
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
             {data.tags.map(tag => (
-              <span key={tag} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: `${color}18`, color }}>
+              <span key={tag} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 'var(--r-20)', background: `${color}18`, color }}>
                 {tag}
               </span>
             ))}
@@ -126,7 +152,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           {showExamples && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
               {data.examples.map((ex, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < data.examples.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.examples.length - 1 ? '1px solid var(--line)' : 'none' }}>
                   <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>›</span>
                   <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{ex}</span>
                 </div>
@@ -151,7 +177,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
             {showReflection && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
                 {data.reflection.map((q, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
                     <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>?</span>
                     <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{q}</span>
                   </div>
@@ -206,7 +232,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           <div className="prompt-num">·</div>
           <div style={{ width: '100%' }}>
             <div className="prompt-label">Что с этим сделать?</div>
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               <div
                 onClick={() => setShowPlan(true)}
                 role="button" tabIndex={0}

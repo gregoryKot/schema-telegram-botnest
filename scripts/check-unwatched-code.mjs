@@ -11,14 +11,13 @@
 // тоже роняет гейт. Починить: тест (образец — maxBridgeLoader.test.ts) либо:
 //   node scripts/check-unwatched-code.mjs --update   (--verbose — детали)
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
-
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE = join(ROOT, 'scripts', 'unwatched-code-baseline.json');
 const update = process.argv.includes('--update');
 const verbose = process.argv.includes('--verbose');
-
 const CODE_EXT = /\.(js|mjs|cjs|sh)$/;
 
 // Деревья, за которыми уже следит другой гейт — префиксы repo-relative путей.
@@ -27,21 +26,19 @@ const WATCHED_PREFIXES = [
   'webapp/public/', 'schema-miniapp/public/', 'game/public/',
 ];
 // Деревья вне гейта в принципе (не прод-код репозитория или заморожены).
-const EXCLUDED_PREFIXES = ['game/', '.github/'];
-
+// Экспорт — ради теста гейта.
+export const EXCLUDED_PREFIXES = ['game/', '.github/'];
 function gitFiles() {
   return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
     .split('\n')
     .filter(Boolean);
 }
-
+function main() {
 const all = gitFiles();
-
 const isSegmentExcluded = (rel) => {
   const segments = rel.split('/');
   return segments.includes('dist') || segments.includes('node_modules');
 };
-
 const scope = all
   .filter((rel) => CODE_EXT.test(rel))
   .filter((rel) => !WATCHED_PREFIXES.some((p) => rel.startsWith(p)))
@@ -175,3 +172,6 @@ if (stale.length) {
 console.error('Осознанное исключение — впиши причину:');
 console.error('  node scripts/check-unwatched-code.mjs --update');
 process.exit(1);
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

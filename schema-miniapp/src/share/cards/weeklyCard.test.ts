@@ -11,7 +11,7 @@ import type { Need, DayHistory } from '../../types';
 
 const needs = [
   { id: 'attachment', emoji: '🤝', chartLabel: 'Привязанность' },
-  { id: 'autonomy', emoji: '🚀', chartLabel: 'Автономия' },
+  { id: 'autonomy', emoji: '🧭', chartLabel: 'Автономия' },
 ] as Need[];
 
 const history: DayHistory[] = [
@@ -71,6 +71,6 @@ describe('buildWeeklyShareText', () => {
   it('подробный: строка на каждую потребность', () => {
     const text = buildWeeklyShareText(needs, history, 0, true, 't.me/TestBot');
     expect(text).toContain('🤝 Привязанность: 7.0');
-    expect(text).toContain('🚀 Автономия: 8.0');
+    expect(text).toContain('🧭 Автономия: 8.0');
   });
 });

@@ -36,6 +36,7 @@ function makeService(
     fakeBot.bot,
     botService,
     cadenceService as any,
+    { canonicalUserId: jest.fn(async (id: number) => BigInt(id)) } as any,
   );
   return { service, fakeBot, cadenceService };
 }

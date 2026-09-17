@@ -2,7 +2,11 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Пинч-зум разрешён (WCAG 1.4.4) — maximum-scale/user-scalable=no
+         запрещали слабовидящим увеличить текст. От случайного зума по
+         двойному тапу защищает touch-action: manipulation на интерактиве
+         (src/index.css), а не запрет зума на весь документ. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Всё по схеме</title>
     <!-- Цвет статус-бара/адресной строки standalone-PWA. manifest.webmanifest
          несёт только один theme_color (светлая тема) — тёмную отрабатывают
@@ -13,12 +17,50 @@
     <!-- iOS «На экран „Домой“» не читает manifest.icons надёжно — нужен
          явный link. Тот же файл, что у сайта (webapp/public/), одна копия. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Чанк стартовой вкладки «Сегодня» — единственный файл первого экрана,
+         который сборка НЕ включает в свой список modulepreload (он чисто
+         динамический, React.lazy). Без этой строки он начинал качаться
+         только ПОСЛЕ исполнения index.js — последним, последовательно
+         (замер 2026-08-23: +200-700мс к первому контенту). Имена ассетов
+         стабильны (без контент-хеша, правило №13), поэтому статическая
+         ссылка не протухает; в dev-режиме файла нет — браузер молча
+         игнорирует несработавший preload. Если сохранённая вкладка не
+         «Сегодня», лишние ~10КБ — приемлемая цена за доминирующий случай. -->
+    <link rel="modulepreload" href="/app/assets/TodaySection.js" />
     <script src="/telegram-web-app.js"></script>
     <!-- Мост MAX: подключается только внутри MAX, решает это сам загрузчик.
          Отдельным файлом, а не инлайном — у нас script-src 'self' без
          unsafe-inline, инлайн CSP заблокировал бы. -->
     <script src="/max-bridge.js"></script>
     <script type="module" crossorigin src="/app/assets/index.js"></script>
+    <link rel="modulepreload" crossorigin href="/app/assets/hitbox.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/a11y.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/BottomSheet.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/api.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/safezone.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/Skeleton.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/SectionLabel.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/CrisisCard.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/crisisMarkers.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/TherapyNote.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/analytics.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/shareTexts.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/botConfig.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/helpers.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/QuickPracticeSheet.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/ysqStorageKeys.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/haptic.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/useDragReorder.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/types.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/needData.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/IdentityDot.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/charts.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/needsRadarCard.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/CustomizeButton.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/modeTest.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/modeFeelGates.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/modeDisplayName.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/collectWarmWords.js">
     <link rel="stylesheet" crossorigin href="/app/assets/index.css">
   <link rel="manifest" href="/app/manifest.webmanifest"></head>
   <body>

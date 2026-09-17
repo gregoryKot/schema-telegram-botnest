@@ -53,6 +53,23 @@ describe('AppErrorScreen', () => {
     delete (globalThis as { WebApp?: unknown }).WebApp;
   });
 
+  // Веб-хост (PWA с ярлыка/вкладка) — не мессенджер. Инцидент 31.08.2026:
+  // авария БД показала «Не удалось войти... Telegram выдаст свежий пропуск»
+  // владельцу, открывшему приложение с домашнего экрана, не из Telegram.
+  it('в браузере (веб-хосте) не называет ни Telegram, ни MAX', () => {
+    render(<AppErrorScreen error="Error: API error: 401" />);
+    expect(screen.getByText(/Попробовать войти заново/)).toBeTruthy();
+    expect(screen.queryByText(/Telegram/)).toBeNull();
+    expect(screen.queryByText(/MAX/)).toBeNull();
+  });
+
+  // Контрольный случай: в Telegram слово «Telegram» по-прежнему на месте.
+  it('контрольный: в Telegram слово Telegram есть, как раньше', () => {
+    inTelegram();
+    render(<AppErrorScreen error="401" />);
+    expect(screen.getByText(/Telegram выдаст свежий пропуск/)).toBeTruthy();
+  });
+
   // Причину «не удалось войти» иначе видно только в аудит-логе. Форма подписи
   // на самом экране превращает отладку в один скриншот — но значений в ней
   // быть не должно: там id и имя человека.

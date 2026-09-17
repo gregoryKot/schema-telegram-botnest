@@ -10,7 +10,7 @@ const CHOICE: React.CSSProperties = {
   width: '100%',
   textAlign: 'left',
   padding: '13px 14px',
-  borderRadius: 14,
+  borderRadius: 'var(--r-14)',
   fontSize: 14,
   lineHeight: 1.45,
   fontFamily: 'inherit',
@@ -37,7 +37,7 @@ export function MarksStep({
         style={{
           background: 'rgba(var(--fg-rgb),0.04)',
           border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '10px 14px',
           marginBottom: 14,
           fontSize: 13,

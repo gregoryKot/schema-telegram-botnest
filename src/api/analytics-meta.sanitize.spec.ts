@@ -42,6 +42,17 @@ describe('sanitizeMeta', () => {
     ).toBeUndefined();
   });
 
+  // Регресс: PhraseCheck/RewriteStep/HistoryCard шлют surface="phrase_check",
+  // но его не было в CRISIS_SURFACES — события уходили без meta.surface.
+  it('crisis_card_shown/crisis_hotline_tapped: surface "phrase_check" (PhraseCheck) принят', () => {
+    expect(
+      sanitizeMeta('crisis_card_shown', { surface: 'phrase_check' }),
+    ).toEqual({ surface: 'phrase_check' });
+    expect(
+      sanitizeMeta('crisis_hotline_tapped', { surface: 'phrase_check' }),
+    ).toEqual({ surface: 'phrase_check' });
+  });
+
   it('outbox_flush: положительный count с потолком 1000', () => {
     expect(sanitizeMeta('outbox_flush', { count: 5000 })).toEqual({
       count: 1000,
@@ -285,6 +296,31 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
   });
 
+  it('profile_pattern_open: kind schema/mode проходит', () => {
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'schema' })).toEqual({
+      kind: 'schema',
+    });
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'mode' })).toEqual({
+      kind: 'mode',
+    });
+  });
+
+  it('profile_pattern_open: неизвестный/отсутствующий kind → отброшено', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', { kind: 'diary' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('profile_pattern_open', {})).toBeUndefined();
+  });
+
+  it('profile_pattern_open: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', {
+        kind: 'schema',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ kind: 'schema' });
+  });
+
   it('plus_action: action из allow-list проходит', () => {
     expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
       action: 'tracker',
@@ -500,6 +536,53 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('signup_source', {})).toBeUndefined();
   });
 
+  it('data_export: целые tables + rows проходят', () => {
+    expect(sanitizeMeta('data_export', { tables: 18, rows: 4200 })).toEqual({
+      tables: 18,
+      rows: 4200,
+    });
+    expect(sanitizeMeta('data_export', { tables: 0, rows: 0 })).toEqual({
+      tables: 0,
+      rows: 0,
+    });
+  });
+
+  it('data_export: значения выше потолка обрезаются, а не отбрасываются', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 9999, rows: 50_000_000 }),
+    ).toEqual({ tables: 200, rows: 1_000_000 });
+  });
+
+  it('data_export: нецелые/отрицательные/не-числа → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 1.5, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: -1, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: 5, rows: -1 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: '5', rows: 10 }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('data_export', {})).toBeUndefined();
+  });
+
+  // Проверка на утечку (правило №7): эндпоинт выгрузки шлёт только числа, но
+  // защита не должна зависеть от того, что вызывающий не ошибётся — лишнее
+  // поле (даже свободный текст) обязано отбрасываться, а не проезжать в БД.
+  it('data_export: лишние/свободнотекстовые поля не пропускаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('data_export', {
+        tables: 18,
+        rows: 4200,
+        email: 'user@example.com',
+        note: 'мой личный дневник за сегодня',
+      }),
+    ).toEqual({ tables: 18, rows: 4200 });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });
@@ -602,6 +685,15 @@ describe('sanitizeMeta', () => {
         surface: 'today',
       }),
     ).toEqual({ action: 'added', surface: 'today' });
+  });
+
+  it('home_screen_offer: сайтовая поверхность site_banner проходит авторизованным путём', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'shown',
+        surface: 'site_banner',
+      }),
+    ).toEqual({ action: 'shown', surface: 'site_banner' });
   });
 
   it('home_screen_offer: неизвестный action → отброшено целиком', () => {
@@ -731,6 +823,30 @@ describe('sanitizeMeta', () => {
         'nonexistent_event' as unknown as Parameters<typeof sanitizeMeta>[0],
         { anything: 'here' },
       ),
+    ).toBeUndefined();
+  });
+});
+
+// Карточка объединения на сайте шлёт host: 'web'. До неё в allow-list были
+// только мессенджеры, и meta целиком возвращалась бы undefined — событие
+// записано, а веб-половина воронки в отчёте невидима.
+describe('account_link_* — площадка «сайт»', () => {
+  it('host: web проходит и meta сохраняется', () => {
+    expect(sanitizeMeta('account_link_started', { host: 'web' })).toEqual({
+      host: 'web',
+    });
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'web', merged: true }),
+    ).toEqual({ host: 'web', merged: true });
+  });
+
+  // Контрольный случай: список не стал «любой строкой».
+  it('незнакомая площадка по-прежнему отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('account_link_started', { host: 'vk' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_started', { host: 'что угодно' }),
     ).toBeUndefined();
   });
 });

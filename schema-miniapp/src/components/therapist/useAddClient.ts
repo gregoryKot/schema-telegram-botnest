@@ -73,7 +73,13 @@ export function useAddClient({ setClients }: Params) {
         );
       else if (msg.toLowerCase().includes('already'))
         setAddError('Клиент уже подключён');
-      else setAddError('Ошибка. Проверь ID.');
+      else
+        setAddError(
+          tr(
+            'Не нашёлся клиент с таким ID. Проверь код и попробуй ещё раз.',
+            'Не нашёлся клиент с таким ID. Проверьте код и попробуйте ещё раз.',
+          ),
+        );
     } finally {
       setAddLoading(false);
     }

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEx, ModeEx } from './FlashcardEx';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: {
@@ -48,7 +49,7 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {
@@ -56,6 +57,62 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Обычно это молчание в переписке' } });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+// Аудит 2026-08-22, находка №2: handleSave не показывал состояние отправки,
+// не защищал от двойного нажатия и молчал при ошибке. Навигация до
+// последнего вопроса (7 вопросов SCHEMA_QUESTIONS) — заполняем первый,
+// остальные пропускаем, чтобы дойти до кнопки «Сохранить карточку».
+function goToLastStep() {
+  const textarea = screen.getByRole('textbox');
+  fireEvent.change(textarea, { target: { value: 'Пример ответа' } });
+  for (let i = 0; i < 6; i++) {
+    fireEvent.click(screen.getByRole('button', { name: /Дальше|Пропустить/ }));
+  }
+}
+
+describe('FlashcardEx (SchemaEx) — сохранение: состояние отправки, ошибка, двойное нажатие', () => {
+  it('во время сохранения кнопка заблокирована и подписана «Сохраняю…», после успеха — «готово»', async () => {
+    const mockApi = (await import('../../api')).api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    let resolveSave: () => void = () => {};
+    mockApi.saveSchemaNote.mockImplementation(() => new Promise<void>((res) => { resolveSave = res; }));
+    renderSheet();
+    goToLastStep();
+
+    const saveBtn = screen.getByRole('button', { name: /Сохранить карточку/ }) as HTMLButtonElement;
+    fireEvent.click(saveBtn);
+    expect(screen.getByRole('button', { name: /Сохраняю/ })).toBeTruthy();
+    expect((screen.getByRole('button', { name: /Сохраняю/ }) as HTMLButtonElement).disabled).toBe(true);
+
+    resolveSave();
+    await screen.findByText('Карточка сохранена · ' + new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }));
+  });
+
+  it('повторное нажатие во время отправки не шлёт запрос дважды (защита от двойного клика)', async () => {
+    const mockApi = (await import('../../api')).api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    mockApi.saveSchemaNote.mockImplementation(() => new Promise<void>(() => {})); // никогда не резолвится
+    renderSheet();
+    goToLastStep();
+
+    const saveBtn = screen.getByRole('button', { name: /Сохранить карточку/ });
+    fireEvent.click(saveBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    expect(mockApi.saveSchemaNote).toHaveBeenCalledTimes(1);
+  });
+
+  it('ошибка сохранения показывает сообщение, а не тишину — карточка не помечается сохранённой', async () => {
+    const mockApi = (await import('../../api')).api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+    mockApi.saveSchemaNote.mockRejectedValue(new Error('offline'));
+    renderSheet();
+    goToLastStep();
+
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить карточку/ }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/Карточка сохранена/)).toBeNull();
+    // Кнопка снова доступна — можно повторить попытку.
+    expect((screen.getByRole('button', { name: /Сохранить карточку/ }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
 

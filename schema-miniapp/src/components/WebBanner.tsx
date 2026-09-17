@@ -39,11 +39,11 @@ export function WebBanner({
       style={{
         background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
         border: '1px solid color-mix(in srgb, var(--accent) 22%, transparent)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '13px 14px',
         marginBottom: 12,
         display: 'flex',
-        gap: 12,
+        gap: 'var(--space-12)',
         alignItems: 'flex-start',
       }}
     >
@@ -73,7 +73,7 @@ export function WebBanner({
           style={{
             background: 'color-mix(in srgb, var(--accent) 16%, transparent)',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             padding: '7px 14px',
             color: 'var(--accent)',
             fontSize: 12,

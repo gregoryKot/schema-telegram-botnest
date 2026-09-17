@@ -20,6 +20,10 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import {
+  emailCallbackErrorUrl,
+  emailCallbackNextUrl,
+} from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
 import {
   EmailBodyDto,
@@ -27,7 +31,11 @@ import {
   InitDataBodyDto,
 } from './dto/auth-scalar.dto';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import {
+  isCrossSiteRequest,
+  requireCsrf,
+  setRefreshCookie,
+} from './auth-http.util';
 
 @Controller('api/auth')
 export class AuthAccountController {
@@ -55,12 +63,13 @@ export class AuthAccountController {
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(dto.email);
+    return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
+    @Query('ticket') ticket: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
@@ -78,19 +87,15 @@ export class AuthAccountController {
         );
         return;
       }
-      res.cookie(
-        REFRESH_COOKIE,
-        r.tokens.refreshToken,
-        cookieOptions(30 * 24 * 3600),
-      );
+      setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
+      // Билет НЕ одобряем молча (device-code phishing): с билетом уводим на
+      // экран сверки, где вошедший человек подтвердит код сам.
       res.redirect(
-        r.purpose === 'link_email_auth'
-          ? `${frontendBase}/account?linked=email`
-          : `${frontendBase}/auth/callback#access_token=${r.tokens.accessToken}&expires_in=${r.tokens.expiresIn}`,
+        emailCallbackNextUrl(r.purpose, frontendBase, r.tokens, ticket),
       );
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
+      res.redirect(emailCallbackErrorUrl(err, frontendBase));
     }
   }
 
@@ -139,11 +144,14 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
+    // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
+    // MAX — strict-кука там не продлевается (2026-08-21, «постоянно нужно
+    // логиниться заново»). Нативное вебвью Telegram остаётся на strict.
+    const crossSite = isCrossSiteRequest(
+      req,
+      this.config.getOrThrow<string>('WEBAPP_URL'),
     );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -191,7 +199,7 @@ export class AuthAccountController {
       );
       // Friendly message to client — no Prisma internals leaked.
       throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.',
+        'Не удалось объединить аккаунты. Админ уведомлён — попробовать позже.',
       );
     }
 
@@ -213,11 +221,7 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('merge_confirmed', {
       target,
       source,

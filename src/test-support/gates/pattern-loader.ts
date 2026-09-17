@@ -90,3 +90,20 @@ export function loadStringList(
   const stdout = importExport(scriptName, exportName, '(s) => [...s]');
   return JSON.parse(stdout) as string[];
 }
+
+/** Прогоняет экспортируемую функцию гейта на входной строке и возвращает
+ * результат — для слоёв, которые нельзя проверить через CLI (гашение
+ * разведённых форм: его эффект не виден в отчёте, только в том, что гейт
+ * промолчал). */
+export function callExport(
+  scriptName: string,
+  exportName: string,
+  input: string,
+): string {
+  const stdout = importExport(
+    scriptName,
+    exportName,
+    `(fn) => fn(${JSON.stringify(input)})`,
+  );
+  return JSON.parse(stdout) as string;
+}

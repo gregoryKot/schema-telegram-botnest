@@ -79,10 +79,10 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <>
           <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
             <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
-            <h3>Говори от лица режима</h3>
+            <h3>{tr('Говори от лица режима', 'Говорите от лица режима')}</h3>
             <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </div>
-          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
             <GlyphArrowLeft /> Сменить режим
           </button>
           <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
@@ -112,10 +112,10 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         </div>
         {isHealthyStep ? (
           <>
-            <div className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
+            <div id="mode-entry-question" className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
             <div className="flash-hint">{tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')}</div>
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
-            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 12, background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
+            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 'var(--r-12)', background: 'var(--c-moss)10', border: '1px solid var(--c-moss)33' }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c-moss)', marginBottom: 6 }}>Например, можно сказать себе:</div>
               <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-sub)', lineHeight: 1.55 }}>«{hint}»</div>
             </div>
@@ -126,11 +126,12 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={healthyResponse}
               onChange={e => setHealthyResponse(e.target.value)}
               placeholder={tr('Напиши своими словами…', 'Напишите своими словами…')}
+              aria-labelledby="mode-entry-question"
             />
           </>
         ) : (
           <>
-            <div className="flash-q">{cur!.title}</div>
+            <div id="mode-entry-question" className="flash-q">{cur!.title}</div>
             <div className="flash-hint">{cur!.hint}</div>
             <textarea
               ref={areaRef}
@@ -139,6 +140,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               value={curValue}
               onChange={e => set(cur!.key, e.target.value)}
               placeholder={cur!.example}
+              aria-labelledby="mode-entry-question"
             />
           </>
         )}

@@ -34,7 +34,10 @@ export function AppearanceSection({
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ОФОРМЛЕНИЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <div
           style={{
             padding: '14px 16px',
@@ -43,7 +46,13 @@ export function AppearanceSection({
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-10)',
+            }}
+          >
             <ThemeIcon theme={theme} />
             <div>
               <div
@@ -206,7 +215,7 @@ export function AppearanceSection({
                 style={{
                   width: '100%',
                   padding: '9px 0',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   border: '1px solid rgba(var(--fg-rgb),0.1)',
                   background: 'transparent',
                   color: 'var(--text-sub)',
@@ -231,14 +240,14 @@ export function AppearanceSection({
                   {tr('Свои данные не теряешь.', 'Свои данные не теряете.')}{' '}
                   Заявку можно подать заново.
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                   <button
                     disabled={resignBusy}
                     onClick={() => setResignConfirm(false)}
                     style={{
                       flex: 1,
                       padding: '9px 0',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: '1px solid rgba(var(--fg-rgb),0.1)',
                       background: 'transparent',
                       color: 'var(--text-sub)',
@@ -264,7 +273,7 @@ export function AppearanceSection({
                     style={{
                       flex: 1,
                       padding: '9px 0',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: 'none',
                       background: 'var(--accent-red)',
                       color: '#fff',

@@ -25,7 +25,7 @@ export function ModeChainSuggestion({
           marginTop: 16,
           background: 'rgba(var(--fg-rgb),0.04)',
           border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 14px 12px',
           textAlign: 'left',
         }}
@@ -57,7 +57,7 @@ export function ModeChainSuggestion({
                 gap: 6,
                 background: 'rgba(var(--fg-rgb),0.07)',
                 border: '1px solid transparent',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 padding: '7px 12px',
                 color: 'var(--text)',
                 fontSize: 13,
@@ -77,7 +77,7 @@ export function ModeChainSuggestion({
             style={{
               background: 'none',
               border: '1px solid rgba(var(--fg-rgb),0.14)',
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               padding: '7px 12px',
               color: 'var(--text-sub)',
               fontSize: 13,

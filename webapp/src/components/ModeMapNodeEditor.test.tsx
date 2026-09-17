@@ -122,6 +122,20 @@ describe('ModeMapNodeEditor — условные поля по типу ноды
     expect(screen.getByLabelText('Неудовлетворённая потребность')).toBeTruthy();
   });
 
+  it('поле потребности: плейсхолдер звучит в форме «ты»', () => {
+    renderEditor(baseNode({ type: 'child' }), {}, 'ty');
+    expect(
+      screen.getByPlaceholderText('Выбери или впиши свою…'),
+    ).toBeTruthy();
+  });
+
+  it('поле потребности: плейсхолдер звучит в форме «вы»', () => {
+    renderEditor(baseNode({ type: 'child' }), {}, 'vy');
+    expect(
+      screen.getByPlaceholderText('Выберите или впишите свою…'),
+    ).toBeTruthy();
+  });
+
   it('trigger: НЕ показывает поле потребности (только у child/custom)', () => {
     renderEditor(baseNode({ type: 'trigger' }));
     expect(screen.queryByLabelText('Неудовлетворённая потребность')).toBeNull();

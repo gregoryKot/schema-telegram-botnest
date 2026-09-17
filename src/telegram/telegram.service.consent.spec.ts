@@ -1,8 +1,10 @@
 // Продолжение telegram.service.onboarding.spec.ts (лимит ~300 строк на файл,
 // CLAUDE.md — вынесено в отдельный файл): accept_consent (легаси-кнопка
 // consent-сообщений, отправленных до слияния экранов согласия),
-// accept:(ty|vy)/cancel/back:welcome/treq — их непокрытые ветки catch/фолбэк
-// (базовый happy-path уже покрыт telegram.service.spec.ts).
+// accept:(ty|vy)/cancel/back:welcome — их непокрытые ветки catch/фолбэк
+// (базовый happy-path уже покрыт telegram.service.spec.ts). treq — вынесен
+// на TelegramAdminService (правило №10 CLAUDE.md), см.
+// telegram.admin.service.treq.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramService, WELCOME_TEXT } from './telegram.service';
 import {
@@ -21,21 +23,13 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.botService,
   };
   const analyticsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core'),
     ...overrides.analyticsService,
-  };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
-  };
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -51,20 +45,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     schedule: jest.fn().mockResolvedValue(undefined),
     ...overrides.notificationService,
   };
-  const therapistRequestService = {
-    approve: jest.fn().mockResolvedValue(undefined),
-    reject: jest.fn().mockResolvedValue(undefined),
-    ...overrides.therapistRequestService,
-  };
-  const publisher = {
-    publish: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.publisher,
-  };
-  const channelCheck = {
-    log: jest.fn().mockResolvedValue(''),
-    checkOne: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.channelCheck,
-  };
   const analyticsEvents = {
     track: jest.fn().mockResolvedValue(undefined),
     ...overrides.analyticsEvents,
@@ -74,18 +54,20 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
-    statsReport,
-    healthyAdultService,
     accountService,
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
-    publisher,
-    channelCheck,
     analyticsEvents,
   );
-  return { service, fakeBot, botService, pairsService, analyticsEvents };
+  return {
+    service,
+    fakeBot,
+    botService,
+    accountService,
+    pairsService,
+    analyticsEvents,
+  };
 }
 
 beforeEach(() => {
@@ -128,7 +110,7 @@ describe('TelegramService — accept_consent (легаси-кнопка)', () =>
     service.onModuleInit();
     await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc',
+      payload: 'pair_abc',
     });
     const ctx = await runAction(fakeBot, 'accept_consent', { from: { id: 1 } });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'ABC');
@@ -228,22 +210,61 @@ describe('TelegramService — cancel/back:welcome ошибки', () => {
   });
 });
 
-describe('TelegramService — treq action, ошибка approve/reject', () => {
-  it('approve падает — answerCbQuery("Ошибка"), ошибка залогирована, не бросает', async () => {
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const OLD = process.env.ADMIN_ID;
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot } = makeDeps({
-      therapistRequestService: {
-        approve: jest.fn().mockRejectedValue(new Error('db down')),
+// Разбор 2026-08-29. Слияние аккаунтов физически удаляет строку User
+// источника, а привязка Telegram переезжает на цель. /start после этого шёл
+// по сырому ctx.from.id и upsert'ом заводил рядом ВТОРОЙ, пустой аккаунт —
+// раздвоение, которое человек только что вручную вылечил, возвращалось само.
+describe('/start у слитого аккаунта', () => {
+  const TG = 42;
+  const WEB = 1_000_000_000_000_777n;
+
+  function mergedDeps() {
+    return makeDeps({
+      accountService: {
+        canonicalUserId: jest.fn(async () => WEB),
+      },
+      botService: {
+        hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
+        getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'vy' }),
+      },
+    });
+  }
+
+  it('регистрирует ЦЕЛЕВОЙ аккаунт, а не заводит новый по telegramId', async () => {
+    const { service, fakeBot, accountService } = mergedDeps();
+    service.onModuleInit();
+
+    await runCommand(fakeBot, 'start', { from: { id: TG, first_name: 'Ася' } });
+
+    expect(accountService.registerUser).toHaveBeenCalledWith(WEB, 'Ася');
+    expect(accountService.registerUser).not.toHaveBeenCalledWith(
+      BigInt(TG),
+      expect.anything(),
+    );
+  });
+
+  it('настройки читаются по целевому номеру — иначе новичковый онбординг покажется повторно', async () => {
+    const { service, fakeBot, botService } = mergedDeps();
+    service.onModuleInit();
+
+    await runCommand(fakeBot, 'start', { from: { id: TG } });
+
+    expect(botService.getUserSettings).toHaveBeenCalledWith(WEB);
+  });
+
+  it('человек без слияния по-прежнему живёт под своим telegramId', async () => {
+    // Контрольный случай: сужение пути не должно сломать «обычного»
+    // пользователя бота, которому привязку никогда не заводили.
+    const { service, fakeBot, accountService } = makeDeps({
+      botService: {
+        hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
+        getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'ty' }),
       },
     });
     service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:approve:5', {
-      from: { id: 999 },
-    });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith('Ошибка');
-    if (OLD === undefined) delete process.env.ADMIN_ID;
-    else process.env.ADMIN_ID = OLD;
+
+    await runCommand(fakeBot, 'start', { from: { id: TG, first_name: 'Ася' } });
+
+    expect(accountService.registerUser).toHaveBeenCalledWith(BigInt(TG), 'Ася');
   });
 });

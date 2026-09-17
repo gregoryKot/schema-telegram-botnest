@@ -29,7 +29,7 @@ export function RewriteStep({
         style={{
           background: 'rgba(var(--fg-rgb),0.04)',
           border: '1px solid rgba(var(--fg-rgb),0.08)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '13px 15px',
           marginBottom: 14,
         }}
@@ -78,7 +78,7 @@ export function RewriteStep({
           boxSizing: 'border-box',
           background: 'rgba(var(--fg-rgb),0.04)',
           border: `1px solid ${rewrite.trim() ? 'color-mix(in srgb, var(--accent-green) 30%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '13px 14px',
           color: 'var(--text)',
           fontSize: 14,
@@ -97,9 +97,9 @@ export function RewriteStep({
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 10,
+          gap: 'var(--space-10)',
           padding: '11px 13px',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           background: rewrite.trim()
             ? 'color-mix(in srgb, var(--accent-yellow) 8%, transparent)'
             : 'rgba(var(--fg-rgb),0.03)',

@@ -86,6 +86,13 @@ export function modeEntrySavedMeta(
   };
 }
 
+// 2026-08-31: needs_what/needs_why/needs_result/diaries_why/today_screen/author
+// сняты с визарда (schema-miniapp/src/components/disclaimer/steps.ts) — визард
+// дублировал онбординг трекера и пустые состояния фичей, контент переехал
+// туда же. Тип НЕ сокращён — старые события с этими шагами лежат в БД, и
+// воронка /stats за прошлый период должна по-прежнему читаться (парный список
+// на бэке — src/analytics/onboarding-steps.constants.ts, синхронь оба). Новые
+// события с этими шагами больше не приходят.
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'
@@ -109,7 +116,39 @@ export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
 export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
 export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
 
-/** Мессенджер, из которого переносят: meta.host. */
-export type AccountLinkHost = 'max' | 'telegram';
+/** Откуда переносят: meta.host. 'web' — карточка объединения на сайте. */
+export type AccountLinkHost = 'max' | 'telegram' | 'web';
 /** Почему не вышло: meta.reason. */
 export type AccountLinkFailReason = 'expired' | 'error';
+
+// Открытие листа схемы/режима с редизайна вкладки «Я»: meta { kind }.
+// Парный allow-list (ANALYTICS_EVENTS, PROFILE_PATTERN_KINDS) —
+// src/analytics/analytics.constants.ts. Фронт вкладки «Я» ещё не подключён
+// (см. src/security/analytics-sync.invariants.spec.ts, BACKEND_ONLY) — тот
+// же приём, что у MODE_CARD_SAVED_EVENT: контракт заводится раньше UI.
+export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
+export type ProfilePatternKind = 'schema' | 'mode';
+
+// ── Разбор случая («Что это было») ─────────────────────────────────────────
+// Новая точка входа: человек за три минуты разбирает один случай и получает
+// первую запись дневника, приметы для карточки и метку на карте себя.
+// Имена событий шлются строковыми литералами из компонентов потока — так их
+// видит спека синхронизации (src/security/analytics-sync.invariants.spec.ts);
+// здесь живут типы меты. Парный allow-list и санитайзер —
+// src/analytics/case-steps.constants.ts и src/api/analytics-meta.sanitize-case.ts.
+//
+// Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
+// остаются на клиенте и в зашифрованных полях карточки (правило №7).
+
+/** Вердикт критерия Jacob: meta.verdict у case_criterion. */
+export type CaseVerdictMeta = 'mode' | 'ordinary' | 'borderline';
+
+/** Откуда взялась сцена: meta.source у case_scene. */
+export type CaseSceneSource = 'own' | 'frame';
+
+/**
+ * Откуда взялось имя режима: meta.source у mode_renamed. Доля `own` и `chip`
+ * против `skipped` показывает, присваивает ли человек часть себе, — ради
+ * этого шаг и существует.
+ */
+export type ModeRenameSource = 'chip' | 'own' | 'skipped';

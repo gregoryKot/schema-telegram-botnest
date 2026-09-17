@@ -48,54 +48,7 @@ function makePrisma(overrides: Record<string, any> = {}) {
       count: jest.fn().mockResolvedValue(0),
       ...overrides.pair,
     },
-    $queryRaw: overrides.$queryRaw ?? makeQueryRawMock(),
   } as any;
-}
-
-// $queryRaw в BotAnalyticsService используется несколькими разными сырыми
-// запросами (getAdminStats/getRetentionStats) — тег-функция разбирает
-// шаблон-стрингу и по узнаваемому фрагменту SQL решает, что вернуть, вместо
-// хрупкой привязки к порядку вызовов Promise.all.
-function makeQueryRawMock(
-  cfg: {
-    cohortPoint?: (n: number) => { cohort: number; retained: number };
-    filledOnce30?: number;
-    todayCount?: number;
-    month30Count?: number;
-    ret1?: number;
-    ret3?: number;
-    ret7?: number;
-    ret30?: number;
-  } = {},
-) {
-  return jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => {
-    const text = strings.join('|');
-    if (text.includes('AS cohort')) {
-      const n = values[0] as number;
-      const r = cfg.cohortPoint?.(n) ?? { cohort: 0, retained: 0 };
-      return Promise.resolve([
-        { cohort: BigInt(r.cohort), retained: BigInt(r.retained) },
-      ]);
-    }
-    if (text.includes('EXISTS (SELECT 1 FROM "Rating" r')) {
-      return Promise.resolve([{ c: BigInt(cfg.filledOnce30 ?? 0) }]);
-    }
-    if (text.includes('WHERE date = ')) {
-      return Promise.resolve([{ c: BigInt(cfg.todayCount ?? 0) }]);
-    }
-    if (text.includes('WHERE date >= ')) {
-      return Promise.resolve([{ c: BigInt(cfg.month30Count ?? 0) }]);
-    }
-    if (text.includes('>= 1)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret1 ?? 0) }]);
-    if (text.includes('>= 3)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret3 ?? 0) }]);
-    if (text.includes('>= 7)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret7 ?? 0) }]);
-    if (text.includes('>= 30)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret30 ?? 0) }]);
-    return Promise.resolve([]);
-  });
 }
 
 describe('BotAnalyticsService', () => {
@@ -686,95 +639,61 @@ describe('BotAnalyticsService', () => {
     });
   });
 
-  describe('getRetentionStats', () => {
-    it('собирает когорты D1/D7/D30 и воронку онбординга за последние 30 дней', async () => {
-      const prisma = makePrisma({
-        user: {
-          count: jest.fn(({ where }: any) =>
-            Promise.resolve(where.disclaimerAccepted ? 30 : 50),
-          ),
+  // getBestDayOfWeek/getWorstDayOfWeek на границе «≥3 разных дней недели» и
+  // getStreakData.weekDots — перенесены сюда из bot.admin-stats.service.spec.ts
+  // (правило №10: тесты не про getAdminStats относятся к этому сервису, не к
+  // BotAdminStatsService).
+  describe('getBestDayOfWeek / getWorstDayOfWeek — граница «≥3 разных дней недели»', () => {
+    it('ровно 3 разных дня недели — уже достаточно для ответа (не null)', async () => {
+      const prisma: any = {
+        rating: {
+          findMany: jest.fn().mockResolvedValue([
+            { date: d(0), value: 9 }, // среда
+            { date: d(1), value: 1 }, // вторник
+            { date: d(2), value: 5 }, // понедельник
+          ]),
         },
-        $queryRaw: makeQueryRawMock({
-          cohortPoint: (n) =>
-            n === 1
-              ? { cohort: 10, retained: 4 }
-              : n === 7
-                ? { cohort: 20, retained: 6 }
-                : { cohort: 15, retained: 2 },
-          filledOnce30: 25,
-        }),
-      });
+      };
       const svc = new BotAnalyticsService(prisma);
-      const stats = await svc.getRetentionStats();
-      expect(stats.d1).toEqual({ cohort: 10, retained: 4 });
-      expect(stats.d7).toEqual({ cohort: 20, retained: 6 });
-      expect(stats.d30).toEqual({ cohort: 15, retained: 2 });
-      expect(stats.funnel).toEqual({
-        registered30: 50,
-        consented30: 30,
-        filledOnce30: 25,
-      });
+      expect(await svc.getBestDayOfWeek(1)).toBe('среда');
+      expect(await svc.getWorstDayOfWeek(1)).toBe('вторник');
+    });
+
+    it('всего 2 разных дня недели — недостаточно данных, обе функции возвращают null', async () => {
+      const prisma: any = {
+        rating: {
+          findMany: jest.fn().mockResolvedValue([
+            { date: d(0), value: 9 }, // среда
+            { date: d(1), value: 1 }, // вторник
+          ]),
+        },
+      };
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getBestDayOfWeek(1)).toBeNull();
+      expect(await svc.getWorstDayOfWeek(1)).toBeNull();
     });
   });
 
-  describe('getAdminStats', () => {
-    it('собирает полный отчёт /stats без падений на населённых данных', async () => {
-      const ago7 = new Date(FIXED_DATE.getTime() - 7 * 86_400_000);
-      const ago30 = new Date(FIXED_DATE.getTime() - 30 * 86_400_000);
-      const prisma = makePrisma({
-        user: {
-          count: jest.fn(({ where }: any) => {
-            if (where.notifyEnabled === false) return Promise.resolve(3);
-            if (where.botBlockedAt) return Promise.resolve(2);
-            if (where.createdAt?.gte?.getTime() === ago7.getTime())
-              return Promise.resolve(5);
-            if (where.createdAt?.gte?.getTime() === ago30.getTime())
-              return Promise.resolve(12);
-            if (where.disclaimerAccepted) return Promise.resolve(8);
-            if (where.createdAt) return Promise.resolve(20); // registered30
-            return Promise.resolve(100); // totalUsers
-          }),
-        },
-        pair: { count: jest.fn().mockResolvedValue(4) },
+  describe('getStreakData — weekDots (текущая неделя пн–вс, будущее = false)', () => {
+    it('среда — заполнены пн/ср, будущие дни (чт..вс) всегда false вне зависимости от данных', async () => {
+      const prisma: any = {
         rating: {
-          findMany: jest.fn(({ distinct }: any) => {
-            if (distinct?.includes('date'))
-              return Promise.resolve([
-                { date: d(0), userId: 1n },
-                { date: d(1), userId: 2n },
-              ]);
-            return Promise.resolve([{ userId: 1n }, { userId: 3n }]);
-          }),
-          groupBy: jest.fn().mockResolvedValue([
-            { needId: 'limits', _avg: { value: 3.2 } },
-            { needId: 'attachment', _avg: { value: 7.1 } },
-          ]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([{ date: d(2) }, { date: d(0) }]), // пн и ср
         },
-        $queryRaw: makeQueryRawMock({
-          todayCount: 7,
-          month30Count: 40,
-          ret1: 60,
-          ret3: 30,
-          ret7: 15,
-          ret30: 5,
-          cohortPoint: () => ({ cohort: 10, retained: 3 }),
-          filledOnce30: 18,
-        }),
-      });
+        appActivity: { findMany: jest.fn().mockResolvedValue([]) },
+        schemaDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+        modeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+        gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({ notifyTimezone: 'UTC' }),
+        },
+      };
       const svc = new BotAnalyticsService(prisma);
-      const report = await svc.getAdminStats();
-      expect(typeof report).toBe('string');
-      expect(report).toContain('Всего людей: 100');
-      expect(report).toContain('Выключили напоминания: 3');
-      expect(report).toContain('Сейчас вместе: 4');
-      // getAdminStats дописывает retention-блок (getRetentionStats)
-      expect(report.length).toBeGreaterThan(200);
-    });
-
-    it('на пустой БД не падает и не показывает NaN/undefined (правило №8 CLAUDE.md)', async () => {
-      const svc = new BotAnalyticsService(makePrisma());
-      const report = await svc.getAdminStats();
-      expect(report).not.toMatch(/NaN|undefined/);
+      const { weekDots } = await svc.getStreakData(1n);
+      // индексы 0=пн..6=вс: пн(0)=true, вт(1)=false, ср(2)=true, дальше — будущее
+      expect(weekDots).toEqual([true, false, true, false, false, false, false]);
     });
   });
 });

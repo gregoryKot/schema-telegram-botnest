@@ -1,49 +1,49 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { canonicalUserId, telegramIdsFor } from '../auth/telegram-identity';
+import { WEB_USER_ID_MIN, isTelegramUserId } from '../auth/user-id-range';
+import { deleteAllUserData } from './account.delete';
+// Реестр живёт отдельным файлом (им пользуется и account.delete.ts);
+// ре-экспорт — чтобы импорты соседей и спек продолжали работать.
+export { USER_DATA_TABLES } from './user-data-tables';
 
-// ── User data registry ───────────────────────────────────────────────────────
-// CHECKLIST when adding a new table with userId:
-//   1. Add the model name here — deleteAllUserData will clear it automatically
-//   2. In service methods: use encryptRecord/decryptRecord (from utils/crypto)
-//      and declare an EncryptSchema constant near the methods
-//   3. Add onDelete: Cascade on the User relation in schema.prisma
-//   4. Run `npx prisma generate` after schema changes
-//
-// TypeScript: if a name doesn't exist on PrismaService you get a compile error.
-export const USER_DATA_TABLES = [
-  'rating',
-  'note',
-  'userSchemaNote',
-  'userModeNote',
-  'userBeliefCheck',
-  'userPhraseCheck',
-  'userLetter',
-  'userSafePlace',
-  'userFlashcard',
-  'userPractice',
-  'practicePlan',
-  'practiceSession',
-  'childhoodRating',
-  'ysqResult',
-  'ysqProgress',
-  'ysqResultHistory',
-  'scheduledNotification',
-  'schemaDiaryEntry',
-  'modeDiaryEntry',
-  'gratitudeDiaryEntry',
-  'appActivity',
-  'userTask',
-  'diaryDraft',
-  'emailToken',
-  'analyticsEvent',
-  'deviceLinkRequest',
-] as const;
-// Compile-time check: any invalid table name above becomes a TS error here.
-type _VerifyTables = {
-  [K in (typeof USER_DATA_TABLES)[number]]: PrismaService[K];
-};
+/**
+ * Что нужно знать про человека, чтобы отправить ему уведомление: тихие часы,
+ * форма обращения и КУДА писать. `chatId === null` — писать некуда: у
+ * человека нет телеграм-входа вовсе.
+ */
+export interface SendSettings {
+  tz: string;
+  start: number;
+  end: number;
+  form: string | null;
+  chatId: bigint | null;
+}
+
+/**
+ * Куда писать этому аккаунту. Сначала — привязка AuthProvider (единственный
+ * верный ответ для слитых аккаунтов и для входов через сайт). Если привязки
+ * нет, а сам номер лежит в телеграмном диапазоне — это старый пользователь
+ * бота, которому строку AuthProvider никогда не заводили (её создаёт вход в
+ * мини-апп или на сайте). Таких большинство, и их адрес — сам userId.
+ *
+ * `null` остаётся только у веб-номеров без привязки: чата по такому номеру
+ * не существует в принципе.
+ */
+function resolveChatId(
+  userId: bigint,
+  providerId: string | undefined,
+): bigint | null {
+  if (providerId !== undefined) {
+    try {
+      return BigInt(providerId);
+    } catch {
+      return isTelegramUserId(userId) ? userId : null;
+    }
+  }
+  return isTelegramUserId(userId) ? userId : null;
+}
 
 // Жизненный цикл аккаунта: регистрация/идентичность, роль, статус блокировки
 // бота, списки для рассылок и полное удаление (right-to-erasure).
@@ -149,9 +149,32 @@ export class AccountService {
     return users.map((u) => Number(u.id));
   }
 
+  /**
+   * Кого планировщик вообще рассматривает. Отсекаем тех, кому бот физически
+   * не может написать: вход через Google, почту или MAX даёт userId в
+   * веб-диапазоне, чата с таким номером не существует. Раньше их всё равно
+   * ставили в очередь, отправка падала, и человек молча получал
+   * `botBlockedAt` — уведомления выключались навсегда у того, кто ни о чём
+   * не просил.
+   *
+   * Отсекаем ИМЕННО здесь, до создания строки: тогда веха (streak_7 и
+   * соседи) не сгорает у человека, который привяжет Telegram позже.
+   */
   async getAllUsersWithSettings() {
     return this.prisma.user.findMany({
-      where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
+      where: {
+        notifyEnabled: true,
+        botBlockedAt: null,
+        deletedAt: null,
+        // Либо есть привязка к Telegram, либо номер сам телеграмный (старый
+        // пользователь бота без строки AuthProvider). Веб-номер без привязки
+        // отсекаем: чата по нему нет, и раньше такие люди молча копили
+        // botBlockedAt на неудачных отправках.
+        OR: [
+          { authProviders: { some: { provider: 'telegram' } } },
+          { id: { lt: WEB_USER_ID_MIN } },
+        ],
+      },
       select: {
         id: true,
         notifyLocalHour: true,
@@ -179,11 +202,7 @@ export class AccountService {
   }
 
   /** Тихие часы + таймзона + форма обращения для пачки юзеров (processQueue) */
-  async getSendSettingsFor(
-    ids: bigint[],
-  ): Promise<
-    Map<string, { tz: string; start: number; end: number; form: string | null }>
-  > {
+  async getSendSettingsFor(ids: bigint[]): Promise<Map<string, SendSettings>> {
     if (ids.length === 0) return new Map();
     const rows = await this.prisma.user.findMany({
       where: { id: { in: ids } },
@@ -193,6 +212,14 @@ export class AccountService {
         notifyQuietStart: true,
         notifyQuietEnd: true,
         addressForm: true,
+        // Адрес берём тем же запросом, что и настройки: очередь читает и то и
+        // другое на одном тике, второй роундтрип здесь был бы дублем механики.
+        authProviders: {
+          where: { provider: 'telegram' },
+          select: { providerId: true },
+          orderBy: { id: 'desc' },
+          take: 1,
+        },
       },
     });
     return new Map(
@@ -203,76 +230,41 @@ export class AccountService {
           start: r.notifyQuietStart,
           end: r.notifyQuietEnd,
           form: r.addressForm,
+          chatId: resolveChatId(r.id, r.authProviders?.[0]?.providerId),
         },
       ]),
     );
   }
 
+  /**
+   * Полное удаление аккаунта — тело транзакции в account.delete.ts
+   * (правило №10: два десятка таблиц не живут внутри сервиса).
+   */
   async deleteAllUserData(userId: bigint): Promise<void> {
-    const uid = userId;
-    // HARD delete — right-to-erasure. We tear out every row that references
-    // this user, including auth providers, web sessions, therapist requests,
-    // and finally the User row itself. NO soft-delete fallback.
-    //
-    // After the transaction we run VACUUM on the touched tables (outside the
-    // transaction — VACUUM can't run inside one). This reclaims dead tuples
-    // so the data is physically overwriteable by Postgres faster.
-    await this.prisma.$transaction([
-      // All user-owned tables (USER_DATA_TABLES registry above).
-      ...USER_DATA_TABLES.map((table) =>
-        (
-          this.prisma[table] as unknown as {
-            deleteMany(args: {
-              where: { userId: bigint };
-            }): Prisma.PrismaPromise<Prisma.BatchPayload>;
-          }
-        ).deleteMany({ where: { userId: uid } }),
-      ),
-      // Clinical rows about a person: remove when EITHER side deletes account.
-      // clientId matters no less than therapistId — right-to-erasure клиента
-      // включает конспектуализацию и заметки терапевта О НЁМ (аудит 2026-07, D-1).
-      this.prisma.clientConceptualization.deleteMany({
-        where: { OR: [{ therapistId: uid }, { clientId: uid }] },
-      }),
-      this.prisma.therapistNote.deleteMany({
-        where: { OR: [{ therapistId: uid }, { clientId: uid }] },
-      }),
-      this.prisma.therapyRelation.deleteMany({
-        where: { OR: [{ therapistId: uid }, { clientId: uid }] },
-      }),
-      // Mode maps (about a client, created by a therapist) — remove if either side leaves.
-      this.prisma.modeMap.deleteMany({
-        where: { OR: [{ therapistId: uid }, { clientId: uid }] },
-      }),
-      this.prisma.therapistCustomMode.deleteMany({
-        where: { therapistId: uid },
-      }),
-      // Pairs (two refs).
-      this.prisma.pair.deleteMany({
-        where: { OR: [{ userId1: uid }, { userId2: uid }] },
-      }),
-      // Auth: providers + web sessions + therapist requests.
-      this.prisma.authProvider.deleteMany({ where: { userId: uid } }),
-      this.prisma.webSession.deleteMany({ where: { userId: uid } }),
-      this.prisma.therapistRequest.deleteMany({
-        where: { userId: uid },
-      }),
-      // Recurring subscriptions: for Telegram users userId === telegramId, so
-      // remove (and stop billing) any subscription tied to this person. Charges
-      // cascade-delete via the FK. (Web-only subs without telegramId aren't
-      // account-linked — managed by their own cancel token.)
-      this.prisma.subscription.deleteMany({
-        where: { telegramId: uid },
-      }),
-      // Finally — the user row itself.
-      this.prisma.user.delete({ where: { id: uid } }),
-    ]);
-    // Async VACUUM on the affected tables only (non-blocking, no FULL).
-    // Scope to User table and key user-data tables — avoids a full-DB scan.
-    this.prisma
-      .$executeRawUnsafe('VACUUM ANALYZE "User"')
-      .catch((e) =>
-        this.logger.warn(`Post-delete VACUUM failed: ${(e as Error).message}`),
-      );
+    return deleteAllUserData(this.prisma, this.logger, userId);
+  }
+
+  /**
+   * Чей это аккаунт по адресу в Telegram. Хендлеры бота знают только
+   * `ctx.from.id`, а после слияния аккаунтов он уже НЕ равен userId — данные
+   * человека лежат под веб-номером, и запись по сырому telegramId создала бы
+   * второй, пустой аккаунт. Единственная реализация — auth/telegram-identity.
+   */
+  async canonicalUserId(telegramId: number | bigint): Promise<bigint> {
+    return canonicalUserId(this.prisma, telegramId);
+  }
+
+  /**
+   * Адреса в Telegram для пачки аккаунтов (рассылка). Тот же фолбэк, что и у
+   * очереди: телеграмный номер без привязки — сам себе адрес, иначе рассылка
+   * перестала бы доходить до старых пользователей бота.
+   */
+  async telegramIdsFor(userIds: bigint[]): Promise<Map<string, bigint>> {
+    const linked = await telegramIdsFor(this.prisma, userIds);
+    for (const id of userIds) {
+      const key = id.toString();
+      if (!linked.has(key) && isTelegramUserId(id)) linked.set(key, id);
+    }
+    return linked;
   }
 }

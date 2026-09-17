@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../utils/addressForm';
 import { PlansScreen } from './PlansScreen';
 
 const getPlanHistory = vi.fn();
@@ -26,11 +27,13 @@ afterEach(() => {
   cleanup();
 });
 
-function renderScreen(onOpenTracker = vi.fn()) {
+function renderScreen(onOpenTracker = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   return render(
-    <MemoryRouter>
-      <PlansScreen onClose={vi.fn()} onOpenTracker={onOpenTracker} />
-    </MemoryRouter>,
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter>
+        <PlansScreen onClose={vi.fn()} onOpenTracker={onOpenTracker} />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
   );
 }
 
@@ -51,10 +54,47 @@ describe('PlansScreen — пустое состояние', () => {
     expect(onOpenTracker).toHaveBeenCalled();
   });
 
-  it('провал загрузки истории не роняет экран — считается пустым списком', async () => {
+  it('объяснение пустого состояния звучит на «ты»', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen(vi.fn(), 'ty');
+    expect(
+      await screen.findByText(/выбери потребность с низкой оценкой и нажми/),
+    ).toBeTruthy();
+  });
+
+  it('объяснение пустого состояния звучит на «вы»', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen(vi.fn(), 'vy');
+    expect(
+      await screen.findByText(/выберите потребность с низкой оценкой и нажмите/),
+    ).toBeTruthy();
+  });
+});
+
+describe('PlansScreen — сбой загрузки (сбой ≠ пусто)', () => {
+  // Регрессия: раньше .catch(() => setPlans([])) рисовал «Планов пока нет»
+  // человеку, у которого планы есть, просто запрос отвалился
+  // (CLAUDE.md «сбой ≠ пусто»; пара к miniapp PlansScreen).
+  it('провал api.getPlanHistory показывает явную ошибку, а не «Планов пока нет»', async () => {
     getPlanHistory.mockRejectedValue(new Error('network'));
     renderScreen();
-    expect(await screen.findByText('Планов пока нет')).toBeTruthy();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить планы/);
+    expect(screen.queryByText('Планов пока нет')).toBeNull();
+  });
+
+  it('«Попробовать ещё раз» перезапрашивает планы и убирает ошибку при успехе', async () => {
+    getPlanHistory.mockRejectedValueOnce(new Error('network'));
+    renderScreen();
+    await screen.findByRole('alert');
+
+    getPlanHistory.mockResolvedValueOnce([
+      { id: 1, needId: 'attachment', practiceText: 'Позвонить другу', scheduledDate: today, reminderUtcHour: null, done: null },
+    ]);
+    fireEvent.click(screen.getByText('Попробовать ещё раз'));
+
+    await waitFor(() => expect(screen.getByText('Позвонить другу')).toBeTruthy());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

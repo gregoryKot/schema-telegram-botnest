@@ -12,6 +12,14 @@ afterEach(() => {
 });
 
 describe('PatternsHeader', () => {
+  // В8 дизайн-аудита 2026-08: заголовок экрана — h1.
+  it('«Паттерны» — h1', () => {
+    render(<PatternsHeader onOpenSchema={() => {}} onCustomize={() => {}} />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Паттерны' }),
+    ).toBeTruthy();
+  });
+
   it('шестерёнка и «Библиотека» — в одном ряду actions, без второй строки', () => {
     render(<PatternsHeader onOpenSchema={() => {}} onCustomize={() => {}} />);
     const gear = screen.getByLabelText('Настроить экран');

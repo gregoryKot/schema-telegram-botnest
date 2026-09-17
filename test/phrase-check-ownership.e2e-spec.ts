@@ -10,7 +10,10 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
-import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership упражнения «Разобрать фразу»', () => {
   let app: INestApplication;
@@ -24,6 +27,8 @@ describe('e2e smoke: ownership упражнения «Разобрать фра�
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
     await cleanupOwnershipFixtures(prisma, ALL);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, ALL);
   });
 
   afterAll(async () => {

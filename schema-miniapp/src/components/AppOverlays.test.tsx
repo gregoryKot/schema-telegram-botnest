@@ -140,6 +140,13 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
 }
 
 describe('AppOverlays — видимость по sheets.*', () => {
+  // DiarySection/TaskCreateSheet/ChildhoodWheelSheet/PracticesScreen/
+  // PlansScreen/SchemaInfoSheet — React.lazy (LazyOverlays.tsx, правка
+  // производительности 2026-08-22): даже с замоканным модулем import()
+  // резолвится асинхронно, поэтому findByText (не getByText) нужен всем
+  // пунктам списка — часть из них уже была бы готова синхронно, но
+  // единообразие важнее: гейт ловит регресс независимо от того, какая
+  // шторка стала ленивой в следующей правке.
   it.each([
     ['trackerOverlay', 'TrackerOverlay'],
     ['diaries', 'DiarySection'],
@@ -153,11 +160,11 @@ describe('AppOverlays — видимость по sheets.*', () => {
     ['plans', 'PlansScreen'],
     ['schemaInfo', 'SchemaInfoSheet'],
     ['todayNote', 'NoteSheet'],
-  ] as const)('sheets.%s=true показывает %s', (flag, label) => {
+  ] as const)('sheets.%s=true показывает %s', async (flag, label) => {
     render(
       <AppOverlays {...baseProps({ sheets: makeSheets({ [flag]: true }) })} />,
     );
-    expect(screen.getByText(label)).toBeTruthy();
+    expect(await screen.findByText(label)).toBeTruthy();
   });
 
   it('ничего не открыто — ни один шит не рендерится (кроме постоянного DonateNudge)', () => {
@@ -252,7 +259,8 @@ describe('AppOverlays — цепочки колбэков между шитам�
       />,
     );
     fireEvent.click(screen.getByText('address-done'));
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    // Метка — время в localStorage: переживает вкладку (регресс 2026-08-21)
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
     expect(close).toHaveBeenCalledWith('addressPicker');
     expect(onAddressPickerDone).toHaveBeenCalled();
   });

@@ -13,6 +13,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../utils/addressForm';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import type { Need, DayHistory } from '../types';
 
@@ -39,11 +40,17 @@ const NEEDS: Need[] = [
 ];
 const HISTORY: DayHistory[] = [{ date: '2020-01-10', ratings: { safety: 7 } }];
 
-function renderSheet(history: DayHistory[] = HISTORY, onClose = vi.fn()) {
+function renderSheet(
+  history: DayHistory[] = HISTORY,
+  onClose = vi.fn(),
+  form: 'ty' | 'vy' = 'ty',
+) {
   return render(
-    <MemoryRouter>
-      <WeeklyCardSheet needs={NEEDS} history={history} onClose={onClose} />
-    </MemoryRouter>,
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter>
+        <WeeklyCardSheet needs={NEEDS} history={history} onClose={onClose} />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
   );
 }
 
@@ -77,6 +84,20 @@ describe('WeeklyCardSheet — есть данные за неделю', () => {
   it('«Назад к истории» использует useHistorySheet (goBack), не onClose напрямую', () => {
     renderSheet();
     expect(screen.getByText('Назад к истории')).toBeTruthy();
+  });
+
+  it('подзаголовок звучит в форме «ты»', () => {
+    renderSheet(HISTORY, vi.fn(), 'ty');
+    expect(
+      screen.getByText('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.'),
+    ).toBeTruthy();
+  });
+
+  it('подзаголовок звучит в форме «вы»', () => {
+    renderSheet(HISTORY, vi.fn(), 'vy');
+    expect(
+      screen.getByText('Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.'),
+    ).toBeTruthy();
   });
 });
 

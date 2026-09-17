@@ -45,10 +45,10 @@ export function ActionStep({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
               background: 'var(--surface)',
               border: '1px solid var(--border-color)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 16,
             }}
@@ -94,7 +94,7 @@ export function ActionStep({
             boxSizing: 'border-box',
             background: 'var(--surface)',
             border: `1px solid ${action.trim() ? 'var(--accent)' : 'var(--border-color)'}`,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -107,13 +107,13 @@ export function ActionStep({
           }}
         />
         <CrisisGate texts={[action]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
           <button
             onClick={onBack}
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -133,7 +133,7 @@ export function ActionStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: action.trim()

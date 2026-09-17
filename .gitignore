@@ -128,3 +128,16 @@ reports/
 # упавших прогонов — артефакт запуска, в CI уезжает отдельным upload-artifact.
 test-results/
 playwright-report/
+
+# Артефакты `tsc -b` рядом с TS-исходниками тестов и конфигов: сборка webapp
+# (`npm run build --prefix webapp`) собирает и связанные проекты, оставляя
+# .js/.d.ts/.js.map возле каждого .ts. Это мусор сборки, не код.
+e2e-browser/**/*.js
+e2e-browser/**/*.d.ts
+e2e-browser/**/*.js.map
+test/**/*.js
+test/**/*.d.ts
+test/**/*.js.map
+playwright.config.js
+playwright.config.d.ts
+playwright.config.js.map

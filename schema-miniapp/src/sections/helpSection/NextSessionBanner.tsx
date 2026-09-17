@@ -44,7 +44,7 @@ export function NextSessionBanner({
           ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
           : 'rgba(var(--fg-rgb),0.05)',
         border: `1px solid ${isToday ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '5px 12px',
       }}
     >

@@ -118,7 +118,7 @@ describe('BecomeTherapistSection — форма заявки', () => {
         {...baseProps({
           showReqForm: true,
           reqFullName: 'Анна Смирнова',
-          reqQual: 'Схема-терапевт',
+          reqQual: 'Психолог',
           reqContacts: '@anna',
         })}
       />,

@@ -48,7 +48,6 @@ async function openedHook(clientOverrides: Partial<Record<string, unknown>> = {}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
   mockApi.getTherapistNotes.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(null);
@@ -137,15 +136,34 @@ describe('openClient', () => {
 });
 
 // ── Удаление клиента ─────────────────────────────────────────────────────────
+// Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog
+// (рендерится в ClientHeader). requestDeleteClient открывает подтверждение
+// (confirmingDelete=true), deleteClient — сама операция (вызывается диалогом
+// на «Удалить»), cancelDeleteClient — отмена без обращения к api.
+describe('requestDeleteClient / cancelDeleteClient', () => {
+  it('ничего не делает без выбранного клиента', () => {
+    const { result } = setup();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+  });
+  it('с выбранным клиентом — открывает подтверждение', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(true);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+  it('отмена закрывает подтверждение без обращения к api', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    act(() => { result.current.cancelDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+});
+
 describe('deleteClient', () => {
   it('ничего не делает без выбранного клиента', async () => {
     const { result } = setup();
-    await act(async () => { await result.current.deleteClient(); });
-    expect(mockApi.removeClient).not.toHaveBeenCalled();
-  });
-  it('ничего не делает, если пользователь отменил confirm', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const { result } = await openedHook();
     await act(async () => { await result.current.deleteClient(); });
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });

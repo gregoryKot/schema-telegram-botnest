@@ -10,10 +10,15 @@ import { api } from '../api';
 import { TODAY_STR, HISTORY_HINT_KEY } from './historyView/constants';
 import { WheelCard } from './historyView/WheelCard';
 import { NeedRow } from './historyView/NeedRow';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { InsightCard } from './historyView/InsightCard';
 import { HistoryDatePicker } from './historyView/HistoryDatePicker';
 import { HistoryControls } from './historyView/HistoryControls';
 import { HistoryWeekView } from './historyView/HistoryWeekView';
+import {
+  BOOKING_CTA_LABEL,
+  trackerTapHint,
+} from '../../../shared/src/history/therapistCta';
 
 interface Props {
   needs: Need[];
@@ -80,8 +85,7 @@ export function HistoryView({
   }, [history.length, selectedIdx]);
 
   useEffect(() => {
-    dateBtnRefs.current[selectedIdx]?.scrollIntoView({
-      behavior: 'smooth',
+    scrollIntoViewSafe(dateBtnRefs.current[selectedIdx], {
       block: 'nearest',
       inline: 'center',
     });
@@ -195,7 +199,7 @@ export function HistoryView({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 'var(--space-12)',
               padding: '0 16px',
             }}
           >
@@ -221,10 +225,7 @@ export function HistoryView({
                   color: 'var(--text-faint)',
                 }}
               >
-                {tr(
-                  'Нажми на потребность — узнаешь что делать',
-                  'Нажмите на потребность — узнаете что делать',
-                )}
+                {trackerTapHint(tr)}
               </div>
             )}
 
@@ -242,11 +243,11 @@ export function HistoryView({
                   }
                 }}
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 'var(--space-12)',
                   cursor: 'pointer',
                   background:
                     ratedCount === 0
@@ -258,7 +259,7 @@ export function HistoryView({
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-10)',
                     flexShrink: 0,
                     background:
                       'color-mix(in srgb, var(--accent-blue) 14%, transparent)',
@@ -321,7 +322,7 @@ export function HistoryView({
             {needsLow.length > 0 && (
               <div
                 className="card"
-                style={{ borderRadius: 16, padding: '16px' }}
+                style={{ borderRadius: 'var(--r-16)', padding: '16px' }}
               >
                 <div
                   style={{
@@ -338,7 +339,7 @@ export function HistoryView({
                   {!contact.isTherapist &&
                     ' Иногда за этим стоит что-то важное — терапевт поможет разобраться.'}
                 </div>
-                {bookingLink('Записаться и взять сводку →')}
+                {bookingLink(BOOKING_CTA_LABEL)}
               </div>
             )}
 
@@ -355,7 +356,7 @@ export function HistoryView({
                 }
               }}
               style={{
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 cursor: 'pointer',
                 border: noteText
@@ -365,7 +366,7 @@ export function HistoryView({
                 background: noteText ? undefined : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
               }}
             >
               <span style={{ fontSize: 16 }}>📝</span>
@@ -402,7 +403,7 @@ export function HistoryView({
                     style={{
                       fontSize: 11,
                       padding: '3px 10px',
-                      borderRadius: 20,
+                      borderRadius: 'var(--r-20)',
                       fontWeight: 500,
                       background:
                         'color-mix(in srgb, var(--accent) 12%, transparent)',

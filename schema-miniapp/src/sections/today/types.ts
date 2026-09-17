@@ -21,4 +21,10 @@ export interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
   onNewDiaryEntry?: (t: 'schema' | 'mode' | 'gratitude') => void;
+  /** Разбор случая — главное действие экрана. */
+  onStartCase: () => void;
+  /** Карта себя, куда складываются разборы. */
+  onOpenMap: () => void;
+  /** Спокойный день: отмечается наравне с разбором, а не прячется. */
+  onSteadyDay: () => void;
 }

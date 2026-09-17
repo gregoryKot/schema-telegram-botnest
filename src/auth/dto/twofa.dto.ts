@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, Length, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * DTO for the 2FA `code` body field (auth.controller.ts: 2fa/enable,
@@ -31,4 +38,13 @@ export class TwoFaChallengeDto extends TwoFaCodeDto {
   @IsNotEmpty()
   @MaxLength(4096)
   challengeToken!: string;
+
+  // Билет входа, если второй фактор случился посреди входа из установленного
+  // приложения. Без него человек с 2FA упирался бы в тупик: в браузере вошёл,
+  // а приложение так и ждёт опросом до истечения билета.
+  @IsOptional()
+  @IsString()
+  @Length(8, 8)
+  @Matches(/^[A-Za-z0-9]+$/)
+  ticket?: string;
 }

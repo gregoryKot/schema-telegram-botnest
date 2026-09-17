@@ -35,7 +35,13 @@ export function PatternsHero({
 
   if (!hasSchemas) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-12)',
+        }}
+      >
         <HeroCta
           label="Первый шаг"
           chip="≈10 мин"

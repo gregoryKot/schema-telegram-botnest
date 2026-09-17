@@ -38,6 +38,7 @@ describe('TelegramQuizService', () => {
       fakeBot.bot,
       botService as any,
       analytics as any,
+      { canonicalUserId: jest.fn(async (id: number) => BigInt(id)) } as any,
     );
     service.onModuleInit();
     return service;

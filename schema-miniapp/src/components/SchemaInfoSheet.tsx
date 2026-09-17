@@ -8,8 +8,8 @@ import type { Tab } from './schemaInfoSheet/types';
 import { NeedsTab } from './schemaInfoSheet/NeedsTab';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
+import { useTr } from '../utils/addressForm';
 export { SCHEMA_DOMAINS };
-
 /* ─── Main Component ─── */
 export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
 interface Props {
@@ -19,7 +19,6 @@ interface Props {
   initialTab?: SchemaInfoTab;
   highlightSchema?: string;
 }
-
 const SCHEMA_TABS: { key: Tab; label: string }[] = [
   { key: 'needs', label: 'Потребности' },
   { key: 'schemas', label: 'Схемы' },
@@ -40,15 +39,22 @@ export function SchemaInfoContent({
         <SectionLabel purple mb={6}>
           Схема-терапия
         </SectionLabel>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: 'var(--text)',
+            margin: 0,
+          }}
+        >
           Как это работает
-        </div>
+        </h2>
       </div>
       <div
         style={{
           display: 'flex',
           background: 'rgba(var(--fg-rgb),0.06)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           padding: 3,
           marginBottom: 20,
         }}
@@ -63,7 +69,7 @@ export function SchemaInfoContent({
                 flex: 1,
                 padding: '8px 0',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: active ? 'rgba(var(--fg-rgb),0.12)' : 'transparent',
                 color: active ? 'var(--text)' : 'var(--text-faint)',
                 fontSize: 13,
@@ -94,6 +100,7 @@ export function SchemaInfoSheet({
   initialTab,
   highlightSchema: initHighlight,
 }: Props) {
+  const tr = useTr();
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(
@@ -143,10 +150,10 @@ export function SchemaInfoSheet({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   background: 'rgba(251,191,36,0.08)',
                   border: '1px solid rgba(251,191,36,0.2)',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   padding: '12px 16px',
                   marginBottom: 12,
                   cursor: 'pointer',
@@ -170,7 +177,10 @@ export function SchemaInfoSheet({
                       marginTop: 2,
                     }}
                   >
-                    Нажми, чтобы продолжить с места остановки
+                    {tr(
+                      'Нажми, чтобы продолжить с места остановки',
+                      'Нажмите, чтобы продолжить с места остановки',
+                    )}
                   </div>
                 </div>
                 <span style={{ fontSize: 16, color: 'var(--accent-yellow)' }}>
@@ -196,7 +206,7 @@ export function SchemaInfoSheet({
                   'color-mix(in srgb, var(--accent) 10%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '14px 16px',
                 cursor: 'pointer',
               }}

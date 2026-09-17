@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// PlanSheet — «что сделаешь завтра» + напоминание (2% покрытия, 483 строки,
-// НЕТ существующего теста). PracticeOptionRow покрыт своим тестом — мокаем.
-// Кризисный путь (правило №7) не нужен: свободный текст здесь — название
-// бытовой практики («написать другу», «прогулка»), а не дневниковая запись
-// о состоянии. Ключевые правила: ошибка сохранения ВИДНА (не закрывает лист
-// молча — правило CLAUDE.md), защита от дубль-клика по «Сохранить»,
-// напоминание пересчитывается из tzOffset, а не хардкодится.
+// PlanSheet — «что сделаешь завтра» + напоминание. PracticeOptionRow покрыт
+// своим тестом — мокаем. Кризисная детекция (правило №7) — свободный текст
+// «своя практика» раньше уходил без прогона через crisisMarkers, как и
+// TaskCreateSheet.tsx до своего фикса (см. TaskCreateSheet.test.tsx). Ключевые
+// правила: ошибка сохранения ВИДНА (не закрывает лист молча — правило
+// CLAUDE.md), защита от дубль-клика по «Сохранить», напоминание пересчитывается
+// из tzOffset, а не хардкодится.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   render,
@@ -16,6 +16,7 @@ import {
 } from '@testing-library/react';
 import { setHost, type HostBridge } from '../../../shared/src/host';
 import { PlanSheet } from './PlanSheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('./planSheet/PracticeOptionRow', () => ({
   PracticeOptionRow: ({
@@ -43,6 +44,7 @@ vi.mock('../api', () => ({
     deletePractice: vi.fn(),
     addPractice: vi.fn(),
     createPlan: vi.fn(),
+    trackEvent: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -276,5 +278,52 @@ describe('PlanSheet — ты/вы', () => {
   it('заголовок фазы выбора звучит на «ты» по умолчанию (без AddressFormContext = ty)', async () => {
     render(<PlanSheet {...baseProps()} />);
     expect(screen.getByText('Что сделаешь завтра?')).toBeTruthy();
+  });
+});
+
+describe('PlanSheet — кризисная детекция в свободном тексте практики (правило №7)', () => {
+  it('кризисная фраза в поле «своя практика» показывает CrisisCard с телефоном доверия', async () => {
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    fireEvent.change(
+      screen.getByPlaceholderText('Что-то конкретное, маленькое...'),
+      { target: { value: 'не хочу жить' } },
+    );
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  it('нейтральный текст практики не показывает CrisisCard', async () => {
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    fireEvent.change(
+      screen.getByPlaceholderText('Что-то конкретное, маленькое...'),
+      { target: { value: 'Прогулка вечером' } },
+    );
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+describe('PlanSheet — сбой загрузки своих практик (сбой ≠ пусто, В10 аудита 2026-08)', () => {
+  // Регрессия: отказ getPractices здесь глушился одним console.error —
+  // пользователь молча видел куцый список готовых вариантов, как будто
+  // своих практик нет. webapp уже показывал баннер отказа — теперь и здесь.
+  it('отказ getPractices — виден баннер отказа, готовые варианты остаются', async () => {
+    mockApi.getPractices.mockRejectedValue(new Error('offline'));
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(
+      'Не удалось загрузить твои практики — ниже только готовые варианты',
+    );
+    // Кураторский список работает — деградация, не пустота.
+    expect(screen.getByText('Или своя')).toBeTruthy();
+  });
+
+  it('успешная загрузка — баннера отказа нет', async () => {
+    mockApi.getPractices.mockResolvedValue([]);
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

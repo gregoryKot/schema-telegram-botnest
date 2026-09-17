@@ -168,6 +168,26 @@ describe('sanitizeScreenMeta', () => {
     ).toBeUndefined();
   });
 
+  it('screen_block_move: screen="today" + новый блок «Сегодня» проходит (только move реально шлётся с today)', () => {
+    expect(
+      sanitizeScreenMeta('screen_block_move', {
+        screen: 'today',
+        block: 'focus',
+        dir: 'up',
+      }),
+    ).toEqual({ screen: 'today', block: 'focus', dir: 'up' });
+  });
+
+  it('screen_block_move: screen="today" + неизвестный block → отброшено целиком', () => {
+    expect(
+      sanitizeScreenMeta('screen_block_move', {
+        screen: 'today',
+        block: 'мусор',
+        dir: 'up',
+      }),
+    ).toBeUndefined();
+  });
+
   it('screen_block_move: лишние поля срезаются (защита от PII)', () => {
     expect(
       sanitizeScreenMeta('screen_block_move', {

@@ -67,7 +67,7 @@ export function CompletionScreen({
             display: 'flex',
             alignItems: 'baseline',
             justifyContent: 'center',
-            gap: 4,
+            gap: 'var(--space-4)',
             marginBottom: 6,
           }}
         >
@@ -109,7 +109,7 @@ export function CompletionScreen({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
             alignItems: 'center',
           }}
         >
@@ -117,7 +117,7 @@ export function CompletionScreen({
             onClick={isBackfill ? (onDone ?? goBack) : goBack}
             style={{
               padding: '13px 40px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'var(--text)',
               color: 'var(--bg)',

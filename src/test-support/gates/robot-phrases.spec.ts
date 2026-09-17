@@ -2,7 +2,11 @@
 // пофайловый храповик роботных конструкций в user-facing тексте
 // («это не X, это Y», канцелярит, метатекст, филлеры, мостики).
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns } from './pattern-loader';
+import {
+  loadNamedPatterns,
+  loadRegexList,
+  loadStringList,
+} from './pattern-loader';
 
 describe('check-robot-phrases.mjs', () => {
   it('новый файл с запрещённой конструкцией — exit 1', () => {
@@ -52,6 +56,128 @@ describe('check-robot-phrases.mjs', () => {
       '✓ Храповик роботных конструкций: 0 (без роста)',
     );
   });
+
+  // Эталонные примеры «это не X, это Y», где вторая часть даёт новое
+  // (docs/VOICE.md) — гейт раньше засчитывал их нарушением наравне с пустыми
+  // повторами. ALLOW гасит их точечно, по конкретной фразе.
+  it('«Это не каприз, это счётчик» — эталонный пример VOICE.md, гейт молчит', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/clean.ts':
+        "export const msg = 'Тело тяжёлое не назло тебе. Это не каприз, это счётчик.';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('«это не факт, это схема» — конкретный клинический термин, гейт молчит', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/clean.ts':
+        "export const msg = 'Стыд говорит «со мной что-то не так» — но это не факт, это схема.';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  // ALLOW гасит только свой фрагмент — соседнее нарушение в той же строке
+  // по-прежнему ловится (тот же приём и тест, что в gendered-forms.spec.ts).
+  it('ALLOW не прячет соседнее нарушение в той же строке', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/foo.ts':
+        "export const msg = 'Это не каприз, это счётчик. Важно отметить это.';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[metatext] Важно отметить');
+  });
+
+  // Кнопка заявки специалиста («Я психолог — подать заявку») — чужая реплика
+  // о своей квалификации, ALLOW её гасит. Контроль ниже: самоназвание автора
+  // той же формой по-прежнему краснеет.
+  it('«Я психолог — подать заявку» — заявка специалиста, гейт молчит', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/account/TherapistRequestSection.tsx':
+        "export const label = 'Я психолог — подать заявку';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: «Я психолог» о себе в другом контексте — по-прежнему exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/landing/AuthorSection.tsx':
+        "export const bio = 'Я психолог, работаю в подходе схема-терапия';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[samonazvanie-avtora] Я психолог');
+  });
+
+  // Похожая, но НЕзаконная «это не X, это Y» — вторая часть пересказывает
+  // первую, ALLOW не должен ловить произвольные вариации «это не каприз».
+  it('похожая, но пустая «это не X, это Y» по-прежнему ловится', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/foo.ts': "export const msg = 'Это не каприз, это прихоть';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[eto-ne-eto] Это не каприз, это');
+  });
+});
+
+describe('ALLOW-исключения check-robot-phrases.mjs', () => {
+  const ALLOW = loadRegexList('check-robot-phrases.mjs', 'ALLOW');
+
+  it('у каждого ALLOW-исключения есть образец, который оно распознаёт', () => {
+    const CORPUS = [
+      'Это не каприз, это счётчик',
+      'но это не факт, это схема',
+      'Я психолог — подать заявку',
+      'Настройки → «Я психолог» → заполни форму',
+    ];
+    const unmatched = ALLOW.filter(
+      (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
+    );
+    expect(unmatched).toEqual([]);
+  });
+});
+
+// EXCLUDED — юридические документы (docs/VOICE.md: формальный регистр там
+// уместен и не варьируется). Список маленький и заведён точечно по пути
+// файла — держим его от «а заодно исключим похожую страницу».
+describe('EXCLUDED-исключения check-robot-phrases.mjs', () => {
+  const EXCLUDED = loadStringList('check-robot-phrases.mjs', 'EXCLUDED');
+  const ROBOT_LINE = "export const msg = 'Это не просто документ для тебя';\n";
+
+  it.each(EXCLUDED)('«%s» целиком не сканируется', (file) => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      [file]: ROBOT_LINE,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: та же конструкция в обычном файле — по-прежнему exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/SomeOtherPage.tsx': ROBOT_LINE,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/pages/SomeOtherPage.tsx: новый файл с 1 конструкциями',
+    );
+  });
 });
 
 // Механизм вместо добросовестности (как shared/src/utils/crisisMarkers.test.ts):
@@ -74,6 +200,8 @@ describe('каждый паттерн пойман своим образцом',
     filler: 'Это ключевой момент',
     bridges: 'Таким образом, ты справишься',
     symmetry: 'С одной стороны это страшно',
+    'samonazvanie-terapevt': 'Автор проекта — схема-терапевт, работает онлайн',
+    'samonazvanie-avtora': 'Я психолог, работаю в подходе схема-терапия',
   };
 
   it('в PATTERNS нет имени без образца в POSITIVE', () => {
@@ -107,6 +235,21 @@ describe('каждый паттерн пойман своим образцом',
       'filler',
       'Значимые люди в его жизни',
       'термин «значимые люди» выведен из-под правила намеренно',
+    ],
+    [
+      'samonazvanie-terapevt',
+      'Схема-терапия помогает понять, почему сценарий повторяется',
+      'запрещено самоназвание, а не метод: «схема-терапия» остаётся',
+    ],
+    [
+      'samonazvanie-avtora',
+      'Работаете с психологом? Поделитесь динамикой',
+      '«психолог» о других людях законен — правило только про автора',
+    ],
+    [
+      'samonazvanie-avtora',
+      'Я работаю в подходе схема-терапия и сделал приложение бесплатным',
+      'правильная формулировка о себе — без существительного-квалификации',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;

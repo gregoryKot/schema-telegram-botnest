@@ -148,7 +148,7 @@ export class TherapyConnectionController {
   @Post('become-therapist')
   becomeTherapist() {
     throw new HttpException(
-      'Этот способ отключён. Используй /api/therapy/request — заявку рассмотрит администратор.',
+      'Способ отключён. Заявка подаётся в приложении: Настройки → «Я психолог».',
       410,
     );
   }

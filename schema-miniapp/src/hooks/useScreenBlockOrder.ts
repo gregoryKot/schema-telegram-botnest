@@ -18,11 +18,12 @@ import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 const ORDER_KEYS: Record<CustomizableScreen, string> = {
   profile: 'screen_order_profile',
   patterns: 'screen_order_patterns',
+  today: 'screen_order_today',
 };
 
 export function useScreenBlockOrder(screen: CustomizableScreen): {
   orderedIds: ScreenBlockId[];
-  reorder: (id: string, toIndex: number) => boolean;
+  reorder: (id: string, toIndex: number, displayedIds?: string[]) => boolean;
 } {
   const key = ORDER_KEYS[screen];
   const [order, setOrder] = useState<string[]>(() => readStringArray(key));
@@ -32,11 +33,14 @@ export function useScreenBlockOrder(screen: CustomizableScreen): {
     order,
   ).map((x) => x.id);
 
-  // Переставляет id СРЕДИ ВСЕХ блоков экрана; no-op — false без записи/события.
+  // Переставляет id СРЕДИ displayedIds (по умолчанию — все блоки экрана;
+  // «Сегодня» передаёт видимое подмножество: строка баннера терапевта есть
+  // не у всех). no-op — false без записи/события.
   const reorder = useCallback(
-    (id: string, toIndex: number): boolean => {
-      const fromIndex = (orderedIds as string[]).indexOf(id);
-      const moved = applyReorderToIndex(key, orderedIds, id, toIndex);
+    (id: string, toIndex: number, displayedIds?: string[]): boolean => {
+      const displayed = displayedIds ?? orderedIds;
+      const fromIndex = displayed.indexOf(id);
+      const moved = applyReorderToIndex(key, displayed, id, toIndex);
       if (moved) {
         setOrder(readStringArray(key));
         notifyPrefsChanged();

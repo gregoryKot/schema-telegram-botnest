@@ -111,7 +111,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                 <h3>Последние записи клиента</h3>
                 <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('client_notes')}>Все записи →</button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
                 {clientDiary.slice(0, 5).map((entry, i) => {
                   let color: string;
                   let title: string;
@@ -137,9 +137,9 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
                     typeLabel = 'Дневник благодарности';
                   }
                   return (
-                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', borderRadius: 10, background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
+                    <div key={i} style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start', padding: '10px 14px', borderRadius: 'var(--r-10)', background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
                           <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{typeLabel}</span>
                         </div>
@@ -163,7 +163,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
               <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
                 {tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}
               </div>
-              <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Открыть концептуализацию
               </button>
             </div>

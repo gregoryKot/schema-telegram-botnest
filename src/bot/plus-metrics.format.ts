@@ -19,6 +19,7 @@ export interface PlusMetrics {
 // Сверка с реестром — в спеке форматтера (новый пункт без подписи вылезет
 // в отчёт голым ключом).
 export const QUICK_ACTION_LABELS: Record<string, string> = {
+  case: 'Что это было (разбор случая)',
   tracker: 'Трекер потребностей',
   diary_schema: 'Дневник схем',
   diary_mode: 'Дневник режимов',

@@ -161,6 +161,50 @@ describe('DonationService.create — email/comment: trim и схлопывани
   });
 });
 
+// Щит, волна 2б (docs/SHIELD_PROMPT.md, «Известные дыры»): DonationService
+// не имел ни одного try/catch — падение самого INSERT'а улетало наверх
+// молча, никто не узнавал. Проба (описана в отчёте агента) подтвердила: без
+// this.notify.alertAdmin() в catch-блоке тест ниже красный — мутант,
+// который раньше выживал бы.
+describe('DonationService.create — падение записи в БД не молчит (щит, волна 2б)', () => {
+  it('prisma.donation.create() бросает → алерт админу (тот же канал notify.alertAdmin) и исключение ПРОБРАСЫВАЕТСЯ (не глотается тихим успехом)', async () => {
+    const { service, prisma, notify } = makeService({
+      robokassaEnabled: false,
+    });
+    prisma.donation.create.mockRejectedValueOnce(
+      new Error('connection terminated'),
+    );
+
+    await expect(service.create({ amount: 300 })).rejects.toThrow(
+      'connection terminated',
+    );
+
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    expect(notify.alertAdmin.mock.calls[0][0]).toContain('не создался');
+    expect(notify.alertAdmin.mock.calls[0][0]).toContain('300 ₽');
+  });
+
+  it('успешное создание — алерт про ошибку БД НЕ вызывается (только штатная карточка markPaid, если применимо)', async () => {
+    const { service, notify } = makeService({ robokassaEnabled: false });
+    await service.create({ amount: 300 });
+
+    const dbFailureAlerts = notify.alertAdmin.mock.calls.filter(([text]) =>
+      String(text).includes('не создался'),
+    );
+    expect(dbFailureAlerts).toHaveLength(0);
+  });
+
+  it('Robokassa включена (без dev-домарки paid) — падение create() тоже алертит и пробрасывает', async () => {
+    const { service, prisma, notify } = makeService({
+      robokassaEnabled: true,
+    });
+    prisma.donation.create.mockRejectedValueOnce(new Error('DB down'));
+
+    await expect(service.create({ amount: 500 })).rejects.toThrow('DB down');
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('DonationService.isDonationInvId', () => {
   it('true на границах диапазона [BASE, 2e9)', () => {
     expect(DonationService.isDonationInvId(DONATION_INVID_BASE)).toBe(true);

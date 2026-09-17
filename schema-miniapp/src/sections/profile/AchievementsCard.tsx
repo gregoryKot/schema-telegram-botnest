@@ -17,7 +17,7 @@ export function AchievementsCard({
       {...pressable(onOpen)}
       className="card"
       style={{
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '16px 0 16px 16px',
         cursor: 'pointer',
         overflow: 'hidden',
@@ -66,7 +66,7 @@ export function AchievementsCard({
         <div
           style={{
             display: 'flex',
-            gap: 8,
+            gap: 'var(--space-8)',
             overflowX: 'auto',
             paddingRight: 16,
             paddingBottom: 2,
@@ -85,7 +85,7 @@ export function AchievementsCard({
                   justifyContent: 'center',
                   gap: 3,
                   padding: '10px 12px',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   background:
                     'color-mix(in srgb, var(--accent) 9%, transparent)',
                   border:
@@ -118,7 +118,7 @@ export function AchievementsCard({
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '10px 12px',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.06)',
                 minWidth: 64,

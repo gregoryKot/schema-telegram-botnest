@@ -143,6 +143,8 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
       useScreenBlocks('profile', 'screen_hidden_profile'),
     );
     expect(result.current.orderedIds).toEqual([
+      'portrait',
+      'warm_words',
       'journey',
       'streak',
       'heatmap',
@@ -175,7 +177,9 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
     );
     let moved = true;
     act(() => {
-      moved = result.current.reorder('journey', 0);
+      // 'journey' сейчас на индексе 2 (portrait/warm_words впереди по
+      // умолчанию) — тот же индекс = no-op.
+      moved = result.current.reorder('journey', 2);
     });
     expect(moved).toBe(false);
     expect(localStorage.getItem('screen_order_profile')).toBeNull();

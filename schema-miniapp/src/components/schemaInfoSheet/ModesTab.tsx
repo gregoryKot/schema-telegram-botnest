@@ -59,7 +59,7 @@ export function ModesTab() {
             'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), color-mix(in srgb, var(--accent-blue) 10%, transparent))',
           border:
             '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 16px',
           marginBottom: 20,
           cursor: 'pointer',
@@ -114,7 +114,7 @@ export function ModesTab() {
               key={m.name}
               style={{
                 background: 'rgba(var(--fg-rgb),0.04)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
                 marginBottom: 8,
               }}
@@ -123,7 +123,7 @@ export function ModesTab() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   marginBottom: 6,
                 }}
               >
@@ -205,7 +205,7 @@ export function ModesTab() {
                 style={{
                   width: 36,
                   height: 4,
-                  borderRadius: 2,
+                  borderRadius: 'var(--r-2)',
                   background: 'rgba(var(--fg-rgb),0.12)',
                   margin: '0 auto 16px',
                 }}
@@ -239,7 +239,7 @@ export function ModesTab() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr 1fr',
-                gap: 8,
+                gap: 'var(--space-8)',
               }}
             >
               {MODE_CHECKIN.map((item) => (
@@ -256,7 +256,7 @@ export function ModesTab() {
                   }}
                   style={{
                     background: 'rgba(var(--fg-rgb),0.05)',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     padding: '12px 8px',
                     textAlign: 'center',
                     cursor: 'pointer',
@@ -331,7 +331,7 @@ export function ModesTab() {
             <div
               style={{
                 background: 'rgba(var(--fg-rgb),0.06)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '14px 16px',
                 marginBottom: 24,
                 textAlign: 'left',
@@ -365,7 +365,7 @@ export function ModesTab() {
                 width: '100%',
                 padding: '14px 0',
                 border: 'none',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 background:
                   'color-mix(in srgb, var(--accent) 25%, transparent)',
                 color: 'var(--accent)',

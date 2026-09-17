@@ -114,6 +114,29 @@ describe('BotClientOverviewService.getClientOverviews', () => {
     expect(prisma.countQueries()).toBe(3);
   });
 
+  it('D5: запрос distinct-дат (allDates) уходит со страховочным потолком take: 5000 и orderBy по свежести', async () => {
+    const prisma = makePrisma(ratings);
+    const svc = new BotClientOverviewService(prisma);
+    await svc.getClientOverviews([A, B, C]);
+
+    const calls = prisma.rating.findMany.mock.calls as any[];
+    // Различаем два вызова rating.findMany по наличию distinct — только у
+    // allDates (запрос №2) он есть, у recentRows (запрос №3) нет.
+    const allDatesArgs = calls.find((c) => c[0].distinct)?.[0];
+    const recentRowsArgs = calls.find((c) => !c[0].distinct)?.[0];
+
+    expect(allDatesArgs).toMatchObject({
+      distinct: ['userId', 'date'],
+      orderBy: { date: 'desc' },
+      take: 5000,
+    });
+    // Потолок — только для allDates. recentRows и так ограничен union дат за
+    // 14 дней (запрос №3), ему такой предохранитель не нужен.
+    expect(recentRowsArgs).toBeDefined();
+    expect(recentRowsArgs.take).toBeUndefined();
+    expect(recentRowsArgs.orderBy).toBeUndefined();
+  });
+
   it('пустой список клиентов — ноль запросов', async () => {
     const prisma = makePrisma([]);
     const svc = new BotClientOverviewService(prisma);

@@ -30,6 +30,7 @@ function makeBotService(overrides: Record<string, any> = {}) {
 function makeService(botService: any) {
   const accountService = {
     setAdaptiveLevel: jest.fn().mockResolvedValue(undefined),
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
   };
   const scheduleService = {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),

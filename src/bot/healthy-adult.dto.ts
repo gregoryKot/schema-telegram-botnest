@@ -37,3 +37,14 @@ export class ImportPhrasesDto {
   @MaxLength(20000)
   text!: string;
 }
+
+/**
+ * Проверка текста без сохранения — «прогнать через планку и посмотреть».
+ * Лимит выше, чем у фразы: в админку вставляют и черновики целиком.
+ */
+export class CheckPhraseDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  text!: string;
+}

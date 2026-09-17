@@ -13,6 +13,7 @@ import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
 import { failedSummary, silentSummary } from './publish-report';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -52,20 +53,47 @@ export class ChannelScheduleService {
     private readonly publisher: ChannelPublisherService,
     private readonly phrases: HealthyAdultService,
     private readonly deliveries: DeliveryLogService,
+    private readonly cronLeader: CronLeaderService,
   ) {}
 
   @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
   async tickMorning() {
+    // Без аренды второй инстанс (масштабирование/рестарт) продублирует пост
+    // подписчикам канала в то же окно — один и тот же слот выйдет дважды.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultMorning',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     await this.maybePost();
   }
 
   @Cron(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ })
   async tickEvening() {
+    // Тот же риск, что и у утреннего тика, но для вечернего окна.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultEvening',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     await this.maybePost();
   }
 
   @Cron(CATCH_UP_CRON, { name: 'healthyAdultCatchUp', timeZone: POST_TZ })
   async tickCatchUp() {
+    // Без аренды оба инстанса досылают долг одним и тем же должникам —
+    // повторный retry() по уже дошедшей площадке превращается в дубль поста.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultCatchUp',
+        LEASE_WINDOW.fifteenMinutes,
+      ))
+    )
+      return;
     try {
       await this.catchUp(new Date());
     } catch (err) {

@@ -55,7 +55,7 @@ export function YsqStatusCard({
         onClick={() => onOpenSchema({ startTest: true })}
         style={{
           padding: '9px 20px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           background:
             ysqCompletedAt && ysqProgressAnswered == null

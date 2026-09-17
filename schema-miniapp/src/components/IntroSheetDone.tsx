@@ -19,7 +19,7 @@ interface Props<T extends Record<string, string>> {
 const BUTTON: CSSProperties = {
   width: '100%',
   padding: '13px 0',
-  borderRadius: 14,
+  borderRadius: 'var(--r-14)',
   border: 'none',
   fontFamily: 'inherit',
   fontSize: 15,

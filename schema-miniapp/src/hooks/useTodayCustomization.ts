@@ -14,6 +14,7 @@ import {
   setPhraseHidden,
 } from '../utils/todayFocus';
 import { useLongPress } from './useLongPress';
+import { useScreenBlockOrder } from './useScreenBlockOrder';
 import type { CustomizeHighlight } from '../components/TodayCustomizeSheet';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
@@ -34,6 +35,9 @@ export function useTodayCustomization() {
   // null — лист закрыт; true — открыт шестерёнкой; строка — открыт долгим
   // нажатием на конкретный блок, его строку подсвечиваем.
   const [sheet, setSheet] = useState<CustomizeHighlight | true | null>(null);
+  // Порядок блоков — тот же generic-механизм, что у «Профиля»/«Паттернов»
+  // (ключ screen_order_today, событие screen_block_move шлёт сам хук).
+  const order = useScreenBlockOrder('today');
 
   const openByGear = useCallback(() => {
     setSheet(true);
@@ -67,6 +71,8 @@ export function useTodayCustomization() {
     phraseHidden,
     secondaryHidden,
     therapistBannerHidden,
+    orderedIds: order.orderedIds,
+    reorder: order.reorder,
     sheet,
     highlight: sheet === true ? undefined : (sheet ?? undefined),
     openByGear,

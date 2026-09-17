@@ -46,7 +46,7 @@ export function AdminPage() {
     <div style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }}>
         <input style={{ ...input, flex: 1 }} type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && tryKey()} placeholder="Ключ" />
         <button style={btn} onClick={tryKey}>Войти</button>

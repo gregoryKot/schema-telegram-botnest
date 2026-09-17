@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { api } from '../api';
 import { BottomNav, Section } from './BottomNav';
 import { FloatingPill } from './FloatingPill';
-import { SchemaEntrySheet } from './diary/SchemaEntrySheet';
-import { ModeEntrySheet } from './diary/ModeEntrySheet';
-import { GratitudeEntrySheet } from './diary/GratitudeEntrySheet';
+// Ленивые: статический импорт тянул modeCards/healthyAdultHints/62КБ
+// GratitudeEntrySheet в стартовый граф (замер 2026-08-23, LazyDiarySheets.tsx).
+import {
+  LazySchemaEntrySheet as SchemaEntrySheet,
+  LazyModeEntrySheet as ModeEntrySheet,
+  LazyGratitudeEntrySheet as GratitudeEntrySheet,
+} from './LazyDiarySheets';
 import {
   QuickActionOverlays,
   type OverlayQuickActionId,
@@ -54,20 +58,23 @@ export function AppDiaryNav({
       case 'tracker':
         sheets.open('trackerOverlay', { trackerNeedId: null });
         return;
+      case 'case':
+        // Разбор случая — главное действие продукта, поэтому не через
+        // локальный activeOverlay (тот закрывается вместе с пилюлей/навом),
+        // а через общий реестр листов sheets (как onStartCase в App.tsx) —
+        // AppOverlays уже рендерит CaseFlowOverlay по sheets.caseFlow.
+        sheets.open('caseFlow');
+        return;
       case 'breathing':
       case 'grounding':
       case 'stop':
-      case 'belief_check':
-      case 'phrase_check':
-      case 'flashcard':
-      case 'safe_place':
-      case 'letter_to_self':
-      case 'warm_words':
         setActiveOverlay(id);
         return;
       default:
-        // childhood_wheel/tasks/practices/plans — поверхность «Инструменты»,
-        // из «плюса» недостижимы (см. utils/quickActions.ts).
+        // belief_check/phrase_check/flashcard/safe_place/letter_to_self/
+        // warm_words/childhood_wheel/tasks/practices/plans — поверхность
+        // «Инструменты», из «плюса» недостижимы (один дом на действие, см.
+        // utils/quickActionsRegistry.ts).
         return;
     }
   }
@@ -102,17 +109,17 @@ export function AppDiaryNav({
         />
       )}
 
-      {/* ── Действие из «плюса», не относящееся к дневникам/трекеру ── */}
+      {/* ── Экстренная практика из «плюса» (дыхание/заземление/«Стоп») ── */}
       <QuickActionOverlays
         active={activeOverlay}
         onClose={() => setActiveOverlay(null)}
-        onOpenTracker={() => {
-          setActiveOverlay(null);
-          sheets.open('trackerOverlay', { trackerNeedId: null });
-        }}
       />
 
-      {/* ── Floating pill (always above bottom bar) ── */}
+      {/* ── Floating pill (above bottom bar, на всех экранах) ──
+          Ж3 (аудит 2026-08, #405) прятала «+» на «Сегодня», чтобы не
+          конкурировать с CTA TodayFocusCard. Владелец откатил решение
+          2026-08-25: «+» — привычная точка входа, её пропажа с главного
+          экрана читается как поломка, а не как фокусировка. */}
       {!therapistMode &&
         !sheets.tracker &&
         !sheets.diaries &&

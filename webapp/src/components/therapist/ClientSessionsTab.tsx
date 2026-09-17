@@ -18,7 +18,7 @@ export function ClientSessionsTab({ detail }: Props) {
         <div className="eyebrow" style={{ marginBottom: 16 }}>
           Новая заметка · {fmtDate(newNoteDate || todayStr())}
           <input type="date" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)}
-                 style={{ marginLeft: 10, fontSize: 11, padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 4, background: 'transparent', color: 'var(--text-faint)' }} />
+                 style={{ marginLeft: 10, fontSize: 11, padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 'var(--r-4)', background: 'transparent', color: 'var(--text-faint)' }} />
         </div>
         <textarea
           className="textarea"
@@ -31,7 +31,7 @@ export function ClientSessionsTab({ detail }: Props) {
         />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter – сохранить</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
             {newNoteText.trim() && (
               <button onClick={() => setNewNoteText('')} className="btn btn-secondary">Отмена</button>
             )}
@@ -53,11 +53,11 @@ export function ClientSessionsTab({ detail }: Props) {
         notes.map((note, i) => (
           <div key={note.id} style={{ marginBottom: 48 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-12)' }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmtDate(note.date)}</span>
                 <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>Сессия {notes.length - i}</span>
               </div>
-              <button onClick={() => removeNote(note.id)} aria-label="Удалить заметку" style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removeNote(note.id)} aria-label="Удалить заметку" style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 'var(--r-4)', fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }}>✕</button>
             </div>
             <div style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720, whiteSpace: 'pre-wrap' }}>
               {note.text}

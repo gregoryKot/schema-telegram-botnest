@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaFlashcard } from './SchemaFlashcard';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('../api', () => ({
   api: {
@@ -115,7 +116,7 @@ describe('SchemaFlashcard — кризисная детекция (reflection)',
     const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {
@@ -244,5 +245,54 @@ describe('SchemaFlashcard — «Открыть трекер →» на экра�
     vi.advanceTimersByTime(100);
     expect(onOpenTracker).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+});
+
+describe('SchemaFlashcard — серверная копия не доехала', () => {
+  // Регрессия: отказ createFlashcard глушился — экран говорил «Сохранено»
+  // без оговорок, хотя на других устройствах и у терапевта карточки нет
+  // (локальная копия в localStorage при этом честно существует).
+  async function saveWithServerDown() {
+    mockApi.createFlashcard.mockRejectedValue(new Error('offline'));
+    renderToResponseStep();
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+      target: { value: 'Побыть рядом с собой' },
+    });
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: 'Позвонить другу' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    });
+  }
+
+  it('отказ сервера — «Сохранено» с оговоркой про это устройство', async () => {
+    await saveWithServerDown();
+    expect(screen.getByText('Сохранено')).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain(
+      'осталась только на этом устройстве',
+    );
+    // Локальная копия существует — это не потеря, а честная деградация.
+    expect(JSON.parse(localStorage.getItem('schema_flashcards')!).length).toBe(1);
+  });
+
+  it('успешное сохранение — без оговорок', async () => {
+    mockApi.createFlashcard.mockResolvedValue({});
+    renderToResponseStep();
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+      target: { value: 'Текст' },
+    });
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: 'Шаг' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    });
+    expect(screen.getByText('Сохранено')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

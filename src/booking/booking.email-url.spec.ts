@@ -12,7 +12,7 @@ const INSIDE_WINDOW = new Date(FIXED_NOW.getTime() + 13 * 3_600_000);
 function makeService(opts: { siteUrl?: string | undefined } = {}) {
   let nextId = 100;
   const tx = {
-    $queryRaw: jest.fn(async () => undefined),
+    $executeRaw: jest.fn(async () => undefined),
     booking: {
       findMany: jest.fn(async () => []),
       create: jest.fn(async ({ data }: any) => {
@@ -44,6 +44,7 @@ function makeService(opts: { siteUrl?: string | undefined } = {}) {
     robokassa as any,
     pricing as any,
     config as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
   return { service, robokassa };
 }

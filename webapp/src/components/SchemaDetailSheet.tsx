@@ -92,11 +92,11 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
           <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
           <p className="body">{'Группа схем, связанных общей темой.'}</p>
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             <button
               onClick={toggleSchema}
               className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)' }}
             >
               {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
             </button>

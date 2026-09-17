@@ -16,22 +16,14 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.botService,
   };
   const analyticsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core'),
     getConsecutiveDays: jest.fn().mockResolvedValue(0),
     ...overrides.analyticsService,
   };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
-  };
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
-  };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -47,20 +39,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     schedule: jest.fn().mockResolvedValue(undefined),
     ...overrides.notificationService,
   };
-  const therapistRequestService = {
-    approve: jest.fn().mockResolvedValue(undefined),
-    reject: jest.fn().mockResolvedValue(undefined),
-    ...overrides.therapistRequestService,
-  };
-  const publisher = {
-    publish: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.publisher,
-  };
-  const channelCheck = {
-    log: jest.fn().mockResolvedValue(''),
-    checkOne: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
-    ...overrides.channelCheck,
-  };
   const analyticsEvents = {
     track: jest.fn().mockResolvedValue(undefined),
     ...overrides.analyticsEvents,
@@ -70,15 +48,10 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
-    statsReport,
-    healthyAdultService,
     accountService,
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
-    publisher,
-    channelCheck,
     analyticsEvents,
   );
   return {
@@ -120,7 +93,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_xyz789',
+      payload: 'pair_xyz789',
     });
     expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'XYZ789');
     expect(ctx.reply).toHaveBeenCalledWith(
@@ -137,7 +110,7 @@ describe('TelegramService — /start pair_XXX с уже принятым сог�
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_bad',
+      payload: 'pair_bad',
     });
     expect(ctx.reply).toHaveBeenCalledWith(
       expect.stringContaining('недействительна'),

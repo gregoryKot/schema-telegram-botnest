@@ -22,6 +22,7 @@ vi.mock('../api', () => ({
     createCustomMode: vi.fn().mockResolvedValue({}),
     deleteCustomMode: vi.fn().mockResolvedValue(undefined),
   },
+  reportClientError: vi.fn(),
 }));
 
 vi.mock('./ModeMapCanvas', () => ({
@@ -145,5 +146,55 @@ describe('ModeMapEditor — сбой автосейва не роняет экр
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// РЕГРЕССИЯ: фикс cleanup-эффекта размонтирования (см. ModeMapEditor.test.tsx)
+// не должен трогать поведение, пока экран открыт — статус по-прежнему
+// проходит idle → saving → saved ровно через 1200мс после правки.
+describe('ModeMapEditor — пока смонтирован, автосейв работает как раньше', () => {
+  it('правка → 1200мс → статус idle → saving → saved', async () => {
+    let resolveUpdate: (v: unknown) => void = () => {};
+    updateModeMap.mockImplementation(
+      () => new Promise((resolve) => { resolveUpdate = resolve; }),
+    );
+    renderEditorWithEdge();
+    fireEvent.click(screen.getByText('выбрать ребро e1'));
+    await act(async () => {});
+    vi.useFakeTimers();
+    try {
+      expect(screen.getByText('статус:idle')).toBeTruthy();
+      fireEvent.click(screen.getByText('ведёт к'));
+      expect(screen.getByText('статус:idle')).toBeTruthy(); // таймер ещё не сработал
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
+      expect(screen.getByText('статус:saving')).toBeTruthy(); // запрос ушёл, ответа ещё нет
+
+      await act(async () => { resolveUpdate({}); });
+      expect(screen.getByText('статус:saved')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// РЕГРЕССИЯ: размонтирование со взведённым таймером не должно звать
+// setSaveStatus на пропавшем дереве и не должно терять правку. Детальные
+// кейсы (провал сохранения, уже сработавший таймер, пустое размонтирование)
+// проверены изолированно в useModeMapAutosave.test.ts — здесь только сквозная
+// сверка через мок-холст: пропс saveStatus реального ModeMapEditor.
+describe('ModeMapEditor — размонтирование со взведённым таймером (мок-холст)', () => {
+  it('размонтирование посреди 1200мс окна не бросает и отправляет правку немедленно', async () => {
+    const { unmount } = renderEditorWithEdge();
+    fireEvent.click(screen.getByText('выбрать ребро e1'));
+    await act(async () => {});
+    fireEvent.click(screen.getByText('ведёт к')); // взводит таймер, ещё не сработал
+    expect(updateModeMap).not.toHaveBeenCalled();
+
+    expect(() => unmount()).not.toThrow();
+
+    expect(updateModeMap).toHaveBeenCalledTimes(1);
+    const body = updateModeMap.mock.calls.at(-1)![1] as { edges: ModeMapEdge[] };
+    expect(body.edges[0].data?.edgeType).toBe('leads_to');
   });
 });

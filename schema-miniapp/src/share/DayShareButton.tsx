@@ -31,9 +31,9 @@ export function DayShareButton({ needs, ratings, date, zIndex }: Props) {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           minHeight: 44,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border:
             '1px solid color-mix(in srgb, var(--accent) 24%, transparent)',
           background: 'color-mix(in srgb, var(--accent) 9%, transparent)',

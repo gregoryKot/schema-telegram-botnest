@@ -23,7 +23,11 @@ export function DisclaimerPrivacyStep({
       </div>
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 16,
+        }}
       >
         <div
           style={{

@@ -14,6 +14,7 @@ import {
 } from '@testing-library/react';
 import { TaskCreateSheet, getTaskDisplayText } from './TaskCreateSheet';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 const FIRST_SCHEMA = SCHEMA_DOMAINS[0].schemas[0];
 const FIRST_MODE = ALL_MODES[0];
@@ -63,7 +64,7 @@ describe('TaskCreateSheet — кризисная детекция в описа�
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
 
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст цели не показывает CrisisCard', () => {

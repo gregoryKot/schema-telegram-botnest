@@ -22,12 +22,12 @@ export function WizardProgress({
   onSelect,
 }: Props) {
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
       {segments.map((segment, i) => {
         const style = {
           flex: 1,
           height: 4,
-          borderRadius: 2,
+          borderRadius: 'var(--r-2)',
           background: segment.filled
             ? accentColor
             : i === active

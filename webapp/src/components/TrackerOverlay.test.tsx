@@ -21,9 +21,11 @@ import type { Need } from '../types';
 // эмулировать историю напрямую).
 vi.mock('../api', () => ({
   api: { ratings: vi.fn(), saveRating: vi.fn() },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReportClientError = reportClientError as ReturnType<typeof vi.fn>;
 
 const NEEDS: Need[] = [
   { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привяз.' },
@@ -152,6 +154,26 @@ describe('TrackerOverlay — ошибка API', () => {
     expect(onSaved).not.toHaveBeenCalled();
     // Компонент по-прежнему смонтирован и реагирует на дальнейшие клики.
     expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+  });
+
+  // Регрессия (правило CLAUDE.md №14): в webapp нет outbox-очереди (в отличие
+  // от мини-аппа), поэтому сбой сохранения оценки терял её без следа и без
+  // сигнала наверх. Теперь catch обязан отчитаться через reportClientError.
+  it('ошибка api.saveRating отправляет отчёт наверх с section: tracker', async () => {
+    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    renderOverlay();
+    fireEvent.click(screen.getByText('7'));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        section: 'tracker',
+        message: expect.stringContaining('rating save failed'),
+      }),
+    );
   });
 });
 
@@ -299,6 +321,26 @@ describe('TrackerOverlay — бэкафилл: сохранение оценки
       await vi.advanceTimersByTimeAsync(500);
     });
     expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+  });
+
+  // Регрессия (правило CLAUDE.md №14), ветка isBackfill — та же потеря
+  // оценки, что и в обычной ветке, только для прошлой даты.
+  it('ошибка сохранения оценки бэкафилла отправляет отчёт наверх с section: tracker', async () => {
+    mockApi.ratings.mockResolvedValue({});
+    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    renderOverlay({ date: '2026-07-10' });
+    await act(async () => {});
+    fireEvent.click(screen.getByText('6'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        section: 'tracker',
+        message: expect.stringContaining('backfill rating save failed'),
+      }),
+    );
   });
 });
 
