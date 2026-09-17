@@ -185,7 +185,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 }}>
                 <span style={{
                   fontSize: 10, fontWeight: 600, letterSpacing: '0.07em',
-                  color: active ? 'rgba(var(--bg-rgb, 255,255,255),0.6)' : 'var(--text-faint)',
+                  color: active ? 'color-mix(in srgb, var(--bg) 60%, transparent)' : 'var(--text-faint)',
                   textTransform: 'uppercase',
                 }}>{getDayAbbr(day.date)}</span>
                 <span style={{

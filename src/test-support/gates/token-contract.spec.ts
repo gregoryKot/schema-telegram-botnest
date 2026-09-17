@@ -4,6 +4,7 @@
 // дублирует его здесь — тот же приём, что PAIRS в check-paired-files.mjs:
 // если список в скрипте изменится, список ниже придётся обновить вместе.
 import { runGate } from './gate-sandbox';
+import { loadStringList } from './pattern-loader';
 
 // Копия SHARED_NAME_ONLY_TOKENS из scripts/check-token-contract.mjs.
 const SHARED_NAME_ONLY_TOKENS = [
@@ -100,5 +101,120 @@ describe('check-token-contract.mjs', () => {
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Контракт токенов соблюдён');
+  });
+});
+
+// ── Фолбэк в var() ────────────────────────────────────────────────────────
+// Класс, ради которого проверка добавлена: `var(--danger, #e5484d)` — токена
+// --danger не было объявлено нигде, поэтому рисовался фолбэк, и фолбэки
+// разъехались между площадками. Гейт обязан краснеть на любой фолбэк и
+// молчать ровно на тех, где значение задаёт инстанс элемента или площадка.
+describe('check-token-contract.mjs — фолбэк в var()', () => {
+  /** Валидное дерево + один файл-нарушитель (или разрешённый образец). */
+  function runWith(relPath: string, source: string) {
+    return runGate('check-token-contract.mjs', {
+      'shared/src/theme/tokens.css': VALID_TOKENS_CSS,
+      'webapp/src/index.css': validAppCss(),
+      'schema-miniapp/src/index.css': validAppCss(),
+      [relPath]: source,
+    });
+  }
+
+  it('фолбэк в .tsx — exit 1, называет файл, строку и токен', () => {
+    const res = runWith(
+      'schema-miniapp/src/components/JoinConfirmSheet.tsx',
+      `export const s = { color: 'var(--danger, #c0392b)' };\n`,
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'schema-miniapp/src/components/JoinConfirmSheet.tsx:1: фолбэк в var(--danger, …)',
+    );
+  });
+
+  it('фолбэк в .css второго фронтенда тоже виден', () => {
+    const res = runWith(
+      'webapp/src/pages/landing.css',
+      `.x { color: var(--c-rose, #c46b6b); }\n`,
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('var(--c-rose, …)');
+  });
+
+  it('чистое дерево без фолбэков — exit 0', () => {
+    const res = runWith(
+      'webapp/src/components/AddressFormPicker.tsx',
+      `export const s = { color: 'var(--accent-red)' };\n`,
+    );
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('фолбэков в var() нет');
+  });
+
+  it('фолбэк в комментарии не считается, тот же текст в коде — считается', () => {
+    const inComment = runWith(
+      'shared/src/theme/extra.css',
+      `/* было var(--danger, #e5484d) — см. историю */\n.x { color: var(--accent-red); }\n`,
+    );
+    expect(inComment.status).toBe(0);
+
+    const inCode = runWith(
+      'shared/src/theme/extra.css',
+      `.x { color: var(--danger, #e5484d); }\n`,
+    );
+    expect(inCode.status).toBe(1);
+  });
+
+  it('`//` в URL не принимается за комментарий — фолбэк после ссылки виден', () => {
+    const res = runWith(
+      'webapp/src/x.ts',
+      `export const s = 'https://example.com' + 'var(--danger, #e5484d)';\n`,
+    );
+    expect(res.status).toBe(1);
+  });
+
+  // Контрольная пара к HOST_PREFIXES: свойство площадки гасится, наше
+  // собственное --safe-bottom с точно таким же фолбэком `0px` — нет.
+  // Без второй половины проверка ничего не доказывает (правило №15).
+  it('--tg-* (свойство мессенджера) разрешено, наш --safe-bottom — нет', () => {
+    const host = runWith(
+      'schema-miniapp/src/index2.css',
+      `:root { --safe-bottom: var(--tg-safe-area-inset-bottom, 0px); }\n`,
+    );
+    expect(host.status).toBe(0);
+
+    const ours = runWith(
+      'schema-miniapp/src/components/UpdateToast.tsx',
+      `export const s = { bottom: 'calc(76px + var(--safe-bottom, 0px))' };\n`,
+    );
+    expect(ours.status).toBe(1);
+    expect(ours.stderr).toContain('var(--safe-bottom, …)');
+  });
+
+  // Метагейт check-gate-exemptions.mjs требует теста на имя списка; правило
+  // №15 — образец, который запись гасит, И контрольный, который не должна.
+  describe('FALLBACK_ALLOW', () => {
+    const allow = loadStringList('check-token-contract.mjs', 'FALLBACK_ALLOW');
+
+    it('список непустой и состоит из имён кастомных свойств', () => {
+      expect(allow.length).toBeGreaterThan(0);
+      for (const name of allow) expect(name).toMatch(/^--[a-z][a-z0-9-]*$/);
+    });
+
+    it.each(allow)(
+      '%s гасится, а соседний токен на его месте — нет',
+      (name) => {
+        const allowed = runWith(
+          'webapp/src/allowed.css',
+          `.x { color: var(${name}, var(--accent)); }\n`,
+        );
+        expect(allowed.status).toBe(0);
+
+        const control = runWith(
+          'webapp/src/allowed.css',
+          `.x { color: var(${name}-not-allowed, var(--accent)); }\n`,
+        );
+        expect(control.status).toBe(1);
+        expect(control.stderr).toContain(`var(${name}-not-allowed, …)`);
+      },
+    );
   });
 });
