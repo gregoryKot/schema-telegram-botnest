@@ -103,7 +103,7 @@ export function BreathingCard() {
           }}
         >
           <style>{`@keyframes breathe-idle { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }`}</style>
-          {active ? st.secondsLeft : '🫧'}
+          {active ? st.secondsLeft : null}
         </div>
         <div
           style={{

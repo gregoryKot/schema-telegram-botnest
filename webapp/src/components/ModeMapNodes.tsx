@@ -4,6 +4,8 @@ import { useNodeActions } from './modeMapActions';
 import { MMIcon } from './modeMapIcons';
 import { getSchemaById } from '../schemaTherapyData';
 import { TYPE_COLORS } from './modeMapData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 export interface ModeNodeData {
   label: string;
@@ -21,8 +23,7 @@ export interface ModeNodeData {
   schemaId?: string;
 }
 
-// TYPE_COLORS/NODE_DEFAULT_SIZES/NODE_TYPES вынесены в modeMapData.ts /
-// modeMapRegistry.ts — этот файл экспортирует только компоненты.
+// TYPE_COLORS/NODE_DEFAULT_SIZES/NODE_TYPES вынесены в modeMapData.ts / modeMapRegistry.ts — этот файл экспортирует только компоненты.
 
 // Connection dots at the 4 sides. Hidden by default, revealed on node hover
 // (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
@@ -71,6 +72,7 @@ const next = <T,>(arr: T[], cur: T): T => arr[(arr.indexOf(cur) + 1) % arr.lengt
 // Contextual toolbar shown above a selected node
 function NodeTools({ id, selected, data }: { id: string; selected?: boolean; data?: ModeNodeData }) {
   const actions = useNodeActions();
+  const tr = useTr();
   if (!actions) return null;
   const sw = data?.strokeWidth ?? 'normal';
   const fz = data?.fontSize ?? 'md';
@@ -82,19 +84,19 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
   const sep = <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(var(--fg-rgb),0.12)', margin: '2px 1px' }} />;
   return (
     <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
-      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8, alignItems: 'center',
+      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 'var(--r-8)', alignItems: 'center',
         background: 'var(--bg-elev)', border: '1px solid var(--line-strong)',
         boxShadow: 'var(--shadow-2)' }}>
         <button style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {sep}
-        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (нажми, чтобы сменить)`}
+        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Толщина контура"
           onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
           <span style={{ display: 'inline-block', width: 16, height: sw === 'thin' ? 1.5 : sw === 'bold' ? 4 : 2.5,
             borderRadius: 3, background: 'var(--text-sub)' }} />
         </button>
         <button style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
-          title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (нажми, чтобы сменить)`}
+          title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Размер текста"
           onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
         {sep}
@@ -172,7 +174,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
           onDoubleClick={e => e.stopPropagation()}
           className="nodrag"
           style={{ width: '90%', fontSize: fs, fontWeight: 600, textAlign: 'center',
-            border: '1px solid var(--accent)', borderRadius: 4, background: 'var(--bg-elev)',
+            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)',
             color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
@@ -184,14 +186,14 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
       {showNeed && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
-        color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>🌿 {data.healthyResponse}</div>}
+        color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>{data.healthyResponse}</div>}
       {showSchema && schema && (
-        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%',
+        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 'var(--space-4)', maxWidth: '100%',
           padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
           background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
           border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,
           color: light ? 'rgba(255,255,255,0.92)' : schema.domainColor }}>
-          <span style={{ fontSize: subFs - 1 }}>{schema.emoji}</span>
+          <IdentityDot color={schema.domainColor} size={7} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{schema.name}</span>
         </div>
       )}

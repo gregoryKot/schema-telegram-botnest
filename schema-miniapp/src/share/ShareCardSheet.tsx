@@ -1,7 +1,6 @@
-// Generic-шит шаринга карточки: превью канваса + «Поделиться» + «Скопировать
-// текст». Все share-карточки приложения (трекер, достижения, схема, дневник)
-// ходят через него. Логика — общая (shared/useShareCard, правило №3),
-// вёрстка своя: BottomSheet мини-аппа.
+// Generic-шит шаринга карточки: превью канваса + «Поделиться» + «Скопировать текст».
+// Все share-карточки приложения ходят через него. Логика общая (shared/useShareCard,
+// правило №3), вёрстка своя: BottomSheet мини-аппа.
 import { useRef } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
@@ -11,17 +10,12 @@ import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
 
 interface Props {
-  /** Заголовок шита («Карточка недели», «Достижение»…) */
-  title: string;
-  /** Рисует карточку на канвасе. Вызывается при открытии. */
-  draw: (canvas: HTMLCanvasElement) => void;
-  /** Короткий текст, уходящий вместе с картинкой */
-  shareText: string;
-  /** Подробный текст для фолбэка (по умолчанию shareText) */
-  fallbackText?: string;
+  title: string; // Заголовок шита («Карточка недели», «Достижение»…)
+  draw: (canvas: HTMLCanvasElement) => void; // Рисует карточку, вызывается при открытии
+  shareText: string; // Короткий текст, уходящий вместе с картинкой
+  fallbackText?: string; // Подробный текст для фолбэка (по умолчанию shareText)
   filename: string;
-  /** Тип карточки для аналитики share_card (правило №8) */
-  eventKind: ShareCardKind;
+  eventKind: ShareCardKind; // Тип карточки для аналитики share_card (правило №8)
   onClose: () => void;
   zIndex?: number;
   therapyNote?: boolean;
@@ -47,6 +41,16 @@ export function ShareCardSheet({
     eventKind,
     track: api.trackEvent,
   });
+  // Три состояния кнопки «Скопировать» повторяются дважды — общий индекс вместо копипасты ternary.
+  const st = s.copied ? 0 : s.failed ? 1 : 2;
+  const mix = (c: string, pct: number) =>
+    `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+  const copyBg = (g: number, idle: string) =>
+    [mix('var(--accent-green)', g), mix('var(--accent-red)', 15), idle][st];
+  const copyColor = (idle: string) =>
+    ['#06d6a0', 'var(--accent-red)', idle][st];
+  const copyLabel = (done: string, idle: string) =>
+    [done, 'Не получилось', idle][st];
 
   return (
     <>
@@ -74,7 +78,7 @@ export function ShareCardSheet({
 
           <div
             style={{
-              borderRadius: 20,
+              borderRadius: 'var(--r-20)',
               overflow: 'hidden',
               border: '1px solid rgba(var(--fg-rgb),0.07)',
               boxShadow: '0 14px 34px rgba(0,0,0,0.25)',
@@ -95,11 +99,12 @@ export function ShareCardSheet({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 'var(--space-8)',
               padding: '15px 0',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
-              background: 'linear-gradient(135deg, #8f86ff, #5aa8f7)',
+              background:
+                'linear-gradient(135deg, var(--accent), var(--accent-hi))',
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,
@@ -118,17 +123,15 @@ export function ShareCardSheet({
               marginTop: 10,
               padding: '13px 0',
               border: 'none',
-              borderRadius: 12,
-              background: s.copied
-                ? 'color-mix(in srgb, var(--accent-green) 18%, transparent)'
-                : 'rgba(var(--fg-rgb),0.06)',
-              color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.65)',
+              borderRadius: 'var(--r-12)',
+              background: copyBg(18, 'rgba(var(--fg-rgb),0.06)'),
+              color: copyColor('rgba(var(--fg-rgb),0.65)'),
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
+            {copyLabel('✓ Текст скопирован', 'Скопировать текст')}
           </button>
           {therapyNote && (
             <div style={{ marginTop: 12 }}>
@@ -157,7 +160,7 @@ export function ShareCardSheet({
                 color: 'rgba(var(--fg-rgb),0.7)',
                 lineHeight: 1.6,
                 background: 'rgba(var(--fg-rgb),0.04)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 padding: '12px 14px',
                 overflowX: 'auto',
                 whiteSpace: 'pre-wrap',
@@ -175,17 +178,15 @@ export function ShareCardSheet({
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
-                borderRadius: 12,
-                background: s.copied
-                  ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.08)',
-                color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
+                borderRadius: 'var(--r-12)',
+                background: copyBg(20, 'rgba(var(--fg-rgb),0.08)'),
+                color: copyColor('rgba(var(--fg-rgb),0.7)'),
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              {s.copied ? '✓ Скопировано' : 'Скопировать'}
+              {copyLabel('✓ Скопировано', 'Скопировать')}
             </button>
           </div>
         </BottomSheet>

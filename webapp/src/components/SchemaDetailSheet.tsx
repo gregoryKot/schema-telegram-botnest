@@ -11,13 +11,13 @@ import { schemaShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
 
 const BELIEFS: Record<string, string[]> = {
-  emotional_deprivation:     ['Никто никогда по-настоящему не позаботится обо мне', 'Я обречён(а) быть один(а) в своих переживаниях'],
+  emotional_deprivation:     ['Никто никогда по-настоящему не позаботится обо мне', 'Мне суждено остаться со своими переживаниями в одиночестве'],
   abandonment:               ['Все рано или поздно уходят', 'Я не могу рассчитывать на близких'],
   mistrust:                  ['Если открыться – обязательно предадут', 'Люди используют тех, кто им доверяет'],
   defectiveness:             ['Со мной что-то фундаментально не так', 'Если узнают правду – отвергнут'],
-  social_isolation:          ['Я не такой(ая) как все', 'Я не вписываюсь ни в одну группу или сообщество'],
-  dependence:                ['Я не справлюсь сам(а)', 'Без поддержки я беспомощен(на)'],
-  vulnerability:             ['Что-то плохое вот-вот случится', 'Мир опасен, и я не защищён(а)'],
+  social_isolation:          ['Я не как все', 'Я не вписываюсь ни в одну группу или сообщество'],
+  dependence:                ['Мне не справиться в одиночку', 'Без поддержки я ничего не могу'],
+  vulnerability:             ['Что-то плохое вот-вот случится', 'Мир опасен, и защиты у меня нет'],
   enmeshment:                ['Без этого человека я не знаю, кто я', 'Мы должны делить всё и всегда быть рядом'],
   failure:                   ['Я всегда проваливаюсь там, где другие успешны', 'Я глупее и некомпетентнее других'],
   entitlement:               ['Правила существуют для других, не для меня', 'Я заслуживаю особого отношения'],
@@ -28,7 +28,7 @@ const BELIEFS: Record<string, string[]> = {
   negativity:                ['Всё равно ничего хорошего не выйдет', 'Лучше не надеяться, чтобы не разочароваться'],
   emotion_inhibition_fear:   ['Если дам волю злости – потеряю контроль', 'Мои сильные эмоции опасны для других'],
   emotional_inhibition:      ['Показывать чувства – это слабость', 'Лучше держаться и не показывать вида'],
-  unrelenting_standards:     ['Я должен(на) быть идеальным(ой)', 'Ошибаться – недопустимо'],
+  unrelenting_standards:     ['От меня требуется безупречность', 'Ошибаться – недопустимо'],
   punitiveness_self:         ['Я заслуживаю наказания за ошибки', 'Прощать себя – значит оправдывать слабость'],
   punitiveness_others:       ['Людей нужно жёстко наказывать за ошибки', 'Прощать слабости – значит поощрять их'],
 };
@@ -44,7 +44,7 @@ interface Props {
 
 export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const navigate = useNavigate();
-  const goBack = useHistorySheet(onClose);
+  const goBack = useHistorySheet(onClose); // явный onClose() у navigate() ниже убран — двойной вызов, see useHistorySheet.ts
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
@@ -92,16 +92,16 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
           <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
           <p className="body">{'Группа схем, связанных общей темой.'}</p>
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             <button
               onClick={toggleSchema}
               className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)' }}
             >
               {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
             </button>
             <button
-              onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+              onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
               className="ex-btn ex-btn-primary"
               style={{ width: '100%' }}
             >
@@ -145,7 +145,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
         </button>
         <button
-          onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+          onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
           className="ex-btn ex-btn-primary"
         >
           Познакомиться →

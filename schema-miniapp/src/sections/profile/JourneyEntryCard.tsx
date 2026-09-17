@@ -9,7 +9,11 @@ export function JourneyEntryCard({ onOpen }: { onOpen: () => void }) {
     <div
       {...pressable(onOpen)}
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px', cursor: 'pointer' }}
+      style={{
+        borderRadius: 'var(--r-20)',
+        padding: '16px 16px',
+        cursor: 'pointer',
+      }}
     >
       <div
         style={{
@@ -28,7 +32,7 @@ export function JourneyEntryCard({ onOpen }: { onOpen: () => void }) {
             color: 'var(--text-faint)',
           }}
         >
-          🧭 Мой путь
+          Мой путь
         </div>
         <span style={{ color: 'var(--text-faint)', fontSize: 14 }}>›</span>
       </div>

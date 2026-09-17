@@ -219,6 +219,67 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     expect(result[0].clientId).toBe(-42);
     expect(result[0].clientName).toBe('Оффлайн клиент');
   });
+
+  // Регресс O2: userId: { lt: 0 } матчил ВСЕХ виртуальных клиентов терапевта
+  // разом — при батч-запросе (фикс N+1) группировка обязана держать задачи
+  // виртуальных клиентов раздельно, а не объединять их.
+  it('два виртуальных клиента — каждый видит только свои задачи, не задачи другого', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push(
+      {
+        id: 5,
+        therapistId: T1,
+        clientId: null,
+        status: 'active',
+        virtualClientName: 'Виртуальный 1',
+      },
+      {
+        id: 7,
+        therapistId: T1,
+        clientId: null,
+        status: 'active',
+        virtualClientName: 'Виртуальный 2',
+      },
+    );
+    tasks.push(
+      {
+        id: 1,
+        userId: -5n,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('задача первого') ?? 'задача первого',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        userId: -7n,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('задача второго') ?? 'задача второго',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+    );
+
+    const result = await service.getAllTasksForTherapist(T1);
+
+    expect(result).toHaveLength(2);
+    const first = result.find((r) => r.clientId === -5)!;
+    const second = result.find((r) => r.clientId === -7)!;
+    expect(first.tasks).toHaveLength(1);
+    expect(first.tasks[0].text).toBe('задача первого');
+    expect(second.tasks).toHaveLength(1);
+    expect(second.tasks[0].text).toBe('задача второго');
+  });
 });
 
 describe('TherapyTasksViewService.getTasksForClient — доступ по активной связи', () => {

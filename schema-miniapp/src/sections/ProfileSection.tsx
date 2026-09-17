@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getHost } from '../../../shared/src/host';
-import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
-import { NEED_NAMES, ACHIEVEMENT_META } from './profile/constants';
-import { StreakData, InsightsData } from './profile/types';
+import { ACHIEVEMENT_META } from './profile/constants';
 import { ProfileHeader } from './profile/ProfileHeader';
-import { StreakCard } from './profile/StreakCard';
-import { ActivityHeatmap } from './profile/ActivityHeatmap';
-import { AchievementsCard } from './profile/AchievementsCard';
-import { InsightsCard } from './profile/InsightsCard';
-import { JourneyEntryCard } from './profile/JourneyEntryCard';
+import { ProfileCards } from './profile/ProfileCards';
+import { useAboutMe } from './profile/useAboutMe';
+import { useProfileStats } from './profile/useProfileStats';
 import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
 import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
+import { PortraitSheet } from './profile/PortraitSheet';
+import { useScreenBlocks } from '../hooks/useScreenBlocks';
+import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
+import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -23,6 +23,7 @@ interface Props {
   onOpenTracker?: () => void;
   refreshKey?: number;
   displayName?: string | null;
+  onOpenPatterns: (tab: 'schemas' | 'modes') => void;
 }
 
 export function ProfileSection({
@@ -30,69 +31,41 @@ export function ProfileSection({
   onOpenTracker,
   refreshKey,
   displayName,
+  onOpenPatterns,
 }: Props) {
   const safeTop = useSafeTop();
   const tgName = getHost().user()?.firstName ?? '';
   const firstName = displayName || tgName;
 
-  const [streak, setStreak] = useState<StreakData | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[] | null>(null);
-  const [insights, setInsights] = useState<InsightsData | null>(null);
-  const [ready, setReady] = useState(false);
-  const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
+  // Прогрессивный рендер (замер 2026-08-22, профиль 3G+CPU×4): раньше
+  // streak/achievements/insights/history(112) грузились одним Promise.all
+  // с единым `ready`, и самый долгий ответ держал пустым весь экран
+  // (1321мс). useProfileStats даёт каждому источнику свой ready; тяжёлая
+  // history(112) для тепловой карты вынесена совсем отдельно и лениво —
+  // см. HeatmapCard внутри ProfileCards.
+  const {
+    streak,
+    streakReady,
+    achievements,
+    achievementsReady,
+    insights,
+    insightsReady,
+    hasInsights,
+  } = useProfileStats(refreshKey);
+  const aboutMe = useAboutMe(refreshKey);
 
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
     null,
   );
-  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [_homeScreenStatus] = useState<string | null>(null);
+  const [showPortrait, setShowPortrait] = useState(false);
 
-  useEffect(() => {
-    setReady(false);
-    setStreak(null);
-    setAchievements(null);
-    setInsights(null);
-    void Promise.all([
-      api
-        .getStreak()
-        .then(setStreak)
-        .catch(() => {}),
-      api
-        .getAchievements()
-        .then(setAchievements)
-        .catch(() => {}),
-      api
-        .getInsights()
-        .then(setInsights)
-        .catch(() => {}),
-      api
-        .history(112)
-        .then((h) => setActiveDates(new Set(h.map((d) => d.date))))
-        .catch(() => {}),
-    ]).finally(() => setReady(true));
-  }, [refreshKey]);
+  const blocks = useScreenBlocks('profile', SCREEN_HIDDEN_KEYS.profile);
 
   const currentStreak = streak?.currentStreak ?? 0;
-  const longestStreak = streak?.longestStreak ?? 0;
   const totalDays = streak?.totalDays ?? 0;
-  const todayDone = streak?.todayDone ?? false;
-  const weekDots = streak?.weekDots ?? [];
-  const hasInsights =
-    insights && insights.weeklyStats.some((s) => s.avg !== null);
-
-  const _insightSummary = (() => {
-    if (!insights) return null;
-    if (insights.bestDayOfWeek && insights.totalDays >= 7)
-      return `Лучший день — ${insights.bestDayOfWeek}`;
-    const rising = insights.weeklyStats.find((s) => s.trend === '↑');
-    if (rising) return `${NEED_NAMES[rising.needId]} растёт`;
-    return 'Заполняй дневник каждый день';
-  })();
-
-  const _showHomeSuggestion = false; // moved to onboarding
 
   return (
     <div
@@ -108,6 +81,7 @@ export function ProfileSection({
         firstName={firstName}
         totalDays={totalDays}
         onOpenSettings={onOpenSettings}
+        onCustomize={blocks.openByGear}
       />
 
       <div
@@ -115,63 +89,30 @@ export function ProfileSection({
           padding: '16px 16px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 'var(--space-10)',
         }}
       >
-        {/* ── Скелетон ── */}
-        {!ready && (
-          <>
-            {[88, 110, 80].map((h, i) => (
-              <div
-                key={i}
-                style={{
-                  height: h,
-                  borderRadius: 20,
-                  background:
-                    'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
-                  backgroundSize: '200% auto',
-                  animation: 'shimmer 1.5s linear infinite',
-                }}
-              />
-            ))}
-          </>
-        )}
-
-        {/* ── Мой путь (архив всей активности) — первым, по просьбе владельца ── */}
-        {ready && <JourneyEntryCard onOpen={() => setJourneyOpen(true)} />}
-
-        {/* ── Стрик ── */}
-        {ready && streak !== null && (
-          <StreakCard
-            currentStreak={currentStreak}
-            longestStreak={longestStreak}
-            totalDays={totalDays}
-            todayDone={todayDone}
-            weekDots={weekDots}
-            onOpenTracker={onOpenTracker}
-          />
-        )}
-
-        {/* ── Activity heatmap ── */}
-        {ready && activeDates.size > 0 && (
-          <ActivityHeatmap activeDates={activeDates} totalDays={totalDays} />
-        )}
-
-        {/* ── Достижения ── */}
-        {ready && achievements && (
-          <AchievementsCard
-            achievements={achievements}
-            onOpen={() => setShowAchievements(true)}
-          />
-        )}
-
-        {/* ── Паттерны (инсайты) ── */}
-        {ready && hasInsights && insights && (
-          <InsightsCard
-            insights={insights}
-            onShowBestDayInfo={() => setShowBestDayInfo(true)}
-          />
-        )}
+        {/* ── Карточки: скрываемые через «Настроить» / долгое нажатие ──
+            Общего скелетона на весь блок больше нет — каждая карточка
+            показывает свой силуэт, пока летят именно её данные
+            (ProfileCardSkeletons.tsx). */}
+        <ProfileCards
+          blocks={blocks}
+          streak={streak}
+          streakReady={streakReady}
+          achievements={achievements}
+          achievementsReady={achievementsReady}
+          insights={insights}
+          insightsReady={insightsReady}
+          hasInsights={hasInsights}
+          aboutMe={aboutMe}
+          onOpenJourney={() => setJourneyOpen(true)}
+          onOpenTracker={onOpenTracker}
+          onShowAchievements={() => setShowAchievements(true)}
+          onShowBestDayInfo={() => setShowBestDayInfo(true)}
+          onOpenPatterns={onOpenPatterns}
+          onOpenPortrait={() => setShowPortrait(true)}
+        />
 
         <div style={{ padding: '4px 0' }}>
           <TherapyNote compact />
@@ -206,6 +147,18 @@ export function ProfileSection({
       )}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
+
+      {/* ── BottomSheet: Мой портрет (полные списки схем/режимов) ── */}
+      {showPortrait && (
+        <PortraitSheet
+          aboutMe={aboutMe}
+          onOpenPatterns={onOpenPatterns}
+          onClose={() => setShowPortrait(false)}
+        />
+      )}
+
+      {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие на карточку) ── */}
+      {blocks.sheet !== null && <ScreenCustomizeSheet blocks={blocks} />}
     </div>
   );
 }

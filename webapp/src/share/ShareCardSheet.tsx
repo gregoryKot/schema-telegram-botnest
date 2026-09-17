@@ -3,6 +3,8 @@
 // (вёрстка своя — правило №3: логика в shared/useShareCard, вёрстка per-frontend).
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { TherapyNote } from '../components/TherapyNote';
+import { BottomSheetShell } from '../components/BottomSheetShell';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
 import type { ShareCardKind } from '../../../shared/src/share/analytics';
@@ -18,6 +20,8 @@ interface Props {
   eventKind: ShareCardKind;
   onClose: () => void;
   zIndex?: number;
+  /** Заход на терапию после «Поделиться» — паритет с miniapp (В10 аудита 2026-08) */
+  therapyNote?: boolean;
 }
 
 export function ShareCardSheet({
@@ -29,6 +33,7 @@ export function ShareCardSheet({
   eventKind,
   onClose,
   zIndex = 300,
+  therapyNote,
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -42,41 +47,7 @@ export function ShareCardSheet({
   });
 
   return (
-    <div
-      role="presentation"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex,
-        background: 'rgba(0,0,0,0.55)',
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-      onClick={goBack}
-    >
-      <div
-        role="presentation"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--bg)',
-          borderRadius: '20px 20px 0 0',
-          padding: '24px 24px 48px',
-          width: '100%',
-          maxWidth: 560,
-          margin: '0 auto',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            borderRadius: 2,
-            background: 'var(--surface-3)',
-            margin: '0 auto 20px',
-          }}
-        />
+    <BottomSheetShell goBack={goBack} zIndex={zIndex} padding="24px 24px 48px">
         <div
           style={{
             fontSize: 17,
@@ -95,7 +66,7 @@ export function ShareCardSheet({
 
         <div
           style={{
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             overflow: 'hidden',
             border: '1px solid var(--line)',
             boxShadow: '0 14px 34px rgba(0,0,0,0.22)',
@@ -115,7 +86,7 @@ export function ShareCardSheet({
               color: 'var(--text-sub)',
               lineHeight: 1.6,
               background: 'var(--surface-2)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 14px',
               overflowX: 'auto',
               whiteSpace: 'pre-wrap',
@@ -138,7 +109,7 @@ export function ShareCardSheet({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             background: 'var(--accent)',
             color: 'var(--on-accent)',
             opacity: s.sharing ? 0.6 : 1,
@@ -154,17 +125,21 @@ export function ShareCardSheet({
             marginTop: 10,
             padding: '12px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: 'var(--surface-2)',
-            color: s.copied ? 'var(--c-moss)' : 'var(--text-sub)',
+            color: s.copied ? 'var(--c-moss)' : s.failed ? 'var(--accent-red)' : 'var(--text-sub)',
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
           }}
         >
-          {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
+          {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
-      </div>
-    </div>
+        {therapyNote && (
+          <div style={{ marginTop: 12 }}>
+            <TherapyNote compact />
+          </div>
+        )}
+    </BottomSheetShell>
   );
 }

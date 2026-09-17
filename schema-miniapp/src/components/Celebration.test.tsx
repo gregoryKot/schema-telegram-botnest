@@ -42,17 +42,20 @@ afterEach(() => {
 });
 
 describe('Celebration — контент по стрику', () => {
-  it('обычный стрик (не веха) — иконка 🔥 и текст «N дней подряд»', () => {
+  // Сведение 2026-08: эмодзи 🔥/🏆 убраны (канон «отказа от эмодзи» доехал и
+  // сюда) — веха отмечается акцентом на числе (data-milestone).
+  it('обычный стрик (не веха) — число без акцента вехи и «N дней подряд»', () => {
     render(<Celebration streak={5} onDone={() => {}} />);
-    expect(screen.getByText('🔥')).toBeTruthy();
-    expect(screen.getByText('5')).toBeTruthy();
+    expect(screen.getByText('5').getAttribute('data-milestone')).toBe('no');
     expect(screen.getByText('дней подряд')).toBeTruthy();
+    expect(screen.queryByText('🔥')).toBeNull();
   });
 
-  it('стрик-веха (7) — иконка 🏆 и текст вехи из celebrationText', () => {
+  it('стрик-веха (7) — акцент на числе и текст вехи из celebrationText', () => {
     render(<Celebration streak={7} onDone={() => {}} />);
-    expect(screen.getByText('🏆')).toBeTruthy();
+    expect(screen.getByText('7').getAttribute('data-milestone')).toBe('yes');
     expect(screen.getByText('Неделя подряд. Это настоящий сдвиг')).toBeTruthy();
+    expect(screen.queryByText('🏆')).toBeNull();
   });
 
   it('передан insight — показывается отдельным блоком', () => {
@@ -80,7 +83,7 @@ describe('Celebration — закрытие', () => {
   it('клик по фону зовёт onDone', () => {
     const onDone = vi.fn();
     render(<Celebration streak={3} onDone={onDone} />);
-    fireEvent.click(screen.getByText('🏆'));
+    fireEvent.click(screen.getByRole('presentation'));
     expect(onDone).toHaveBeenCalled();
   });
 });

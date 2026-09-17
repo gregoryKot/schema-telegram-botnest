@@ -3,53 +3,8 @@ import { api } from '../api';
 import { SectionLabel } from './SectionLabel';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
-
-const buildQuestions = (tr: (ty: string, vy: string) => string) => [
-  'Что было самым трудным на этой неделе?',
-  tr(
-    'Что дало тебе энергию на этой неделе?',
-    'Что дало вам энергию на этой неделе?',
-  ),
-  tr(
-    'Было ли что-то, что ты сделал именно так, как хочешь — не потому что нужно или ждут?',
-    'Было ли что-то, что вы сделали именно так, как хотите — не потому что нужно или ждут?',
-  ),
-  tr('Что ты хотел бы сделать иначе?', 'Что вы хотели бы сделать иначе?'),
-  'Что хочется взять с собой в следующую неделю?',
-  tr(
-    'Как ты заботился о себе на этой неделе?',
-    'Как вы заботились о себе на этой неделе?',
-  ),
-  tr('Что ты заметил нового о себе?', 'Что вы заметили нового о себе?'),
-  'Какая потребность требовала больше всего внимания?',
-];
-
-function getWeekKey() {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(
-    ((now.getTime() - startOfYear.getTime()) / 86400000 +
-      startOfYear.getDay() +
-      1) /
-      7,
-  );
-  return `weekly_q_${now.getFullYear()}_${week}`;
-}
-
-function getQuestion(tr: (ty: string, vy: string) => string): string {
-  const now = new Date();
-  const week = Math.ceil(
-    (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 604800000,
-  );
-  const questions = buildQuestions(tr);
-  return questions[week % questions.length];
-}
-
-function shouldShow(): boolean {
-  if (localStorage.getItem(getWeekKey())) return false;
-  const dow = new Date().getDay(); // 1 = Monday
-  return dow === 1;
-}
+import { SaveErrorNote } from './SaveErrorNote';
+import { getWeekKey, getQuestion, shouldShow } from './weeklyQuestion.helpers';
 
 interface Props {
   date: string; // today's date YYYY-MM-DD
@@ -60,16 +15,21 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
   const tr = useTr();
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const question = getQuestion(tr);
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true);
-    localStorage.setItem(getWeekKey(), '1');
-    api
-      .saveNote(date, `[Вопрос недели] ${question}\n\n${text.trim()}`)
-      .catch(() => {});
-    setSaving(false);
-    onDismiss();
+    setSaveError(false);
+    try {
+      await api.saveNote(date, `[Вопрос недели] ${question}\n\n${text.trim()}`);
+      localStorage.setItem(getWeekKey(), '1');
+      onDismiss();
+    } catch (e) {
+      console.error('saveNote (weekly) failed', e);
+      setSaveError(true);
+      setSaving(false);
+    }
   }
 
   function handleSkip() {
@@ -81,9 +41,9 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
     <div
       style={{
         background:
-          'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(79,163,247,0.08))',
+          'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
         border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '16px 18px',
         marginBottom: 20,
       }}
@@ -112,7 +72,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           width: '100%',
           background: 'rgba(var(--fg-rgb),0.06)',
           border: '1px solid rgba(var(--fg-rgb),0.1)',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           padding: '10px 12px',
           color: 'var(--text)',
           fontSize: 13,
@@ -125,14 +85,20 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
         }}
       />
       <CrisisGate texts={[text]} surface="weekly" />
-      <div style={{ display: 'flex', gap: 8 }}>
+      {saveError && (
+        <SaveErrorNote
+          ty="Не сохранилось, попробуй ещё раз"
+          vy="Не сохранилось, попробуйте ещё раз"
+        />
+      )}
+      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
         <button
           onClick={handleSkip}
           style={{
             flex: 1,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'rgba(var(--fg-rgb),0.06)',
             color: 'var(--text-sub)',
             fontSize: 12,
@@ -148,7 +114,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
             flex: 2,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
             color: 'var(--accent)',
             fontSize: 12,

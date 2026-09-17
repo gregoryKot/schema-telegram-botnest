@@ -31,7 +31,8 @@ export function ClientDetailView({
   startDateInputRef,
   nextSessionInputRef,
 }: ClientDetailViewProps) {
-  const { setRenamingAlias, setYsqRequested, deleteError } = detail;
+  const { setRenamingAlias, setYsqRequested, deleteError, clientLoadError } =
+    detail;
 
   return (
     <div
@@ -59,7 +60,7 @@ export function ClientDetailView({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             marginBottom: 4,
           }}
         >
@@ -114,6 +115,21 @@ export function ClientDetailView({
           </div>
         )}
 
+        {/* fetchClientDetail: часть данных не загрузилась — не путать с «у клиента их нет» */}
+        {clientLoadError && (
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--accent-red)',
+              marginTop: 4,
+              textAlign: 'center',
+            }}
+          >
+            Часть данных клиента не загрузилась. Обновится при повторном
+            открытии карточки.
+          </div>
+        )}
+
         {/* Thin separator */}
         <div
           style={{
@@ -151,7 +167,6 @@ export function ClientDetailView({
         <div style={{ marginTop: 12 }}>
           <WebBanner
             id="mode_map"
-            emoji="🗺"
             title="Карта режимов клиента — на сайте"
             text="Визуальная схема-карта режимов с зонами, переходами и экспортом. В мини-аппе не помещается — редактор открывается в кабинете на сайте."
             url={WEB_CABINET_URL}

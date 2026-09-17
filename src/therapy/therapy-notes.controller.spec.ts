@@ -94,6 +94,14 @@ describe('TherapyNotesController.getNotes', () => {
       'No active relation with this client',
     );
   });
+
+  it('прочая ошибка сервиса пробрасывается как есть, не подменяется на 403', async () => {
+    const { controller, notes } = makeController();
+    notes.getNotes.mockRejectedValue(new Error('DB connection lost'));
+    await expect(controller.getNotes(makeReq(3n), '5')).rejects.toThrow(
+      'DB connection lost',
+    );
+  });
 });
 
 describe('TherapyNotesController.createNote', () => {
@@ -151,6 +159,22 @@ describe('TherapyNotesController.createNote', () => {
     const passed = notes.createNote.mock.calls[0][2] as { text: string };
     expect(passed.text).toHaveLength(5000);
   });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, notes } = makeController();
+    notes.createNote.mockRejectedValue(new Error('No active relation'));
+    await expect(
+      controller.createNote(makeReq(3n), '5', VALID_BODY),
+    ).rejects.toThrow('No active relation with this client');
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.createNote.mockRejectedValue(new Error('DB connection lost'));
+    await expect(
+      controller.createNote(makeReq(3n), '5', VALID_BODY),
+    ).rejects.toThrow('DB connection lost');
+  });
 });
 
 describe('TherapyNotesController.deleteNote', () => {
@@ -173,6 +197,16 @@ describe('TherapyNotesController.deleteNote', () => {
 });
 
 describe('TherapyNotesController.getConceptualization', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.getConceptualization(makeReq(), '5'),
+    ).rejects.toThrow(ForbiddenException);
+    expect(notes.getConceptualization).not.toHaveBeenCalled();
+  });
+
   it('терапевт → делегирует getConceptualization(therapistId, clientId)', async () => {
     const { controller, notes } = makeController();
     const res = await controller.getConceptualization(makeReq(3n), '5');
@@ -188,6 +222,16 @@ describe('TherapyNotesController.getConceptualization', () => {
     await expect(
       controller.getConceptualization(makeReq(3n), '5'),
     ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.getConceptualization.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.getConceptualization(makeReq(3n), '5'),
+    ).rejects.toThrow('DB connection lost');
   });
 });
 
@@ -209,9 +253,39 @@ describe('TherapyNotesController.updateSessionInfo', () => {
     expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5, body);
     expect(res).toEqual({ ok: true });
   });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, clientData } = makeController();
+    clientData.updateSessionInfo.mockRejectedValue(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.updateSessionInfo(makeReq(3n), '5', {}),
+    ).rejects.toThrow('No active relation with this client');
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, clientData } = makeController();
+    clientData.updateSessionInfo.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.updateSessionInfo(makeReq(3n), '5', {}),
+    ).rejects.toThrow('DB connection lost');
+  });
 });
 
 describe('TherapyNotesController.saveConceptualization', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.saveConceptualization(makeReq(), '5', {}),
+    ).rejects.toThrow(ForbiddenException);
+    expect(notes.saveConceptualization).not.toHaveBeenCalled();
+  });
+
   it('терапевт → делегирует saveConceptualization(therapistId, clientId, body)', async () => {
     const { controller, notes } = makeController();
     const body = { schemaIds: ['abandonment'] };
@@ -228,5 +302,15 @@ describe('TherapyNotesController.saveConceptualization', () => {
     await expect(
       controller.saveConceptualization(makeReq(3n), '5', {}),
     ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.saveConceptualization.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.saveConceptualization(makeReq(3n), '5', {}),
+    ).rejects.toThrow('DB connection lost');
   });
 });

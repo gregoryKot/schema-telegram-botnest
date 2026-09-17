@@ -35,6 +35,7 @@ function statusFixture(overrides: Record<string, unknown> = {}) {
     appleCalendar: false,
     calendarBusyCount: 0,
     calendarNames: [],
+    calendarReadError: null,
     calendarBlocking: false,
     emailFallback: true,
     siteUrl: 'https://schemehappens.ru',
@@ -98,6 +99,28 @@ describe('BookingSection — статус интеграций', () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByText('Блокировка слотов по календарю включена — занятое время скрывается из записи.');
   });
+
+  // Регресс 2026-09-13: appleCalendar:true читался как «связь есть», хотя
+  // чтение занятости падало — слоты шли поверх личных встреч молча.
+  it('calendarReadError — красная пометка «чтение не работает», а не «вкл · занято»', async () => {
+    mockApi.adminStatus.mockResolvedValue(statusFixture({
+      appleCalendar: true, calendarBusyCount: 4, calendarBlocking: true,
+      calendarReadError: 'REPORT 403 for https://x/calendars/',
+    }));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/чтение не работает: REPORT 403 for/);
+    expect(screen.queryByText(/вкл · занято: 4/)).toBeNull();
+  });
+
+  it('без calendarReadError — обычный статус «вкл · занято», без красной пометки', async () => {
+    mockApi.adminStatus.mockResolvedValue(statusFixture({
+      appleCalendar: true, calendarBusyCount: 4, calendarBlocking: true,
+      calendarReadError: null,
+    }));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/вкл · занято: 4/);
+    expect(screen.queryByText(/чтение не работает/)).toBeNull();
+  });
 });
 
 describe('BookingSection — цены сессий', () => {
@@ -124,6 +147,26 @@ describe('BookingSection — цены сессий', () => {
 
     await screen.findByText('Цена сохранена ✓');
     expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500);
+  });
+
+  it('таймер сброса «✓» чистится при анмаунте (регресс: setState после снятия компонента ронял CI «window is not defined»)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mockApi.adminSetPrice.mockResolvedValue({ ok: true });
+      const { unmount } = render(<BookingSection adminKey="k" />);
+      const priceInput = await screen.findByDisplayValue('3000');
+      fireEvent.change(priceInput, { target: { value: '3500' } });
+      fireEvent.click(
+        within(section('Цены')).getByRole('button', { name: 'Сохранить' }),
+      );
+      await screen.findByText('Цена сохранена ✓');
+
+      unmount();
+      // Утёкший таймер = setState по снятому компоненту через 1.5с.
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ошибка сохранения цены сессии — видна, «сохранена» не показывается (тот же класс бага, что и в подписке)', async () => {
@@ -160,6 +203,13 @@ describe('BookingSection — расписание', () => {
   it('без правил — подсказка добавить слоты, а не пустой список без объяснения', async () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByText('Пока нет правил. Добавьте слоты ниже.');
+  });
+
+  it('сбой ≠ пусто: отказ загрузки правил показывает ошибку, а не «Пока нет правил»', async () => {
+    mockApi.adminListRules.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    expect(await screen.findByText(/Не удалось загрузить расписание/)).toBeTruthy();
+    expect(screen.queryByText('Пока нет правил. Добавьте слоты ниже.')).toBeNull();
   });
 
   it('показывает существующее правило человеческим текстом', async () => {
@@ -206,6 +256,28 @@ describe('BookingSection — записи', () => {
   it('без записей в выбранном фильтре — явный текст «Записей нет», не пусто', async () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByText('Записей нет.');
+  });
+
+  // Сбой ≠ пусто: «Записей нет.» на отказе (неверный ключ/сеть) читается как
+  // «записей правда нет» — терапевт может решить, что записей никогда не было.
+  it('сбой ≠ пусто: отказ adminListBookings показывает ошибку, а не «Записей нет»', async () => {
+    mockApi.adminListBookings.mockRejectedValue(new Error('API error: 403'));
+    render(<BookingSection adminKey="wrong" />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить записи/);
+    expect(screen.queryByText('Записей нет.')).toBeNull();
+  });
+
+  it('смена фильтра после сбоя сбрасывает ошибку на успешном ответе', async () => {
+    mockApi.adminListBookings.mockRejectedValueOnce(new Error('network'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByRole('alert');
+
+    mockApi.adminListBookings.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Отменённые' }));
+
+    await screen.findByText('Записей нет.');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('показывает реальную запись клиента с именем и контактом', async () => {

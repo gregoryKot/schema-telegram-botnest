@@ -25,7 +25,7 @@ const PAIRS = [
   'utils/crisisMarkers.test.ts',
   'utils/todayInsight.ts',
   'utils/drafts.ts',
-  'utils/addressForm.tsx',
+  'utils/addressForm.ts',
   'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
@@ -38,6 +38,8 @@ const PAIRS = [
   'hooks/useReducedMotionPref.ts',
   'utils/telemetryUrl.ts',
   'utils/telemetryUrl.test.ts',
+  'components/schemaFlashcard/constants.ts',
+  'components/schemaFlashcard/types.ts',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное

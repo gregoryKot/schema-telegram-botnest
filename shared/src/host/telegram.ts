@@ -25,6 +25,7 @@ type TgWebApp = {
   expand?(): void;
   close?(): void;
   disableVerticalSwipes?(): void;
+  enableVerticalSwipes?(): void;
   openLink?(url: string): void;
   addToHomeScreen?(): void;
   checkHomeScreenStatus?(cb: (status: HomeScreenStatus) => void): void;
@@ -73,6 +74,11 @@ export function createTelegramHost(): HostBridge {
   const tg = () => telegramWebApp();
   // Факт события важнее числа: contentTop может прийти нулём.
   let contentReported = false;
+  // Bot API 7.7+; в старых клиентах методов может не быть — вызов через `?.`.
+  const setVerticalSwipes = (enabled: boolean) => {
+    if (enabled) tg()?.enableVerticalSwipes?.();
+    else tg()?.disableVerticalSwipes?.();
+  };
 
   return {
     id: 'telegram',
@@ -96,9 +102,10 @@ export function createTelegramHost(): HostBridge {
     // сворачивает всё приложение.
     expand: () => {
       tg()?.expand?.();
-      tg()?.disableVerticalSwipes?.();
+      setVerticalSwipes(false);
     },
     close: () => tg()?.close?.(),
+    setVerticalSwipes,
 
     user(): HostUser | null {
       const u = tg()?.initDataUnsafe?.user;
@@ -126,7 +133,14 @@ export function createTelegramHost(): HostBridge {
         contentTop: w?.contentSafeAreaInset?.top,
         deviceTop: w?.safeAreaInset?.top,
         isFullscreen: !!w?.isFullscreen,
-        contentReported,
+        // «Клиент умеет присылать полосу контента» — это не только событие
+        // contentSafeAreaChanged (на старте оно может не прийти вовсе), но и
+        // само наличие объекта contentSafeAreaInset (Bot API 8.0+). Без этого
+        // честный ноль от способного клиента ждал события и получал страховку
+        // 96px — дыра над шапкой в sheet-режиме (скриншот 2026-08-12).
+        contentReported:
+          contentReported || w?.contentSafeAreaInset?.top !== undefined,
+        overlaysContent: true,
       };
     },
     onInsetsChange(cb) {

@@ -39,12 +39,12 @@ describe('TaskHistoryList — пустое состояние', () => {
 describe('TaskHistoryList — содержимое', () => {
   it('done=true — галочка', () => {
     render(<TaskHistoryList taskHistory={[makeTask({ done: true })]} />);
-    expect(screen.getByText('✅')).toBeTruthy();
+    expect(screen.getByText('✓')).toBeTruthy();
   });
 
   it('done=false — крестик, не перепутан с галочкой', () => {
     render(<TaskHistoryList taskHistory={[makeTask({ done: false })]} />);
-    expect(screen.getByText('❌')).toBeTruthy();
+    expect(screen.getByText('×')).toBeTruthy();
     expect(screen.queryByText('✅')).toBeNull();
   });
 

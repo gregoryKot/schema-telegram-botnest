@@ -48,14 +48,14 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
       />,
     );
     expect(screen.getByText('Позвонить другу и рассказать о дне')).toBeTruthy();
-    expect(screen.getByText('🛡 Безопасность')).toBeTruthy();
+    expect(screen.getByText('Безопасность')).toBeTruthy();
   });
 
   it('«Да, сделал» зовёт checkinPlan(id, true) и onDone', async () => {
@@ -64,13 +64,13 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
       />,
     );
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     await waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(api.checkinPlan).toHaveBeenCalledWith(42, true);
   });
@@ -80,7 +80,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
@@ -97,7 +97,7 @@ describe('CheckInSheet — успешный чек-ин', () => {
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
@@ -116,13 +116,13 @@ describe('CheckInSheet — провал сохранения виден поль
     render(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={onDone}
       />,
     );
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     expect(
       await screen.findByText('Не удалось сохранить — попробуй ещё раз'),
     ).toBeTruthy();
@@ -137,15 +137,15 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
     renderWithForm(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
       />,
       'ty',
     );
-    expect(screen.getByText('Вчера ты планировал')).toBeTruthy();
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    expect(screen.getByText('Вчера в планах было')).toBeTruthy();
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     expect(
       await screen.findByText('Не удалось сохранить — попробуй ещё раз'),
     ).toBeTruthy();
@@ -156,7 +156,7 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
     const { container } = renderWithForm(
       <CheckInSheet
         plan={plan}
-        needEmoji="🛡"
+        needColor="#4fa3f7"
         needLabel="Безопасность"
         color="#4fa3f7"
         onDone={() => {}}
@@ -164,7 +164,7 @@ describe('CheckInSheet — обращение ты/вы (регрессия: б�
       'vy',
     );
     expect(screen.getByText('Вчера вы планировали')).toBeTruthy();
-    fireEvent.click(screen.getByText('Да, сделал ✓'));
+    fireEvent.click(screen.getByText('Да, получилось ✓'));
     await screen.findByText('Не удалось сохранить — попробуйте ещё раз');
     expect(hasTyForms(container.textContent ?? '')).toBe(false);
   });

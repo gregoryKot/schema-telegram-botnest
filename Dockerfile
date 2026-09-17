@@ -5,7 +5,11 @@
 
 # ── Stage 1: build ───────────────────────────────────────────────────────────
 FROM node:22-slim AS build
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# openssl (нужен движку Prisma) ставится скриптом с повтором и запасным
+# зеркалом: см. deploy/install-openssl.sh — сеть билдера Amvera до
+# deb.debian.org отваливается, и сборка не обязана падать с первой попытки.
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
 WORKDIR /app
 
 # Облегчение сборки (слабый билдер Amvera ловил OOM на `npm ci --prefix webapp`
@@ -17,8 +21,13 @@ ENV npm_config_audit=false \
     npm_config_fund=false \
     npm_config_update_notifier=false
 
-# Backend dependencies
+# Backend dependencies.
+# setup-merge-drivers.mjs копируется ДО npm ci: корневой npm-хук `prepare`
+# запускает его на каждом install, и без файла `npm ci` падает с ENOENT —
+# ровно так деплой молча стоял с #256 по #258 (инцидент 2026-08-04). Внутри
+# образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
 COPY package*.json ./
+COPY scripts/setup-merge-drivers.mjs scripts/
 RUN npm ci
 
 # Webapp dependencies
@@ -60,7 +69,8 @@ RUN npm prune --production
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM node:22-slim
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
 WORKDIR /app
 ENV NODE_ENV=production
 

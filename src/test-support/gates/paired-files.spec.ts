@@ -13,7 +13,7 @@ const PAIRS = [
   'utils/crisisMarkers.test.ts',
   'utils/todayInsight.ts',
   'utils/drafts.ts',
-  'utils/addressForm.tsx',
+  'utils/addressForm.ts',
   'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
@@ -26,6 +26,8 @@ const PAIRS = [
   'hooks/useReducedMotionPref.ts',
   'utils/telemetryUrl.ts',
   'utils/telemetryUrl.test.ts',
+  'components/schemaFlashcard/constants.ts',
+  'components/schemaFlashcard/types.ts',
 ];
 
 describe('check-paired-files.mjs', () => {
@@ -36,6 +38,19 @@ describe('check-paired-files.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('парные файлы разошлись: types.ts');
+  });
+
+  // До этого теста catch-ветка (файл пары физически отсутствует хотя бы в
+  // одном из деревьев) исполнялась в фикстурах (остальные PAIRS-записи не
+  // создавались в тесте выше), но её `failed = true;` ни разу не проверялся
+  // отдельно — тест 1 проходил и без него благодаря content-mismatch.
+  it('файл пары физически отсутствует в одном из деревьев — exit 1', () => {
+    const res = runGate('check-paired-files.mjs', {
+      'webapp/src/types.ts': 'export type Foo = 1;\n',
+      // schema-miniapp/src/types.ts не создан вовсе.
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('пара отсутствует: types.ts');
   });
 
   it('все пары побайтово идентичны в обоих деревьях — exit 0', () => {

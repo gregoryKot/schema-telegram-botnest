@@ -40,6 +40,7 @@ function makeService(bookingRow: any) {
     {} as any,
     pricing as any,
     config as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
   return { service, prisma, notify, state };
 }

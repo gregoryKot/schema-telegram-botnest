@@ -18,8 +18,8 @@
 // game/ исключён — заморожен решением владельца (как в eslint-храповике).
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'file-size-baseline.json');
 const UPDATE = process.argv.includes('--update');
@@ -31,18 +31,24 @@ const NEW_FILE_LIMIT = 300;
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 // Что не считаем кодом проекта: vendor, сборки, декларации, тесты (растут
-// законно вместе с покрытием), заморозенная игра.
-const EXCLUDE = [
+// законно вместе с покрытием), заморозенная игра. Экспорт — ради теста гейта.
+export const EXCLUDE = [
   /(^|\/)node_modules\//,
   /(^|\/)dist\//,
   /(^|\/)coverage\//,
   /(^|\/)build\//,
   /\.d\.ts$/,
-  /\.(spec|test)\.(ts|tsx|js|jsx)$/,
+  // Тест-файл распознаётся и через точку (foo.spec.ts), и через дефис
+  // (auth-flows.e2e-spec.ts). Раньше вторая форма под исключение НЕ попадала,
+  // и сквозные тесты жили под храповиком роста: чтобы дописать сценарий,
+  // приходилось ужимать соседние — гейт выдавливал покрытие вместо того,
+  // чтобы его защищать (найдено 2026-08-22, при добавлении e2e на ротацию
+  // refresh-токена). Инфраструктура тестов (test/e2e-support/**, фикстуры)
+  // под гейтом остаётся: это обычные модули, они обязаны дробиться.
+  /[.-](spec|test)\.(ts|tsx|js|jsx)$/,
   /(^|\/)game\//,
   /(^|\/)webapp\/public\//,
 ];
-
 function listFiles() {
   const res = spawnSync('git', ['ls-files'], {
     cwd: ROOT,
@@ -59,7 +65,6 @@ function listFiles() {
     .filter((p) => CODE_EXT.test(p))
     .filter((p) => !EXCLUDE.some((re) => re.test(p)));
 }
-
 function countLines(relPath) {
   try {
     const txt = readFileSync(join(ROOT, relPath), 'utf8');
@@ -73,6 +78,8 @@ function countLines(relPath) {
   }
 }
 
+// CLI-логика — только при запуске как скрипт (не при импорте EXCLUDE).
+function main() {
 const files = listFiles();
 const sizes = {};
 for (const f of files) {
@@ -81,8 +88,11 @@ for (const f of files) {
 }
 
 if (UPDATE) {
+  // Сортировка по ПУТИ, а не по размеру: при сортировке по размеру ужавшийся
+  // файл переезжал через полфайла, и диффы параллельных агентов перекрывались
+  // почти всегда. По пути строка стоит на месте (см. .gitattributes).
   const sorted = Object.fromEntries(
-    Object.entries(sizes).sort((a, b) => b[1] - a[1]),
+    Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)),
   );
   writeFileSync(BASELINE_PATH, JSON.stringify(sorted, null, 2) + '\n');
   const over = Object.values(sizes).filter((n) => n > NEW_FILE_LIMIT).length;
@@ -92,7 +102,6 @@ if (UPDATE) {
   );
   process.exit(0);
 }
-
 let baseline;
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
@@ -102,7 +111,6 @@ try {
   );
   process.exit(1);
 }
-
 const grown = []; // файл из бейслайна вырос
 const newBig = []; // новый файл сразу больше потолка
 for (const [f, n] of Object.entries(sizes)) {
@@ -149,3 +157,5 @@ console.log(
         `node scripts/check-file-size-ratchet.mjs --update (${overCap} ещё сверх ${NEW_FILE_LIMIT})`
     : `✓ файл-храповик: без роста (${overCap} файлов сверх потолка ${NEW_FILE_LIMIT} — долг тает по мере рефакторинга)`,
 );
+}
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

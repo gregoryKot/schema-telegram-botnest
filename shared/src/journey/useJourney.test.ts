@@ -5,9 +5,15 @@
 // тест создаёт свой на каждый кейс, как это делает реальный вызывающий код.
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useJourney, type JourneyDeps } from './useJourney';
+import { useJourney, makeJourneyProps, type JourneyDeps } from './useJourney';
 import { JOURNEY_OPEN_EVENT } from '../share/analytics';
-import type { JourneyCounts, JourneyData, JourneyItem } from './journeyMeta';
+import type {
+  JourneyCounts,
+  JourneyData,
+  JourneyItem,
+  JourneySubtitleSources,
+} from './journeyMeta';
+import type { JourneyApiLike } from './useJourney';
 
 function zeroCounts(): JourneyCounts {
   return {
@@ -117,5 +123,96 @@ describe('useJourney', () => {
     act(() => result.current.setSortDir('asc'));
     const asc = result.current.items.map((i) => i.at);
     expect(asc).toEqual([...desc].reverse());
+  });
+});
+
+// Заглушка api: методы вне текущего теста явно кидают — виден случайный
+// поход не в тот эндпоинт (тот же приём, что в journeyContent.test.ts).
+function stubJourneyApi(overrides: Partial<JourneyApiLike>): JourneyApiLike {
+  const unimplemented = (name: string) => () => {
+    throw new Error(`api.${name} не замокан в этом тесте`);
+  };
+  const names: (keyof JourneyApiLike)[] = [
+    'getJourney',
+    'trackEvent',
+    'getSchemaDiary',
+    'getModeDiary',
+    'getGratitudeDiary',
+    'getBeliefChecks',
+    'getLetters',
+    'getFlashcards',
+    'getSafePlace',
+    'getNote',
+    'getPractices',
+    'getPlanHistory',
+    'ratings',
+    'getSchemaNotes',
+    'getModeNotes',
+    'getYsqHistory',
+    'getYsqResult',
+  ];
+  const base = Object.fromEntries(
+    names.map((n) => [n, unimplemented(n)]),
+  ) as unknown as JourneyApiLike;
+  return { ...base, ...overrides };
+}
+
+describe('makeJourneyProps', () => {
+  const src: JourneySubtitleSources = {
+    getModeById: (id) =>
+      id === 'vulnerable_child' ? { name: 'Уязвимый Ребёнок' } : undefined,
+    getSchemaById: () => undefined,
+  };
+
+  it('deps.getJourney делегирует в api.getJourney', async () => {
+    const data: JourneyData = { counts: zeroCounts(), items: [] };
+    const api = stubJourneyApi({ getJourney: vi.fn().mockResolvedValue(data) });
+    const props = makeJourneyProps(api, src);
+    await expect(props.deps.getJourney()).resolves.toBe(data);
+  });
+
+  it('deps.trackEvent делегирует имя события в api.trackEvent без meta', () => {
+    const trackEvent = vi.fn();
+    const props = makeJourneyProps(stubJourneyApi({ trackEvent }), src);
+    props.deps.trackEvent('journey_open');
+    expect(trackEvent).toHaveBeenCalledWith('journey_open');
+  });
+
+  it('subtitle() резолвит имя режима по modeId через переданный src', () => {
+    const props = makeJourneyProps(stubJourneyApi({}), src);
+    expect(
+      props.subtitle({
+        type: 'mode_diary',
+        at: '2026-07-20',
+        modeId: 'vulnerable_child',
+      }),
+    ).toBe('Уязвимый Ребёнок');
+    expect(props.subtitle({ type: 'note', at: '2026-07-20' })).toBeNull();
+  });
+
+  it('fetchResult() делегирует в fetchJourneyResult с той же api', async () => {
+    const api = stubJourneyApi({
+      getLetters: async () => [{ id: 5, text: 'Письмо себе' }],
+    });
+    const props = makeJourneyProps(api, src);
+    const result = await props.fetchResult({
+      type: 'letter',
+      at: '2026-07-20',
+      id: 5,
+    });
+    expect(result?.parts).toEqual([{ title: undefined, text: 'Письмо себе' }]);
+  });
+
+  it('fetchDetail() делегирует в fetchJourneyDetail с той же api', async () => {
+    const api = stubJourneyApi({
+      getLetters: async () => [{ id: 5, text: 'Письмо себе целиком' }],
+    });
+    const props = makeJourneyProps(api, src);
+    const parts = await props.fetchDetail({
+      type: 'letter',
+      at: '2026-07-20',
+      id: 5,
+    });
+    expect(parts).toEqual([{ title: undefined, text: 'Письмо себе целиком' }]);
   });
 });

@@ -4,6 +4,7 @@ import {
   modeChainVmLocal,
   type ModeChainSuggestionProps,
 } from '../../modeChainVm';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 /**
  * Подсказка «разобрать связанный режим» после сохранения записи — в одной
@@ -22,7 +23,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
         marginTop: 20,
         padding: '14px 16px 12px',
         border: '1px solid var(--line)',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         background: 'var(--surface-2)',
       }}
     >
@@ -47,7 +48,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
               onPick(id);
             }}
           >
-            {mode.emoji} {mode.name}
+            <IdentityDot color={mode.groupColor} /> {mode.name}
           </button>
         ))}
         <button

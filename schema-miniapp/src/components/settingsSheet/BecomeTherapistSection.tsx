@@ -1,4 +1,5 @@
 import { api } from '../../api';
+import { useTr } from '../../utils/addressForm';
 
 type TherapistReq = {
   id: number;
@@ -43,6 +44,33 @@ export function BecomeTherapistSection({
   reqError,
   setReqError,
 }: Props) {
+  const tr = useTr();
+
+  async function handleSubmitRequest() {
+    setReqBusy(true);
+    setReqError('');
+    try {
+      await api.submitTherapistRequest({
+        fullName: reqFullName.trim(),
+        qualification: reqQual.trim(),
+        contacts: reqContacts.trim(),
+        message: reqMsg.trim() || undefined,
+      });
+      const req = await api.getTherapistRequest();
+      setTherapistReq(req);
+      setShowReqForm(false);
+    } catch (e) {
+      // Показываем реальную причину (парность с webapp): «Request already
+      // pending», лимит и т.п. — иначе ошибка выглядит необъяснимой.
+      setReqError(
+        String(e).replace('Error: ', '') ||
+          tr('Ошибка. Попробуй ещё раз.', 'Ошибка. Попробуйте ещё раз.'),
+      );
+    } finally {
+      setReqBusy(false);
+    }
+  }
+
   return (
     <div style={{ marginBottom: 8 }}>
       {therapistReq === undefined ? null : therapistReq?.status ===
@@ -104,7 +132,7 @@ export function BecomeTherapistSection({
             gap: 6,
           }}
         >
-          <span>👨‍⚕️</span> Я психолог — подать заявку
+          Я психолог — подать заявку
         </button>
       ) : (
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
@@ -139,7 +167,7 @@ export function BecomeTherapistSection({
               label: 'Квалификация',
               val: reqQual,
               set: setReqQual,
-              placeholder: 'Схема-терапевт, КПТ, 5 лет практики',
+              placeholder: 'Психолог, схема-терапия и КПТ, 5 лет практики',
             },
             {
               label: 'Контакты',
@@ -189,7 +217,10 @@ export function BecomeTherapistSection({
             <textarea
               value={reqMsg}
               onChange={(e) => setReqMsg(e.target.value)}
-              placeholder="Расскажи о себе или своём подходе"
+              placeholder={tr(
+                'Расскажи о себе или своём подходе',
+                'Расскажите о себе или своём подходе',
+              )}
               rows={3}
               style={{
                 width: '100%',
@@ -243,38 +274,14 @@ export function BecomeTherapistSection({
                 !reqQual.trim() ||
                 !reqContacts.trim()
               }
-              onClick={async () => {
-                setReqBusy(true);
-                setReqError('');
-                try {
-                  await api.submitTherapistRequest({
-                    fullName: reqFullName.trim(),
-                    qualification: reqQual.trim(),
-                    contacts: reqContacts.trim(),
-                    message: reqMsg.trim() || undefined,
-                  });
-                  const req = await api.getTherapistRequest();
-                  setTherapistReq(req);
-                  setShowReqForm(false);
-                } catch (e) {
-                  // Показываем реальную причину (парность с webapp):
-                  // «Request already pending», лимит и т.п. — иначе
-                  // ошибка выглядит необъяснимой.
-                  setReqError(
-                    String(e).replace('Error: ', '') ||
-                      'Ошибка. Попробуй ещё раз.',
-                  );
-                } finally {
-                  setReqBusy(false);
-                }
-              }}
+              onClick={handleSubmitRequest}
               style={{
                 flex: 2,
                 padding: '10px 0',
                 borderRadius: 10,
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',

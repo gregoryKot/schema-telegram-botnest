@@ -18,9 +18,11 @@ vi.mock('../api', () => ({
     updateSettings: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
 function profile(overrides: Partial<{ mySchemaIds: string[]; myModeIds: string[]; activeSchemaIds: string[]; completedAt: string | null }> = {}) {
   return {
@@ -60,8 +62,10 @@ afterEach(() => {
 describe('SchemasSection — пустой аккаунт (без хардкод-заглушек)', () => {
   it('без схем/режимов показывает реальные пустые подсказки, а не выдуманные данные', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    // Ждём именно отрисованную подсказку, а не факт вызова api: вызов случается
+    // раньше, чем стейт доедет до DOM, и под нагрузкой CI между ними ещё виден
+    // скелетон (красный webapp на #269, 2026-08).
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText('Начать →')).toBeTruthy();
   });
@@ -69,8 +73,7 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
   it('ошибка getProfile не роняет экран — остаётся пустое состояние вместо краха', async () => {
     mockApi.getProfile.mockRejectedValue(new Error('network down'));
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
   });
 });
 
@@ -80,28 +83,29 @@ describe('SchemasSection — скелетон загрузки', () => {
     mockApi.getProfile.mockReturnValue(new Promise(r => { resolveProfile = r; }));
     const { container } = renderSection();
 
-    // Скелетон — блок мерцающих плашек (animation: shimmer), а не готовый текст.
-    expect(container.querySelectorAll('[style*="shimmer"]').length).toBeGreaterThan(0);
+    // Скелетон — блок мерцающих плашек (примитив Skeleton, класс .skel), а не
+    // готовый текст. Раньше плашка была инлайновым `animation: shimmer` —
+    // теперь цвет/анимация приезжают из общего класса, не из инлайн-стиля
+    // (переезд на примитив, скрин владельца 2026-08-23).
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
 
     resolveProfile(profile());
-    await waitFor(() => expect(container.querySelectorAll('[style*="shimmer"]').length).toBe(0));
+    await waitFor(() => expect(container.querySelectorAll('.skel').length).toBe(0));
   });
 });
 
 describe('SchemasSection — ты/вы вилка', () => {
   it('на «ты»: подсказки на «ты», без "вы"-форм', async () => {
     renderSection({}, 'ty');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройди тест на схемы или добавь вручную')).toBeTruthy();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText(/Определи схемы автоматически/)).toBeTruthy();
   });
 
   it('на «вы»: те же подсказки во множественном числе, ни одной "ты"-формы', async () => {
     renderSection({}, 'vy');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройдите тест на схемы или добавьте вручную')).toBeTruthy();
+    await screen.findByText('Пройдите тест на схемы или добавьте вручную');
     expect(screen.getByText('Добавьте режимы которые узнаёте у себя')).toBeTruthy();
     expect(screen.getByText(/Определите схемы автоматически/)).toBeTruthy();
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
@@ -161,18 +165,35 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
   it('"+ Добавить" у схем открывает SchemaPickerSheet, сохранение зовёт api.updateSettings', async () => {
     mockApi.updateSettings.mockResolvedValue({ ok: true });
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-
-    const addButtons = screen.getAllByText('+ Добавить');
+    const addButtons = await screen.findAllByText('+ Добавить');
     fireEvent.click(addButtons[0]);
     await screen.findByText(/Выбери схемы, которые тебе близки/);
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): та же дыра, что у режимов ниже — отказ
+  // записи mySchemaIds тонул молча.
+  it('отказ api.updateSettings при сохранении схем уходит в reportClientError', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    renderSection();
+    const addButtons = await screen.findAllByText('+ Добавить');
+    fireEvent.click(addButtons[0]);
+    await screen.findByText(/Выбери схемы, которые тебе близки/);
+    const options = screen.getAllByText('Покинутость / Нестабильность');
+    fireEvent.click(options[options.length - 1]);
+    fireEvent.click(screen.getByText(/Сохранить/));
+
+    await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
+    ));
   });
 });
 
 describe('SchemasSection — карта режимов от терапевта', () => {
   it('без карт от терапевта блок скрыт (не 0 карт, а вообще нет блока)', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.listMyModeMaps).toHaveBeenCalled());
+    // Экран должен дорисоваться: проверка отсутствия блока по недогруженному
+    // DOM зеленела бы всегда, даже если блок появляется.
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.queryByText('Карта режимов с терапевтом')).toBeNull();
   });
 
@@ -185,27 +206,37 @@ describe('SchemasSection — карта режимов от терапевта',
     // ModeMapViewer лениво грузится внутри листа — лист открылся (заголовок листа).
     await waitFor(() => expect(screen.getAllByText('Карта режимов').length).toBeGreaterThanOrEqual(1));
   });
+
+  // РЕГРЕССИЯ (check-silent-catch): .catch(() => {}) глотал отказ molча —
+  // блок карт молча выглядел «карт нет», неотличимо от честного нуля.
+  it('отказ listMyModeMaps уходит в reportClientError, экран остаётся рабочим', async () => {
+    mockApi.listMyModeMaps.mockRejectedValue(new Error('network down'));
+    renderSection();
+    await screen.findByText('Пройди тест на схемы или добавь вручную');
+    expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mode-map') }),
+    );
+    expect(screen.queryByText('Карта режимов с терапевтом')).toBeNull();
+  });
 });
 
 describe('SchemasSection — базовые потребности / колесо детства', () => {
   it('без childhoodRatings — плашка "Пройти колесо детства"', async () => {
     renderSection({ childhoodRatings: {} });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Пройти колесо детства →')).toBeTruthy();
+    await screen.findByText('Пройти колесо детства →');
   });
 
   it('с childhoodRatings — реальный балл потребности, а не заглушка, и "Изменить детство"', async () => {
     renderSection({ childhoodRatings: { attachment: 6 } });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Изменить детство →')).toBeTruthy();
+    await screen.findByText('Изменить детство →');
     expect(screen.getByText('6')).toBeTruthy();
   });
 
   it('клик по потребности открывает NeedDetailSheet (появляется кнопка "Назад")', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    const need = await screen.findByText('Привязанность');
     expect(screen.queryByText('Назад')).toBeNull();
-    fireEvent.click(screen.getByText('Привязанность'));
+    fireEvent.click(need);
     await screen.findByText('Назад');
   });
 });
@@ -214,9 +245,7 @@ describe('SchemasSection — пикер режимов', () => {
   it('открывает ModePickerSheet с популярными режимами, сохранение вызывает updateSettings', async () => {
     mockApi.updateSettings.mockResolvedValue({ ok: true });
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-
-    fireEvent.click(screen.getAllByText('+ Добавить')[1]);
+    fireEvent.click((await screen.findAllByText('+ Добавить'))[1]);
     await screen.findByText('С чего начать');
     // «Уязвимый Ребёнок» дублируется с постоянно видимой «Картой режимов» на
     // основной странице — берём последнее вхождение (пикер рендерится позже в DOM).
@@ -225,5 +254,24 @@ describe('SchemasSection — пикер режимов', () => {
     fireEvent.click(screen.getByText('Сохранить · 1'));
 
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalledWith({ myModeIds: ['vulnerable_child'] }));
+  });
+
+  // РЕГРЕССИЯ (check-silent-catch): .catch(() => {}) при отказе записи не
+  // сообщал ни пользователю, ни логам — локальный выбор расходился с
+  // сервером незаметно для всех. Оптимистичное обновление UI сохраняем
+  // (это осознанный выбор — не блокировать закрытие листа на медленной
+  // записи), но отказ теперь виден в reportClientError.
+  it('отказ api.updateSettings при сохранении режимов уходит в reportClientError', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    renderSection();
+    fireEvent.click((await screen.findAllByText('+ Добавить'))[1]);
+    await screen.findByText('С чего начать');
+    const matches = screen.getAllByText('Уязвимый Ребёнок');
+    fireEvent.click(matches[matches.length - 1]);
+    fireEvent.click(screen.getByText('Сохранить · 1'));
+
+    await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'schemas', message: expect.stringContaining('myModeIds') }),
+    ));
   });
 });

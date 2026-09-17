@@ -16,12 +16,23 @@
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
-//   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
-//   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
+//   web_banner_open     — нажал баннер-переход (meta.banner). Баннеры живут
+//                         в обоих фронтендах: кабинет мини-аппа зовёт на
+//                         сайт, мобильный сайт — в приложение (/app/);
+//   web_banner_dismiss  — скрыл баннер-переход (meta.banner), те же баннеры;
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
-//   home_screen_offer   — предложение значка на экран (meta.action + surface);
+//   home_screen_offer   — предложение значка на экран (meta.action + surface).
+//                         Поверхности мини-аппа (Telegram) шлют событие
+//                         авторизованно через POST /api/event. Сайт добавил
+//                         две свои: баннер «приложение для телефона» в
+//                         кабинете (webapp/src/components/MobileAppBanner.tsx)
+//                         тоже идёт авторизованно через /api/event, а блок
+//                         установки на публичном лендинге
+//                         (webapp/src/pages/landing/AppInstallSection.tsx) —
+//                         анонимно через POST /api/public-event, и там
+//                         принимается ТОЛЬКО surface site_landing;
 //   journey_open        — открыл архив «Мой путь» (без meta);
 //   ysq_help_open       — раскрыл «Как понимать» в результатах теста схем
 //                         (без meta);
@@ -42,6 +53,83 @@
 //   mode_chain_followup — после сохранения записи дневника режимов согласился
 //                         разобрать связанный режим (meta.from + meta.to —
 //                         modeId исходного и выбранного режима).
+//   mode_doubt_opened   — открыл «С чем путают режим» с карточки выбранного
+//                         режима (meta.modeId).
+//   mode_doubt_switched — в «С чем путают режим» нажал «Это ближе» (meta.from
+//                         + meta.to — modeId исходного и выбранного режима).
+//   account_link_started — из мессенджера начал перенос данных со своего
+//                         прежнего аккаунта (meta.host: max|telegram);
+//   account_link_confirmed — подтвердил перенос в браузере (meta.host +
+//                         meta.merged — реально ли что-то переехало);
+//   account_link_failed — перенос не состоялся (meta.host + meta.reason:
+//                         expired|error). Без него в отчёте видно только
+//                         успехи, и «сколько людей не смогли» не измерить.
+//   plus_open           — открыл универсальное меню «плюс» (без meta).
+//   plus_action         — выбрал действие в меню «плюс» (meta.action —
+//                         QuickActionId).
+//   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
+//                         meta.hidden + meta.surface: 'plus'|'tools').
+//   quick_action_move   — переставил пункт в настройке меню (meta.action +
+//                         meta.surface + meta.dir: 'up'|'down').
+//   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.via — переиспользует
+//                         CUSTOMIZE_ENTRY_POINTS). screen='today' сюда не
+//                         шлётся: вход в настройку «Сегодня» исторически
+//                         отчитывается своим today_customize_open.
+//   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.hidden). Видимость
+//                         блоков «Сегодня» — отдельным путём (частные
+//                         today_*_hidden-ключи в ui-prefs.sanitize.ts), это
+//                         событие с screen='today' не приходит.
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах» и, с
+//                         добавлением screen_order_today, на «Сегодня»
+//                         (meta.screen + meta.block + meta.dir: 'up'|'down').
+//                         Единственное из трёх screen_*-событий, которое
+//                         реально шлётся с meta.screen='today'.
+//   auth_rejected       — СЕРВЕРНОЕ событие: мини-апп пришёл с пустой
+//                         подписью (meta.reason + meta.host). Пишется только
+//                         guard'ом и всегда с userId = null — по этому
+//                         признаку отчёт и отличает настоящие отказы от
+//                         возможной подделки с клиента. Инцидент 2026-08-08:
+//                         вход был сломан у всех пользователей Telegram, а
+//                         отказ не считал никто.
+//   auth_success        — СЕРВЕРНОЕ событие: guard подтвердил вход по JWT,
+//                         Telegram или MAX initData (meta.host:
+//                         telegram|max|web). Пишется только guard'ом
+//                         (src/api/auth-success.report.ts), всегда с
+//                         userId = null (тот же приём, что у auth_rejected)
+//                         и с троттлингом раз в 5 минут на userId+площадку —
+//                         это счётчик СЕССИЙ входа, не запросов. Пара к
+//                         auth_rejected для блока «Вход в мессенджере»:
+//                         падение входа не всегда выглядит ростом отказов,
+//                         иногда клиент просто перестаёт доезжать до
+//                         сервера — тогда виден провал именно этого счётчика.
+//   client_error        — СЕРВЕРНОЕ: посчитанная поломка фронтенда,
+//                         meta.source + meta.section (бакет, см.
+//                         client-error-section.ts). Пишет только
+//                         ClientErrorsController, userId = null, троттлинг
+//                         по source+section+ip — счётчик, не лог.
+//   signup_source        — СЕРВЕРНОЕ: атрибуция посева, meta.src — слаг из
+//                         SIGNUP_SOURCES. Пишет только бот в /start, когда
+//                         payload — deep-link `src_<slug>` (parseSourceSlug,
+//                         src/telegram/start-source.ts), и ровно один раз —
+//                         при первом касании нового юзера (до гейта
+//                         согласия, чтобы видеть и конверсию в «принял
+//                         соглашение»). Возвращающийся по той же ссылке
+//                         повторно не считается.
+//   data_export          — СЕРВЕРНОЕ: выгрузка своих данных (152-ФЗ/GDPR,
+//                         GET /api/account/export); meta.tables/meta.rows.
+//   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
+//                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   desktop_app_open     — запустил установленное приложение на компьютере,
+//                         открылся кабинет сайта (без meta).
+//   case_*               — разбор случая («Что это было»); имена, мета и
+//                         описания каждого — в case-steps.constants.ts.
+//   game_*               — события игры (game/); реестр, meta и описания
+//                         каждого — game-events.constants.ts.
+import { CASE_EVENTS } from './case-steps.constants';
+import { GAME_EVENTS } from './game-events.constants';
+
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -68,16 +156,44 @@ export const ANALYTICS_EVENTS = [
   'mode_test_completed',
   'warm_words_open',
   'mode_chain_followup',
+  'mode_doubt_opened',
+  'mode_doubt_switched',
+  'account_link_started',
+  'account_link_confirmed',
+  'account_link_failed',
+  'plus_open',
+  'plus_action',
+  'quick_action_toggle',
+  'quick_action_move',
+  'screen_customize_open',
+  'screen_block_toggle',
+  'screen_block_move',
+  'auth_rejected',
+  'auth_success',
+  'client_error',
+  'signup_source',
+  'data_export',
+  'profile_pattern_open',
+  'desktop_app_open',
+  // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
+  'login_ticket_step',
+  // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
+  ...CASE_EVENTS,
+  // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
+  ...GAME_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
 // События, которые разрешено слать БЕЗ авторизации (POST /api/public-event):
-// мини-тесты «без регистрации» и клики лендинга. Только этот срез —
-// остальная аналитика по-прежнему требует верифицированной идентичности.
+// мини-тесты «без регистрации», клики лендинга и вся игра (она вообще не
+// авторизует пользователя, правило №5/№14). Только этот срез — остальная
+// аналитика по-прежнему требует верифицированной идентичности.
 export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
+  'home_screen_offer',
+  ...GAME_EVENTS,
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -128,56 +244,73 @@ export const HOME_SCREEN_ACTIONS = [
 ] as const;
 export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
 
+// Откуда переносят данные (meta.host) и почему не вышло (meta.reason) для
+// событий account_link_*. Парная константа на фронтах —
+// shared/src/share/analytics.ts (синхронно).
+//
+// 'web' появился вместе с карточкой объединения на сайте: там перенос
+// НАЧИНАЕТ сайт, а подтверждает бот. Без этого значения санитайзер вернул бы
+// undefined и meta исчезла целиком — событие записалось бы, а веб-половина
+// воронки в отчёте осталась невидимой.
+export const ACCOUNT_LINK_HOSTS = ['max', 'telegram', 'web'] as const;
+export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
+
+export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
+export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
+
+// 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
+// баннер «приложение для телефона» в кабинете сайта
+// (webapp/src/components/MobileAppBanner.tsx), авторизованный путь.
+// 'site_landing' — блок установки на публичном лендинге
+// (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
+// анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
+// поверхность (см. sanitize в public-events.controller.ts).
 export const HOME_SCREEN_SURFACES = [
   'onboarding',
   'today',
   'settings',
+  'site_banner',
+  'site_landing',
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 
-// Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
-// Порядок = порядок показа: по нему строится воронка «докуда доходят».
-// 'done' — нажал финальную кнопку. Парный список на фронте:
-// shared/src/share/analytics.ts (при добавлении шага синхронь оба).
-export const ONBOARDING_STEPS = [
-  'welcome',
-  'privacy',
-  'not_therapy',
-  'needs_what',
-  'needs_why',
-  'needs_result',
-  'diaries_why',
-  'today_screen',
-  'author',
-  'home_screen',
-  'done',
-] as const;
-export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+// Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
+// Используется в двух местах: bot.product-metrics.service.ts фильтрует
+// сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
+// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// же surface для отдельного блока «Установка с сайта». IN-список в обоих
+// $queryRaw собирается из этой константы, а не хардкодится дважды.
+export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
-// Тип карточки для событий share_card / share_result (meta.kind).
-export const SHARE_CARD_KINDS = [
-  'weekly',
-  'day',
-  'achievement',
-  'streak',
-  'schema',
-  'diary',
-  'ysq',
-  'mode',
-  'mode_entry',
-  'pair_invite',
-  'app_invite',
-  'therapist_invite',
-  'month',
-  'achievements',
-  'phrase',
-  'gratitude',
-  'journey',
-  'journey_item',
-  'practice',
-  'mode_entry_full',
-] as const;
-export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
+// ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts
+// (правило №10, тот же приём, что у SHARE_CARD_KINDS ниже).
+export {
+  ONBOARDING_STEPS,
+  type OnboardingStep,
+} from './onboarding-steps.constants';
+
+// SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts
+// (правило №10: файл сверх потолка обязан таять, а не расти вместе со
+// списком; тот же приём, что у CRISIS_SURFACES ниже).
+export {
+  SHARE_CARD_KINDS,
+  type ShareCardKind,
+} from './share-card-kinds.constants';
+
+// Шаги пути входа по билету — в файле-спутнике (правило №10).
+export {
+  LOGIN_TICKET_STEPS,
+  LOGIN_TICKET_HOSTS,
+  type LoginTicketStep,
+  type LoginTicketHost,
+} from './login-ticket-steps.constants';
+
+// Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
+// схемы или лист режима. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
+export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
 
 // CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts
 // (правило №10: файл держим ≤201 строки).
@@ -196,8 +329,32 @@ export const TODAY_FOCUS_PRACTICES = [
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 
-// Идентификаторы баннеров «полная версия на сайте» (meta.banner для событий
-// web_banner_open / web_banner_dismiss). Парный список — на фронте мини-аппа
-// (schema-miniapp/src/utils/webBanner.ts), при добавлении баннера синхронь.
-export const WEB_BANNER_IDS = ['cabinet_full', 'mode_map'] as const;
-export type WebBannerId = (typeof WEB_BANNER_IDS)[number];
+// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts
+// (правило №10, тот же приём, что у SIGNUP_SOURCES ниже).
+export { WEB_BANNER_IDS, type WebBannerId } from './web-banner-ids.constants';
+
+// QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
+// вынесены в quick-actions.constants.ts (правило №10: тот файл держим
+// минимальным, парность с фронтом описана прямо там).
+export {
+  QUICK_ACTION_IDS,
+  type QuickActionId,
+  QUICK_ACTION_SURFACES,
+  type QuickActionSurface,
+  QUICK_ACTION_MOVE_DIRS,
+  type QuickActionMoveDir,
+} from './quick-actions.constants';
+
+// SCREEN_BLOCK_IDS/ScreenBlockId/CUSTOMIZABLE_SCREENS/CustomizableScreen —
+// вынесены в screen-blocks.constants.ts (правило №10, тот же приём, что и
+// с QUICK_ACTION_IDS выше).
+export {
+  SCREEN_BLOCK_IDS,
+  type ScreenBlockId,
+  CUSTOMIZABLE_SCREENS,
+  type CustomizableScreen,
+} from './screen-blocks.constants';
+
+// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts
+// (правило №10, тот же приём, что и с CRISIS_SURFACES выше).
+export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';

@@ -11,13 +11,15 @@ import { TherapyTasksController } from './therapy-tasks.controller';
 import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
 import { TherapistRequestService } from './therapist-request.service';
+import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [BotModule, NotificationModule, AuthModule],
+  imports: [BotModule, NotificationModule, AuthModule, AnalyticsModule],
   controllers: [
     TherapyController,
     TherapyConnectionController,
@@ -33,6 +35,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyClientDataService,
     ModeMapsService,
     TherapistRequestService,
+    TherapistRequestNotifyService,
     TelegramAuthGuard,
   ],
   exports: [

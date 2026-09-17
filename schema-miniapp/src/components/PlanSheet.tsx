@@ -1,202 +1,54 @@
-import { useEffect, useState } from 'react';
-import { getHost } from '../../../shared/src/host';
-import { api, UserPractice } from '../api';
+import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
-
-function ianaToUtcOffset(iana: string): number {
-  try {
-    const now = new Date();
-    const utcMs = new Date(
-      now.toLocaleString('en-US', { timeZone: 'UTC' }),
-    ).getTime();
-    const localMs = new Date(
-      now.toLocaleString('en-US', { timeZone: iana }),
-    ).getTime();
-    return Math.round((localMs - utcMs) / 3600000);
-  } catch {
-    return 3;
-  }
-}
-
-export const CURATED: Record<string, string[]> = {
-  attachment: [
-    'Написать кому-то близкому без повода',
-    'Провести вечер вместе — без телефонов',
-    'Спросить кого-то «Как ты на самом деле?»',
-    'Поделиться чем-то личным в разговоре',
-  ],
-  autonomy: [
-    'Принять одно решение самостоятельно, без совета',
-    'Сделать что-то только потому что я хочу',
-    'Выделить час на своё дело без объяснений',
-    'Сказать «нет» одной просьбе, если не хочу',
-  ],
-  expression: [
-    'Написать про момент дня, когда что-то было внутри — и осталось невысказанным',
-    'Назвать вслух одну свою эмоцию',
-    'Рассказать кому-то о чём-то, что меня трогает',
-    'Выразить несогласие мягко, но честно',
-  ],
-  play: [
-    'Сделать что-то без цели — просто потому что весело',
-    'Попробовать новое место или маршрут',
-    'Поиграть во что-нибудь — хоть в игру на телефоне',
-    'Сделать что-то руками — приготовить, нарисовать, смастерить',
-  ],
-  limits: [
-    'Закончить работу вовремя, не задерживаться',
-    'Выполнить одно дело, которое откладывал',
-    'Отказаться от одного лишнего обязательства',
-    'Соблюдать одно правило для себя весь день',
-  ],
-};
-
-const REMINDER_OPTIONS = [
-  { label: 'Утром', localHour: 9 },
-  { label: 'Днём', localHour: 13 },
-  { label: 'Вечером', localHour: 19 },
-  { label: 'Без напоминания', localHour: null },
-];
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
+import { LoadErrorBanner } from './LoadErrorBanner';
+import {
+  usePlanSheetState,
+  REMINDER_OPTIONS,
+} from '../../../shared/src/practices/usePlanSheetState';
 
 interface Props {
   needId: string;
-  needEmoji: string;
   needLabel: string;
   color: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function defaultReminderIdx(): number {
-  const h = new Date().getHours();
-  if (h < 12) return 0; // Утром
-  if (h < 17) return 1; // Днём
-  return 2; // Вечером
-}
-
 export function PlanSheet({
   needId,
-  needEmoji,
   needLabel,
   color,
   onClose,
   onSaved,
 }: Props) {
   const tr = useTr();
-  const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
-  const [selectedText, setSelectedText] = useState('');
-  const [customText, setCustomText] = useState('');
-  const [reminderIdx, setReminderIdx] = useState(defaultReminderIdx);
-  const [tzOffset, setTzOffset] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const [savedOk, setSavedOk] = useState(false);
-  const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
-  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
-
-  useEffect(() => {
-    api
-      .getPractices(needId)
-      .then(setUserPractices)
-      .catch(() => {});
-    api
-      .getSettings()
-      .then((s) => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
-      .catch(() => {});
-  }, [needId]);
-
-  const curated = CURATED[needId] ?? [];
-  const allOptions = [
-    ...userPractices.map((p) => ({ text: p.text, isUser: true, id: p.id })),
-    ...curated
-      .filter((t) => !userPractices.some((p) => p.text === t))
-      .map((t) => ({
-        text: t,
-        isUser: false,
-        id: undefined as number | undefined,
-      })),
-  ];
-
-  function selectText(text: string) {
-    setSelectedText(text);
-    setCustomText('');
-    setPhase('confirm');
-  }
-
-  function handleDeletePractice(id: number) {
-    if (deletingIds.has(id)) return;
-    setDeletingIds((prev) => new Set([...prev, id]));
-    api
-      .deletePractice(id)
-      .then(() => setUserPractices((prev) => prev.filter((p) => p.id !== id)))
-      .catch(() =>
-        setDeletingIds((prev) => {
-          const s = new Set(prev);
-          s.delete(id);
-          return s;
-        }),
-      );
-  }
-
-  function handleCustomSubmit() {
-    const t = customText.trim();
-    if (!t) return;
-    setSelectedText(t);
-    setPhase('confirm');
-  }
-
-  async function handleSave() {
-    if (!selectedText || saving) return;
-    setSaving(true);
-    try {
-      const opt = REMINDER_OPTIONS[reminderIdx];
-      let reminderUtcHour: number | undefined;
-      if (opt.localHour !== null) {
-        reminderUtcHour = (((opt.localHour - tzOffset) % 24) + 24) % 24;
-      }
-      if (!userPractices.some((p) => p.text === selectedText)) {
-        await api.addPractice(needId, selectedText);
-      }
-      await api.createPlan(needId, selectedText, reminderUtcHour);
-      setSavedOk(true);
-      setTimeout(() => onSaved(), 1200);
-    } catch {
-      setSaveError(true);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleIcsDownload() {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
-    const y = date.getUTCFullYear();
-    const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(date.getUTCDate()).padStart(2, '0');
-    const opt = REMINDER_OPTIONS[reminderIdx];
-    const h =
-      opt.localHour !== null
-        ? String((opt.localHour - tzOffset + 24) % 24).padStart(2, '0')
-        : '09';
-    const ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Schema//Schema//RU',
-      'BEGIN:VEVENT',
-      `DTSTART:${y}${mo}${d}T${h}0000Z`,
-      `DTEND:${y}${mo}${d}T${h}3000Z`,
-      `SUMMARY:🎯 ${selectedText}`,
-      `DESCRIPTION:Практика для потребности: ${needLabel}`,
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ].join('\r\n');
-    const dataUrl =
-      'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-    getHost().saveFile(dataUrl, 'practice.ics');
-  }
+  const {
+    selectedText,
+    customText,
+    setCustomText,
+    reminderIdx,
+    setReminderIdx,
+    saving,
+    saveError,
+    setSaveError,
+    savedOk,
+    phase,
+    setPhase,
+    deletingIds,
+    practicesFailed,
+    allOptions,
+    selectText,
+    handleCustomSubmit,
+    handleDeletePractice,
+    handleSave,
+    handleIcsDownload,
+  } = usePlanSheetState(needId, needLabel, api, onSaved);
 
   return (
     <BottomSheet onClose={onClose}>
@@ -219,10 +71,9 @@ export function PlanSheet({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 20,
           }}
         >
-          {needEmoji}
+          <IdentityDot id={needId} size={14} />
         </div>
         <div>
           <div
@@ -243,6 +94,16 @@ export function PlanSheet({
 
       {phase === 'pick' && (
         <>
+          {practicesFailed && (
+            <div style={{ marginBottom: 16 }}>
+              <LoadErrorBanner
+                message={tr(
+                  'Не удалось загрузить твои практики — ниже только готовые варианты',
+                  'Не удалось загрузить ваши практики — ниже только готовые варианты',
+                )}
+              />
+            </div>
+          )}
           {allOptions.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <SectionLabel>Мои практики</SectionLabel>
@@ -292,6 +153,8 @@ export function PlanSheet({
                 fontFamily: 'inherit',
               }}
             />
+            {/* правило №7: свободный текст обязан проходить кризисную детекцию */}
+            {detectCrisisAny(customText) && <CrisisCard surface="plan" />}
           </div>
           {customText.trim() && (
             <button onClick={handleCustomSubmit} className="btn-primary">
@@ -439,7 +302,6 @@ export function PlanSheet({
                 cursor: 'pointer',
               }}
             >
-              <span style={{ fontSize: 16 }}>📅</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
                 Добавить в календарь (.ics)
               </span>

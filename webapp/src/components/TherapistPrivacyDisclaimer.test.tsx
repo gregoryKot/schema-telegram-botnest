@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistPrivacyDisclaimer, THERAPIST_DISCLAIMER_KEY } from './TherapistPrivacyDisclaimer';
+import { AddressFormContext } from '../utils/addressForm';
 
 beforeEach(() => {
   localStorage.clear();
@@ -38,5 +39,35 @@ describe('TherapistPrivacyDisclaimer', () => {
     fireEvent.click(screen.getByText('Спасибо, буду иметь в виду'));
     expect(localStorage.getItem(THERAPIST_DISCLAIMER_KEY)).toBe('1');
     expect(onDone).toHaveBeenCalled();
+  });
+
+  it('ты/вы: терапевт с формой «ты» не видит «вы»-обращения (правило CLAUDE.md)', () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <TherapistPrivacyDisclaimer onDone={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/твоя работа с людьми, которые тебе доверились/)).toBeTruthy();
+    expect(screen.getByText(/старайся/)).toBeTruthy();
+    expect(screen.getByText('Только твой доступ')).toBeTruthy();
+    expect(screen.getByText(/Если решишь удалить аккаунт/)).toBeTruthy();
+    expect(screen.queryByText(/старайтесь/)).toBeNull();
+  });
+
+  it('ты/вы: терапевт с формой «вы» не видит «ты»-обращения', () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <TherapistPrivacyDisclaimer onDone={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/ваша работа с людьми, которые вам доверились/)).toBeTruthy();
+    expect(screen.getByText(/старайтесь/)).toBeTruthy();
+    expect(screen.getByText('Только ваш доступ')).toBeTruthy();
+    expect(screen.getByText(/Если решите удалить аккаунт/)).toBeTruthy();
+    expect(screen.queryByText(/старайся не вносить/)).toBeNull();
   });
 });

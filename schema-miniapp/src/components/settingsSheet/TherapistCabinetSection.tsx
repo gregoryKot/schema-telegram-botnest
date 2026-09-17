@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { api } from '../../api';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { SettingsLabel } from './ui';
 
 interface Props {
@@ -12,10 +14,16 @@ export function TherapistCabinetSection({
   therapyInviteUrl,
   setTherapyInviteUrl,
 }: Props) {
+  const [inviteError, setInviteError] = useState(false);
+  const { failed: inviteCopyFailed, copy: copyInviteUrl } =
+    useCopyToClipboard();
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <div
           onClick={onOpenTherapistCabinet}
           role="button"
@@ -36,20 +44,12 @@ export function TherapistCabinetSection({
         >
           <div>
             <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: 'var(--accent)',
-              }}
+              style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}
             >
               Открыть кабинет
             </div>
             <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-faint)',
-                marginTop: 2,
-              }}
+              style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
             >
               Клиенты, задания, приглашения
             </div>
@@ -67,38 +67,39 @@ export function TherapistCabinetSection({
               try {
                 const { url } = await api.createTherapyInvite();
                 setTherapyInviteUrl(url);
-                try {
-                  await navigator.clipboard.writeText(url);
-                } catch {
-                  /* ignore */
-                }
-              } catch {
-                /* ignore */
+                setInviteError(false);
+                await copyInviteUrl(url);
+              } catch (e) {
+                console.error('createTherapyInvite', e);
+                setInviteError(true);
               }
             }}
             style={{
               background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '8px 16px',
               color: 'var(--accent)',
               fontSize: 13,
               cursor: 'pointer',
             }}
           >
-            + Создать приглашение клиенту
+            {inviteError ? 'Не получилось' : '+ Создать приглашение клиенту'}
           </button>
           {therapyInviteUrl && (
             <div
               style={{
                 fontSize: 12,
-                color: 'var(--text-sub)',
+                color: inviteCopyFailed
+                  ? 'var(--accent-red)'
+                  : 'var(--text-sub)',
                 marginTop: 8,
                 wordBreak: 'break-all',
               }}
             >
-              Скопировано: {therapyInviteUrl.slice(0, 50)}...
+              {inviteCopyFailed ? 'Не скопировалось: ' : 'Скопировано: '}
+              {therapyInviteUrl.slice(0, 50)}...
             </div>
           )}
         </div>

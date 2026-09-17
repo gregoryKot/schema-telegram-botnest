@@ -1,22 +1,26 @@
 import { Need } from '../types';
+import { markAddressFormAsked } from '../../../shared/src/settings/addressFormPrompt';
 import { api, PairsData, StreakData } from '../api';
-import { DiarySection } from '../sections/DiarySection';
 import { Section } from './BottomNav';
 import { TrackerOverlay } from './TrackerOverlay';
 import { Disclaimer } from './Disclaimer';
 import { SettingsSheet } from './SettingsSheet';
 import { AddressFormPicker } from './AddressFormPicker';
 import { DonateNudge } from './DonateNudge';
-import { PracticesScreen } from './PracticesScreen';
-import { PlansScreen } from './PlansScreen';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { NoteSheet } from './NoteSheet';
-import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { PairSheet } from './PairSheet';
-import { ChildhoodWheelSheet } from './ChildhoodWheelSheet';
-import { TaskCreateSheet } from './TaskCreateSheet';
+import { JoinConfirmSheet } from './JoinConfirmSheet';
 import { AboutSheet } from './AboutSheet';
+import {
+  LazyDiarySection as DiarySection,
+  LazyPracticesScreen as PracticesScreen,
+  LazyPlansScreen as PlansScreen,
+  LazySchemaInfoSheet as SchemaInfoSheet,
+  LazyChildhoodWheelSheet as ChildhoodWheelSheet,
+  LazyTaskCreateSheet as TaskCreateSheet,
+} from './LazyOverlays';
 import { AppDiaryNav } from './AppDiaryNav';
 import { UseSheetsReturn } from '../hooks/useSheets';
 import { TODAY_DATE } from '../utils/todayConstants';
@@ -57,6 +61,9 @@ interface Props {
 // Оверлеи/шиты App.tsx, не относящиеся к главным экранам или истории
 // потребностей (те — в AppSections/TrackerHistoryOverlay). Перенесено из
 // App.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
+import { CaseFlowOverlay } from './caseFlow/CaseFlowOverlay';
+import { SelfMapOverlay } from './selfMap/SelfMapOverlay';
+
 export function AppOverlays({
   sheets,
   needs,
@@ -121,11 +128,16 @@ export function AppOverlays({
             position: 'fixed',
             inset: 0,
             zIndex: 80,
-            background: 'var(--bg)',
             overflowY: 'auto',
           }}
         >
-          <DiarySection onClose={() => sheets.close('diaries')} />
+          <DiarySection
+            onClose={() => sheets.close('diaries')}
+            onOpenTracker={() => {
+              sheets.close('diaries');
+              sheets.open('trackerOverlay', { trackerNeedId: null });
+            }}
+          />
         </div>
       )}
 
@@ -171,6 +183,10 @@ export function AppOverlays({
         />
       )}
 
+      {sheets.caseFlow && <CaseFlowOverlay sheets={sheets} />}
+
+      {sheets.selfMap && <SelfMapOverlay sheets={sheets} />}
+
       {sheets.childhoodWheel && (
         <ChildhoodWheelSheet
           onClose={() => sheets.close('childhoodWheel')}
@@ -188,6 +204,17 @@ export function AppOverlays({
             sheets.close('pairSheet');
             void api.getPair().then(setPairData);
           }}
+        />
+      )}
+
+      {sheets.joinConfirm && sheets.joinKind && sheets.joinCode && (
+        <JoinConfirmSheet
+          joinKind={sheets.joinKind}
+          joinCode={sheets.joinCode}
+          onClose={() =>
+            sheets.close('joinConfirm', { joinKind: null, joinCode: null })
+          }
+          onPairJoined={setPairData}
         />
       )}
 
@@ -219,7 +246,7 @@ export function AppOverlays({
       {sheets.addressPicker && (
         <AddressFormPicker
           onDone={() => {
-            sessionStorage.setItem('addr_form_asked', '1');
+            markAddressFormAsked();
             sheets.close('addressPicker');
             onAddressPickerDone();
           }}

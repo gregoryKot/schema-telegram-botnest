@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -31,17 +32,33 @@ afterEach(() => {
 describe('SchemaEntrySheet — кризисная детекция', () => {
   it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
     renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(textarea, { target: { value: 'Обычный рабочий созвон' } });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+// В7 дизайн-аудита 2026-08: поле связано с видимым вопросом программно.
+describe('SchemaEntrySheet — поля связаны с вопросом (В7)', () => {
+  it('первый шаг: textarea доступно по вопросу «Что случилось?»', () => {
+    renderSheet();
+    const byLabel = screen.getByLabelText('Что случилось?');
+    const byPlaceholder = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
+    expect(byLabel).toBe(byPlaceholder);
+  });
+
+  it('шаг «Схемы»: поле «откуда это знакомо» доступно по своему вопросу', () => {
+    renderSheet();
+    fireEvent.click(ticks()[5]);
+    expect(screen.getByLabelText('Откуда это знакомо?')).toBeTruthy();
   });
 });
 
@@ -57,7 +74,7 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     // Первый шаг обязателен — кнопка сразу подписана «Дальше», но задизейблена.
     const nextBtn = screen.getByText('Дальше').closest('button') as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(true);
-    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     expect(nextBtn.disabled).toBe(false);
   });
@@ -75,20 +92,20 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     expect(screen.getByPlaceholderText(/так папа в детстве оценивал/)).toBeTruthy();
   });
 
-  // Регрессия: excessiveReactions («Где я раздул/а») был в черновике, но
+  // Регрессия: excessiveReactions («Где я преувеличиваю») был в черновике, но
   // потерял UI (useState без сеттера) — расхождение с миниаппом (правило
   // №3). Визард обязан вернуть шаг в обоих фронтендах.
-  it('шаг «Где я раздул/а» (excessiveReactions) снова доступен и сохраняется', async () => {
+  it('шаг «Где я преувеличиваю» (excessiveReactions) снова доступен и сохраняется', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
         <SchemaEntrySheet onClose={vi.fn()} onSave={onSave} />
       </MemoryRouter>,
     );
-    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     fireEvent.click(ticks()[8]); // индекс 8 в SCHEMA_DIARY_STEP_ORDER — excessiveReactions
-    expect(screen.getByText('Где я раздул/а')).toBeTruthy();
+    expect(screen.getByText('Где я преувеличиваю')).toBeTruthy();
     const area = screen.getByPlaceholderText(/реакция оказалась больше/);
     fireEvent.change(area, { target: { value: 'Слишком остро отреагировал на пустяк' } });
     fireEvent.click(screen.getByText('Сохранить'));

@@ -5,13 +5,15 @@ import type { Quiz } from './quiz.types';
 import { buildDrivesQuiz } from './quiz-drives.data';
 import { buildCriticQuiz } from './quiz-critic.data';
 import { buildBatteryQuiz } from './quiz-battery.data';
+import { buildVoiceQuiz } from './quiz-voice.data';
 
-export const QUIZ_IDS = ['drives', 'critic', 'battery'] as const;
+export const QUIZ_IDS = ['drives', 'critic', 'voice', 'battery'] as const;
 export type QuizId = (typeof QUIZ_IDS)[number];
 
 const BUILDERS: Record<QuizId, (form: AddressForm) => Quiz> = {
   drives: buildDrivesQuiz,
   critic: buildCriticQuiz,
+  voice: buildVoiceQuiz,
   battery: buildBatteryQuiz,
 };
 

@@ -2,23 +2,13 @@
 // Чистые утилиты каталога схем (цвета, короткие имена, чтение локальных id).
 // Логика с ветвлениями — обязана быть под тестом (правило CLAUDE.md).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { cm, hex, readLocalIds, shortName, needScoreColor } from './utils';
+import { cm, readLocalIds, shortName, needScoreColor } from './utils';
 
 describe('cm', () => {
   it('строит color-mix с заданным процентом прозрачности', () => {
     expect(cm('var(--accent-red)', 15)).toBe(
       'color-mix(in srgb, var(--accent-red) 15%, transparent)',
     );
-  });
-});
-
-describe('hex', () => {
-  it('резолвит известную CSS-переменную в HEX', () => {
-    expect(hex('var(--accent-green)')).toBe('#4ade80');
-  });
-
-  it('неизвестный цвет возвращает как есть (фолбэк)', () => {
-    expect(hex('#123456')).toBe('#123456');
   });
 });
 

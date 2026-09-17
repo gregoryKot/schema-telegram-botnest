@@ -26,7 +26,7 @@ export function YsqHistoryTimeline({ history }: Props) {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         {history.map((entry, idx) => {
@@ -49,10 +49,10 @@ export function YsqHistoryTimeline({ history }: Props) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 padding: '10px 14px',
                 background: 'rgba(var(--fg-rgb),0.04)',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
               }}
             >
               <div

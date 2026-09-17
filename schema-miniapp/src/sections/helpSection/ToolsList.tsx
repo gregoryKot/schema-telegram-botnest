@@ -1,134 +1,106 @@
+import { useState } from 'react';
 import { ToolRow } from '../../components/ToolRow';
-import { plural } from '../today/helpers';
+import { buildToolRows, ToolRowsProps } from './toolRows';
+import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
+import type { QuickActionId } from '../../utils/quickActions';
+import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
+import { useHiddenActions } from '../../utils/useHiddenActions';
+import {
+  TOOLS_ACTIONS_ORDER_KEY,
+  withDragRange,
+} from '../../utils/quickActionOrder';
+import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
 
-// Блок «Инструменты» экрана «Здесь и сейчас» — 8 строк-переходов в отдельные
-// упражнения/списки. Вынесено из HelpSection.tsx (правило №10, храповик
-// размера файла — долг обязан таять). Поведение, порядок строк, index
-// (каскадная анимация) и тексты не менялись.
-interface Props {
-  tasksCount: number;
-  practiceCount?: number | null;
-  planCount?: number | null;
-  childhoodDone: boolean;
+// Строки блока «Инструменты» — из toolRows.ts, общего с листом настройки
+// видимости (QuickActionCustomizeSheet, правило «одна механика — компонент»).
+//
+// Ж2 (аудит 2026-08): раньше здесь рядом с заголовком была ещё и пилюля
+// «Настроить» — второй вход в тот же лист, что и шестерёнка в HelpHeader.
+// Оставлен один вход (шестерёнка, см. HelpHeader.tsx) — пилюля убрана, лист
+// по-прежнему открывается через customizeOpenRef, состояние листа (`show
+// Customize`) остаётся здесь.
+interface Props extends ToolRowsProps {
   onOpenTasks: () => void;
   onOpenPractices: () => void;
   onOpenPlans: () => void;
   onOpenBeliefCheck: () => void;
+  onOpenPhraseCheck: () => void;
   onOpenSafePlace: () => void;
   onOpenLetterToSelf: () => void;
   onOpenFlashcard: () => void;
   onOpenChildhoodWheel: () => void;
   onOpenWarmWords: () => void;
+  customizeOpenRef?: React.MutableRefObject<() => void>; // шапка HelpSection
 }
-
-export function ToolsList({
-  tasksCount,
-  practiceCount,
-  planCount,
-  childhoodDone,
-  onOpenTasks,
-  onOpenPractices,
-  onOpenPlans,
-  onOpenBeliefCheck,
-  onOpenSafePlace,
-  onOpenLetterToSelf,
-  onOpenFlashcard,
-  onOpenChildhoodWheel,
-  onOpenWarmWords,
-}: Props) {
+// props целиком, без деструктуризации (файл в бейслайне размера, №10).
+export function ToolsList(props: Props) {
+  const [hidden, handleToggle] = useHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY);
+  const [showCustomize, setShowCustomize] = useState(false);
+  if (props.customizeOpenRef)
+    props.customizeOpenRef.current = () => setShowCustomize(true);
+  const callbacks: Partial<Record<QuickActionId, () => void>> = {
+    phrase_check: props.onOpenPhraseCheck,
+    tasks: props.onOpenTasks,
+    practices: props.onOpenPractices,
+    plans: props.onOpenPlans,
+    belief_check: props.onOpenBeliefCheck,
+    safe_place: props.onOpenSafePlace,
+    letter_to_self: props.onOpenLetterToSelf,
+    flashcard: props.onOpenFlashcard,
+    childhood_wheel: props.onOpenChildhoodWheel,
+    warm_words: props.onOpenWarmWords,
+  };
+  const rows = buildToolRows(props);
+  const { ordered, onReorder } = useQuickActionOrder(TOOLS_ACTIONS_ORDER_KEY, [
+    rows,
+  ]);
+  const orderedRows = ordered[0];
+  const visibleRows = orderedRows.filter((r) => !hidden.includes(r.id));
   return (
     <>
       <div className="section-label" style={{ margin: '8px 4px -4px' }}>
         Инструменты
       </div>
-      <ToolRow
-        emoji="🎯"
-        label="Мои цели"
-        sub={
-          tasksCount === 0
-            ? 'Нет активных'
-            : `${tasksCount} ${plural(tasksCount, 'цель', 'цели', 'целей')}`
-        }
-        tint="var(--accent-orange)"
-        index={0}
-        onClick={onOpenTasks}
-      />
-      <ToolRow
-        emoji="🗂"
-        label="Практики"
-        sub={
-          practiceCount == null
-            ? undefined
-            : practiceCount === 0
-              ? 'Нет практик'
-              : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-        }
-        tint="var(--accent)"
-        index={1}
-        onClick={onOpenPractices}
-      />
-      <ToolRow
-        emoji="🗓"
-        label="Планы"
-        sub={
-          planCount == null
-            ? undefined
-            : planCount === 0
-              ? 'История пуста'
-              : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-        }
-        tint="var(--accent-blue)"
-        index={2}
-        onClick={onOpenPlans}
-      />
-      <ToolRow
-        emoji="🔍"
-        label="Проверка убеждений"
-        sub="Правда ли это?"
-        tint="var(--accent-yellow)"
-        index={3}
-        onClick={onOpenBeliefCheck}
-      />
-      <ToolRow
-        emoji="🏡"
-        label="Безопасное место"
-        sub="Ресурс в тревожный момент"
-        tint="var(--accent-green)"
-        index={4}
-        onClick={onOpenSafePlace}
-      />
-      <ToolRow
-        emoji="✉️"
-        label="Письмо себе"
-        sub="Уязвимому Ребёнку"
-        tint="var(--accent-pink)"
-        index={5}
-        onClick={onOpenLetterToSelf}
-      />
-      <ToolRow
-        emoji="🆘"
-        label="Схема включилась"
-        sub="5 шагов чтобы разобраться"
-        tint="var(--accent-indigo)"
-        index={6}
-        onClick={onOpenFlashcard}
-      />
-      <ToolRow
-        emoji="🌱"
-        label="Колесо детства"
-        sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-        tint="var(--accent-green)"
-        index={7}
-        onClick={onOpenChildhoodWheel}
-      />
-      <ToolRow
-        emoji="💛"
-        label="Тёплые слова"
-        sub="Слова поддержки себе"
-        tint="var(--accent-yellow)"
-        index={8}
-        onClick={onOpenWarmWords}
-      />
+
+      {visibleRows.length === 0 ? (
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-sub)',
+            lineHeight: 1.5,
+            padding: 4,
+          }}
+        >
+          Все инструменты скрыты. Вернуть их можно через шестерёнку в шапке.
+        </div>
+      ) : (
+        visibleRows.map((row, index) => (
+          <ToolRow
+            key={row.id}
+            label={row.label}
+            sub={row.sub}
+            index={index}
+            onClick={() => callbacks[row.id]?.()}
+          />
+        ))
+      )}
+      {showCustomize && (
+        <QuickActionCustomizeSheet
+          title="Какие инструменты показывать"
+          surface="tools"
+          actions={withDragRange([orderedRows]).map((r) => ({
+            id: r.id,
+            label: r.label,
+            sub: r.sub ?? '',
+            rangeMin: r.rangeMin,
+            rangeMax: r.rangeMax,
+          }))}
+          hidden={hidden}
+          onToggle={handleToggle}
+          onReorder={onReorder}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
     </>
   );
 }

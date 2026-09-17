@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { IntroSheetFlashcard } from './IntroSheetFlashcard';
+import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
 vi.mock('../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -43,13 +44,13 @@ describe('IntroSheetFlashcard — кризисная детекция (прав�
   it('показывает карточку поддержки при кризисной фразе в ответе', () => {
     const textarea = renderCard();
     fireEvent.change(textarea, { target: { value: 'хочу исчезнуть' } });
-    expect(screen.getByText('8-800-2000-122')).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('не показывает карточку при нейтральном ответе', () => {
     const textarea = renderCard();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
-    expect(screen.queryByText('8-800-2000-122')).toBeNull();
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 });
 
@@ -73,5 +74,21 @@ describe('IntroSheetFlashcard — шаг виден сразу (правило �
     expect(notPrevented).toBe(true);
     fireEvent.change(textarea, { target: { value: 'два слова' } });
     expect((textarea as HTMLTextAreaElement).value).toBe('два слова');
+  });
+});
+
+// В7 дизайн-аудита 2026-08: вопрос был связан с полем только placeholder'ом,
+// который исчезает при вводе. Проверяем, что поле доступно по видимому
+// вопросу как по label — не только по placeholder.
+describe('IntroSheetFlashcard — вопрос связан с полем (В7)', () => {
+  it('textarea доступно по видимому вопросу как по label (не только по placeholder)', () => {
+    render(<Wrapper />);
+    // getByLabelText разрешает aria-labelledby так же, как <label for=…> —
+    // падает, если поле не связано программно с видимым вопросом.
+    const byLabel = screen.getByLabelText('Что запускает эту схему?');
+    const byPlaceholder = screen.getByPlaceholderText(
+      'Когда не отвечают на сообщения...',
+    );
+    expect(byLabel).toBe(byPlaceholder);
   });
 });

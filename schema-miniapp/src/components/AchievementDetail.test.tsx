@@ -14,7 +14,7 @@ vi.mock('../../../shared/src/share/cards/achievementCard', async () => {
 });
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 
-const meta = { emoji: '🏅', title: 'Первая неделя', desc: 'Семь дней подряд' };
+const meta = { title: 'Первая неделя', desc: 'Семь дней подряд' };
 
 afterEach(() => {
   cleanup();
@@ -22,9 +22,8 @@ afterEach(() => {
 });
 
 describe('AchievementDetail — контент и закрытие', () => {
-  it('показывает эмодзи/заголовок/описание достижения', () => {
+  it('показывает заголовок/описание достижения', () => {
     render(<AchievementDetail meta={meta} onClose={() => {}} />);
-    expect(screen.getByText('🏅')).toBeTruthy();
     expect(screen.getByText('Первая неделя')).toBeTruthy();
     expect(screen.getByText('Семь дней подряд')).toBeTruthy();
   });

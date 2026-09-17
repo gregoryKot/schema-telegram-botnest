@@ -1,88 +1,87 @@
 // @vitest-environment jsdom
-// ModesTab — вкладка «Режимы» каталога: собственная логика — группировка
-// режимов пользователя по MODE_GROUPS с недельной частотой (остальное —
-// composition из ModesHero/PatternFrequencyList, у них своя ответственность,
-// здесь их мокаем, чтобы тест бил по группировке, а не дублировал их тесты).
+// ModesTab — композиция Hero + ModesPatternSection: держит openId и
+// сводит воедино открытие ОДНОГО и того же экрана паттерна и от тапа по
+// строке списка, и от тапа по сводке недели в Hero. Hero скрываемый через
+// блок «Паттернов» heroes (пропс blocks — тот же id, что у PatternsHero на
+// вкладке «Схемы»). У Hero/ModesPatternSection — своя логика и свои тесты,
+// здесь мокаем.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import type { BlockVisibility } from './blockVisibility';
 import { ModesTab } from './ModesTab';
 
-vi.mock('../../components/ModesHero', () => ({
-  ModesHero: () => <div data-testid="modes-hero" />,
-  INTRO_MODE_ID: 'demanding_critic',
-}));
+function fakeBlocks(hidden: string[] = []): BlockVisibility {
+  return {
+    isHidden: (id) => hidden.includes(id),
+    holdProps: () =>
+      ({}) as unknown as ReturnType<BlockVisibility['holdProps']>,
+  };
+}
 
-vi.mock('../../components/PatternFrequencyList', () => ({
-  PatternFrequencyList: ({
-    groups,
+vi.mock('../../components/ModesHero', () => ({
+  ModesHero: ({
+    onOpenModeDetail,
   }: {
-    groups: { title: string; items: { name: string; freq: number }[] }[];
+    onOpenModeDetail: (id: string) => void;
   }) => (
-    <div data-testid="pattern-list">
-      {groups.map((g) => (
-        <div key={g.title}>
-          {g.title}: {g.items.map((i) => `${i.name}(${i.freq})`).join(', ')}
-        </div>
-      ))}
-    </div>
+    <button onClick={() => onOpenModeDetail('demanding_critic')}>
+      hero-open-critic
+    </button>
   ),
 }));
 
-afterEach(() => {
-  cleanup();
-});
+vi.mock('./ModesPatternSection', () => ({
+  ModesPatternSection: ({ openId }: { openId: string | null }) => (
+    <div data-testid="pattern-section">{openId ?? 'none'}</div>
+  ),
+}));
+
+afterEach(cleanup);
 
 const BASE_PROPS = {
   profileLoading: false,
+  myModeIds: [],
   modeSummary: null,
+  modeFreq: {},
+  modeEntries: [],
+  setModeEntries: () => {},
   onOpenSchema: () => {},
   onShowModePicker: () => {},
-  onOpenModeIntro: () => {},
+  onMeetCritic: () => {},
+  blocks: fakeBlocks(),
 };
 
-describe('ModesTab — группировка режимов пользователя', () => {
-  it('без выбранных режимов список групп не рендерится', () => {
-    render(<ModesTab {...BASE_PROPS} myModeIds={[]} modeFreq={{}} />);
-    expect(screen.queryByTestId('pattern-list')).toBeNull();
+describe('ModesTab — единый openId для Hero и списка паттернов', () => {
+  it('изначально ничего не открыто', () => {
+    render(<ModesTab {...BASE_PROPS} />);
+    expect(screen.getByTestId('pattern-section').textContent).toBe('none');
   });
 
-  it('только группы с реально выбранными режимами попадают в список', () => {
-    render(
-      <ModesTab
-        {...BASE_PROPS}
-        myModeIds={['demanding_critic']}
-        modeFreq={{ demanding_critic: 3 }}
-      />,
-    );
-    const list = screen.getByTestId('pattern-list');
-    expect(list.textContent).toContain('😬 Требовательный Критик(3)');
-  });
-
-  it('частота отсутствующего в modeFreq режима — 0, а не undefined', () => {
-    render(
-      <ModesTab
-        {...BASE_PROPS}
-        myModeIds={['demanding_critic']}
-        modeFreq={{}}
-      />,
-    );
-    expect(screen.getByTestId('pattern-list').textContent).toContain(
-      '😬 Требовательный Критик(0)',
+  it('тап по сводке недели в Hero открывает тот же PatternSheet, что и список', () => {
+    render(<ModesTab {...BASE_PROPS} />);
+    fireEvent.click(screen.getByText('hero-open-critic'));
+    expect(screen.getByTestId('pattern-section').textContent).toBe(
+      'demanding_critic',
     );
   });
 });
 
 describe('ModesTab — загрузка', () => {
-  it('во время загрузки (есть режимы) показывает скелетон, а не список', () => {
-    render(
-      <ModesTab
-        {...BASE_PROPS}
-        profileLoading={true}
-        myModeIds={['demanding_critic']}
-        modeFreq={{}}
-      />,
-    );
-    expect(screen.queryByTestId('pattern-list')).toBeNull();
-    expect(screen.queryByTestId('modes-hero')).toBeNull(); // hero скрыт во время загрузки
+  it('во время загрузки Hero скрыт', () => {
+    render(<ModesTab {...BASE_PROPS} profileLoading={true} />);
+    expect(screen.queryByText('hero-open-critic')).toBeNull();
+  });
+});
+
+describe('ModesTab — скрываемые блоки (useScreenBlocks)', () => {
+  it('блок heroes скрыт — Hero не рендерится, список режимов на месте', () => {
+    render(<ModesTab {...BASE_PROPS} blocks={fakeBlocks(['heroes'])} />);
+    expect(screen.queryByText('hero-open-critic')).toBeNull();
+    expect(screen.getByTestId('pattern-section')).toBeTruthy();
+  });
+
+  it('блок heroes не скрыт — Hero на месте', () => {
+    render(<ModesTab {...BASE_PROPS} />);
+    expect(screen.getByText('hero-open-critic')).toBeTruthy();
   });
 });

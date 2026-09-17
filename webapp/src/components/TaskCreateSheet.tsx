@@ -7,16 +7,12 @@ import { haptic } from '../haptic';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { useTr } from '../utils/addressForm';
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
-interface Props {
-  clientId?: number;
-  clientName?: string;
-  defaultType?: TaskType;
-  onCreated: () => void;
-  onClose: () => void;
-}
+interface Props { clientId?: number; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
 
 const STREAK_OPTIONS = [3, 7, 14, 30];
 
@@ -38,6 +34,7 @@ const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s
 
 export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const tr = useTr();
   const [type, setType] = useState<TaskType>(defaultType ?? 'tracker_streak');
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
@@ -48,10 +45,9 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   const [error, setError] = useState('');
   const configRef = useRef<HTMLDivElement>(null);
   const customTextRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => {
     if ((type === 'schema_intro' || type === 'mode_intro') && configRef.current) {
-      setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+      setTimeout(() => scrollIntoViewSafe(configRef.current, { block: 'nearest' }), 80);
     }
   }, [type]);
 
@@ -77,9 +73,9 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
   async function handleCreate() {
     const finalText = getPayloadText().trim();
-    if (type === 'custom' && !finalText) { setError('Введи описание задания'); return; }
-    if (type === 'schema_intro' && !selectedSchemaId) { setError('Выбери схему'); return; }
-    if (type === 'mode_intro' && !selectedModeId) { setError('Выбери режим'); return; }
+    if (type === 'custom' && !finalText) { setError(tr('Введи описание задания', 'Введите описание задания')); return; }
+    if (type === 'schema_intro' && !selectedSchemaId) { setError(tr('Выбери схему', 'Выберите схему')); return; }
+    if (type === 'mode_intro' && !selectedModeId) { setError(tr('Выбери режим', 'Выберите режим')); return; }
     haptic.success();
     setSaving(true); setError('');
     try {
@@ -112,7 +108,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             {clientName ? `Задание для ${clientName}` : 'Новое задание'}
           </div>
           <h1 className="hub-title" style={{ marginBottom: 8 }}>
-            Выбери<br /><span className="it">задание</span>
+            {tr('Выбери', 'Выберите')}<br /><span className="it">задание</span>
           </h1>
           <p className="hub-sub" style={{ marginBottom: 32 }}>
             Появится у клиента в мини-аппе – он выполняет самостоятельно.
@@ -154,7 +150,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                     </div>
                   </div>
 
-                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>{opt.time}</span>
                     <div style={{
                       width: 20, height: 20, borderRadius: '50%',
@@ -189,7 +185,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                       key={d}
                       onClick={() => setTargetDays(d)}
                       style={{
-                        padding: '5px 14px', borderRadius: 4, cursor: 'pointer',
+                        padding: '5px 14px', borderRadius: 'var(--r-4)', cursor: 'pointer',
                         fontWeight: 500, fontSize: 13, fontFamily: 'inherit',
                         background: targetDays === d ? 'var(--text)' : 'transparent',
                         color: targetDays === d ? 'var(--bg)' : 'var(--text-sub)',
@@ -218,11 +214,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         padding: '11px 0',
                         borderBottom: i < ALL_SCHEMAS_FLAT.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
                         cursor: 'pointer',
-                        gap: 12,
+                        gap: 'var(--space-12)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 3, height: 20, borderRadius: 2, background: s.domainColor, flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+                        <div style={{ width: 3, height: 20, borderRadius: 'var(--r-2)', background: s.domainColor, flexShrink: 0 }} />
                         <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedSchemaId === s.id ? 600 : 400 }}>{s.name}</span>
                       </div>
                       {selectedSchemaId === s.id && (
@@ -252,11 +248,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                         padding: '11px 0',
                         borderBottom: i < ALL_MODES.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
                         cursor: 'pointer',
-                        gap: 12,
+                        gap: 'var(--space-12)',
                       }}
                     >
-                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400 }}>
-                        {m.emoji} {m.name}
+                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+                        <IdentityDot color={m.groupColor} /> {m.name}
                       </span>
                       {selectedModeId === m.id && (
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -316,7 +312,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
               onClick={handleCreate}
               disabled={!canSave || saving}
               style={{
-                padding: '9px 20px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                padding: '9px 20px', borderRadius: 'var(--r-6)', border: 'none', cursor: 'pointer',
                 background: canSave && !saving ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)',
                 color: canSave && !saving ? 'var(--bg)' : 'var(--text-faint)',
                 fontSize: 13, fontWeight: 500, fontFamily: 'inherit',

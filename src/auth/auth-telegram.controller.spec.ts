@@ -1,6 +1,6 @@
 // Покрытие AuthTelegramController (был 0%): telegram/widget (POST + CSRF),
-// telegram/redirect, telegram/widget-redirect. Контроллер инстанцируется
-// напрямую с typed test doubles (без TestingModule) — стиль auth.service.spec.ts.
+// telegram/redirect. Контроллер инстанцируется напрямую с typed test doubles
+// (без TestingModule) — стиль auth.service.spec.ts.
 // telegram/widget — единственный CSRF-защищённый роут в auth/*: тестируем
 // requireCsrf() отдельно как «гейт до БД» (см. CLAUDE.md «Обработка ошибок» —
 // answerCbQuery/эквивалент до сайд-эффектов), плюс happy path и main guard-ветку
@@ -29,6 +29,8 @@ const BOT_TOKEN = '12345:TEST_SECRET';
 interface FlowMocks {
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
+  buildLinkState: jest.Mock;
+  readLinkState: jest.Mock;
 }
 
 interface SecurityLogMocks {
@@ -39,8 +41,6 @@ interface ResMocks {
   redirect: jest.Mock;
   cookie: jest.Mock;
   clearCookie: jest.Mock;
-  type: jest.Mock;
-  send: jest.Mock;
 }
 
 interface TelegramProviderMocks {
@@ -58,6 +58,8 @@ function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
   const mocks: FlowMocks = {
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
+    buildLinkState: jest.fn().mockReturnValue('signed-link-state'),
+    readLinkState: jest.fn().mockReturnValue(null),
   };
   return { flow: mocks as unknown as AuthFlowService, mocks };
 }
@@ -96,8 +98,6 @@ function makeRes(): { res: Response; mocks: ResMocks } {
   mocks.redirect = jest.fn();
   mocks.cookie = jest.fn();
   mocks.clearCookie = jest.fn();
-  mocks.send = jest.fn();
-  mocks.type = jest.fn(() => mocks as unknown as Response);
   return { res: mocks as unknown as Response, mocks };
 }
 
@@ -234,6 +234,9 @@ describe('AuthTelegramController.telegramWidget — resolveLinkUserId и outcome
   it('нет webUser, но есть cookie tg_link_user → linkUserId из cookie', async () => {
     const { flow, flowMocks, providers } = setup();
     flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    // Кука несёт подписанный state (C1) — сырое значение куки для контроллера
+    // больше ничего не значит, значение даёт flow.readLinkState.
+    flowMocks.readLinkState.mockReturnValue(222n);
     const controller = makeController({ providers, flow });
     const req = makeReq({
       headers: { 'x-requested-with': 'XMLHttpRequest' },
@@ -351,125 +354,24 @@ describe('AuthTelegramController.telegramRedirect', () => {
     );
   });
 
-  it('с webUser: ставит tg_link_user cookie со строковым userId', () => {
-    const { flow } = makeFlow();
+  it('с webUser: ставит tg_link_user cookie с подписанным state', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
     const controller = makeController({ providers: makeProviders({}), flow });
     const req = makeReq({ webUser: { userId: 777n } } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
     controller.telegramRedirect(req, res);
 
+    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(777n);
     expect(resMocks.cookie).toHaveBeenCalledWith(
       'tg_link_user',
-      '777',
+      'signed-link-state',
       expect.objectContaining({ httpOnly: true }),
     );
   });
 });
 
-describe('AuthTelegramController.telegramWidgetRedirect', () => {
-  it('пустой query → отдаёт HTML-трамплин без обращения к провайдеру/flow', async () => {
-    const telegram = makeTelegramProvider();
-    const { flow, mocks: flowMocks } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({}, req, res);
-
-    expect(resMocks.type).toHaveBeenCalledWith('text/html');
-    expect(resMocks.send).toHaveBeenCalledWith(
-      expect.stringContaining('tgAuthResult'),
-    );
-    expect(telegram.verifyClientData).not.toHaveBeenCalled();
-    expect(flowMocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
-  });
-
-  it('query с tgAuthResult (base64url JSON) → декодируется в плоские поля перед verifyClientData', async () => {
-    const telegram = makeTelegramProvider();
-    const identity: ProviderIdentity = {
-      providerId: '555',
-      displayName: 'Грег',
-    };
-    telegram.verifyClientData.mockReturnValue(identity);
-    const { flow, mocks: flowMocks } = makeFlow();
-    flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-
-    const payload = { id: 555, first_name: 'Грег', hash: 'deadbeef' };
-    const tgAuthResult = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url',
-    );
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({ tgAuthResult }, req, res);
-
-    expect(telegram.verifyClientData).toHaveBeenCalledWith({
-      id: '555',
-      first_name: 'Грег',
-      hash: 'deadbeef',
-    });
-    expect(flowMocks.finishOAuthRedirect).toHaveBeenCalledWith(
-      TOKENS_OUTCOME,
-      'telegram',
-      res,
-      WEBAPP_URL,
-    );
-    expect(resMocks.type).not.toHaveBeenCalled();
-  });
-
-  it('плоский query (без tgAuthResult) → verifyClientData получает query как есть', async () => {
-    const telegram = makeTelegramProvider();
-    const identity: ProviderIdentity = { providerId: '555' };
-    telegram.verifyClientData.mockReturnValue(identity);
-    const { flow, mocks: flowMocks } = makeFlow();
-    flowMocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const query = { id: '555', hash: 'deadbeef' };
-    const req = makeReq();
-    const { res } = makeRes();
-
-    await controller.telegramWidgetRedirect(query, req, res);
-
-    expect(telegram.verifyClientData).toHaveBeenCalledWith(query);
-  });
-
-  it('битый (не-JSON) tgAuthResult → редирект на /auth/error с причиной, verifyClientData не вызывается', async () => {
-    const telegram = makeTelegramProvider();
-    const { flow } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect(
-      { tgAuthResult: 'not-valid-base64url-json!!!' },
-      req,
-      res,
-    );
-
-    expect(telegram.verifyClientData).not.toHaveBeenCalled();
-    const url = resMocks.redirect.mock.calls[0][0] as string;
-    expect(url).toContain(`${WEBAPP_URL}/auth/error?reason=`);
-  });
-
-  it('провайдер без verifyClientData → редирект на /auth/error, flow не трогается', async () => {
-    const telegram = { verifyClientData: undefined };
-    const { flow, mocks: flowMocks } = makeFlow();
-    const providers = makeProviders({ telegram });
-    const controller = makeController({ providers, flow });
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramWidgetRedirect({ id: '555' }, req, res);
-
-    expect(flowMocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      expect.stringContaining(`${WEBAPP_URL}/auth/error?reason=`),
-    );
-  });
-});
+// telegramWidgetRedirect (GET /api/auth/telegram/widget-redirect) удалён —
+// был мёртвым кодом, дублирующим TelegramWidgetCallback.tsx (правило №11
+// CLAUDE.md). return_to (telegram-oauth-url.ts) давно вёл на фронтовую
+// страницу, серверный обработчик никогда не вызывался.

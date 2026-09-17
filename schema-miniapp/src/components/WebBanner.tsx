@@ -12,13 +12,11 @@ import {
 // пары в webapp нет. Тексты — безличные, вилка ты/вы не нужна.
 export function WebBanner({
   id,
-  emoji,
   title,
   text,
   url,
 }: {
   id: WebBannerId;
-  emoji: string;
   title: string;
   text: string;
   url: string;
@@ -41,17 +39,14 @@ export function WebBanner({
       style={{
         background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
         border: '1px solid color-mix(in srgb, var(--accent) 22%, transparent)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '13px 14px',
         marginBottom: 12,
         display: 'flex',
-        gap: 12,
+        gap: 'var(--space-12)',
         alignItems: 'flex-start',
       }}
     >
-      <span style={{ fontSize: 20, lineHeight: '24px', flexShrink: 0 }}>
-        {emoji}
-      </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -78,7 +73,7 @@ export function WebBanner({
           style={{
             background: 'color-mix(in srgb, var(--accent) 16%, transparent)',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             padding: '7px 14px',
             color: 'var(--accent)',
             fontSize: 12,

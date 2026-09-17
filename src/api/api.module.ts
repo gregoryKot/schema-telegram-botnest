@@ -4,6 +4,7 @@ import { YsqController } from './ysq.controller';
 import { PairsController } from './pairs.controller';
 import { PlansController } from './plans.controller';
 import { ExercisesController } from './exercises.controller';
+import { PhraseCheckController } from './phrase-check.controller';
 import { NotesController } from './notes.controller';
 import { TrackerController } from './tracker.controller';
 import { SettingsController } from './settings.controller';
@@ -16,6 +17,7 @@ import { PublicEventsController } from './public-events.controller';
 import { QuizController } from './quiz.controller';
 import { JourneyController } from './journey.controller';
 import { PracticeSessionsController } from './practice-sessions.controller';
+import { AccountExportController } from './account-export.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -23,6 +25,7 @@ import { TelegramModule } from '../telegram/telegram.module';
 import { TherapyModule } from '../therapy/therapy.module';
 import { AuthModule } from '../auth/auth.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { DataExportService } from '../account/data-export.service';
 
 @Module({
   imports: [
@@ -39,6 +42,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     PairsController,
     PlansController,
     ExercisesController,
+    PhraseCheckController,
     NotesController,
     TrackerController,
     SettingsController,
@@ -51,7 +55,8 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     PracticeSessionsController,
     HealthController,
     ClientErrorsController,
+    AccountExportController,
   ],
-  providers: [TelegramAuthGuard],
+  providers: [TelegramAuthGuard, DataExportService],
 })
 export class ApiModule {}

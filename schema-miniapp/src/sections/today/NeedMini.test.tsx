@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Мини-карточка потребности на экране трекера (CLAUDE.md — приоритет
 // покрытия «экраны трекера и оценки потребностей»). Поведение: пустое
-// состояние (эмодзи, не выдуманное число), заполненное значение, дельта к
-// вчера, клик/клавиатура открывают оценку.
+// состояние (цветная точка потребности, не выдуманное число), заполненное
+// значение, дельта к вчера, клик/клавиатура открывают оценку.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { NeedMini } from './NeedMini';
@@ -20,9 +20,11 @@ const NEED: Need = {
 };
 
 describe('NeedMini', () => {
-  it('нет оценки за сегодня — показывает эмодзи, не число (пустое состояние)', () => {
-    render(<NeedMini need={NEED} value={undefined} onTap={() => {}} />);
-    expect(screen.getByText('🧭')).toBeTruthy();
+  it('нет оценки за сегодня — показывает точку цвета потребности, не число (пустое состояние)', () => {
+    const { container } = render(
+      <NeedMini need={NEED} value={undefined} onTap={() => {}} />,
+    );
+    expect(container.querySelector('[aria-hidden="true"]')).toBeTruthy();
     expect(screen.queryByText(/^\d+$/)).toBeNull();
   });
 

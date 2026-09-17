@@ -23,7 +23,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
     ).toBe(67);
   });
 
-  it('iOS без инсетов (contentTop не сообщён) — фолбэк 56', () => {
+  it('iOS без инсетов (contentTop не сообщён) — фолбэк 96', () => {
     expect(
       computeSafeTop({
         contentTop: undefined,
@@ -32,7 +32,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         ios: true,
         contentReported: false,
       }),
-    ).toBe(56);
+    ).toBe(96);
   });
 
   it('не-iOS без инсетов — 0', () => {
@@ -135,5 +135,180 @@ describe('computeSafeTop — fullscreen, инсеты НЕ пришли (щед�
         contentReported: false,
       }),
     ).toBe(FS_BAND_ANDROID);
+  });
+});
+
+// Четвёртый заход (скриншот 2026-08-12): в sheet-режиме Telegram рисует
+// СПЛОШНУЮ шапку над webview — полоса контента честно нулевая, а страховка
+// 96px давала дыру над заголовком. Правило: способному клиенту (полоса
+// контента прислана, пусть и нулём) верим точно; страховка — только тем,
+// кто полосу прислать не умеет (contentTop undefined, Bot API < 8.0).
+describe('computeSafeTop — нулевые инсеты внутри мессенджера (регрессия 2026-08)', () => {
+  const zeros = {
+    contentTop: 0,
+    deviceTop: 0,
+    isFullscreen: false,
+    contentReported: true,
+  };
+
+  it('iOS, sheet-режим со сплошной шапкой: честному нулю верим — без дыры 96px', () => {
+    expect(computeSafeTop({ ...zeros, ios: true, overlaysContent: true })).toBe(
+      0,
+    );
+  });
+
+  it('Android, способный клиент с нулевой полосой — тоже без дыры', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: false, overlaysContent: true }),
+    ).toBe(0);
+  });
+
+  it('клиент полосу прислать НЕ умеет — страховка под пилюлю «Закрыть»', () => {
+    expect(
+      computeSafeTop({
+        contentTop: undefined,
+        deviceTop: 0,
+        isFullscreen: false,
+        contentReported: false,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(96);
+  });
+
+  it('браузер на iOS: ноль — правда, чёлку закрывает CSS env()', () => {
+    expect(
+      computeSafeTop({ ...zeros, ios: true, overlaysContent: false }),
+    ).toBe(0);
+  });
+
+  it('полный экран с нулевой полосой контента — тоже «не доехало», а не точное значение', () => {
+    // device пришёл, content отчитан нулём: раньше вернули бы 47 и шапка
+    // оказалась бы ровно под кнопками Telegram.
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(123);
+  });
+
+  it('полный экран с обоими ненулевыми инсетами — по-прежнему точное значение', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 47,
+        isFullscreen: true,
+        contentReported: true,
+        ios: true,
+        overlaysContent: true,
+      }),
+    ).toBe(93);
+  });
+});
+
+// Регресс к скриншоту 2026-08: заголовок «Паттерны» стоял под пилюлей
+// «Закрыть» на клиенте, который полосу контента прислать не умел — отступ
+// обязан очищать не только статус-бар (~54pt), но и полосу кнопок (низ ~87pt).
+describe('фолбэк очищает кнопки Telegram, а не только статус-бар', () => {
+  const TELEGRAM_BUTTONS_BOTTOM_PT = 87;
+
+  it('клиент без полосы контента на iOS в мессенджере → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: undefined,
+      deviceTop: 0,
+      isFullscreen: false,
+      ios: true,
+      contentReported: false,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('в полноэкранном режиме без инсетов — тоже ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: true,
+      ios: true,
+      contentReported: false,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(TELEGRAM_BUTTONS_BOTTOM_PT);
+  });
+
+  it('браузер на iOS лишнего отступа не получает — там чёлку закрывает CSS', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
+  });
+});
+
+// Развёрнутый (не полноэкранный) режим. Клиент, НЕ умеющий присылать полосу
+// контента, получает страховку под кнопки; способный клиент с честным нулём
+// (сплошная шапка над webview) — точное значение, включая device-инсет.
+describe('развёрнутый режим: кнопки поверх контента, полосы контента нет', () => {
+  const BUTTONS_BOTTOM_PT = 87;
+
+  it('клиент без полосы контента, device есть → отступ ниже кнопок', () => {
+    const top = computeSafeTop({
+      contentTop: undefined,
+      deviceTop: 59,
+      isFullscreen: false,
+      ios: true,
+      contentReported: false,
+      overlaysContent: true,
+    });
+    expect(top).toBeGreaterThan(BUTTONS_BOTTOM_PT);
+  });
+
+  it('способный клиент: полоса нулевая, device есть → ровно device, без страховки', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 59,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: true,
+      }),
+    ).toBe(59);
+  });
+
+  it('клиент прислал НЕНУЛЕВУЮ полосу контента — верим ему точно', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 59,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: true,
+      }),
+    ).toBe(105);
+  });
+
+  it('браузер лишнего отступа не получает', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 0,
+        deviceTop: 0,
+        isFullscreen: false,
+        ios: true,
+        contentReported: true,
+        overlaysContent: false,
+      }),
+    ).toBe(0);
   });
 });

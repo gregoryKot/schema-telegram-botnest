@@ -113,6 +113,31 @@ describe('DiarySection — загрузка и пустое состояние',
   });
 });
 
+describe('DiarySection — сбой загрузки (сбой ≠ пусто)', () => {
+  it('провал одного из трёх дневников показывает предупреждение, не стирает остальной UI', async () => {
+    // Регрессия: раньше отказ ЛЮБОГО из трёх дневников оставлял entries []
+    // — дневник выглядел стёртым, хотя записи (терапевтические данные) целы
+    // на сервере (CLAUDE.md «сбой ≠ пусто»).
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network'));
+    await renderLoaded();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/записи на месте/);
+    // Остальной UI не спрятан — заголовок домашнего экрана дневников на месте.
+    expect(screen.getByText('Мои дневники')).toBeTruthy();
+  });
+
+  it('«Обновить» после сбоя перезагружает дневники и убирает предупреждение', async () => {
+    mockApi.getSchemaDiary.mockRejectedValueOnce(new Error('network'));
+    await renderLoaded();
+    await screen.findByRole('alert');
+
+    mockApi.getSchemaDiary.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText('Обновить'));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+  });
+});
+
 describe('DiarySection — сохранение записи благодарности (read-after-write)', () => {
   it('после сохранения новая запись сразу видна в списке дневника', async () => {
     // Дата берётся из текущего дня, а не литералом: компонент шлёт «сегодня»,
@@ -128,8 +153,8 @@ describe('DiarySection — сохранение записи благодарн�
 
     // Открываем дневник благодарности и создаём новую запись через FAB.
     fireEvent.click(screen.getByText('Дневник благодарности'));
-    await screen.findByText('+ Записать');
-    fireEvent.click(screen.getByText('+ Записать'));
+    await screen.findByText('Записать');
+    fireEvent.click(screen.getByText('Записать'));
 
     const first = await screen.findByPlaceholderText(
       'Что-то хорошее, что произошло сегодня...',
@@ -152,8 +177,8 @@ describe('DiarySection — сохранение записи благодарн�
     await renderLoaded();
 
     fireEvent.click(screen.getByText('Дневник благодарности'));
-    await screen.findByText('+ Записать');
-    fireEvent.click(screen.getByText('+ Записать'));
+    await screen.findByText('Записать');
+    fireEvent.click(screen.getByText('Записать'));
 
     const first = await screen.findByPlaceholderText(
       'Что-то хорошее, что произошло сегодня...',

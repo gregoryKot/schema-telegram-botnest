@@ -21,6 +21,7 @@ vi.mock('../api', () => ({
     trackEvent: vi.fn(),
     getStreak: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -187,6 +188,22 @@ describe('HistoryView — день с реальными данными', () => 
     });
     expect(screen.getByText('Стоит уделить внимание')).toBeTruthy();
     expect(screen.getByText(/Остаётся низкой несколько дней подряд/)).toBeTruthy();
+    // CTA текст общий с miniapp (Ж9 аудита 2026-08) — раньше здесь было «Записаться →».
+    expect(screen.getByText('Записаться и взять сводку →')).toBeTruthy();
+  });
+
+  it('подсказка над трекером звучит в форме «ты» (текст общий с miniapp, Ж9)', async () => {
+    await act(async () => {
+      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'ty');
+    });
+    expect(screen.getByText('Нажми на потребность — узнаешь что делать')).toBeTruthy();
+  });
+
+  it('подсказка над трекером звучит в форме «вы» (текст общий с miniapp, Ж9)', async () => {
+    await act(async () => {
+      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'vy');
+    });
+    expect(screen.getByText('Нажмите на потребность — узнаете что делать')).toBeTruthy();
   });
 });
 

@@ -37,4 +37,27 @@ describe('check-route-collisions.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ коллизий маршрутов нет (2 маршрутов)');
   });
+
+  // До этого теста фикстуры проверяли только @Get — Post/Put/Patch/Delete
+  // не были покрыты ни одним тестом (замер: сузить регэксп до одного @Get
+  // ни один тест не ловил).
+  it('два контроллера с одним и тем же POST-маршрутом — тоже exit 1', () => {
+    const POST_CONTROLLER = (className: string, ctrlPath: string) =>
+      [
+        "import { Controller, Post } from '@nestjs/common';",
+        '',
+        `@Controller('${ctrlPath}')`,
+        `export class ${className} {`,
+        '  @Post()',
+        '  handle() {}',
+        '}',
+        '',
+      ].join('\n');
+    const res = runGate('check-route-collisions.mjs', {
+      'src/foo.controller.ts': POST_CONTROLLER('FooController', 'donate'),
+      'src/foo2.controller.ts': POST_CONTROLLER('Foo2Controller', 'donate'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('маршрут-дубль: POST /donate');
+  });
 });

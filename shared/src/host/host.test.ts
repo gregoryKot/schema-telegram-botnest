@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTelegramHost } from './telegram';
 import { createMaxHost, resetMaxLaunchParams } from './max';
-import { createWebHost } from './web';
+import { createWebHost, isStandalone, webPlatform } from './web';
 import { detectHostId, getHost, setHost } from './index';
 
 type Listener = () => void;
@@ -28,6 +28,7 @@ function fakeTelegram(overrides: Record<string, unknown> = {}) {
     expand: vi.fn(),
     close: vi.fn(),
     disableVerticalSwipes: vi.fn(),
+    enableVerticalSwipes: vi.fn(),
     openLink: vi.fn(),
     addToHomeScreen: vi.fn(),
     checkHomeScreenStatus: vi.fn(),
@@ -113,6 +114,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('определение хоста', () => {
@@ -133,15 +135,45 @@ describe('определение хоста', () => {
     expect(getHost().id).toBe('max');
   });
 
-  // Приоритет намеренно у MAX, а не у Telegram (было наоборот до 2026-08-03).
-  // Телеграмный SDK подключён в index.html безусловно и создаёт свой объект
-  // где угодно, поэтому «Telegram первым» означало «Telegram всегда»: внутри
-  // MAX приложение считало себя телеграмным и обмен подписи MAX не звался.
-  // Признаки MAX подделать телеграмным SDK нельзя — значит они и решают.
-  it('оба объекта сразу — приоритет у MAX', () => {
-    fakeTelegram();
-    fakeMax();
-    expect(detectHostId()).toBe('max');
+  // Спор двух площадок решают стартовые параметры в адресе, а не сам факт
+  // существования объекта. Оба SDK создают свою глобаль слишком легко:
+  // телеграмный подключён в index.html безусловно (поэтому «Telegram первым»
+  // означало «Telegram всегда» и внутри MAX обмен подписи MAX не звался,
+  // 2026-08-03), а мост MAX однажды загрузился в Telegram из-за ошибки
+  // загрузчика и утащил туда же весь Telegram (2026-08-08).
+  describe('оба объекта сразу', () => {
+    function setHash(hash: string) {
+      window.location.hash = hash;
+      resetMaxLaunchParams();
+    }
+
+    afterEach(() => setHash(''));
+
+    it('стартовые параметры MAX в адресе — MAX', () => {
+      setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
+      fakeTelegram();
+      fakeMax();
+      expect(detectHostId()).toBe('max');
+    });
+
+    // Регресс инцидента 2026-08-08: живая телеграмная подпись весит больше,
+    // чем посторонний window.WebApp без параметров запуска MAX.
+    it('параметров MAX в адресе нет, подпись Telegram живая — Telegram', () => {
+      setHash(
+        '#tgWebAppData=user%3D%257B%2522id%2522%253A1%257D&tgWebAppVersion=8.0',
+      );
+      fakeTelegram();
+      fakeMax();
+      expect(detectHostId()).toBe('telegram');
+    });
+
+    // Внутри MAX телеграмный SDK оставляет platform = 'unknown' и пустую
+    // подпись — тогда мост решает даже без параметров в адресе.
+    it('параметров нет и Telegram не настоящий — MAX', () => {
+      fakeTelegram({ platform: 'unknown', initData: '' });
+      fakeMax();
+      expect(detectHostId()).toBe('max');
+    });
   });
 
   it('посторонний window.WebApp без признаков MAX Bridge — не хост MAX', () => {
@@ -205,6 +237,19 @@ describe('адаптер Telegram', () => {
     expect(webApp.disableVerticalSwipes).toHaveBeenCalled();
   });
 
+  // Баг с живого устройства (Telegram iOS): драг строки за ручку «≡» тем же
+  // жестом сворачивал мини-приложение. setVerticalSwipes — явный переключатель
+  // для useDragReorder, отдельный от гашения при expand().
+  it('setVerticalSwipes переключает enable/disableVerticalSwipes клиента', () => {
+    const { webApp } = fakeTelegram();
+    const host = createTelegramHost();
+    host.setVerticalSwipes(false);
+    expect(webApp.disableVerticalSwipes).toHaveBeenCalledTimes(1);
+    expect(webApp.enableVerticalSwipes).not.toHaveBeenCalled();
+    host.setVerticalSwipes(true);
+    expect(webApp.enableVerticalSwipes).toHaveBeenCalledTimes(1);
+  });
+
   it('тактильный отклик разложен по типам клиента', () => {
     const { webApp } = fakeTelegram();
     const { haptic } = createTelegramHost();
@@ -233,15 +278,27 @@ describe('адаптер Telegram', () => {
     expect(webApp.BackButton.offClick).toHaveBeenCalledWith(cb);
   });
 
-  it('contentReported взводится событием, а не значением инсета', () => {
-    const { emit } = fakeTelegram();
+  it('contentReported взводится наличием contentSafeAreaInset — способный клиент виден сразу, без события', () => {
+    fakeTelegram();
     const host = createTelegramHost();
     expect(host.insets()).toEqual({
       contentTop: 12,
       deviceTop: 47,
       isFullscreen: true,
-      contentReported: false,
+      // Свойство contentSafeAreaInset есть (Bot API 8.0+) — клиент умеет
+      // присылать полосу контента, значению (включая ноль) можно верить.
+      // Ждать события contentSafeAreaChanged нельзя: на старте оно может не
+      // прийти, и честный ноль получал страховку 96px — дыра над шапкой в
+      // sheet-режиме (скриншот 2026-08-12).
+      contentReported: true,
+      overlaysContent: true,
     });
+  });
+
+  it('старый клиент без contentSafeAreaInset: contentReported false до события', () => {
+    const { emit } = fakeTelegram({ contentSafeAreaInset: undefined });
+    const host = createTelegramHost();
+    expect(host.insets().contentReported).toBe(false);
 
     const cb = vi.fn();
     host.onInsetsChange(cb);
@@ -298,6 +355,7 @@ describe('адаптер Telegram', () => {
       BackButton: undefined,
       addToHomeScreen: undefined,
       disableVerticalSwipes: undefined,
+      enableVerticalSwipes: undefined,
     });
     const host = createTelegramHost();
     expect(host.capabilities).toEqual({
@@ -312,6 +370,70 @@ describe('адаптер Telegram', () => {
       host.backButton.setVisible(true);
       host.homeScreen.add();
       host.backButton.onClick(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
+    }).not.toThrow();
+  });
+
+  it('ready/close уходят в SDK, colorScheme читает тему клиента', () => {
+    const { webApp } = fakeTelegram({ colorScheme: 'dark' });
+    const host = createTelegramHost();
+    host.ready();
+    host.close();
+    expect(webApp.ready).toHaveBeenCalled();
+    expect(webApp.close).toHaveBeenCalled();
+    expect(host.colorScheme()).toBe('dark');
+  });
+
+  it('openLink и saveFile — оба через openLink клиента: скачивания в вебвью нет', () => {
+    const { webApp } = fakeTelegram();
+    const host = createTelegramHost();
+    host.openLink('https://schemehappens.ru/articles/1');
+    expect(webApp.openLink).toHaveBeenCalledWith(
+      'https://schemehappens.ru/articles/1',
+    );
+    host.saveFile('data:text/calendar,BEGIN', 'practice.ics');
+    expect(webApp.openLink).toHaveBeenCalledWith('data:text/calendar,BEGIN');
+  });
+
+  it('тактильный отклик: press/warning/error тоже разложены по типам клиента', () => {
+    const { webApp } = fakeTelegram();
+    const { haptic } = createTelegramHost();
+    haptic.press();
+    haptic.warning();
+    haptic.error();
+    expect(webApp.HapticFeedback.impactOccurred).toHaveBeenCalledWith('medium');
+    expect(webApp.HapticFeedback.notificationOccurred).toHaveBeenCalledWith(
+      'warning',
+    );
+    expect(webApp.HapticFeedback.notificationOccurred).toHaveBeenCalledWith(
+      'error',
+    );
+  });
+
+  it('без window.Telegram вовсе (мост ещё не загрузился) — вызовы тихие, colorScheme и onInsetsChange безопасны', () => {
+    // Явно НЕ вызываем fakeTelegram() — createTelegramHost() создаётся до
+    // того, как скрипт мессенджера успел положить window.Telegram.
+    const host = createTelegramHost();
+    expect(host.colorScheme()).toBeNull();
+    const cb = vi.fn();
+    const offInsets = host.onInsetsChange(cb);
+    expect(() => offInsets()).not.toThrow();
+    expect(cb).not.toHaveBeenCalled();
+
+    const statusCb = vi.fn();
+    host.homeScreen.checkStatus(statusCb);
+    expect(statusCb).not.toHaveBeenCalled();
+    const offAdded = host.homeScreen.onAdded(vi.fn());
+    expect(() => offAdded()).not.toThrow();
+
+    expect(() => {
+      host.ready();
+      host.close();
+      host.openLink('https://schemehappens.ru');
+      host.saveFile('data:text/calendar,BEGIN', 'p.ics');
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
   });
 });
@@ -375,6 +497,18 @@ describe('адаптер MAX', () => {
     expect(host.capabilities.close).toBe(false);
     expect(host.capabilities.homeScreen).toBe(false);
     expect(host.capabilities.backButton).toBe(true);
+  });
+
+  // Мост площадки (webapp/public/max-bridge.js проверен) не даёт аналога
+  // Telegram-свайпов — setVerticalSwipes тихий no-op, страховку от жеста
+  // хоста на этой площадке несёт touchmove-листенер в useDragReorder.
+  it('setVerticalSwipes — тихий no-op, вызовы не падают', () => {
+    fakeMax();
+    const host = createMaxHost();
+    expect(() => {
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
+    }).not.toThrow();
   });
 
   it('тактильный отклик разложен по типам клиента', () => {
@@ -454,6 +588,7 @@ describe('адаптер MAX', () => {
       deviceTop: 0,
       isFullscreen: false,
       contentReported: true,
+      overlaysContent: false,
     });
     expect(host.onInsetsChange(vi.fn())).toBeInstanceOf(Function);
   });
@@ -484,6 +619,8 @@ describe('адаптер MAX', () => {
       host.homeScreen.add();
       host.homeScreen.checkStatus(vi.fn());
       host.homeScreen.onAdded(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
     expect(host.capabilities).toEqual({
       haptics: false,
@@ -516,6 +653,7 @@ describe('адаптер браузера', () => {
       deviceTop: 0,
       isFullscreen: false,
       contentReported: true,
+      overlaysContent: false,
     });
   });
 
@@ -571,10 +709,78 @@ describe('адаптер браузера', () => {
       host.backButton.setVisible(true);
       host.homeScreen.add();
       host.onInsetsChange(vi.fn())();
+      host.setVerticalSwipes(false);
+      host.setVerticalSwipes(true);
     }).not.toThrow();
     const status = vi.fn();
     host.homeScreen.checkStatus(status);
     expect(status).toHaveBeenCalledWith('unsupported');
+  });
+
+  function mockUserAgent(ua: string) {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: ua,
+      configurable: true,
+    });
+  }
+
+  it('платформа определяется по UA — iOS/Android/остальное как «web»', () => {
+    mockUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit',
+    );
+    expect(createWebHost().platform).toBe('ios');
+
+    mockUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit');
+    expect(createWebHost().platform).toBe('android');
+
+    mockUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit');
+    expect(createWebHost().platform).toBe('web');
+  });
+
+  it('openLink открывает новую вкладку без доверия к window.opener', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    createWebHost().openLink('https://schemehappens.ru/articles/1');
+    expect(open).toHaveBeenCalledWith(
+      'https://schemehappens.ru/articles/1',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('полный набор тактильного отклика в установленном приложении', () => {
+    const vibrate = mockVibrate();
+    mockStandalone(true);
+    const { haptic } = createWebHost();
+    haptic.select();
+    haptic.success();
+    haptic.warning();
+    haptic.error();
+    expect(vibrate).toHaveBeenNthCalledWith(1, 5);
+    expect(vibrate).toHaveBeenNthCalledWith(2, [10, 40, 10]);
+    expect(vibrate).toHaveBeenNthCalledWith(3, [20, 40, 20]);
+    expect(vibrate).toHaveBeenNthCalledWith(4, [30, 40, 30]);
+  });
+
+  it('backButton.onClick и homeScreen.onAdded — браузер отдаёт заглушки, отписка не падает', () => {
+    const host = createWebHost();
+    const offClick = host.backButton.onClick(vi.fn());
+    expect(() => offClick()).not.toThrow();
+    const offAdded = host.homeScreen.onAdded(vi.fn());
+    expect(() => offAdded()).not.toThrow();
+  });
+
+  it('SSR-заглушки: без глобального window изоляция не падает и возвращает нейтральные значения', () => {
+    const realWindow = globalThis.window;
+    // isStandalone/urlStartParam защищены от SSR-рендера (typeof window ===
+    // 'undefined') — единственный способ дойти до этой ветки в jsdom-тесте.
+    vi.stubGlobal('window', undefined);
+    try {
+      expect(isStandalone()).toBe(false);
+      const host = createWebHost();
+      expect(host.startParam()).toBeNull();
+    } finally {
+      vi.stubGlobal('window', realWindow);
+    }
   });
 });
 
@@ -596,6 +802,18 @@ describe('MAX: стартовые параметры из адреса', () => {
   it('без моста хост всё равно опознаётся как MAX', () => {
     setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
     expect(detectHostId()).toBe('max');
+  });
+
+  // Telegram передаёт свои стартовые данные тем же фрагментом, и внутри имени
+  // `tgWebAppData` подстрока `WebAppData=` есть. Имя параметра сверяется
+  // целиком — иначе телеграмный запуск читался бы как MAX (инцидент
+  // 2026-08-08: у всех пользователей Telegram «Не удалось войти»).
+  it('телеграмный tgWebAppData за параметр MAX не принимается', () => {
+    setHash(
+      '#tgWebAppData=user%3D%257B%2522id%2522%253A1%257D%26hash%3Dabc&tgWebAppVersion=8.0&tgWebAppPlatform=ios',
+    );
+    expect(detectHostId()).toBe('web');
+    expect(createMaxHost().sessionExchange()).toBeNull();
   });
 
   it('подпись для обмена берётся из адреса, когда моста нет', () => {
@@ -691,5 +909,27 @@ describe('детект хоста при всегда загруженном SDK
       WebApp: { initData: 'user=%7B%22id%22%3A1%7D' },
     };
     expect(detectHostId()).toBe('telegram');
+  });
+});
+
+// webPlatform экспортирован для webapp (выбор шагов установки PWA,
+// правило №3: один UA-парсер платформы на оба потребителя).
+describe('webPlatform', () => {
+  const IPHONE =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15';
+  const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36';
+  const MAC =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+  const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
+  it('iPhone → ios, Android → android, Windows → web', () => {
+    expect(webPlatform(IPHONE, 5)).toBe('ios');
+    expect(webPlatform(ANDROID, 5)).toBe('android');
+    expect(webPlatform(WIN, 0)).toBe('web');
+  });
+
+  it('iPadOS прикидывается маком — отличаем по мультитачу', () => {
+    expect(webPlatform(MAC, 5)).toBe('ios');
+    expect(webPlatform(MAC, 0)).toBe('web');
   });
 });

@@ -14,15 +14,14 @@ import {
   setPhraseHidden,
 } from '../utils/todayFocus';
 import { useLongPress } from './useLongPress';
+import { useScreenBlockOrder } from './useScreenBlockOrder';
 import type { CustomizeHighlight } from '../components/TodayCustomizeSheet';
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-// Настройка экрана «Сегодня»: что показано, какая практика главная и как
-// открыт лист настройки. Собрано в один хук, потому что раньше это были восемь
-// useState + обработчики прямо в TodaySection (который и так самый большой
-// файл мини-аппа, правило №10).
-//
-// Скрытие блоков — per-device в localStorage (как тема): состояние экрана
-// личное для устройства, а не общее для аккаунта.
+// Настройка экрана «Сегодня» (что показано, какая практика главная) — раньше
+// восемь useState в TodaySection (правило №10), теперь один хук. Хранится
+// per-device в localStorage, синхронизируется между устройствами через
+// uiPrefsSync (notifyPrefsChanged ниже).
 export function useTodayCustomization() {
   const [practice, setPracticeState] =
     useState<FocusPractice>(getFocusPractice);
@@ -36,6 +35,9 @@ export function useTodayCustomization() {
   // null — лист закрыт; true — открыт шестерёнкой; строка — открыт долгим
   // нажатием на конкретный блок, его строку подсвечиваем.
   const [sheet, setSheet] = useState<CustomizeHighlight | true | null>(null);
+  // Порядок блоков — тот же generic-механизм, что у «Профиля»/«Паттернов»
+  // (ключ screen_order_today, событие screen_block_move шлёт сам хук).
+  const order = useScreenBlockOrder('today');
 
   const openByGear = useCallback(() => {
     setSheet(true);
@@ -57,6 +59,7 @@ export function useTodayCustomization() {
       const next = !current;
       persist(next);
       setState(next);
+      notifyPrefsChanged();
       api.trackEvent('today_block_toggle', { block, hidden: next });
     },
     [],
@@ -68,6 +71,8 @@ export function useTodayCustomization() {
     phraseHidden,
     secondaryHidden,
     therapistBannerHidden,
+    orderedIds: order.orderedIds,
+    reorder: order.reorder,
     sheet,
     highlight: sheet === true ? undefined : (sheet ?? undefined),
     openByGear,
@@ -79,6 +84,7 @@ export function useTodayCustomization() {
     choosePractice: useCallback((p: FocusPractice) => {
       setFocusPractice(p);
       setPracticeState(p);
+      notifyPrefsChanged();
       api.trackEvent('today_focus_change', { practice: p });
     }, []),
     toggleStreak: useCallback(

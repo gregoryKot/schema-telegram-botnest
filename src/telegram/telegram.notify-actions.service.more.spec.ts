@@ -4,6 +4,7 @@
 // 2026-08). notify:pause:7 catch уже покрыт в исходном файле.
 import { Logger } from '@nestjs/common';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
+import { ERROR_RETRY } from './telegram.constants';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
 
 function makeService(
@@ -38,9 +39,7 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'addr:ty');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не получилось сохранить'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
   });
 
   it('notify:pause: editMessageReplyMarkup падает — answerCbQuery-фолбэк', async () => {

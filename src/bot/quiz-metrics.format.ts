@@ -20,6 +20,7 @@ export interface QuizMetrics {
 export const QUIZ_LABELS: Record<string, string> = {
   drives: '🚗 «Кто у руля»',
   critic: '🎙 «Внутренний критик»',
+  voice: '🎧 «Критик или Здоровый Взрослый»',
   battery: '🔋 «Батарейка»',
 };
 

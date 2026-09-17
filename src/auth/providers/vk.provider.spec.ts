@@ -60,6 +60,59 @@ describe('VkProvider.buildAuthUrl', () => {
     expect(p.get('code_challenge')).toBeTruthy();
     expect(p.get('scope')).toBe('email phone');
   });
+
+  it('callbackOrigin() = origin VK_REDIRECT_URI (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
+    const provider = new VkProvider(makeConfig());
+    expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
+  });
+
+  it('аварийный потолок стора верификаторов (L9): поток buildAuthUrl не растит его без предела', () => {
+    const provider = new VkProvider(makeConfig());
+    const CAP = 5000;
+    for (let i = 0; i < CAP + 200; i++) provider.buildAuthUrl(`state-${i}`);
+    const verifiers = (
+      provider as unknown as { verifiers: Map<string, unknown> }
+    ).verifiers;
+    expect(verifiers.size).toBeLessThanOrEqual(CAP);
+    // Старейшие вытеснены, свежие на месте — эвикция по возрасту, не clear().
+    expect(verifiers.has('state-0')).toBe(false);
+    expect(verifiers.has(`state-${CAP + 199}`)).toBe(true);
+  });
+});
+
+// Щит, волна 3: "упомянут ≠ исполняется" (SHIELD_PROMPT.md). Прунинг-цикл
+// (setInterval(() => this.prune(), 15 мин).unref() в конструкторе) до этого
+// теста не запускал ни один тест НАПРЯМУЮ — тест выше на L9 и тест на
+// просрочку в exchangeCodeWithContext вызывают prune() опосредованно, через
+// buildAuthUrl/expiresAt-проверку, а не через сам таймер. Тест ниже —
+// единственный, кто реально продвигает часы и смотрит, чистит ли карту
+// именно сам interval-колбэк, а не что-то другое.
+describe('VkProvider — прунинг-цикл (setInterval в конструкторе)', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('таймер сам подчищает протухший verifier — без внешнего вызова buildAuthUrl/exchange', () => {
+    jest.useFakeTimers();
+    const provider = new VkProvider(makeConfig());
+    provider.buildAuthUrl('state-swept'); // verifier живёт 10 минут
+    const verifiers = (
+      provider as unknown as { verifiers: Map<string, unknown> }
+    ).verifiers;
+    expect(verifiers.has('state-swept')).toBe(true);
+
+    // Verifier уже протух (>10 мин), но карту чистит только сам sweep —
+    // до его срабатывания (интервал 15 мин) запись обязана ещё лежать.
+    // Без этой промежуточной проверки тест не отличал бы «чистит таймер»
+    // от «чистит что-то ещё при первом обращении».
+    jest.advanceTimersByTime(14 * 60_000);
+    expect(verifiers.has('state-swept')).toBe(true);
+
+    // Интервал сработал (15 мин от старта) — теперь протухшая запись ушла
+    // сама, без единого вызова buildAuthUrl/exchangeCodeWithContext.
+    jest.advanceTimersByTime(60_000 + 1);
+    expect(verifiers.has('state-swept')).toBe(false);
+  });
 });
 
 describe('VkProvider.exchangeCode (без контекста)', () => {

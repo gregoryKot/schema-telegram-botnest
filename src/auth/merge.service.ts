@@ -1,47 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
-// Tables where a userId column points to User.id (BigInt).
-// Discovered via grep on schema.prisma; if a new user-owned model is added,
-// register its table name here. Order matters for FK dependencies on delete.
-export const USER_OWNED_TABLES = [
-  'Rating',
-  'YsqProgress',
-  'YsqResult',
-  'YsqResultHistory',
-  'Note',
-  'UserSchemaNote',
-  'UserModeNote',
-  'UserBeliefCheck',
-  'UserLetter',
-  'UserSafePlace',
-  'UserFlashcard',
-  'UserPractice',
-  'PracticePlan',
-  'PracticeSession',
-  'ChildhoodRating',
-  'ScheduledNotification',
-  'SchemaDiaryEntry',
-  'ModeDiaryEntry',
-  'GratitudeDiaryEntry',
-  'AppActivity',
-  'UserTask',
-  'DiaryDraft',
-  'AnalyticsEvent',
-  'TherapistRequest',
-  'AuthProvider',
-] as const;
-// Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
-// handled separately below — multi-column refs (therapistId/clientId/userId1/userId2).
+// Реестр переносимых таблиц живёт отдельным файлом; ре-экспорт — чтобы
+// импорты спек и соседей из merge.service продолжали работать.
+export { USER_OWNED_TABLES } from './user-owned-tables';
+import { USER_OWNED_TABLES } from './user-owned-tables';
+import { mergeUserScalarFields } from './merge-user-fields';
+import {
+  reassignSubscriptions,
+  conflictAlertText,
+  type ReassignOutcome,
+} from './merge-subscriptions';
+import { SecurityLogService } from './security-log.service';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
-// valid for the new one). Source's rows are simply destroyed.
-// EmailToken тоже здесь: verification-токены старого аккаунта не должны
-// подтверждать e-mail нового, а после DELETE User они стали бы сиротами
-// (у EmailToken нет FK) — найдено spec-сверкой реестров (аудит 2026-07, S-2).
-export const SECURITY_SENSITIVE_TABLES = ['WebSession', 'EmailToken'] as const;
+// valid for the new one). Source's rows are simply destroyed. EmailToken:
+// verification-токены старого аккаунта не должны подтверждать e-mail нового,
+// а после DELETE User стали бы сиротами (FK у него нет) — spec-сверка реестров
+// (аудит 2026-07, S-2). LoginTicket: код входа/привязки живёт минуты.
+export const SECURITY_SENSITIVE_TABLES = [
+  'WebSession',
+  'EmailToken',
+  'LoginTicket',
+] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include
 // userId. When source and target both have a row with the same (userId, …key)
@@ -100,7 +82,10 @@ export function ident(name: string, kind: 'table' | 'col'): string {
 export class MergeService {
   private readonly logger = new Logger(MergeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly securityLog: SecurityLogService,
+  ) {}
 
   // Returns a row-count summary so the UI can present an informed merge
   // confirmation ("you'll move 87 ratings, 14 diary entries, …").
@@ -136,6 +121,10 @@ export class MergeService {
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
     const startedAt = Date.now();
+    // Обёртка, а не `let`: результат забирается изнутри колбэка транзакции, а
+    // возврату значения из $transaction доверять нельзя — тестовые дублёры
+    // Prisma сплошь и рядом просто вызывают колбэк, ничего не возвращая.
+    const state: { subs: ReassignOutcome } = { subs: { kind: 'none' } };
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
@@ -313,44 +302,16 @@ export class MergeService {
           )
       `);
 
-      // 5. Propagate recoveryEmail, disclaimerAccepted and role from source → target.
-      //    Must happen before DELETE so we can still read source fields.
-      //    recoveryEmail is @unique — clear from source first, then set on target
-      //    (otherwise Postgres unique constraint fires within the transaction).
-      const srcEmailRows = await tx.$queryRaw<
-        Array<{ re: string | null; rev: Date | null }>
-      >(Prisma.sql`
-        SELECT "recoveryEmail" AS re, "recoveryEmailVerifiedAt" AS rev
-        FROM "User" WHERE id = ${sourceId}
-      `);
-      const srcEmail = srcEmailRows[0]?.re ?? null;
-      const srcEmailVerified = srcEmailRows[0]?.rev ?? null;
-      if (srcEmail) {
-        // Free the unique slot on source first
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = NULL, "recoveryEmailVerifiedAt" = NULL
-          WHERE id = ${sourceId}
-        `);
-        // Apply to target only if target has no email yet
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = ${srcEmail}, "recoveryEmailVerifiedAt" = ${srcEmailVerified}
-          WHERE id = ${targetId} AND "recoveryEmail" IS NULL
-        `);
-      }
+      // 5. Propagate recoveryEmail, disclaimerAccepted, role, onboarding-flags
+      //    and addressForm from source → target. Must happen before DELETE so
+      //    we can still read source fields. Вынесено в merge-user-fields.ts
+      //    (правило №10 — этот файл уже на потолке baseline).
+      await mergeUserScalarFields(tx, sourceId, targetId);
 
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "disclaimerAccepted" = true
-        WHERE id = ${targetId}
-          AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
-      `);
-      // Promote target to THERAPIST if source had that role — merge must not
-      // silently downgrade a user's access level. Also carry therapistMode flag
-      // (account.service.setRole sets them together; merge should mirror that).
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
-        WHERE id = ${targetId}
-          AND (SELECT "role" FROM "User" WHERE id = ${sourceId}) = 'THERAPIST'
-      `);
+      // 5b. Подписка привязана к telegramId, а не userId — цикл по
+      //     USER_OWNED_TABLES её не видит, и до этого шага она оставалась на
+      //     удаляемом аккаунте: списания шли, а человек их не видел.
+      state.subs = await reassignSubscriptions(tx, sourceId, targetId);
 
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(
@@ -358,6 +319,24 @@ export class MergeService {
       );
     });
     const ms = Date.now() - startedAt;
-    this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);
+    this.logger.log(
+      `Merged user ${sourceId} → ${targetId} (${ms}ms), подписок перенесено: ` +
+        (state.subs.kind === 'moved' ? state.subs.count : 0),
+    );
+    // Живые подписки с обеих сторон — редчайший случай про деньги, который
+    // нельзя решить кодом (какую отменить — не наше решение). Идёт через
+    // SecurityLogService, а не прямым notifyAdminWithFallback: там уже есть
+    // бюджет DM (правило №14 — сигнализация без троттлинга мьютит чат ровно
+    // во время аварии). Сообщается ПОСЛЕ транзакции: сеть внутри неё держала
+    // бы блокировки, а недоставка не должна откатывать слияние.
+    if (state.subs.kind === 'conflict') {
+      this.securityLog.log('merge_subscription_conflict', {
+        sourceId: String(sourceId),
+        targetId: String(targetId),
+        sourceLive: state.subs.sourceLive,
+        targetLive: state.subs.targetLive,
+        detail: conflictAlertText(sourceId, targetId, state.subs),
+      });
+    }
   }
 }

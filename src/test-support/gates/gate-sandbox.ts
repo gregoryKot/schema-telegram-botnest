@@ -16,14 +16,17 @@ import {
   mkdirSync,
   writeFileSync,
   copyFileSync,
+  readFileSync,
   chmodSync,
+  realpathSync,
 } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
 
 // src/test-support/gates → корень репозитория на 3 уровня выше.
-const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
+// export: reused by pattern-loader.ts to locate the same real scripts.
+export const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
 
 export interface GateResult {
   status: number | null;
@@ -59,6 +62,24 @@ export function cleanupTmp(tmp: string): void {
   rmSync(tmp, { recursive: true, force: true });
 }
 
+/** Скрипт + все модули, которые он импортирует относительным путём (одного
+ * уровня вложенности достаточно: правила гейта — простой список без своих
+ * зависимостей). */
+function withLocalDeps(scriptName: string, seen = new Set<string>()): string[] {
+  if (seen.has(scriptName)) return [];
+  seen.add(scriptName);
+  let source: string;
+  try {
+    source = readFileSync(join(REAL_SCRIPTS_DIR, scriptName), 'utf8');
+  } catch {
+    return [scriptName];
+  }
+  for (const m of source.matchAll(/from\s+'\.\/([\w.-]+\.mjs)'/g)) {
+    withLocalDeps(m[1], seen);
+  }
+  return [...seen];
+}
+
 /**
  * Копирует реальный scripts/<scriptName> в свежую песочницу, записывает туда
  * fixture-файлы (`files`: relPath → content), опционально инициализирует git,
@@ -69,14 +90,23 @@ export function runGate(
   files: Record<string, string>,
   options: RunGateOptions = {},
 ): GateResult {
-  const tmp = mkdtempSync(join(tmpdir(), 'gate-'));
+  // realpathSync обязателен: на macOS os.tmpdir() — это симлинк
+  // (/var/folders/… → /private/var/folders/…). Гейты запускают main() по
+  // сверке `resolve(process.argv[1]) === fileURLToPath(import.meta.url)`, а
+  // import.meta.url приходит уже разрезолвленным — по симлинк-пути сверка не
+  // совпадала, скрипт молча завершался с кодом 0 и пустым выводом, и тесты
+  // песочницы падали у всех на маке (ровно то, о чём правило №15: гейт, чей
+  // тест не работает, защищает только на бумаге).
+  const tmp = mkdtempSync(join(realpathSync(tmpdir()), 'gate-'));
   try {
     const scriptsDir = join(tmp, 'scripts');
     mkdirSync(scriptsDir, { recursive: true });
-    copyFileSync(
-      join(REAL_SCRIPTS_DIR, scriptName),
-      join(scriptsDir, scriptName),
-    );
+    // Копируем скрипт вместе с его локальными зависимостями: гейт, доросший
+    // до лимита размера, дробится на движок + модуль правил (правило №10), и
+    // без соседей в песочнице он падал бы с ERR_MODULE_NOT_FOUND.
+    for (const name of withLocalDeps(scriptName)) {
+      copyFileSync(join(REAL_SCRIPTS_DIR, name), join(scriptsDir, name));
+    }
 
     for (const [relPath, content] of Object.entries(files)) {
       const dest = join(tmp, relPath);

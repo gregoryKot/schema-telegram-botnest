@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ChildhoodWheelEx } from './ChildhoodWheelEx';
+import { AddressFormContext } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
   api: {
@@ -70,11 +71,57 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     expect(screen.getByRole('button', { name: /Посмотреть результат/ })).toBeTruthy();
   });
 
-  it('ошибка сохранения не блокирует переход к результату (best-effort, как в LetterEx/SafePlaceEx)', async () => {
+  // Раньше ошибка сохранения молча игнорировалась («best-effort»), и экран
+  // всё равно переходил к результату — тот же экран-тупик, что нашли в
+  // FlashcardEx (аудит 2026-08-22, находка №2): человек уходит с уверенностью,
+  // что колесо сохранено, а на деле запрос не прошёл. useSavingAction теперь
+  // держит на экране слайдеров и показывает сообщение об ошибке.
+  it('ошибка сохранения показывает сообщение и НЕ переходит к результату', async () => {
     mockApi.saveChildhoodRatings.mockRejectedValue(new Error('offline'));
+    const onSaved = vi.fn();
+    renderEx(onSaved);
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/Среднее 5\/10/)).toBeNull();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('после ошибки повторное нажатие с рабочей сетью успешно сохраняет (retry)', async () => {
+    mockApi.saveChildhoodRatings.mockRejectedValueOnce(new Error('offline'));
     renderEx();
+    const btn = screen.getByRole('button', { name: /Посмотреть результат/ });
+    fireEvent.click(btn);
+    await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
+  });
+});
+
+describe('ChildhoodWheelEx — ты/вы: подсказка «Связать с сегодня»', () => {
+  it('форма «ты»', async () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    await screen.findByText(/Среднее 5\/10/);
+    expect(screen.getByText(/^Открой дневник за последнюю неделю и сравни/)).toBeTruthy();
+  });
+
+  it('форма «вы»', async () => {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    await screen.findByText(/Среднее 5\/10/);
+    expect(screen.getByText(/^Откройте дневник за последнюю неделю и сравните/)).toBeTruthy();
   });
 });
 

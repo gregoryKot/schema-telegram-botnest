@@ -102,3 +102,101 @@ describe('LandingPage — smoke', () => {
     expect(screen.getByLabelText('Закрыть меню')).toBeTruthy();
   });
 });
+
+// Регрессия-по-смыслу: запись физически принимается только на сайте практики
+// (kotlarewski) — на schemehappens и любом другом хосте кнопка обязана
+// увести туда, а не пытаться скроллить несуществующую форму записи.
+describe('LandingPage — «Записаться» ведёт на правильный сайт по хосту', () => {
+  const originalLocation = window.location;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+  });
+
+  it('на schemehappens.ru (не практика) уводит на сайт практики', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hostname: 'schemehappens.ru', href: 'https://schemehappens.ru/' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByText('Записаться на знакомство →')[0]);
+    expect(window.location.href).toBe('https://kotlarewski.gr/#booking');
+  });
+
+  it('на самом kotlarewski.ru скроллит к форме на странице, а не уводит', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hostname: 'kotlarewski.ru', href: 'https://kotlarewski.ru/' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const scrollSpy = vi.fn();
+    // jsdom не реализует layout — подменяем scrollIntoView на секции записи.
+    const bookingSection = document.getElementById('booking')!;
+    bookingSection.scrollIntoView = scrollSpy;
+    fireEvent.click(screen.getAllByText('Записаться на знакомство →')[0]);
+    expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    // Хост не подставной — адрес не поменялся.
+    expect(window.location.href).toBe('https://kotlarewski.ru/');
+  });
+});
+
+// Регрессия (задача 2026-09-16): визитка практики крутит рекламу уже сейчас,
+// а продукт «Всё по схеме» / schemehappens.ru ещё не готов — до перезапуска
+// ссылок на продукт на визитке быть не должно (история сохранена в git,
+// правило про удаление, а не комментирование).
+describe('LandingPage — визитка без отсылок к приложению', () => {
+  it('не упоминает «Всё по схеме» и не показывает ссылку «Войти»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(screen.queryByText(/Всё по схеме/)).toBeNull();
+    expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('нет ссылок на schemehappens.ru и нет бот-ссылок кроме t.me/kotlarewski', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(document.querySelectorAll('a[href*="schemehappens.ru"]').length).toBe(0);
+    const tgLinks = Array.from(document.querySelectorAll('a[href*="t.me/"]'));
+    expect(tgLinks.length).toBeGreaterThan(0);
+    for (const a of tgLinks) {
+      expect(a.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    }
+  });
+
+  it('мобильное меню не показывает пункт «Всё по схеме»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByLabelText('Открыть меню')[0]);
+    expect(screen.queryByText('Всё по схеме')).toBeNull();
+  });
+});
+
+describe('LandingPage — хэш-переход при первой загрузке (/#prices)', () => {
+  const originalLocation = window.location;
+
+  it('открытие ссылки с хэшем прокручивает к нужному блоку', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#prices', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const pricesSection = utils.container.querySelector('#prices') as HTMLElement;
+      const scrollSpy = vi.fn();
+      pricesSection.scrollIntoView = scrollSpy;
+      act(() => { vi.runAllTimers(); });
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+});

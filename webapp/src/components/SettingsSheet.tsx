@@ -1,53 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
-import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
+import type { UserSettings } from '../api';
 import { Loader } from './Loader';
-import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
-import type { Theme } from '../utils/theme';
-import { useSetAddressForm } from '../utils/addressForm';
-import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { useSetAddressForm, useTr } from '../utils/addressForm';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
+import { ExportSummaryModal } from './settingsSheet/ExportSummaryModal';
 import { appInviteShare, pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
+import {
+  TIMEZONES,
+  HOURS,
+  FREQ_LABELS,
+  QUIET_PRESETS,
+  pad,
+  quietLabel,
+  hourInQuiet,
+} from '../../../shared/src/settings/constants';
+import { SHead, SRow, Toggle, SmallToggle, ChevronVal } from './settingsSheet/ui';
+import { usePairSettings } from './settingsSheet/usePairSettings';
+import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
+import { AppearanceSection } from './settingsSheet/AppearanceSection';
+import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
+import { DataSection } from './settingsSheet/DataSection';
 
-const TIMEZONES = [
-  { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
-  { label: 'Нью-Йорк (UTC−5)',      iana: 'America/New_York' },
-  { label: 'Лондон (UTC+0)',         iana: 'Europe/London' },
-  { label: 'Берлин (UTC+1)',         iana: 'Europe/Berlin' },
-  { label: 'Киев / Израиль (UTC+2)', iana: 'Europe/Kyiv' },
-  { label: 'Москва (UTC+3)',         iana: 'Europe/Moscow' },
-  { label: 'Дубай (UTC+4)',          iana: 'Asia/Dubai' },
-  { label: 'Ташкент (UTC+5)',        iana: 'Asia/Tashkent' },
-  { label: 'Алматы (UTC+6)',         iana: 'Asia/Almaty' },
-  { label: 'Пекин (UTC+8)',          iana: 'Asia/Shanghai' },
-];
-const HOURS = [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
-function pad(n: number) { return String(n).padStart(2, '0'); }
 
-const FREQ_LABELS = ['Каждый день', 'Через день', 'Пару раз в неделю', 'Раз в неделю'];
-
-// Пресеты тихих часов: start===end → выключены
-const QUIET_PRESETS = [
-  { label: 'Выключены', start: 0, end: 0 },
-  { label: '21:00 – 08:00', start: 21, end: 8 },
-  { label: '22:00 – 08:00', start: 22, end: 8 },
-  { label: '23:00 – 07:00', start: 23, end: 7 },
-  { label: '00:00 – 08:00', start: 0, end: 8 },
-];
-
-function quietLabel(start?: number, end?: number): string {
-  if (start === undefined || end === undefined || start === end) return 'Выключены';
-  return `${pad(start)}:00 – ${pad(end)}:00`;
-}
-
-/** Час уведомления внутри окна тишины? (окно может переходить через полночь) */
-function hourInQuiet(hour: number, start?: number, end?: number): boolean {
-  if (start === undefined || end === undefined || start === end) return false;
-  return start > end ? (hour >= start || hour < end) : (hour >= start && hour < end);
-}
+// Дефолты на случай, если api.getSettings() отказал — экран не должен
+// зависнуть на Loader, показываем безопасные значения.
+const DEFAULT_SETTINGS: UserSettings = {
+  notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow',
+  notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [],
+  therapistShareCards: true, therapistShareProfile: true,
+};
 
 interface Props {
   onClose: () => void;
@@ -61,16 +48,18 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y();
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
-  const [pairData, setPairData]     = useState<PairsData | null>(null);
-  const [pairLoading, setPairLoading] = useState(true);
-  const [pairInviteUrl, setPairInviteUrl] = useState('');
-  const [pairInviteCopied, setPairInviteCopied] = useState(false);
-  const [joinCode, setJoinCode]     = useState('');
-  const [joinView, setJoinView]     = useState<'main' | 'join'>('main');
-  const [joinError, setJoinError]   = useState(false);
+  const pair = usePairSettings(userRole);
+  const {
+    pairData, pairLoading, pairLoadError, pairInviteUrl,
+    joinCode, setJoinCode, joinView, setJoinView, joinError, leaveError: leavePairError,
+    handleCreateInvite, handleJoin, leavePair, retryLoad: retryPairLoad,
+  } = pair;
+  const pairInviteCopy = useCopyToClipboard();
   const [exportText, setExportText] = useState<string | null>(null);
   // Сводка собирается на сервере: сеть может отвалиться. Без этого состояния
   // отказ выглядел как «ничего не произошло» — обработчик падал
@@ -78,99 +67,41 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [exportError, setExportError] = useState(false);
   const [appInvite, setAppInvite] = useState(false);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
-  const [exportCopied, setExportCopied] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting]     = useState(false);
-  const [resignConfirm, setResignConfirm] = useState(false);
-  const [resignBusy, setResignBusy] = useState(false);
-  const [savedToast, setSavedToast] = useState(false);
-  const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
-  const [therapyJoinCode, setTherapyJoinCode] = useState('');
-  const [therapyJoinError, setTherapyJoinError] = useState('');
-  const [therapyInviteUrl, setTherapyInviteUrl] = useState('');
+  // Авто-копия при открытии сводки — свой инстанс: иначе она подсвечивала бы
+  // кнопку «Скопировать» в модалке, которую человек ещё не нажимал.
+  const exportAutoCopy = useCopyToClipboard();
+  const [savedToast, setSavedToast] = useState(false); const [saveError, setSaveError] = useState(false); // «Сохранено» раньше шло даже при отказе api
+  const {
+    therapyRelation, therapyJoinCode, setTherapyJoinCode, therapyJoinError,
+    leaveTherapyError, therapyInviteUrl, inviteCopied, inviteError,
+    leaveTherapy, joinTherapy, createInvite,
+  } = useTherapyRelationSettings(userRole);
   const [editName, setEditName] = useState(displayName ?? '');
-  const [nameSaving, setNameSaving] = useState(false);
-  const [theme, setTheme] = useState<Theme>(getTheme);
-  const motion = useReducedMotionPref(() => {
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
-  });
+  const [nameSaving, setNameSaving] = useState(false); const [nameError, setNameError] = useState(false); // отказ раньше не был виден
   const setAddressForm = useSetAddressForm();
-  const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
-  const [showReqForm, setShowReqForm] = useState(false);
-  const [reqFullName, setReqFullName] = useState('');
-  const [reqQual, setReqQual] = useState('');
-  const [reqContacts, setReqContacts] = useState('');
-  const [reqMsg, setReqMsg] = useState('');
-  const [reqBusy, setReqBusy] = useState(false);
-  const [reqError, setReqError] = useState('');
-
-  // Re-show the pair loading state when the role context changes. Adjusting
-  // state during render (not in an effect) keeps this off set-state-in-effect;
-  // on mount pairLoading already starts true.
-  const [seenRole, setSeenRole] = useState(userRole);
-  if (userRole !== seenRole) { setSeenRole(userRole); setPairLoading(true); }
 
   useEffect(() => {
     api.getSettings()
       .then(setSettings)
-      .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
-    api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
-    api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
-    if (userRole !== 'THERAPIST') {
-      api.getTherapistRequest().then(r => setTherapistReq(r)).catch(() => setTherapistReq(null));
-    }
-  }, [userRole]);
+      .catch(() => setSettings(DEFAULT_SETTINGS));
+  }, []);
 
   async function patch(update: Partial<UserSettings>) {
     if (!settings) return;
-    setSettings(s => s ? { ...s, ...update } : s);
-    await api.updateSettings(update).catch(() => {});
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
+    const prev = settings; setSettings(s => s ? { ...s, ...update } : s);
+    try { await api.updateSettings(update); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
+    catch { setSettings(prev); setSaveError(true); setTimeout(() => setSaveError(false), 2400); }
   }
 
-  async function handleCreateInvite() {
-    setPairLoading(true);
-    try {
-      const { code, url } = await api.createPairInvite();
-      await api.getPair().then(setPairData);
-      setPairInviteUrl(url);
-      // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо
-      // голого текста: пользователь видит превью и делится картинкой.
-      setPairShare({ code, url });
-    } finally { setPairLoading(false); }
-  }
-
-  async function handleJoin() {
-    if (!joinCode.trim()) return;
-    setPairLoading(true); setJoinError(false);
-    try {
-      await api.joinPair(joinCode.trim().toUpperCase());
-      await api.getPair().then(setPairData);
-      setJoinView('main');
-    } catch { setJoinError(true); } finally { setPairLoading(false); }
-  }
-
-  async function submitTherapistRequest() {
-    setReqError('');
-    if (!reqFullName.trim() || !reqQual.trim() || !reqContacts.trim()) {
-      setReqError('Заполни ФИО, квалификацию и контакты');
-      return;
-    }
-    setReqBusy(true);
-    try {
-      await api.submitTherapistRequest({ fullName: reqFullName.trim(), qualification: reqQual.trim(), contacts: reqContacts.trim(), message: reqMsg.trim() || undefined });
-      setTherapistReq({ status: 'pending', rejectReason: null });
-      setShowReqForm(false);
-    } catch (e) { setReqError(String(e).replace('Error: ', '')); }
-    finally { setReqBusy(false); }
+  // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо голого
+  // текста: пользователь видит превью и делится картинкой.
+  async function createInviteAndShare() {
+    const r = await handleCreateInvite();
+    if (r) setPairShare(r);
   }
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
   };
 
   const navItems = [
@@ -202,7 +133,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div {...dialogA11y} className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* ── Header ── */}
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '0 32px', height: 52, borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
@@ -215,8 +146,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
             {subView === 'time' ? 'Время уведомления' : subView === 'tz' ? 'Часовой пояс' : subView === 'freq' ? 'Частота напоминаний' : subView === 'quiet' ? 'Тихие часы' : 'Настройки'}
           </span>
-          <span style={{ fontSize: 13, color: 'var(--accent-green)', fontWeight: 500, opacity: savedToast ? 1 : 0, transition: 'opacity 0.3s' }}>
-            Сохранено ✓
+          <span style={{ fontSize: 13, color: saveError ? 'var(--accent-red)' : 'var(--accent-green)', fontWeight: 500, opacity: savedToast || saveError ? 1 : 0, transition: 'opacity 0.3s' }}>
+            {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
         </div>
 
@@ -240,14 +171,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
               {/* ── TIME VIEW ── */}
               {subView === 'time' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-8)' }}>
                   {HOURS.map(h => {
                     const active = h === localHour;
                     return (
                       <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setSubView('main'); }}
                         role="button" tabIndex={0}
                         onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyLocalHour: h }); setSubView('main'); } }}
-                        style={{ padding: '14px 0', borderRadius: 8, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}
+                        style={{ padding: '14px 0', borderRadius: 'var(--r-8)', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}
                       >{pad(h)}:00</div>
                     );
                   })}
@@ -316,63 +247,21 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {subView === 'main' && (<>
 
                 {/* Оформление */}
-                <SHead id="s-appearance" label="Оформление" />
-                <SRow
-                  title={theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-                  sub={<span onClick={e => { e.stopPropagation(); setTheme(resetToSystemTheme()); }}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setTheme(resetToSystemTheme()); } }}
-                    style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
-                  right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
+                <AppearanceSection
+                  userRole={userRole}
+                  therapistMode={therapistMode}
+                  onToggleTherapistMode={onToggleTherapistMode}
+                  onResignTherapist={onResignTherapist}
+                  onSaved={() => { setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }}
                 />
-                {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
-                <SRow
-                  title="Меньше движения"
-                  sub={motion.sub}
-                  right={<Toggle on={motion.reduced} onClick={motion.toggle} />}
-                />
-                {userRole === 'THERAPIST' && onToggleTherapistMode && (
-                  <SRow
-                    title="Режим специалиста"
-                    sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-                    right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} />}
-                  />
-                )}
-                {userRole === 'THERAPIST' && onResignTherapist && (
-                  !resignConfirm ? (
-                    <div style={{ padding: '10px 0' }}>
-                      <button onClick={() => setResignConfirm(true)}
-                        style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
-                        Перестать быть специалистом
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '10px 0' }}>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
-                        Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
-                          style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
-                          Отмена
-                        </button>
-                        <button disabled={resignBusy}
-                          onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
-                          style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'var(--accent-red, #e5484d)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                          {resignBusy ? '…' : 'Снять роль'}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
 
                 {/* Имя */}
                 <SHead id="s-name" label="Имя" />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    placeholder="Твоё имя"
+                    placeholder={tr('Твоё имя', 'Ваше имя')}
                     maxLength={50}
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit' }}
                   />
@@ -380,19 +269,20 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <button disabled={nameSaving || !editName.trim()}
                       onClick={async () => {
                         const name = editName.trim(); if (!name) return;
-                        setNameSaving(true);
+                        setNameSaving(true); setNameError(false);
                         try { await api.updateName(name); onNameChanged?.(name); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
-                        catch { /* best-effort: ошибку намеренно игнорируем */ } finally { setNameSaving(false); }
+                        catch { setNameError(true); } finally { setNameSaving(false); }
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}
                     >{nameSaving ? '...' : 'Сохранить'}</button>
                   )}
                 </div>
+                {nameError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', padding: '4px 0' }}>{tr('Не удалось сохранить имя', 'Не удалось сохранить имя')}</div>}
 
                 {/* Уведомления */}
                 <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
                 {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-12)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
                       ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
                     </span>
@@ -419,12 +309,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Обращение */}
                 <SHead id="s-address" label="Обращение" />
-                <div style={{ display: 'flex', gap: 8, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)', padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   {(['ty', 'vy'] as const).map(form => {
                     const active = (settings.addressForm ?? 'ty') === form;
                     return (
                       <button key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
-                        style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 8, border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
+                        style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 'var(--r-8)', border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
                       >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
                     );
                   })}
@@ -432,7 +322,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Мой терапевт */}
                 {userRole !== 'THERAPIST' && (<>
-                  <SHead id="s-therapist" label="Мой терапевт" hint="Терапевт видит трекер и задания. Остальное — на твоё усмотрение." />
+                  <SHead id="s-therapist" label="Мой терапевт" hint={tr('Терапевт видит трекер и задания. Остальное — на твоё усмотрение.', 'Терапевт видит трекер и задания. Остальное — на ваше усмотрение.')} />
                   {therapyRelation === undefined ? (
                     <SRow title="Загрузка..." />
                   ) : therapyRelation?.status === 'active' ? (
@@ -442,32 +332,29 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                       <SRow title="Карточки схем и режимов" sub="Личные карточки и заметки" right={<SmallToggle on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
                       <SRow title="Профиль и схемы" sub="Активные схемы и результаты теста" right={<SmallToggle on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
-                      <button onClick={() => { api.leaveTherapy().then(() => setTherapyRelation(null)).catch(() => {}); }}
+                      <button onClick={leaveTherapy}
                         style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         Отключиться от терапевта
                       </button>
+                      {leaveTherapyError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{tr('Не удалось отключиться. Проверь связь и попробуй ещё раз', 'Не удалось отключиться. Проверьте связь и попробуйте ещё раз')}</div>}
                     </div>
                   ) : (
                     <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                       <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: '0 0 12px', lineHeight: 1.6 }}>
-                        Если терапевт выслал ссылку-приглашение — введи код ниже.
+                        {tr('Если терапевт выслал ссылку-приглашение — введи код ниже.', 'Если терапевт выслал ссылку-приглашение — введите код ниже.')}
                       </p>
                       <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px', lineHeight: 1.6 }}>
                         Ввод кода — это согласие открыть терапевту доступ к своим записям:
                         дневникам, заметкам и результатам опросников (объём настраивается после
                         подключения, отключить терапевта можно в любой момент).
                       </p>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                         <input value={therapyJoinCode} onChange={e => setTherapyJoinCode(e.target.value.toUpperCase())}
                           placeholder="ABCDEF" maxLength={8}
                           style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, borderRadius: 7, padding: '8px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'monospace', letterSpacing: 3, outline: 'none' }}
                         />
-                        <button onClick={async () => {
-                          if (!therapyJoinCode.trim()) return;
-                          setTherapyJoinError('');
-                          try { await api.joinTherapy(therapyJoinCode.trim()); const rel = await api.getTherapyRelation(); setTherapyRelation(rel); setTherapyJoinCode(''); }
-                          catch { setTherapyJoinError('Неверный код'); }
-                        }} style={{ background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '8px 16px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <button onClick={joinTherapy}
+                          style={{ background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '8px 16px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                           Войти
                         </button>
                       </div>
@@ -477,69 +364,19 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </>)}
 
                 {/* Стать специалистом */}
-                {userRole !== 'THERAPIST' && (<>
-                  <SHead id="s-specialist" label="Стать специалистом" />
-                  <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
-                    {therapistReq?.status === 'pending' ? (
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                        ⏳ Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
-                      </div>
-                    ) : therapistReq?.status === 'approved' ? (
-                      <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
-                        ✅ Заявка одобрена. Перезайди в приложение чтобы появился кабинет терапевта.
-                      </div>
-                    ) : !showReqForm ? (
-                      <div>
-                        {therapistReq?.status === 'rejected' && (
-                          <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 12 }}>
-                            Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. Можешь подать снова.
-                          </div>
-                        )}
-                        <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 12px' }}>
-                          Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.
-                        </p>
-                        <button onClick={() => setShowReqForm(true)}
-                          style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                          Подать заявку
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" style={inputStyle} />
-                        <textarea value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3}
-                          placeholder="Квалификация: образование, направление, опыт, сертификаты"
-                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-                        <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." style={inputStyle} />
-                        <textarea value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2}
-                          placeholder="Сообщение (необязательно)"
-                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-                        {reqError && <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{reqError}</div>}
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => { setShowReqForm(false); setReqError(''); }}
-                            style={{ flex: 1, padding: '10px 0', borderRadius: 7, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                            Отмена
-                          </button>
-                          <button disabled={reqBusy} onClick={submitTherapistRequest}
-                            style={{ flex: 2, padding: '10px 0', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: reqBusy ? 'default' : 'pointer', opacity: reqBusy ? 0.7 : 1, fontFamily: 'inherit' }}>
-                            {reqBusy ? 'Отправляю...' : 'Отправить заявку'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>)}
+                {userRole !== 'THERAPIST' && <BecomeTherapistSection />}
 
                 {/* Кабинет терапевта */}
                 {userRole === 'THERAPIST' && (<>
                   <SHead id="s-cabinet" label="Кабинет терапевта" />
                   <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
                   <div style={{ padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
-                    <button onClick={async () => {
-                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch { /* best-effort: ошибку намеренно игнорируем */ } } catch { /* best-effort: ошибку намеренно игнорируем */ }
-                    }} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    <button onClick={createInvite} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                       + Создать приглашение клиенту
                     </button>
-                    {therapyInviteUrl && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>Скопировано ✓</div>}
+                    {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
+                    {therapyInviteUrl && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8, wordBreak: 'break-all' }}>{inviteCopied ? 'Скопировано ✓' : therapyInviteUrl}</div>}
+                    {inviteError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{tr('Не удалось создать приглашение. Попробуй ещё раз', 'Не удалось создать приглашение. Попробуйте ещё раз')}</div>}
                   </div>
                 </>)}
 
@@ -548,6 +385,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                   {pairLoading && !pairData ? (
                     <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>Загрузка...</div>
+                  ) : pairLoadError && !pairData ? (
+                    // Раньше сбой getPair() молча падал в "нет партнёра", и
+                    // подключённый пользователь на сетевой ошибке видел
+                    // "пригласить друга", будто связь пропала.
+                    <div>
+                      <div style={{ fontSize: 13, color: 'var(--accent-red)', marginBottom: 8 }}>{tr('Не удалось загрузить данные о партнёре', 'Не удалось загрузить данные о партнёре')}</div>
+                      <button onClick={retryPairLoad} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Повторить</button>
+                    </div>
                   ) : pairData && pairData.partners.length > 0 ? (
                     pairData.partners.map(p => (
                       <div key={p.code} style={{ marginBottom: 16 }}>
@@ -556,16 +401,17 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                           ? <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span></div>
                           : <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>Ещё не заполнил</div>
                         }
-                        <button onClick={() => { api.leavePair(p.code).catch(() => {}); api.getPair().then(setPairData).catch(() => {}); }}
+                        <button onClick={() => leavePair(p.code)}
                           style={{ background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                           Выйти из пары
                         </button>
+                        {leavePairError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>{tr('Не удалось выйти из пары. Попробуй ещё раз', 'Не удалось выйти из пары. Попробуйте ещё раз')}</div>}
                       </div>
                     ))
                   ) : joinView === 'main' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={handleCreateInvite} disabled={pairLoading}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+                        <button onClick={createInviteAndShare} disabled={pairLoading}
                           style={{ padding: '8px 16px', border: 'none', borderRadius: 7, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer', opacity: pairLoading ? 0.7 : 1, fontFamily: 'inherit' }}>
                           {pairLoading ? '...' : pairData?.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
                         </button>
@@ -576,11 +422,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                       {pairInviteUrl && (
                         <div>
-                          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Отправь другу:</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>{tr('Отправь другу:', 'Отправьте другу:')}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 8, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
-                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
-                            style={{ background: 'none', border: 'none', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-                            {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
+                          <button onClick={() => void pairInviteCopy.copy(pairInviteUrl)}
+                            style={{ background: 'none', border: 'none', color: pairInviteCopy.copied ? 'var(--accent-green)' : pairInviteCopy.failed ? 'var(--accent-red)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                            {pairInviteCopy.copied ? '✓ Скопировано' : pairInviteCopy.failed ? 'Не скопировалось — ссылка выше' : 'Скопировать ссылку'}
                           </button>
                         </div>
                       )}
@@ -588,7 +434,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div>
                       <button onClick={() => setJoinView('main')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: '0 0 12px', fontFamily: 'inherit', display: 'block' }}>← Назад</button>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                         <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код"
                           style={{ flex: 1, padding: '8px 12px', borderRadius: 7, background: 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${joinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, color: 'var(--text)', fontSize: 15, fontFamily: 'monospace', outline: 'none', letterSpacing: 4, textAlign: 'center' }}
                         />
@@ -616,11 +462,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   }
                   let shared = false;
                   try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
-                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } setExportText(text); }
+                  if (!shared) { await exportAutoCopy.copy(text); setExportText(text); }
                 }} />
                 {exportError && (
                   <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>
-                    Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз
+                    {tr('Не удалось собрать сводку. Проверь связь и попробуй ещё раз', 'Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз')}
                   </div>
                 )}
 
@@ -639,7 +485,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </a>
                     {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
                     <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат</span>
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
@@ -648,9 +494,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
 
                 {/* Данные */}
-                <SHead id="s-data" label="Данные" />
-                <SRow title="Конфиденциальность" sub="Что и как хранится" onClick={() => setShowPrivacy(true)} />
-                <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
+                <DataSection />
 
               </>)}
             </div>
@@ -678,149 +522,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
       {/* ── Export modal ── */}
       {exportText && (
-        <InfoModal onClose={() => { setExportText(null); setExportCopied(false); }}>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Сводка для терапевта</div>
-          <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
-            {exportText}
-          </pre>
-          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
-            style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 10, background: exportCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {exportCopied ? '✓ Скопировано' : 'Скопировать'}
-          </button>
-        </InfoModal>
+        <ExportSummaryModal text={exportText} onClose={() => setExportText(null)} />
       )}
 
-      {/* ── Privacy modal ── */}
-      {showPrivacy && (
-        <InfoModal onClose={() => setShowPrivacy(false)}>
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Данные и конфиденциальность</div>
-          {[
-            { title: 'Что хранится', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к аккаунту и доступно с любого устройства.' },
-            { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются. Никогда.' },
-          ].map(b => (
-            <div key={b.title} style={{ marginBottom: 10, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{b.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b.text}</div>
-            </div>
-          ))}
-          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-            <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
-              style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
-              Удалить результаты теста
-            </button>
-          )}
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Это образовательный инструмент.</div>
-        </InfoModal>
-      )}
-
-
-      {/* ── Delete modal ── */}
-      {showDeleteSheet && (
-        <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
-            Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
-          </div>
-          {!deleteConfirm ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
-              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.12)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
-              <button disabled={deleting} onClick={async () => {
-                setDeleting(true);
-                try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
-                catch { setDeleting(false); setDeleteConfirm(false); }
-              }} style={{ width: '100%', padding: '13px 0', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-                {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-              </button>
-            </div>
-          )}
-        </InfoModal>
-      )}
     </>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
-  background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-  borderRadius: 7, color: 'var(--text)', fontSize: 14, outline: 'none',
-};
-
-function SHead({ id, label, hint }: { id: string; label: string; hint?: string }) {
-  return (
-    <div id={id} style={{ paddingTop: 40, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
-      <div className="eyebrow">{label}</div>
-      {hint && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
-    </div>
-  );
-}
-
-function SRow({ title, sub, right, onClick, danger }: {
-  title: string; sub?: React.ReactNode; right?: React.ReactNode;
-  onClick?: () => void; danger?: boolean;
-}) {
-  return (
-    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
-      style={{
-      display: 'flex', alignItems: 'center', gap: 16,
-      padding: '13px 0',
-      borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, color: danger ? 'var(--accent-red)' : 'var(--text)' }}>{title}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
-      </div>
-      {right ?? (onClick && <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>)}
-    </div>
-  );
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }} />
-    </div>
-  );
-}
-
-function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-    </div>
-  );
-}
-
-function ChevronVal({ text, small }: { text: string; small?: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: small ? 12 : 14, color: 'var(--text-sub)', textAlign: 'right', maxWidth: 200 }}>{text}</span>
-      <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-    </div>
-  );
-}
-
-function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="settings-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      <div className="settings-modal-box" onClick={e => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}>
-        <div className="settings-modal-handle" />
-        {children}
-      </div>
-    </div>
   );
 }

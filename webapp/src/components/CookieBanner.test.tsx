@@ -39,6 +39,16 @@ describe('CookieBanner — первый визит', () => {
     expect(localStorage.getItem('cookie_consent')).toBe('all');
     expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
   });
+
+  it('Метрика инициализируется БЕЗ webvisor — клинический текст SPA не уходит в Яндекс (H2)', () => {
+    render(<CookieBanner />);
+    fireEvent.click(screen.getByRole('button', { name: 'Принять все' }));
+
+    const ym = (window as unknown as { ym?: { a?: unknown[][] } }).ym;
+    const initCall = ym?.a?.find((c) => c[1] === 'init');
+    expect(initCall).toBeTruthy();
+    expect((initCall![2] as { webvisor?: boolean }).webvisor).toBe(false);
+  });
 });
 
 describe('CookieBanner — повторный визит (решение уже сохранено)', () => {

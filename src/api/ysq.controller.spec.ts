@@ -90,6 +90,16 @@ describe('YsqController.saveYsqResult', () => {
     expect(ysqService.saveYsqResult).not.toHaveBeenCalled();
   });
 
+  it('значение вне диапазона 0..6 при верной длине → BadRequestException', async () => {
+    const { controller, ysqService } = makeController();
+    const answers = validAnswers();
+    answers[3] = 9;
+    await expect(
+      controller.saveYsqResult(makeReq(), { answers }),
+    ).rejects.toThrow(BadRequestException);
+    expect(ysqService.saveYsqResult).not.toHaveBeenCalled();
+  });
+
   it('валидные ответы сохраняются под userId из req, чужой userId в body игнорируется', async () => {
     const { controller, ysqService } = makeController();
     const answers = validAnswers();
@@ -98,6 +108,44 @@ describe('YsqController.saveYsqResult', () => {
       userId: 999,
     } as any);
     expect(ysqService.saveYsqResult).toHaveBeenCalledWith(4n, answers);
+  });
+});
+
+describe('YsqController.getYsqProgress/deleteYsqProgress', () => {
+  it('getYsqProgress делегирует сервису под userId из req', async () => {
+    const { controller, ysqService } = makeController({
+      getYsqProgress: jest
+        .fn()
+        .mockResolvedValue({ answers: validAnswers(), page: 4 }),
+    });
+    const res = await controller.getYsqProgress(makeReq(12n));
+    expect(ysqService.getYsqProgress).toHaveBeenCalledWith(12n);
+    expect(res).toEqual({ answers: validAnswers(), page: 4 });
+  });
+
+  it('deleteYsqProgress удаляет под userId из req и возвращает { ok: true }', async () => {
+    const { controller, ysqService } = makeController();
+    const res = await controller.deleteYsqProgress(makeReq(13n));
+    expect(ysqService.deleteYsqProgress).toHaveBeenCalledWith(13n);
+    expect(res).toEqual({ ok: true });
+  });
+});
+
+describe('YsqController.getYsqResult/deleteYsqResult', () => {
+  it('getYsqResult делегирует сервису под userId из req', async () => {
+    const { controller, ysqService } = makeController({
+      getYsqResult: jest.fn().mockResolvedValue({ answers: validAnswers() }),
+    });
+    const res = await controller.getYsqResult(makeReq(14n));
+    expect(ysqService.getYsqResult).toHaveBeenCalledWith(14n);
+    expect(res).toEqual({ answers: validAnswers() });
+  });
+
+  it('deleteYsqResult удаляет под userId из req и возвращает { ok: true }', async () => {
+    const { controller, ysqService } = makeController();
+    const res = await controller.deleteYsqResult(makeReq(15n));
+    expect(ysqService.deleteYsqResult).toHaveBeenCalledWith(15n);
+    expect(res).toEqual({ ok: true });
   });
 });
 

@@ -208,16 +208,19 @@ describe('AppOverlays — SettingsSheet', () => {
 });
 
 describe('AppOverlays — Practices/Plans: close + openTracker', () => {
+  // PracticesScreen/PlansScreen — React.lazy (LazyOverlays.tsx, правка
+  // производительности 2026-08-22): findByText вместо getByText — первый
+  // кадр после render() показывает Suspense-фолбэк, не замоканный компонент.
   it.each([
     ['practices', 'practices-close', 'practices-tracker'],
     ['plans', 'plans-close', 'plans-tracker'],
   ] as const)(
     '%s: закрывает себя и открывает трекер',
-    (flag, closeBtn, trackerBtn) => {
+    async (flag, closeBtn, trackerBtn) => {
       const close = vi.fn();
       const open = vi.fn();
       renderOverlays({ sheets: makeSheets({ [flag]: true, close, open }) });
-      fireEvent.click(screen.getByText(closeBtn));
+      fireEvent.click(await screen.findByText(closeBtn));
       expect(close).toHaveBeenCalledWith(flag);
       fireEvent.click(screen.getByText(trackerBtn));
       expect(open).toHaveBeenCalledWith('trackerOverlay', {
@@ -237,7 +240,8 @@ describe('AppOverlays — About/ChildhoodWheel/Pair/SchemaInfo', () => {
     expect(open).toHaveBeenCalledWith('schemaInfo');
   });
 
-  it('ChildhoodWheelSheet: openSchemas переключает шиты, onSaved пробрасывает оценки', () => {
+  it('ChildhoodWheelSheet: openSchemas переключает шиты, onSaved пробрасывает оценки', async () => {
+    // ChildhoodWheelSheet — React.lazy, см. комментарий выше.
     const close = vi.fn();
     const open = vi.fn();
     const setChildhoodRatings = vi.fn();
@@ -245,7 +249,7 @@ describe('AppOverlays — About/ChildhoodWheel/Pair/SchemaInfo', () => {
       sheets: makeSheets({ childhoodWheel: true, close, open }),
       setChildhoodRatings,
     });
-    fireEvent.click(screen.getByText('wheel-open-schemas'));
+    fireEvent.click(await screen.findByText('wheel-open-schemas'));
     expect(close).toHaveBeenCalledWith('childhoodWheel');
     expect(open).toHaveBeenCalledWith('schemaInfo');
     fireEvent.click(screen.getByText('wheel-saved'));
@@ -265,10 +269,11 @@ describe('AppOverlays — About/ChildhoodWheel/Pair/SchemaInfo', () => {
     expect(api.getPair).toHaveBeenCalled();
   });
 
-  it('SchemaInfoSheet: close сбрасывает autoStartTest/highlight', () => {
+  it('SchemaInfoSheet: close сбрасывает autoStartTest/highlight', async () => {
+    // SchemaInfoSheet — React.lazy, см. комментарий выше.
     const close = vi.fn();
     renderOverlays({ sheets: makeSheets({ schemaInfo: true, close }) });
-    fireEvent.click(screen.getByText('schema-info-close'));
+    fireEvent.click(await screen.findByText('schema-info-close'));
     expect(close).toHaveBeenCalledWith('schemaInfo', {
       schemaAutoStartTest: false,
       schemaHighlight: undefined,

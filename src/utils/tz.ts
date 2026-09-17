@@ -1,6 +1,18 @@
+// Кэш форматтеров даты по зоне (D1 аудита 2026-08): localDate звался в цикле
+// slot.service построения слотов на КАЖДЫЕ сутки диапазона, конструируя новый
+// Intl.DateTimeFormat каждый раз (дорого). Валидный набор IANA-зон конечен;
+// неизвестная зона бросает RangeError в конструкторе Intl ДО .set() — кэш
+// не растёт мусором.
+const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
 /** YYYY-MM-DD in the given IANA timezone */
 export function localDate(tz: string, base = new Date()): string {
-  return new Intl.DateTimeFormat('sv', { timeZone: tz }).format(base);
+  let fmt = dateFormatterCache.get(tz);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('sv', { timeZone: tz });
+    dateFormatterCache.set(tz, fmt);
+  }
+  return fmt.format(base);
 }
 
 /**

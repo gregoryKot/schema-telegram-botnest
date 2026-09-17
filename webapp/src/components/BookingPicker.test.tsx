@@ -14,8 +14,10 @@ vi.mock('../api', () => ({
     bookSlot: vi.fn(),
     cancelBooking: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
+import { ApiError } from '../apiClient';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const timeLabelFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' });
@@ -74,6 +76,16 @@ describe('BookingPicker — загрузка и пустое состояние'
 
   it('при ошибке загрузки слотов тоже рендерит fallback', async () => {
     mockApi.getSlots.mockRejectedValue(new Error('network'));
+    render(<BookingPicker fallback={<div>Запасной вариант связи</div>} />);
+    await screen.findByText('Запасной вариант связи');
+  });
+
+  // Сбой ≠ пусто: без options не собирается цена/тип сессии — раньше
+  // .catch(() => setOptions([])) тихо ломал форму (слоты грузились, а форма
+  // записи — нет). Теперь отказ getBookingOptions переиспользует ту же
+  // ветку loadFailed, что уже была у слотов.
+  it('при ошибке загрузки опций сессии тоже рендерит fallback, а не сломанную форму', async () => {
+    mockApi.getBookingOptions.mockRejectedValue(new Error('network'));
     render(<BookingPicker fallback={<div>Запасной вариант связи</div>} />);
     await screen.findByText('Запасной вариант связи');
   });
@@ -153,13 +165,28 @@ describe('BookingPicker — занятый слот и ошибки API', () => 
     await screen.findByText(/Не нашёл вас по этому контакту/);
   });
 
-  it('слот, который заняли параллельно (общая ошибка бронирования), показывает сообщение и не роняет форму', async () => {
-    mockApi.bookSlot.mockRejectedValue(new Error('SLOT_TAKEN'));
+  it('слот, который заняли параллельно (409), показывает «выберите другое» и не роняет форму', async () => {
+    mockApi.bookSlot.mockRejectedValue(new ApiError(409, 'Slot already taken'));
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
-    await screen.findByText(/возможно, время только что заняли/);
+    await screen.findByText(/возможно, его только что заняли/);
     // Форма остаётся на экране — можно попробовать снова, не всё потеряно.
     expect(screen.getByLabelText('Имя *')).toBeTruthy();
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  // Инцидент 2026-09-13: сервер падал на каждой попытке, а текст под формой
+  // говорил «время заняли, обновите страницу» — человек нажал семь раз.
+  it('сбой сервера (500) — честный текст «заявка не сохранилась» без призыва повторить, ссылка на Telegram и отчёт наверх', async () => {
+    mockApi.bookSlot.mockRejectedValue(new ApiError(500, 'Internal server error'));
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    await screen.findByText(/Заявка не сохранилась/);
+    expect(screen.queryByText(/только что заняли/)).toBeNull();
+    expect(screen.queryByText(/Обновите страницу/)).toBeNull();
+    expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'booking submit failed: HTTP 500', section: 'booking' });
   });
 });

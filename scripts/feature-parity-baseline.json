@@ -1,0 +1,72 @@
+{
+  "DELETE /api/belief-checks/:param": {
+    "status": "nobody",
+    "reason": "deleteBeliefCheck объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления записи «Проверка убеждения». Долг, не решение: нужна кнопка удаления в обоих фронтендах либо роут снимается.",
+    "since": "741e401b"
+  },
+  "DELETE /api/drafts/:param": {
+    "status": "nobody",
+    "reason": "Роут родился как замена localStorage-черновиков (49b0c378), но фронтенды так и не переключились — shared/src/utils/drafts.ts по сей день чисто localStorage. Серверная миграция черновиков не докатилась ни до одного фронтенда.",
+    "since": "49b0c378"
+  },
+  "DELETE /api/flashcards/:param": {
+    "status": "nobody",
+    "reason": "deleteFlashcard объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления флешкарты. Та же недоделка, что у belief-checks/letters — кнопка нужна в обоих либо роут снимается.",
+    "since": "741e401b"
+  },
+  "DELETE /api/letters/:param": {
+    "status": "nobody",
+    "reason": "deleteLetter объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления письма. Та же недоделка, что у belief-checks/flashcards — кнопка нужна в обоих либо роут снимается.",
+    "since": "741e401b"
+  },
+  "DELETE /api/phrase-checks/:param": {
+    "status": "nobody",
+    "reason": "deletePhraseCheck объявлен в обоих клиентах (webapp получил упражнение в daa43d3a) и нигде не вызывается кроме тестов — та же недоделка, что у belief-checks/flashcards/letters, только для более нового упражнения «Критик или забота?».",
+    "since": "daa43d3a"
+  },
+  "GET /api/drafts": {
+    "status": "nobody",
+    "reason": "Пара к POST/DELETE /api/drafts — читающий конец той же незавершённой миграции с localStorage на сервер (49b0c378). Ни один фронтенд не читает черновики с бэкенда.",
+    "since": "49b0c378"
+  },
+  "GET /api/link-token": {
+    "status": "nobody",
+    "reason": "Не путать с /api/auth/link-token (src/auth/auth.controller.ts, вне scope этого гейта) — тот вебапп реально дёргает для привязки Google/VK. Этот роут (TelegramAuthGuard, для привязки провайдера ИЗ мини-аппа) не вызывается ни одним фронтендом — похоже на мёртвый код с момента введения универсального provider registry.",
+    "since": "d141d9f0"
+  },
+  "GET /api/practice-sessions": {
+    "status": "miniapp-only",
+    "reason": "История прохождений быстрых практик «Здесь и сейчас» (дыхание/заземление/«Стоп») — карточка на экране мини-аппа. На сайте таких быстрых практик пока нет вообще, это отдельная нереализованная на вебе фича, не намеренное платформенное решение. Оценка объёма (2026-08-21): не одна карточка, а мини-сюита — StepFlowSheet (140 стр., движок шагов), BreathingCard (174 стр., своя анимация дыхания), PracticeDoneFooter (65 стр.), QuickPracticeSheet (74 стр.), контент shared/src/practices/quickPractices.ts (174 стр.) + минимум 3 точки входа в мини-аппе (HelpSection, plusMenu/QuickActionOverlays, patternSheet/PatternHelpSection). Перенос по образцу «Критик или забота?» — отдельная волна, не влезает в эту без риска половинчатой фичи.",
+    "since": "f6b74ba0"
+  },
+  "GET /api/quizzes": {
+    "status": "webapp-only",
+    "reason": "Лёгкие мини-тесты без регистрации — лид-магнит для сайта /tests (посадочная страница + маркетинг). Продуктовое решение: мини-апп открывается уже зарегистрированным пользователем, воронка лид-магнита ему не нужна.",
+    "since": "cb68eef3"
+  },
+  "GET /health": {
+    "status": "nobody",
+    "reason": "Инфраструктурный health-check для Docker HEALTHCHECK (см. Dockerfile) и внешнего аптайм-мониторинга — не пользовательская фича, ни один фронтенд не обязан и не должен его дёргать.",
+    "since": "54ff3c43"
+  },
+  "POST /api/booking": {
+    "status": "webapp-only",
+    "reason": "Форма заявки на консультацию — часть посадочной страницы психолога сайта (BookingForm.tsx), в мини-аппе такого раздела нет. Продуктовое решение: запись к терапевту живёт на маркетинговом сайте, не в терапевтическом инструменте.",
+    "since": "8fdeabde"
+  },
+  "POST /api/drafts/:param": {
+    "status": "nobody",
+    "reason": "Пишущий конец той же незавершённой миграции с localStorage на сервер (49b0c378, см. GET/DELETE /api/drafts) — ни один фронтенд не пишет черновики на бэкенд.",
+    "since": "49b0c378"
+  },
+  "POST /api/practice-session": {
+    "status": "miniapp-only",
+    "reason": "Запись прохождения быстрой практики — пишущая пара к GET /api/practice-sessions, тот же нереализованный на сайте раздел «Здесь и сейчас».",
+    "since": "f6b74ba0"
+  },
+  "POST /api/user-flags": {
+    "status": "miniapp-only",
+    "reason": "Осознанное платформенное решение, не недоделка: сайт теперь ЧИТАЕТ этот роут (GET, api.getUserFlags — therapistMode для дефолтного роутинга терапевта, useBootstrapLoad.ts). Писать сайту в этот эндпоинт нечего — все POST-поля (FLAG_FIELDS: онбординг-модалка мини-аппа, дисмиссы подсказок мини-аппа, schemaIntrosShown и т.п.) описывают UI-состояния, которых на сайте просто нет (свой чеклист «С чего начать» и своя механика дисмиссов, см. onboarding_done/onboarding_skipped в OnboardingWidget.tsx); therapistMode из этого списка сознательно исключён (UserFlagsDto) и пишется через привилегированный /api/therapy/therapist-view, не сюда.",
+    "since": "task2-2026-08-21"
+  }
+}

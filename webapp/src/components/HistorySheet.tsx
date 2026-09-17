@@ -1,12 +1,13 @@
 import { lazy, Suspense, useState } from 'react';
-import type { Need, DayHistory } from '../types';
 import type { PracticePlan, StreakData } from '../api';
 import { api } from '../api';
-import { COLORS } from '../types';
-import { Loader } from './Loader';
+import { COLORS, type Need, type DayHistory } from '../types';
+import { HistorySheetSkeleton } from './HistorySheetSkeleton';
 import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { needColor } from '../../../shared/src/needs/needColors';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
@@ -55,9 +56,10 @@ export function HistorySheet({
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
+  const dialogA11y = useDialogA11y();
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div {...dialogA11y} style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
       {/* ExScreen-style topbar */}
       <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
         <button className="ex-back" onClick={goBack}>
@@ -75,8 +77,8 @@ export function HistorySheet({
         </div>
 
         {historyLoading
-          ? <Loader minHeight="60vh" />
-          : <Suspense fallback={<Loader minHeight="60vh" />}>
+          ? <HistorySheetSkeleton />
+          : <Suspense fallback={<HistorySheetSkeleton />}>
               <HistoryView
                 needs={needs}
                 history={history}
@@ -100,7 +102,7 @@ export function HistorySheet({
         return (
           <CheckInSheet
             plan={plan}
-            needEmoji={need.emoji ?? ''}
+            needColor={needColor(need.id)}
             needLabel={need.chartLabel}
             color={COLORS[need.id] ?? '#888'}
             onDone={() => onDismissPlan(plan.id)}

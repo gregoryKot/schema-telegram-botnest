@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
+import { SaveErrorNote } from '../components/SaveErrorNote';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
+import { INTRO_MODE_ID } from '../components/ModesHero';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import {
   weekSchemaSummary,
   weekSchemaFrequency,
@@ -14,35 +13,60 @@ import {
   weekModeFrequency,
   WeekTopSummary,
 } from '../utils/patternsSummary';
-import { readLocalIds } from './schemas/utils';
 import { Tab, SchemasSectionProps as Props } from './schemas/types';
+import { PatternsHeader } from './schemas/PatternsHeader';
 import { SchemasTab } from './schemas/SchemasTab';
 import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
+import { useMySelections } from './schemas/useMySelections';
+import {
+  readStoredPatternsTab,
+  writeStoredPatternsTab,
+} from './schemas/patternsTabStorage';
+import { useScreenBlocks } from '../hooks/useScreenBlocks';
+import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
+import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 export function SchemasSection({
   onOpenSchema,
   childhoodRatings = {},
   onOpenChildhoodWheel,
   onOpenDiaries,
+  initialTab,
 }: Props) {
-  const [tab, setTab] = useState<Tab>('schemas');
-  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
-    readLocalIds(MY_SCHEMA_IDS_KEY),
+  // Приоритет: явный initialTab (переход с карточки «Мой портрет») → то, на
+  // чём пользователь оставался в прошлый раз → 'schemas'. Персист — эффектом
+  // ниже, он же фиксирует initialTab (если пришёл) как новое «последнее».
+  const [tab, setTab] = useState<Tab>(
+    () => initialTab ?? readStoredPatternsTab() ?? 'schemas',
   );
-  const [myModeIds, setMyModeIds] = useState<string[]>(() =>
-    readLocalIds(MY_MODE_IDS_KEY),
-  );
-  const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
-  const [profileLoading, setProfileLoading] = useState(true);
+  useEffect(() => writeStoredPatternsTab(tab), [tab]);
+  // Явный переход «открой вкладку X» (карточка портрета в «Я») теперь
+  // приходит к уже смонтированной секции (KeepMountedSection) — раньше
+  // initialTab применялся только инициализатором useState при
+  // перемонтировании. App гасит сигнал в null сразу после доставки.
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
+  const {
+    manualSchemaIds,
+    myModeIds,
+    ysqSchemaIds,
+    ysqCompletedAt,
+    profileLoading,
+    schemaSaveError,
+    modeSaveError,
+    saveSchemas,
+    saveModes,
+  } = useMySelections();
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
-  const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
-  const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
+  const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
+  const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
     null,
   );
@@ -51,41 +75,25 @@ export function SchemasSection({
   const [schemaFreq, setSchemaFreq] = useState<Record<string, number>>({});
   const [modeFreq, setModeFreq] = useState<Record<string, number>>({});
   const safeTop = useSafeTop();
+  const blocks = useScreenBlocks('patterns', SCREEN_HIDDEN_KEYS.patterns);
 
   useEffect(() => {
     api
-      .getProfile()
-      .then((p) => {
-        const serverSchemas = p.mySchemaIds ?? [];
-        const serverModes = p.myModeIds ?? [];
-        setManualSchemaIds(serverSchemas);
-        if (serverSchemas.length > 0)
-          localStorage.setItem(
-            MY_SCHEMA_IDS_KEY,
-            JSON.stringify(serverSchemas),
-          );
-        setMyModeIds(serverModes);
-        if (serverModes.length > 0)
-          localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
-        setYsqSchemaIds(p.ysq.activeSchemaIds ?? []);
-        setYsqCompletedAt(p.ysq.completedAt);
-        setProfileLoading(false);
-      })
-      .catch(() => setProfileLoading(false));
-    api
       .getSchemaDiary()
       .then((entries) => {
+        setSchemaEntries(entries);
         setWeekSummary(weekSchemaSummary(entries));
         setSchemaFreq(weekSchemaFrequency(entries));
       })
-      .catch(() => {});
+      .catch((e) => console.error('getSchemaDiary failed', e));
     api
       .getModeDiary()
       .then((entries) => {
+        setModeEntries(entries);
         setModeSummary(weekModeSummary(entries));
         setModeFreq(weekModeFrequency(entries));
       })
-      .catch(() => {});
+      .catch((e) => console.error('getModeDiary failed', e));
     api
       .getYsqProgress()
       .then((progress) =>
@@ -95,16 +103,10 @@ export function SchemasSection({
             : null,
         ),
       )
-      .catch(() => {});
+      .catch((e) => console.error('getYsqProgress failed', e));
   }, []);
 
   const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
-
-  function saveSchemas(ids: string[]) {
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
-    setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => {});
-  }
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'schemas', label: 'Схемы' },
@@ -115,53 +117,10 @@ export function SchemasSection({
   return (
     <div className="section-pad" style={{ paddingTop: safeTop }}>
       {/* ── Header ── */}
-      <div
-        style={{
-          padding: '24px 20px 0',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-              lineHeight: 1.15,
-            }}
-          >
-            Паттерны
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>
-            Привычные реакции родом из детства
-          </div>
-        </div>
-        <button
-          onClick={() => onOpenSchema()}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 12,
-            border: 'none',
-            background: 'rgba(var(--fg-rgb),0.07)',
-            color: 'var(--text-sub)',
-            fontSize: 18,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            marginTop: 4,
-          }}
-          title="Библиотека схема-терапии"
-          aria-label="Библиотека схема-терапии"
-        >
-          📖
-        </button>
-      </div>
+      <PatternsHeader
+        onOpenSchema={() => onOpenSchema()}
+        onCustomize={blocks.openByGear}
+      />
 
       {/* ── Tab switcher ── */}
       <div style={{ padding: '16px 20px 0' }}>
@@ -170,7 +129,7 @@ export function SchemasSection({
             display: 'flex',
             background: 'var(--surface-2)',
             border: '1px solid var(--border-color)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: 3,
           }}
         >
@@ -197,6 +156,15 @@ export function SchemasSection({
             </button>
           ))}
         </div>
+        {((tab === 'schemas' && schemaSaveError) ||
+          (tab === 'modes' && modeSaveError)) && (
+          <div style={{ marginTop: 8 }}>
+            <SaveErrorNote
+              ty="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуй ещё раз."
+              vy="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуйте ещё раз."
+            />
+          </div>
+        )}
       </div>
 
       <div
@@ -216,10 +184,12 @@ export function SchemasSection({
             ysqProgressAnswered={ysqProgressAnswered}
             weekSummary={weekSummary}
             schemaFreq={schemaFreq}
+            schemaEntries={schemaEntries}
+            setSchemaEntries={setSchemaEntries}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowSchemaPicker={() => setShowSchemaPicker(true)}
-            onOpenSchemaDetail={(id) => setDetailSchemaId(id)}
+            blocks={blocks}
           />
         )}
 
@@ -230,10 +200,13 @@ export function SchemasSection({
             myModeIds={myModeIds}
             modeSummary={modeSummary}
             modeFreq={modeFreq}
+            modeEntries={modeEntries}
+            setModeEntries={setModeEntries}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowModePicker={() => setShowModePicker(true)}
-            onOpenModeIntro={(id) => setIntroModeId(id)}
+            onMeetCritic={() => setIntroModeId(INTRO_MODE_ID)}
+            blocks={blocks}
           />
         )}
 
@@ -259,11 +232,7 @@ export function SchemasSection({
       {showModePicker && (
         <ModePickerSheet
           selected={myModeIds}
-          onSave={(ids) => {
-            localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
-            setMyModeIds(ids);
-            api.updateSettings({ myModeIds: ids }).catch(() => {});
-          }}
+          onSave={saveModes}
           onClose={() => setShowModePicker(false)}
         />
       )}
@@ -275,21 +244,6 @@ export function SchemasSection({
         />
       )}
 
-      {detailSchemaId && (
-        <SchemaDetailSheet
-          schemaId={detailSchemaId}
-          onClose={() => setDetailSchemaId(null)}
-          onOpenDiary={() => setIntroSchemaId(detailSchemaId)}
-        />
-      )}
-
-      {introSchemaId && (
-        <SchemaIntroSheet
-          schemaId={introSchemaId}
-          onClose={() => setIntroSchemaId(null)}
-        />
-      )}
-
       {detailNeedId && (
         <NeedDetailSheet
           needId={detailNeedId}
@@ -298,6 +252,9 @@ export function SchemasSection({
           onClose={() => setDetailNeedId(null)}
         />
       )}
+
+      {/* ── Лист «Настроить экран» (шестерёнка / долгое нажатие) ── */}
+      {blocks.sheet !== null && <ScreenCustomizeSheet blocks={blocks} />}
     </div>
   );
 }

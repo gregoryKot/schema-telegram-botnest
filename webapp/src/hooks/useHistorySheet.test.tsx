@@ -211,3 +211,101 @@ describe('useHistorySheet — размонтирование', () => {
     expect(() => unmount()).not.toThrow();
   });
 });
+
+// Ж5 дизайн-аудита 2026-08: webapp единственный не слушал Escape — miniap
+// (BottomSheet) слушал всегда. Добавлен модульный стек id смонтированных
+// шитов, чтобы при нескольких наложенных Escape закрывал только верхний.
+describe('useHistorySheet — Escape', () => {
+  function fireEscape() {
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+    });
+  }
+
+  it('Escape закрывает лист (тем же путём, что и «Назад»)', () => {
+    const snap = makeSnapshot();
+    const onClose = vi.fn();
+
+    renderHook(() => useHistorySheet(onClose), {
+      wrapper: makeWrapper(snap, ['/hub', '/target'], 1),
+    });
+
+    fireEscape();
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(snap.loc!.pathname).toBe('/target');
+  });
+
+  it('прочие клавиши Escape-хендлер не трогают', () => {
+    const snap = makeSnapshot();
+    const onClose = vi.fn();
+
+    renderHook(() => useHistorySheet(onClose), {
+      wrapper: makeWrapper(snap, ['/hub', '/target'], 1),
+    });
+
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+    });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  // Оба листа — отдельные компоненты (реалистичный случай: лист поверх
+  // листа, каждый со своим Probe), но делят один MemoryRouter/document.
+  function OuterSheet({ onClose }: { onClose: () => void }) {
+    useHistorySheet(onClose);
+    return null;
+  }
+  function InnerSheet({ onClose }: { onClose: () => void }) {
+    useHistorySheet(onClose);
+    return null;
+  }
+
+  it('два наложенных листа: Escape закрывает только верхний (смонтированный последним)', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/outer'], 1);
+    const onCloseOuter = vi.fn();
+    const onCloseInner = vi.fn();
+
+    render(
+      <>
+        <OuterSheet onClose={onCloseOuter} />
+        <InnerSheet onClose={onCloseInner} />
+      </>,
+      { wrapper },
+    );
+
+    fireEscape();
+
+    expect(onCloseInner).toHaveBeenCalledTimes(1);
+    expect(onCloseOuter).not.toHaveBeenCalled();
+  });
+
+  it('верхний лист закрыт (размонтирован) — следующий Escape закрывает новый верхний', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/outer'], 1);
+    const onCloseOuter = vi.fn();
+    const onCloseInner = vi.fn();
+
+    function TwoSheets({ showInner }: { showInner: boolean }) {
+      return (
+        <>
+          <OuterSheet onClose={onCloseOuter} />
+          {showInner && <InnerSheet onClose={onCloseInner} />}
+        </>
+      );
+    }
+    const { rerender } = render(<TwoSheets showInner />, { wrapper });
+
+    fireEscape();
+    expect(onCloseInner).toHaveBeenCalledTimes(1);
+    expect(onCloseOuter).not.toHaveBeenCalled();
+
+    rerender(<TwoSheets showInner={false} />);
+    fireEscape();
+    expect(onCloseOuter).toHaveBeenCalledTimes(1);
+  });
+});

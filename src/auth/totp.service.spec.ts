@@ -49,6 +49,47 @@ function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
           return Promise.resolve({ ...next });
         },
       ),
+      // CAS-фильтры (updateMany). Фейк применяет ту же семантику, что сервис, и
+      // возвращает count — тест судит по РЕЗУЛЬТАТУ (принят/отвергнут), а не по
+      // форме вызова. Два вида CAS:
+      //  • L2 (анти-реплей TOTP): id + OR[totpLastStep null | lt step];
+      //  • F1 (погашение recovery-кода): id + totpRecoveryCodes.equals(старый
+      //    блоб) — как jsonb-равенство в Postgres, совпадает только пока блоб не
+      //    изменился (проигравший гонку получает count=0).
+      updateMany: jest.fn(
+        ({
+          where,
+          data,
+        }: {
+          where: {
+            id: bigint;
+            OR?: { totpLastStep: null | { lt: number } }[];
+            totpRecoveryCodes?: { equals: unknown };
+          };
+          data: Record<string, unknown>;
+        }) => {
+          const key = where.id.toString();
+          const row = users.get(key);
+          if (!row) return Promise.resolve({ count: 0 });
+          if (where.OR) {
+            const cur = row.totpLastStep as number | null | undefined;
+            const matches = where.OR.some((c) =>
+              c.totpLastStep === null
+                ? cur == null
+                : typeof cur === 'number' && cur < c.totpLastStep.lt,
+            );
+            if (!matches) return Promise.resolve({ count: 0 });
+          }
+          if (
+            where.totpRecoveryCodes &&
+            row.totpRecoveryCodes !== where.totpRecoveryCodes.equals
+          ) {
+            return Promise.resolve({ count: 0 });
+          }
+          users.set(key, { ...row, ...data });
+          return Promise.resolve({ count: 1 });
+        },
+      ),
     },
   };
 }
@@ -207,6 +248,30 @@ describe('TotpService — verifyCode', () => {
     ).toBe(false);
   });
 
+  it('тот же TOTP-код не принимается дважды в пределах окна (replay, L2)', async () => {
+    const prisma = makeFakePrisma();
+    const { service, secret } = await enroll(prisma);
+    const code = authenticator.generate(secret);
+
+    expect(await service.verifyCode(USER_ID, code)).toBe(true); // первый раз
+    expect(await service.verifyCode(USER_ID, code)).toBe(false); // реплей того же шага
+  });
+
+  it('код следующего шага принимается после предыдущего (анти-реплей не ложит валидный вход)', async () => {
+    const prisma = makeFakePrisma();
+    const { service, secret } = await enroll(prisma);
+
+    expect(
+      await service.verifyCode(USER_ID, authenticator.generate(secret)),
+    ).toBe(true);
+
+    // Время ушло на шаг вперёд — код нового шага обязан пройти.
+    dateNowSpy.mockReturnValue(FIXED_TIME + 30_000);
+    expect(
+      await service.verifyCode(USER_ID, authenticator.generate(secret)),
+    ).toBe(true);
+  });
+
   it('recovery-код принимается один раз — повторное использование отвергается (защита от replay)', async () => {
     const prisma = makeFakePrisma();
     const { service, recoveryCodes } = await enroll(prisma);
@@ -224,6 +289,27 @@ describe('TotpService — verifyCode', () => {
     const { service, recoveryCodes } = await enroll(prisma);
     const padded = `  ${recoveryCodes[0].toUpperCase()}  `;
     expect(await service.verifyCode(USER_ID, padded)).toBe(true);
+  });
+
+  it('гонка: один recovery-код, поданный конкурентно дважды, гасится РОВНО один раз (F1, атомарный CAS)', async () => {
+    const prisma = makeFakePrisma();
+    const { service, recoveryCodes } = await enroll(prisma);
+    const code = recoveryCodes[0];
+
+    // Два параллельных запроса с ОДНИМ и тем же recovery-кодом. В фейке (как на
+    // реальной БД) findUnique обоих резолвится раньше любого updateMany, значит
+    // оба читают блоб ДО того, как кто-то запишет остаток — точная модель гонки.
+    // Неатомарный read→update пустил бы оба (двойное списание одноразового
+    // кода); CAS по блобу обязан пустить ровно один.
+    const [a, b] = await Promise.all([
+      service.verifyCode(USER_ID, code),
+      service.verifyCode(USER_ID, code),
+    ]);
+    expect([a, b].filter(Boolean)).toHaveLength(1);
+
+    // Код списан один раз: остаётся 9, повторно уже не принимается.
+    expect((await service.getStatus(USER_ID)).recoveryCodesLeft).toBe(9);
+    expect(await service.verifyCode(USER_ID, code)).toBe(false);
   });
 });
 

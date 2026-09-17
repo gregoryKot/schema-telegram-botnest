@@ -9,6 +9,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { QUIZ_IDS } from '../src/quiz/quiz-registry';
 
 describe('e2e smoke: публичные мини-тесты', () => {
   let app: INestApplication;
@@ -37,11 +38,9 @@ describe('e2e smoke: публичные мини-тесты', () => {
   it('GET /api/quizzes отдаёт контент анониму (без токена/initData)', async () => {
     const res = await request(app.getHttpServer()).get('/api/quizzes');
     expect(res.status).toBe(200);
-    expect(res.body.quizzes.map((q: any) => q.id)).toEqual([
-      'drives',
-      'critic',
-      'battery',
-    ]);
+    // Сверка с реестром: новый тест обязан доехать до анонимной выдачи, но
+    // список-копию здесь править на каждый тест незачем.
+    expect(res.body.quizzes.map((q: any) => q.id)).toEqual([...QUIZ_IDS]);
     expect(res.body.quizzes[0].questions.length).toBeGreaterThan(0);
   });
 

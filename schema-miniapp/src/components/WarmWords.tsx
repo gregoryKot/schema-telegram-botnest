@@ -5,12 +5,20 @@ import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { getModeById } from '../schemaTherapyData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useWarmWords } from '../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../shared/src/share/shareTexts';
 
 interface Props {
   onClose: () => void;
 }
+
+// Откуда слова — подпись под датой (источники collectWarmWords).
+const SOURCE_LABELS: Record<'diary' | 'card' | 'phrase', string> = {
+  diary: 'дневник',
+  card: 'карточка режима',
+  phrase: 'разбор фразы',
+};
 
 function fmtDate(d: Date): string {
   return d.toLocaleDateString('ru-RU', {
@@ -25,15 +33,12 @@ function fmtDate(d: Date): string {
 // момент. Только чтение: детекция кризиса была на этапе записи (правило №7).
 export function WarmWords({ onClose }: Props) {
   const tr = useTr();
-  const items = useWarmWords(api);
+  const { items, failed } = useWarmWords(api);
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
-          emoji="💛"
-          bg="rgba(251,191,36,0.12)"
-          border="rgba(251,191,36,0.2)"
           title="Тёплые слова"
           subtitle="Слова поддержки от Здорового Взрослого"
         />
@@ -43,7 +48,7 @@ export function WarmWords({ onClose }: Props) {
           style={{
             background: 'rgba(251,191,36,0.06)',
             border: '1px solid rgba(251,191,36,0.12)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
             fontSize: 12,
@@ -52,14 +57,32 @@ export function WarmWords({ onClose }: Props) {
           }}
         >
           {tr(
-            'Здесь — твои слова из дневника режимов и карточек режимов: то, что говорит Здоровый Взрослый. Перечитывай, когда трудно.',
-            'Здесь — ваши слова из дневника режимов и карточек режимов: то, что говорит Здоровый Взрослый. Перечитывайте, когда трудно.',
+            'Здесь — твои слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывай, когда трудно.',
+            'Здесь — ваши слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывайте, когда трудно.',
           )}
         </div>
 
         {items === null && <SkeletonList rows={4} h={92} />}
 
-        {items !== null && items.length === 0 && (
+        {failed && (
+          <div
+            role="alert"
+            style={{
+              textAlign: 'center',
+              padding: '20px 8px',
+              fontSize: 13,
+              color: 'var(--text-sub)',
+              lineHeight: 1.6,
+            }}
+          >
+            {tr(
+              'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
+              'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
+            )}
+          </div>
+        )}
+
+        {!failed && items !== null && items.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px 8px' }}>
             <div
               style={{
@@ -96,7 +119,7 @@ export function WarmWords({ onClose }: Props) {
                     padding: '12px 14px',
                     background: 'rgba(var(--fg-rgb),0.03)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     marginBottom: 8,
                   }}
                 >
@@ -106,11 +129,23 @@ export function WarmWords({ onClose }: Props) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       marginBottom: 6,
-                      gap: 8,
+                      gap: 'var(--space-8)',
                     }}
                   >
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      {mode ? `${mode.emoji} ${mode.name}` : 'Режим'}
+                      {item.source === 'phrase' ? (
+                        'Переписанная фраза'
+                      ) : mode ? (
+                        <>
+                          <IdentityDot
+                            color={mode.groupColor ?? 'var(--accent)'}
+                            size={8}
+                          />{' '}
+                          {mode.name}
+                        </>
+                      ) : (
+                        'Режим'
+                      )}
                     </span>
                     <span
                       style={{
@@ -120,8 +155,7 @@ export function WarmWords({ onClose }: Props) {
                         textAlign: 'right',
                       }}
                     >
-                      {fmtDate(item.at)} ·{' '}
-                      {item.source === 'diary' ? 'дневник' : 'карточка режима'}
+                      {fmtDate(item.at)} · {SOURCE_LABELS[item.source]}
                     </span>
                   </div>
                   <div

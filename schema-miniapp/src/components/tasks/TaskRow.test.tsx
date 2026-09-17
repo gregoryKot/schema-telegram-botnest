@@ -79,6 +79,7 @@ describe('TaskRow — full вариант', () => {
 });
 
 describe('TaskRow — compact вариант', () => {
+  // Исход задачи — знак, а не картинка: ✓ выполнено, × не выполнено.
   it('done=true — галочка, без кнопки «Готово»', () => {
     render(
       <TaskRow
@@ -86,7 +87,7 @@ describe('TaskRow — compact вариант', () => {
         variant="compact"
       />,
     );
-    expect(screen.getByText('✅')).toBeTruthy();
+    expect(screen.getByText('✓')).toBeTruthy();
     expect(screen.queryByText('Готово')).toBeNull();
   });
 

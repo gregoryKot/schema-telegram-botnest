@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useAsyncData } from '../hooks/useAsyncData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onClose: () => void;
@@ -18,9 +21,9 @@ function statusColor(done: boolean | null) {
 }
 
 function statusIcon(done: boolean | null) {
-  if (done === true)  return '✅';
-  if (done === false) return '❌';
-  return '⏳';
+  if (done === true)  return '✓';
+  if (done === false) return '×';
+  return '·';
 }
 
 function formatDate(dateStr: string): string {
@@ -34,11 +37,12 @@ function formatDate(dateStr: string): string {
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const goBack = useHistorySheet(onClose);
-  const [plans, setPlans] = useState<PracticePlan[] | null>(null);
-
-  useEffect(() => {
-    api.getPlanHistory(30).then(setPlans).catch(() => setPlans([]));
-  }, []);
+  const tr = useTr();
+  // Сбой ≠ пусто (пара к miniapp-фиксу #371): отказ раньше рисовал «Планов
+  // пока нет». Здесь — через канонический для webapp useAsyncData.failed.
+  const plansFetcher = useCallback(() => api.getPlanHistory(30), []);
+  const { data: plans, reload: load, setData: setPlans, failed: loadFailed } =
+    useAsyncData<PracticePlan[] | null>(plansFetcher, null);
 
   const pending   = (plans ?? []).filter(p => p.done === null);
   const completed = (plans ?? []).filter(p => p.done !== null);
@@ -57,18 +61,31 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
             <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
           </div>
         </div>
 
         <div>
-        {!plans ? (
+        {loadFailed ? (
+          // Сбой ≠ пусто: не путать с «Планов пока нет» ниже — там реальный
+          // пустой ответ, здесь запрос не прошёл вовсе.
+          <div role="alert" style={{ padding: '24px 0' }}>
+            <p style={{ color: 'var(--c-rose)', fontSize: 14, margin: '0 0 16px' }}>
+              {tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
+            </p>
+            <button onClick={load} style={{
+              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
+              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              Попробовать ещё раз
+            </button>
+          </div>
+        ) : !plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
           /* Empty state */
           <div style={{ paddingTop: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
               Планов пока нет
             </div>
@@ -76,11 +93,14 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65,
               marginBottom: 24, maxWidth: 280, margin: '0 auto 24px',
             }}>
-              Планы создаются в трекере – выбери потребность с низкой оценкой и нажми «Запланировать практику»
+              {tr(
+                'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
+                'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
+              )}
             </div>
             {onOpenTracker && (
               <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
-                padding: '12px 28px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
+                padding: '12px 28px', borderRadius: 'var(--r-14)', border: 'none', fontFamily: 'inherit',
                 background: 'transparent', outline: '1px solid var(--line)',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
@@ -96,7 +116,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Ожидают выполнения
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
                   {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -108,7 +128,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Выполненные
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
                   {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
@@ -139,23 +159,14 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
     <div style={{
       background: colors.bg,
       border: `1px solid ${colors.border}`,
-      borderRadius: 20,
+      borderRadius: 'var(--r-20)',
       padding: '14px 16px',
       overflow: 'hidden',
     }}>
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {needData && (
-            <div style={{
-              width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-              background: needColor + '22',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12,
-            }}>
-              {needData.emoji}
-            </div>
-          )}
+          {needData && <IdentityDot id={plan.needId} size={12} />}
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>
@@ -174,16 +185,16 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button onClick={() => checkin(true)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 12, fontFamily: 'inherit',
+            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
             background: 'rgba(52,211,153,0.12)', outline: '1px solid rgba(52,211,153,0.22)',
             color: 'var(--accent-green)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>
             ✓ Выполнено
           </button>
           <button onClick={() => checkin(false)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 12, fontFamily: 'inherit',
+            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
             background: 'rgba(248,113,113,0.08)', outline: '1px solid rgba(248,113,113,0.18)',
             color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
           }}>

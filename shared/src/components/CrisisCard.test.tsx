@@ -9,6 +9,7 @@ import { CrisisCardView } from './CrisisCard';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
+  CRISIS_HOTLINES,
 } from '../utils/crisisMarkers';
 
 const tr = (ty: string, vy: string) => `${ty}|${vy}`;
@@ -18,11 +19,19 @@ afterEach(() => {
 });
 
 describe('CrisisCardView — рендер', () => {
-  it('role="status", телефон доверия и его tel-ссылка видны', () => {
+  it('role="status", взрослая линия (первая) и её tel-ссылка видны', () => {
     render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
     expect(screen.getByRole('status')).toBeTruthy();
     const link = screen.getByText(CRISIS_HOTLINE_DISPLAY);
     expect(link.getAttribute('href')).toBe(CRISIS_HOTLINE_TEL);
+  });
+
+  it('вторая линия (детская) видна с tel-ссылкой и подписью аудитории', () => {
+    render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
+    const child = CRISIS_HOTLINES[1];
+    const link = screen.getByText(child.display);
+    expect(link.getAttribute('href')).toBe(child.tel);
+    expect(screen.getByText(child.audienceNote!)).toBeTruthy();
   });
 
   it('обе формы обращения (ты/вы) присутствуют в тексте через tr()', () => {

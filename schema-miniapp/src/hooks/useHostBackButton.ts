@@ -39,6 +39,7 @@ export function useHostBackButton({
   const backHandlerRef = useRef<() => void>(() => {});
   const anyOpen = !!(
     newDiaryEntry ||
+    sheets.joinConfirm ||
     sheets.trackerOverlay ||
     sheets.tracker ||
     sheets.diaries ||
@@ -56,37 +57,41 @@ export function useHostBackButton({
   useEffect(() => {
     backHandlerRef.current = newDiaryEntry
       ? () => setNewDiaryEntry(null)
-      : sheets.trackerOverlay
-        ? () => sheets.close('trackerOverlay', { trackerNeedId: null })
-        : sheets.tracker
-          ? () => sheets.close('tracker', { trackerTab: 'today' })
-          : sheets.diaries
-            ? () => sheets.close('diaries')
-            : sheets.schemaInfo
-              ? () => sheets.close('schemaInfo', { schemaAutoStartTest: false })
-              : sheets.settings
-                ? () => sheets.close('settings')
-                : sheets.practices
-                  ? () => sheets.close('practices')
-                  : sheets.plans
-                    ? () => sheets.close('plans')
-                    : sheets.about
-                      ? () => sheets.close('about')
-                      : sheets.pairSheet
-                        ? () => {
-                            sheets.close('pairSheet');
-                            void api.getPair().then(setPairData);
-                          }
-                        : sheets.childhoodWheel
-                          ? () => sheets.close('childhoodWheel')
-                          : sheets.todayNote
-                            ? () => sheets.close('todayNote')
-                            : therapistMode && cabinetView === 'client'
-                              ? () => therapistBackHandlerRef.current()
-                              : () => {};
+      : sheets.joinConfirm
+        ? () => sheets.close('joinConfirm', { joinKind: null, joinCode: null })
+        : sheets.trackerOverlay
+          ? () => sheets.close('trackerOverlay', { trackerNeedId: null })
+          : sheets.tracker
+            ? () => sheets.close('tracker', { trackerTab: 'today' })
+            : sheets.diaries
+              ? () => sheets.close('diaries')
+              : sheets.schemaInfo
+                ? () =>
+                    sheets.close('schemaInfo', { schemaAutoStartTest: false })
+                : sheets.settings
+                  ? () => sheets.close('settings')
+                  : sheets.practices
+                    ? () => sheets.close('practices')
+                    : sheets.plans
+                      ? () => sheets.close('plans')
+                      : sheets.about
+                        ? () => sheets.close('about')
+                        : sheets.pairSheet
+                          ? () => {
+                              sheets.close('pairSheet');
+                              void api.getPair().then(setPairData);
+                            }
+                          : sheets.childhoodWheel
+                            ? () => sheets.close('childhoodWheel')
+                            : sheets.todayNote
+                              ? () => sheets.close('todayNote')
+                              : therapistMode && cabinetView === 'client'
+                                ? () => therapistBackHandlerRef.current()
+                                : () => {};
     getHost().backButton.setVisible(anyOpen);
   }, [
     newDiaryEntry,
+    sheets.joinConfirm,
     sheets.trackerOverlay,
     sheets.tracker,
     sheets.diaries,

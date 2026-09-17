@@ -35,6 +35,12 @@ export interface HostInsets {
   isFullscreen: boolean;
   /** Хост хоть раз прислал contentTop: значение 0 тоже считается ответом. */
   contentReported: boolean;
+  /**
+   * Хост рисует свои кнопки (закрыть/меню) ПОВЕРХ контента. У таких хостов
+   * нулевой верхний инсет — это «значение не доехало», а не «отступ не нужен»:
+   * поверить ему значит увести шапку под кнопки мессенджера.
+   */
+  overlaysContent: boolean;
 }
 
 export interface HostHaptic {
@@ -69,6 +75,14 @@ export interface HostBridge {
   ready(): void;
   expand(): void;
   close(): void;
+  /**
+   * Хост может ловить вертикальный свайп как жест «свернуть приложение» —
+   * например пока пользователь тащит строку за ручку «≡». `false` просит
+   * хост не перехватывать вертикальные жесты на время драга, `true`
+   * возвращает поведение по умолчанию. У площадок без такого API — no-op,
+   * страховку берёт на себя вызывающий код (см. useDragReorder).
+   */
+  setVerticalSwipes(enabled: boolean): void;
 
   user(): HostUser | null;
   /** Параметр глубокой ссылки (Telegram start_param). */

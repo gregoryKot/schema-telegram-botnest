@@ -38,11 +38,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   }, []);
 
   // resetKey=needIdx → list flashes back to loading on tab switch, then fills.
+  // Внутреннего catch → [] больше нет: отказ загрузки рисовал «Пока пусто —
+  // добавь первую практику» человеку, у которого практики есть. Сбой ≠ пусто.
   const practicesFetcher = useCallback(
-    () => api.getPractices(NEED_IDS[needIdx]).catch(() => [] as UserPractice[]),
+    () => api.getPractices(NEED_IDS[needIdx]),
     [needIdx],
   );
-  const { data: practices, reload: reloadPractices, setData: setPractices } =
+  const { data: practices, reload: reloadPractices, setData: setPractices, failed: practicesFailed } =
     useAsyncData<UserPractice[] | null>(practicesFetcher, null, needIdx);
 
   async function handleAdd() {
@@ -65,7 +67,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
 
   function handleDelete(id: number) {
     setPractices(prev => prev?.filter(x => x.id !== id) ?? null);
-    api.deletePractice(id).catch(() => {});
+    // Оптимистичное удаление: сбой возвращает список с сервера (иначе
+    // практика «исчезала», оставаясь в БД, и воскресала при следующем заходе).
+    api.deletePractice(id).catch(() => {
+      setErrorToast(true);
+      setTimeout(() => setErrorToast(false), 2500);
+      reloadPractices();
+    });
   }
 
   const needId = NEED_IDS[needIdx];
@@ -75,7 +83,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div data-testid="practices-screen" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
       <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
@@ -89,7 +97,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
             {errorToast && <span className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>Ошибка сохранения</span>}
             {addedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Добавлено</span>}
             <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
@@ -131,10 +139,14 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h3>{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h3>
             {practices && <span className="hint">{practices.length} {practices.length === 1 ? 'практика' : practices.length < 5 ? 'практики' : 'практик'}</span>}
           </div>
-          {!practices ? (
+          {practicesFailed ? (
+            <div role="alert" className="text-sm" style={{ color: 'var(--c-rose)' }}>
+              {tr('Не удалось загрузить практики. Проверь соединение и обнови страницу', 'Не удалось загрузить практики. Проверьте соединение и обновите страницу')}
+            </div>
+          ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="text-sm muted">Пока пусто – добавь первую практику ниже.</div>
+            <div className="text-sm muted">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
           ) : (
             practices.map(p => (
               <div key={p.id} className="list-line">
@@ -159,7 +171,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           <div className="text-sm muted" style={{ marginBottom: 12, maxWidth: 600 }}>
             Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>
-          <div style={{ display: 'flex', gap: 8, maxWidth: 600 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)', maxWidth: 600 }}>
             <input
               value={input}
               onChange={e => setInput(e.target.value)}

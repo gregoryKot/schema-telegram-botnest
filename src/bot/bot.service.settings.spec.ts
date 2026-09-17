@@ -150,6 +150,23 @@ describe('BotService.getUserSettings / updateUserSettings — read-after-write �
 
     expect(await svc.getUserSettings(1n)).toBeNull();
   });
+
+  // uiPrefs — plain JSON (не в EncryptSchema), должен пройти через
+  // encryptRecord/decryptRecord неизменным (read-after-write).
+  it('uiPrefs, записанный через updateUserSettings, читается назад как есть (plain-поле)', async () => {
+    const db = makeDb();
+    const svc = new BotService(db);
+
+    await svc.updateUserSettings(1n, {
+      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+    });
+    const settings = await svc.getUserSettings(1n);
+
+    expect(settings?.uiPrefs).toEqual({
+      today_streak_hidden: '1',
+      today_focus_practice: 'tracker',
+    });
+  });
 });
 
 describe('BotService.getChildhoodRatings / saveChildhoodRatings — read-after-write', () => {

@@ -1,16 +1,30 @@
-// Регистрация service worker'а (docs/PWA_PLAN.md фаза 1). Только web-хост:
-// внутри Telegram/MAX мини-апп живёт в вебвью мессенджера — SW там не нужен
-// и рискует отдать устаревшую оболочку поверх актуального вебвью хоста
-// (docs/MULTI_HOST_PLAN.md шаг 3). Свой модуль, а не сгенерированный
-// плагином клиент (`injectRegister: false` в vite.config.ts) — так же можно
-// подцепить свой UI обновления (UpdateToast.tsx) через onUpdateAvailable.
-import { Workbox } from 'workbox-window';
+// ЭКСПЕРИМЕНТ 2026-08-25: service worker в PWA ВЫКЛЮЧЕН — вместо регистрации
+// снимаем уже установленный и чистим его кеши.
+//
+// Разбор недельной жалобы «из ярлыка первую минуту ужасно, в Telegram
+// летает, перезапуск всё сбрасывает»: единственная структурная разница
+// между площадками — сам SW (в вебвью мессенджеров он не регистрировался
+// никогда, см. shouldRegisterServiceWorker). Феномен «standalone PWA заметно
+// медленнее того же сайта в Safari» документирован (Apple DevForums, тред
+// 714477) — разработчики лечили его переписыванием SW, а очистка данных
+// сайта помогала временно. Механика, совпадающая с симптомом кадр в кадр:
+// скрипты, отданные из Cache Storage сервис-воркером, не получают кеш
+// байткода (v8.dev/blog/code-caching-for-devs; для WebKit не документировано,
+// но поведение сходится) — весь JS (~1.2МБ) перепарсируется и
+// перекомпилируется на КАЖДОМ холодном старте, JIT прогревается заново.
+// Отсюда ужасная первая минута, которая «чинится» прогревом и возвращается
+// после перезапуска. Плюс после каждого деплоя SW перекачивал весь прекеш.
+//
+// Без SW статика PWA едет ровно тем же путём, что в Telegram: HTTP-кеш +
+// ETag/304 (src/infra/static-cache.ts) — с обычным кешем байткода браузера.
+// Цена эксперимента: (1) нет офлайн-оболочки — данные и так требуют сети,
+// офлайн-очередь оценок (outbox) живёт отдельно и не зависит от SW;
+// (2) нет тоста «Обновить» — обновления приезжают обычной перезагрузкой,
+// что при no-cache на index НАДЁЖНЕЕ прежнего двойного перезапуска.
+// Подтвердится у владельца — зафиксируем насовсем и выпилим UpdateToast;
+// нет — вернём SW с прекешем только оболочки (без JS).
 import { getHost } from '../../shared/src/host';
 
-const SW_URL = '/app/sw.js';
-const SCOPE = '/app/';
-
-let workbox: Workbox | null = null;
 type UpdateListener = () => void;
 let updateListener: UpdateListener | null = null;
 
@@ -22,7 +36,9 @@ export function shouldRegisterServiceWorker(): boolean {
   );
 }
 
-/** UpdateToast подписывается в useEffect, чтобы узнать про готовое обновление. */
+/** UpdateToast подписывается на «готово обновление». Пока SW выключен,
+ *  событие не наступает никогда — подписка остаётся ради обратной
+ *  совместимости и лёгкого отката эксперимента. */
 export function onUpdateAvailable(listener: UpdateListener): () => void {
   updateListener = listener;
   return () => {
@@ -30,33 +46,31 @@ export function onUpdateAvailable(listener: UpdateListener): () => void {
   };
 }
 
+/** Снимает установленный ранее SW и чистит его кеши (см. шапку файла).
+ *  Имя сохранено: main.tsx зовёт её по расписанию, как звал регистрацию. */
 export function registerServiceWorker(): void {
   if (!shouldRegisterServiceWorker()) return;
-  // type НЕ 'module': injectManifest собирает sw.ts в классический бандл
-  // (в dist/sw.js нет ни import, ни export), а devOptions выключены — то есть
-  // модульного SW у нас не бывает никогда. Попросив 'module', мы заставили бы
-  // браузер разбирать классический файл как модуль и отвалились бы там, где
-  // модульные SW не поддерживаются, — причём молча, потому что регистрация
-  // намеренно гасит ошибку ниже.
-  workbox = new Workbox(SW_URL, { scope: SCOPE });
-  // 'waiting' — новая версия установлена и ждёт активации (старая ещё
-  // контролирует открытые вкладки). Ровно момент показать тост.
-  workbox.addEventListener('waiting', () => updateListener?.());
-  workbox.register().catch(() => {
-    // SW — прогрессивное улучшение, а не критичный путь: тихий отказ
-    // (приватный режим, отключённый SW в браузере) не должен ронять аппку.
-  });
+  navigator.serviceWorker
+    .getRegistrations()
+    .then(async (regs) => {
+      for (const reg of regs) await reg.unregister();
+      // Кеши чистим только если SW реально стоял: у чистого браузера нечего
+      // трогать. Текущая страница, пока её ещё контролирует старый SW,
+      // переживает чистку: workbox-прекеш при промахе падает в сеть
+      // (fallbackToNetwork), а со следующего запуска SW уже нет.
+      if (regs.length > 0 && 'caches' in window) {
+        for (const key of await caches.keys()) await caches.delete(key);
+      }
+    })
+    .catch((e) => console.error('sw cleanup failed', e));
 }
 
-/** Кнопка «Обновить» в тосте: активировать новую версию и перезагрузить вкладку. */
+/** Кнопка «Обновить» в тосте: без SW достаточно перезагрузки. */
 export function applyUpdate(): void {
-  if (!workbox) return;
-  workbox.addEventListener('controlling', () => window.location.reload());
-  workbox.messageSkipWaiting();
+  window.location.reload();
 }
 
 /** Только для тестов: сбросить состояние модуля между прогонами. */
 export function _resetForTests(): void {
-  workbox = null;
   updateListener = null;
 }

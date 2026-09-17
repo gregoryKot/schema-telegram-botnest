@@ -21,6 +21,31 @@ export class TherapyTasksViewService {
       include: { client: { select: { id: true, firstName: true } } },
     });
 
+    // Точный userId связи: реальный клиент — rel.client.id, виртуальный —
+    // -rel.id (см. getTasksForClient). Общий helper — для запроса ниже
+    // и для группировки результата по конкретной связи.
+    const userIdOf = (rel: (typeof relations)[number]) =>
+      rel.client ? rel.client.id : BigInt(-rel.id);
+
+    // Один запрос по всем userId вместо findMany в цикле — было N+1 (D2).
+    // Группировка по точному userId (не userId: { lt: 0 }, который матчил
+    // ВСЕХ виртуальных клиентов терапевта разом и путал их задачи, O2).
+    const allTasks = await this.prisma.userTask.findMany({
+      where: {
+        assignedBy: therapistId,
+        userId: { in: relations.map(userIdOf) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const tasksByUserId = new Map<string, typeof allTasks>();
+    for (const t of allTasks) {
+      const key = String(t.userId);
+      const group = tasksByUserId.get(key);
+      if (group) group.push(t);
+      else tasksByUserId.set(key, [t]);
+    }
+
     const results: Array<{
       clientId: number;
       clientName: string;
@@ -32,14 +57,7 @@ export class TherapyTasksViewService {
       const clientName = rel.client
         ? (rel.clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
         : (rel.clientAlias ?? rel.virtualClientName ?? `ID ${-clientId}`);
-
-      const tasks = await this.prisma.userTask.findMany({
-        where: {
-          assignedBy: therapistId,
-          userId: rel.client ? rel.client.id : { lt: 0 },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const tasks = tasksByUserId.get(String(userIdOf(rel))) ?? [];
 
       if (tasks.length > 0) {
         results.push({

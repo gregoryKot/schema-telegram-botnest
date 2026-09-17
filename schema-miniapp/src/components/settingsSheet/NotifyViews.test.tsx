@@ -194,6 +194,96 @@ describe('NotifySubView — часовой пояс', () => {
   });
 });
 
+describe('NotifySubView — клавиатурная активация (Enter/пробел) работает так же, как клик', () => {
+  it('время: Enter на часе патчит notifyLocalHour и возвращает на main', async () => {
+    const patch = vi.fn().mockResolvedValue(undefined);
+    const setView = vi.fn();
+    render(
+      <NotifySubView
+        view="time"
+        settings={SETTINGS}
+        localHour={21}
+        patch={patch}
+        setView={setView}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('09:00'), { key: 'Enter' });
+    await vi.waitFor(() =>
+      expect(patch).toHaveBeenCalledWith({ notifyLocalHour: 9 }),
+    );
+    expect(setView).toHaveBeenCalledWith('main');
+  });
+
+  it('время: произвольная клавиша (не Enter/пробел) ничего не патчит', () => {
+    const patch = vi.fn();
+    render(
+      <NotifySubView
+        view="time"
+        settings={SETTINGS}
+        localHour={21}
+        patch={patch}
+        setView={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('09:00'), { key: 'Tab' });
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('частота: пробел патчит notifyFrequency', async () => {
+    const patch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <NotifySubView
+        view="freq"
+        settings={SETTINGS}
+        localHour={21}
+        patch={patch}
+        setView={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('Раз в неделю'), { key: ' ' });
+    await vi.waitFor(() =>
+      expect(patch).toHaveBeenCalledWith({ notifyFrequency: 3 }),
+    );
+  });
+
+  it('тихие часы: Enter патчит start и end одним вызовом', async () => {
+    const patch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <NotifySubView
+        view="quiet"
+        settings={SETTINGS}
+        localHour={21}
+        patch={patch}
+        setView={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('22:00 – 08:00'), { key: 'Enter' });
+    await vi.waitFor(() =>
+      expect(patch).toHaveBeenCalledWith({
+        notifyQuietStart: 22,
+        notifyQuietEnd: 8,
+      }),
+    );
+  });
+
+  it('часовой пояс: Enter патчит notifyTimezone', async () => {
+    const patch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <NotifySubView
+        view="tz"
+        settings={SETTINGS}
+        localHour={21}
+        patch={patch}
+        setView={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(screen.getByText('Лондон (UTC+0)'), { key: 'Enter' });
+    await vi.waitFor(() =>
+      expect(patch).toHaveBeenCalledWith({ notifyTimezone: 'Europe/London' }),
+    );
+  });
+});
+
 describe('NotifySubView — вне активного под-вида (main) ничего не рендерит', () => {
   it('view="main" — компонент рендерит пустой fragment', () => {
     const { container } = render(

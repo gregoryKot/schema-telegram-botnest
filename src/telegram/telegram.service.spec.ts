@@ -1,7 +1,9 @@
 // Поведенческие тесты чисто-логических хендлеров TelegramService, достижимых
-// без запуска всего бота: разбор callback_data (валидный/мусорный), гейтинг
-// админских action'ов, отмена/скип напоминания. Экраны онбординга (start,
-// consent) — тяжёлая UI-склейка, не гоняем здесь (правило приоритета задачи).
+// без запуска всего бота: разбор callback_data (валидный/мусорный), отмена/
+// скип напоминания. Экраны онбординга (start, consent) — тяжёлая UI-склейка,
+// не гоняем здесь (правило приоритета задачи). treq и /stats — вынесены на
+// TelegramAdminService (правило №10 CLAUDE.md), см.
+// telegram.admin.service.*.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import {
@@ -9,8 +11,6 @@ import {
   runAction,
   runCommand,
 } from './telegram.test-helpers.spec';
-
-const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
 function makeDeps(overrides: Record<string, any> = {}) {
   const botService = {
@@ -26,15 +26,13 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.botService,
   };
   const analyticsService = {
-    getAdminStats: jest.fn().mockResolvedValue('core stats'),
     ...overrides.analyticsService,
-  };
-  const statsReport = {
-    render: jest.fn().mockResolvedValue(''),
-    ...overrides.statsReport,
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -50,32 +48,20 @@ function makeDeps(overrides: Record<string, any> = {}) {
     schedule: jest.fn().mockResolvedValue(undefined),
     ...overrides.notificationService,
   };
-  const therapistRequestService = {
-    approve: jest.fn().mockResolvedValue(undefined),
-    reject: jest.fn().mockResolvedValue(undefined),
-    ...overrides.therapistRequestService,
-  };
-  const publisher = { ...overrides.publisher };
-  // Пул канала: /stats показывает остаток, поэтому сервис нужен и здесь.
-  const healthyAdultService = {
-    poolStatus: jest
-      .fn()
-      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
-    ...overrides.healthyAdultService,
+  const analyticsEvents = {
+    track: jest.fn().mockResolvedValue(undefined),
+    ...overrides.analyticsEvents,
   };
   const fakeBot = makeFakeBot();
   const service = new TelegramService(
     fakeBot.bot,
     botService,
     analyticsService,
-    statsReport,
-    healthyAdultService,
     accountService,
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
-    publisher,
+    analyticsEvents,
   );
   return {
     service,
@@ -85,10 +71,8 @@ function makeDeps(overrides: Record<string, any> = {}) {
     pairsService,
     practicesService,
     notificationService,
-    therapistRequestService,
     analyticsService,
-    statsReport,
-    healthyAdultService,
+    analyticsEvents,
   };
 }
 
@@ -99,8 +83,6 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.restoreAllMocks();
-  if (OLD_ADMIN_ID === undefined) delete process.env.ADMIN_ID;
-  else process.env.ADMIN_ID = OLD_ADMIN_ID;
 });
 
 describe('TelegramService — plan_(done|skip):<id>', () => {
@@ -169,96 +151,6 @@ describe('TelegramService — snooze_reminder', () => {
   });
 });
 
-describe('TelegramService — treq:approve|reject (только админ)', () => {
-  it('не-админ получает отказ, therapistRequestService не вызывается', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, therapistRequestService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:approve:5', {
-      from: { id: 1 }, // не 999
-    });
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('админ'),
-    );
-    expect(therapistRequestService.approve).not.toHaveBeenCalled();
-  });
-
-  it('админ approve вызывает approve(adminId, reqId)', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, therapistRequestService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:approve:5', {
-      from: { id: 999 },
-    });
-    expect(therapistRequestService.approve).toHaveBeenCalledWith(999, 5);
-    expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('одобрена'));
-  });
-
-  it('админ reject вызывает reject(adminId, reqId, "")', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, therapistRequestService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:reject:5', {
-      from: { id: 999 },
-    });
-    expect(therapistRequestService.reject).toHaveBeenCalledWith(999, 5, '');
-    expect(ctx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('отклонена'),
-    );
-  });
-
-  it('ADMIN_ID не задан на сервере — доступ закрыт даже якобы-совпадающему id', async () => {
-    delete process.env.ADMIN_ID;
-    const { service, fakeBot, therapistRequestService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'treq:approve:5', {
-      from: { id: 0 },
-    });
-    expect(therapistRequestService.approve).not.toHaveBeenCalled();
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('админ'),
-    );
-  });
-});
-
-describe('TelegramService — /stats (только админ)', () => {
-  it('не-админ получает отказ, метрики не запрашиваются', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, statsReport } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 1 } });
-    expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('доступа'));
-    expect(statsReport.render).not.toHaveBeenCalled();
-  });
-
-  it('админ: второе сообщение содержит склеенный отчёт (StatsReportService)', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, statsReport } = makeDeps({
-      statsReport: {
-        render: jest
-          .fn()
-          .mockResolvedValue('продуктовые метрики\n\nкарточки режимов: 9'),
-      },
-    });
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
-    expect(statsReport.render).toHaveBeenCalled();
-    expect(ctx.reply).toHaveBeenNthCalledWith(1, 'core stats', {
-      parse_mode: 'HTML',
-    });
-    expect(ctx.reply).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining('продуктовые метрики'),
-      { parse_mode: 'HTML' },
-    );
-    expect(ctx.reply).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining('карточки режимов: 9'),
-      { parse_mode: 'HTML' },
-    );
-  });
-});
-
 describe('TelegramService — accept:(ty|vy) сохраняет согласие + форму', () => {
   it('accept:vy: acceptDisclaimer + addressForm=vy, приветствие на «вы»', async () => {
     const { service, fakeBot, botService } = makeDeps();
@@ -282,7 +174,7 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
     // /start pair_ABC123 без согласия — код кладётся в pendingPairCodes, ждём согласия
     const startCtx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc123',
+      payload: 'pair_abc123',
     });
     expect(startCtx.reply).toHaveBeenCalledWith(
       expect.stringContaining('Соглашение'),

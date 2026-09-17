@@ -16,6 +16,10 @@ model Rating {
 
   @@unique([userId, date, needId])
   @@index([userId, date])
+  // Индекс по голому date (аудит M2): /stats фильтрует Rating по date без
+  // userId (COUNT DISTINCT userId за день, ретеншен-GROUP BY), и userId-ведущий
+  // индекс выше для этого не годится — был seq-scan самой растущей таблицы.
+  @@index([date])
 }
 
 model YsqProgress {
@@ -104,6 +108,7 @@ model User {
   modeIntrosShown          Json     @default("[]")  // string[] of mode ids whose intro was viewed
   therapistMode            Boolean  @default(false)
   defaultSection           String?  // last-selected bottom nav section
+  uiPrefs                  Json?    // серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
@@ -112,6 +117,7 @@ model User {
   schemaNotes            UserSchemaNote[]
   modeNotes              UserModeNote[]
   beliefChecks           UserBeliefCheck[]
+  phraseChecks           UserPhraseCheck[]
   letters                UserLetter[]
   safePlace              UserSafePlace?
   flashcards             UserFlashcard[]
@@ -122,6 +128,7 @@ model User {
   ysqHistory             YsqResultHistory[]
   authProviders          AuthProvider[]
   webSessions            WebSession[]
+  loginTickets           LoginTicket[]
   drafts                 DiaryDraft[]
   therapistRequest       TherapistRequest?
   // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
@@ -132,6 +139,11 @@ model User {
   totpSecret             String?
   totpEnabledAt          DateTime?
   totpRecoveryCodes      Json     @default("[]")
+  // totpLastStep: последний ПРИНЯТЫЙ time-step TOTP (floor(unix/30)). Защита от
+  // реплея (L2 аудита 2026-08): один и тот же 6-значный код в пределах окна
+  // (±1 шаг, ~90с) не должен приниматься дважды — verifyCode двигает значение
+  // вперёд атомарно и отвергает шаг ≤ сохранённого. null = ещё не входил по TOTP.
+  totpLastStep           Int?
   // Recovery email — last-resort path in case user loses ALL their auth
   // providers (Google/Telegram/VK all gone). Receives a magic link to add
   // a new provider. Verified separately (verifiedAt).
@@ -236,12 +248,70 @@ model WebSession {
   lastUsedAt   DateTime @default(now())
   expiresAt    DateTime
   revokedAt    DateTime?
+  // Хеш токена, выданного взамен этого при ротации. По нему видно, ПОЛЬЗОВАЛСЯ
+  // ли кто-нибудь наследником: если нет — значит ответ ротации не доехал до
+  // клиента, и предъявление старого токена это потерянный ответ, а не кража
+  // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
+  replacedByHash String?
   ipAddress    String?
   userAgent    String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, revokedAt])
   @@index([family])
+}
+
+// Привязка аккаунта мессенджера к уже существующему (device authorization
+// grant, RFC 8628 — тот же приём, которым телевизор подключают к Netflix).
+//
+// Зачем отдельная таблица, а не подписанный токен: браузер ПОДТВЕРЖДАЕТ, а
+// мини-апп ОПРАШИВАЕТ — им нужно общее изменяемое состояние. В JWT его не
+// положишь.
+//
+// Живёт минуты и содержит только служебное — при merge аккаунтов такие строки
+// удаляются, а не переносятся (SECURITY_SENSITIVE_TABLES, рядом с WebSession).
+// Кодов два, как в самой RFC. Длинный (device_code) знает только мини-апп —
+// им он опрашивает сервер. Короткий (user_code) видит человек, он же едет в
+// ссылке на браузер. Хранятся хэшами: подсмотренная строка в БД не даёт войти.
+// Билет входа. Контейнер (ярлык, вкладка браузера, мини-апп) создаёт билет у
+// себя, уводит человека подтверждать вход куда угодно — в бота, во внешний
+// браузер — и потом ЗАБИРАЕТ сессию опросом. Так вход возвращается ровно
+// туда, где начался: установленное приложение живёт в отдельной банке кук, и
+// сессия, выданная внешнему браузеру, ему не видна (разбор 2026-08-28).
+//
+// Выросло из device-link (RFC 8628, привязка аккаунта мессенджера к
+// существующему). Механизм тот же, поэтому второй таблицы рядом не заводим —
+// добавлен `intent`, а `userId` стал необязательным: у входа хозяина ещё нет.
+model LoginTicket {
+  id             String    @id @default(cuid())
+  deviceCodeHash String    @unique
+  userCodeHash   String    @unique
+  // Кто ПОПРОСИЛ билет. У привязки (intent='link') это аккаунт мессенджера, и
+  // при подтверждении хозяин меняется на целевой аккаунт — иначе строку унесло
+  // бы каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и
+  // забирать сессию было бы неоткуда. У входа (intent='login') хозяина нет.
+  userId         BigInt?
+  // 'login' — вход в пустой контейнер; 'link' — привязка к существующему.
+  intent         String    @default("link")
+  provider       String    // 'max' | 'telegram' | 'google' | 'vk' | 'email'
+  // Где билет создан ('web' | 'telegram' | 'max') и на чём — строка вида
+  // «iPhone · Safari». Показывается человеку при сверке, чтобы подтверждение
+  // не было слепым.
+  hostId         String    @default("web")
+  deviceLabel    String    @default("")
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  // Кто подтвердил. Он же становится хозяином данных.
+  approvedUserId BigInt?
+  approvedAt     DateTime?
+  // Человек нажал «это не я» — билет мёртв, и это видно опросу.
+  deniedAt       DateTime?
+  // Сессия забрана — код больше не действует (одноразовость).
+  consumedAt     DateTime?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Note {
@@ -536,18 +606,26 @@ model UserSchemaNote {
 }
 
 model UserModeNote {
-  id          Int      @id @default(autoincrement())
-  userId      BigInt
-  modeId      String
-  triggers    String   @default("")
-  feelings    String   @default("")
-  thoughts    String   @default("")
-  needs       String   @default("")
-  origins     String   @default("")
-  healthyView String   @default("")
-  behavior    String   @default("")
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  modeId       String
+  triggers     String   @default("")
+  feelings     String   @default("")
+  thoughts     String   @default("")
+  needs        String   @default("")
+  origins      String   @default("")
+  healthyView  String   @default("")
+  behavior     String   @default("")
+  // Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно»
+  modeFunction String   @default("")
+  needsMet     String   @default("")
+  // Имя, которым человек называет режим своими словами («Стена»), и вопрос
+  // «чего боишься, если этот режим перестанет так делать» — оба свободный
+  // текст, шифруются (MODE_NOTE_SCHEMA).
+  alias        String   @default("")
+  fear         String   @default("")
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, modeId])
 }
@@ -561,6 +639,31 @@ model UserBeliefCheck {
   reframe         String?
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+// Разбор фразы внутреннего голоса по приметам самокритики: сама фраза,
+// отмеченные приметы (id из shared/src/phraseCheck) и переписанный вариант.
+model UserPhraseCheck {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  phrase    String
+  /**
+   * Массив id примет, отмеченных как голос критика (PHRASE_MARK_IDS).
+   * Перечисление, а не свободный текст — поэтому открытым (правило шифрования
+   * в CLAUDE.md), и по нему считается разбивка в /stats.
+   */
+  marks     Json
+  rewrite   String?
+  /**
+   * Забрать переписанную фразу в «Тёплые слова» — выбор пользователя на шаге
+   * переписывания. Отдельный флаг, а не «все rewrite подряд»: в коллекцию
+   * попадает только то, что человек сам счёл словами поддержки.
+   */
+  inWarmWords Boolean @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, createdAt])
 }
@@ -802,4 +905,30 @@ model ChannelDelivery {
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// Кто из инстансов уже отработал крон в текущем окне. Без строки-аренды
+/// второй инстанс (масштабирование, перекатывающийся деплой) отрабатывает то
+/// же расписание второй раз: подписчики канала получают два одинаковых поста,
+/// пользователь — два одинаковых напоминания. См. src/infra/cron-leader.service.ts.
+/// Пользовательских данных нет: имя крона, время прогона и имя процесса.
+model CronLease {
+  name       String   @id
+  runAt      DateTime
+  instanceId String
+}
+
+/// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
+/// счётчик @nestjs/throttler по умолчанию живёт в памяти процесса, и на двух
+/// инстансах Amvera лимит на POST /api/booking/book обходился ротацией
+/// инстанса. `key` — sha256 маршрута+бакета из ThrottlerGuard.generateKey
+/// (правило №5: бакет уже верифицирован), PII в нём нет. См.
+/// src/api/postgres-throttle-storage.ts.
+model ThrottleHit {
+  key          String    @id
+  hits         Int
+  expiresAt    DateTime
+  blockedUntil DateTime?
+
+  @@index([expiresAt])
 }

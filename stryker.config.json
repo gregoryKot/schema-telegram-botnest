@@ -18,7 +18,10 @@
     "src/booking/booking.service.ts",
     "src/subscription/subscription.service.ts",
     "src/booking/slot.service.ts",
-    "src/booking/pricing.service.ts"
+    "src/booking/pricing.service.ts",
+    "src/booking/payment.controller.ts",
+    "src/auth/security-log.service.ts",
+    "src/donation/donation.service.ts"
   ],
   "reporters": [
     "clear-text",

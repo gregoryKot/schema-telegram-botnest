@@ -5,10 +5,12 @@ import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { JourneySheet } from '../components/JourneySheet';
+import { Skeleton } from '../components/Skeleton';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { pressable } from '../utils/a11y';
+import { MonthShareButton } from './profile/heatmapShare';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -19,20 +21,20 @@ const NEED_NAMES: Record<string, string> = {
   expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
 };
 
-const ACHIEVEMENT_META: Record<string, { emoji: string; title: string; desc: string }> = {
-  first_day:      { emoji: '🌱', title: 'Первый шаг',   desc: 'Заполнил дневник первый раз' },
-  streak_3:       { emoji: '🔥', title: 'Начало серии', desc: '3 дня подряд' },
-  streak_7:       { emoji: '⭐', title: 'Неделя',        desc: '7 дней подряд' },
-  streak_14:      { emoji: '💫', title: 'Две недели',    desc: '14 дней подряд' },
-  streak_30:      { emoji: '🏆', title: 'Месяц',         desc: '30 дней подряд' },
-  streak_100:     { emoji: '👑', title: 'Сотня',         desc: '100 дней подряд' },
-  total_10:       { emoji: '📅', title: '10 дней',       desc: '10 дней всего' },
-  total_50:       { emoji: '📆', title: '50 дней',       desc: '50 дней всего' },
-  high_day:       { emoji: '✨', title: 'Хороший день',  desc: 'Средний индекс выше 8' },
-  all_above7:     { emoji: '🎯', title: 'Баланс',        desc: 'Все потребности выше 7 в один день' },
-  comeback:       { emoji: '🔄', title: 'Возвращение',   desc: 'Вернулся после перерыва в 3+ дня' },
-  growth:         { emoji: '📈', title: 'Рост',          desc: 'Потребность выросла на 3+ за неделю' },
-  pair_connected: { emoji: '🤝', title: 'Партнёр',       desc: 'Связался с партнёром' },
+const ACHIEVEMENT_META: Record<string, { title: string; desc: string }> = {
+  first_day:      { title: 'Первый шаг',   desc: 'Первая запись в дневнике' },
+  streak_3:       { title: 'Начало серии', desc: '3 дня подряд' },
+  streak_7:       { title: 'Неделя',        desc: '7 дней подряд' },
+  streak_14:      { title: 'Две недели',    desc: '14 дней подряд' },
+  streak_30:      { title: 'Месяц',         desc: '30 дней подряд' },
+  streak_100:     { title: 'Сотня',         desc: '100 дней подряд' },
+  total_10:       { title: '10 дней',       desc: '10 дней всего' },
+  total_50:       { title: '50 дней',       desc: '50 дней всего' },
+  high_day:       { title: 'Хороший день',  desc: 'Средний индекс выше 8' },
+  all_above7:     { title: 'Баланс',        desc: 'Все потребности выше 7 в один день' },
+  comeback:       { title: 'Возвращение',   desc: 'Возвращение после перерыва в 3+ дня' },
+  growth:         { title: 'Рост',          desc: 'Потребность выросла на 3+ за неделю' },
+  pair_connected: { title: 'Партнёр',       desc: 'Связь с партнёром' },
 };
 
 type StreakData = { currentStreak: number; longestStreak: number; totalDays: number; todayDone: boolean; weekDots: boolean[] };
@@ -62,10 +64,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
-  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [_homeScreenStatus] = useState<string | null>(null);
-
+  const [loadError, setLoadError] = useState(false);
   // Therapist relation
   const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
 
@@ -86,22 +86,22 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     setStreak(null);
     setAchievements(null);
     setInsights(null);
+    setLoadError(false);
   }
 
+  // Сбой любого фетча раньше глотался поодиночке — экран уходил в "ready" с
+  // молчаливыми нулями вместо реальных данных. Теперь виден баннером.
   useEffect(() => {
     Promise.all([
-      api.getStreak().then(setStreak).catch(() => {}),
-      api.getAchievements().then(setAchievements).catch(() => {}),
-      api.getInsights().then(setInsights).catch(() => {}),
-      api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))).catch(() => {}),
-      api.getTherapyRelation().then(r => setRelation(r)).catch(() => {}),
-      Promise.all([
-        api.getSchemaDiary().catch(() => []),
-        api.getModeDiary().catch(() => []),
-        api.getGratitudeDiary().catch(() => []),
-      ]).then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)).catch(() => {}),
-      api.getYsqHistory().then(h => setYsqCount(h.length)).catch(() => {}),
-    ]).finally(() => setReady(true));
+      api.getStreak().then(setStreak),
+      api.getAchievements().then(setAchievements),
+      api.getInsights().then(setInsights),
+      api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))),
+      api.getTherapyRelation().then(r => setRelation(r)),
+      Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
+        .then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)),
+      api.getYsqHistory().then(h => setYsqCount(h.length)),
+    ]).catch(() => setLoadError(true)).finally(() => setReady(true));
   }, [refreshKey]);
 
   const currentStreak = streak?.currentStreak ?? 0;
@@ -111,7 +111,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const weekDots      = streak?.weekDots ?? [];
   const earnedList    = achievements?.filter(a => a.earned) ?? [];
   const hasInsights   = insights && insights.weeklyStats.some(s => s.avg !== null);
-
 
   return (
     <div className="page-inner-wide">
@@ -137,16 +136,18 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         {!ready && (
           <>
             {[110, 80, 72].map((h, i) => (
-              <div key={i} style={{ height: h, borderRadius: 20, background: 'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)', backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
+              <Skeleton key={i} height={h} radius={20} style={{ marginBottom: 8 }} />
             ))}
           </>
         )}
+
+        {ready && loadError && <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 16 }}>{tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')}</div>}
 
         {/* ── Мой путь (архив всей активности) — первым, парно с миниаппом ── */}
         {ready && (
           <div {...pressable(() => setJourneyOpen(true))} className="section" style={{ cursor: 'pointer' }}>
             <div className="section-head">
-              <h3>🧭 Мой путь</h3>
+              <h3>Мой путь</h3>
               <span className="hint">→</span>
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
@@ -184,7 +185,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             <div className="section-head"><h3>Стрик</h3></div>
             {/* Top row: big number + secondary stats */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)' }}>
                 <div style={{
                   fontSize: 56, fontWeight: 900, lineHeight: 1, letterSpacing: '-3px',
                   color: currentStreak > 0
@@ -242,7 +243,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
             {/* CTA to fill today (streak broken) */}
             {currentStreak === 0 && totalDays > 0 && onOpenTracker && (
-              <button onClick={onOpenTracker} style={{ marginTop: 14, width: '100%', padding: '10px 0', border: 'none', borderRadius: 12, background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={onOpenTracker} style={{ marginTop: 14, width: '100%', padding: '10px 0', border: 'none', borderRadius: 'var(--r-12)', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Заполнить сегодня →
               </button>
             )}
@@ -274,7 +275,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
           return (
             <div className="section">
-              <div className="section-head"><h3>Активность</h3></div>
+              <div className="section-head">
+                <h3>Активность</h3>
+                <MonthShareButton activeDates={activeDates} totalDays={totalDays} />
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ display: 'flex', gap: 3, minWidth: 'max-content' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 16 }}>
@@ -327,7 +331,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое – за первую запись в дневник</div>
             ) : (
               /* Horizontal scroll of earned achievements */
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
                 {earnedList.map(a => {
                   const m = ACHIEVEMENT_META[a.id];
                   if (!m) return null;
@@ -336,12 +340,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       padding: '10px 12px',
-                      borderRadius: 14,
+                      borderRadius: 'var(--r-14)',
                       background: 'color-mix(in srgb, var(--accent) 9%, transparent)',
                       border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
                       minWidth: 64,
                     }}>
-                      <span style={{ fontSize: 26 }}>{m.emoji}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>{m.title}</span>
                     </div>
                   );
@@ -352,12 +355,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     flexShrink: 0,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '10px 12px',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     background: 'rgba(var(--fg-rgb),0.04)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
                     minWidth: 64,
                   }}>
-                    <span style={{ fontSize: 20, opacity: 0.25 }}>🔒</span>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                       ещё {achievements.filter(a => !a.earned).length}
                     </span>
@@ -375,20 +377,18 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
             {/* Best / worst day pills */}
             {((insights?.bestDayOfWeek || insights?.worstDayOfWeek) && (insights?.totalDays ?? 0) >= 7) && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 16 }}>
                 {insights?.bestDayOfWeek && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-yellow) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)' }}>
-                    <span style={{ fontSize: 13 }}>☀️</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--accent-yellow) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-yellow) 25%, transparent)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
                     </div>
-                    <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 8, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
+                    <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 11, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
                   </div>
                 )}
                 {insights?.worstDayOfWeek && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)' }}>
-                    <span style={{ fontSize: 13 }}>🌧</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>тяжелее</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)' }}>{insights.worstDayOfWeek}</div>
@@ -399,7 +399,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             )}
 
             {/* Need bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
               {insights?.weeklyStats.filter(s => s.avg !== null).map(s => {
                 const isUp = s.trend === '↑';
                 const isDown = s.trend === '↓';
@@ -411,8 +411,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{NEED_NAMES[s.needId]}</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>{(s.avg ?? 0).toFixed(1)} <span style={{ fontSize: 11 }}>{s.trend}</span></span>
                     </div>
-                    <div style={{ height: 6, borderRadius: 4, background: 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 4, width: `${barW}%`, background: barColor, opacity: 0.7, transition: 'width 0.4s ease' }} />
+                    <div style={{ height: 6, borderRadius: 'var(--r-4)', background: 'rgba(var(--fg-rgb),0.07)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 'var(--r-4)', width: `${barW}%`, background: barColor, opacity: 0.7, transition: 'width 0.4s ease' }} />
                     </div>
                   </div>
                 );
@@ -425,8 +425,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         {relation?.role === 'client' && relation.partnerName && (
           <div className="section">
             <div className="section-head"><h3>Терапевт</h3></div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{relation.partnerName}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16 }}>Схема-терапевт</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>{relation.partnerName}</div>
             {[
               relation.nextSession ? ['Следующая сессия', (() => {
                 const [datePart, timePart] = relation.nextSession!.includes('T') ? relation.nextSession!.split('T') : [relation.nextSession!, null];
@@ -450,7 +449,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         </div>
 
         {/* ── Настройки и аккаунт (только мобайл, на десктопе есть в сайдбаре) ── */}
-        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {onOpenSettings && (
             <button
               onClick={onOpenSettings}
@@ -494,12 +493,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
         >
-        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-8)' }}>
               {achievements.map(a => {
                 const m = ACHIEVEMENT_META[a.id];
                 if (!m) return null;
@@ -522,12 +521,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     style={{
                       background: a.earned ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
                       border: `1px solid ${a.earned ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'rgba(var(--fg-rgb),0.06)'}`,
-                      borderRadius: 16, padding: '14px 10px 12px',
+                      borderRadius: 'var(--r-16)', padding: '14px 10px 12px',
                       textAlign: 'center',
                       cursor: a.earned ? 'pointer' : 'default',
                     }}
                   >
-                    <div style={{ fontSize: 26, marginBottom: 6, filter: a.earned ? 'none' : 'grayscale(1) opacity(0.25)' }}>{m.emoji}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: a.earned ? 'var(--text)' : 'var(--text-faint)', marginBottom: 3, lineHeight: 1.3 }}>{m.title}</div>
                     {progress
                       ? <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>{progress}</div>
@@ -556,7 +554,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => setShowBestDayInfo(false)}
         >
-          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>

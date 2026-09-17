@@ -52,7 +52,7 @@ export function ModeEntryDone({
           marginTop: 16,
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         Готово <GlyphCheck />

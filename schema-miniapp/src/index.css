@@ -1,3 +1,9 @@
+/* Единый контракт токенов (акцент + шрифтовая пара Manrope/Spectral,
+   @font-face — shared/src/theme/fonts.css) — webapp ⇄ miniapp. ОБЯЗАН быть
+   самым первым правилом файла (кроме @charset) — таково правило @import в
+   CSS: любое правило перед ним делает импорт невалидным. */
+@import '../../shared/src/theme/tokens.css';
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Всё по схеме — New Design System (index.css)
    Drop-in replacement for src/index.css
@@ -5,8 +11,18 @@
    New additions: --surface, --surface-2, --border-color, --sheet-bg-2
    ───────────────────────────────────────────────────────────────────────────── */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overscroll-behavior: none; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
 
 /* ── Нижняя безопасная зона ──────────────────────────────────────────────────
    env() отдаёт реальный инсет только при viewport-fit=cover (index.html), но
@@ -16,136 +32,254 @@ html, body { height: 100%; overscroll-behavior: none; }
 :root {
   --safe-bottom: max(
     env(safe-area-inset-bottom, 0px),
-    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+    calc(
+      var(--tg-safe-area-inset-bottom, 0px) +
+        var(--tg-content-safe-area-inset-bottom, 0px)
+    )
   );
 }
 
 /* ── Dark theme (default) ──────────────────────────────────────────────────────
-   Палитра дизайн-макета «Сегодня» (тёплая «бумага» в светлой,
-   мягкий графит в тёмной). Имена токенов сохранены — все экраны и компоненты
-   перекрашиваются без правок. Карточки СПЛОШНЫЕ (не стекло) — как в макете.
-   Фоновые «блобы» убраны: макет — плоский, ровный фон (меньше сенсорного шума). */
+   «Тёплая ночь» — та же гамма, что в светлой теме, только перевёрнутая: не синий
+   графит, а глубокий тёплый коричнево-чёрный, тёплые чернила и та же
+   терракота, осветлённая до читаемого на тёмном контраста. Приложение обязано
+   оставаться собой и в два часа ночи: до этого тёмная тема была целиком
+   старой фиолетовой гаммой и выглядела другим продуктом.
+
+   Синий графит (#191b25) заменён на #16120f: холодный фон под тёплой
+   терракотой давал грязный отлив на границах карточек.
+
+   Имена токенов сохранены — экраны перекрашиваются без правок. Карточки
+   СПЛОШНЫЕ (не стекло). Фоновые «блобы» убраны: фон плоский и ровный
+   (меньше сенсорного шума). */
 :root {
-  --fg-rgb:        240, 240, 246;
-  --bg:            #191b25;
-  --sheet-bg:      #23252f;
-  --text:          #f0f0f6;
-  --nav-bg:        rgba(25, 27, 37, 0.82);
-  --text-sub:      rgba(240, 240, 246, 0.62);
-  --text-faint:    rgba(240, 240, 246, 0.40);
-  --chip-sel-text: #ffffff;
-  --on-accent:     #ffffff;
+  --fg-rgb: 240, 233, 226;
+  --bg: #16120f;
+  --sheet-bg: #1f1a16;
+  --text: #f0e9e2;
+  /* 0.86 → 0.96 → непрозрачный (2026-08-26): подложка панелей больше не
+     полупрозрачная, потому что blur под ней снят везде (см. ниже про
+     backdrop-filter). Полупрозрачность без размытия давала бы чёткое
+     просвечивание текста контента под подписями вкладок — ту самую «кашу»,
+     из-за которой значение уже поднимали с 0.86. Цвет равен --bg: панель
+     выглядит ровно так же, как выглядела сквозь размытие фона того же
+     цвета. */
+  --nav-bg: #16120f;
+  --text-sub: rgba(240, 233, 226, 0.64);
+  --text-faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08) */
 
-  /* Accent palette — макет (тёмная тема) */
-  --accent:        #8f86ff;
-  --accent-indigo: #9a8dff;
-  --accent-orange: #f7ad4d;
-  --accent-blue:   #5aa8f7;
-  --accent-green:  #42d19d;
-  --accent-yellow: #facc15;
-  --accent-red:    #f7708a;
-  --accent-pink:   #f77aa3;
+  /* Значения акцента — те же, что [data-theme='dark'] в shared/src/theme/
+     tokens.css. Продублированы ЗДЕСЬ намеренно: этот bare :root — тёмная
+     тема ПО УМОЛЧАНИЮ (мини-апп dark-first) — фон под недолгим кадром ДО
+     того, как JS (App.tsx, applyTheme) проставит настоящий data-theme.
+     НАШЁЛСЯ РЕАЛЬНЫЙ БАГ (полировка 2026-08, п.3, гейт a11y-smoke): у
+     этого bare `:root` и у `[data-theme='light']` в shared/tokens.css
+     одна специфичность (0,1,0) — при равенстве побеждает порядок в
+     каскаде, а этот блок идёт ПОСЛЕ `@import`. Из-за этого --accent (и все
+     производные) молча оставались тёмными ДАЖЕ при data-theme="light":
+     активная вкладка BottomNav красилась в #c97d5a вместо #9a5b3e —
+     2.81:1 вместо 4.5:1. Почему для dark отдельный блок НЕ нужен: bare
+     `:root` уже содержит верные dark-значения и выигрывает тот же спор по
+     специфичности у shared-блока `[data-theme='dark']` — тоже случайно
+     порядком, но оба источника согласны, поэтому и без явного
+     `html[data-theme='dark']` результат верный. Для light такого совпадения
+     нет (нужны ДРУГИЕ числа) — значения явно повторены ниже,
+     в `html[data-theme='light']`, где специфичность (0,1,1) уже не
+     завязана на порядок. */
+  --accent: #c97d5a;
+  --accent-soft: rgba(201, 125, 90, 0.16);
+  --accent-line: rgba(201, 125, 90, 0.3);
+  --accent-rgb: 201, 125, 90;
+  --accent-hi: #db8e68;
+  --on-accent: #16120f;
+  --chip-sel-text: var(--on-accent);
+  --accent-hover: var(--accent-hi);
+  --accent-bg: var(--accent-soft);
+  --accent-indigo: var(--accent);
 
-  /* Solid surfaces (как в макете) */
-  --surface:       #23252f;
-  --surface-2:     #282b37;
-  --border-color:  rgba(255, 255, 255, 0.09);
-  --track-color:   rgba(255, 255, 255, 0.10);
-  --sheet-bg-2:    #1f212b;
+  /* Служебные цвета ниже (успех/ошибка/графики) остаются РАЗНЫМИ от
+     --accent: сведи их в один — и статус перестанет читаться. */
+  --accent-orange: #d98b4a;
+  --accent-green: #6bb083;
+  --accent-blue: #6ba3d6;
+  --accent-yellow: #d9a72c;
+  --accent-red: #e07a67;
+  --accent-pink: #cc8497;
 
-  /* Плоский фон макета — блобы отключены */
-  --blob-1: rgba(0, 0, 0, 0);
-  --blob-2: rgba(0, 0, 0, 0);
+  /* Тёплые ночные поверхности — коричневая, а не синяя, ветка серого */
+  --surface: #1f1a16;
+  --surface-2: #29221d;
+  --border-color: rgba(240, 233, 226, 0.1);
+  --track-color: rgba(240, 233, 226, 0.1);
+  --sheet-bg-2: #1a1512;
+
+  /* Те же роли, что в светлой теме: на них держатся списки и подписи */
+  --ink-2: rgba(240, 233, 226, 0.78);
+  --muted: rgba(240, 233, 226, 0.62);
+  --faint: rgba(240, 233, 226, 0.52); /* ≥4.5:1 к --bg (аудит 2026-08), совпадает с --text-faint */
+  --line: rgba(240, 233, 226, 0.1);
+  --calm: #253026;
+  --dot: rgba(240, 233, 226, 0.24);
+  --chevron: rgba(240, 233, 226, 0.32);
+  --progress-track: rgba(240, 233, 226, 0.14);
 }
 
 /* ── Light theme («бумага» макета) ─────────────────────────────────────────── */
-html[data-theme="light"] {
-  --fg-rgb:        43, 41, 52;
-  --bg:            #f4f0e9;
-  --sheet-bg:      #ffffff;
-  --text:          #2b2934;
-  --nav-bg:        rgba(244, 240, 233, 0.86);
-  --text-sub:      rgba(43, 41, 52, 0.60);
-  --text-faint:    rgba(43, 41, 52, 0.40);
-  --chip-sel-text: #2b2934;
-  --on-accent:     #ffffff;
+html[data-theme='light'] {
+  --fg-rgb: 34, 30, 27;
+  --bg: #faf7f3;
+  --sheet-bg: #ffffff;
+  --text: #221e1b;
+  /* Непрозрачный, как в тёмной теме: см. комментарий у bare :root выше. */
+  --nav-bg: #faf7f3;
+  --text-sub: #4a423c;
+  /* color-contrast (axe, 2026-08): #706c69 держал 4.5:1 только к голому
+     --bg. В реальной вёрстке текст чаще лежит на подкрашенной поверхности
+     карточки (rgba(var(--fg-rgb),0.04..0.06)) — она чуть темнее --bg, и
+     контраст падал до 4.02–4.49 (карточка онбординга, кнопка «Позже»).
+     #655f5c держит ≥4.5:1 и на голом --bg, и на самой тёмной реальной
+     подложке (0.06-тонировка) с запасом. */
+  --text-faint: #655f5c; /* ≥4.5:1 к --bg и к тонированным карточкам (0.06) */
 
-  /* Accent palette — макет (светлая тема) */
-  --accent:        #6d5efc;
-  --accent-indigo: #6d5efc;
-  --accent-orange: #d97706;
-  --accent-blue:   #2f7fe0;
-  --accent-green:  #0f9d67;
-  --accent-yellow: #b45309;
-  --accent-red:    #e5484d;
-  --accent-pink:   #ec5f8b;
+  /* Явное повторение light-констант shared/src/theme/tokens.css (не только
+     импорт) — по той же причине, что html[data-theme='dark'] выше: bare
+     :root того же файла держит dark-значения с равной специфичностью,
+     последним в каскаде побеждал он (полировка 2026-08, п.3). */
+  --accent: #9a5b3e;
+  --accent-soft: rgba(154, 91, 62, 0.12);
+  --accent-line: rgba(154, 91, 62, 0.24);
+  --accent-rgb: 154, 91, 62;
+  --accent-hi: #86482d;
+  --on-accent: #ffffff;
+  --chip-sel-text: var(--on-accent);
+  --accent-hover: var(--accent-hi);
+  --accent-bg: var(--accent-soft);
+  --accent-indigo: var(--accent);
+
+  /* Служебные цвета ниже (успех/ошибка/графики) остаются РАЗНЫМИ от
+     --accent. */
+  --accent-orange: #b4622a;
+  --accent-blue: #2f6f9e;
+  --accent-green: #4a7c59;
+  --accent-yellow: #a8730f;
+  --accent-red: #b3453f;
+  --accent-pink: #b05a72;
 
   /* Тёплые бумажные поверхности */
-  --surface:       #ffffff;
-  --surface-2:     #faf8f3;
-  --border-color:  rgba(43, 41, 52, 0.08);
-  --track-color:   rgba(43, 41, 52, 0.07);
-  --sheet-bg-2:    #faf8f3;
+  --surface: #ffffff;
+  --surface-2: #f2ece4;
+  --border-color: rgba(34, 30, 27, 0.07);
+  --track-color: rgba(34, 30, 27, 0.07);
+  --sheet-bg-2: #f2ece4;
 
-  /* Плоский фон макета — блобов нет */
-  --blob-1: rgba(0, 0, 0, 0);
-  --blob-2: rgba(0, 0, 0, 0);
+  /* Оттенки текста и линий, на которых держится вёрстка «бумаги» */
+  --ink-2: #4a423c;
+  --muted: #8a8079;
+  --faint: #655f5c; /* ≥4.5:1 к --bg и тонированным карточкам, совпадает с --text-faint */
+  --line: rgba(34, 30, 27, 0.07);
+  --calm: #e7ede4;
+  --dot: #e0d6cb;
+  --chevron: #c7bdb3;
+  --progress-track: #e6ddd3;
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
 body {
   background: var(--bg);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   color: var(--text);
   min-height: 100vh;
 }
 
-#root { min-height: 100vh; }
+#root {
+  min-height: 100vh;
+}
 
 /* ── Input reset ───────────────────────────────────────────────────────────── */
-input[type=range] { -webkit-appearance: none; appearance: none; outline: none; border: none; background: transparent; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 0; height: 0; }
-input[type=range]::-moz-range-thumb     { width: 0; height: 0; border: none; background: transparent; }
-button { font-family: inherit; }
-::placeholder { color: var(--text-faint); opacity: 1; }
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+}
+input[type='range']::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+}
+button {
+  font-family: inherit;
+  /* Двойной тап по кнопке не зумит и не задерживает клик — пинч-зум
+     страницы (WCAG 1.4.4) при этом остаётся разрешён, см. index.html. */
+  touch-action: manipulation;
+}
+[role='button'] {
+  touch-action: manipulation;
+}
+::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
 
 /* ── Scrollbar hide ────────────────────────────────────────────────────────── */
-* { scrollbar-width: none; -ms-overflow-style: none; }
-*::-webkit-scrollbar { display: none; }
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
 
 /* ── Primary button ────────────────────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 14px;
-  padding: 14px 0;
+  border-radius: var(--r-16);
+  padding: 16px 0;
+  min-height: 48px;
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s, transform 0.15s;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
 }
-.btn-primary:active { opacity: 0.82; transform: scale(0.97); }
-.btn-primary:disabled { opacity: 0.4; cursor: default; }
+.btn-primary:active {
+  opacity: 0.82;
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 /* Light theme: softer gradient instead of flat saturated color */
-html[data-theme="light"] .btn-primary {
+html[data-theme='light'] .btn-primary {
   background: var(--accent);
-  box-shadow: 0 4px 16px rgba(109, 94, 252, 0.28);
+  box-shadow: none;
 }
 
 /* ── Ghost / tinted button ─────────────────────────────────────────────────── */
 .btn-ghost {
-  background: rgba(var(--fg-rgb), 0.06);
+  background: var(--surface-2);
   color: var(--accent);
   border: none;
-  border-radius: 12px;
-  padding: 10px 0;
-  font-size: 13px;
+  border-radius: var(--r-14);
+  padding: 13px 0;
+  min-height: 48px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -153,67 +287,246 @@ html[data-theme="light"] .btn-primary {
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s;
 }
-.btn-ghost:active { opacity: 0.7; }
+.btn-ghost:active {
+  opacity: 0.7;
+}
 
 /* ── Card ──────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  transition: opacity 0.12s, transform 0.12s;
+  border-radius: 18px;
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
-.card:active { opacity: 0.72; transform: scale(0.98); }
+.card:active {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
 
-/* Light theme: white cards with subtle shadow (iOS-style) */
-html[data-theme="light"] .card {
-  border-color: transparent;
-  box-shadow: 0 2px 12px rgba(22, 19, 44, 0.08), 0 0 1px rgba(22, 19, 44, 0.05);
+/* Тень — только чтобы карточка отделилась от фона: потолок 0 1px 2px.
+   Глубокие тени возвращают «наляпанность», от которой уходит система. */
+html[data-theme='light'] .card {
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
 }
 
 /* ── Section label ─────────────────────────────────────────────────────────── */
-.section-label {
+.section-label,
+.d-caps {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.10em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--faint);
 }
 
 /* ── Typography scale ──────────────────────────────────────────────────────── */
-.text-xs  { font-size: 11px; }
-.text-sm  { font-size: 13px; }
-.text-md  { font-size: 15px; }
-.text-lg  { font-size: 17px; }
-.text-xl  { font-size: 20px; }
-.text-2xl { font-size: 24px; }
-.text-3xl { font-size: 28px; }
-.font-medium   { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold     { font-weight: 700; }
-.font-black    { font-weight: 800; }
+.text-xs {
+  font-size: 11.5px;
+}
+.text-sm {
+  font-size: 13px;
+}
+.text-md {
+  font-size: 15px;
+}
+.text-lg {
+  font-size: 17px;
+}
+.text-xl {
+  font-size: 20px;
+}
+.text-2xl {
+  font-size: 24px;
+}
+.text-3xl {
+  font-size: 28px;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-black {
+  font-weight: 800;
+}
 
 /* ── Animations ────────────────────────────────────────────────────────────── */
-@keyframes fade-in   { from { opacity: 0; transform: translateY(8px); }  to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-up  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pop-in    { 0%   { opacity: 0; transform: scale(0.94); }      100% { opacity: 1; transform: scale(1); } }
-@keyframes sheet-up  { from { transform: translateY(100%); }             to   { transform: translateY(0); } }
-@keyframes tab-right { from { opacity: 0; transform: translateX(24px); } to   { opacity: 1; transform: translateX(0); } }
-@keyframes tab-left  { from { opacity: 0; transform: translateX(-24px); }to   { opacity: 1; transform: translateX(0); } }
-@keyframes shimmer        { from { background-position: 200% center; }        to   { background-position: 0% center; } }
-@keyframes slide-in-right { from { opacity: 0; transform: translateX(32px); } to   { opacity: 1; transform: translateX(0); } }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes tab-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes tab-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 /* Мягкое «дыхание» декоративного круга в hero-CTA (как круг на экране «Помощь») */
-@keyframes hero-breathe { 0%,100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.18); opacity: 1; } }
+@keyframes hero-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
 
 /* ── Field focus ────────────────────────────────────────────────────────────── */
-.field-input:focus { border-color: rgba(var(--fg-rgb), 0.25) !important; outline: none; }
+.field-input {
+  border-radius: var(--r-14);
+}
+.field-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.25) !important;
+  outline: none;
+}
 
 /* ── Chip / selection ───────────────────────────────────────────────────────── */
-.sel-btn { transition: background 150ms, border-color 150ms, color 150ms; -webkit-tap-highlight-color: transparent; }
+.sel-btn {
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ── Layout: отступы под таб-бар и системную полосу (--safe-bottom) ─────────── */
-.section-pad { min-height: 100vh; padding-bottom: calc(140px + var(--safe-bottom)); }
-.sheet-scroll { overflow-y: auto; flex: 1; padding: 0 24px calc(48px + var(--safe-bottom)); }
+.section-pad {
+  min-height: 100vh;
+  padding-bottom: calc(140px + var(--safe-bottom));
+}
+.sheet-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 24px calc(48px + var(--safe-bottom));
+}
+
+/* Кнопка-действие в неактивном виде: не «полупрозрачная», а спокойно
+   выключенная — прозрачность съедала читаемость подписи. */
+.btn-primary:disabled {
+  background: var(--surface-2);
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+/* Заголовки экранов и вопросы — Spectral. */
+.d-display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--text);
+}
+/* Строка списка: цель нажатия не меньше 60px (в макете — строки дневников). */
+.d-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 120ms;
+}
+.d-row + .d-row {
+  border-top: 1px solid var(--line);
+}
+.d-row:active {
+  background: var(--surface-2);
+}
+/* Белый контейнер-группа: строки внутри разделяются волосяной линией. */
+.d-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(34, 30, 27, 0.04);
+  overflow: hidden;
+}
+
+/* Запись в списке дневника: строки внутри панели, не отдельные карточки. */
+.d-entry {
+  padding: var(--space-16);
+}
+.d-entry + .d-entry {
+  border-top: 1px solid var(--line);
+}
+/* Первая строка записи в свёрнутом виде — одной строкой с многоточием. */
+.d-clamp {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
@@ -221,18 +534,23 @@ html[data-theme="light"] .card {
    Блок продублирован: media query и атрибут не объединить в один селектор.
    !important нужен, чтобы перебить инлайновые style={{ transition, animation }}. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
-html[data-reduce-motion="1"] *,
-html[data-reduce-motion="1"] *::before,
-html[data-reduce-motion="1"] *::after {
+html[data-reduce-motion='1'] *,
+html[data-reduce-motion='1'] *::before,
+html[data-reduce-motion='1'] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* Правила .skel живут в shared/src/theme/tokens.css — общий источник цвета
+   плашки-скелетона для webapp и мини-аппа (см. комментарий там). */

@@ -12,6 +12,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * Returns a `goBack` function – use it for ALL close/back actions inside
  * the sheet so that history entries are never orphaned.
  */
+// Ж5 дизайн-аудита 2026-08: webapp не слушал Escape вовсе (miniapp — слушал).
+// Стек id смонтированных history-шитов — модульный, не state хука: нужен
+// только чтобы Escape с общего document-листенера закрывал ИМЕННО верхний
+// лист при нескольких наложенных (иначе сработали бы все разом). Пуш/поп
+// синхронны с mount/unmount эффектом ниже — верхушка стека всегда совпадает
+// с последним открытым листом.
+const openSheetIds: string[] = [];
+
 export function useHistorySheet(onClose: () => void) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,6 +54,25 @@ export function useHistorySheet(onClose: () => void) {
       ref.current();
     }
   }, [location, id]);
+
+  useEffect(() => {
+    openSheetIds.push(id);
+    return () => {
+      const idx = openSheetIds.lastIndexOf(id);
+      if (idx !== -1) openSheetIds.splice(idx, 1);
+    };
+  }, [id]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      // Не верхний из наложенных листов — Escape его не касается.
+      if (openSheetIds[openSheetIds.length - 1] !== id) return;
+      navigate(-1);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [id, navigate]);
 
   return () => navigate(-1);
 }

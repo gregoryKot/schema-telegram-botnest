@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
 import { formatQuizMetrics } from './quiz-metrics.format';
@@ -7,10 +8,17 @@ import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
+import { formatCaseMetrics } from './case-metrics.format';
+import { CaseMetricsService } from './case-metrics.service';
 import {
   ONBOARDING_STEPS,
+  SITE_INSTALL_SURFACES,
   TODAY_BLOCKS,
 } from '../analytics/analytics.constants';
+
+// IN-список сайтовых surface для исключения из воронки мини-аппа — сама
+// строка ${...} собирается один раз, а не в каждом запросе.
+const SITE_SURFACES_LIST = Prisma.join(SITE_INSTALL_SURFACES);
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -23,17 +31,20 @@ export class ProductMetricsService {
     private readonly quizMetrics: QuizMetricsService,
     private readonly practiceLink: PracticeLinkMetricsService,
     private readonly practiceMetrics: PracticeMetricsService,
+    private readonly caseMetrics: CaseMetricsService,
   ) {}
 
   /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
   async render(): Promise<string> {
-    const [metrics, quiz, practice, practiceSessions] = await Promise.all([
-      this.getMetrics(),
-      this.quizMetrics.getMetrics(),
-      this.practiceLink.getMetrics(),
-      this.practiceMetrics.getMetrics(),
-    ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}`;
+    const [metrics, quiz, practice, practiceSessions, cases] =
+      await Promise.all([
+        this.getMetrics(),
+        this.quizMetrics.getMetrics(),
+        this.practiceLink.getMetrics(),
+        this.practiceMetrics.getMetrics(),
+        this.caseMetrics.getMetrics(),
+      ]);
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
@@ -99,6 +110,7 @@ export class ProductMetricsService {
         SELECT count(DISTINCT uid)::bigint AS c FROM (
           SELECT "userId" AS uid FROM "UserFlashcard"
           UNION SELECT "userId" FROM "UserBeliefCheck"
+          UNION SELECT "userId" FROM "UserPhraseCheck"
           UNION SELECT "userId" FROM "UserLetter"
           UNION SELECT "userId" FROM "UserSafePlace"
         ) t`,
@@ -170,11 +182,19 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'via'`,
-      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>`
+      // Воронка мини-аппа: сайтовые surface (site_banner/site_landing) не
+      // считаются здесь — у них своя семантика shown/add/added (см. блок
+      // «Установка с сайта», site-install-metrics.*), подмешивать их сюда
+      // значит пачкать воронку Telegram цифрами с другого источника.
+      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>(
+        Prisma.sql`
         SELECT "meta"->>'action' AS action, count(*)::bigint AS c
         FROM "AnalyticsEvent"
         WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
+          AND ("meta"->>'surface' IS NULL
+               OR "meta"->>'surface' NOT IN (${SITE_SURFACES_LIST}))
         GROUP BY "meta"->>'action'`,
+      ),
       ev('journey_open'),
       ev('ysq_help_open'),
     ]);

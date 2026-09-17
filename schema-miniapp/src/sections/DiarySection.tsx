@@ -11,14 +11,17 @@ import { DiaryListView } from '../components/diary/DiaryListView';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
+import { useTr } from '../utils/addressForm';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
 interface Props {
   onClose?: () => void;
+  onOpenTracker?: () => void;
 }
 
-export function DiarySection({ onClose }: Props = {}) {
+export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
+  const tr = useTr();
   const [activeDiary, setActiveDiary] = useState<DiaryType | null>(null);
   const [newEntry, setNewEntry] = useState<DiaryType | null>(null);
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
@@ -29,6 +32,17 @@ export function DiarySection({ onClose }: Props = {}) {
   const [activeSchemaIds, setActiveSchemaIds] = useState<string[] | undefined>(
     undefined,
   );
+  // Серия и последняя отметка трекера — из профиля, а не из константы: на
+  // чистом аккаунте чип серии просто не рисуется (правило «никаких заглушек»).
+  const [streak, setStreak] = useState<number | undefined>(undefined);
+  const [lastNeedsDate, setLastNeedsDate] = useState<string | undefined>(
+    undefined,
+  );
+  // Сбой ≠ пусто: отказ ЛЮБОГО из трёх дневников раньше оставлял entries []
+  // — дневник выглядел стёртым, хотя записи (терапевтические данные) целы на
+  // сервере. loadFailed рисует предупреждение, но не прячет остальной UI —
+  // человек может хотеть создать запись прямо сейчас.
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -38,12 +52,18 @@ export function DiarySection({ onClose }: Props = {}) {
         api.getGratitudeDiary(),
         api.getProfile().catch(() => null),
       ]);
+      setLoadFailed(false);
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
-      if (profile) setActiveSchemaIds(profile.ysq.activeSchemaIds);
+      if (profile) {
+        setActiveSchemaIds(profile.ysq.activeSchemaIds);
+        setStreak(profile.streak);
+        setLastNeedsDate(profile.lastActivity.needsTracker ?? undefined);
+      }
     } catch (err) {
       console.error(err);
+      setLoadFailed(true);
     }
   }, []);
 
@@ -72,6 +92,51 @@ export function DiarySection({ onClose }: Props = {}) {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      {loadFailed && (
+        // Предупреждение НЕ прячет остальной UI (записи могли не загрузиться,
+        // но пользователь может хотеть создать новую прямо сейчас) — только
+        // баннер сверху над списком/домашним экраном.
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-10)',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            padding: '10px 16px',
+            background: 'rgba(248,113,113,0.1)',
+            borderBottom: '1px solid rgba(248,113,113,0.25)',
+            fontSize: 13,
+            color: 'var(--accent-red)',
+            lineHeight: 1.5,
+          }}
+        >
+          <span>
+            {tr(
+              'Не удалось загрузить записи дневника. Проверь соединение — записи на месте, просто не загрузились',
+              'Не удалось загрузить записи дневника. Проверьте соединение — записи на месте, просто не загрузились',
+            )}
+          </span>
+          <button
+            onClick={() => void load()}
+            style={{
+              flexShrink: 0,
+              padding: '6px 14px',
+              borderRadius: 'var(--r-10)',
+              border: 'none',
+              fontFamily: 'inherit',
+              background: 'rgba(248,113,113,0.15)',
+              color: 'var(--accent-red)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Обновить
+          </button>
+        </div>
+      )}
       {activeDiary ? (
         <DiaryListView
           type={activeDiary}
@@ -90,7 +155,10 @@ export function DiarySection({ onClose }: Props = {}) {
           lastSchemaDiaryDate={schemaEntries[0]?.createdAt}
           lastModeDiaryDate={modeEntries[0]?.createdAt}
           lastGratitudeDiaryDate={gratitudeEntries[0]?.date}
+          streak={streak}
+          lastNeedsDate={lastNeedsDate}
           onOpen={(type) => setActiveDiary(type)}
+          onOpenTracker={onOpenTracker}
           onClose={onClose}
         />
       )}

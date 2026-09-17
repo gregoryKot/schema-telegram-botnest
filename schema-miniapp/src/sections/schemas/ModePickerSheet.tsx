@@ -4,54 +4,10 @@ import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { BottomSheet } from '../../components/BottomSheet';
 import { cm } from './utils';
-
-const POPULAR_MODE_IDS = [
-  'vulnerable_child',
-  'detached_protector',
-  'demanding_critic',
-  'abandoned_child',
-  'compliant_surrenderer',
-];
-
-const MODE_DESC: Record<string, string> = {
-  vulnerable_child: 'Беспомощность, грусть, страх — нуждается в защите',
-  lonely_child: 'Одиночество и непонятость даже среди людей',
-  abandoned_child: 'Страх быть брошенным, тревога при угрозе отношениям',
-  humiliated_child: 'Стыд и ощущение дефективности, страх осуждения',
-  dependent_child: 'Нужна постоянная поддержка, боится самостоятельных решений',
-  angry_child: 'Злость из-за неудовлетворённых потребностей',
-  stubborn_child: 'Упрямое сопротивление требованиям и контролю',
-  enraged_child: 'Неконтролируемая ярость при угрозе или несправедливости',
-  impulsive_child: 'Действует не думая, следует желаниям без учёта последствий',
-  undisciplined_child: 'Избегает скучного, быстро теряет интерес и бросает',
-  compliant_surrenderer: 'Соглашается со всем, чтобы избежать конфликта',
-  helpless_surrenderer: 'Ощущает себя беспомощным, ждёт что другие всё решат',
-  detached_protector:
-    'Отключается эмоционально, уходит в себя чтобы не чувствовать',
-  detached_self_soother: 'Успокаивает себя через еду, экраны, привычки',
-  avoidant_protector: 'Избегает ситуаций и людей, которые могут причинить боль',
-  angry_protector: 'Отталкивает других злостью, защищаясь от уязвимости',
-  self_aggrandiser: 'Ощущение особости и превосходства над другими',
-  overcontroller:
-    'Стремится всё контролировать, тревожится от неопределённости',
-  perfectionistic_oc: 'Недостижимые стандарты, страх малейшей ошибки',
-  suspicious_oc: 'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc: 'Отрицает слабость — должен быть сильным всегда',
-  flagellating_oc: 'Наказывает себя за ошибки строже чем нужно',
-  compulsive_oc: 'Навязчивые ритуалы и действия для снижения тревоги',
-  worrying_oc: 'Хроническое беспокойство о будущих катастрофах',
-  bully_attack: 'Добивается своего через запугивание и агрессию',
-  manipulative: 'Влияет на людей косвенно, скрывая истинные намерения',
-  predator: 'Использует других в своих интересах без сочувствия',
-  attention_seeker: 'Постоянно ищет признания и похвалы от окружающих',
-  pollyanna: 'Отрицает проблемы, видит всё в розовом цвете',
-  demanding_critic: 'Внутренний голос завышенных требований и критики',
-  punitive_critic: 'Жёсткое внутреннее осуждение и приговоры себе',
-  guilt_critic: 'Постоянное чувство вины и самообвинения',
-  happy_child: 'Спонтанность, радость и игривость без тревоги',
-  healthy_adult: 'Взвешенные решения, забота о себе и других',
-  good_parent: 'Внутренний поддерживающий голос, ободряет и успокаивает',
-};
+import {
+  MODE_DESC,
+  POPULAR_MODE_IDS,
+} from '../../../../shared/src/mode/modePickerDesc';
 
 export function ModePickerSheet({
   selected,
@@ -91,8 +47,8 @@ export function ModePickerSheet({
           }}
         >
           {tr(
-            'Выбери режимы которые ты замечаешь у себя.',
-            'Выберите режимы которые вы замечаете у себя.',
+            'Выбери режимы, которые ты замечаешь у себя.',
+            'Выберите режимы, которые вы замечаете у себя.',
           )}
         </div>
 
@@ -109,7 +65,13 @@ export function ModePickerSheet({
           >
             С чего начать
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+            }}
+          >
             {POPULAR_MODE_IDS.map((id) => {
               const mode = ALL_MODES.find((m) => m.id === id);
               if (!mode) return null;
@@ -122,18 +84,15 @@ export function ModePickerSheet({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     padding: '10px 12px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     cursor: 'pointer',
                     background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)',
                     border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`,
                     transition: 'all 0.15s',
                   }}
                 >
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>
-                    {mode.emoji}
-                  </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
@@ -205,7 +164,13 @@ export function ModePickerSheet({
               >
                 {group.group}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-4)',
+                }}
+              >
                 {group.items
                   .filter((m) => !POPULAR_MODE_IDS.includes(m.id))
                   .map((m) => {
@@ -217,9 +182,9 @@ export function ModePickerSheet({
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 10,
+                          gap: 'var(--space-10)',
                           padding: '10px 12px',
-                          borderRadius: 12,
+                          borderRadius: 'var(--r-12)',
                           cursor: 'pointer',
                           background: active
                             ? cm(c, 9)
@@ -228,9 +193,6 @@ export function ModePickerSheet({
                           transition: 'all 0.15s',
                         }}
                       >
-                        <span style={{ fontSize: 18, flexShrink: 0 }}>
-                          {m.emoji}
-                        </span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
@@ -277,7 +239,7 @@ export function ModePickerSheet({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background:
               'linear-gradient(135deg, var(--accent), var(--accent-blue))',

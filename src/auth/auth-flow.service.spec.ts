@@ -55,6 +55,7 @@ function makeConfig(webappUrl = 'https://schemehappens.ru'): ConfigService {
   return {
     getOrThrow: jest.fn((key: string) => {
       if (key === 'WEBAPP_URL') return webappUrl;
+      if (key === 'JWT_SECRET') return 'test-jwt-secret';
       throw new Error(`unexpected config key ${key}`);
     }),
   } as unknown as ConfigService;
@@ -275,7 +276,7 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
 describe('AuthFlowService.finishOAuthRedirect', () => {
   const FRONTEND = 'https://schemehappens.ru';
 
-  it('исход "merge" → редирект на /account/merge с токеном/summary/provider/name', () => {
+  it('исход "merge" → редирект на /account/merge с токеном/summary/provider/name', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -293,7 +294,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     expect(url).toContain(encodeURIComponent('Грег'));
   });
 
-  it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', () => {
+  it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -308,7 +309,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     expect(url).not.toContain('null');
   });
 
-  it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', () => {
+  it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -322,7 +323,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     );
   });
 
-  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback с access_token в хэше', () => {
+  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback с access_token в хэше', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -343,31 +344,33 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
 });
 
 describe('AuthFlowService.linkUserIdFromState', () => {
-  const svc = makeService({});
-
-  it('валидный base64url JSON с linkUserId → возвращает BigInt', () => {
-    const state = Buffer.from(JSON.stringify({ linkUserId: '42' })).toString(
-      'base64url',
-    );
+  // state теперь — подписанный JWT (oauth-state.ts, C1), не base64url JSON.
+  // Крипта сама покрыта oauth-state.spec.ts; здесь — сквозной roundtrip через
+  // AuthFlowService (buildLinkState/linkUserIdFromState делят один stateSecret()).
+  it('roundtrip: buildLinkState → linkUserIdFromState сохраняет linkUserId', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(42n);
     expect(svc.linkUserIdFromState(state)).toBe(42n);
   });
 
-  it('валидный JSON без linkUserId (анонимный вход) → null', () => {
-    const state = Buffer.from(JSON.stringify({ nonce: 'x' })).toString(
-      'base64url',
-    );
+  it('buildLinkState(null) (анонимный вход) → linkUserIdFromState возвращает null', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(null);
     expect(svc.linkUserIdFromState(state)).toBeNull();
   });
 
-  it('linkUserId: null явно в state → null', () => {
-    const state = Buffer.from(JSON.stringify({ linkUserId: null })).toString(
-      'base64url',
-    );
-    expect(svc.linkUserIdFromState(state)).toBeNull();
+  it('РЕГРЕССИЯ C1: неподписанный base64url JSON (старый формат = вектор атаки) → null', () => {
+    const svc = makeService({});
+    // Ровно то, что слал бы атакующий: linkUserId=<жертва> без подписи.
+    const forged = Buffer.from(
+      JSON.stringify({ nonce: 'x', linkUserId: '999' }),
+    ).toString('base64url');
+    expect(svc.linkUserIdFromState(forged)).toBeNull();
   });
 
-  it('битый (не-JSON) state → null, не бросает', () => {
-    expect(svc.linkUserIdFromState('not-valid-base64url-json!!!')).toBeNull();
+  it('битый state → null, не бросает', () => {
+    const svc = makeService({});
+    expect(svc.linkUserIdFromState('garbage!!!')).toBeNull();
   });
 });
 
@@ -396,12 +399,13 @@ describe('AuthFlowService.oauthRedirect', () => {
         path: '/api/auth',
       }),
     );
+    // state — подписанный JWT (C1), не самоописывающийся JSON — читаем его
+    // тем же путём, что и продовый код (svc.linkUserIdFromState), а не
+    // Buffer/JSON.parse напрямую.
     const state = res.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-      linkUserId: string | null;
-    };
-    expect(decoded.linkUserId).toBe('999');
-    expect(buildAuthUrl).toHaveBeenCalledWith(state);
+    expect(svc.linkUserIdFromState(state)).toBe(999n);
+    // Есть webUser → ПРИВЯЗКА → forceChooser=true (принудительный выбор аккаунта).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, true);
     expect(res.redirect).toHaveBeenCalledWith(
       'https://accounts.google.com/o/authorize?x=1',
     );
@@ -420,10 +424,10 @@ describe('AuthFlowService.oauthRedirect', () => {
 
     svc.oauthRedirect('google', req, res);
     const state = res.cookie.mock.calls[0][1] as string;
-    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
-      linkUserId: string | null;
-    };
-    expect(decoded.linkUserId).toBeNull();
+    expect(svc.linkUserIdFromState(state)).toBeNull();
+    // Нет webUser → ВХОД → forceChooser=false: Google впустит уже вошедшего
+    // одним касанием, а не «с нуля» (разбор 2026-08-31).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
   });
 
   it('провайдер не поддерживает OAuth (нет buildAuthUrl) → BadRequestException', () => {
@@ -438,6 +442,66 @@ describe('AuthFlowService.oauthRedirect', () => {
       BadRequestException,
     );
     expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  // РЕГРЕССИЯ 2026-09-08: сайт целиком (включая /login и /api/auth/*)
+  // обслуживается и с домена-алиаса (kotlarewski.gr) — колбэк провайдера
+  // всегда приходит на канонический хост, поэтому кука oauth_state,
+  // поставленная на алиасе, там не увидится («OAuth state mismatch»).
+  it('РЕГРЕССИЯ 2026-09-08: анонимный вход с алиас-домена → 302 на хост колбэка, кука oauth_state НЕ ставится, buildAuthUrl не вызывается', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://accounts.google.com/x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      originalUrl: '/api/auth/google?ticket=K7M2QX94',
+    });
+
+    svc.oauthRedirect('google', req, res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      'https://schemehappens.ru/api/auth/google?ticket=K7M2QX94&_oh=1',
+    );
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(buildAuthUrl).not.toHaveBeenCalled();
+  });
+
+  it('привязка (webUser есть) с алиас-домена → редиректа на канонический хост нет, кука ставится как обычно', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://accounts.google.com/x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      webUser: { userId: 999n },
+    });
+
+    svc.oauthRedirect('google', req, res);
+
+    // Никакого редиректа на другой хост — привязка живёт куками текущего хоста.
+    expect(res.redirect).toHaveBeenCalledWith('https://accounts.google.com/x');
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      expect.any(String),
+      expect.objectContaining({ path: '/api/auth' }),
+    );
+    expect(buildAuthUrl).toHaveBeenCalled();
   });
 });
 
@@ -579,6 +643,97 @@ describe('AuthFlowService.oauthCallback', () => {
     await svc.oauthCallback('google', 'code-1', state, '', req, res);
     expect(res.redirect).toHaveBeenCalledWith(
       `${FRONTEND}/auth/error?reason=google_failed`,
+    );
+  });
+});
+
+// Билет входа: вход начат в установленном приложении, Google требует
+// системный браузер — без этого куска сессия оставалась бы в браузере, а
+// приложение стояло бы на экране входа (разбор 2026-08-28).
+describe('finishOAuthRedirect — возврат сессии в контейнер, начавший вход', () => {
+  function makeRes() {
+    return {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as Response & { redirect: jest.Mock; cookie: jest.Mock };
+  }
+
+  const tokensOutcome = {
+    kind: 'tokens' as const,
+    userId: 999n,
+    tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 900 },
+  };
+
+  it('с билетом НЕ одобряет молча, а уводит на экран сверки', async () => {
+    // Ядро фикса device-code phishing (разбор 2026-08-31): сервер больше не
+    // подтверждает билет за вошедшего. Код в `?ticket=` мог подставить кто
+    // угодно, поэтому одобрение отдаётся человеку на /auth/confirm.
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    const url = res.redirect.mock.calls[0][0];
+    expect(url).toContain('/auth/confirm?code=K7M2QX94');
+    // Сессия для БРАУЗЕРА всё равно выдана — вход в нём состоялся.
+    expect(url).toContain('access_token=a');
+    // Прежнего «тихого» флага одобрения не осталось.
+    expect(url).not.toContain('ticket=1');
+    expect(url).not.toContain('/auth/callback');
+  });
+
+  it('без билета — обычный приём сессии на /auth/callback', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      tokensOutcome,
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    const url = res.redirect.mock.calls[0][0];
+    expect(url).toContain('/auth/callback#access_token=a');
+    expect(url).not.toContain('/auth/confirm');
+  });
+
+  it('второй фактор: билет доезжает до страницы 2FA, а не теряется', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('/auth/2fa?token=chal');
+    expect(res.redirect.mock.calls[0][0]).toContain('ticket=K7M2QX94');
+  });
+
+  it('второй фактор без билета — прежний адрес без хвоста', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'google',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toBe(
+      'https://schemehappens.ru/auth/2fa?token=chal',
     );
   });
 });

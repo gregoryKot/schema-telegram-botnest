@@ -10,7 +10,8 @@
 // Проверка жёсткая, без бейслайна: сейчас таких мест ноль, и новых быть
 // не должно. Ложное срабатывание чинится точечным исключением здесь же.
 import { readFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const ROOT = join(import.meta.dirname, '..');
 const SCAN = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
@@ -19,25 +20,16 @@ const SCAN = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
 const B = '(?<![А-Яа-яЁё])';
 const A = '(?![А-Яа-яЁё])';
 
-const PATTERNS = [
-  // «вы сказал», «вы бы понял» — прошедшее время ед.ч. муж.рода на -л
-  ['прошедшее ед.ч.', new RegExp(`${B}[Вв]ы\\s+(?:бы\\s+)?[а-яё]+[аяиеёу]л${A}`, 'g')],
-  // неправильные: мог, привык, вырос, нёс… — прошедшее без -л
-  [
-    'прошедшее ед.ч.',
-    new RegExp(
-      `${B}[Вв]ы\\s+(?:бы\\s+)?(?:[а-яё]*мог|привык|отвык|вырос|подрос|нёс|вёз|лез|берёг|тёк)${A}`,
-      'g',
-    ),
-  ],
+// Экспорт ради address-agreement.spec.ts (пинит каждый паттерн образцом, как
+// PATTERNS в check-gendered-forms.mjs). name уникален, kind — старый ярлык
+// для сообщения об ошибке (у двух паттернов совпадает намеренно).
+export const PATTERNS = [
+  // «вы сказал», «вы бы понял»
+  ['past-regular', new RegExp(`${B}[Вв]ы\\s+(?:бы\\s+)?[а-яё]+[аяиеёу]л${A}`, 'g'), 'прошедшее ед.ч.'],
+  // мог, привык, вырос, нёс… — прошедшее без -л
+  ['past-irregular', new RegExp(`${B}[Вв]ы\\s+(?:бы\\s+)?(?:[а-яё]*мог|привык|отвык|вырос|подрос|нёс|вёз|лез|берёг|тёк)${A}`, 'g'), 'прошедшее ед.ч.'],
   // краткие прилагательные/причастия муж.рода
-  [
-    'краткое прилагательное',
-    new RegExp(
-      `${B}[Вв]ы\\s+(?:благодарен|компетентен|уверен|готов|рад|должен|способен|виноват|свободен|спокоен|силён|доволен|занят|устал|важен|нужен|похож)${A}`,
-      'g',
-    ),
-  ],
+  ['short-adj', new RegExp(`${B}[Вв]ы\\s+(?:благодарен|компетентен|уверен|готов|рад|должен|способен|виноват|свободен|спокоен|силён|доволен|занят|устал|важен|нужен|похож)${A}`, 'g'), 'краткое прилагательное'],
 ];
 
 function walk(p, acc = []) {
@@ -58,33 +50,38 @@ function walk(p, acc = []) {
   return acc;
 }
 
-const hits = [];
-for (const file of SCAN.flatMap((d) => walk(d))) {
-  const src = readFileSync(join(ROOT, file), 'utf8');
-  src.split('\n').forEach((line, i) => {
-    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
-    for (const [kind, re] of PATTERNS) {
-      re.lastIndex = 0;
-      let m;
-      while ((m = re.exec(line))) {
-        hits.push({ file, ln: i + 1, kind, hit: m[0].replace(/\s+/g, ' ') });
+// CLI-логика — только при запуске как скрипт (не при импорте PATTERNS).
+function main() {
+  const hits = [];
+  for (const file of SCAN.flatMap((d) => walk(d))) {
+    const src = readFileSync(join(ROOT, file), 'utf8');
+    src.split('\n').forEach((line, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
+      for (const [, re, kind] of PATTERNS) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(line))) {
+          hits.push({ file, ln: i + 1, kind, hit: m[0].replace(/\s+/g, ' ') });
+        }
       }
+    });
+  }
+
+  if (hits.length) {
+    console.error(
+      `❌ Согласование «вы»: ${hits.length} мест, где после «вы» стоит форма единственного числа.\n`,
+    );
+    for (const h of hits) {
+      console.error(`  ${h.file}:${h.ln} [${h.kind}] «${h.hit}»`);
     }
-  });
+    console.error(
+      '\nПользователь с формой «вы» читает это как ошибку. Поправь второе слово\n' +
+        'во множественное число: «вы дал» → «вы дали», «вы благодарен» → «вы благодарны».\n' +
+        'Если согласование относится к третьему лицу («никто не просил») — перестрой фразу.',
+    );
+    process.exit(1);
+  }
+  console.log('✓ согласование «вы»: рассогласований нет');
 }
 
-if (hits.length) {
-  console.error(
-    `❌ Согласование «вы»: ${hits.length} мест, где после «вы» стоит форма единственного числа.\n`,
-  );
-  for (const h of hits) {
-    console.error(`  ${h.file}:${h.ln} [${h.kind}] «${h.hit}»`);
-  }
-  console.error(
-    '\nПользователь с формой «вы» читает это как ошибку. Поправь второе слово\n' +
-      'во множественное число: «вы дал» → «вы дали», «вы благодарен» → «вы благодарны».\n' +
-      'Если согласование относится к третьему лицу («никто не просил») — перестрой фразу.',
-  );
-  process.exit(1);
-}
-console.log('✓ согласование «вы»: рассогласований нет');
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

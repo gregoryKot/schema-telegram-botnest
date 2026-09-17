@@ -137,6 +137,103 @@ describe('ProductMetricsService.getMetrics', () => {
     });
   });
 
+  // Пустая БД: каждый фолбэк (`rows[0]?.c ?? 0`, `find(...) ?? 0n`) обязан
+  // отдать ноль, а не NaN/undefined — иначе /stats на чистой базе покажет мусор.
+  it('пустая БД — везде нули, ни одного NaN/undefined', async () => {
+    const prisma: any = {
+      user: { count: jest.fn(async () => 0), groupBy: jest.fn(async () => []) },
+      ysqResult: { count: jest.fn(async () => 0) },
+      ysqProgress: { count: jest.fn(async () => 0) },
+      analyticsEvent: { count: jest.fn(async () => 0) },
+      $queryRaw: jest.fn(async () => []),
+    };
+    const m = await new ProductMetricsService(
+      prisma,
+      { getMetrics: jest.fn() } as never,
+      { getMetrics: jest.fn() } as never,
+      { getMetrics: jest.fn() } as never,
+    ).getMetrics();
+
+    expect(m.adoption).toEqual({
+      diaries: 0,
+      ysqDone: 0,
+      exercises: 0,
+      practices: 0,
+      childhood: 0,
+    });
+    expect(m.sections).toEqual([]);
+    expect(m.onboardingSteps).toEqual([]);
+    expect(m.shareCard.byKind30).toEqual([]);
+    expect(m.shareResult).toEqual({ ok: 0, fallback: 0 });
+    expect(m.outbox).toEqual({ flushes: 0, recovered: 0 });
+    expect(m.today).toEqual({
+      focusChanged: 0,
+      blocksHidden: [],
+      customizeGear: 0,
+      customizeLongpress: 0,
+    });
+    expect(m.homeScreen).toEqual({
+      shown: 0,
+      add: 0,
+      later: 0,
+      never: 0,
+      added: 0,
+    });
+  });
+
+  // Битые строки событий (meta без ключа → null из БД) не должны ронять отчёт:
+  // безымянный kind подписывается «другое», строки без block/step отбрасываются.
+  it('null в meta — безопасные подписи, а не строка «null»', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([{ c: 1n }]) // diaries
+      .mockResolvedValueOnce([{ c: 1n }]) // exercises
+      .mockResolvedValueOnce([{ c: 1n }]) // practices
+      .mockResolvedValueOnce([{ c: 1n }]) // childhood
+      .mockResolvedValueOnce([{ ok: null, c: 3n }]) // share_result без ok
+      .mockResolvedValueOnce([{ flushes: 1n, recovered: 2n }]) // outbox
+      .mockResolvedValueOnce([{ kind: null, c: 2n }]) // share_card без kind
+      .mockResolvedValueOnce([{ block: null, c: 1n }]) // toggle без block
+      .mockResolvedValueOnce([{ step: null, c: 5n }]) // онбординг без step
+      .mockResolvedValueOnce([{ via: null, c: 4n }]) // customize без via
+      .mockResolvedValueOnce([{ action: null, c: 6n }]); // offer без action
+    const prisma: any = {
+      user: {
+        count: jest.fn(async () => 0),
+        groupBy: jest.fn(async () => [
+          { defaultSection: null, _count: { _all: 4 } },
+        ]),
+      },
+      ysqResult: { count: jest.fn(async () => 0) },
+      ysqProgress: { count: jest.fn(async () => 0) },
+      analyticsEvent: { count: jest.fn(async () => 0) },
+      $queryRaw: queryRaw,
+    };
+    const m = await new ProductMetricsService(
+      prisma,
+      { getMetrics: jest.fn() } as never,
+      { getMetrics: jest.fn() } as never,
+      { getMetrics: jest.fn() } as never,
+    ).getMetrics();
+
+    expect(m.shareCard.byKind30).toEqual([{ kind: 'другое', count: 2 }]);
+    expect(m.sections).toEqual([{ key: 'другое', count: 4 }]);
+    // ok=null — это ни успех, ни фолбэк: обе цифры нули.
+    expect(m.shareResult).toEqual({ ok: 0, fallback: 0 });
+    // Строки без block/step/via/action не превращаются в фантомные категории.
+    expect(m.today.blocksHidden).toEqual([]);
+    expect(m.onboardingSteps).toEqual([]);
+    expect(m.today.customizeGear).toBe(0);
+    expect(m.today.customizeLongpress).toBe(0);
+    expect(m.homeScreen).toEqual({
+      shown: 0,
+      add: 0,
+      later: 0,
+      never: 0,
+      added: 0,
+    });
+  });
+
   it('render: блоки мини-тестов и переходов к автору подклеены к отчёту', async () => {
     const quizMetrics = {
       getMetrics: jest.fn(async () => ({
@@ -164,11 +261,30 @@ describe('ProductMetricsService.getMetrics', () => {
         distinctUsers: 0,
       })),
     } as never;
+    const caseMetrics = {
+      getMetrics: jest.fn(async () => ({
+        started: 0,
+        finished: 0,
+        sceneOwn: 0,
+        sceneFrame: 0,
+        verdictMode: 0,
+        verdictOrdinary: 0,
+        verdictBorderline: 0,
+        recognizedAgreed: 0,
+        recognizedDoubted: 0,
+        namedOwn: 0,
+        namedChip: 0,
+        namedSkipped: 0,
+        people: 0,
+        peopleReturned: 0,
+      })),
+    } as never;
     const service = new ProductMetricsService(
       {} as never,
       quizMetrics,
       practiceLink,
       practiceMetrics,
+      caseMetrics,
     );
     // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
     jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
@@ -182,6 +298,10 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(text).toContain('Новички проходят обучение');
     // Блок быстрых практик тоже подклеен.
     expect(text).toContain('Быстрые практики «Здесь и сейчас»');
+    // И блок разбора случая — на пустой БД он говорит честное «пока никто
+    // не начинал», а не показывает нули.
+    expect(text).toContain('Разбор случая');
+    expect(text).toContain('Пока никто не начинал');
   });
 });
 

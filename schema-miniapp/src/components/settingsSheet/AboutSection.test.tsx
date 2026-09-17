@@ -20,7 +20,7 @@ describe('AboutSection', () => {
     const booking = screen.getByText('@kotlarewski');
     expect(booking.getAttribute('href')).toBe('https://t.me/kotlarewski');
 
-    const donate = screen.getByText('разовый донат 💛');
+    const donate = screen.getByText('разовый донат');
     expect(donate.getAttribute('href')).toBe('https://schemehappens.ru/donate');
   });
 });

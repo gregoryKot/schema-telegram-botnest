@@ -1,4 +1,5 @@
 import { PickerRail } from './PickerRail';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import type { LayoutProps } from './types';
 
 export function MobileLayout({
@@ -48,7 +49,7 @@ export function MobileLayout({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 'var(--space-8)',
               color,
             }}
           >
@@ -69,7 +70,7 @@ export function MobileLayout({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 'var(--space-14)',
             marginBottom: 14,
           }}
         >
@@ -105,9 +106,7 @@ export function MobileLayout({
               </div>
             )}
           </div>
-          <span style={{ fontSize: 38, lineHeight: 1, flexShrink: 0 }}>
-            {need.emoji}
-          </span>
+          <IdentityDot id={need.id} size={18} />
         </div>
         <div
           style={{
@@ -170,7 +169,7 @@ export function MobileLayout({
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '20px 1fr',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '10px 0',
                   borderBottom:
                     i < arr.length - 1

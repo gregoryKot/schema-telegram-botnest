@@ -78,9 +78,8 @@ export function TrackerHistoryOverlay({
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
           background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           padding: `${safeTop + 16}px 20px 14px`,
           borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
         }}
@@ -104,7 +103,7 @@ export function TrackerHistoryOverlay({
               padding: '0 4px 0 0',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 'var(--space-4)',
             }}
           >
             ‹ Назад
@@ -122,7 +121,7 @@ export function TrackerHistoryOverlay({
                 'color-mix(in srgb, var(--accent) 10%, var(--surface-2))',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '6px 12px',
               cursor: 'pointer',
               fontSize: 12,
@@ -153,7 +152,7 @@ export function TrackerHistoryOverlay({
             padding: '16px 20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <SkeletonCard h={180} />
@@ -186,7 +185,7 @@ export function TrackerHistoryOverlay({
           return (
             <CheckInSheet
               plan={plan}
-              needEmoji={need.emoji ?? ''}
+              needColor={COLORS[need.id] ?? '#888'}
               needLabel={need.chartLabel}
               color={COLORS[need.id] ?? '#888'}
               onDone={() =>

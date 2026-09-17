@@ -155,6 +155,10 @@ export function createMaxHost(): HostBridge {
     // Метода закрыть себя изнутри у площадки нет — capabilities.close = false,
     // экран и так спрячет кнопку.
     close: () => {},
+    // У Bridge нет аналога Telegram-свайпов (проверено — в мосте площадки их
+    // не нашлось); страховку от жеста хоста на время драга берёт вызывающий
+    // код (touchmove + preventDefault в useDragReorder).
+    setVerticalSwipes: () => {},
 
     user(): HostUser | null {
       const u = wa()?.initDataUnsafe?.user;
@@ -186,6 +190,7 @@ export function createMaxHost(): HostBridge {
       // Инсетов MAX не присылает — чёлку и home-индикатор закрывает CSS
       // env(safe-area-inset-*), а не мост.
       contentReported: true,
+      overlaysContent: false,
     }),
     onInsetsChange: () => () => {},
 

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
+import { SaveErrorNote } from './SaveErrorNote';
+import { PastLetters } from './letterToSelf/PastLetters';
 
 const STORAGE_KEY = 'letters_to_self';
 
@@ -42,12 +43,12 @@ const buildPrompts = (tr: (ty: string, vy: string) => string) => [
     'Вспомните момент из детства или юности, когда вам было по-настоящему тяжело.',
   ),
   tr(
-    'Что тогда происходило? Что ты чувствовал? Чего тебе не хватало?',
-    'Что тогда происходило? Что вы чувствовали? Чего вам не хватало?',
+    'Что тогда происходило? Какие были чувства? Чего тебе не хватало?',
+    'Что тогда происходило? Какие были чувства? Чего вам не хватало?',
   ),
   tr(
-    'Напиши этому ребёнку письмо — от себя сегодняшнего. Что ты хочешь ему сказать? Что ему нужно было услышать?',
-    'Напишите этому ребёнку письмо — от себя сегодняшнего. Что вы хотите ему сказать? Что ему нужно было услышать?',
+    'Напиши этому ребёнку письмо — из сегодняшнего дня. Что хочется сказать? Что тогда важно было услышать?',
+    'Напишите этому ребёнку письмо — из сегодняшнего дня. Что хочется сказать? Что тогда важно было услышать?',
   ),
 ];
 
@@ -56,6 +57,8 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
   const PROMPTS = buildPrompts(tr);
   const [text, setText] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
   const [letters, setLetters] = useState<Letter[]>(() => loadLocal());
   const [viewing, setViewing] = useState<Letter | null>(null);
 
@@ -71,11 +74,14 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
           })),
         );
       })
-      .catch(() => {});
+      .catch((e) => console.error('getLetters failed', e));
   }, []);
 
-  function handleSave() {
-    if (!text.trim()) return;
+  // Раньше «✓ Сохранено» показывалось сразу после fire-and-forget
+  // api.createLetter().catch(()=>{}) — провал был не виден. localStorage
+  // пишется сразу (офлайн-устойчивость), подтверждение — только после успеха.
+  async function handleSave() {
+    if (!text.trim() || saving) return;
     const trimmed = text.trim();
     const letter: Letter = {
       id: Date.now().toString(),
@@ -86,18 +92,24 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
       }),
       text: trimmed,
     };
-    // Sync to localStorage
     const updated = [letter, ...loadLocal()].slice(0, 30);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setLetters((prev) => [letter, ...prev]);
-    // Save to server
-    api.createLetter(trimmed).catch(() => {});
-    setSaved(true);
-    onComplete?.();
-    setTimeout(() => {
-      setSaved(false);
-      setText('');
-    }, 1800);
+    setSaving(true);
+    setError(false);
+    try {
+      await api.createLetter(trimmed);
+      setSaved(true);
+      onComplete?.();
+      setTimeout(() => {
+        setSaved(false);
+        setText('');
+      }, 1800);
+    } catch {
+      setError(true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (viewing) {
@@ -128,9 +140,6 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <SheetIconHeader
-          emoji="✉️"
-          bg="rgba(251,191,36,0.12)"
-          border="rgba(251,191,36,0.2)"
           title="Письмо Уязвимому Ребёнку"
           subtitle="Написать себе из прошлого"
         />
@@ -140,7 +149,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
           style={{
             background: 'rgba(251,191,36,0.06)',
             border: '1px solid rgba(251,191,36,0.12)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
           }}
@@ -163,14 +172,14 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Дорогой маленький я..."
+          placeholder="Здравствуй,..."
           rows={8}
           style={{
             width: '100%',
             boxSizing: 'border-box',
             background: 'rgba(var(--fg-rgb),0.04)',
             border: `1px solid ${text.trim() ? 'rgba(251,191,36,0.25)' : 'rgba(var(--fg-rgb),0.1)'}`,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -183,13 +192,20 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
         />
         <CrisisGate texts={[text]} surface="letter" />
 
+        {error && (
+          <SaveErrorNote
+            ty="Не удалось сохранить на сервере. Письмо осталось на этом устройстве — попробуй ещё раз."
+            vy="Не удалось сохранить на сервере. Письмо осталось на этом устройстве — попробуйте ещё раз."
+          />
+        )}
+
         <button
           onClick={handleSave}
-          disabled={!text.trim() || saved}
+          disabled={!text.trim() || saved || saving}
           style={{
             width: '100%',
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: saved
               ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'
@@ -203,68 +219,19 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
                 : 'rgba(var(--fg-rgb),0.25)',
             fontSize: 15,
             fontWeight: 600,
-            cursor: text.trim() && !saved ? 'pointer' : 'default',
+            cursor: text.trim() && !saved && !saving ? 'pointer' : 'default',
             transition: 'all 0.25s',
             marginBottom: 20,
           }}
         >
-          {saved ? '✓ Сохранено' : 'Сохранить письмо'}
+          {saved
+            ? '✓ Сохранено'
+            : saving
+              ? 'Сохранение...'
+              : 'Сохранить письмо'}
         </button>
 
-        {/* Past letters */}
-        {letters.length > 0 && (
-          <div>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--text-faint)',
-                marginBottom: 10,
-              }}
-            >
-              Прошлые письма
-            </div>
-            {letters.slice(0, 5).map((l) => (
-              <div
-                key={l.id}
-                {...pressable(() => setViewing(l))}
-                style={{
-                  padding: '11px 14px',
-                  background: 'rgba(var(--fg-rgb),0.03)',
-                  border: '1px solid rgba(var(--fg-rgb),0.06)',
-                  borderRadius: 12,
-                  marginBottom: 7,
-                  cursor: 'pointer',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                    marginBottom: 4,
-                  }}
-                >
-                  {l.date}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.4,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  }}
-                >
-                  {l.text}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <PastLetters letters={letters} onView={setViewing} />
 
         <div style={{ marginTop: 16 }}>
           <TherapyNote compact />

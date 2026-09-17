@@ -11,6 +11,9 @@ import { AuthService } from '../auth/auth.service';
 import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
 import { applyTelegramInitData, applyMaxInitData } from './init-data-paths';
+import { reportAuthFailure } from './auth-failure.report';
+import { reportAuthSuccess } from './auth-success.report';
+import { AnalyticsService } from '../analytics/analytics.service';
 import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
@@ -27,6 +30,7 @@ export class TelegramAuthGuard implements CanActivate {
     private readonly authService: AuthService,
     private readonly securityLog: SecurityLogService,
     private readonly maxProvider: MaxProvider,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -40,11 +44,23 @@ export class TelegramAuthGuard implements CanActivate {
       // userId is a BigInt — convert to number for backward compat with controllers
       req.telegramUserId = Number(userId);
       req.webUser = { userId };
-      // Ensure user row exists (web-only users may have never touched the bot)
-      await this.prisma.user.upsert({
+      // Строка веб-юзера создаётся при входе, ДО выдачи токена. Здесь только
+      // сверяем, что аккаунт ещё жив: access-токен живёт 15 минут — дольше, чем
+      // удаление или слияние аккаунта. Прежний upsert ВОСКРЕШАЛ строку по
+      // устаревшему токену: у удалённого появлялась пустая зомби-строка (обход
+      // права на удаление), а слитый юзер застревал на исчезнувшем исходном id
+      // вместо целевого — его данные «пропадали» (разбор 2026-08-31). Нет строки
+      // или помечена deletedAt → токен протух вместе с аккаунтом: 401, и клиент
+      // рефрешит — refresh-кука слитого уже переехала на целевой userId.
+      const account = await this.prisma.user.findUnique({
         where: { id: userId },
-        update: {},
-        create: { id: userId },
+        select: { id: true, deletedAt: true },
+      });
+      if (!account || account.deletedAt) {
+        throw new UnauthorizedException('Account no longer exists');
+      }
+      reportAuthSuccess(userId, 'web', {
+        track: (meta) => void this.analytics.track(null, 'auth_success', meta),
       });
       return true;
     }
@@ -57,6 +73,7 @@ export class TelegramAuthGuard implements CanActivate {
         this.authService,
         this.securityLog,
         this.logger,
+        this.analytics,
       );
       return true;
     }
@@ -69,10 +86,23 @@ export class TelegramAuthGuard implements CanActivate {
         this.authService,
         this.securityLog,
         this.logger,
+        this.analytics,
       );
       return true;
     }
 
+    // ── Отказ ────────────────────────────────────────────────────────────────
+    // Пустой заголовок подписи проваливается сюда (falsy) — и до 2026-08-08
+    // эта ветка молчала: вход был сломан у всех пользователей Telegram, а на
+    // сервере это выглядело как обычный неавторизованный запрос. Теперь
+    // «мессенджер открыт, а подписи нет» отделено от фонового шума и слышно.
+    reportAuthFailure(req.headers, req.ip, {
+      logger: this.logger,
+      securityLog: this.securityLog,
+      track: (meta) => {
+        void this.analytics.track(null, 'auth_rejected', meta);
+      },
+    });
     throw new UnauthorizedException('Missing authentication');
   }
 }

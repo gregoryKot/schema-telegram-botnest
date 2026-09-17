@@ -1,7 +1,7 @@
 import { Theme, toggleTheme, resetToSystemTheme } from '../../utils/theme';
-import { Row, Toggle } from './ui';
-import { SettingsLabel } from './ui';
+import { Row, Toggle, ThemeIcon, SettingsLabel } from './ui';
 import { MotionPref } from './types';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   theme: Theme;
@@ -30,10 +30,14 @@ export function AppearanceSection({
   resignBusy,
   setResignBusy,
 }: Props) {
+  const tr = useTr();
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ОФОРМЛЕНИЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
+      >
         <div
           style={{
             padding: '14px 16px',
@@ -42,10 +46,14 @@ export function AppearanceSection({
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>
-              {theme === 'dark' ? '🌙' : '☀️'}
-            </span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-10)',
+            }}
+          >
+            <ThemeIcon theme={theme} />
             <div>
               <div
                 style={{
@@ -134,33 +142,24 @@ export function AppearanceSection({
               justifyContent: 'space-between',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <span style={{ fontSize: 18 }}>👨‍⚕️</span>
-              <div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'var(--text)',
-                    fontWeight: 500,
-                  }}
-                >
-                  Режим специалиста
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-sub)',
-                    marginTop: 1,
-                  }}
-                >
-                  {therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-                </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: 'var(--text)',
+                  fontWeight: 500,
+                }}
+              >
+                Режим специалиста
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--text-sub)',
+                  marginTop: 1,
+                }}
+              >
+                {therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
               </div>
             </div>
             <div
@@ -216,7 +215,7 @@ export function AppearanceSection({
                 style={{
                   width: '100%',
                   padding: '9px 0',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   border: '1px solid rgba(var(--fg-rgb),0.1)',
                   background: 'transparent',
                   color: 'var(--text-sub)',
@@ -237,17 +236,18 @@ export function AppearanceSection({
                   }}
                 >
                   Роль специалиста будет снята: кабинет и доступ к данным
-                  клиентов пропадут. Свои данные не теряешь. Заявку можно подать
-                  заново.
+                  клиентов пропадут.{' '}
+                  {tr('Свои данные не теряешь.', 'Свои данные не теряете.')}{' '}
+                  Заявку можно подать заново.
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                   <button
                     disabled={resignBusy}
                     onClick={() => setResignConfirm(false)}
                     style={{
                       flex: 1,
                       padding: '9px 0',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: '1px solid rgba(var(--fg-rgb),0.1)',
                       background: 'transparent',
                       color: 'var(--text-sub)',
@@ -273,7 +273,7 @@ export function AppearanceSection({
                     style={{
                       flex: 1,
                       padding: '9px 0',
-                      borderRadius: 10,
+                      borderRadius: 'var(--r-10)',
                       border: 'none',
                       background: 'var(--accent-red)',
                       color: '#fff',

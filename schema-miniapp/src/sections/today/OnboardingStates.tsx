@@ -10,7 +10,7 @@ export function OnboardingDoneCard({ onHide }: { onHide: () => void }) {
         background: 'color-mix(in srgb, var(--accent-green) 6%, transparent)',
         border:
           '1px solid color-mix(in srgb, var(--accent-green) 18%, transparent)',
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '20px',
         textAlign: 'center',
       }}
@@ -51,11 +51,11 @@ export function OnboardingDoneCard({ onHide }: { onHide: () => void }) {
         style={{
           width: '100%',
           padding: '13px 0',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           fontFamily: 'inherit',
           background: 'var(--accent)',
-          color: '#fff',
+          color: 'var(--on-accent)',
           fontSize: 15,
           fontWeight: 600,
           cursor: 'pointer',
@@ -78,18 +78,16 @@ export function OnboardingResumeCard({
   onResume: () => void;
 }) {
   return (
+    // .card — тот же переход, что в OnboardingWidget.tsx (полировка, п.4).
     <div
+      className="card"
       style={{
-        background: 'rgba(var(--fg-rgb),0.04)',
-        border: '1px solid rgba(var(--fg-rgb),0.08)',
-        borderRadius: 16,
         padding: '14px 16px',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
       }}
     >
-      <div style={{ fontSize: 22 }}>📋</div>
       <div style={{ flex: 1 }}>
         <div
           style={{
@@ -110,7 +108,7 @@ export function OnboardingResumeCard({
         onClick={onResume}
         style={{
           padding: '8px 14px',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           border: 'none',
           fontFamily: 'inherit',
           background: 'color-mix(in srgb, var(--accent) 15%, transparent)',

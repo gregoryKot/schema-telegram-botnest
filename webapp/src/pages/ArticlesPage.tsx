@@ -1,19 +1,21 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import { api } from '../api';
+import { api, ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
-
+import { siteTitleSuffix } from '../utils/domainChrome';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
-  const [articles, setArticles] = useState<ArticleSummary[] | null>(null);
+  // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
+  // слабой сетью пустую сетку — как будто статей на сайте нет.
+  const listFetcher = useCallback(() => api.listArticles(), []);
+  const { data: articles, reload, failed } = useAsyncData<ArticleSummary[] | null>(listFetcher, null);
 
   useEffect(() => {
-    document.title = 'Статьи о схема-терапии | schemehappens.ru';
-    api.listArticles().then(setArticles).catch(() => setArticles([]));
+    document.title = `Статьи о схема-терапии | ${siteTitleSuffix()}`;
   }, []);
 
   return (
@@ -26,9 +28,21 @@ export function ArticlesListPage() {
           Объясняю, как работают схемы, режимы и паттерны – простым языком, без воды.
         </p>
 
-        {articles === null && <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>}
+        {failed ? (
+          <div role="alert">
+            <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
+            <button onClick={() => { void reload(); }} style={{
+              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
+              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              Попробовать ещё раз
+            </button>
+          </div>
+        ) : articles === null ? (
+          <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+        ) : null}
 
-        {articles && (
+        {!failed && articles && (
           <div className="art-grid">
             {articles.map((a) => (
               <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
@@ -69,7 +83,7 @@ export function ArticlesListPage() {
           }
         `}</style>
 
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
+        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Хотите разобраться глубже?</p>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
             Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе.
@@ -91,17 +105,42 @@ export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
 
   // resetKey=slug → back to the loading state (undefined) on navigation between
-  // articles, then null on 404 or the loaded article.
+  // articles. null = настоящий 404 от сервера. Любой другой отказ (сеть, 5xx)
+  // пробрасывается в хук и поднимает `failed`: раньше `.catch(() => null)`
+  // превращал обрыв сети в экран «404» на существующей статье. Ветвление по
+  // ApiError.status, не по тексту message — текст теперь может приходить с
+  // сервера и меняться.
   const articleFetcher = useCallback(
     (): Promise<Article | null | undefined> =>
-      slug ? api.getArticle(slug).catch(() => null) : Promise.resolve(undefined),
+      slug
+        ? api.getArticle(slug).catch((err: unknown) => {
+            if (err instanceof ApiError && err.status === 404) return null;
+            throw err;
+          })
+        : Promise.resolve(undefined),
     [slug],
   );
-  const { data: article } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
+  const { data: article, reload, failed } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
 
   useEffect(() => {
-    if (article) document.title = `${article.title} | schemehappens.ru`;
+    if (article) document.title = `${article.title} | ${siteTitleSuffix()}`;
   }, [article]);
+
+  if (failed) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div role="alert" style={{ textAlign: 'center', padding: '0 20px' }}>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
+          <button onClick={() => { void reload(); }} style={{
+            padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none',
+            borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            Попробовать ещё раз
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (article === undefined) {
     return (
@@ -178,7 +217,7 @@ export function ArticlePage() {
 
         {article.heroImage ? (
           <img src={article.heroImage} alt="" loading="lazy" decoding="async"
-            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 20, display: 'block', margin: '0 0 44px' }} />
+            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 'var(--r-20)', display: 'block', margin: '0 0 44px' }} />
         ) : (
           <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
         )}
@@ -226,12 +265,12 @@ export function ArticlePage() {
           .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
         `}</style>
 
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
+        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Разобраться на практике</p>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
             Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос и я расскажу, как схема-терапия работает в вашем случае.
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
             <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Записаться →
             </a>

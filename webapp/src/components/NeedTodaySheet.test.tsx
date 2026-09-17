@@ -27,9 +27,12 @@ HTMLElement.prototype.scrollIntoView = vi.fn();
 
 const NEED: Need = { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привязанность' };
 
-function renderSheet(props: Partial<Parameters<typeof NeedTodaySheet>[0]> = {}) {
+function renderSheet(
+  props: Partial<Parameters<typeof NeedTodaySheet>[0]> = {},
+  form: 'ty' | 'vy' = 'ty',
+) {
   return render(
-    <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
       <MemoryRouter>
         <NeedTodaySheet need={NEED} value={5} onChange={vi.fn()} onClose={vi.fn()} {...props} />
       </MemoryRouter>
@@ -89,8 +92,40 @@ describe('NeedTodaySheet', () => {
     expect(screen.getByText(/Хороший день/)).toBeTruthy();
   });
 
+  it('поддерживающая подпись звучит в форме «ты»', () => {
+    renderSheet({ value: 10 }, 'ty');
+    expect(screen.getByText('Хороший день – заметь это')).toBeTruthy();
+  });
+
+  it('поддерживающая подпись звучит в форме «вы»', () => {
+    renderSheet({ value: 10 }, 'vy');
+    expect(screen.getByText('Хороший день – заметьте это')).toBeTruthy();
+  });
+
   it('оценка выше 3 НЕ показывает блок «Что с этим сделать?»', () => {
     renderSheet({ value: 6 });
     expect(screen.queryByText('Что с этим сделать?')).toBeNull();
+  });
+});
+
+describe('NeedTodaySheet — маркер «вчера» (В10 аудита 2026-08)', () => {
+  // Регрессия: yesterdayValue был объявлен в Props, но не деструктурирован —
+  // пользователь сайта не видел маркер «вчера», который есть в miniapp
+  // (NeedRatingBar). Паритет — не обязательно тот же DOM, тот же смысл.
+  it('yesterdayValue передан — виден текст «вчера N»', () => {
+    renderSheet({ value: 5, yesterdayValue: 3 });
+    const hint = screen.getByText(/вчера/);
+    expect(hint.textContent).toContain('вчера');
+    expect(hint.textContent).toContain('3');
+  });
+
+  it('yesterdayValue не передан — текста «вчера» нет', () => {
+    renderSheet({ value: 5 });
+    expect(screen.queryByText(/вчера/)).toBeNull();
+  });
+
+  it('yesterdayValue=0 — текста «вчера» нет (нет оценки за вчера — не «оценка 0»)', () => {
+    renderSheet({ value: 5, yesterdayValue: 0 });
+    expect(screen.queryByText(/вчера/)).toBeNull();
   });
 });

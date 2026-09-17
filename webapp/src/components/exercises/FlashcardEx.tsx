@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
@@ -19,6 +20,7 @@ import { ModePortrait } from './ModePortrait';
 const portraitSeenKey = (modeId: string) => `mode_portrait_seen_${modeId}`;
 
 function FlashcardFlow({ questions, accentColor, onSave, explainer }: { questions: Q[]; accentColor: string; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string }) {
+  const tr = useTr();
   const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
@@ -29,7 +31,14 @@ function FlashcardFlow({ questions, accentColor, onSave, explainer }: { question
   const q = questions[step];
   const isLast = step === questions.length - 1;
 
-  async function handleSave() { await onSave(data); setDone(true); }
+  // Аудит 2026-08-22 (находка №2): раньше handleSave не показывал состояние
+  // отправки и не защищал от двойного нажатия, а сбой onSave падал молча —
+  // человек нажимал «Сохранить карточку» и не понимал, приняли ли нажатие.
+  const { saving, error, run } = useSavingAction();
+  async function handleSave() {
+    const ok = await run(() => onSave(data));
+    if (ok) setDone(true);
+  }
 
   if (done) {
     return (
@@ -63,12 +72,17 @@ function FlashcardFlow({ questions, accentColor, onSave, explainer }: { question
       <textarea ref={areaRef} className="paper-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </div>
     {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
+    {isLast && error && (
+      <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>
+        {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
+      </div>
+    )}
     <div className="ex-foot">
       <button className="ex-btn ex-btn-ghost" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}><GlyphArrowLeft /> Назад</button>
       <span className="spacer" />
       {!isLast
         ? <button className="ex-btn ex-btn-primary" onClick={() => setStep(s => s + 1)}>{data[q.key].trim() ? 'Дальше' : 'Пропустить'} <GlyphArrowRight /></button>
-        : <button className="ex-btn ex-btn-primary" disabled={!filled.some(x => x)} onClick={handleSave}>Сохранить карточку <GlyphCheck /></button>
+        : <button className="ex-btn ex-btn-primary" disabled={!filled.some(x => x) || saving} onClick={handleSave}>{saving ? 'Сохраняю…' : <>Сохранить карточку <GlyphCheck /></>}</button>
       }
     </div>
   </>);
@@ -99,7 +113,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
             {d.schemas.map(s => (
               <div key={s.id} {...pressable(() => setPicked({ id: s.id, name: s.name, desc: s.libraryDesc, color: d.color, domain: d.domain }))}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '16px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, marginTop: 10 }} />
+                <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: d.color, marginTop: 10 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.1, color: 'var(--text)', marginBottom: 4 }}>{s.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.libraryDesc}</div>
@@ -156,7 +170,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
             {g.items.map(m => (
               <div key={m.id} {...pressable(() => { setShowPortrait(!localStorage.getItem(portraitSeenKey(m.id))); setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group }); })}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: g.color, marginTop: 8 }} />
+                <div style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: g.color, marginTop: 8 }} />
                 <div>
                   <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.15, color: 'var(--text)', marginBottom: 4 }}>{m.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{m.short}</div>

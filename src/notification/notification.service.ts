@@ -108,6 +108,7 @@ export class NotificationService {
     const rows = await this.prisma.scheduledNotification.findMany({
       where: { sendAt: { lte: new Date() }, sentAt: null, cancelledAt: null },
       orderBy: { sendAt: 'asc' },
+      take: 500, // M3: бэклог после даунтайма дренируется батчами, старейшие первыми
     });
     return rows.map((r) => ({ ...r, userId: Number(r.userId) }));
   }
@@ -169,6 +170,18 @@ export class NotificationService {
       select: { sentAt: true },
     });
     return row?.sentAt ?? null;
+  }
+
+  /**
+   * Снять одно уведомление, которое доставить некому (у аккаунта нет входа в
+   * Telegram). Именно cancelledAt, а не markSent: sentAt читает lastSentAt(),
+   * на нём стоит каденс — «отправлено» без отправки сдвинуло бы расписание.
+   */
+  async cancelOne(id: number) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { id, sentAt: null, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    });
   }
 
   /** Перенести неотправленное уведомление на другое время (тихие часы) */

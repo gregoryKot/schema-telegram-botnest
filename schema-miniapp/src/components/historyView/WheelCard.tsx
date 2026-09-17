@@ -27,7 +27,7 @@ export function WheelCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, paddingTop: 4, paddingBottom: 8 }}
+      style={{ borderRadius: 'var(--r-20)', paddingTop: 4, paddingBottom: 8 }}
     >
       <div key={selectedDate}>
         <NeedsWheel
@@ -104,7 +104,7 @@ export function WheelCard({
             style={{ cursor: 'pointer' }}
           >
             <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-              🌱 Оценить детство →
+              Оценить детство →
             </span>
           </div>
         ) : null}

@@ -6,80 +6,54 @@ import {
   Optional,
   Logger,
 } from '@nestjs/common';
-import { Telegraf, Context, Markup } from 'telegraf';
+import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
-import { BOT_COMMANDS } from './telegram.constants';
-import { renderTemplate } from '../notification/notification.templates';
+import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
-import { StatsReportService } from '../bot/stats-report.service';
-import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
 import { AccountService } from '../bot/account.service';
 import { PairsService } from '../bot/pairs.service';
 import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
-import { TherapistRequestService } from '../therapy/therapist-request.service';
-import { ChannelPublisherService } from '../channel/channel-publisher.service';
-import { ChannelCheckService } from '../channel/channel-check.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { parseSourceSlug } from './start-source';
+import { readStartPayload } from './start-payload';
+import { sendStartWelcome } from './telegram.start-welcome';
+import { ADDRESS_PROMPT } from './telegram.consent-text';
+import {
+  handlePairStart,
+  PAIR_PREFIX,
+  type PairStartDeps,
+} from './telegram.pair-start';
+import {
+  buildAddressKeyboard,
+  buildWelcomeKeyboard,
+} from './telegram.keyboards';
+// Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
+export { buildWelcomeKeyboard };
+import { isLoginPayload } from './login-payload';
+import { isLinkPayload } from './link-payload';
+import { TelegramLoginService } from './telegram.login.service';
+import { TelegramLinkService } from './telegram.link.service';
 import {
   isQuietHours,
   nextQuietEnd,
   tzOffsetAt,
 } from '../notification/notification.time';
-import { adminIdNum, isAdminSender } from '../utils/admin-alert';
 import { retryWithBackoff } from '../utils/retry';
 import { t, AddressForm } from '../notification/address-form';
+import {
+  MINIAPP_ONLY_KEYBOARD,
+  pairJoinResultText,
+  acceptRetryText,
+  resolveForm,
+} from './telegram.reply-helpers';
 
 export const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
 Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и тест на схемы в одном месте.`;
-
-const CONSENT_TEXT = `🔐 Соглашение об обработке данных
-
-Прежде чем начать:
-
-• Твои данные (оценки, дневники, планы) хранятся на защищённом сервере в зашифрованном виде и привязаны к Telegram ID
-• Записи и ответы на опросники могут касаться твоего психоэмоционального состояния — принимая соглашение, ты даёшь отдельное согласие на обработку таких сведений
-• Данные не передаются третьим лицам — кроме терапевта, если ты сам решишь подключить его по коду, и технической инфраструктуры (подробнее: schemehappens.ru/privacy)
-• Ты можешь удалить всё в любой момент через Настройки → Удалить данные
-• Приложение не медицинский инструмент и не заменяет психотерапию
-• Сервис предназначен для пользователей старше 18 лет
-
-Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
-
-export function buildWelcomeKeyboard(): ReturnType<
-  typeof Markup.inlineKeyboard
-> {
-  return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
-    [Markup.button.callback('🎲 Мини-тесты на 2 минуты', 'qz:list')],
-    [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
-  ]);
-}
-
-// Онбординг −1 шаг (аудит 2026-07, этап 4.3): согласие и выбор ты/вы — один
-// экран с двумя кнопками вместо двух последовательных сообщений.
-function buildConsentKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('✅ Принять — общаемся на «ты»', 'accept:ty')],
-    [Markup.button.callback('✅ Принять — на «вы»', 'accept:vy')],
-  ]);
-}
-
-const ADDRESS_PROMPT =
-  'Один вопрос, чтобы дальше было комфортно: как удобнее общаться?';
-
-export function buildAddressKeyboard() {
-  return Markup.inlineKeyboard([
-    [
-      Markup.button.callback('На «ты»', 'addr:ty'),
-      Markup.button.callback('На «вы»', 'addr:vy'),
-    ],
-  ]);
-}
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -91,19 +65,32 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
-    private readonly statsReport: StatsReportService,
-    private readonly healthyAdult: HealthyAdultService,
     private readonly accountService: AccountService,
     private readonly pairsService: PairsService,
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
-    private readonly therapistRequestService: TherapistRequestService,
-    private readonly publisher: ChannelPublisherService,
-    private readonly channelCheck: ChannelCheckService,
+    private readonly analyticsEvents: AnalyticsService,
+    private readonly loginService: TelegramLoginService,
+    private readonly linkService: TelegramLinkService,
   ) {}
 
   private stopping = false;
   // Pending pair codes for users who need to accept consent first (in-memory, 15 min TTL)
+  private pairDeps(): PairStartDeps {
+    return {
+      botService: this.botService,
+      pairsService: this.pairsService,
+      accountService: this.accountService,
+      pending: this.pendingPairCodes,
+      now: () => Date.now(),
+    };
+  }
+
+  /** Форма обращения по сырому telegramId — привязка общего помощника. */
+  private form(rawId: number | undefined) {
+    return resolveForm(this.accountService, this.botService, rawId);
+  }
+
   private readonly pendingPairCodes = new Map<
     number,
     { code: string; expiresAt: number }
@@ -146,74 +133,58 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       try {
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        // Канонический номер, а не сырой telegramId: после слияния аккаунтов
+        // данные человека лежат под веб-номером, и registerUser по сырому
+        // номеру завёл бы рядом второй, пустой аккаунт — раздвоение
+        // возвращалось само на следующем /start.
+        const userId = await this.accountService.canonicalUserId(rawId);
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
         await this.accountService.registerUser(userId, ctx.from?.first_name);
-        const payload = (ctx as Context & { startPayload?: string })
-          .startPayload;
-        if (payload?.startsWith('pair_')) {
-          const code = payload.slice(5).toUpperCase();
-          const hasConsent =
-            await this.botService.hasAcceptedDisclaimer(userId);
-          if (!hasConsent) {
-            this.pendingPairCodes.set(rawId, {
-              code,
-              expiresAt: Date.now() + 15 * 60_000,
-            });
-            await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
-            return;
-          }
-          const ok = await this.pairsService.joinPair(userId, code);
-          if (ok) {
-            await ctx.reply(
-              'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
-              Markup.inlineKeyboard([
-                [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-              ]),
-            );
-          } else {
-            await ctx.reply(
-              'Ссылка недействительна или уже использована.',
-              Markup.inlineKeyboard([
-                [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-              ]),
-            );
-          }
+        const payload = readStartPayload(ctx);
+        // Атрибуция посева (src_<slug>) — ровно один раз, при первом
+        // касании нового юзера, ДО гейта согласия (чтобы видеть и конверсию
+        // «переход → принял соглашение»). Возвращающийся по той же ссылке
+        // повторно не считается — isReturning уже вычислен выше.
+        const sourceSlug = parseSourceSlug(payload);
+        if (sourceSlug && !isReturning) {
+          void this.analyticsEvents.track(userId, 'signup_source', {
+            src: sourceSlug,
+          });
+        }
+        // Вход по диплинку из приложения. Раньше гейта согласия: человек уже
+        // соглашался при первом входе, а тут он ждёт подтверждения на другом
+        // экране — упереться здесь в стену согласия значило бы подвесить его.
+        if (isLoginPayload(payload)) {
+          await this.loginService.handleStart(ctx, payload!, rawId);
           return;
         }
-        const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
-        if (!hasConsent2) {
-          await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
+        // Как и вход, объединение идёт ДО гейта согласия: человек ждёт
+        // подтверждения на другом экране, и упереться здесь в соглашение
+        // значит оставить тот экран висеть.
+        if (isLinkPayload(payload)) {
+          await this.linkService.handleStart(ctx, payload!, rawId);
           return;
         }
-        // Форма обращения ещё не выбрана — спросить до приветствия
-        if (!existingSettings?.addressForm) {
-          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
+        if (payload?.startsWith(PAIR_PREFIX)) {
+          await handlePairStart(this.pairDeps(), ctx, payload, rawId, userId);
           return;
         }
-        if (isReturning) {
-          const streak = await this.analyticsService.getConsecutiveDays(userId);
-          const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
-          const streakLine =
-            streak >= 3
-              ? `\n🔥 Серия: ${streak} ${streak < 5 ? 'дня' : 'дней'} подряд`
-              : '';
-          await ctx.reply(
-            `С возвращением${name}!${streakLine}`,
-            buildWelcomeKeyboard(),
-          );
-        } else {
-          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
-        }
+        await sendStartWelcome(
+          {
+            botService: this.botService,
+            analyticsService: this.analyticsService,
+          },
+          ctx,
+          userId,
+          existingSettings,
+        );
       } catch (err) {
         this.logger.error('start command failed', err);
         await ctx
           .reply(
-            'Что-то пошло не так. Попробуй открыть «Всё по схеме» через кнопку ниже.',
-            Markup.inlineKeyboard([
-              [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-            ]),
+            'Что-то пошло не так. Кнопка ниже откроет «Всё по схеме» ещё раз.',
+            MINIAPP_ONLY_KEYBOARD,
           )
           .catch(() => null);
       }
@@ -248,10 +219,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('donate', async (ctx) => {
-      const text =
-        '💛 <b>Поддержать SchemeHappens</b>\n\n' +
-        'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏';
       try {
+        const form = await this.form(ctx.from?.id);
+        const text =
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          t(
+            form,
+            'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏',
+            'Приложение бесплатное и без рекламы. Если оно вам помогает — поддержите проект любой суммой. Спасибо 🙏',
+          );
         await ctx.reply(text, {
           parse_mode: 'HTML',
           reply_markup: {
@@ -261,83 +237,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           },
         });
       } catch (err) {
-        // If the inline button is rejected (e.g. an invalid URL), still give the
-        // user a working plain-text link instead of failing silently.
+        // If the inline button is rejected (e.g. an invalid URL), still give
+        // a working plain-text link instead of failing silently.
         this.logger.error('donate command failed', err);
         await ctx
-          .reply(`${text}\n\n${DONATE_URL}`, { parse_mode: 'HTML' })
+          .reply(`💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`, {
+            parse_mode: 'HTML',
+          })
           .catch(() => null);
-      }
-    });
-
-    // Admin-only: preview the monthly donate reminder immediately (the real one
-    // fires 1st of each month). Lets us verify text + button without waiting.
-    this.bot.command('testdonate', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        const t = renderTemplate('donate_reminder', { seed: 0 });
-        if (t)
-          await ctx.reply(
-            t.text,
-            t.keyboard ? { reply_markup: t.keyboard.reply_markup } : {},
-          );
-      } catch (err) {
-        this.logger.error('testdonate command failed', err);
-      }
-    });
-
-    this.bot.command('stats', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
-        const [core, product, pool] = await Promise.all([
-          this.analyticsService.getAdminStats(),
-          this.statsReport.render(),
-          this.healthyAdult.poolStatus(),
-        ]);
-        await ctx.reply(core, { parse_mode: 'HTML' });
-        await ctx.reply(`${product}\n\n${formatPoolStatus(pool)}`, {
-          parse_mode: 'HTML',
-        });
-      } catch (err) {
-        this.logger.error('stats command failed', err);
-        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
-      }
-    });
-
-    // Ручная публикация фразы «Здорового Взрослого» по всем настроенным
-    // площадкам — проверка связки (env + права бота), т.к. по расписанию пост
-    // выходит утром/вечером в случайную минуту, а сразу после настройки — нет.
-    this.bot.command('zv', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        // `/zv max` — проверка одной площадки: обычный /zv разошлёт настоящий
-        // пост всем подписчикам сразу, а свежеподключённую площадку надо
-        // проверять молча для остальных.
-        const only = ctx.message.text.split(/\s+/)[1];
-        // `/zv log` — журнал последних отправок: кто, куда и с каким исходом.
-        // Раньше ответ на «почему утром пришло не всё» жил только в логах
-        // хостинга (инцидент 2026-07-31).
-        if (only === 'log') {
-          await ctx.reply(await this.channelCheck.log());
-          return;
-        }
-        const result = only
-          ? await this.channelCheck.checkOne(only)
-          : await this.publisher.publish();
-        await ctx.reply(result.message);
-      } catch (err) {
-        this.logger.error('zv command failed', err);
-        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
       }
     });
 
@@ -371,7 +278,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         await this.botService.acceptDisclaimer(userId);
         await this.botService.updateUserSettings(userId, {
           addressForm: form,
@@ -397,9 +304,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept action failed', err);
-        await ctx
-          .editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.')
-          .catch(() => null);
+        // ctx.match не привязан к try — форма из callback_data доступна и тут.
+        const form = (ctx.match as RegExpMatchArray | undefined)?.[1] as
+          AddressForm | undefined;
+        await ctx.editMessageText(acceptRetryText(form)).catch(() => null);
       }
     });
 
@@ -410,7 +318,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery('Принято ✅');
         const rawId = ctx.from?.id;
         if (rawId) {
-          await this.botService.acceptDisclaimer(BigInt(rawId));
+          const userId = await this.accountService.canonicalUserId(rawId);
+          await this.botService.acceptDisclaimer(userId);
           if (await this.resumePendingPair(ctx, rawId)) return;
         }
         // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
@@ -421,46 +330,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
-        await ctx
-          .editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.')
-          .catch(() => null);
-      }
-    });
-
-    // ─── Therapist-request admin callbacks ──────────────────────────────────
-    // (resumePendingPair — приватный метод класса ниже, общий для обоих
-    // consent-хендлеров.)
-    // Inline buttons attached to admin notification messages. Only the admin
-    // ID may trigger these.
-    this.bot.action(/^treq:(approve|reject):(\d+)$/, async (ctx) => {
-      try {
-        const adminId = adminIdNum();
-        if (!adminId || ctx.from?.id !== adminId) {
-          await ctx.answerCbQuery('Только админ');
-          return;
-        }
-        const match = ctx.match as RegExpMatchArray;
-        const action = match[1] as 'approve' | 'reject';
-        const reqId = parseInt(match[2], 10);
-        // answerCbQuery ДО обращения к БД — иначе при зависшем approve/reject
-        // Telegram крутит вечный спиннер на кнопке (правило CLAUDE.md).
-        await ctx.answerCbQuery(
-          action === 'approve' ? '✅ Одобряю…' : '❌ Отклоняю…',
-        );
-        if (action === 'approve') {
-          await this.therapistRequestService.approve(adminId, reqId);
-          await ctx.editMessageReplyMarkup(undefined).catch(() => null);
-          await ctx.reply(`Заявка #${reqId} одобрена`);
-        } else {
-          // Reject without reason in the inline-button path; for a reason
-          // admin should reply to the notification with "/reject <id> <reason>".
-          await this.therapistRequestService.reject(adminId, reqId, '');
-          await ctx.editMessageReplyMarkup(undefined).catch(() => null);
-          await ctx.reply(`Заявка #${reqId} отклонена`);
-        }
-      } catch (err) {
-        this.logger.error(`treq action failed: ${(err as Error).message}`);
-        await ctx.answerCbQuery('Ошибка').catch(() => null);
+        // Форма ещё не выбрана на этом шаге — «ты» по умолчанию, как весь флоу до выбора.
+        await ctx.editMessageText(acceptRetryText()).catch(() => null);
       }
     });
 
@@ -469,7 +340,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery('⏰ Напомню через час');
         const rawId = ctx.from?.id;
         if (rawId) {
-          const userId = BigInt(rawId);
+          const userId = await this.accountService.canonicalUserId(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
           const quietStart = settings?.notifyQuietStart ?? 22;
@@ -500,11 +371,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
-        await ctx
-          .editMessageText(
-            'Не удалось перенести напоминание. Попробуй ещё раз.',
-          )
-          .catch(() => null);
+        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -514,7 +381,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const match = ctx.match as RegExpMatchArray;
         const done = match[1] === 'done';
         const planId = Number(match[2]);
@@ -527,9 +394,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           .catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
       } catch (err) {
         this.logger.error('plan checkin action failed', err);
-        await ctx
-          .editMessageText('Не удалось сохранить. Попробуй ещё раз.')
-          .catch(() => null);
+        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
       }
     });
 
@@ -537,124 +402,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
       // admin-approval flow. Redirect users to the mini-app form.
       try {
+        const form = await this.form(ctx.from?.id);
         await ctx.reply(
-          '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
-            'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
-            'Админ проверит и одобрит.',
+          t(
+            form,
+            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
+              'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
+              'Админ проверит и одобрит.',
+            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
+              'Откройте мини-апп → Настройки → "Я психолог" → заполните форму.\n' +
+              'Админ проверит и одобрит.',
+          ),
         );
       } catch (err) {
         this.logger.error('therapist command failed', err);
-      }
-    });
-
-    // Фолбэк-доступ к заявкам на роль терапевта: если пуш-уведомление не дошло
-    // (напр. после переезда бота), админ всё равно видит и обрабатывает заявки.
-    this.bot.command('zayavki', async (ctx) => {
-      try {
-        const adminId = adminIdNum();
-        if (!adminId || ctx.from?.id !== adminId) {
-          await ctx.reply('Только админ');
-          return;
-        }
-        const esc = (s: string) =>
-          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        type PendingReq = {
-          id: number;
-          userId: bigint;
-          fullName: string;
-          qualification: string;
-          contacts: string;
-          message: string | null;
-        };
-        const pending = (await this.therapistRequestService.listPending(
-          adminId,
-        )) as PendingReq[];
-        if (pending.length === 0) {
-          await ctx.reply('Заявок на роль терапевта нет.');
-          return;
-        }
-        for (const req of pending) {
-          const text =
-            `🩺 <b>Заявка #${req.id}</b>\n\n` +
-            `<b>Имя:</b> ${esc(req.fullName)}\n` +
-            `<b>Квалификация:</b> ${esc(req.qualification)}\n` +
-            `<b>Контакты:</b> ${esc(req.contacts)}\n` +
-            (req.message ? `<b>Сообщение:</b> ${esc(req.message)}\n` : '') +
-            `<b>Telegram ID:</b> <code>${req.userId}</code>`;
-          await ctx.reply(text, {
-            parse_mode: 'HTML',
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: '✅ Approve',
-                    callback_data: `treq:approve:${req.id}`,
-                  },
-                  { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
-                ],
-              ],
-            },
-          });
-        }
-      } catch (err) {
-        this.logger.error(`zayavki command failed: ${(err as Error).message}`);
-        await ctx.reply('Ошибка при получении заявок').catch(() => null);
-      }
-    });
-
-    this.bot.command('broadcast', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        const text = (ctx.message as { text?: string } | undefined)?.text
-          ?.slice('/broadcast '.length)
-          .trim();
-        if (!text) {
-          await ctx.reply('Укажи текст: /broadcast <сообщение>');
-          return;
-        }
-        const userIds = await this.accountService.getBroadcastUserIds();
-        await ctx.reply(
-          `Начинаю рассылку для ${userIds.length} пользователей...`,
-        );
-        let sent = 0,
-          failed = 0;
-        for (const uid of userIds) {
-          try {
-            // Plain text — no parse_mode. Avoids stray markdown chars from
-            // breaking the broadcast for half the users.
-            await this.bot!.telegram.sendMessage(uid, text, {
-              parse_mode: undefined,
-            });
-            sent++;
-          } catch (err: unknown) {
-            failed++;
-            const e = err as {
-              response?: { error_code?: number; description?: string };
-              message?: string;
-            };
-            const code = e.response?.error_code;
-            const desc = String(e.response?.description ?? e.message ?? '');
-            const isPermanent =
-              code === 403 ||
-              (code === 400 &&
-                /chat not found|user is deactivated|bot was blocked/i.test(
-                  desc,
-                ));
-            if (isPermanent) {
-              await this.accountService
-                .markUserBlocked(BigInt(uid))
-                .catch(() => null);
-            }
-          }
-          await new Promise((r) => setTimeout(r, 50));
-        }
-        await ctx.reply(`✅ Готово: ${sent} доставлено, ${failed} ошибок`);
-      } catch (err) {
-        this.logger.error('broadcast command failed', err);
-        await ctx.reply('❌ Ошибка рассылки').catch(() => null);
       }
     });
 
@@ -717,7 +478,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (adminId) {
       this.bot.telegram
         .sendMessage(adminId, '🚀 Деплой завершён')
-        .catch(() => null);
+        .catch((err) => this.logger.error('deploy DM failed', err));
     }
 
     // One-time cleanup: cancel legacy pre_reminder notifications left in queue
@@ -727,7 +488,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (n > 0)
           this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
       })
-      .catch(() => null);
+      .catch((e) => this.logger.error('cancelAllPreReminders failed', e));
   }
 
   /** Отправить сообщение администратору. Возвращает true, если доставлено. */
@@ -757,13 +518,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const pending = this.pendingPairCodes.get(rawId);
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
-    const ok = await this.pairsService.joinPair(BigInt(rawId), pending.code);
-    const text = ok
-      ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
-      : 'Ссылка недействительна или уже использована.';
-    const kb = Markup.inlineKeyboard([
-      [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-    ]);
+    const userId = await this.accountService.canonicalUserId(rawId);
+    const ok = await this.pairsService.joinPair(userId, pending.code);
+    const text = pairJoinResultText(ok, await this.form(rawId));
+    const kb = MINIAPP_ONLY_KEYBOARD;
     try {
       await ctx.editMessageText(text, kb);
     } catch {

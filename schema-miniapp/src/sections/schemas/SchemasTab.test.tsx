@@ -1,13 +1,25 @@
 // @vitest-environment jsdom
-// SchemasTab — вкладка «Схемы» каталога (0% покрытия): группировка выбранных
-// схем по доменам с недельной частотой + карточка теста YSQ в трёх состояниях
-// (не начат/начат/пройден). PatternsHero и PatternFrequencyList — свои файлы
-// со своими тестами, здесь их мокаем, чтобы бить только по логике SchemasTab.
+// SchemasTab — вкладка «Схемы» каталога: держит openId (единый для Hero и
+// списка), рисует Hero + карточку теста YSQ в трёх состояниях (не начат/
+// начат/пройден), оба скрываемые через блоки «Паттернов» (heroes/ysq_status,
+// пропс blocks). PatternsHero, YsqStatusCard и SchemasPatternSection — свои
+// файлы со своими тестами, здесь их мокаем.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
+import type { BlockVisibility } from './blockVisibility';
+import { SCREEN_BLOCK_ORDER } from '../../utils/screenBlocks';
 import { SchemasTab } from './SchemasTab';
+
+function fakeBlocks(hidden: string[] = []): BlockVisibility {
+  return {
+    isHidden: (id) => hidden.includes(id),
+    holdProps: () =>
+      ({}) as unknown as ReturnType<BlockVisibility['holdProps']>,
+    orderedIds: SCREEN_BLOCK_ORDER.patterns,
+  };
+}
 
 // Дата прохождения теста — относительная (не литерал): fmtDate() рисует её
 // как есть, но литерал в прошлом всё равно однажды перестанет быть валидной
@@ -17,21 +29,19 @@ const YSQ_COMPLETED_AT = new Date(
 ).toISOString();
 
 vi.mock('../../components/PatternsHero', () => ({
-  PatternsHero: () => <div data-testid="patterns-hero" />,
-}));
-vi.mock('../../components/PatternFrequencyList', () => ({
-  PatternFrequencyList: ({
-    groups,
+  PatternsHero: ({
+    onOpenSchemaDetail,
   }: {
-    groups: { title: string; items: { name: string; freq: number }[] }[];
+    onOpenSchemaDetail: (id: string) => void;
   }) => (
-    <div data-testid="pattern-list">
-      {groups.map((g) => (
-        <div key={g.title}>
-          {g.title}: {g.items.map((i) => `${i.name}(${i.freq})`).join(', ')}
-        </div>
-      ))}
-    </div>
+    <button onClick={() => onOpenSchemaDetail('abandonment')}>
+      hero-open-abandonment
+    </button>
+  ),
+}));
+vi.mock('./SchemasPatternSection', () => ({
+  SchemasPatternSection: ({ openId }: { openId: string | null }) => (
+    <div data-testid="pattern-section">{openId ?? 'none'}</div>
   ),
 }));
 
@@ -52,16 +62,17 @@ const BASE_PROPS = {
   ysqProgressAnswered: null as number | null,
   weekSummary: null,
   schemaFreq: {} as Record<string, number>,
+  schemaEntries: [],
+  setSchemaEntries: () => {},
   onOpenSchema: vi.fn(),
   onShowSchemaPicker: vi.fn(),
-  onOpenSchemaDetail: vi.fn(),
+  blocks: fakeBlocks(),
 };
 
 describe('SchemasTab — без выбранных схем и непройденным тестом', () => {
-  it('карточка теста и группы схем не рендерятся', () => {
+  it('карточка теста не рендерится', () => {
     renderWithForm(<SchemasTab {...BASE_PROPS} />);
     expect(screen.queryByText('Тест на схемы')).toBeNull();
-    expect(screen.queryByTestId('pattern-list')).toBeNull();
   });
 });
 
@@ -96,31 +107,19 @@ describe('SchemasTab — карточка теста YSQ по состояния
   });
 });
 
-describe('SchemasTab — группировка схем пользователя по доменам', () => {
-  it('только реально выбранные схемы попадают в список групп', () => {
-    renderWithForm(
-      <SchemasTab
-        {...BASE_PROPS}
-        allSchemaIds={['abandonment']}
-        schemaFreq={{ abandonment: 2 }}
-      />,
+describe('SchemasTab — единый openId для Hero и списка паттернов', () => {
+  it('тап по сводке недели в Hero открывает тот же PatternSheet, что и список', () => {
+    renderWithForm(<SchemasTab {...BASE_PROPS} />);
+    expect(screen.getByTestId('pattern-section').textContent).toBe('none');
+    fireEvent.click(screen.getByText('hero-open-abandonment'));
+    expect(screen.getByTestId('pattern-section').textContent).toBe(
+      'abandonment',
     );
-    const list = screen.getByTestId('pattern-list');
-    expect(list.textContent).toContain('(2)');
   });
+});
 
-  it('частота отсутствующей в schemaFreq схемы — 0, а не подставное значение', () => {
-    renderWithForm(
-      <SchemasTab
-        {...BASE_PROPS}
-        allSchemaIds={['abandonment']}
-        schemaFreq={{}}
-      />,
-    );
-    expect(screen.getByTestId('pattern-list').textContent).toContain('(0)');
-  });
-
-  it('во время загрузки профиля — скелетон вместо списка групп', () => {
+describe('SchemasTab — во время загрузки', () => {
+  it('Hero скрыт', () => {
     renderWithForm(
       <SchemasTab
         {...BASE_PROPS}
@@ -128,15 +127,35 @@ describe('SchemasTab — группировка схем пользовател�
         allSchemaIds={['abandonment']}
       />,
     );
-    expect(screen.queryByTestId('pattern-list')).toBeNull();
-    expect(screen.queryByTestId('patterns-hero')).toBeNull(); // hero скрыт во время загрузки
+    expect(screen.queryByText('hero-open-abandonment')).toBeNull();
+  });
+});
+
+describe('SchemasTab — скрываемые блоки (useScreenBlocks)', () => {
+  it('блок heroes скрыт — Hero не рендерится, список схем на месте', () => {
+    renderWithForm(
+      <SchemasTab {...BASE_PROPS} blocks={fakeBlocks(['heroes'])} />,
+    );
+    expect(screen.queryByText('hero-open-abandonment')).toBeNull();
+    expect(screen.getByTestId('pattern-section')).toBeTruthy();
   });
 
-  it('нет выбранных схем, но тест пройден без результатов-групп — кнопка «Добавить схему»', () => {
+  it('блок ysq_status скрыт — карточка теста не рендерится, список схем на месте', () => {
     renderWithForm(
-      <SchemasTab {...BASE_PROPS} ysqCompletedAt={YSQ_COMPLETED_AT} />,
+      <SchemasTab
+        {...BASE_PROPS}
+        allSchemaIds={['abandon']}
+        blocks={fakeBlocks(['ysq_status'])}
+      />,
     );
-    expect(screen.getByText('+ Добавить схему')).toBeTruthy();
+    expect(screen.queryByText('Тест на схемы')).toBeNull();
+    expect(screen.getByTestId('pattern-section')).toBeTruthy();
+  });
+
+  it('ничего не скрыто — Hero и карточка теста оба на месте', () => {
+    renderWithForm(<SchemasTab {...BASE_PROPS} allSchemaIds={['abandon']} />);
+    expect(screen.getByText('hero-open-abandonment')).toBeTruthy();
+    expect(screen.getByText('Тест на схемы')).toBeTruthy();
   });
 });
 

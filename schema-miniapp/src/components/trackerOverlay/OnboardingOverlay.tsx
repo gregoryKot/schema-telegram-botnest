@@ -1,7 +1,14 @@
 import { useTr } from '../../utils/addressForm';
 
 // Онбординг-карточка трекера (3 шага). Вынесено из TrackerOverlay.tsx
-// (правило №10). ты/вы строки шагов — через tr().
+// (правило №10). Строки шагов с обращением — через tr().
+//
+// Свод 2026-08-31: визард первого входа сокращён (disclaimer/steps.ts), шаг
+// needs_what («откуда эти пять потребностей») снят — эта карточка теперь
+// единственное место, где новичок узнаёт про схема-терапию за потребностями.
+// Поэтому строка происхождения стоит НАД тремя шагами, а не внутри одного:
+// человек прочтёт её, на каком бы шаге ни закрыл карточку. Формулировка
+// безличная — обе формы обращения звучат одинаково.
 export const buildOnboardingSteps = (
   tr: (ty: string, vy: string) => string,
 ) => [
@@ -39,10 +46,22 @@ export function OnboardingOverlay({
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border-color)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 16px',
         }}
       >
+        {/* Происхождение потребностей — см. комментарий в шапке файла. */}
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-sub)',
+            lineHeight: 1.5,
+            marginBottom: 10,
+          }}
+        >
+          Пять базовых эмоциональных потребностей — из схема-терапии: считается,
+          что схемы формируются там, где их систематически не хватало.
+        </div>
         <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
           {onbSteps.map((_, i) => (
             <div
@@ -61,7 +80,7 @@ export function OnboardingOverlay({
         <div
           style={{
             display: 'flex',
-            gap: 12,
+            gap: 'var(--space-12)',
             alignItems: 'flex-start',
             marginBottom: 12,
           }}
@@ -91,14 +110,14 @@ export function OnboardingOverlay({
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
           <button
             onClick={dismissOnb}
             style={{
               padding: '7px 12px',
               border: 'none',
               fontFamily: 'inherit',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'transparent',
               color: 'var(--text-faint)',
               fontSize: 11,
@@ -116,7 +135,7 @@ export function OnboardingOverlay({
               padding: '8px',
               border: 'none',
               fontFamily: 'inherit',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               background: 'var(--surface-2)',
               color: 'var(--accent)',
               fontSize: 12,

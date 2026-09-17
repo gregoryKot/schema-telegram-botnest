@@ -1,5 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
-
+import { cm } from '../../sections/schemas/utils';
 interface GroundingStepProps {
   allCardsCount: number;
   tr: (ty: string, vy: string) => string;
@@ -27,7 +27,7 @@ export function GroundingStep({
             marginBottom: 10,
           }}
         >
-          {tr('Ты сделал правильно', 'Вы сделали правильно')}
+          Всё правильно
         </div>
         <div
           style={{
@@ -47,9 +47,9 @@ export function GroundingStep({
         {/* Breathing box */}
         <div
           style={{
-            background: 'rgba(96,165,250,0.07)',
-            border: '1px solid rgba(96,165,250,0.18)',
-            borderRadius: 20,
+            background: cm('var(--accent-blue)', 7),
+            border: `1px solid ${cm('var(--accent-blue)', 18)}`,
+            borderRadius: 'var(--r-20)',
             padding: '18px 16px',
             marginBottom: 24,
             textAlign: 'left',
@@ -75,7 +75,7 @@ export function GroundingStep({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 'var(--space-12)',
                 marginBottom: i < 2 ? 10 : 0,
               }}
             >
@@ -85,8 +85,8 @@ export function GroundingStep({
                   height: 24,
                   borderRadius: '50%',
                   flexShrink: 0,
-                  background: 'rgba(96,165,250,0.14)',
-                  border: '1px solid rgba(96,165,250,0.22)',
+                  background: cm('var(--accent-blue)', 14),
+                  border: `1px solid ${cm('var(--accent-blue)', 22)}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -118,11 +118,11 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
-            background: 'rgba(96,165,250,0.12)',
-            outline: '1px solid rgba(96,165,250,0.22)',
+            background: cm('var(--accent-blue)', 12),
+            outline: `1px solid ${cm('var(--accent-blue)', 22)}`,
             color: 'var(--accent-blue)',
             fontSize: 15,
             fontWeight: 600,
@@ -138,7 +138,7 @@ export function GroundingStep({
             style={{
               width: '100%',
               padding: '11px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               fontFamily: 'inherit',
               border: 'none',
               background: 'var(--surface)',
@@ -157,7 +157,7 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '11px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: 'transparent',

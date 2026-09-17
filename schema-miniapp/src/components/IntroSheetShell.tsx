@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { useIntroSheetData } from '../hooks/useIntroSheetData';
@@ -21,7 +20,9 @@ export interface IntroSheetShellProps<T extends Record<string, string>> {
   loadExisting: () => Promise<T | null>;
   saveNote: (data: T) => Promise<unknown>;
   accentColor: string;
-  emoji: string;
+  /** Иконка слева от заголовка: эмодзи схемы или цветной кружок режима
+   *  (`<IdentityDot color={...} />`, волна 6) — см. IntroSheetHeaderProps. */
+  emoji: ReactNode;
   title: string;
   subtitle: string;
   description?: string;
@@ -59,13 +60,14 @@ export function IntroSheetShell<T extends Record<string, string>>({
 }: IntroSheetShellProps<T>) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
-  const { data, set, handleSave, saving, hasAny } = useIntroSheetData({
-    storageKey,
-    emptyData,
-    loadExisting,
-    saveNote,
-    onComplete,
-  });
+  const { data, set, handleSave, saving, saveError, hasAny } =
+    useIntroSheetData({
+      storageKey,
+      emptyData,
+      loadExisting,
+      saveNote,
+      onComplete,
+    });
 
   const q = questions[step];
   const isLast = step === questions.length - 1;
@@ -132,14 +134,14 @@ export function IntroSheetShell<T extends Record<string, string>>({
               isLast
                 ? saving
                   ? 'Сохраняем…'
-                  : 'Сохранить карточку'
+                  : saveError
+                    ? 'Не сохранилось — попробовать ещё раз'
+                    : 'Сохранить карточку'
                 : nextButtonLabel
             }
             onPrimary={
               isLast
-                ? () => {
-                    void handleSave().then(() => setDone(true));
-                  }
+                ? () => void handleSave().then((ok) => ok && setDone(true))
                 : () => setStep((s) => s + 1)
             }
             primaryDisabled={isLast ? !hasAny || saving : false}

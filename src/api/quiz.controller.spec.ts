@@ -1,13 +1,16 @@
 // Публичная выдача мини-тестов: контент из quiz-registry, форма из ?form,
 // всё неизвестное — «ты» (дефолт проекта для анонимов).
 import { QuizController } from './quiz.controller';
+import { QUIZ_IDS } from '../quiz/quiz-registry';
 
 describe('QuizController', () => {
   const controller = new QuizController();
 
   it('отдаёт все тесты со структурой для сайта', () => {
     const { quizzes } = controller.list(undefined);
-    expect(quizzes.map((q) => q.id)).toEqual(['drives', 'critic', 'battery']);
+    // Сверка с реестром, а не со списком-копией: новый тест обязан доехать до
+    // сайта целиком, но переписывать эту строку на каждый тест незачем.
+    expect(quizzes.map((q) => q.id)).toEqual([...QUIZ_IDS]);
     for (const q of quizzes) {
       expect(q.questions.length).toBeGreaterThan(0);
       expect(q.results.length).toBeGreaterThan(0);

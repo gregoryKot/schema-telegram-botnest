@@ -5,101 +5,14 @@ import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
-export { SCHEMA_DOMAINS };
+import { NEED_ORDER } from '../needData';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { buildNeedsData } from './schemaInfoSheet/data';
+import { ModesTab } from './schemaInfoSheet/ModesTab';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
-type ModeCheckinItem = ReturnType<typeof buildModeCheckin>[number];
-
 type Tab = 'needs' | 'schemas' | 'modes';
-
-/* ─── 5 Core Needs ─── */
-const buildNeedsData = (tr: (ty: string, vy: string) => string) => [
-  {
-    emoji: '🤝',
-    title: 'Привязанность',
-    subtitle: 'Безопасность и связь',
-    desc: tr('Потребность в стабильных, надёжных отношениях – чтобы тебя принимали, слышали и не бросали. Когда она не удовлетворена, появляются тревога, страх одиночества и сложности с доверием.', 'Потребность в стабильных, надёжных отношениях – чтобы вас принимали, слышали и не бросали. Когда она не удовлетворена, появляются тревога, страх одиночества и сложности с доверием.'),
-  },
-  {
-    emoji: '🚀',
-    title: 'Автономия',
-    subtitle: 'Контроль и компетентность',
-    desc: 'Потребность чувствовать себя способным справляться самостоятельно, делать выборы и отвечать за свою жизнь. Дефицит проявляется как беспомощность, зависимость от чужого мнения или страх ошибиться.',
-  },
-  {
-    emoji: '💬',
-    title: 'Выражение чувств',
-    subtitle: 'Свобода самовыражения',
-    desc: 'Потребность в том, чтобы чувства и мысли были услышаны и приняты – без осуждения. Когда эта потребность хронически не удовлетворяется, эмоции подавляются или взрываются.',
-  },
-  {
-    emoji: '🎉',
-    title: 'Спонтанность',
-    subtitle: 'Игра и радость',
-    desc: 'Потребность в лёгкости, веселье и отдыхе без чувства вины. Жёсткие стандарты и самокритика блокируют её, создавая ощущение серьёзности и долга вместо радости.',
-  },
-  {
-    emoji: '⚖️',
-    title: 'Границы',
-    subtitle: 'Самодисциплина и уважение',
-    desc: 'Потребность устанавливать разумные пределы – для себя и с другими. Без неё трудно сдерживать импульсы, говорить «нет» и уважать чужие границы.',
-  },
-];
-
-/* ─── Schema Modes ─── */
-const buildModes = (tr: (ty: string, vy: string) => string) => [
-  {
-    group: 'Детские режимы',
-    color: 'var(--accent-blue)',
-    items: [
-      { name: 'Уязвимый Ребёнок', emoji: '🥺', feel: 'одиноко, страшно, грустно, покинуто', desc: 'Базовый режим боли – ранние чувства брошенности, стыда или беспомощности. Активируется, когда что-то задевает схему. Нуждается в безопасности, тепле и присутствии.' },
-      { name: 'Сердитый / Разъярённый Ребёнок', emoji: '😤', feel: 'злость, ярость, «это несправедливо»', desc: 'Незрелая злость в ответ на нарушение потребностей. Сердитый ребёнок – реагирует, Разъярённый – вспыхивает. Возникает, когда потребности игнорировались или воспринята несправедливость.' },
-      { name: 'Импульсивный / Недисциплинированный Ребёнок', emoji: '⚡', feel: 'хочу сейчас, скучно, не могу терпеть', desc: 'Действует импульсивно, требует немедленного удовлетворения. В умеренной форме – нежелание прилагать усилия ради долгосрочных целей, сложность терпеть дискомфорт.' },
-    ],
-  },
-  {
-    group: 'Дисфункциональные копинги',
-    color: 'var(--accent-orange)',
-    items: [
-      { name: 'Послушный Капитулянт', emoji: '😶', feel: 'соглашаюсь, лишь бы не конфликтовать', desc: 'Подчиняется ожиданиям других. Подавляет собственные потребности ради сохранения отношений или избегания наказания.' },
-      { name: 'Отстранённый Защитник', emoji: '🌫️', feel: 'онемение, отстранённость, «не трогайте меня»', desc: 'Уходит от боли через эмоциональную изоляцию, прокрастинацию, отвлечение. Временно снижает страдание, но блокирует контакт с собой и другими.' },
-      { name: 'Самовозвеличиватель / Гиперкомпенсатор', emoji: '🔥', feel: 'контроль, превосходство, «я лучше знаю»', desc: 'Борьба со схемой через противоположное – сверхдостижения, контроль, грандиозность. Внешне сильный, внутри – тот же страх или стыд.' },
-    ],
-  },
-  {
-    group: 'Критикующие режимы',
-    color: 'var(--accent-red)',
-    items: [
-      { name: 'Карающий Критик', emoji: '😠', feel: 'стыд, «я плохой», самонаказание', desc: 'Голос, который жёстко атакует и наказывает за ошибки. Усвоенный голос значимого взрослого, который критиковал, стыдил или наказывал.' },
-      { name: 'Требовательный Критик', emoji: '😬', feel: 'давление, «недостаточно стараюсь», тревога', desc: 'Постоянное давление высоких стандартов – пока всё не идеально, нельзя отдыхать. Нередко маскируется под «продуктивность».' },
-      { name: 'Внушающий Вину Критик', emoji: '😔', feel: 'вина, «я подвёл», долг', desc: 'Постоянно напоминает об обязательствах перед другими, формирует чувство вины. Часто стоит за самопожертвованием и трудностью говорить «нет».' },
-    ],
-  },
-  {
-    group: 'Здоровые режимы',
-    color: 'var(--accent-green)',
-    items: [
-      { name: 'Счастливый Ребёнок', emoji: '😄', feel: 'лёгкость, радость, игривость', desc: 'Спонтанность, любопытство, радость без тревоги. Признак того, что базовые потребности сейчас удовлетворены.' },
-      { name: 'Здоровый Взрослый', emoji: '🌿', feel: 'спокойно, ясно, устойчиво', desc: tr('Главная цель схема-терапии. В этом режиме ты можешь заботиться о своих потребностях, ставить границы, успокаивать Уязвимого Ребёнка.', 'Главная цель схема-терапии. В этом режиме вы можете заботиться о своих потребностях, ставить границы, успокаивать Уязвимого Ребёнка.') },
-    ],
-  },
-];
-
-/* ─── Mode Check-in data ─── */
-const buildModeCheckin = (tr: (ty: string, vy: string) => string) => [
-  { emoji: '🥺', label: 'Одиноко / страшно', mode: 'Уязвимый Ребёнок', tip: tr('Найди что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.', 'Найдите что-то тёплое – разговор, объятие, уют. Уязвимый Ребёнок нуждается в безопасности и присутствии, а не в советах.') },
-  { emoji: '😤', label: 'Злюсь / несправедливо', mode: 'Сердитый Ребёнок', tip: 'Сначала – тело. Выдох, пауза, движение. Потом можно разбираться с ситуацией. Злость – сигнал о нарушенной потребности.' },
-  { emoji: '😬', label: 'Давление / «надо больше»', mode: 'Требовательный Критик', tip: tr('Это не твой голос – это усвоенное. Спроси: что бы я сказал другу в такой же ситуации?', 'Это не ваш голос – это усвоенное. Спросите: что бы я сказал другу в такой же ситуации?') },
-  { emoji: '😠', label: 'Стыдно / я плохой', mode: 'Карающий Критик', tip: tr('Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуй сострадание к себе.', 'Карающий Критик врёт. Ошибки – часть человеческого опыта, не приговор. Попробуйте сострадание к себе.') },
-  { emoji: '😔', label: 'Виноват / должен всем', mode: 'Критик вины', tip: tr('Чувство вины – не факт. Попробуй отделить: это реальная ответственность или усвоенный голос о долге?', 'Чувство вины – не факт. Попробуйте отделить: это реальная ответственность или усвоенный голос о долге?') },
-  { emoji: '🌫️', label: 'Хочу отключиться', mode: 'Отстранённый Защитник', tip: tr('За отстранённостью – боль. Попробуй назвать, что именно больно, хотя бы для себя.', 'За отстранённостью – боль. Попробуйте назвать, что именно больно, хотя бы для себя.') },
-  { emoji: '😶', label: 'Соглашаюсь, хотя не хочу', mode: 'Послушный Капитулянт', tip: tr('Твои потребности тоже важны. Даже маленький «нет» – шаг к себе.', 'Ваши потребности тоже важны. Даже маленький «нет» – шаг к себе.') },
-  { emoji: '🔥', label: 'Контролирую / превосхожу', mode: 'Гиперкомпенсатор', tip: tr('Грандиозность – это Уязвимый Ребёнок в доспехах. Что ты защищаешь?', 'Грандиозность – это Уязвимый Ребёнок в доспехах. Что вы защищаете?') },
-  { emoji: '💚', label: 'Поддерживаю себя', mode: 'Хороший Родитель', tip: tr('Запомни это ощущение – к нему можно возвращаться.', 'Запомните это ощущение – к нему можно возвращаться.') },
-  { emoji: '😄', label: 'Легко и радостно', mode: 'Счастливый Ребёнок', tip: tr('Лёгкость и радость без тревоги – это ты, когда тебе хорошо. Просто побудь в этом.', 'Лёгкость и радость без тревоги – это вы, когда вам хорошо. Просто побудьте в этом.') },
-  { emoji: '🌿', label: 'Спокойно и устойчиво', mode: 'Здоровый Взрослый', tip: 'Хорошее время для рефлексии и сложных решений.' },
-];
 
 /* ─── Sub-components ─── */
 function NeedsTab() {
@@ -110,10 +23,10 @@ function NeedsTab() {
       <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 24 }}>
         Схема-терапия строится на идее, что у каждого есть пять базовых эмоциональных потребностей. Когда они систематически не удовлетворялись в детстве – формируются схемы.
       </p>
-      {NEEDS_DATA.map((n) => (
+      {NEEDS_DATA.map((n, i) => (
         <div key={n.title} style={{ borderBottom: '1px solid var(--line)', padding: '20px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-            <span style={{ fontSize: 28 }}>{n.emoji}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', marginBottom: 10 }}>
+            <IdentityDot id={NEED_ORDER[i]} size={16} />
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--text)' }}>{n.title}</div>
               <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{n.subtitle}</div>
@@ -157,7 +70,7 @@ function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
               <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{d.domain}</span>
             </div>
@@ -188,126 +101,6 @@ function SchemasTab({ highlight }: { highlight?: string }) {
   );
 }
 
-function ModesTab() {
-  const tr = useTr();
-  const MODES = buildModes(tr);
-  const MODE_CHECKIN = buildModeCheckin(tr);
-  const [checkinMode, setCheckinMode] = useState<ModeCheckinItem | null>(null);
-  const [showCheckin, setShowCheckin] = useState(false);
-
-  return (
-    <div>
-      <div
-        onClick={() => setShowCheckin(true)}
-        role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCheckin(true); } }}
-        style={{
-          background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-          borderRadius: 16, padding: '16px 20px', marginBottom: 24, cursor: 'pointer',
-        }}
-      >
-        <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 6 }}>Режим прямо сейчас</div>
-        <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</div>
-      </div>
-
-      <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 24 }}>
-        Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому взрослому.
-      </p>
-
-      {MODES.map((g) => (
-        <div key={g.group} style={{ marginBottom: 24 }}>
-          <div className="eyebrow" style={{ color: g.color, marginBottom: 12 }}>{g.group}</div>
-          {g.items.map((m) => (
-            <div key={m.name} style={{ borderBottom: '1px solid var(--line)', padding: '16px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 22 }}>{m.emoji}</span>
-                <div>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>{m.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>Чувствуется как: {m.feel}</div>
-                </div>
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
-            </div>
-          ))}
-        </div>
-      ))}
-
-      {/* Check-in selector */}
-      {showCheckin && !checkinMode && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', animation: 'fade-in 150ms ease' }}>
-          <div className="ex-topbar">
-            <button className="ex-back" onClick={() => setShowCheckin(false)}>
-              <GlyphArrowLeft /> Назад
-            </button>
-          </div>
-          <div className="page">
-            <div className="page-inner" style={{ paddingTop: 48 }}>
-              <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>Режим прямо сейчас</div>
-              <h1 className="hub-title" style={{ marginBottom: 8 }}>{tr('Как ты', 'Как вы')}<br /><span className="it">сейчас?</span></h1>
-              <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 36 }}>{tr('Выбери самое близкое ощущение', 'Выберите самое близкое ощущение')}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
-                {MODE_CHECKIN.map((item) => (
-                  <div
-                    key={item.label}
-                    onClick={() => setCheckinMode(item)}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCheckinMode(item); } }}
-                    className="mode-card"
-                    style={{ '--mode-color': 'var(--accent)' } as React.CSSProperties}
-                  >
-                    <span className="mode-card-stripe" />
-                    <div style={{ textAlign: 'center', width: '100%', padding: '4px 0' }}>
-                      <div style={{ fontSize: 32, marginBottom: 8 }}>{item.emoji}</div>
-                      <div className="mode-card-name" style={{ fontSize: 13, textAlign: 'center' }}>{item.label}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Result overlay */}
-      {checkinMode && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', animation: 'fade-in 150ms ease' }}>
-          <div className="ex-topbar">
-            <button className="ex-back" onClick={() => { setCheckinMode(null); setShowCheckin(false); }}>
-              <GlyphArrowLeft /> Назад
-            </button>
-          </div>
-          <div className="page">
-            <div className="page-inner" style={{ paddingTop: 56, maxWidth: 520 }}>
-              <div style={{ fontSize: 64, marginBottom: 20, textAlign: 'center' }}>{checkinMode.emoji}</div>
-              <div className="eyebrow" style={{ color: 'var(--accent)', textAlign: 'center', marginBottom: 8 }}>Режим</div>
-              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', textAlign: 'center', marginBottom: 32 }}>
-                {checkinMode.mode}
-              </h1>
-              <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)', background: 'color-mix(in srgb, var(--accent) 6%, transparent)', marginBottom: 32 }}>
-                <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Что помогает</div>
-                <p className="body" style={{ margin: 0 }}>{checkinMode.tip}</p>
-              </div>
-              <div className="ex-foot" style={{ padding: 0 }}>
-                <span className="spacer" />
-                <button
-                  onClick={() => { setCheckinMode(null); setShowCheckin(false); }}
-                  className="ex-btn ex-btn-primary"
-                >
-                  Понятно
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Main Component ─── */
-export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
-interface Props { onClose: () => void; ratings?: Record<string, number>; autoStartTest?: boolean; initialTab?: SchemaInfoTab; highlightSchema?: string }
 
 const SCHEMA_TABS: { key: Tab; label: string }[] = [
   { key: 'needs',   label: 'Потребности' },
@@ -346,8 +139,12 @@ export function SchemaInfoContent({ initialTab, highlight }: { initialTab?: Tab;
   );
 }
 
+/* ─── Main Component ─── */
+export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
+interface Props { onClose: () => void; ratings?: Record<string, number>; autoStartTest?: boolean; initialTab?: SchemaInfoTab; highlightSchema?: string }
+
 export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, highlightSchema: initHighlight }: Props) {
-  const goBack = useHistorySheet(onClose);
+  const goBack = useHistorySheet(onClose); const tr = useTr();
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(initialTab ?? 'needs');
@@ -369,7 +166,6 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           <GlyphArrowLeft /> Назад
         </button>
       </div>
-
       <div className="page">
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 32 }}>
@@ -386,14 +182,14 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
               role="button" tabIndex={0}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 14,
+                display: 'flex', alignItems: 'center', gap: 'var(--space-14)',
                 background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                borderRadius: 16, padding: '16px 20px', marginBottom: 12, cursor: 'pointer',
+                borderRadius: 'var(--r-16)', padding: '16px 20px', marginBottom: 12, cursor: 'pointer',
               }}>
               <span style={{ fontSize: 22 }}>⏸</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--accent-yellow)' }}>Незаконченный тест</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>Нажми, чтобы продолжить с места остановки</div>
+                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>{tr('Нажми, чтобы продолжить с места остановки', 'Нажмите, чтобы продолжить с места остановки')}</div>
               </div>
               <span style={{ fontSize: 18, color: 'var(--accent-yellow)' }}>›</span>
             </div>
@@ -406,7 +202,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
               border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-              borderRadius: 16, padding: '18px 20px', cursor: 'pointer',
+              borderRadius: 'var(--r-16)', padding: '18px 20px', cursor: 'pointer',
             }}
           >
             <div>

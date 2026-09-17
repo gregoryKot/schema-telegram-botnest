@@ -1,6 +1,7 @@
 import { useTr } from '../../utils/addressForm';
-import { COLORS } from '../../types';
 import { SectionLabel } from '../SectionLabel';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { needColor } from '../../../../shared/src/needs/needColors';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { TherapyNote } from '../TherapyNote';
 import { pressable } from '../../utils/a11y';
@@ -73,13 +74,12 @@ export function ResultPhase({
       >
         {NEED_IDS.map((id) => {
           const value = ratings[id];
-          const color = COLORS[id] ?? '#888';
           return (
             <div
               key={id}
               style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
-              <span style={{ fontSize: 13 }}>{NEED_META[id].emoji}</span>
+              <IdentityDot id={id} />
               <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                 {NEED_META[id].label.split(' ')[0]}
               </span>
@@ -92,7 +92,7 @@ export function ResultPhase({
                       ? 'var(--accent-red)'
                       : value <= 6
                         ? 'var(--accent-yellow)'
-                        : color,
+                        : needColor(id),
                 }}
               >
                 {value}
@@ -126,7 +126,7 @@ export function ResultPhase({
                 key={id}
                 style={{
                   background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   padding: '12px 14px',
                   marginBottom: 10,
                 }}
@@ -135,11 +135,11 @@ export function ResultPhase({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 'var(--space-8)',
                     marginBottom: 8,
                   }}
                 >
-                  <span style={{ fontSize: 14 }}>{meta.emoji}</span>
+                  <IdentityDot id={id} />
                   <span
                     style={{
                       fontSize: 13,
@@ -182,7 +182,7 @@ export function ResultPhase({
                         style={{
                           fontSize: 11,
                           padding: '3px 10px',
-                          borderRadius: 20,
+                          borderRadius: 'var(--r-20)',
                           background: hint.color + '18',
                           color: hint.color,
                           cursor: schemaData ? 'pointer' : 'default',
@@ -213,7 +213,7 @@ export function ResultPhase({
               background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
               cursor: 'pointer',
               marginTop: 4,
@@ -251,7 +251,7 @@ export function ResultPhase({
               'color-mix(in srgb, var(--accent-green) 10%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             marginBottom: 24,
           }}
@@ -283,13 +283,13 @@ export function ResultPhase({
         <TherapyNote compact />
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
         <button
           onClick={onEdit}
           style={{
             flex: 1,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
             background: 'transparent',
             color: 'var(--text-sub)',
@@ -304,7 +304,7 @@ export function ResultPhase({
           style={{
             flex: 2,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'rgba(var(--fg-rgb),0.08)',
             color: 'rgba(var(--fg-rgb),0.7)',

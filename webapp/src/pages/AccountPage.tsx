@@ -1,26 +1,45 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
 import { API_BASE } from '../utils/apiBase';
-import { TherapistRequestSection } from './account/TherapistRequestSection';
+import { useTr } from '../utils/addressForm'; import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
+import { GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider } from './account/ProviderRows';
+import { Skeleton } from '../components/Skeleton';
+import { AccountLinkSection } from './account/AccountLinkSection';
+import { EmailLinkRow } from './account/EmailLinkRow';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
-interface Provider {
-  provider: 'google' | 'telegram' | 'vk' | 'email';
-  email: string | null;
-  displayName: string | null;
-}
+type Provider = AccountProvider;
+
+// Ж4: подписи провайдеров для диалога отвязки — раньше сообщение всегда
+// говорило либо «Google», либо «Telegram» (VK/MAX/Email молча получали
+// «Telegram» из тернарника) — теперь по реальному провайдеру.
+const PROVIDER_LABELS: Record<Provider['provider'], string> = {
+  google: 'Google',
+  telegram: 'Telegram',
+  vk: 'ВКонтакте',
+  max: 'MAX',
+  email: 'Email',
+};
 
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
-  const navigate = useNavigate();
+  const tr = useTr(); const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [totp, setTotp] = useState<{ enabled: boolean; recoveryCodesLeft: number }>({ enabled: false, recoveryCodesLeft: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const success = searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null;
+  // Переход по ссылке из письма на занятый адрес. Раньше он уводил на экран
+  // «ссылка истекла» — неправда: ссылка жива, занят адрес, и человек шёл
+  // запрашивать письмо заново по кругу.
+  const emailTaken = searchParams.get('error') === 'email_taken'
+    ? tr('Этот адрес уже привязан к другому аккаунту. Войди по нему на странице входа — или привяжи сюда другой адрес.',
+         'Этот адрес уже привязан к другому аккаунту. Войдите по нему на странице входа — или привяжите сюда другой адрес.')
+    : null;
   const [busy, setBusy] = useState(false);
 
   // Pure fetch (no setState), so it can be shared by the mount effect and the
@@ -62,13 +81,6 @@ export function AccountPage() {
     return () => { alive = false; };
   }, [loadAccount]);
 
-  // Email link state
-  const [showEmailLink, setShowEmailLink] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
-  const [emailLinkSent, setEmailLinkSent] = useState(false);
-  const [emailLinkBusy, setEmailLinkBusy] = useState(false);
-  const emailInputRef = useRef<HTMLInputElement>(null);
-
   // Запрос ставит httpOnly-cookie `link_token` (60 c) — токен больше не
   // передаётся в URL (не попадает в логи/историю браузера).
   const fetchLinkToken = async (): Promise<void> => {
@@ -77,23 +89,28 @@ export function AccountPage() {
       headers: { Authorization: `Bearer ${accessToken ?? ''}` },
     });
   };
-  const linkGoogle = async () => {
+  // Общий шаг привязки: одна и та же механика для всех OAuth-провайдеров
+  // (сначала link-token кука, потом редирект) — раньше linkTelegram копией не
+  // делал await fetchLinkToken() (симптом 2026-08-21: без куки сервер не
+  // видел юзера, вместо привязки создавался/логинился ДРУГОЙ аккаунт).
+  const linkVia = async (path: string) => {
     sessionStorage.setItem('auth_return_to', '/account');
     await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/google`;
+    window.location.href = `${API_BASE}${path}`;
   };
-  const linkVk = async () => {
-    sessionStorage.setItem('auth_return_to', '/account');
-    await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/vk`;
-  };
-  const linkTelegram = () => {
-    sessionStorage.setItem('auth_return_to', '/account');
-    window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
-  };
+  const linkGoogle = () => linkVia('/api/auth/google');
+  const linkVk = () => linkVia('/api/auth/vk');
+  const linkTelegram = () => linkVia('/api/auth/telegram/redirect');
 
-  const unlink = async (provider: 'google' | 'telegram' | 'vk' | 'email') => {
-    if (!confirm(`Отвязать ${provider === 'google' ? 'Google' : 'Telegram'}?`)) return;
+  // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
+  // unlinkProvider хранит, какой провайдер подтверждаем (null = диалог закрыт).
+  const [unlinkProvider, setUnlinkProvider] = useState<Provider['provider'] | null>(null);
+  // «Выйти со всех устройств» отзывает ВСЕ сессии (?all=true) — ощутимее
+  // обычного выхода, поэтому через подтверждение.
+  const [logoutAllOpen, setLogoutAllOpen] = useState(false);
+
+  const performUnlink = async (provider: Provider['provider']) => {
+    setUnlinkProvider(null);
     setBusy(true);
     setError(null);
     try {
@@ -114,37 +131,11 @@ export function AccountPage() {
     }
   };
 
-  const sendEmailLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailLinkBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/email/link-to-account`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ email: emailInput }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Ошибка' }));
-        throw new Error(body.message ?? `Ошибка ${res.status}`);
-      }
-      setEmailLinkSent(true);
-    } catch (e) {
-      setError(String(e).replace('Error: ', ''));
-    } finally {
-      setEmailLinkBusy(false);
-    }
-  };
-
   const hasGoogle = providers.some(p => p.provider === 'google');
   const hasTelegram = providers.some(p => p.provider === 'telegram');
   const hasVk = providers.some(p => p.provider === 'vk');
   const hasEmail = providers.some(p => p.provider === 'email');
-
-  useEffect(() => {
-    if (showEmailLink && !hasEmail && !emailLinkSent) emailInputRef.current?.focus();
-  }, [showEmailLink, hasEmail, emailLinkSent]);
+  const hasMax = providers.some(p => p.provider === 'max');
 
   return (
     <div style={{ flex: 1, padding: 24, maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -154,145 +145,60 @@ export function AccountPage() {
 
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Аккаунт</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
-        Привязывай несколько способов входа – заходи откуда удобно
+        {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
       </p>
 
       {success && (
-        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-green)', fontSize: 13 }}>
+        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-green)', fontSize: 13 }}>
           {success}
         </div>
       )}
 
-      {error && (
-        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
-          {error}
+      {(error ?? emailTaken) && (
+        <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 'var(--r-12)', padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
+          {error ?? emailTaken}
         </div>
       )}
 
+      <AccountLinkSection providers={providers} loading={loading} onLinked={refresh} />
+
       {loading ? (
-        <div className="loader-center" style={{ minHeight: 200 }}><div className="spinner" /></div>
+        // Силуэт будущих строк входа: иконка, название, кнопка. Правило
+        // проекта — плейсхолдер ПО ФОРМЕ контента, а не крутилка.
+        <div className="card-elevated" style={{ padding: 20 }} aria-hidden>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '14px 0' }}>
+              <Skeleton width={36} height={36} radius={10} />
+              <Skeleton width="40%" height={14} />
+              <Skeleton width={84} height={30} radius={8} style={{ marginLeft: 'auto' }} />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="card-elevated" style={{ padding: '20px' }}>
-          {/* Google */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(var(--fg-rgb),0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-                  <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                </svg>
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>Google</div>
-                {hasGoogle && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'google')?.email}</div>}
-              </div>
-            </div>
-            {hasGoogle ? (
-              <button disabled={busy} onClick={() => unlink('google')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
-                Отвязать
-              </button>
-            ) : (
-              <button disabled={busy} onClick={linkGoogle} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Привязать
-              </button>
-            )}
-          </div>
+          <ProviderRow icon={<GoogleIcon />} title="Google" divider linked={hasGoogle} busy={busy}
+            subtitle={providers.find(p => p.provider === 'google')?.email}
+            onLink={linkGoogle} onUnlink={() => setUnlinkProvider('google')} />
 
-          {/* Telegram */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(34,158,217,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.89l-1.68 7.92c-.12.56-.45.7-.9.43l-2.5-1.84-1.2 1.16c-.13.13-.25.25-.5.25l.18-2.55 4.63-4.18c.2-.18-.04-.27-.31-.1l-5.72 3.6-2.46-.77c-.54-.17-.55-.54.11-.8l9.58-3.69c.45-.16.85.11.69.77z" fill="#2AABEE"/>
-                </svg>
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>Telegram</div>
-                {hasTelegram && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'telegram')?.displayName ?? 'привязан'}</div>}
-              </div>
-            </div>
-            {hasTelegram ? (
-              <button disabled={busy} onClick={() => unlink('telegram')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
-                Отвязать
-              </button>
-            ) : (
-              <button disabled={busy} onClick={linkTelegram} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Привязать
-              </button>
-            )}
-          </div>
+          <ProviderRow icon={<TelegramIcon />} title="Telegram" linked={hasTelegram} busy={busy}
+            subtitle={providers.find(p => p.provider === 'telegram')?.displayName ?? 'привязан'}
+            onLink={linkTelegram} onUnlink={() => setUnlinkProvider('telegram')} />
 
-          {/* VK */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0077FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 600 }}>
-                VK
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>ВКонтакте</div>
-                {hasVk && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'vk')?.displayName ?? providers.find(p => p.provider === 'vk')?.email ?? 'привязан'}</div>}
-              </div>
-            </div>
-            {hasVk ? (
-              <button disabled={busy} onClick={() => unlink('vk')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
-                Отвязать
-              </button>
-            ) : (
-              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Привязать
-              </button>
-            )}
-          </div>
+          <ProviderRow icon={<VkIcon />} title="ВКонтакте" divider linked={hasVk} busy={busy}
+            subtitle={providers.find(p => p.provider === 'vk')?.displayName ?? providers.find(p => p.provider === 'vk')?.email ?? 'привязан'}
+            onLink={linkVk} onUnlink={() => setUnlinkProvider('vk')} />
 
-          {/* Email */}
-          <div style={{ padding: '14px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(var(--fg-rgb),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                  ✉️
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>Email</div>
-                  {hasEmail && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'email')?.email ?? 'привязан'}</div>}
-                  {!hasEmail && <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>не привязан</div>}
-                </div>
-              </div>
-              {hasEmail ? (
-                <button disabled={busy} onClick={() => unlink('email')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
-                  Отвязать
-                </button>
-              ) : (
-                <button disabled={busy} onClick={() => { setShowEmailLink(true); setEmailLinkSent(false); setEmailInput(''); }} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  Привязать
-                </button>
-              )}
-            </div>
-            {showEmailLink && !hasEmail && (
-              emailLinkSent ? (
-                <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                  ✉️ Письмо отправлено на <b>{emailInput}</b>. Перейди по ссылке в письме — она привяжет email к аккаунту.
-                  <button onClick={() => { setEmailLinkSent(false); setEmailInput(''); }} style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
-                    Ввести другой email
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={sendEmailLink} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                  <input
-                    type="email" required ref={emailInputRef}
-                    placeholder="your@email.com"
-                    value={emailInput}
-                    onChange={e => setEmailInput(e.target.value)}
-                    style={{ flex: 1, padding: '9px 12px', fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 8, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
-                  />
-                  <button type="submit" disabled={emailLinkBusy} style={{ padding: '9px 14px', fontSize: 12, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, cursor: emailLinkBusy ? 'default' : 'pointer', opacity: emailLinkBusy ? 0.7 : 1, whiteSpace: 'nowrap' }}>
-                    {emailLinkBusy ? '…' : 'Отправить'}
-                  </button>
-                </form>
-              )
-            )}
-          </div>
+          {/* MAX: своего входа для сайтов у площадки нет — привязка начинается
+              в самом приложении, поэтому кнопки «Привязать» здесь быть не может. */}
+          {hasMax && (
+            <ProviderRow icon={<MaxIcon />} title="MAX" divider linked busy={busy}
+              subtitle={providers.find(p => p.provider === 'max')?.displayName ?? 'привязан'}
+              onUnlink={() => setUnlinkProvider('max')} />
+          )}
+
+          <EmailLinkRow accessToken={accessToken} linked={hasEmail} busy={busy}
+            email={providers.find(p => p.provider === 'email')?.email}
+            onUnlink={() => setUnlinkProvider('email')} onError={setError} />
         </div>
       )}
 
@@ -300,9 +206,34 @@ export function AccountPage() {
 
       <TherapistRequestSection accessToken={accessToken} />
 
-      <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 12, padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
+      <button onClick={() => logout()} style={{ marginTop: 24, width: '100%', background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 'var(--r-12)', padding: '14px 0', fontSize: 14, cursor: 'pointer' }}>
         Выйти
       </button>
+
+      <button onClick={() => setLogoutAllOpen(true)} style={{ marginTop: 10, width: '100%', background: 'transparent', border: 'none', color: 'var(--text-faint)', padding: '4px 0', fontSize: 13, cursor: 'pointer' }}>
+        Выйти со всех устройств
+      </button>
+
+      {logoutAllOpen && (
+        <ConfirmDialog
+          title="Выйти со всех устройств?"
+          message="Сессии на всех устройствах завершатся. Данные останутся на месте — войти можно будет снова."
+          confirmLabel="Выйти везде"
+          onConfirm={() => { setLogoutAllOpen(false); void logout(true); }}
+          onCancel={() => setLogoutAllOpen(false)}
+        />
+      )}
+
+      {unlinkProvider && (
+        <ConfirmDialog
+          title={`Отвязать ${PROVIDER_LABELS[unlinkProvider]}?`}
+          message="Понадобится другой способ входа в аккаунт."
+          confirmLabel="Отвязать"
+          busy={busy}
+          onConfirm={() => performUnlink(unlinkProvider)}
+          onCancel={() => setUnlinkProvider(null)}
+        />
+      )}
     </div>
   );
 }

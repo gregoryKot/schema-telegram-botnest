@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   buildModeChainSuggestion,
   resolveModeChainCandidates,
+  modeChainVm,
 } from './modeChain';
 
 const tyTr = (ty: string, _vy: string) => ty;
@@ -134,5 +135,35 @@ describe('resolveModeChainCandidates', () => {
     const spy = vi.fn(getModeById);
     resolveModeChainCandidates(['a', 'b'], spy);
     expect(spy).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('modeChainVm', () => {
+  const modes: Record<string, { name: string }> = {
+    demanding_critic: { name: 'Требовательный критик' },
+    punitive_critic: { name: 'Карающий критик' },
+    // guilt_critic намеренно отсутствует — проверяем фильтр несуществующих id.
+  };
+  const getModeById = (id: string) => modes[id];
+
+  it('режим из семьи детской боли — вопрос, подсказка и резолвнутые кандидаты одним вызовом', () => {
+    const vm = modeChainVm('vulnerable_child', tyTr, getModeById);
+    expect(vm).not.toBeNull();
+    expect(vm!.question).toContain('Критика');
+    expect(vm!.hint.length).toBeGreaterThan(0);
+    expect(vm!.candidates).toEqual([
+      { id: 'demanding_critic', mode: { name: 'Требовательный критик' } },
+      { id: 'punitive_critic', mode: { name: 'Карающий критик' } },
+    ]);
+  });
+
+  it('здоровый режим (семья ok) — null без похода в getModeById', () => {
+    const spy = vi.fn(getModeById);
+    expect(modeChainVm('healthy_adult', tyTr, spy)).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('неизвестный modeId — null, а не падение', () => {
+    expect(modeChainVm('nonexistent', tyTr, getModeById)).toBeNull();
   });
 });

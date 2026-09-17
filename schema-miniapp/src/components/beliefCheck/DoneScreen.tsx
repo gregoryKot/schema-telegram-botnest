@@ -1,6 +1,7 @@
 // Финальный экран проверки убеждения — сводка доказательств.
 // Вынесено из BeliefCheck.tsx.
 import { BottomSheet } from '../BottomSheet';
+import { cm } from '../../sections/schemas/utils';
 
 export function BeliefDoneScreen({
   belief,
@@ -41,9 +42,9 @@ export function BeliefDoneScreen({
         </div>
         <div
           style={{
-            background: 'rgba(96,165,250,0.08)',
-            border: '1px solid rgba(96,165,250,0.15)',
-            borderRadius: 16,
+            background: cm('var(--accent-blue)', 8),
+            border: `1px solid ${cm('var(--accent-blue)', 15)}`,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             textAlign: 'left',
             marginBottom: 16,
@@ -152,9 +153,9 @@ export function BeliefDoneScreen({
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
-            background: 'rgba(96,165,250,0.15)',
+            background: cm('var(--accent-blue)', 15),
             color: 'var(--accent-blue)',
             fontSize: 15,
             fontWeight: 600,

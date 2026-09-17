@@ -26,12 +26,22 @@ const vibrate = (pattern: number | number[]): void => {
   if (canVibrate()) navigator.vibrate(pattern);
 };
 
-/** iOS/Android определяем по UA — значение того же вида, что даёт Telegram. */
-function webPlatform(): string {
-  if (typeof navigator === 'undefined') return 'web';
-  const ua = navigator.userAgent;
-  if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
-  if (/Android/.test(ua)) return 'android';
+/**
+ * iOS/Android определяем по UA — значение того же вида, что даёт Telegram.
+ * Экспортирован: webapp строит на нём выбор шагов установки PWA
+ * (webapp/src/utils/pwaInstall.ts) — второй UA-парсер запрещён правилом №3.
+ * Параметры — только для тестов, в проде читаются из navigator.
+ */
+export function webPlatform(ua?: string, maxTouchPoints?: number): string {
+  if (ua === undefined && typeof navigator === 'undefined') return 'web';
+  const agent = ua ?? navigator.userAgent;
+  const touch =
+    maxTouchPoints ??
+    (typeof navigator === 'undefined' ? 0 : (navigator.maxTouchPoints ?? 0));
+  if (/iPhone|iPad|iPod/.test(agent)) return 'ios';
+  // iPadOS 13+ прикидывается маком — отличаем по мультитачу.
+  if (/Macintosh/i.test(agent) && touch > 1) return 'ios';
+  if (/Android/.test(agent)) return 'android';
   return 'web';
 }
 
@@ -60,6 +70,9 @@ export function createWebHost(): HostBridge {
     ready: () => {},
     expand: () => {},
     close: () => {},
+    // Браузер не перехватывает вертикальные жесты как «свернуть» — гасить
+    // нечего, страховку на время драга берёт вызывающий код.
+    setVerticalSwipes: () => {},
 
     user: () => null,
     startParam: urlStartParam,
@@ -77,6 +90,7 @@ export function createWebHost(): HostBridge {
       isFullscreen: false,
       // Чёлку и home-индикатор закрывает CSS env(safe-area-inset-*).
       contentReported: true,
+      overlaysContent: false,
     }),
     onInsetsChange: () => () => {},
 

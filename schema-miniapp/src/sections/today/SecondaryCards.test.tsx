@@ -54,24 +54,50 @@ describe('SecondaryCards — карточка «Потребности»', () =>
     expect(screen.queryByText('2 / 2')).toBeNull();
   });
 
-  it('клик по карточке потребностей открывает историю трекера, если передан onOpenTrackerHistory', () => {
+  it('день оценён — клик по карточке потребностей открывает историю трекера', () => {
+    const onOpenTracker = vi.fn();
     const onOpenTrackerHistory = vi.fn();
-    render(<SecondaryCards {...baseProps({ onOpenTrackerHistory })} />);
+    render(
+      <SecondaryCards
+        {...baseProps({
+          allRated: true,
+          ratedCount: 2,
+          onOpenTracker,
+          onOpenTrackerHistory,
+        })}
+      />,
+    );
     fireEvent.click(screen.getByText('Потребности'));
     expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
+    expect(onOpenTracker).not.toHaveBeenCalled();
   });
 
-  it('клик по мини-карточке потребности вызывает onOpenTrackerAt с её id (не всплывает до истории)', () => {
+  it('сегодня ещё не заполнено — клик по карточке открывает трекер, а не историю', () => {
+    const onOpenTracker = vi.fn();
+    const onOpenTrackerHistory = vi.fn();
+    render(
+      <SecondaryCards
+        {...baseProps({ onOpenTracker, onOpenTrackerHistory })}
+      />,
+    );
+    fireEvent.click(screen.getByText('Потребности'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+    expect(onOpenTrackerHistory).not.toHaveBeenCalled();
+  });
+
+  it('клик по мини-карточке потребности вызывает onOpenTrackerAt с её id (не всплывает до карточки)', () => {
+    const onOpenTracker = vi.fn();
     const onOpenTrackerHistory = vi.fn();
     const onOpenTrackerAt = vi.fn();
     render(
       <SecondaryCards
-        {...baseProps({ onOpenTrackerHistory, onOpenTrackerAt })}
+        {...baseProps({ onOpenTracker, onOpenTrackerHistory, onOpenTrackerAt })}
       />,
     );
     fireEvent.click(screen.getAllByRole('button')[1]);
     expect(onOpenTrackerAt).toHaveBeenCalledWith('attachment');
     expect(onOpenTrackerHistory).not.toHaveBeenCalled();
+    expect(onOpenTracker).not.toHaveBeenCalled();
   });
 
   it('без onOpenTrackerAt клик по потребности открывает общий трекер', () => {

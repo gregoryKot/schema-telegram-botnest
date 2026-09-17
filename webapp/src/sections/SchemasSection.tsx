@@ -1,16 +1,23 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import {
+  MODE_DESC,
+  POPULAR_MODE_IDS,
+} from '../../../shared/src/mode/modePickerDesc';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
-import { useNeedData } from '../needData';
+import { useNeedData, NEED_ORDER } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+import { Skeleton } from '../components/Skeleton';
 import { pressable } from '../utils/a11y';
+import { needColor } from '../../../shared/src/needs/needColors';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
@@ -19,14 +26,6 @@ const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m =>
 function cm(color: string, pct: number) {
   return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
-const NEED_IDS: { id: string; color: string }[] = [
-  { id: 'attachment', color: '#ff6b9d' },
-  { id: 'autonomy',   color: '#4fa3f7' },
-  { id: 'expression', color: '#facc15' },
-  { id: 'play',       color: '#06d6a0' },
-  { id: 'limits',     color: '#a78bfa' },
-];
-
 function readLocalIds(key: string): string[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
@@ -103,7 +102,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       }
       setProfileLoading(false);
     }).catch(() => setProfileLoading(false));
-    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => {});
+    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => reportClientError({ message: 'schemas mode-map count load failed', section: 'schemas' }));
   }, []);
 
   const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
@@ -114,7 +113,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   function saveSchemas(ids: string[]) {
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
     setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => {});
+    api.updateSettings({ mySchemaIds: ids }).catch(() => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
   }
 
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
@@ -126,7 +125,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
-            <span style={{ color: 'var(--accent)' }}>● </span>Схема-терапия
+            Схема-терапия
           </div>
           <h1 className="hub-title" style={{ marginBottom: 8 }}>
             Мои<br /><span className="it">паттерны</span>
@@ -134,7 +133,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
         </div>
         <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
-          📖 <span>Библиотека</span>
+          Библиотека
         </button>
       </div>
 
@@ -171,12 +170,12 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 4, height: 22, background: c, borderRadius: 2, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)' }}>
+                      <span style={{ width: 4, height: 22, background: c, borderRadius: 'var(--r-2)', flexShrink: 0 }} />
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{schema.name}</span>
                     </div>
-                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 4 }} />
+                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 'var(--r-4)', overflow: 'hidden' }}>
+                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 'var(--r-4)' }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       {score && score.avg > 0 ? `${score.avg}/6` : score && score.pct5plus > 0 ? `${score.pct5plus}%` : '–'}
@@ -219,9 +218,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             <button onClick={() => setShowSchemaPicker(true)} className="link">+ Добавить</button>
           </div>
           {profileLoading ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[80, 100, 90, 110].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <Skeleton key={i} height={32} width={w} radius={20} />
               ))}
             </div>
           ) : allSchemaIds.length === 0 ? (
@@ -229,7 +228,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               {tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               {allSchemaIds.map(id => {
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
                 const schema = domain?.schemas.find(s => s.id === id);
@@ -237,7 +236,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 const c = domain.color;
                 return (
                   <button key={id} onClick={() => setDetailSchemaId(id)} style={{
-                    padding: '6px 13px', borderRadius: 20,
+                    padding: '6px 13px', borderRadius: 'var(--r-20)',
                     border: `1.5px solid ${cm(c, 35)}`,
                     background: cm(c, 9),
                     color: c, fontSize: 13, fontWeight: 600,
@@ -264,19 +263,19 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               const activeCount = domain.schemas.filter(s => allSchemaIds.includes(s.id)).length;
               return (
                 <div key={domain.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 16 }}>
                     <span style={{ width: 24, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
                     <span style={{ fontSize: 14, fontWeight: 600, color: c }}>{domain.domain}</span>
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                       {activeCount > 0 ? `${activeCount} из ${domain.schemas.length} активны` : `${domain.schemas.length} схем`}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-8)' }}>
                     {domain.schemas.map(s => {
                       const isMine = allSchemaIds.includes(s.id);
                       return (
                         <div key={s.id} {...pressable(() => setDetailSchemaId(s.id))} style={{
-                          cursor: 'pointer', borderRadius: 10,
+                          cursor: 'pointer', borderRadius: 'var(--r-10)',
                           background: isMine ? cm(c, 7) : 'var(--surface-2)',
                           border: `1px solid ${isMine ? cm(c, 22) : 'var(--line)'}`,
                           borderLeft: `3px solid ${isMine ? c : 'var(--line)'}`,
@@ -304,20 +303,20 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             <button onClick={() => setShowModePicker(true)} className="link">+ Добавить</button>
           </div>
           {profileLoading ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
               {[90, 110, 80].map((w, i) => (
-                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+                <Skeleton key={i} height={32} width={w} radius={20} />
               ))}
             </div>
           ) : myModes.length === 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</div>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-8)' }}>
               {myModes.map(m => {
                 const c = m.groupColor;
                 return (
                   <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                    padding: '6px 13px', borderRadius: 20,
+                    padding: '6px 13px', borderRadius: 'var(--r-20)',
                     border: `1.5px solid ${cm(c, 35)}`,
                     background: cm(c, 9),
                     color: c, fontSize: 13, fontWeight: 600,
@@ -325,7 +324,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                     WebkitTapHighlightColor: 'transparent',
                     display: 'flex', alignItems: 'center', gap: 5,
                   }}>
-                    <span style={{ fontSize: 14 }}>{m.emoji}</span>
+                    <IdentityDot color={c} />
                     {m.name}
                   </button>
                 );
@@ -339,11 +338,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <div className="section">
             <button onClick={() => setShowMyMap(true)} style={{
               width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 14,
+              display: 'flex', alignItems: 'center', gap: 'var(--space-14)', padding: '16px 18px', borderRadius: 'var(--r-14)',
               border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
               WebkitTapHighlightColor: 'transparent',
             }}>
-              <span style={{ fontSize: 26, flexShrink: 0 }}>🗺️</span>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                   Карта режимов с терапевтом
@@ -367,27 +365,27 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               const c = group.color;
               return (
                 <div key={group.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 12 }}>
                     <span style={{ width: 20, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
                     <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{group.group}</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-8)' }}>
                     {group.items.map(m => {
                       const active = myModeIds.includes(m.id);
                       return (
                         <div key={m.id} {...pressable(() => setIntroModeId(m.id))} style={{
-                          padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                          padding: '12px 14px', borderRadius: 'var(--r-12)', cursor: 'pointer',
                           background: active ? cm(c, 8) : 'var(--surface-2)',
                           border: `1px solid ${active ? cm(c, 28) : 'var(--line)'}`,
-                          display: 'flex', alignItems: 'flex-start', gap: 10,
+                          display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)',
                           transition: 'all 0.15s',
                         }}>
                           <div style={{
-                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            width: 36, height: 36, borderRadius: 'var(--r-10)', flexShrink: 0,
                             background: active ? cm(c, 22) : cm(c, 14),
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 20,
-                          }}>{m.emoji}</div>
+                          }}><IdentityDot color={c} size={14} /></div>
                           <div style={{ paddingTop: 1 }}>
                             <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)', lineHeight: 1.25 }}>{m.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{m.short}</div>
@@ -415,7 +413,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
           {!hasChildhood && (
             <div {...pressable(() => onOpenChildhoodWheel?.())} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
@@ -424,7 +421,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
           )}
 
-          {NEED_IDS.map(({ id, color }) => {
+          {NEED_ORDER.map((id) => {
+            const color = needColor(id);
             const d = NEED_DATA[id];
             if (!d) return null;
             const childScore = childhoodRatings[id];
@@ -435,7 +433,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   background: `${color}18`, border: `1px solid ${color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                 }}>
-                  {d.emoji}
+                  <IdentityDot id={id} size={14} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
@@ -468,7 +466,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {showModePicker && (
         <ModePickerSheet
           selected={myModeIds}
-          onSave={ids => { localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids)); setMyModeIds(ids); api.updateSettings({ myModeIds: ids }).catch(() => {}); }}
+          onSave={ids => { localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids)); setMyModeIds(ids); api.updateSettings({ myModeIds: ids }).catch(() => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' })); }}
           onClose={() => setShowModePicker(false)}
         />
       )}
@@ -504,7 +502,7 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0,
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '12px 16px', flexShrink: 0,
         borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
         <button onClick={goBack} aria-label="Назад" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
           <GlyphArrowLeft />
@@ -520,46 +518,6 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
 
 // ── Mode picker sheet ──────────────────────────────────────────────────────────
 
-const POPULAR_MODE_IDS = ['vulnerable_child', 'detached_protector', 'demanding_critic', 'abandoned_child', 'compliant_surrenderer'];
-
-const MODE_DESC: Record<string, string> = {
-  vulnerable_child:      'Беспомощность, грусть, страх – нуждается в защите',
-  lonely_child:          'Одиночество и непонятость даже среди людей',
-  abandoned_child:       'Страх быть брошенным, тревога при угрозе отношениям',
-  humiliated_child:      'Стыд и ощущение дефективности, страх осуждения',
-  dependent_child:       'Нужна постоянная поддержка, боится самостоятельных решений',
-  angry_child:           'Злость из-за неудовлетворённых потребностей',
-  stubborn_child:        'Упрямое сопротивление требованиям и контролю',
-  enraged_child:         'Неконтролируемая ярость при угрозе или несправедливости',
-  impulsive_child:       'Действует не думая, следует желаниям без учёта последствий',
-  undisciplined_child:   'Избегает скучного, быстро теряет интерес и бросает',
-  compliant_surrenderer: 'Соглашается со всем, чтобы избежать конфликта',
-  helpless_surrenderer:  'Ощущает себя беспомощным, ждёт что другие всё решат',
-  detached_protector:    'Отключается эмоционально, уходит в себя чтобы не чувствовать',
-  detached_self_soother: 'Успокаивает себя через еду, экраны, привычки',
-  avoidant_protector:    'Избегает ситуаций и людей, которые могут причинить боль',
-  angry_protector:       'Отталкивает других злостью, защищаясь от уязвимости',
-  self_aggrandiser:      'Ощущение особости и превосходства над другими',
-  overcontroller:        'Стремится всё контролировать, тревожится от неопределённости',
-  perfectionistic_oc:    'Недостижимые стандарты, страх малейшей ошибки',
-  suspicious_oc:         'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc:         'Отрицает слабость – должен быть сильным всегда',
-  flagellating_oc:       'Наказывает себя за ошибки строже чем нужно',
-  compulsive_oc:         'Навязчивые ритуалы и действия для снижения тревоги',
-  worrying_oc:           'Хроническое беспокойство о будущих катастрофах',
-  bully_attack:          'Добивается своего через запугивание и агрессию',
-  manipulative:          'Влияет на людей косвенно, скрывая истинные намерения',
-  predator:              'Использует других в своих интересах без сочувствия',
-  attention_seeker:      'Постоянно ищет признания и похвалы от окружающих',
-  pollyanna:             'Отрицает проблемы, видит всё в розовом цвете',
-  demanding_critic:      'Внутренний голос завышенных требований и критики',
-  punitive_critic:       'Жёсткое внутреннее осуждение и приговоры себе',
-  guilt_critic:          'Постоянное чувство вины и самообвинения',
-  happy_child:           'Спонтанность, радость и игривость без тревоги',
-  healthy_adult:         'Взвешенные решения, забота о себе и других',
-  good_parent:           'Внутренний поддерживающий голос, ободряет и успокаивает',
-};
-
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -569,7 +527,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
@@ -586,15 +544,15 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             С чего начать
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {POPULAR_MODE_IDS.map(id => {
               const mode = ALL_MODES.find(m => m.id === id);
               if (!mode) return null;
               const active = ids.includes(id);
               const c = mode.groupColor; // CSS variable
               return (
-                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{mode.emoji}</span>
+                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
+                  <IdentityDot color={c} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
                     {MODE_DESC[id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[id]}</div>}
@@ -616,12 +574,12 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
               <div className="eyebrow" style={{ color: c, marginBottom: 8, opacity: 0.8 }}>
                 {group.group}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {group.items.filter(m => !POPULAR_MODE_IDS.includes(m.id)).map(m => {
                   const active = ids.includes(m.id);
                   return (
-                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>{m.emoji}</span>
+                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '10px 12px', borderRadius: 'var(--r-12)', cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
+                      <IdentityDot color={c} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>
                         {MODE_DESC[m.id] && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{MODE_DESC[m.id]}</div>}

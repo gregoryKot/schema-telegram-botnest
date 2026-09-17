@@ -17,7 +17,7 @@ export function AchievementsCard({
       {...pressable(onOpen)}
       className="card"
       style={{
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '16px 0 16px 16px',
         cursor: 'pointer',
         overflow: 'hidden',
@@ -66,7 +66,7 @@ export function AchievementsCard({
         <div
           style={{
             display: 'flex',
-            gap: 8,
+            gap: 'var(--space-8)',
             overflowX: 'auto',
             paddingRight: 16,
             paddingBottom: 2,
@@ -82,27 +82,29 @@ export function AchievementsCard({
                   flexShrink: 0,
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 6,
+                  justifyContent: 'center',
+                  gap: 3,
                   padding: '10px 12px',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   background:
                     'color-mix(in srgb, var(--accent) 9%, transparent)',
                   border:
                     '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                  minWidth: 64,
+                  minWidth: 96,
                 }}
               >
-                <span style={{ fontSize: 26 }}>{m.emoji}</span>
                 <span
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: 600,
-                    color: 'var(--text-sub)',
+                    color: 'var(--text)',
                     whiteSpace: 'nowrap',
                   }}
                 >
                   {m.title}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  {m.desc}
                 </span>
               </div>
             );
@@ -113,19 +115,16 @@ export function AchievementsCard({
               style={{
                 flexShrink: 0,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
                 padding: '10px 12px',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 background: 'rgba(var(--fg-rgb),0.04)',
                 border: '1px solid rgba(var(--fg-rgb),0.06)',
                 minWidth: 64,
               }}
             >
-              <span style={{ fontSize: 20, opacity: 0.25 }}>🔒</span>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+              <span style={{ fontSize: 11, color: 'var(--faint)' }}>
                 ещё {achievements.filter((a) => !a.earned).length}
               </span>
             </div>

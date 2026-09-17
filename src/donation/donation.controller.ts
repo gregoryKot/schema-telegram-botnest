@@ -7,15 +7,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottle } from '../api/persistent-throttle.decorator';
 import { DonationService } from './donation.service';
-
-interface DonateDto {
-  amount: number;
-  source?: 'app' | 'game';
-  email?: string;
-  comment?: string;
-  website?: string; // honeypot
-}
+import { DonateDto } from './donation.dto';
 
 @Controller('api/donation')
 export class DonationController {
@@ -25,13 +19,10 @@ export class DonationController {
   @Post()
   @HttpCode(HttpStatus.OK)
   @Throttle({ long: { limit: 20, ttl: 3_600_000 } })
+  @PersistentThrottle()
   async donate(@Body() dto: DonateDto) {
     if (dto.website) throw new BadRequestException('rejected'); // honeypot
-    return this.donation.create({
-      amount: dto.amount,
-      source: dto.source,
-      email: dto.email,
-      comment: dto.comment,
-    });
+    const { amount, source, email, comment } = dto;
+    return this.donation.create({ amount, source, email, comment });
   }
 }

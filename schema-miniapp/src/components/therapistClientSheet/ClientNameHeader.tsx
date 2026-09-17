@@ -28,7 +28,13 @@ export function ClientNameHeader({
   if (renamingAlias) {
     return (
       <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--space-8)',
+            alignItems: 'center',
+          }}
+        >
           <input
             ref={aliasInputRef}
             value={aliasInput}
@@ -40,7 +46,7 @@ export function ClientNameHeader({
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.07)',
               border: '1px solid rgba(var(--fg-rgb),0.15)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '7px 10px',
               outline: 'none',
               color: 'var(--text)',
@@ -53,10 +59,10 @@ export function ClientNameHeader({
             aria-label="Сохранить"
             style={{
               padding: '7px 12px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'var(--accent)',
-              color: '#fff',
+              color: 'var(--on-accent)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -72,7 +78,7 @@ export function ClientNameHeader({
             aria-label="Отменить"
             style={{
               padding: '7px 10px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',
@@ -145,18 +151,24 @@ export function ClientNameHeader({
         onClick={deleteClient}
         disabled={deleteLoading}
         style={{
+          width: 44,
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          fontSize: 16,
           color: 'var(--accent-red)',
-          padding: '4px',
           flexShrink: 0,
         }}
         title="Удалить клиента"
-        aria-label="Удалить клиента"
+        aria-label="Удалить"
       >
-        🗑
+        {/* prettier-ignore */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
       </button>
     </div>
   );

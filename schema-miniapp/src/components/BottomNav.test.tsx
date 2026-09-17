@@ -12,7 +12,7 @@ const LABELS: Record<Section, string> = {
   today: 'Сегодня',
   help: 'Помощь',
   schemas: 'Паттерны',
-  profile: 'Профиль',
+  profile: 'Я',
 };
 
 describe('BottomNav — вкладки', () => {

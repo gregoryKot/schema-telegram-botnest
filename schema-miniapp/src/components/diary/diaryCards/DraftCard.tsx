@@ -33,7 +33,7 @@ export function DraftCard({
   return (
     <div
       style={{
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         marginBottom: 14,
         background: cm(color, 5),
@@ -48,7 +48,13 @@ export function DraftCard({
           marginBottom: 6,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-8)',
+          }}
+        >
           <span
             style={{
               fontSize: 9,
@@ -56,7 +62,7 @@ export function DraftCard({
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               padding: '3px 7px',
-              borderRadius: 6,
+              borderRadius: 'var(--r-6)',
               background: cm(color, 13),
               color,
             }}
@@ -80,13 +86,13 @@ export function DraftCard({
           {preview.length > 80 ? preview.slice(0, 80) + '…' : preview}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
         <button
           onClick={onContinue}
           style={{
             flex: 1,
             padding: '9px 0',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             border: 'none',
             background: color,
             color: '#fff',
@@ -102,7 +108,7 @@ export function DraftCard({
             onClick={() => setConfirm(true)}
             style={{
               padding: '9px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.06)',
               color: 'var(--text-sub)',
@@ -117,7 +123,7 @@ export function DraftCard({
             onClick={onDelete}
             style={{
               padding: '9px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background:
                 'color-mix(in srgb, var(--accent-red) 20%, transparent)',

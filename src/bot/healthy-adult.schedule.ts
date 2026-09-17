@@ -54,6 +54,23 @@ export function slotForMoment(now: Date): HealthyAdultSlot | null {
   return slotForHour(mskParts(now).hour);
 }
 
+/**
+ * Слот, долг которого ещё имеет смысл досылать.
+ *
+ * Окно публикации узкое (два часа), и повторы, живущие только внутри него,
+ * бесполезны для поста, вышедшего на последнем тике: досылать уже нечем
+ * (инцидент 2026-08-09, публикация в 10:55 при окне до 10:55). Поэтому долг
+ * тянется до вечернего окна, а вечерний — до конца суток. Ночью не досылаем:
+ * подписчики спят, а к утру выйдет свежая фраза.
+ */
+export function catchUpSlot(now: Date): HealthyAdultSlot | null {
+  const { hour } = mskParts(now);
+  if (hour >= SLOT_START_HOUR.morning && hour < SLOT_START_HOUR.evening)
+    return 'morning';
+  if (hour >= SLOT_START_HOUR.evening) return 'evening';
+  return null;
+}
+
 /** Слот, которому принадлежит час МСК (null — вне обоих окон). */
 function slotForHour(hour: number): HealthyAdultSlot | null {
   if (hour === SLOT_START_HOUR.morning || hour === SLOT_START_HOUR.morning + 1)

@@ -11,30 +11,63 @@ afterEach(() => {
 });
 
 describe('ProfileHeader', () => {
+  // В8 дизайн-аудита 2026-08: имя пользователя — заголовок экрана (h1).
+  it('имя пользователя — h1', () => {
+    render(
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={0}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Аня' })).toBeTruthy();
+  });
+
   it('чистый аккаунт (totalDays=0) — строка «дней в приложении» не показывается', () => {
     render(
-      <ProfileHeader firstName="Аня" totalDays={0} onOpenSettings={() => {}} />,
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={0}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
     );
     expect(screen.queryByText(/в приложении/)).toBeNull();
   });
 
   it('без имени — использует нейтральное «Я» и первую букву аватара', () => {
     render(
-      <ProfileHeader firstName="" totalDays={0} onOpenSettings={() => {}} />,
+      <ProfileHeader
+        firstName=""
+        totalDays={0}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
     );
     expect(screen.getAllByText('Я').length).toBeGreaterThan(0);
   });
 
   it('1 день — единственное число', () => {
     render(
-      <ProfileHeader firstName="Аня" totalDays={1} onOpenSettings={() => {}} />,
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={1}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
     );
     expect(screen.getByText(/1 день в/)).toBeTruthy();
   });
 
   it('3 дня — «дня» (2-4)', () => {
     render(
-      <ProfileHeader firstName="Аня" totalDays={3} onOpenSettings={() => {}} />,
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={3}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
     );
     expect(screen.getByText(/3 дня в/)).toBeTruthy();
   });
@@ -45,21 +78,37 @@ describe('ProfileHeader', () => {
         firstName="Аня"
         totalDays={10}
         onOpenSettings={() => {}}
+        onCustomize={() => {}}
       />,
     );
     expect(screen.getByText(/10 дней в/)).toBeTruthy();
   });
 
-  it('клик по шестерёнке вызывает onOpenSettings', () => {
+  it('клик по кнопке настроек вызывает onOpenSettings', () => {
     const onOpenSettings = vi.fn();
     render(
       <ProfileHeader
         firstName="Аня"
         totalDays={0}
         onOpenSettings={onOpenSettings}
+        onCustomize={() => {}}
       />,
     );
-    fireEvent.click(screen.getByText('⚙️'));
+    fireEvent.click(screen.getByLabelText('Настройки'));
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('клик по «Настроить» вызывает onCustomize', () => {
+    const onCustomize = vi.fn();
+    render(
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={0}
+        onOpenSettings={() => {}}
+        onCustomize={onCustomize}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Настроить экран профиля'));
+    expect(onCustomize).toHaveBeenCalledTimes(1);
   });
 });

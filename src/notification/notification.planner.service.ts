@@ -57,7 +57,7 @@ export class NotificationPlannerService {
     // Оценка движка идёт каждую ночь — детекция игнора и сдвиги уровня не зависят
     // от того, какое сообщение (и было ли) отправлено сегодня.
     const { remindToday } = await this.cadence.evaluate(user, now);
-    const daysSince = await this.analytics.getDaysSinceLastFill(uid);
+    const daysSince = await this.analytics.getDaysSinceLastFill(uid, tz);
 
     // Перерывы: 3 → lapsing_3, 7 → dormant_7, 30 → reengagement_30, дальше nudge раз в 45 дней.
     // Гейт по ВЫБРАННОЙ юзером частоте (notifyFrequency), а не по эффективному уровню.
@@ -132,7 +132,7 @@ export class NotificationPlannerService {
       daysSince < 7 &&
       !(await this.notifications.hasPending(uid, 'weekly'))
     ) {
-      const stats = await this.analytics.getWeeklyStats(uid);
+      const stats = await this.analytics.getWeeklyStats(uid, tz);
       const bestDay = await this.analytics.getBestDayOfWeek(uid);
       const text = buildWeeklySummaryText(
         stats,
@@ -226,9 +226,9 @@ export class NotificationPlannerService {
     ignoredCount = 0,
   ) {
     const [streak, weeklyStats, history, seq] = await Promise.all([
-      this.analytics.getConsecutiveDays(userId),
-      this.analytics.getWeeklyStats(userId),
-      this.analytics.getHistoryRatings(userId, 2),
+      this.analytics.getConsecutiveDays(userId, tz),
+      this.analytics.getWeeklyStats(userId, tz),
+      this.analytics.getHistoryRatings(userId, 2, tz),
       this.cadence.nextReminderSeq(userId),
     ]);
     const yesterday = history.find((_, i) => i === 1);
@@ -284,8 +284,8 @@ export class NotificationPlannerService {
     addressForm?: string | null,
   ) {
     const [lowNeeds3, lowNeeds10] = await Promise.all([
-      this.analytics.getLowStreakNeeds(userId, 5, 3),
-      this.analytics.getLowStreakNeeds(userId, 5, 10),
+      this.analytics.getLowStreakNeeds(userId, 5, 3, tz),
+      this.analytics.getLowStreakNeeds(userId, 5, 10, tz),
     ]);
     const lowNeeds = lowNeeds10.length > 0 ? lowNeeds10 : lowNeeds3;
     if (lowNeeds.length === 0) return;

@@ -29,15 +29,27 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
       return row;
     });
 
+  const findOne = (store: any[], keyField: string) =>
+    jest.fn(async ({ where }: any) => {
+      const key = where[Object.keys(where)[0]];
+      return (
+        store.find(
+          (r) => r.userId === key.userId && r[keyField] === key[keyField],
+        ) ?? null
+      );
+    });
+
   const db: any = {
     userSchemaNote: {
       upsert: upsert(schemaNotes, 'schemaId'),
+      findUnique: findOne(schemaNotes, 'schemaId'),
       findMany: jest.fn(async ({ where }: any) =>
         schemaNotes.filter((r) => r.userId === where.userId),
       ),
     },
     userModeNote: {
       upsert: upsert(modeNotes, 'modeId'),
+      findUnique: findOne(modeNotes, 'modeId'),
       findMany: jest.fn(async ({ where }: any) =>
         modeNotes.filter((r) => r.userId === where.userId),
       ),
@@ -120,5 +132,71 @@ describe('NotesService — карточка схемы/режима попада
       jsonArrays: ['mySchemaIds', 'myModeIds'],
     });
     expect(settings.myModeIds).toContain('vulnerable_child');
+  });
+});
+
+describe('NotesService.getSchemaNote/getModeNote — единичное чтение', () => {
+  it('getSchemaNote: существующая карточка расшифровывается и возвращается', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertSchemaNote(1n, 'defectiveness', { thoughts: 'я плохой' });
+
+    const note = await svc.getSchemaNote(1n, 'defectiveness');
+    expect(note).not.toBeNull();
+    expect(note!.thoughts).toBe('я плохой');
+  });
+
+  it('getSchemaNote: карточки нет → null, а не выдуманные данные', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await expect(svc.getSchemaNote(1n, 'abandonment')).resolves.toBeNull();
+  });
+
+  it('getModeNote: существующая карточка расшифровывается и возвращается', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertModeNote(1n, 'vulnerable_child', { feelings: 'страшно' });
+
+    const note = await svc.getModeNote(1n, 'vulnerable_child');
+    expect(note).not.toBeNull();
+    expect(note!.feelings).toBe('страшно');
+  });
+
+  it('getModeNote: карточки нет → null', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await expect(svc.getModeNote(1n, 'punitive_parent')).resolves.toBeNull();
+  });
+});
+
+describe('NotesService.addToMyList — денормализованная коллекция, крайние случаи', () => {
+  it('пользователь не найден (гонка с удалением аккаунта) — не падает, update не вызывается', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    db.user.findUnique = jest.fn(async () => null);
+    const svc = new NotesService(db);
+
+    await expect(
+      svc.upsertSchemaNote(1n, 'defectiveness', { thoughts: 'x' }),
+    ).resolves.toBeDefined();
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('битое/отсутствующее mySchemaIds (не массив) трактуется как пустой список, id добавляется', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    // Симулируем legacy-строку в поле вместо json-массива: decryptRecord с
+    // jsonArrays попробует JSON.parse и, если результат не массив, отдаёт как есть.
+    db.user.findUnique = jest.fn(async () => ({
+      mySchemaIds: JSON.stringify('не массив'),
+    }));
+    const svc = new NotesService(db);
+
+    await svc.upsertSchemaNote(1n, 'defectiveness', { thoughts: 'x' });
+
+    expect(db.user.update).toHaveBeenCalledTimes(1);
+    const settings = decryptRecord(
+      (db.user.update as jest.Mock).mock.calls[0][0].data,
+      { jsonArrays: ['mySchemaIds'] },
+    );
+    expect(settings.mySchemaIds).toEqual(['defectiveness']);
   });
 });

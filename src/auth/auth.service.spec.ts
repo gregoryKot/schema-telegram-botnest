@@ -24,20 +24,18 @@ import {
   createFakeTransaction,
   Row,
 } from '../test-support/fake-prisma.spec-helper';
-// encrypt/decrypt обёрнуты в jest.fn (реальная реализация по умолчанию через
+// encrypt обёрнут в jest.fn (реальная реализация по умолчанию через
 // requireActual) — нужно точечно замокать возврат null в паре тестов на
 // LogicalOperator-мутанты (`?? lower` vs `&& lower`): реальный encrypt()
 // никогда не возвращает null для непустой строки, поэтому иначе эту ветку
-// не отличить от `&&`.
-import { encrypt, decrypt } from '../utils/crypto';
+// не отличить от `&&`. decrypt здесь не нужен — AuthService его не вызывает
+// (decField(row.email)-тест переехал в email-token.service.spec.ts вместе с
+// consumeEmailToken).
+import { encrypt } from '../utils/crypto';
 
 jest.mock('../utils/crypto', () => {
   const actual = jest.requireActual('../utils/crypto');
-  return {
-    ...actual,
-    encrypt: jest.fn(actual.encrypt),
-    decrypt: jest.fn(actual.decrypt),
-  };
+  return { ...actual, encrypt: jest.fn(actual.encrypt) };
 });
 
 const JWT_SECRET = 'test-jwt-secret';
@@ -90,7 +88,7 @@ function makeFakePrisma() {
     defaults: { usedAt: null },
   });
   const webSession = createFakeTable(webSessions, {
-    defaults: { revokedAt: null },
+    defaults: { revokedAt: null, replacedByHash: null },
   });
   const authProvider = createFakeTable(authProviders);
   const user = createFakeTable(users);
@@ -185,7 +183,10 @@ describe('AuthService — refresh-token rotation', () => {
     const { svc, webSessions } = makeService();
     await svc.issueTokens(99n); // посторонний пользователь, своя family
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    // Цепочку надо ПРОДВИНУТЬ: кражей считается повтор, когда наследником уже
+    // воспользовались. Одна ротация делает наследника, вторая — использует его.
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     ); // reuse → theft-detection всей family
@@ -220,19 +221,109 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
-  it('повторное использование уже провёрнутого токена палит всю family (theft detection)', async () => {
+  // Регрессия на разбор 2026-08-28 «постоянно выкидывает». Кражу от
+  // потерянного ответа отличает НАСЛЕДНИК, а не время: пользовался ли токеном,
+  // выданным взамен, кто-нибудь ещё.
+  it('наследником воспользовались → повтор старого токена палит всю family (настоящая кража)', async () => {
     const { svc, webSessions, securityLog } = makeService();
     const issued = await svc.issueTokens(1n);
-    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    // Легитимный клиент продолжил цепочку — значит наследник дошёл до него.
+    await svc.rotateRefreshToken(second.refreshToken);
+
     await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
       UnauthorizedException,
     );
-    // вся family отозвана, включая токен, честно выданный на шаге выше
     expect(webSessions.every((s) => s.revokedAt !== null)).toBe(true);
     expect(securityLog.log).toHaveBeenCalledWith(
       'refresh_token_reuse',
       expect.objectContaining({ userId: 1n }),
     );
+  });
+
+  // Разбор 2026-09-03: владелец получал DM refresh_token_reuse десятки раз с
+  // одной и той же family — вердикт «кража» не был идемпотентен. Мёртвая
+  // кука в телефоне живёт до 30 дней и предъявляется снова при каждом
+  // открытии приложения; после первого revokeFamilyExcept семья уже мертва,
+  // и повтор не должен слать второй DM.
+  it('первая кража → securityLog.log вызван РОВНО ОДИН раз с userId/family', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(securityLog.log).toHaveBeenCalledWith('refresh_token_reuse', {
+      userId: 1n,
+      family: expect.any(String),
+    });
+  });
+
+  it('повтор той же мёртвой куки после кражи → 401, но securityLog.log НЕ вызывается снова (эхо, не новое событие)', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const second = await svc.rotateRefreshToken(issued.refreshToken);
+    await svc.rotateRefreshToken(second.refreshToken);
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+
+    // Та же мёртвая кука предъявлена ПОВТОРНО (телефон открыли снова).
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(securityLog.log).toHaveBeenCalledTimes(1); // не выросло
+  });
+
+  it('ответ ротации не доехал — СПУСТЯ СУТКИ старый токен всё ещё впускает', async () => {
+    const { svc, securityLog } = makeService();
+    const issued = await svc.issueTokens(1n);
+    // Ротация прошла на сервере, но Set-Cookie не доехал: ОС усыпила
+    // приложение. У клиента остался ПРЕЖНИЙ токен.
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Человек возвращается на следующий день — раньше здесь его выкидывало и
+    // отзывало все его сессии разом.
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 24 * 3600 * 1000));
+    const recovered = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(recovered.accessToken).toBeTruthy();
+    expect(recovered.rotated).toBe(true);
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'refresh_token_reuse',
+      expect.anything(),
+    );
+  });
+
+  it('ответ не доехал ДВАЖДЫ подряд — вход всё равно не теряется', async () => {
+    const { svc } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 7200_000));
+
+    // Без перенацеливания replacedByHash второй повтор выглядел бы кражей:
+    // прежний наследник к этому моменту уже отозван восстановлением.
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).resolves.toEqual(
+      expect.objectContaining({ rotated: true }),
+    );
+  });
+
+  it('восстановление оставляет в семье ровно один живой токен', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken);
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 3600_000));
+    await svc.rotateRefreshToken(issued.refreshToken);
+
+    // Иначе детекция перестала бы что-либо значить: два живых токена в одной
+    // цепочке — это ровно то состояние, которое она обязана ловить.
+    expect(webSessions.filter((s) => s.revokedAt === null)).toHaveLength(1);
   });
 
   it.each<[string, (svc: AuthService) => Promise<string>]>([
@@ -261,6 +352,49 @@ describe('AuthService — refresh-token rotation', () => {
     await expect(svc.rotateRefreshToken(token)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+});
+
+// Пункт 2 диагностики 2026-08-21 «постоянно нужно логиниться заново»: каждая
+// загрузка страницы дёргала refresh и ротировала куку — само по себе источник
+// гонки reuse-детекции. shouldSkipRotation (refresh-rotation.ts) подавляет
+// повторную ротацию одной сессии в пределах REFRESH_ROTATE_MIN_INTERVAL_MS.
+describe('AuthService — rotateRefreshToken: интервал ротации', () => {
+  it('ротировали только что (< 5 мин назад) → access новый, refresh ТОТ ЖЕ, кука не меняется', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE; // сессия только что создана/ротирована
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 60_000)); // +1 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(false);
+    expect(result.refreshToken).toBe(issued.refreshToken); // не поменялся
+    expect(result.accessToken).not.toBe(''); // access всё равно свежий JWT
+    expect(webSessions).toHaveLength(1); // новая строка НЕ создана
+    expect(webSessions[0].revokedAt).toBeNull(); // старая НЕ отозвана
+  });
+
+  it('ротировали давно (≥ 5 мин назад) → обычная ротация, refresh новый', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].createdAt = FIXED_DATE;
+    jest.setSystemTime(new Date(FIXED_DATE.getTime() + 5 * 60_000)); // ровно 5 мин
+
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+
+    expect(result.rotated).toBe(true);
+    expect(result.refreshToken).not.toBe(issued.refreshToken);
+    expect(webSessions).toHaveLength(2);
+    expect(webSessions[0].revokedAt).not.toBeNull(); // старая отозвана
+  });
+
+  it('createdAt отсутствует в строке сессии (fake-Prisma без @default) → всё равно ротирует (не падает)', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    expect(webSessions[0].createdAt).toBeUndefined(); // как и в проде до фикса
+    const result = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(result.rotated).toBe(true);
   });
 });
 
@@ -640,6 +774,7 @@ describe('AuthService — requestEmailLogin', () => {
     expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
       'user@example.com',
       expect.stringContaining('/api/auth/email/callback?token='),
+      'ty',
     );
     // TTL магической ссылки — ровно 30 минут (EMAIL_TOKEN_TTL_MS), не 0.5мс
     // и не 1.8мс, как дала бы поломанная арифметика.
@@ -691,174 +826,6 @@ describe('AuthService — requestEmailLogin', () => {
     (encrypt as jest.Mock).mockReturnValueOnce(null);
     await svc.requestEmailLogin('fallback@example.com');
     expect(emailTokens[0].email).toBe('fallback@example.com');
-  });
-});
-
-describe('AuthService — consumeEmailToken', () => {
-  it('пустой токен → именно "Missing token" (не проваливается в "Token not found")', async () => {
-    const { svc } = makeService();
-    await expect(svc.consumeEmailToken('')).rejects.toThrow('Missing token');
-  });
-
-  it('неизвестный токен → UnauthorizedException', async () => {
-    const { svc } = makeService();
-    await expect(svc.consumeEmailToken('garbage')).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('чужой (гарбаж) токен не находит СУЩЕСТВУЮЩИЙ в таблице чужой токен — findUnique обязан фильтровать по tokenHash, а не отдавать первую строку', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('victim@example.com'); // легитимная запись уже есть
-    expect(emailTokens).toHaveLength(1);
-    await expect(
-      svc.consumeEmailToken('completely-unrelated-garbage-token'),
-    ).rejects.toThrow('Token not found');
-  });
-
-  it('expiresAt ровно равен текущему моменту (граница) → ещё НЕ истёк, потребляется успешно', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('boundary@example.com');
-    emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime());
-    const raw = extractTokenFromLink(svc);
-    await expect(svc.consumeEmailToken(raw)).resolves.toEqual(
-      expect.objectContaining({ purpose: 'login' }),
-    );
-  });
-
-  it('второй потреблённый токен не помечает usedAt у первого (соседнего) — update обязан фильтровать по id, а не брать первую строку', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('first@example.com');
-    await svc.requestEmailLogin('second@example.com');
-    expect(emailTokens).toHaveLength(2);
-    // Достаём токен именно ВТОРОГО письма (последний вызов sendLoginLink).
-    const raw = extractTokenFromLink(svc);
-    await svc.consumeEmailToken(raw);
-    expect(emailTokens[0].usedAt).toBeNull(); // первый (соседний) не тронут
-    expect(emailTokens[1].usedAt).not.toBeNull(); // второй — потреблён
-  });
-
-  it('уже использованный токен → UnauthorizedException', async () => {
-    const { svc } = makeService();
-    await svc.requestEmailLogin('used@example.com');
-    const raw = extractTokenFromLink(svc);
-    await svc.consumeEmailToken(raw);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('просроченный токен → UnauthorizedException', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('expired@example.com');
-    emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime() - 1000);
-    const raw = extractTokenFromLink(svc);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('токен с неизвестным purpose → UnauthorizedException', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('badpurpose@example.com');
-    emailTokens[0].purpose = 'something_else';
-    const raw = extractTokenFromLink(svc);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('токен без userId → UnauthorizedException', async () => {
-    const { svc, emailTokens } = makeService();
-    await svc.requestEmailLogin('nouser@example.com');
-    emailTokens[0].userId = null;
-    const raw = extractTokenFromLink(svc);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('purpose=login → возвращает токены, помечает использованным, НЕ заходит в ветку link_email_auth (linkProviderToUser не вызывается)', async () => {
-    const { svc, prisma, emailTokens } = makeService();
-    await svc.requestEmailLogin('login@example.com');
-    // requestEmailLogin уже дёрнул authProvider.findUnique один раз внутри
-    // findOrCreateUserByProvider — фиксируем счётчик ДО consumeEmailToken.
-    const callsBefore = (prisma.authProvider.findUnique as jest.Mock).mock.calls
-      .length;
-    const raw = extractTokenFromLink(svc);
-    const result = await svc.consumeEmailToken(raw);
-    expect(result.purpose).toBe('login');
-    expect(result.tokens.accessToken).toBeDefined();
-    expect(emailTokens[0].usedAt).not.toBeNull();
-    // purpose='login' не должен заходить в ветку link_email_auth —
-    // linkProviderToUser (и его findUnique) не вызывается лишний раз.
-    expect(
-      (prisma.authProvider.findUnique as jest.Mock).mock.calls.length,
-    ).toBe(callsBefore);
-  });
-
-  it('purpose=link_email_auth → привязывает email к целевому userId', async () => {
-    const { svc, authProviders } = makeService();
-    await svc.linkEmailToAccount(42n, 'link@example.com');
-    const raw = extractTokenFromLink(svc);
-    const result = await svc.consumeEmailToken(raw);
-    expect(result.purpose).toBe('link_email_auth');
-    expect(
-      authProviders.some(
-        (p) => p.provider === 'email' && String(p.userId) === '42',
-      ),
-    ).toBe(true);
-  });
-
-  it('decField(row.email) вернул null (напр. чужой ключ шифрования) → привязывается сырое row.email, не null (?? а не &&)', async () => {
-    const { svc, authProviders } = makeService();
-    await svc.linkEmailToAccount(77n, 'decrypt-fallback@example.com');
-    const raw = extractTokenFromLink(svc);
-    (decrypt as jest.Mock).mockReturnValueOnce(null);
-    const result = await svc.consumeEmailToken(raw);
-    expect(result.purpose).toBe('link_email_auth');
-    expect(
-      authProviders.some(
-        (p) =>
-          p.provider === 'email' &&
-          p.providerId === 'decrypt-fallback@example.com',
-      ),
-    ).toBe(true);
-  });
-
-  it('purpose=link_email_auth, email привязался к другому userId между отправкой и переходом по ссылке (race) → ConflictException', async () => {
-    const { svc, emailTokens, authProviders } = makeService();
-    // Токен уже выпущен (пользователь получил письмо), но прежде чем он
-    // перешёл по ссылке — email успел стать AuthProvider'ом другого userId
-    // (напр. параллельный login тем же email). consumeEmailToken должен
-    // отклонить привязку, а не молча перезаписать чужой провайдер.
-    const raw = 'test-race-raw-token';
-    const tokenHash = createHash('sha256').update(raw).digest('hex');
-    emailTokens.push({
-      id: 'et-race',
-      userId: 999999n,
-      tokenHash,
-      email: 'taken@example.com',
-      purpose: 'link_email_auth',
-      expiresAt: new Date(FIXED_DATE.getTime() + 100_000),
-      usedAt: null,
-    });
-    authProviders.push({
-      id: 1,
-      userId: 111n,
-      provider: 'email',
-      providerId: 'taken@example.com',
-    });
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(ConflictException);
-  });
-
-  it('consumeEmailLoginToken (алиас) возвращает только TokenPair', async () => {
-    const { svc } = makeService();
-    await svc.requestEmailLogin('alias@example.com');
-    const raw = extractTokenFromLink(svc);
-    const tokens = await svc.consumeEmailLoginToken(raw);
-    expect(tokens.accessToken).toBeDefined();
-    expect(tokens.refreshToken).toBeDefined();
   });
 });
 
@@ -944,17 +911,6 @@ describe('AuthService — linkEmailToAccount', () => {
     );
   });
 });
-
-// Достаёт сырой токен из последней вызванной ссылки sendLoginLink — линк вида
-// ".../api/auth/email/callback?token=<raw>".
-function extractTokenFromLink(svc: AuthService): string {
-  const emailSvc = (svc as any).emailSvc;
-  const link: string =
-    emailSvc.sendLoginLink.mock.calls[
-      emailSvc.sendLoginLink.mock.calls.length - 1
-    ][1];
-  return new URL(link).searchParams.get('token')!;
-}
 
 describe('AuthService — linkProviderToUser', () => {
   it('провайдер уже привязан к этому же userId → ok:true, ничего не создаёт', async () => {

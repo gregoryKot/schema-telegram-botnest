@@ -5,7 +5,14 @@
 // истории после загрузки, кнопки «Назад»/«Оценить» и напоминание о
 // просроченном плане практики (CheckInSheet) для реальной, а не выдуманной даты.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
 import type { Need, PracticePlan } from '../api';
@@ -22,7 +29,12 @@ vi.mock('../api', () => ({
 HTMLElement.prototype.scrollIntoView = vi.fn();
 
 const NEEDS: Need[] = [
-  { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привяз.' },
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: 'Привязанность',
+    chartLabel: 'Привяз.',
+  },
 ];
 
 function renderSheet(props: Partial<Parameters<typeof HistorySheet>[0]> = {}) {
@@ -53,9 +65,20 @@ afterEach(() => cleanup());
 beforeEach(() => vi.clearAllMocks());
 
 describe('HistorySheet', () => {
-  it('пока historyLoading=true — скелетон-лоадер, HistoryView не рендерится', () => {
-    renderSheet({ historyLoading: true });
+  // К4 дизайн-аудита 2026-08: оверлей размечен как диалог (useDialogA11y).
+  it('размечен как диалог', () => {
+    renderSheet();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
+  it('пока historyLoading=true — скелетон по форме колеса потребностей, а не спиннер/пустота', () => {
+    const { container } = renderSheet({ historyLoading: true });
     expect(screen.queryByText('Пусто.')).toBeNull();
+    // Правило CLAUDE.md «скелетоны по форме, не спиннеры»: круглый силуэт
+    // колеса потребностей + строки списка, не .spinner.
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
+    expect(container.querySelector('.spinner')).toBeNull();
   });
 
   it('после загрузки рендерит HistoryView (лениво, через Suspense)', async () => {
@@ -73,7 +96,14 @@ describe('HistorySheet', () => {
 
   it('просроченный план практики (scheduledDate < todayDate) показывает CheckInSheet', async () => {
     const plans: PracticePlan[] = [
-      { id: 1, needId: 'attachment', practiceText: 'Подышать 5 минут', scheduledDate: '2020-01-05', reminderUtcHour: null, done: null },
+      {
+        id: 1,
+        needId: 'attachment',
+        practiceText: 'Подышать 5 минут',
+        scheduledDate: '2020-01-05',
+        reminderUtcHour: null,
+        done: null,
+      },
     ];
     await act(async () => {
       renderSheet({ pendingPlans: plans, todayDate: '2020-01-10' });
@@ -84,11 +114,45 @@ describe('HistorySheet', () => {
 
   it('план с будущей датой (scheduledDate >= todayDate) НЕ показывает CheckInSheet', async () => {
     const plans: PracticePlan[] = [
-      { id: 2, needId: 'attachment', practiceText: 'Будущая практика', scheduledDate: '2020-01-20', reminderUtcHour: null, done: null },
+      {
+        id: 2,
+        needId: 'attachment',
+        practiceText: 'Будущая практика',
+        scheduledDate: '2020-01-20',
+        reminderUtcHour: null,
+        done: null,
+      },
     ];
     await act(async () => {
       renderSheet({ pendingPlans: plans, todayDate: '2020-01-10' });
     });
     expect(screen.queryByText(/Будущая практика/)).toBeNull();
+  });
+
+  it('просроченный план ссылается на несуществующую потребность — CheckInSheet не рендерится (не падает)', async () => {
+    const plans: PracticePlan[] = [
+      {
+        id: 3,
+        needId: 'unknown_need',
+        practiceText: 'Практика-призрак',
+        scheduledDate: '2020-01-05',
+        reminderUtcHour: null,
+        done: null,
+      },
+    ];
+    await act(async () => {
+      renderSheet({ pendingPlans: plans, todayDate: '2020-01-10' });
+    });
+    expect(screen.queryByText(/Практика-призрак/)).toBeNull();
+  });
+
+  it('«Заполнить сегодня» (пустая история) одновременно открывает трекер и закрывает лист', async () => {
+    const onOpenTracker = vi.fn();
+    renderSheet({ onOpenTracker, history: [] });
+    await waitFor(() =>
+      expect(screen.getByText('Заполнить сегодня')).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByText('Заполнить сегодня'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
   });
 });

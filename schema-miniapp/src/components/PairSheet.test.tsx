@@ -80,6 +80,40 @@ describe('PairSheet — создание приглашения (read-after-writ
   });
 });
 
+describe('PairSheet — провал создания приглашения виден (regression: check-silent-catch)', () => {
+  it('createPairInvite падает: кнопка сообщает о провале, а не молчит', async () => {
+    // Раньше catch { /* best-effort */ } был скопирован сюда по ошибке —
+    // на деле это провал самого действия, а не фоновой мелочи (clipboard/
+    // navigator.share): кнопка молча ничего не делала.
+    mockApi.createPairInvite.mockRejectedValue(new Error('network'));
+    await renderReady();
+    fireEvent.click(screen.getByText('Создать приглашение'));
+
+    await screen.findByText('Не получилось — попробовать ещё раз');
+    expect(screen.queryByTestId('share-card-sheet')).toBeNull();
+  });
+
+  it('повтор после успеха убирает сообщение об ошибке', async () => {
+    mockApi.createPairInvite.mockRejectedValueOnce(new Error('network'));
+    mockApi.createPairInvite.mockResolvedValueOnce({
+      code: 'AB12',
+      url: 'https://t.me/bot?startapp=pair_AB12',
+    });
+    await renderReady();
+    fireEvent.click(screen.getByText('Создать приглашение'));
+    await screen.findByText('Не получилось — попробовать ещё раз');
+
+    fireEvent.click(screen.getByText('Не получилось — попробовать ещё раз'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('share-card-sheet')).toBeTruthy(),
+    );
+    expect(
+      screen.queryByText('Не получилось — попробовать ещё раз'),
+    ).toBeNull();
+  });
+});
+
 describe('PairSheet — присоединение по коду', () => {
   it('неверный код показывает видимую ошибку, а не молчаливый провал', async () => {
     mockApi.joinPair.mockRejectedValue(new Error('not found'));

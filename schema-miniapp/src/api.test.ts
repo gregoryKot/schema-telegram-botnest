@@ -9,6 +9,7 @@
 // session.test.ts), Bearer — после.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from './api';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function mockFetchOnce(status: number, body?: unknown) {
   const json = vi.fn().mockResolvedValue(body ?? {});
@@ -19,6 +20,9 @@ function mockFetchOnce(status: number, body?: unknown) {
 
 beforeEach(() => {
   global.fetch = vi.fn();
+  // Кеш GET-ответов (apiCache.ts) — модуль-синглтон; без сброса повторный
+  // api.getDisclaimer() отвечал бы из кеша предыдущего теста.
+  clearApiCache();
   (window as unknown as { Telegram?: unknown }).Telegram = {
     WebApp: { initData: 'query_id=AAA&user=%7B%7D&hash=deadbeef' },
   };
@@ -52,9 +56,13 @@ describe('api — заголовки авторизации', () => {
 
   it('приложение открыто не в мессенджере → заголовка initData нет, запрос не падает', async () => {
     delete (window as unknown as { Telegram?: unknown }).Telegram;
+    // Веб-хост без токена сначала меняет refresh-куку на токен (см.
+    // hasInstantAuth в session.ts) — здесь обмен отвечает 401 «куки нет»,
+    // и запрос уходит как раньше, без авторизации. Проверяем именно его.
+    mockFetchOnce(401, {});
     mockFetchOnce(200, { accepted: true });
     await api.getDisclaimer();
-    const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[1];
     const headers = init.headers as Record<string, string>;
     // Пустая подпись Telegram из браузера бессмысленна: там вход по JWT, а
     // бэкенд на отсутствующий заголовок отвечает так же, как на пустой.

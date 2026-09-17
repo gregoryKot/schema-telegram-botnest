@@ -18,6 +18,8 @@ export function LetterEx({
   const goBack = useHistorySheet(onBack);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
+  const [sealing, setSealing] = useState(false);
+  const [sealError, setSealError] = useState(false);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,14 +35,23 @@ export function LetterEx({
         .catch(() => {});
   }, [done]);
 
+  // Раньше сбой createLetter глушился, а экран всё равно говорил «написано» —
+  // 15–25 минут работы терялись без следа. В мини-аппе (LetterToSelf) это уже
+  // починено; здесь тот же принцип: подтверждение — только после успеха,
+  // при отказе текст остаётся в поле и можно запечатать ещё раз.
   async function seal() {
+    if (sealing) return;
+    setSealing(true);
+    setSealError(false);
     try {
       await api.createLetter(text);
+      onComplete?.();
+      setDone(true);
     } catch {
-      /* best-effort: ошибку намеренно игнорируем */
+      setSealError(true);
+    } finally {
+      setSealing(false);
     }
-    onComplete?.();
-    setDone(true);
   }
 
   if (done) {
@@ -77,7 +88,7 @@ export function LetterEx({
         }
       >
         <div className="letter-paper">
-          <div className="letter-salutation">Дорогой маленький я,</div>
+          <div className="letter-salutation">Здравствуй,</div>
           <div
             style={{
               fontFamily: 'var(--serif)',
@@ -129,8 +140,8 @@ export function LetterEx({
         </>
       }
       lede={tr(
-        'Сядь рядом с собой-маленьким – таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда.',
-        'Сядьте рядом с собой-маленьким – таким, каким вы были, когда было трудно. Скажите ему то, что он должен был услышать тогда.',
+        'Мысленно сядь рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажи то, что тогда важно было услышать.',
+        'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажите то, что тогда важно было услышать.',
       )}
       aside={
         <>
@@ -152,8 +163,8 @@ export function LetterEx({
               <li>Какой момент из детства – самый трудный?</li>
               <li>
                 {tr(
-                  'Что ты тогда чувствовал? Чего не хватало?',
-                  'Что вы тогда чувствовали? Чего не хватало?',
+                  'Какие были чувства тогда? Чего не хватало?',
+                  'Какие были чувства тогда? Чего не хватало?',
                 )}
               </li>
               <li>Что он должен был услышать – но не услышал?</li>
@@ -170,7 +181,7 @@ export function LetterEx({
       }
     >
       <div className="letter-paper">
-        <div className="letter-salutation">Дорогой маленький я,</div>
+        <div className="letter-salutation">Здравствуй,</div>
         <textarea
           ref={textRef}
           value={text}
@@ -192,11 +203,19 @@ export function LetterEx({
         <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
       </div>
       {detectCrisisAny(text) && <CrisisCard surface="letter" />}
+      {sealError && (
+        <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+          {tr(
+            'Не удалось сохранить письмо — текст на месте. Проверь соединение и попробуй ещё раз.',
+            'Не удалось сохранить письмо — текст на месте. Проверьте соединение и попробуйте ещё раз.',
+          )}
+        </div>
+      )}
       <div className="ex-foot">
         <span className="spacer" />
         <button
           className="ex-btn ex-btn-primary"
-          disabled={!text.trim()}
+          disabled={!text.trim() || sealing}
           onClick={seal}
         >
           Запечатать письмо <GlyphCheck />

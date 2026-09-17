@@ -1,0 +1,1 @@
+var e=`SchemeHappensBot`,t=e,n=`@${e}`,r=`https://t.me/${e}`,i=`t.me/${e}`,a=t=>`https://t.me/${e}/diary${t?`?startapp=${t}`:``}`;export{a,t as i,i as n,r,n as t};

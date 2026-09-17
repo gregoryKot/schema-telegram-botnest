@@ -11,7 +11,7 @@ export function StreakCard({ streak }: { streak: number }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '12px 16px',
         borderRadius: 18,
         animation: 'slide-up 0.3s ease both',
@@ -22,17 +22,18 @@ export function StreakCard({ streak }: { streak: number }) {
         style={{
           width: 40,
           height: 40,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           flexShrink: 0,
-          background:
-            'color-mix(in srgb, var(--accent-orange) 14%, transparent)',
+          background: 'var(--accent-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 20,
+          fontSize: 17,
+          fontWeight: 700,
+          color: 'var(--accent)',
         }}
       >
-        🔥
+        {streak}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>

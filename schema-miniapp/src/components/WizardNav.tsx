@@ -12,6 +12,10 @@ interface Props {
 // Ряд кнопок навигации визарда (← Назад / Далее|Сохранить) — общий примитив
 // для IntroSheetShell и ModeDiaryWizard (правило «одна механика — один
 // компонент», CLAUDE.md).
+//
+// Прозрачность берём через color-mix, а не склейкой `${accentColor}20`:
+// accentColor приходит и как hex, и как var(--accent) — во втором случае
+// склейка даёт невалидный цвет, и кнопка молча становится прозрачной.
 export function WizardNav({
   accentColor,
   onBack,
@@ -26,9 +30,9 @@ export function WizardNav({
     ? 'var(--surface-2)'
     : primaryKind === 'save'
       ? gradientSave
-        ? `linear-gradient(135deg, ${accentColor}cc, ${accentColor}88)`
+        ? `linear-gradient(135deg, color-mix(in srgb, ${accentColor} 80%, transparent), color-mix(in srgb, ${accentColor} 53%, transparent))`
         : accentColor
-      : `${accentColor}20`;
+      : `color-mix(in srgb, ${accentColor} 12%, transparent)`;
   const primaryColor = primaryDisabled
     ? 'var(--text-faint)'
     : primaryKind === 'save'
@@ -36,14 +40,14 @@ export function WizardNav({
       : accentColor;
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
       <button
         onClick={onBack}
         disabled={backDisabled}
         style={{
           width: 44,
           height: 44,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           fontFamily: 'inherit',
           background: backDisabled ? 'var(--surface)' : 'var(--surface-2)',
@@ -63,7 +67,7 @@ export function WizardNav({
         style={{
           flex: 1,
           padding: '13px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           fontFamily: 'inherit',
           background: primaryBg,

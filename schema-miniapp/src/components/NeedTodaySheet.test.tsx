@@ -87,9 +87,7 @@ describe('NeedTodaySheet', () => {
   it('высокая оценка (>6) — показывает аффирмацию', () => {
     renderSheet({ value: 8 });
     expect(
-      screen.getByText(
-        'Сегодня ты позаботился об этой потребности — заметь это',
-      ),
+      screen.getByText('Сегодня эта потребность получила заботу — заметь это'),
     ).toBeTruthy();
   });
 

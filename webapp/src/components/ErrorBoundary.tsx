@@ -60,7 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="text-md muted" style={{ marginBottom: 24, maxWidth: 600 }}>
                 Что-то сломалось в разделе <b>{this.props.section}</b>.
               </div>
-              <details style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 8, fontFamily: 'monospace', fontSize: 12, marginBottom: 16 }}>
+              <details style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 'var(--r-8)', fontFamily: 'monospace', fontSize: 12, marginBottom: 16 }}>
                 <summary style={{ cursor: 'pointer', fontWeight: 600, marginBottom: 8 }}>Детали ошибки</summary>
                 <div style={{ color: 'var(--c-rose)', marginBottom: 12, whiteSpace: 'pre-wrap' }}>
                   {this.state.error.message}

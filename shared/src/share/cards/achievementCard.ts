@@ -1,6 +1,8 @@
-// Карточка достижения: медальон с эмодзи, титул, описание — по центру.
+// Карточка достижения: кольцо-медальон, титул, описание — по центру.
+// Эмодзи внутри медальона больше нет: на экране профиля их убрали, и
+// картинка не должна заводить второй, «только для шаринга», словарь значков.
+// Пустое кольцо работает как рамка вокруг названия — оно и есть медальон.
 import {
-  drawEmoji,
   CARD_W,
   CARD_PAD,
   FOOTER_H,
@@ -14,7 +16,6 @@ import {
 } from '../cardKit';
 
 export interface AchievementMeta {
-  emoji: string;
   title: string;
   desc: string;
 }
@@ -65,7 +66,11 @@ export function drawAchievementCard(
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  drawEmoji(c, m.emoji, cx, cy + 18, 50, { align: 'center' });
+  // Внутри медальона — типографическая галочка: достижение получено.
+  // Знак один на все достижения, поэтому не требует расшифровки.
+  ctx.font = cardFont(44, 'bold');
+  ctx.fillStyle = c.accent;
+  ctx.fillText('✓', cx, cy + 16);
 
   ctx.font = cardFont(24, 'bold');
   ctx.fillStyle = th.fg(0.96);

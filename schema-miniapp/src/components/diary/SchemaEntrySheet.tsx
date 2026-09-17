@@ -24,7 +24,7 @@ interface Props {
   onSave: (data: SchemaDiaryEntryInput) => Promise<void>;
 }
 
-const COLOR = 'var(--accent-red)';
+const COLOR = 'var(--accent)';
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const tr = useTr();
