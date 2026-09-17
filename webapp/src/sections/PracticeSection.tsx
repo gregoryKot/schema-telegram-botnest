@@ -15,6 +15,8 @@ import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
 import { CrisisBlock } from './practice/CrisisBlock';
+import { HereAndNowBlock } from './practice/HereAndNowBlock';
+import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -51,13 +53,6 @@ function fmtCount(n: number): string {
   if (n === 1) return `1 запись`;
   if (n < 5) return `${n} записи`;
   return `${n} записей`;
-}
-function plural(n: number, one: string, few: string, many: string) {
-  const m10 = n % 10, m100 = n % 100;
-  if (m100 >= 11 && m100 <= 19) return many;
-  if (m10 === 1) return one;
-  if (m10 >= 2 && m10 <= 4) return few;
-  return many;
 }
 function resolveText(task: UserTask) {
   const text = getTaskDisplayText(task.type, task.text);
@@ -257,6 +252,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           {sessionBanner.partnerName && <span className="u-faint"> · с {sessionBanner.partnerName}</span>}
         </div>
       )}
+
+      <HereAndNowBlock />
 
       <CrisisBlock />
 

@@ -1,15 +1,18 @@
 // Подвал завершённой быстрой практики «Здесь и сейчас»: счётчик прохождений +
 // кнопка «Поделиться». Общий для трёх практик (правило «одна механика — один
-// компонент») — QuickPracticeSheet кладёт его в doneExtra StepFlowSheet,
+// компонент») — QuickPracticeFlow кладёт его в doneExtra пошагового листа,
 // BreathingCard показывает под карточкой (у дыхания нет done-экрана).
+// Вёрстка здесь общая для обеих площадок сознательно: после выноса логики
+// она совпала бы построчно, а токены (--text-sub, --accent, --fg-rgb, --space-8)
+// объявлены в обоих index.css (гейт check-token-contract.mjs).
 import { useEffect } from 'react';
-import { plural } from '../sections/today/helpers';
+import { pluralRu } from '../utils/pluralRu';
 
 /** Нейтральная подпись для canvas-карточки и текста шаринга — без формы
  * обращения и рода (как в shareTexts.ts: 1-е лицо или безличное). */
 export function practiceCountLabel(count: number | null): string | null {
   if (count == null || count <= 0) return null;
-  return `прошли ${count} ${plural(count, 'раз', 'раза', 'раз')}`;
+  return `прошли ${count} ${pluralRu(count, 'раз', 'раза', 'раз')}`;
 }
 
 interface Props {
@@ -41,7 +44,7 @@ export function PracticeDoneFooter({ count, onShare, onShown }: Props) {
         // роду в проекте нет («проходил»/«проходила» пришлось бы разводить),
         // поэтому фраза не зависит ни от формы обращения, ни от рода.
         <div className="u-sub12">
-          Пройдено уже {count} {plural(count, 'раз', 'раза', 'раз')}
+          Пройдено уже {count} {pluralRu(count, 'раз', 'раза', 'раз')}
         </div>
       )}
       <button
@@ -53,7 +56,7 @@ export function PracticeDoneFooter({ count, onShare, onShown }: Props) {
           fontSize: 13,
           fontWeight: 700,
           padding: '9px 18px',
-          borderRadius: 99,
+          borderRadius: 999,
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
