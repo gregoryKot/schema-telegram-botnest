@@ -107,7 +107,7 @@ export function AddressFormPicker({ onDone }: Props) {
           <div
             style={{
               fontSize: 12.5,
-              color: 'var(--danger, #e5484d)',
+              color: 'var(--accent-red)',
               lineHeight: 1.5,
               marginBottom: 10,
             }}

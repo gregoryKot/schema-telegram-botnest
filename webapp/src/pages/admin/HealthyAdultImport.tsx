@@ -102,7 +102,7 @@ function PoolMeter({ status }: { status: HealthyAdultPoolStatus | null }) {
         padding: '8px 10px',
         borderRadius: 'var(--r-8)',
         color: low ? 'var(--accent-red)' : 'var(--text-sub)',
-        background: low ? 'rgba(var(--accent-red-rgb,200,60,60),0.08)' : 'rgba(var(--fg-rgb),0.04)',
+        background: low ? 'color-mix(in srgb, var(--accent-red) 8%, transparent)' : 'rgba(var(--fg-rgb),0.04)',
       }}
     >
       {status.enabled === 0

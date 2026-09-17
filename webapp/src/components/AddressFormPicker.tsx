@@ -73,7 +73,7 @@ function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         {failed && (
-          <div style={{ fontSize: 12.5, color: 'var(--danger, #e5484d)', lineHeight: 1.5, marginBottom: 10 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--accent-red)', lineHeight: 1.5, marginBottom: 10 }}>
             Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
           </div>
         )}
