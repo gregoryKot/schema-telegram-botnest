@@ -151,7 +151,6 @@ describe('formatJourneyDate', () => {
   it('нечитаемая дата — пустая строка, не «Invalid Date»', () => {
     expect(formatJourneyDate('мусор', now)).toBe('');
   });
-
 });
 
 // Пин конвенции из инцидента 2026-09-17: календарный день показывается в UTC.
