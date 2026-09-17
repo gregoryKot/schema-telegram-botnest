@@ -79,7 +79,7 @@ export function DeleteBtn({
           padding: '8px 0',
           borderRadius: 'var(--r-8)',
           border: 'none',
-          background: 'rgba(239,68,68,0.15)',
+          background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)',
           color: 'var(--accent-red)',
           fontSize: 12,
           fontWeight: 600,

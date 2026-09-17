@@ -7,9 +7,7 @@ import { useTr } from '../utils/addressForm';
 export function SaveErrorNote({ ty, vy }: { ty: string; vy: string }) {
   const tr = useTr();
   return (
-    <div
-      style={{ fontSize: 12, color: 'rgba(255,100,100,0.8)', marginBottom: 10 }}
-    >
+    <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10 }}>
       {tr(ty, vy)}
     </div>
   );

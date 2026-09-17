@@ -310,7 +310,7 @@ export function PlanSheet({
             <div
               style={{
                 fontSize: 13,
-                color: '#ff6b6b',
+                color: 'var(--accent-red)',
                 textAlign: 'center',
                 marginBottom: 12,
               }}

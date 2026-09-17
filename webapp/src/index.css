@@ -124,6 +124,15 @@
   --accent-orange: var(--c-clay);
   --accent-pink:   var(--c-plum);
 
+  /* Текст НА залитом --accent-red (кнопка «Снять роль», «Да, удалить всё
+     навсегда») — та же роль, что --on-accent у акцента, и по той же причине
+     отдельным токеном: белый годится только в светлой теме. Белый на светлом
+     --accent-red — 5.65:1, в тёмной теме тот же белый на #d68585 даёт 2.78:1
+     и WCAG AA (4.5:1) не проходит — см. переопределение ниже.
+     Инвариант пары (≥4.5:1 в обеих темах, оба фронтенда) держит тест
+     index.css.contrast.test.ts: меняешь --accent-red — пересчитается само. */
+  --on-accent-red: #ffffff;
+
   /* Legacy aliases for backward compat */
   --border-color:  var(--line);
   --sheet-bg:      var(--bg-elev);
@@ -190,6 +199,11 @@ html[data-theme="dark"] {
   --accent-red:    var(--c-rose-strong);
   --accent-orange: var(--c-clay);
   --accent-pink:   var(--c-plum);
+
+  /* Тёмная тема осветляет красный до #d68585, и белый текст на нём даёт
+     2.78:1 — ниже нормы. Тёплые ночные чернила (то же значение, что
+     --on-accent тёмной темы в shared/src/theme/tokens.css) — 6.70:1. */
+  --on-accent-red: #16120f;
 
   --border-color:  var(--line);
   --sheet-bg:      var(--bg-elev);

@@ -47,6 +47,11 @@ const APP_CSS = [
 // статусные цвета не сводятся — иначе статус перестаёт читаться).
 export const SHARED_NAME_ONLY_TOKENS = [
   '--accent-red',
+  // Текст на залитом --accent-red. Значение локально (у площадок разные
+  // красные), но имя обязано быть на обеих: иначе следующая красная кнопка
+  // мини-аппа снова напишет '#fff' и получит в тёмной теме 2.94:1. Контраст
+  // самой ПАРЫ считает webapp/src/index.css.contrast.test.ts.
+  '--on-accent-red',
   '--accent-orange',
   '--accent-yellow',
   '--accent-green',

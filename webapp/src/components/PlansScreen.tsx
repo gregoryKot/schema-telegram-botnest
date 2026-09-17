@@ -15,8 +15,8 @@ interface Props {
 }
 
 function statusColor(done: boolean | null) {
-  if (done === true)  return { bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)', text: 'var(--accent-green)' };
-  if (done === false) return { bg: 'rgba(248,113,113,0.07)', border: 'rgba(248,113,113,0.18)', text: 'var(--accent-red)' };
+  if (done === true)  return { bg: 'color-mix(in srgb, var(--accent-green) 8%, transparent)', border: 'color-mix(in srgb, var(--accent-green) 20%, transparent)', text: 'var(--accent-green)' };
+  if (done === false) return { bg: 'color-mix(in srgb, var(--accent-red) 7%, transparent)', border: 'color-mix(in srgb, var(--accent-red) 18%, transparent)', text: 'var(--accent-red)' };
   return { bg: 'transparent', border: 'var(--line)', text: 'var(--text-sub)' };
 }
 
@@ -188,14 +188,14 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
         <div className="u-row8">
           <button onClick={() => checkin(true)} style={{
             flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'rgba(52,211,153,0.12)', outline: '1px solid rgba(52,211,153,0.22)',
+            background: 'color-mix(in srgb, var(--accent-green) 12%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-green) 22%, transparent)',
             color: 'var(--accent-green)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>
             ✓ Выполнено
           </button>
           <button onClick={() => checkin(false)} style={{
             flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'rgba(248,113,113,0.08)', outline: '1px solid rgba(248,113,113,0.18)',
+            background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-red) 18%, transparent)',
             color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
           }}>
             Не вышло

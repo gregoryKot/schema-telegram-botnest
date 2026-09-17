@@ -188,7 +188,7 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
         <Row
           label="Удалить все данные"
           divider
-          color="#f87171"
+          color="var(--accent-red)"
           onClick={onDelete}
         />
       </div>

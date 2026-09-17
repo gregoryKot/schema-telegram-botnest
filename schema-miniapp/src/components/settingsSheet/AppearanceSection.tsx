@@ -261,7 +261,7 @@ export function AppearanceSection({
                       borderRadius: 'var(--r-10)',
                       border: 'none',
                       background: 'var(--accent-red)',
-                      color: '#fff',
+                      color: 'var(--on-accent-red)',
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: 'pointer',

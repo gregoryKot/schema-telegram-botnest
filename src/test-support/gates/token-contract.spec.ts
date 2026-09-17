@@ -9,6 +9,7 @@ import { loadStringList } from './pattern-loader';
 // Копия SHARED_NAME_ONLY_TOKENS из scripts/check-token-contract.mjs.
 const SHARED_NAME_ONLY_TOKENS = [
   '--accent-red',
+  '--on-accent-red',
   '--accent-orange',
   '--accent-yellow',
   '--accent-green',
