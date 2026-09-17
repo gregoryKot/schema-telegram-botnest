@@ -26,7 +26,7 @@ export function JourneyTimeline({
   return (
     <div>
       {groups.map((g) => (
-        <div key={g.key} style={{ marginBottom: 18 }}>
+        <div key={g.key} className="u-mb18">
           <div
             style={{
               fontSize: 11,

@@ -74,7 +74,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
       <div className="page-inner-wide">
         {/* Hero */}
         <div style={{ marginBottom: 48 }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>{todayLabel()}</div>
+          <div className="eyebrow u-mb10">{todayLabel()}</div>
           <h1 className="hub-title" style={{ marginBottom: 0 }}>
             {greeting(displayName)}
           </h1>
@@ -85,9 +85,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
             {/* Sessions today */}
             <div>
-              <div className="eyebrow" style={{ marginBottom: 14 }}>Сессии сегодня</div>
+              <div className="eyebrow u-mb14">Сессии сегодня</div>
               {loading ? (
-                <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Загрузка…</div>
+                <div className="u-faint14">Загрузка…</div>
               ) : sessionsToday.length === 0 ? (
                 <div style={{ color: 'var(--text-faint)', fontSize: 14, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>Сессий не запланировано</div>
               ) : (
@@ -105,7 +105,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                           <span style={{ fontWeight: 500, fontSize: 14, color: 'var(--text)', flex: 1 }}>
                             {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                           </span>
-                          {time && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{time}</span>}
+                          {time && <span className="u-faint12">{time}</span>}
                         </button>
                       );
                     })}
@@ -115,9 +115,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
             {/* Client activity */}
             <div>
-              <div className="eyebrow" style={{ marginBottom: 14 }}>Активность клиентов</div>
+              <div className="eyebrow u-mb14">Активность клиентов</div>
               {loading ? (
-                <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Загрузка…</div>
+                <div className="u-faint14">Загрузка…</div>
               ) : clients.length === 0 ? (
                 <div style={{ color: 'var(--text-faint)', fontSize: 14, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>Нет клиентов</div>
               ) : (
@@ -192,7 +192,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                       <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500, flex: 1 }}>
                         {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                      <span className="u-faint11">
                         {c.lastActiveDate
                           ? `${Math.floor((now - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
                           : 'нет данных'}
@@ -206,7 +206,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
             {/* Active today */}
             {activeToday.length > 0 && (
               <div>
-                <div className="eyebrow" style={{ marginBottom: 14 }}>Заполнили сегодня</div>
+                <div className="eyebrow u-mb14">Заполнили сегодня</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
                   {activeToday.map(c => (
                     <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}

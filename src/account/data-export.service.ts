@@ -83,9 +83,12 @@ export class DataExportService {
         continue;
       }
       const delegateName = model[0].toLowerCase() + model.slice(1);
-      const delegate = this.prisma[
-        delegateName as keyof PrismaService
-      ] as unknown as FindManyDelegate;
+      // Индексируем через Record, а не keyof PrismaService: тот союз включает
+      // методы клиента ($connect и др.), и typescript-eslint ≥ 8.70 считает
+      // такое обращение «отвязанным методом» (unbound-method, PR #485).
+      const delegate = (
+        this.prisma as unknown as Record<string, FindManyDelegate>
+      )[delegateName];
       const rows = await delegate.findMany({ where: { userId } });
       const schema = decision.schema;
       data[model] = schema ? rows.map((r) => decryptRecord(r, schema)) : rows;

@@ -39,15 +39,7 @@ export function ExamplesBody({
           >
             ›
           </span>
-          <span
-            style={{
-              fontSize: 14,
-              color: 'var(--text-sub)',
-              lineHeight: 1.5,
-            }}
-          >
-            {ex}
-          </span>
+          <span className="u-sub14-lh15">{ex}</span>
         </div>
       ))}
     </div>
@@ -87,15 +79,7 @@ export function ReflectionBody({
           >
             ?
           </span>
-          <span
-            style={{
-              fontSize: 14,
-              color: 'var(--text-sub)',
-              lineHeight: 1.5,
-            }}
-          >
-            {q}
-          </span>
+          <span className="u-sub14-lh15">{q}</span>
         </div>
       ))}
     </div>
@@ -115,7 +99,7 @@ export function RangesBody({
 }) {
   const RANGE_VALUES = [1, 4, 7];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="u-col6">
       {data.ranges.map((range, i) => {
         const active = i === rangeIdx;
         return (

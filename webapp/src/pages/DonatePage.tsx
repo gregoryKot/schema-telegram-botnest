@@ -41,7 +41,7 @@ export function DonatePage() {
             <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6 }}>Это очень помогает развивать проект.</p>
           </div>
         ) : (
-          <div style={{ marginTop: 24 }}>
+          <div className="u-mt24">
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, margin: '0 0 8px' }}>Поддержать проект</h1>
             <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6, margin: '0 0 24px' }}>
               SchemeHappens бесплатный. Если он полезен — поддержите развитие любой суммой.

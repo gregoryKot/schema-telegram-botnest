@@ -102,14 +102,14 @@ function ModeDoubtSheet({
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
               {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+            <div className="u-sub12">
               сейчас выбран
             </div>
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 28 }}>
             Вот с чем его чаще всего путают — и как отличить.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+          <div className="u-col12">
             {doubts.map((d) => {
               const other = getModeById(d.otherId);
               const leafLabel = getModeLeafLabel(d.otherId);
@@ -131,7 +131,7 @@ function ModeDoubtSheet({
                   <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginBottom: 6 }}>
                     → {other?.name ?? d.otherId}
                   </div>
-                  <p className="body" style={{ marginBottom: 8 }}>{d.gist}</p>
+                  <p className="body u-mb8">{d.gist}</p>
                   <div
                     style={{
                       background: 'color-mix(in srgb, var(--accent-blue) 8%, transparent)',

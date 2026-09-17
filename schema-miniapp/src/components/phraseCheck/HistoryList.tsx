@@ -21,10 +21,8 @@ export function PhraseCheckHistoryList({
 }) {
   if (history.length === 0) return null;
   return (
-    <div style={{ marginTop: 20 }}>
-      <div className="section-label" style={{ marginBottom: 8 }}>
-        Прошлые разборы
-      </div>
+    <div className="u-mt20">
+      <div className="section-label u-mb8">Прошлые разборы</div>
       {history.map((h) => (
         <div
           key={h.id}

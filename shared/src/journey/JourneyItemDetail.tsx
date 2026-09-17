@@ -1,7 +1,7 @@
 // Детальный просмотр записи «Моего пути»: тап по шагу → открыть и прочитать
 // ВСЁ, что сохранено (без обрезки, все поля), с кнопкой поделиться внутри.
 // Единственная копия для обоих фронтендов (правило №3). Обёртка — per-frontend.
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   type JourneyItem,
   JOURNEY_GROUP_COLORS,
@@ -53,10 +53,12 @@ export function JourneyItemDetail({
   detail,
   subtitle,
   onShare,
+  deleteButton,
 }: {
   detail: JourneyDetailState;
   subtitle: (item: JourneyItem) => string | null;
   onShare: () => void;
+  deleteButton?: ReactNode;
 }) {
   const { item, parts, loading, close: onBack } = detail;
   if (!item) return null;
@@ -182,6 +184,7 @@ export function JourneyItemDetail({
       >
         Поделиться карточкой
       </button>
+      {deleteButton}
     </div>
   );
 }

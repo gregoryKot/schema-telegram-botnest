@@ -199,8 +199,8 @@ export function PhraseCheckEx({
             </button>
           </div>
           {pastEntries.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div className="aside-card-eyebrow" style={{ marginBottom: 10 }}>Прошлые разборы · {history.length}</div>
+            <div className="u-mt8">
+              <div className="aside-card-eyebrow u-mb10">Прошлые разборы · {history.length}</div>
               <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
             </div>
           )}

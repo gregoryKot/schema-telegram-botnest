@@ -21,7 +21,7 @@ export function YsqActiveDomainList({
   return (
     <>
       {activeByDomain.map((domain) => (
-        <div key={domain.needId} style={{ marginBottom: 20 }}>
+        <div key={domain.needId} className="u-mb20">
           <div
             style={{
               fontSize: 11,

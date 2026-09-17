@@ -214,7 +214,7 @@ export function SafePlaceEx({
           />
         </div>
       </div>
-      <div className="ex-prompt" style={{ marginBottom: 18 }}>
+      <div className="ex-prompt u-mb18">
         <div className="ex-prompt-num">2.</div>
         <div>
           <div className="ex-prompt-label">Через все органы чувств</div>

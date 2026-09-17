@@ -17,7 +17,7 @@ interface Props {
 
 export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, onOpenTracker, goBack, handleNew, tr }: Props) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div className="u-sheet-grid">
       <Topbar onBack={goBack} label="Закрыть" />
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 32 }}>Сохранено</h1>
@@ -40,7 +40,7 @@ export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, 
               marginBottom: i < arr.length - 1 ? 16 : 0,
               borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
             }}>
-              <div className="eyebrow" style={{ marginBottom: 6 }}>{row.label}</div>
+              <div className="eyebrow u-mb6">{row.label}</div>
               <div style={{ fontFamily: i === 0 ? 'var(--serif)' : 'inherit', fontSize: i === 0 ? 20 : 15, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
             </div>
           ))}
@@ -50,9 +50,9 @@ export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, 
             Открыть трекер →
           </button>
         )}
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
-          <button onClick={handleNew} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>Ещё одну</button>
-          <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
+        <div className="u-row10">
+          <button onClick={handleNew} className="ex-btn ex-btn-ghost u-flex1">Ещё одну</button>
+          <button onClick={goBack} className="ex-btn ex-btn-primary u-flex1">Готово</button>
         </div>
       </div>
     </div>

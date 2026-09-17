@@ -56,7 +56,7 @@ export function MergePage() {
 
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 720, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Аккаунт</div>
+      <div className="eyebrow u-mb14">Аккаунт</div>
       <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 18 }}>
         Объединить аккаунты?
       </h1>
@@ -74,7 +74,7 @@ export function MergePage() {
         ) : (
           Object.entries(summary).map(([table, n]) => (
             <div key={table} className="list-line">
-              <span className="text-sm" style={{ flex: 1 }}>{tableLabel(table)}</span>
+              <span className="text-sm u-flex1">{tableLabel(table)}</span>
               <span className="num text-md" style={{ fontWeight: 500 }}>{n}</span>
             </div>
           ))

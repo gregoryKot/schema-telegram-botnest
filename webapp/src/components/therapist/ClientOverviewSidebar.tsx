@@ -21,7 +21,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
     <aside>
       {/* Next session */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 14 }}>Следующая сессия</div>
+        <div className="eyebrow u-mb14">Следующая сессия</div>
         {editingNextSession ? (
           <div>
             <input
@@ -45,7 +45,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
                 {nextSessionLabel(selectedClient.nextSession)}
               </div>
             ) : (
-              <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Не установлена</div>
+              <div className="u-faint13">Не установлена</div>
             )}
             {selectedClient.meetingDays && selectedClient.meetingDays.length > 0 && (
               <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4 }}>
@@ -63,7 +63,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
 
       {/* Start date */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Начало терапии</div>
+        <div className="eyebrow u-mb10">Начало терапии</div>
         {editingStartDate ? (
           <div>
             <input
@@ -81,9 +81,9 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
             {sessionInfoError && <div role="alert" style={{ fontSize: 12, color: 'var(--c-rose)', marginTop: 6 }}>{sessionInfoError}</div>}
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+          <div className="u-ac8">
             <span style={{ fontSize: 14, color: 'var(--text)' }}>
-              {selectedClient.therapyStartDate ? fmtDate(selectedClient.therapyStartDate) : <span style={{ color: 'var(--text-faint)' }}>Не указана</span>}
+              {selectedClient.therapyStartDate ? fmtDate(selectedClient.therapyStartDate) : <span className="u-faint">Не указана</span>}
             </span>
             <button onClick={() => { setEditingStartDate(true); setLocalStartDate(selectedClient.therapyStartDate ?? ''); }} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}>
               изменить
@@ -97,7 +97,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
         <>
           <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
           <div className="section">
-            <div className="eyebrow" style={{ marginBottom: 12 }}>Индекс сегодня</div>
+            <div className="eyebrow u-mb12">Индекс сегодня</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 8 }}>
               <div style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1, color: indexColor(selectedClient.todayIndex) }}>
                 {selectedClient.todayIndex.toFixed(1)}
@@ -139,14 +139,14 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
           <>
             <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
             <div className="section">
-              <div className="eyebrow" style={{ marginBottom: 14 }}>Потребности сегодня</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+              <div className="eyebrow u-mb14">Потребности сегодня</div>
+              <div className="u-col10">
                 {Object.entries(NEED_LABELS).map(([id, { label, color }]) => {
                   const v = today.ratings[id];
                   if (v == null) return null;
                   return (
                     <div key={id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 'var(--space-8)', alignItems: 'center' }}>
-                      <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>{label}</div>
+                      <div className="u-sub12">{label}</div>
                       <div style={{ width: 80, height: 3, background: 'var(--surface-3)', borderRadius: 'var(--r-2)', overflow: 'hidden' }}>
                         <div style={{ width: `${v * 10}%`, height: '100%', background: color, borderRadius: 'var(--r-2)' }} />
                       </div>
@@ -164,8 +164,8 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
 
       {/* Quick actions */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 14 }}>Действия</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+        <div className="eyebrow u-mb14">Действия</div>
+        <div className="u-col12">
           {[
             { label: '+ Заметка сессии', action: () => setClientTab('sessions') },
             { label: '+ Назначить задание', action: () => setShowAssign(true) },

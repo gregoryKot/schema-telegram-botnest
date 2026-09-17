@@ -158,7 +158,7 @@ export function SchemasSection({
         </div>
         {((tab === 'schemas' && schemaSaveError) ||
           (tab === 'modes' && modeSaveError)) && (
-          <div style={{ marginTop: 8 }}>
+          <div className="u-mt8">
             <SaveErrorNote
               ty="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуй ещё раз."
               vy="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуйте ещё раз."

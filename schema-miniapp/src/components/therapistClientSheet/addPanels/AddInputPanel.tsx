@@ -28,7 +28,7 @@ export function AddInputPanel({
   const filled = !!addInput.trim();
   return (
     <>
-      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+      <div className="u-row8">
         <input
           value={addInput}
           onChange={(e) => {

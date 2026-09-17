@@ -40,11 +40,11 @@ export function ModeMapLegend({ onClose }: { onClose: () => void }) {
         <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-faint)' }}>Легенда</span>
         <button onClick={onClose} title="Скрыть" aria-label="Скрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="u-col6">
         {ITEMS.map(it => (
-          <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+          <div key={it.label} className="u-ac8">
             <Glyph shape={it.shape} color={it.color} />
-            <span style={{ color: 'var(--text-sub)' }}>{it.label}</span>
+            <span className="u-sub">{it.label}</span>
           </div>
         ))}
       </div>

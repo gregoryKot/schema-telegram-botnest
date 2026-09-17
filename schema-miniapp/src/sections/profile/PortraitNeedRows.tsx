@@ -54,7 +54,7 @@ export function PortraitNeedRows({ needs }: Props) {
                 fontFamily: 'inherit',
               }}
             >
-              <div style={{ flex: 1 }}>
+              <div className="u-flex1">
                 <NeedBar n={n} maxCount={maxCount} />
               </div>
               <span

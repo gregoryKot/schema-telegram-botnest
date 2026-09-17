@@ -30,7 +30,7 @@ export function ExportOverlay({
   const st = exportCopied ? 0 : exportFailed ? 1 : 2;
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 16,
@@ -91,7 +91,7 @@ export function PrivacyOverlay({
 }) {
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -131,21 +131,13 @@ export function PrivacyOverlay({
             >
               {block.title}
             </div>
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-              }}
-            >
-              {block.text}
-            </div>
+            <div className="u-sub13-lh16">{block.text}</div>
           </div>
         ))}
 
         {(!!localStorage.getItem(YSQ_PROGRESS_KEY) ||
           !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="u-mb12">
             <div
               style={{
                 fontSize: 13,
@@ -213,7 +205,7 @@ export function DeleteOverlay({
 }) {
   return (
     <BottomSheet onClose={onBackdropClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -237,7 +229,7 @@ export function DeleteOverlay({
           действие необратимо.
         </div>
         {!deleteConfirm ? (
-          <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+          <div className="u-row8">
             <button
               onClick={onCancel}
               style={{

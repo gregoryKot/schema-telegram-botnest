@@ -24,7 +24,7 @@ export function EvidenceList({
   return (
     <>
       {items.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="u-mb10">
           {items.map((f, i) => (
             <div
               key={i}

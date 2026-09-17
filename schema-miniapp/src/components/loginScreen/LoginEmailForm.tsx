@@ -82,7 +82,7 @@ export function LoginEmailForm() {
     // noValidate: браузерный тултип конструктора валидации не звучит в
     // выбранной форме ты/вы и не показывается стабильно в PWA-режиме —
     // ошибку всегда показывает наш текст (правило CLAUDE.md «ошибки не глотаем»).
-    <form onSubmit={submit} noValidate style={{ marginTop: 12 }}>
+    <form onSubmit={submit} noValidate className="u-mt12">
       <input
         type="email"
         placeholder="you@example.com"

@@ -73,7 +73,7 @@ export function TwoFactorSection({
   if (recoveryCodes) {
     return (
       <div style={{ marginTop: 32 }}>
-        <div className="eyebrow" style={{ marginBottom: 12 }}>Recovery-коды</div>
+        <div className="eyebrow u-mb12">Recovery-коды</div>
         <div className="text-sm muted" style={{ marginBottom: 12, lineHeight: 1.5 }}>
           {tr('Сохрани эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряешь телефон.', 'Сохраните эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряете телефон.')}
         </div>
@@ -93,7 +93,7 @@ export function TwoFactorSection({
 
   return (
     <div style={{ marginTop: 32 }}>
-      <div className="eyebrow" style={{ marginBottom: 12 }}>Двухфакторная аутентификация</div>
+      <div className="eyebrow u-mb12">Двухфакторная аутентификация</div>
 
       {!totp.enabled && !setupOpen && (
         <div className="text-sm muted" style={{ lineHeight: 1.6, marginBottom: 14 }}>
@@ -104,7 +104,7 @@ export function TwoFactorSection({
 
       {totp.enabled && !disableMode && (
         <>
-          <div className="text-sm" style={{ marginBottom: 14 }}>
+          <div className="text-sm u-mb14">
             <span style={{ color: 'var(--c-moss)' }}>✓ Включена.</span>{' '}
             <span className="muted">Recovery-кодов осталось: {totp.recoveryCodesLeft}</span>
           </div>
@@ -115,14 +115,14 @@ export function TwoFactorSection({
       )}
 
       {totp.enabled && disableMode && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)' }}>
+        <div className="u-col10">
           <div className="text-sm muted">{tr('Введи текущий код из приложения, чтобы отключить:', 'Введите текущий код из приложения, чтобы отключить:')}</div>
           <input
             value={code} onChange={e => setCode(e.target.value)}
             placeholder="123456" inputMode="numeric" autoComplete="one-time-code"
             style={{ padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 'var(--r-10)', background: 'var(--surface)', color: 'var(--text)', fontSize: 18, letterSpacing: '0.2em', textAlign: 'center', fontFamily: 'monospace' }}
           />
-          <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+          <div className="u-row10">
             <button onClick={disable} disabled={busy || !code.trim()} className="btn btn-primary">
               {busy ? 'Отключаю…' : 'Отключить'}
             </button>
@@ -151,7 +151,7 @@ export function TwoFactorSection({
           </div>
           {otpauthUrl && (
             <details className="text-sm muted">
-              <summary style={{ cursor: 'pointer' }}>Не сканируется QR? Ввести секрет вручную</summary>
+              <summary className="u-pointer">Не сканируется QR? Ввести секрет вручную</summary>
               <div style={{ marginTop: 6, padding: 10, background: 'var(--surface-2)', borderRadius: 'var(--r-8)', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 11 }}>
                 {otpauthUrl}
               </div>
@@ -162,7 +162,7 @@ export function TwoFactorSection({
             placeholder="123456" inputMode="numeric" autoComplete="one-time-code"
             style={{ padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 'var(--r-10)', background: 'var(--surface)', color: 'var(--text)', fontSize: 18, letterSpacing: '0.2em', textAlign: 'center', fontFamily: 'monospace' }}
           />
-          <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+          <div className="u-row10">
             <button onClick={confirm} disabled={busy || !code.trim()} className="btn btn-primary">
               {busy ? 'Проверяю…' : 'Подтвердить'}
             </button>

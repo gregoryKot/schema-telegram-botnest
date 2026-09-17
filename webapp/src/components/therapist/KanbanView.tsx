@@ -64,7 +64,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+          <div className="u-col8">
             {col.items.length === 0 && (
               <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>–</div>
             )}

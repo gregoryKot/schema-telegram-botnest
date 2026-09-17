@@ -170,7 +170,7 @@ export function TrackerOverlay({
   const nextNeed = needs[idx + 1];
 
   const steps = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="u-ac6">
       {needs.map((n, i) => (
         <button
           key={n.id}

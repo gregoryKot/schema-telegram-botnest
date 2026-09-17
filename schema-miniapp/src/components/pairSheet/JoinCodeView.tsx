@@ -36,9 +36,7 @@ export function JoinCodeView({
         >
           ‹
         </span>
-        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-          Ввести код
-        </span>
+        <span className="u-h16">Ввести код</span>
       </div>
       <input
         value={code}

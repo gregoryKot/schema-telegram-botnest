@@ -1,13 +1,14 @@
-import { useState } from 'react';
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { BottomSheet } from '../../components/BottomSheet';
+import { PickerStickyHeader } from '../../components/PickerStickyHeader';
 import { cm } from './utils';
 import {
   MODE_DESC,
   POPULAR_MODE_IDS,
 } from '../../../../shared/src/mode/modePickerDesc';
+import { useAutosavedSelection } from '../../../../shared/src/hooks/useAutosavedSelection';
 
 export function ModePickerSheet({
   selected,
@@ -19,25 +20,17 @@ export function ModePickerSheet({
   onClose: () => void;
 }) {
   const tr = useTr();
-  const [ids, setIds] = useState<string[]>(selected);
-  const toggle = (id: string) =>
-    setIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const { ids, toggle } = useAutosavedSelection(selected, onSave);
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Мои режимы
-        </div>
+      <div className="u-pt4">
+        <PickerStickyHeader
+          title="Мои режимы"
+          hint="Выбор сохраняется сразу"
+          count={ids.length}
+          onDone={onClose}
+        />
         <div
           style={{
             fontSize: 13,
@@ -52,7 +45,7 @@ export function ModePickerSheet({
           )}
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           <div
             style={{
               fontSize: 11,
@@ -65,13 +58,7 @@ export function ModePickerSheet({
           >
             С чего начать
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-4)',
-            }}
-          >
+          <div className="u-col4">
             {POPULAR_MODE_IDS.map((id) => {
               const mode = ALL_MODES.find((m) => m.id === id);
               if (!mode) return null;
@@ -93,7 +80,7 @@ export function ModePickerSheet({
                     transition: 'all 0.15s',
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="u-fill">
                     <div
                       style={{
                         fontSize: 14,
@@ -150,7 +137,7 @@ export function ModePickerSheet({
         {MODE_GROUPS.map((group) => {
           const c = group.color; // CSS variable
           return (
-            <div key={group.id} style={{ marginBottom: 18 }}>
+            <div key={group.id} className="u-mb18">
               <div
                 style={{
                   fontSize: 11,
@@ -164,13 +151,7 @@ export function ModePickerSheet({
               >
                 {group.group}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-4)',
-                }}
-              >
+              <div className="u-col4">
                 {group.items
                   .filter((m) => !POPULAR_MODE_IDS.includes(m.id))
                   .map((m) => {
@@ -193,7 +174,7 @@ export function ModePickerSheet({
                           transition: 'all 0.15s',
                         }}
                       >
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="u-fill">
                           <div
                             style={{
                               fontSize: 14,
@@ -230,28 +211,6 @@ export function ModePickerSheet({
             </div>
           );
         })}
-
-        <button
-          onClick={() => {
-            onSave(ids);
-            onClose();
-          }}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: 'var(--r-14)',
-            border: 'none',
-            background:
-              'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-            color: '#fff',
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-            marginTop: 8,
-          }}
-        >
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
     </BottomSheet>
   );

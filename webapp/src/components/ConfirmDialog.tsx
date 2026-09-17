@@ -114,7 +114,7 @@ export function ConfirmDialog({
             {error}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={onCancel}
             disabled={busy}

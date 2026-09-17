@@ -46,7 +46,7 @@ export function CaseHookScreen({
         ≈ 3 минуты
       </div>
 
-      <div style={{ marginTop: 10 }}>
+      <div className="u-mt10">
         <TertiaryLink label="Сегодня ровный день →" onClick={onSteadyDay} />
       </div>
     </div>

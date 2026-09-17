@@ -3,7 +3,7 @@ import { BuildInfoLine } from './BuildInfoLine';
 
 export function AboutSection() {
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>О ПРИЛОЖЕНИИ</SettingsLabel>
       <div
         className="card"
@@ -67,13 +67,7 @@ export function AboutSection() {
             }}
           >
             Канал о схема-терапии —{' '}
-            <a
-              href="https://t.me/SchemeHappens"
-              style={{
-                color: 'var(--accent)',
-                textDecoration: 'none',
-              }}
-            >
+            <a href="https://t.me/SchemeHappens" className="u-link">
               @SchemeHappens
             </a>
           </div>
@@ -85,13 +79,7 @@ export function AboutSection() {
             }}
           >
             Записаться на сессию —{' '}
-            <a
-              href="https://t.me/kotlarewski"
-              style={{
-                color: 'var(--accent)',
-                textDecoration: 'none',
-              }}
-            >
+            <a href="https://t.me/kotlarewski" className="u-link">
               @kotlarewski
             </a>
           </div>
@@ -108,10 +96,7 @@ export function AboutSection() {
               href="https://schemehappens.ru/donate"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: 'var(--accent)',
-                textDecoration: 'none',
-              }}
+              className="u-link"
             >
               разовый донат
             </a>

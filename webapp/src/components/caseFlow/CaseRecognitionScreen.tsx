@@ -4,7 +4,7 @@ import type { RecognitionView } from '../../../../shared/src/case/caseRecognitio
 
 function ChainRow({ label, text }: { label: string; text: string }) {
   return (
-    <div style={{ marginBottom: 10 }}>
+    <div className="u-mb10">
       <div
         style={{
           fontSize: 11,
@@ -77,7 +77,7 @@ export function CaseRecognitionScreen({
       </div>
 
       <CaseFlowFoot primaryLabel="Дальше" onPrimary={onNext} onLater={onLater} crisis={crisis} onHardNow={onHardNow} />
-      <button type="button" className="ex-btn ex-btn-ghost" style={{ marginTop: 8 }} onClick={onDoubt}>
+      <button type="button" className="ex-btn ex-btn-ghost u-mt8" onClick={onDoubt}>
         У меня было иначе →
       </button>
     </ExScreen>

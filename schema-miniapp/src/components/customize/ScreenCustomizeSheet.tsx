@@ -25,13 +25,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
       subtitle="Скрытые блоки можно вернуть в любой момент"
       onClose={closeSheet}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-        }}
-      >
+      <div className="u-col8">
         {orderedIds.map((id) => {
           const meta = BLOCK_META[id];
           if (!meta) return null;

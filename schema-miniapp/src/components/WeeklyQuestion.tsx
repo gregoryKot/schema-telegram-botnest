@@ -91,7 +91,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           vy="Не сохранилось, попробуйте ещё раз"
         />
       )}
-      <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+      <div className="u-row8">
         <button
           onClick={handleSkip}
           style={{

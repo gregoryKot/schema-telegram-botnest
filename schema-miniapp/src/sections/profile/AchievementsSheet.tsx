@@ -46,7 +46,7 @@ export function AchievementsSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
@@ -55,9 +55,7 @@ export function AchievementsSheet({
             marginBottom: 20,
           }}
         >
-          <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Достижения
-          </span>
+          <span className="u-h17">Достижения</span>
           <span
             style={{
               fontSize: 13,

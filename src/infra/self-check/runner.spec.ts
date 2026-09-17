@@ -18,6 +18,7 @@ describe('runProbes', () => {
         critical: true,
         ok: true,
         detail: 'всё хорошо',
+        reportInHealth: true,
       },
       {
         id: 'b',
@@ -25,6 +26,28 @@ describe('runProbes', () => {
         critical: false,
         ok: false,
         detail: 'сломано',
+        reportInHealth: true,
+      },
+    ]);
+  });
+
+  it('reportInHealth: false у пробы — переносится в результат как есть', async () => {
+    const hidden: Probe = {
+      id: 'hidden',
+      title: 'Проба hidden',
+      critical: false,
+      reportInHealth: false,
+      run: async () => ({ ok: false, detail: 'скрыто от /health' }),
+    };
+    const results = await runProbes([hidden]);
+    expect(results).toEqual([
+      {
+        id: 'hidden',
+        title: 'Проба hidden',
+        critical: false,
+        ok: false,
+        detail: 'скрыто от /health',
+        reportInHealth: false,
       },
     ]);
   });
@@ -56,6 +79,7 @@ describe('runProbes', () => {
         critical: false,
         ok: false,
         detail: 'не ответила за 1 с',
+        reportInHealth: true,
       },
     ]);
   });

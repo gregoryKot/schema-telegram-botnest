@@ -109,33 +109,30 @@ export function LoginProviderButtons({
       {/* Telegram первым: это основной путь продукта и единственный, который
           сразу даёт тот же аккаунт, что в боте и мини-аппе. */}
       <a
-        className="btn-outline"
+        className="btn-outline u-mb8"
         href={href('telegram')}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ marginBottom: 8 }}
       >
         <TelegramIcon />
         Войти через Telegram
       </a>
       {/* Google — официальные брендовые цвета логотипа, не токены продукта */}
       <a
-        className="btn-outline"
+        className="btn-outline u-mb8"
         href={href('google')}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ marginBottom: 8 }}
       >
         <GoogleIcon />
         Войти через Google
       </a>
       {/* VK — официальный брендовый цвет (#0077FF), не токен продукта */}
       <a
-        className="btn-outline"
+        className="btn-outline u-mb12"
         href={href('vk')}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ marginBottom: 12 }}
       >
         <span
           style={{

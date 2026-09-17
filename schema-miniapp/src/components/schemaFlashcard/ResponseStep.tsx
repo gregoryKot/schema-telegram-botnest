@@ -27,16 +27,10 @@ export function ResponseStep({
 }: ResponseStepProps) {
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Здоровый Взрослый
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 2 из 4
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Здоровый Взрослый</div>
+          <div className="u-faint12-mt2">Шаг 2 из 4</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         <div
@@ -67,8 +61,7 @@ export function ResponseStep({
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}
         >
-          Что отзывается?{' '}
-          <span style={{ color: 'var(--text-faint)' }}>(необязательно)</span>
+          Что отзывается? <span className="u-faint">(необязательно)</span>
         </div>
         <textarea
           value={reflection}
@@ -92,7 +85,7 @@ export function ResponseStep({
           }}
         />
         <CrisisGate texts={[reflection]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={onBack}
             style={{
@@ -130,7 +123,7 @@ export function ResponseStep({
             Дальше →
           </button>
         </div>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

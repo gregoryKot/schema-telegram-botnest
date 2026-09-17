@@ -65,7 +65,7 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
                 'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
               )}
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
+            <div className="u-row8">
               <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
                 style={{ padding: '8px 14px', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
                 Отмена

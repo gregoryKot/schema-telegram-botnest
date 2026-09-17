@@ -60,7 +60,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
 
       {/* Active schemas */}
       {activeScores.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="u-mb10">
           <div
             style={{
               fontSize: 10,
@@ -74,7 +74,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
             const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
             const delta = getDelta(score.id);
             return (
-              <div key={score.id} style={{ marginBottom: 6 }}>
+              <div key={score.id} className="u-mb6">
                 <div
                   style={{
                     display: 'flex',
@@ -263,14 +263,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                     {entryDelta}
                   </span>
                 )}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                  }}
-                >
-                  {d}
-                </span>
+                <span className="u-faint11">{d}</span>
               </div>
             );
           })}

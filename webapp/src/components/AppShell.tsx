@@ -9,37 +9,26 @@ import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
-import { ScreenSkeleton } from './Skeleton';
-import { ErrorBoundary } from './ErrorBoundary';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
+import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
-import { MobileAppBanner } from './MobileAppBanner';
 
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
 
-// – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
-const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => ({ default: m.TodaySection })));
-const DiarySection   = lazy(() => import('../sections/DiarySection').then(m => ({ default: m.DiarySection })));
-const SchemasSection = lazy(() => import('../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
-const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
-const PracticeSection = lazy(() => import('../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
-
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
-// TherapistPrivacyDisclaimer переехали в appShell/AppOverlays.tsx (правило
-// №10 — файл был на потолке 300 строк), там же их lazy()-объявления.
-const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
+// TherapistPrivacyDisclaimer — appShell/AppOverlays.tsx; секции/кабинет
+// терапевта — appShell/AppSections.tsx (тоже правило №10).
+const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
-const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
-const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
 
 import type { StreakData } from '../api';
 
@@ -224,6 +213,14 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
   }, [setSaved]);
 
+  // Сиблинги контейнера секций ниже (Tracker/History/Diaries/Celebration/
+  // AppOverlays) — `inert` на контейнере прячет фон от таба/скринридера,
+  // пока хоть один открыт (аудит 2026-09: «Помощь рядом» читалась сквозь каталог практик).
+  const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
+    || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
+    || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
+    || ov.showTherapistDisclaimer || celebrationStreak !== null;
+
   if (loading) {
     return <Loader minHeight="100vh" />;
   }
@@ -343,7 +340,7 @@ export function AppShell() {
         <div className="sb-foot">
           <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               <div className="sb-acc-name">{displayName || 'Профиль'}</div>
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
@@ -394,104 +391,37 @@ export function AppShell() {
         {/* Canvas */}
         <div className="canvas">
         {/*
-          Аудит 2026-08-22: раньше ОДИН Suspense накрывал и основной контент
-          (разделы/кабинет терапевта), и ВСЕ ленивые шторки поверх него — если
-          шторка ещё качала свой чанк, React прятал под фолбэк весь общий
-          Suspense-boundary целиком, то есть уже отрисованный раздел под ней.
-          Ниже — своя Suspense-граница на каждую независимую сущность:
-          основной контент получает силуэт экрана (он и правда заменяется
-          целиком), а шторки поверх — fallback={null}, потому что контент под
-          ними никуда не девается, пока грузится чанк шторки.
+          Аудит 2026-08-22: AppSections (основной контент) и все ленивые
+          шторки ниже — сиблинги с раздельными Suspense-границами, а не один
+          общий boundary: иначе догрузка чанка шторки прятала бы под фолбэк
+          уже отрисованный раздел под ней (fallback={null} у шторок — контент
+          рядом никуда не девается, пока грузится их чанк).
+          Аудит 2026-09: тот же фон оставался доступным таба/скринридеру
+          сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
-        <Suspense fallback={<ScreenSkeleton />}>
-
-        {/* Therapist mode */}
-        {therapistMode && location.pathname === '/cabinet/today' && (
-          <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
-            <TherapistTodaySection
-              displayName={displayName}
-              onOpenClient={(id) => navigate('/cabinet/' + id)}
-            />
-          </ErrorBoundary>
-        )}
-        {therapistMode && location.pathname !== '/cabinet/today' && (
-          <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
-            <TherapistClientSheet
-              view={openClientId ? 'client' : 'list'}
-              openClientId={openClientId}
-              onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
-              onOpenClient={(id) => navigate('/cabinet/' + id)}
-              onClose={() => switchTherapistMode(false)}
-              backHandlerRef={therapistBackHandlerRef}
-              onClientsChange={setTherapistClients}
-            />
-          </ErrorBoundary>
-        )}
-
-        {/* Regular sections */}
-        {!therapistMode && (
-          <div className="page animate-fade" key={section}>
-            <MobileAppBanner />
-            {section === 'today' && (
-              <TodaySection
-                needs={needs}
-                ratings={ratings}
-                yesterdayRatings={yesterdayRatings}
-                onNavigate={setSection}
-                onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
-                onOpenAdvanced={() => ov.setShowSettings(true)}
-                onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-                onOpenTrackerAt={(needId) => { ov.setTrackerNeedId(needId); ov.setShowTrackerOverlay(true); }}
-                onOpenTrackerHistory={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
-                onOpenDiaries={() => ov.setShowDiaries(true)}
-                onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
-                refreshKey={todayRefreshKey}
-                userRole={userRole}
-                onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
-              />
-            )}
-            {section === 'diary' && (
-              <ErrorBoundary section="Дневник" key="diary-boundary">
-                <DiarySection />
-              </ErrorBoundary>
-            )}
-            {section === 'schemas' && (
-              <ErrorBoundary section="Паттерны" key="schemas-boundary">
-                <SchemasSection
-                  onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
-                  childhoodRatings={childhoodRatings}
-                  onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
-                />
-              </ErrorBoundary>
-            )}
-            {section === 'profile' && (
-              <ProfileSection
-                onOpenSettings={() => ov.setShowSettings(true)}
-                onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-                refreshKey={profileRefreshKey}
-                displayName={displayName}
-              />
-            )}
-            {section === 'practice' && (
-              <ErrorBoundary section="Практика" key="practice-boundary">
-                <PracticeSection
-                  onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
-                  onOpenPractices={() => ov.setShowPractices(true)}
-                  onOpenPlans={() => ov.setShowPlans(true)}
-                  onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-                  onOpenDiaries={() => ov.setShowDiaries(true)}
-                  onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setShowSchemaInfo(true); }}
-                  refreshKey={helpTasksKey}
-                  onTasksChanged={() => setHelpTasksKey(k => k + 1)}
-                />
-              </ErrorBoundary>
-            )}
-          </div>
-        )}
-
-        </Suspense>
-        {/* Конец Suspense-границы основного контента — дальше только шторки
-            поверх него, у каждой своя граница (см. комментарий выше). */}
+        <AppSections
+          inert={anyOverlayOpen}
+          therapistMode={therapistMode}
+          pathname={location.pathname}
+          section={section}
+          needs={needs}
+          ratings={ratings}
+          yesterdayRatings={yesterdayRatings}
+          displayName={displayName}
+          navigate={navigate}
+          openClientId={openClientId}
+          switchTherapistMode={switchTherapistMode}
+          therapistBackHandlerRef={therapistBackHandlerRef}
+          setTherapistClients={setTherapistClients}
+          setSection={setSection}
+          ov={ov}
+          todayRefreshKey={todayRefreshKey}
+          userRole={userRole}
+          profileRefreshKey={profileRefreshKey}
+          childhoodRatings={childhoodRatings}
+          helpTasksKey={helpTasksKey}
+          setHelpTasksKey={setHelpTasksKey}
+        />
 
         {/* ── TrackerOverlay ── */}
         {ov.showTrackerOverlay && (

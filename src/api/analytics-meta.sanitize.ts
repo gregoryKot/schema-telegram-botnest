@@ -13,6 +13,7 @@ import {
   ACCOUNT_LINK_FAIL_REASON_SET,
   SIGNUP_SOURCE_SET,
   PROFILE_PATTERN_KIND_SET,
+  ENTRY_DELETE_TYPE_SET,
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
@@ -265,6 +266,13 @@ export function sanitizeMeta(
     const kind = meta.kind;
     if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
       return { kind };
+    }
+    return undefined;
+  }
+  if (name === 'entry_deleted') {
+    const type = meta.type;
+    if (typeof type === 'string' && ENTRY_DELETE_TYPE_SET.has(type)) {
+      return { type };
     }
     return undefined;
   }

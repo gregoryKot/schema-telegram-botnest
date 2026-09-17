@@ -35,7 +35,7 @@ export function PatternSheetHeader({ color, name, subtitle, onBack }: Props) {
       >
         <IdentityDot color={color} size={18} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <div
           style={{
             fontSize: 18,

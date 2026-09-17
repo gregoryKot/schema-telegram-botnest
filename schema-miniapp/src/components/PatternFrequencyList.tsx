@@ -110,10 +110,7 @@ export function PatternFrequencyList({
                 {g.items.length}
               </span>
             </div>
-            <div
-              className="card"
-              style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-            >
+            <div className="card u-r16-clip">
               {items.map((it, i) => {
                 const active = it.id === selectedId;
                 const shown = it.freq > 0;
@@ -140,7 +137,7 @@ export function PatternFrequencyList({
                       WebkitTapHighlightColor: 'transparent',
                     }}
                   >
-                    <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="u-fill">
                       <span
                         style={{
                           display: 'block',

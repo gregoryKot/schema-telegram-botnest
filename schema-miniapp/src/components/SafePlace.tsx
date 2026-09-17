@@ -124,7 +124,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <SheetIconHeader
           title="Безопасное место"
           subtitle={tr(

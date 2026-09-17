@@ -96,7 +96,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           role="progressbar"
           aria-valuenow={stepNumber}
@@ -148,16 +148,8 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             🔎
           </div>
           <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Критик или забота?
-            </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              Разбор фразы по девяти приметам
-            </div>
+            <div className="u-h17">Критик или забота?</div>
+            <div className="u-sub12-mt2">Разбор фразы по девяти приметам</div>
           </div>
         </div>
 
@@ -240,7 +232,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
         )}
 
         {markIndex < 0 && (
-          <div style={{ marginTop: 12 }}>
+          <div className="u-mt12">
             <TherapyNote compact />
           </div>
         )}

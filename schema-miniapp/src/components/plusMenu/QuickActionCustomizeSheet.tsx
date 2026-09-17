@@ -43,13 +43,7 @@ export function QuickActionCustomizeSheet({
       zIndex={300}
       onClose={onClose}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-        }}
-      >
+      <div className="u-col8">
         {actions.map((a) => {
           const wasHidden = hidden.includes(a.id);
           return (

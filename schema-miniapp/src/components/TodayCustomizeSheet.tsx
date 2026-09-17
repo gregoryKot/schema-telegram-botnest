@@ -104,7 +104,7 @@ export function TodayCustomizeSheet({
 
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>
           Настроить экран
         </div>
@@ -119,12 +119,9 @@ export function TodayCustomizeSheet({
           Главное дело дня — у каждого своё
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <SettingsLabel>Одно дело на сегодня</SettingsLabel>
-          <div
-            className="card"
-            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-          >
+          <div className="card u-r16-clip">
             {FOCUS_OPTIONS.map((opt, i) => {
               const active = opt.id === practice;
               return (
@@ -156,7 +153,7 @@ export function TodayCustomizeSheet({
           </div>
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <SettingsLabel>Оформление</SettingsLabel>
           <div
             className="card"
@@ -186,7 +183,7 @@ export function TodayCustomizeSheet({
           </div>
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <SettingsLabel>Показывать на главном</SettingsLabel>
           <div
             style={{
@@ -199,10 +196,7 @@ export function TodayCustomizeSheet({
             Подсказка: долгое нажатие на любой блок главного экрана открывает
             эту настройку. Порядок блоков меняется за ручку «≡».
           </div>
-          <div
-            className="card"
-            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-          >
+          <div className="card u-r16-clip">
             {visibleIds.map((id, i) => {
               const meta = rowMeta[id];
               if (!meta) return null;
@@ -224,20 +218,13 @@ export function TodayCustomizeSheet({
           </div>
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <div
-            className="card"
-            style={{ borderRadius: 'var(--r-16)', overflow: 'hidden' }}
-          >
+        <div className="u-mt16">
+          <div className="card u-r16-clip">
             <Row label="Общие настройки приложения" onClick={onOpenSettings} />
           </div>
         </div>
 
-        <button
-          className="btn-primary"
-          style={{ marginTop: 10 }}
-          onClick={onClose}
-        >
+        <button className="btn-primary u-mt10" onClick={onClose}>
           Готово
         </button>
       </div>

@@ -20,6 +20,7 @@ import { ModeCardMetricsService } from '../src/bot/mode-card-metrics.service';
 import { ModeDiaryMetricsService } from '../src/bot/mode-diary-metrics.service';
 import { WarmWordsMetricsService } from '../src/bot/warm-words-metrics.service';
 import { PhraseCheckMetricsService } from '../src/bot/phrase-check-metrics.service';
+import { EntryDeleteMetricsService } from '../src/bot/entry-delete-metrics.service';
 import { AccountLinkMetricsService } from '../src/bot/account-link-metrics.service';
 import { PlusMetricsService } from '../src/bot/plus-metrics.service';
 import { WebBannerMetricsService } from '../src/bot/web-banner-metrics.service';
@@ -53,6 +54,7 @@ function buildReport(prisma: PrismaService): StatsReportService {
     new ModeDiaryMetricsService(prisma),
     new WarmWordsMetricsService(prisma),
     new PhraseCheckMetricsService(prisma),
+    new EntryDeleteMetricsService(prisma),
     new AccountLinkMetricsService(prisma),
     new PlusMetricsService(prisma),
     new WebBannerMetricsService(prisma),
@@ -104,6 +106,7 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'profile_pattern_open', meta: { pattern: 'abandonment' } },
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
+  { name: 'entry_deleted', meta: { type: 'belief_check' } },
 ];
 // Серверные/анонимные строки (userId IS NULL) — вход, поломки клиента, лиды.
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [

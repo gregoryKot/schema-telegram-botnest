@@ -47,7 +47,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         setShowConceptSheet(false);
       }}
     >
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
@@ -56,9 +56,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Концептуализация
-          </div>
+          <div className="u-h17">Концептуализация</div>
           {concept && (concept.history as unknown[])?.length > 0 && (
             <button
               onClick={() => setShowHistory((h) => !h)}
@@ -83,7 +81,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         </div>
         <ConceptHistoryPanel detail={detail} />
         {selectedClient.telegramId > 0 && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="u-mb12">
             <button
               onClick={handleRequestYsq}
               style={{
@@ -137,7 +135,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             >
               Схемы клиента (самооценка)
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <div className="u-wrap5">
               {selfSchemaIds.map((id) => {
                 const schema = ALL_SCHEMAS.find((s) => s.id === id);
                 return schema ? (
@@ -161,7 +159,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         )}
         <SectionLabel mb={8}>Актуальные схемы (ЭДС)</SectionLabel>
         {SCHEMA_DOMAINS.map((domain) => (
-          <div key={domain.id} style={{ marginBottom: 10 }}>
+          <div key={domain.id} className="u-mb10">
             <div
               style={{
                 fontSize: 10,
@@ -175,7 +173,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             >
               {domain.domain}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <div className="u-wrap5">
               {domain.schemas.map((schema) => {
                 const active = activeSchemaIds.includes(schema.id);
                 const fromYsq = ysqSchemaIds.includes(schema.id);
@@ -214,9 +212,9 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           activeModeIds={activeModeIds}
           onToggle={toggleModeId}
         />
-        <div style={{ marginTop: 8 }}>
+        <div className="u-mt8">
           {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
-            <div key={key} style={{ marginBottom: 12 }}>
+            <div key={key} className="u-mb12">
               <div
                 style={{
                   fontSize: 11,

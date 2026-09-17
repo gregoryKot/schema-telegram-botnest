@@ -95,7 +95,7 @@ export function BookingPaidPage() {
 
         <div style={card}>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 4 }}>{typeLabel(booking.type)} · {booking.durationMin} мин</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{fmt(booking.startsAt)}</div>
+          <div className="u-h16">{fmt(booking.startsAt)}</div>
         </div>
 
         {booking.meetingUrl ? (

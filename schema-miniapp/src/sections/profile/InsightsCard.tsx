@@ -146,13 +146,7 @@ export function InsightsCard({
         )}
 
       {/* Need bars */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-12)',
-        }}
-      >
+      <div className="u-col12">
         {insights?.weeklyStats
           .filter((s) => s.avg !== null)
           .map((s) => {
@@ -174,9 +168,7 @@ export function InsightsCard({
                     marginBottom: 6,
                   }}
                 >
-                  <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                    {NEED_NAMES[s.needId]}
-                  </span>
+                  <span className="u-sub13">{NEED_NAMES[s.needId]}</span>
                   <span
                     style={{
                       fontSize: 13,

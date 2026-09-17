@@ -14,10 +14,9 @@ export function SaveEntryButton({
 }) {
   return (
     <button
-      className="ex-btn ex-btn-primary"
+      className="ex-btn ex-btn-primary u-ac8"
       disabled={!canSave || saving}
       onClick={onSave}
-      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}
     >
       {saving ? 'Сохраняю…' : 'Сохранить запись'}
       {!saving && <GlyphCheck />}

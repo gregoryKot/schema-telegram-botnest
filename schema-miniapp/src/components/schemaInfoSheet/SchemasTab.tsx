@@ -36,7 +36,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
         когда-то помогал выжить и приспособиться.
       </p>
       {SCHEMA_DOMAINS.map((d) => (
-        <div key={d.domain} style={{ marginBottom: 12 }}>
+        <div key={d.domain} className="u-mb12">
           <div
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
             role="button"
@@ -59,13 +59,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-10)',
-              }}
-            >
+            <div className="u-ac10">
               <div
                 style={{
                   width: 10,
@@ -142,13 +136,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
                       {s.name}
                       {isHighlighted && ' ◀'}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-sub)',
-                        lineHeight: 1.5,
-                      }}
-                    >
+                    <div className="u-sub12-lh15">
                       {(s as { libraryDesc?: string; desc: string })
                         .libraryDesc ?? s.desc}
                     </div>

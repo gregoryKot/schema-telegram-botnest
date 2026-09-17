@@ -53,9 +53,7 @@ export function SheetHeader({
           ‹
         </button>
       )}
-      <div className="d-caps" style={{ flex: 1 }}>
-        {title}
-      </div>
+      <div className="d-caps u-flex1">{title}</div>
       {onSave && (
         <button
           onClick={onSave}
@@ -103,10 +101,8 @@ export function SummaryBlock({
         marginBottom: 18,
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="d-caps" style={{ marginBottom: 4 }}>
-          {label}
-        </div>
+      <div className="u-fill">
+        <div className="d-caps u-mb4">{label}</div>
         <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.4 }}>
           {text}
         </div>
@@ -141,7 +137,7 @@ export function StepProgress({
   label: string;
 }) {
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div className="u-mb18">
       {/* WizardProgress красит непройденные сегменты в --surface-2— на листе
           он почти сливается с фоном, поэтому подменяем переменную локально на
           токен дорожки (в обеих темах свой), вместо второй копии полоски.
@@ -163,9 +159,7 @@ export function StepProgress({
           accentColor="var(--accent)"
         />
       </div>
-      <div className="d-caps" style={{ marginTop: 10 }}>
-        {label}
-      </div>
+      <div className="d-caps u-mt10">{label}</div>
     </div>
   );
 }

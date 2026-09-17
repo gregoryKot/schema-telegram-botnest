@@ -161,7 +161,7 @@ export function OnboardingWidget({
           >
             {isCurrentDone ? '✓' : currentNo}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <div
               style={{
                 fontSize: 15,

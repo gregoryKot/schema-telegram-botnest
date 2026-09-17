@@ -34,7 +34,7 @@ export function RewriteStep({
           marginBottom: 14,
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+        <div className="u-h15">
           {verdict.emoji} {verdict.title}
         </div>
         <div

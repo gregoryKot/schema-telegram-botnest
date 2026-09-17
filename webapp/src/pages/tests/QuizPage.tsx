@@ -108,7 +108,7 @@ export function QuizPage() {
           <h2 style={{ fontSize: 'clamp(21px, 3.6vw, 28px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.25, margin: '0 0 20px' }}>
             {runner.question.text}
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+          <div className="u-col12">
             {runner.question.options.map((o, idx) => (
               <button
                 key={o.label}

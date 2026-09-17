@@ -68,7 +68,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
             {trendSign}{trendDiff.toFixed(1)} к предыдущей неделе
           </div>
           {reversed.length > 1 && (
-            <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ marginBottom: 16 }}>
+            <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="u-mb16">
               <defs>
                 <linearGradient id={`sh-area-${need.id}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -92,7 +92,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
               <div className="aside-card-eyebrow">В детстве</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                 <span style={{ fontFamily: 'var(--serif)', fontSize: 36, color }}>{childhoodValue}</span>
-                <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>/10</span>
+                <span className="u-faint13">/10</span>
                 {recentAvg > 0 && (
                   <span style={{ fontSize: 13, color: 'var(--text-sub)', marginLeft: 4 }}>
                     → сейчас {recentAvg.toFixed(1)} {recentAvg > childhoodValue ? '↑' : recentAvg < childhoodValue ? '↓' : ''}

@@ -39,13 +39,7 @@ export function ReframeStep({
         >
           Переформулировка
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className="u-sub12-lh15">
           Посмотрев на оба списка — как можно сформулировать эту мысль точнее и
           добрее к себе?
         </div>

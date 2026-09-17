@@ -74,7 +74,7 @@ export function MobileLayout({
             marginBottom: 14,
           }}
         >
-          <div style={{ flex: 1 }}>
+          <div className="u-flex1">
             <button
               onClick={() => setDetailNeed(need)}
               style={{ all: 'unset', cursor: 'pointer' }}
@@ -135,7 +135,7 @@ export function MobileLayout({
             {extra?.question ?? ''}
           </p>
         </div>
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <PickerRail
             value={value}
             onChange={(v) => handleChange(need.id, v)}

@@ -39,7 +39,7 @@ export function ArticlesListPage() {
             </button>
           </div>
         ) : articles === null ? (
-          <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+          <p className="u-faint">Загрузка…</p>
         ) : null}
 
         {!failed && articles && (
@@ -145,7 +145,7 @@ export function ArticlePage() {
   if (article === undefined) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+        <p className="u-faint">Загрузка…</p>
       </div>
     );
   }
@@ -153,9 +153,9 @@ export function ArticlePage() {
   if (!article) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
+        <div className="u-tc">
           <p style={{ fontSize: 48, margin: '0 0 16px' }}>404</p>
-          <a href="/articles" style={{ color: 'var(--accent)' }}>← К статьям</a>
+          <a href="/articles" className="u-accent">← К статьям</a>
         </div>
       </div>
     );
@@ -199,13 +199,13 @@ export function ArticlePage() {
       <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
         <a href="/articles" style={backLink}>← Все статьи</a>
 
-        <div style={{ marginBottom: 40 }}>
+        <div className="u-mb40">
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+            <span className="u-faint12">
               {new Date(article.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>·</span>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{article.readMin} минут чтения</span>
+            <span className="u-faint12">·</span>
+            <span className="u-faint12">{article.readMin} минут чтения</span>
           </div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, lineHeight: 1.15, margin: '0 0 20px', letterSpacing: '-.01em' }}>
             {article.title}

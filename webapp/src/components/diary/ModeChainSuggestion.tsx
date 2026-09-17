@@ -37,7 +37,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
       >
         {vm.question}
       </div>
-      <div className="chip-row" style={{ marginBottom: 8 }}>
+      <div className="chip-row u-mb8">
         {vm.candidates.map(({ id, mode }) => (
           <button
             key={id}

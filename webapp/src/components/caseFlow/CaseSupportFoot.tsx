@@ -57,7 +57,7 @@ export function CaseSupportBlock({
   return (
     <>
       {(crisis || hardNow) && (
-        <div ref={revealRef} style={{ marginTop: 20 }}>
+        <div ref={revealRef} className="u-mt20">
           {hardNow && (
             <TertiaryLink
               label="Вернуться к разбору ▲"

@@ -108,7 +108,7 @@ export function AllTasksSheet({
           </div>
         </div>
       ) : (
-        <div style={{ marginBottom: 8 }}>
+        <div className="u-mb8">
           {tasks.map((task) => (
             <TaskRow
               key={task.id}

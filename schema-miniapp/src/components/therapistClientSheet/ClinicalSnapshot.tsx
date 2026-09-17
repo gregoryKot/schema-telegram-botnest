@@ -35,7 +35,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
       {hasAnything ? (
         <>
           {hasGoals && (
-            <div style={{ marginBottom: 12 }}>
+            <div className="u-mb12">
               <div
                 style={{
                   fontSize: 10,
@@ -63,7 +63,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
             </div>
           )}
           {hasSchemas && (
-            <div style={{ marginBottom: 12 }}>
+            <div className="u-mb12">
               <div
                 style={{
                   fontSize: 10,
@@ -76,13 +76,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
               >
                 Схемы ({activeSchemaIds.length})
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 5,
-                }}
-              >
+              <div className="u-wrap5">
                 {activeSchemaIds.map((id) => {
                   const schema = ALL_SCHEMAS.find((s) => s.id === id);
                   return schema ? (
@@ -188,13 +182,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
               >
                 Переходы режимов
               </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
+              <div className="u-sub13-lh15">
                 {(
                   (concept?.modeTransitions || localConcept.modeTransitions) ??
                   ''
@@ -225,7 +213,7 @@ export function ClinicalSnapshot({ detail }: ClinicalSnapshotProps) {
           </button>
         </>
       ) : (
-        <div style={{ textAlign: 'center' }}>
+        <div className="u-tc">
           <div
             style={{
               fontSize: 13,

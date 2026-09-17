@@ -37,13 +37,7 @@ export function YsqIntro({
         >
           Тест на схемы
         </div>
-        <div
-          style={{
-            fontSize: 14,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className="u-sub14-lh15">
           Паттерны мышления и поведения, сложившиеся в детстве
         </div>
       </div>
@@ -73,15 +67,7 @@ export function YsqIntro({
             }}
           >
             <div>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                }}
-              >
-                {title}
-              </div>
+              <div className="u-h14">{title}</div>
               <div
                 style={{
                   fontSize: 13,
@@ -118,11 +104,7 @@ export function YsqIntro({
 
       {hasProgress ? (
         <>
-          <button
-            onClick={onContinue}
-            className="btn-primary"
-            style={{ marginBottom: 10 }}
-          >
+          <button onClick={onContinue} className="btn-primary u-mb10">
             Продолжить ({progressAnswered} из 116)
           </button>
           <button
@@ -144,11 +126,7 @@ export function YsqIntro({
           </button>
         </>
       ) : (
-        <button
-          onClick={onStartFresh}
-          className="btn-primary"
-          style={{ marginBottom: 10 }}
-        >
+        <button onClick={onStartFresh} className="btn-primary u-mb10">
           Начать тест
         </button>
       )}

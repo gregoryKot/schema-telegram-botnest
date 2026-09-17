@@ -38,7 +38,7 @@ function NoteFieldGrid({ fields }: { fields: { label: string; val?: string }[] }
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
       {fields.filter(f => f.val?.trim()).map(f => (
         <div key={f.label}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
+          <div className="eyebrow u-mb4">{f.label}</div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
         </div>
       ))}
@@ -53,7 +53,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
   if (total === 0) {
     return (
-      <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+      <div className="page-inner-wide u-pt40">
         <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
           Клиент ещё не заполнял дневник
         </div>
@@ -62,7 +62,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   }
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+    <div className="page-inner-wide u-pt40">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Записи клиента</div>
@@ -72,9 +72,9 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
       {/* Diary entries (timestamped events) */}
       {clientDiary.length > 0 && (
-        <div style={{ marginBottom: 40 }}>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Дневник событий · {clientDiary.length}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+        <div className="u-mb40">
+          <div className="eyebrow u-mb16">Дневник событий · {clientDiary.length}</div>
+          <div className="u-col8">
             {clientDiary.map((entry, i) => {
               let color: string;
               let title: string;
@@ -107,7 +107,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                 >
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-12)' }}>
                     <div>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
+                      <span className="u-h14">{title}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 10 }}>{typeLabel}</span>
                     </div>
                     <span style={{ fontSize: 12, color: 'var(--text-faint)', flexShrink: 0 }}>{fmtDate(entry.date)}</span>
@@ -131,8 +131,8 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
       {/* Schema notes (static reflection cards) */}
       {clientSchemaNotesData.length > 0 && (
-        <div style={{ marginBottom: 40 }}>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Схема-карточки · {clientSchemaNotesData.length}</div>
+        <div className="u-mb40">
+          <div className="eyebrow u-mb16">Схема-карточки · {clientSchemaNotesData.length}</div>
           {clientSchemaNotesData.map(n => {
             const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === n.schemaId);
             const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
@@ -160,7 +160,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
       {/* Mode notes (static reflection cards) */}
       {clientModeNotesData.length > 0 && (
         <div>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Режим-карточки · {clientModeNotesData.length}</div>
+          <div className="eyebrow u-mb16">Режим-карточки · {clientModeNotesData.length}</div>
           {clientModeNotesData.map(n => {
             const m = getModeById(n.modeId);
             const group = MODE_GROUPS.find(g => g.items.some(x => x.id === n.modeId));

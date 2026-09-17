@@ -39,7 +39,7 @@ export function CustomizeRow({
         zIndex: lifted ? 1 : undefined,
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <ToggleRow
           title={label}
           sub={sub}

@@ -39,6 +39,11 @@ export const ONBOARDING_STEP_EVENT = 'onboarding_step';
 // на бэке; метрика видна в /stats («Архив „Мой путь“»).
 export const JOURNEY_OPEN_EVENT = 'journey_open';
 
+// Удаление записи упражнения из «Моего пути»: meta { type }. Парный
+// allow-list (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+export const ENTRY_DELETED_EVENT = 'entry_deleted';
+export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
+
 // Клик по ссылке на сайт практики автора (kotlarewski.gr) с публичного сайта:
 // meta { place } — блок об авторе / подвал / ответ FAQ / экран результата
 // мини-теста. Страницы видят только гости, событие анонимное — через

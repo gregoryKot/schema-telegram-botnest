@@ -112,7 +112,7 @@ export function PatternSheet({
   return (
     <>
       <BottomSheet onClose={onClose} zIndex={zIndex}>
-        <div style={{ paddingTop: 4 }}>
+        <div className="u-pt4">
           <PatternSheetHeader
             color={meta.color}
             name={meta.name}

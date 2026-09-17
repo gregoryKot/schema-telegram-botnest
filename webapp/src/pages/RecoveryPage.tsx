@@ -43,7 +43,7 @@ function RecoveryRequest() {
   if (sent) {
     return (
       <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-        <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление</div>
+        <div className="eyebrow u-mb14">Восстановление</div>
         <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>{tr('Проверь почту', 'Проверьте почту')}</h1>
         <div className="text-md muted" style={{ lineHeight: 1.6 }}>
           Если этот email привязан к аккаунту — на него отправлено письмо со ссылкой.
@@ -58,7 +58,7 @@ function RecoveryRequest() {
 
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление доступа</div>
+      <div className="eyebrow u-mb14">Восстановление доступа</div>
       <h1 style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, marginBottom: 14 }}>Потерял доступ?</h1>
       <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 24 }}>
         {tr(
@@ -67,7 +67,7 @@ function RecoveryRequest() {
         )}{' '}
         Иначе доступ к аккаунту восстановить нельзя.
       </div>
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
+      <form onSubmit={submit} className="u-col12">
         <input
           type="email" required value={email} onChange={e => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -115,7 +115,7 @@ function RecoveryConfirm({ token }: { token: string }) {
   }
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление</div>
+      <div className="eyebrow u-mb14">Восстановление</div>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>Не получилось</h1>
       <div className="text-sm" style={{ color: 'var(--c-rose)', marginBottom: 24 }}>{error}</div>
       <button onClick={() => navigate('/auth/recovery')} className="btn btn-primary">

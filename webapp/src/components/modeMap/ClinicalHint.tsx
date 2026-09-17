@@ -47,7 +47,7 @@ export function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
       <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
         <MMIcon name="bulb" size={13} /> Спросить себя
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div className="u-col2">
         {qs.map((q, i) => (
           <button key={i}
             onClick={() => (q.target === 'need' ? onPickNeed() : q.target === 'healthy' ? onPickHealthy() : onPickNote())}

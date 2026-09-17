@@ -55,9 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-          Раздел «{this.props.section}» не открылся
-        </div>
+        <div className="u-h16">Раздел «{this.props.section}» не открылся</div>
         <div
           style={{
             fontSize: 12,
@@ -69,7 +67,7 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           {this.state.error.message}
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-10)' }}>
+        <div className="u-row10">
           <button
             onClick={() => this.setState({ error: null })}
             style={{

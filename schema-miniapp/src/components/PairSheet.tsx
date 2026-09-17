@@ -21,7 +21,7 @@ export function PairSheet({ onClose }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 8 }}>
+      <div className="u-pt8">
         <div
           style={{
             fontSize: 20,

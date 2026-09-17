@@ -18,7 +18,7 @@ export function CollapsibleSection({
   children: ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div className="u-mb24">
       <div
         {...pressable(onToggle)}
         style={{
@@ -30,9 +30,7 @@ export function CollapsibleSection({
         }}
       >
         <SectionLabel mb={0}>{label}</SectionLabel>
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-          {open ? '▴' : '▾'}
-        </span>
+        <span className="u-faint11">{open ? '▴' : '▾'}</span>
       </div>
       {open && children}
     </div>

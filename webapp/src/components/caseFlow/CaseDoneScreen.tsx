@@ -7,7 +7,7 @@ import type { CaseTraits, Tr } from '../../../../shared/src/case/caseTypes';
  *  хардкод-заглушки — тело/порыв могли остаться пустыми). */
 function TraitRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div className="u-mb12">
       <div
         style={{
           fontSize: 11,
@@ -63,8 +63,7 @@ export function CaseDoneScreen({
       </button>
       <button
         type="button"
-        className="ex-btn ex-btn-ghost"
-        style={{ marginTop: 8 }}
+        className="ex-btn ex-btn-ghost u-mt8"
         onClick={onClose}
       >
         Готово

@@ -124,7 +124,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
       </div>
 
       {/* Numbered steps with clinical descriptions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div className="u-col2">
         {steps.map((s, i) => {
           const clickable = !s.ok && (!!s.add || (!!s.action && s.actionReady));
           return (
@@ -142,7 +142,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
                 color: s.ok ? '#fff' : clickable ? 'var(--accent)' : 'var(--text-faint)' }}>
                 {s.ok ? '✓' : clickable ? (s.add ? '+' : '✎') : i + 1}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="u-fill">
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: s.ok ? 'var(--text)' : 'var(--text-sub)' }}>
                   {i + 1}. {s.label}
                 </span>
@@ -184,7 +184,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
             ↻
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+        <div className="u-col8">
           {random.map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 'var(--space-8)', fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
               <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-line)', marginTop: 6 }} /><span>{t}</span>

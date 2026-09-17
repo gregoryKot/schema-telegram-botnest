@@ -17,7 +17,7 @@ export function AboutSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 8 }}>
+      <div className="u-pt8">
         <SectionLabel purple mb={16} as="h2">
           Зачем это всё
         </SectionLabel>
@@ -63,15 +63,7 @@ export function AboutSheet({
                 }}
               >
                 <IdentityDot id={NEED_COLOR_ORDER[i]} />
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: 'var(--text)',
-                  }}
-                >
-                  {n.name}
-                </span>
+                <span className="u-h14">{n.name}</span>
               </div>
               <p
                 style={{
@@ -111,15 +103,7 @@ export function AboutSheet({
             >
               Схема-терапия
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                marginTop: 2,
-              }}
-            >
-              Схемы, режимы, потребности
-            </div>
+            <div className="u-sub12-mt2">Схемы, режимы, потребности</div>
           </div>
           <svg
             width="18"

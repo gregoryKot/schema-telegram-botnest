@@ -29,7 +29,7 @@ export function SelfHelpSheet({
   );
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           className="d-display"
           style={{
@@ -79,7 +79,7 @@ export function SelfHelpSheet({
               Контакты помощи
             </button>
           )}
-          <button className="btn-primary" style={{ flex: 1 }} onClick={onClose}>
+          <button className="btn-primary u-flex1" onClick={onClose}>
             Понятно
           </button>
         </div>

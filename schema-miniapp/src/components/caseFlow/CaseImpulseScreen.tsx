@@ -19,9 +19,7 @@ export function CaseImpulseScreen({
 }) {
   return (
     <div>
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        Что потянуло сделать?
-      </div>
+      <div className="d-display u-e21">Что потянуло сделать?</div>
       <div
         style={{
           fontSize: 14,
@@ -42,7 +40,7 @@ export function CaseImpulseScreen({
         ownPlaceholder="Например: хотелось всё бросить"
       />
 
-      <div style={{ marginTop: 20 }}>
+      <div className="u-mt20">
         <PrimaryAction label="Дальше" onClick={onNext} />
       </div>
     </div>

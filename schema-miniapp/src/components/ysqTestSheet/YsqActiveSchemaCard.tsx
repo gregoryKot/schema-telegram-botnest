@@ -152,13 +152,7 @@ export function YsqActiveSchemaCard({
         }}
       >
         <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-        <span
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <span className="u-sub13-lh15">
           {ysqSchemas.find((sc) => sc.name === schema.name)?.tip ?? schema.tip}
         </span>
       </div>

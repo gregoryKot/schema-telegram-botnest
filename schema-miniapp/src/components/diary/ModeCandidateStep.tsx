@@ -54,9 +54,7 @@ export function ModeCandidateStep({
         onEdit={onBack}
       />
 
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        {group.question}
-      </div>
+      <div className="d-display u-e21">{group.question}</div>
       <div
         style={{
           fontSize: 14,

@@ -72,7 +72,7 @@ export function BecomeTherapistSection({
   }
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       {therapistReq === undefined ? null : therapistReq?.status ===
         'pending' ? (
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
@@ -86,13 +86,7 @@ export function BecomeTherapistSection({
           >
             Заявка отправлена
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              lineHeight: 1.5,
-            }}
-          >
+          <div className="u-sub12-lh15">
             Рассмотрим в течение нескольких дней и напишем в боте.
           </div>
         </div>
@@ -108,7 +102,7 @@ export function BecomeTherapistSection({
           >
             ✓ Заявка одобрена
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+          <div className="u-sub12">
             Обновите страницу, чтобы войти как специалист.
           </div>
         </div>
@@ -176,7 +170,7 @@ export function BecomeTherapistSection({
               placeholder: '@telegram или email',
             },
           ].map(({ label, val, set, placeholder }) => (
-            <div key={label} style={{ marginBottom: 10 }}>
+            <div key={label} className="u-mb10">
               <div
                 style={{
                   fontSize: 11,
@@ -204,7 +198,7 @@ export function BecomeTherapistSection({
               />
             </div>
           ))}
-          <div style={{ marginBottom: 14 }}>
+          <div className="u-mb14">
             <div
               style={{
                 fontSize: 11,
