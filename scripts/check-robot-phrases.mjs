@@ -19,6 +19,14 @@ const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
 
+// Статика вне `src/` — та же слепая зона, что закрывал гейт публичных
+// скриптов (правило №14): её не импортирует ни один модуль, поэтому ни один
+// гейт в неё не смотрел. Именно там самоназвание «Консультант по
+// схема-терапии» (JSON-LD) и «Сайт специалиста по психологическому
+// консультированию» (llms.txt) прожили свип 2026-09 и нашлись ручной
+// вычиткой владельца, а не проверкой.
+const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt'];
+
 // Юридические документы — отдельный жанр: «является публичной офертой» и
 // «обработка осуществляется в соответствии с 152-ФЗ» юридически точны, живым
 // языком их переписывать нельзя (docs/VOICE.md). Экспорт — ради теста гейта.
@@ -139,41 +147,40 @@ function walk(dir, acc = []) {
 function main() {
   const counts = {};
   const details = {};
-  for (const dir of SCAN_DIRS) {
-    for (const file of walk(dir)) {
-      if (EXCLUDED.has(file)) continue;
-      let src;
-      try {
-        src = readFileSync(join(ROOT, file), 'utf8');
-      } catch {
-        continue;
-      }
-      let n = 0;
-      src.split('\n').forEach((line, i) => {
-        if (!/[А-Яа-я]{4}/.test(line)) return; // только строки с русским текстом
-        if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
-        // ALLOW гасит только свой фрагмент, а не всю строку: иначе одна
-        // законная конструкция прячет соседнее нарушение в той же строке
-        // (тот же приём, что в check-gendered-forms.mjs).
-        const scan = ALLOW.reduce(
-          (acc, a) =>
-            acc.replace(
-              new RegExp(a.source, a.flags.replace('g', '') + 'g'),
-              ' ',
-            ),
-          line,
-        );
-        for (const [name, re] of PATTERNS) {
-          re.lastIndex = 0;
-          let m;
-          while ((m = re.exec(scan))) {
-            n++;
-            (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
-          }
-        }
-      });
-      if (n > 0) counts[file] = n;
+  const scanned = [...SCAN_DIRS.flatMap((dir) => walk(dir)), ...SCAN_FILES];
+  for (const file of scanned) {
+    if (EXCLUDED.has(file)) continue;
+    let src;
+    try {
+      src = readFileSync(join(ROOT, file), 'utf8');
+    } catch {
+      continue;
     }
+    let n = 0;
+    src.split('\n').forEach((line, i) => {
+      if (!/[А-Яа-я]{4}/.test(line)) return; // только строки с русским текстом
+      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
+      // ALLOW гасит только свой фрагмент, а не всю строку: иначе одна
+      // законная конструкция прячет соседнее нарушение в той же строке
+      // (тот же приём, что в check-gendered-forms.mjs).
+      const scan = ALLOW.reduce(
+        (acc, a) =>
+          acc.replace(
+            new RegExp(a.source, a.flags.replace('g', '') + 'g'),
+            ' ',
+          ),
+        line,
+      );
+      for (const [name, re] of PATTERNS) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(scan))) {
+          n++;
+          (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
+        }
+      }
+    });
+    if (n > 0) counts[file] = n;
   }
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
