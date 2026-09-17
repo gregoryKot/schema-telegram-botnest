@@ -180,6 +180,35 @@ describe('EXCLUDED-исключения check-robot-phrases.mjs', () => {
   });
 });
 
+// SCAN_FILES — статика вне src/ (webapp/index.html, webapp/public/llms.txt).
+// Её никто не импортирует, поэтому до свипа 2026-09 в неё не смотрел ни один
+// гейт: самоназвание в JSON-LD нашёл владелец глазами. Пара «ловит / молчит»
+// на том же файле, потому что «гейт добавили в список» и «гейт его правда
+// читает» — разные утверждения.
+describe('статика вне src/ (SCAN_FILES)', () => {
+  it('нарушение в webapp/index.html — exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/index.html':
+        '<meta name="description" content="Схема-терапевт онлайн" />\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/index.html: новый файл с 1');
+  });
+
+  it('чистая статика — exit 0', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/public/llms.txt':
+        '> Веду практику в подходе схема-терапии и КПТ. Онлайн.\n',
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+});
+
 // Механизм вместо добросовестности (как shared/src/utils/crisisMarkers.test.ts):
 // тесты выше бьют по CLI через известные строки и НЕ пинят каждый паттерн —
 // замер 2026-08-13 показал, что отключение регэкспа 8 из 10 паттернов
