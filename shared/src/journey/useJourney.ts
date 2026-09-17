@@ -2,7 +2,7 @@
 // загрузка, событие открытия (правило №8), сортировка/фильтр ленты, счётчики.
 // Фронтенд передаёт СТАБИЛЬНЫЙ (модульный) объект deps — иначе эффект будет
 // перезапускаться каждый рендер.
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type JourneyData,
   type JourneyGroup,
@@ -66,14 +66,19 @@ export function useJourney(deps: JourneyDeps) {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [group, setGroup] = useState<JourneyGroup | 'all'>('all');
   const [period, setPeriod] = useState<JourneyPeriod>('all');
+  // Бампится из reload() (после удаления записи) — только рефетч, без
+  // повторного journey_open (это открытие экрана, не перезагрузка).
+  const [bump, setBump] = useState(0);
 
   useEffect(() => {
-    deps.trackEvent(JOURNEY_OPEN_EVENT);
+    if (bump === 0) deps.trackEvent(JOURNEY_OPEN_EVENT);
     deps
       .getJourney()
       .then(setData)
       .catch(() => setFailed(true));
-  }, [deps]);
+  }, [deps, bump]);
+
+  const reload = useCallback(() => setBump((b) => b + 1), []);
 
   const stats = useMemo(
     () => (data ? journeyStatRows(data.counts) : []),
@@ -97,6 +102,7 @@ export function useJourney(deps: JourneyDeps) {
   return {
     data,
     failed,
+    reload,
     sortDir,
     setSortDir,
     group,

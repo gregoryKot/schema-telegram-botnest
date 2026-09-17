@@ -158,6 +158,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
     'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
     'том же обработчике, что формирует файл',
+  entry_deleted:
+    'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
+    'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
+    'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
+    'удалением записи; та же причина, что у share_card',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -205,7 +211,9 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // входа для накрутки через POST /api/event. 27 — data_export (право на
     // доступ по 152-ФЗ/GDPR): пятое серверное событие подряд, тот же приём —
     // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
-    // нечего.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(27);
+    // нечего. 28 — entry_deleted (удаление своей записи в архиве «Мой
+    // путь»): не серверное, а константное — фронт шлёт его из общего хука
+    // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(28);
   });
 });

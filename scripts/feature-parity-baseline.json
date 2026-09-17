@@ -1,23 +1,8 @@
 {
-  "DELETE /api/belief-checks/:param": {
-    "status": "nobody",
-    "reason": "deleteBeliefCheck объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления записи «Проверка убеждения». Долг, не решение: нужна кнопка удаления в обоих фронтендах либо роут снимается.",
-    "since": "741e401b"
-  },
   "DELETE /api/drafts/:param": {
     "status": "nobody",
     "reason": "Роут родился как замена localStorage-черновиков (49b0c378), но фронтенды так и не переключились — shared/src/utils/drafts.ts по сей день чисто localStorage. Серверная миграция черновиков не докатилась ни до одного фронтенда.",
     "since": "49b0c378"
-  },
-  "DELETE /api/flashcards/:param": {
-    "status": "nobody",
-    "reason": "deleteFlashcard объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления флешкарты. Та же недоделка, что у belief-checks/letters — кнопка нужна в обоих либо роут снимается.",
-    "since": "741e401b"
-  },
-  "DELETE /api/letters/:param": {
-    "status": "nobody",
-    "reason": "deleteLetter объявлен в обоих api.ts, но нигде не вызывается кроме тестов — в UI обоих фронтендов нет кнопки удаления письма. Та же недоделка, что у belief-checks/flashcards — кнопка нужна в обоих либо роут снимается.",
-    "since": "741e401b"
   },
   "DELETE /api/phrase-checks/:param": {
     "status": "nobody",
