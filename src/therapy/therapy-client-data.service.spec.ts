@@ -252,6 +252,28 @@ describe('TherapyClientDataService — расшифровка на пути чт
     expect(gratEntry.excerpt).toBe('выспалась · вкусный кофе');
   });
 
+  // Регрессия инцидента 2026-09-17: дата благодарности хранится календарным
+  // днём и разбиралась без `Z` — в зоне процесса. На сервере восточнее UTC
+  // «сегодняшняя» благодарность получала момент предыдущих суток и вставала в
+  // ленте ниже вчерашнего разбора. Ловится вторым прогоном jest под
+  // TZ=Australia/Sydney (джоба backend).
+  it('лента отсортирована по дате независимо от зоны процесса', async () => {
+    const { svc, modeDiary, gratitudeDiary } = makeService([relA]);
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: 'vulnerable_child',
+      situation: 'разбор девятого числа',
+      createdAt: new Date('2026-07-09T15:00:00Z'),
+    });
+    gratitudeDiary.push({
+      userId: CLIENT_A,
+      date: '2026-07-10',
+      items: ['благодарность десятого'],
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    expect(entries.map((e) => e.type)).toEqual(['gratitude', 'mode']);
+  });
+
   it('заметки по схеме и режиму: decryptRecord возвращает исходные строки полей', async () => {
     const { svc, schemaNotes, modeNotes } = makeService([relA]);
     schemaNotes.push(

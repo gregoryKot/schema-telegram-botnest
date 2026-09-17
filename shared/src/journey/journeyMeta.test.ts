@@ -15,6 +15,7 @@ import {
   buildJourneyCardRows,
   JOURNEY_GROUP_COLORS,
 } from './journeyMeta';
+import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 describe('JOURNEY_TYPE_META — быстрые практики', () => {
   it('breathing: эмодзи, подпись, группа exercise', () => {
@@ -149,6 +150,27 @@ describe('formatJourneyDate', () => {
 
   it('нечитаемая дата — пустая строка, не «Invalid Date»', () => {
     expect(formatJourneyDate('мусор', now)).toBe('');
+  });
+
+});
+
+// Пин конвенции из инцидента 2026-09-17: календарный день показывается в UTC.
+// Уберите зону из formatDateString — на западных смещениях день съедет на
+// предыдущий («14 июля» станет «13 июля»).
+describe('календарный день в любой зоне машины', () => {
+  const now = new Date('2026-07-21T12:00:00');
+
+  it('число, компактная строка и ключ месяца — те же', () => {
+    forEachTimeZone((tz) => {
+      expect(formatJourneyDate('2026-07-14', now), tz).toBe('14 июля');
+      expect(formatJourneyDay('2026-07-14'), tz).toBe('14 июля');
+      expect(
+        groupJourneyByMonth([{ type: 'note', at: '2026-07-01' }], now).map(
+          (g) => g.key,
+        ),
+        tz,
+      ).toEqual(['2026-07']);
+    });
   });
 });
 
