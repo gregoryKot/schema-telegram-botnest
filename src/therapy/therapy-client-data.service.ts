@@ -188,7 +188,8 @@ export class TherapyClientDataService {
           : ((r.items as string[]) ?? []);
       entries.push({
         type: 'gratitude',
-        dateMs: new Date(r.date + 'T00:00:00').getTime(),
+        // `Z` обязателен: без него день уезжал в зону сервера (инцидент 2026-09-17)
+        dateMs: Date.parse(r.date + 'T00:00:00Z'),
         date: r.date,
         excerpt: items.slice(0, 2).join(' · '),
       });
