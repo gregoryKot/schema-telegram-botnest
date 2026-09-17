@@ -25,6 +25,7 @@ import { PracticesService } from './practices.service';
 import { ExercisesService } from './exercises.service';
 import { PhraseCheckService } from './phrase-check.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
+import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { WebBannerMetricsService } from './web-banner-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
@@ -75,6 +76,7 @@ const INTERNAL_PROVIDERS = [
   PracticeMetricsService,
   CaseMetricsService,
   PhraseCheckMetricsService,
+  EntryDeleteMetricsService,
   PlusMetricsService,
   WebBannerMetricsService,
   SiteInstallMetricsService,

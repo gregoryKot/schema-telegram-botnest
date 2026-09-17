@@ -4,6 +4,7 @@ import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
+import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
@@ -37,6 +38,7 @@ export class StatsReportService {
     private readonly modeDiary: ModeDiaryMetricsService,
     private readonly warmWords: WarmWordsMetricsService,
     private readonly phraseChecks: PhraseCheckMetricsService,
+    private readonly entryDelete: EntryDeleteMetricsService,
     private readonly accountLink: AccountLinkMetricsService,
     private readonly plus: PlusMetricsService,
     private readonly webBanner: WebBannerMetricsService,
@@ -61,6 +63,7 @@ export class StatsReportService {
       this.modeDiary,
       this.warmWords,
       this.phraseChecks,
+      this.entryDelete,
       this.accountLink,
       this.plus,
       this.webBanner,

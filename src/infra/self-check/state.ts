@@ -10,6 +10,9 @@ export interface SelfCheckResultEntry {
   critical: boolean;
   ok: boolean;
   detail: string;
+  /** См. Probe.reportInHealth (types.ts) — false прячет падение от /health,
+   * но не от DM/`/stats`. */
+  reportInHealth: boolean;
 }
 
 export interface SelfCheckSnapshot {

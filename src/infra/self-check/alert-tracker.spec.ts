@@ -5,7 +5,14 @@ const T0 = 1_700_000_000_000;
 const H = 3_600_000;
 
 function failed(id: string, detail = 'сломано'): SelfCheckResultEntry {
-  return { id, title: `Проба ${id}`, critical: false, ok: false, detail };
+  return {
+    id,
+    title: `Проба ${id}`,
+    critical: false,
+    ok: false,
+    detail,
+    reportInHealth: true,
+  };
 }
 
 describe('SelfCheckAlertTracker', () => {
@@ -23,6 +30,7 @@ describe('SelfCheckAlertTracker', () => {
       critical: false,
       ok: false,
       detail: 'обнаружение не нашло календарей',
+      reportInHealth: true,
     };
     const text = t.noteResult([entry], T0);
     expect(text).toContain('Самопроверка нашла проблему');

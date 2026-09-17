@@ -245,6 +245,29 @@ const LAYERS = `
   <figcaption><b>Разная глубина фокуса.</b> КПТ хорошо работает с мыслями и поведением на поверхности. Схема-терапия идёт до самого дна — к убеждениям и детскому опыту, из которых всё остальное растёт.</figcaption>
 </figure>`;
 
+const BELIEF_BEHAVIORS = `
+<figure class="dg">
+  <svg viewBox="0 0 640 300" role="img" aria-label="Одно убеждение, четыре стратегии защиты">
+    <rect class="dg-node" x="14" y="14" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="44">ПЕРФЕКЦИОНИЗМ</text>
+    <text class="dg-t" x="34" y="76">Делать всё безупречно</text>
+    <text class="dg-s" x="34" y="98">чтобы изъян не всплыл</text>
+    <rect class="dg-node" x="326" y="14" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="346" y="44">ИЗБЕГАНИЕ БЛИЗОСТИ</text>
+    <text class="dg-t" x="346" y="76">Держать дистанцию</text>
+    <text class="dg-s" x="346" y="98">чем ближе, тем выше риск</text>
+    <rect class="dg-node" x="14" y="158" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="188">ПОИСК ОДОБРЕНИЯ</text>
+    <text class="dg-t" x="34" y="220">Постоянное подтверждение</text>
+    <text class="dg-s" x="34" y="242">глушит вердикт ненадолго</text>
+    <rect class="dg-node" x="326" y="158" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="346" y="188">САМОКРИТИКА ВПЕРЁД</text>
+    <text class="dg-t" x="346" y="220">Сказать плохое первым</text>
+    <text class="dg-s" x="346" y="242">чтобы не услышать от других</text>
+  </svg>
+  <figcaption><b>Четыре стратегии, одно убеждение.</b> Внешне это выглядит как разные черты характера, а по сути — разные способы защититься от одного и того же «со мной что-то не так».</figcaption>
+</figure>`;
+
 const RELATIONS = `
 <figure class="dg">
   <svg viewBox="0 0 640 300" role="img" aria-label="Одна схема, разные партнёры, один и тот же итог">
@@ -300,6 +323,7 @@ const DURATION = `
 </figure>`;
 
 export const DIAGRAMS: Record<string, string> = {
+  'belief-behaviors': BELIEF_BEHAVIORS,
   'support-vs-structure': SUPPORT_VS_STRUCTURE,
   standards: STANDARDS,
   duration: DURATION,
@@ -316,6 +340,7 @@ export const DIAGRAMS: Record<string, string> = {
 
 // For the admin editor's diagram picker.
 export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'belief-behaviors', label: 'Одно убеждение, четыре стратегии' },
   { key: 'support-vs-structure', label: 'Поддерживающая беседа vs схема-терапия' },
   { key: 'standards', label: 'Здоровая планка vs перфекционизм' },
   { key: 'duration', label: 'Сколько длится (таймлайн этапов)' },
