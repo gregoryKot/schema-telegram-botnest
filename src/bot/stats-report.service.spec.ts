@@ -17,6 +17,9 @@ describe('StatsReportService.render', () => {
     const phraseChecks = {
       render: jest.fn().mockResolvedValue('разборы фраз: 7'),
     };
+    const entryDelete = {
+      render: jest.fn().mockResolvedValue('удаление записей: 2'),
+    };
     const accountLink = {
       render: jest.fn().mockResolvedValue('перенос данных: 2'),
     };
@@ -58,6 +61,7 @@ describe('StatsReportService.render', () => {
     };
     return {
       blocks: {
+        entryDelete,
         accountLink,
         plus,
         webBanner,
@@ -78,6 +82,7 @@ describe('StatsReportService.render', () => {
         modeDiary as never,
         warmWords as never,
         phraseChecks as never,
+        entryDelete as never,
         accountLink as never,
         plus as never,
         webBanner as never,
@@ -103,6 +108,9 @@ describe('StatsReportService.render', () => {
       out.startsWith('продуктовые метрики\n\nкарточки режимов: 9\n\n'),
     ).toBe(true);
     expect(out).toContain(
+      'разборы фраз: 7\n\nудаление записей: 2\n\nперенос данных: 2',
+    );
+    expect(out).toContain(
       'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
@@ -126,6 +134,7 @@ describe('StatsReportService.render', () => {
     // ровно тот случай, когда метрика «есть», а в /stats её нет.
     const { service, blocks } = build();
     const out = await service.render();
+    expect(blocks.entryDelete.render).toHaveBeenCalledTimes(1);
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
     expect(blocks.webBanner.render).toHaveBeenCalledTimes(1);
@@ -139,6 +148,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.signupSource.render).toHaveBeenCalledTimes(1);
     expect(blocks.game.render).toHaveBeenCalledTimes(1);
     expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
+    expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
     expect(out).toContain('баннеры-переходы: 6');

@@ -321,6 +321,38 @@ describe('sanitizeMeta', () => {
     ).toEqual({ kind: 'schema' });
   });
 
+  it('entry_deleted: type из allow-list проходит', () => {
+    expect(sanitizeMeta('entry_deleted', { type: 'belief_check' })).toEqual({
+      type: 'belief_check',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'letter' })).toEqual({
+      type: 'letter',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'flashcard' })).toEqual({
+      type: 'flashcard',
+    });
+  });
+
+  it('entry_deleted: неизвестный/отсутствующий type → отброшено', () => {
+    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toBeUndefined();
+    expect(sanitizeMeta('entry_deleted', {})).toBeUndefined();
+  });
+
+  it('entry_deleted: type не строка → отброшено', () => {
+    expect(
+      sanitizeMeta('entry_deleted', { type: ['belief_check'] }),
+    ).toBeUndefined();
+  });
+
+  it('entry_deleted: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('entry_deleted', {
+        type: 'letter',
+        text: 'секретный текст письма',
+      }),
+    ).toEqual({ type: 'letter' });
+  });
+
   it('plus_action: action из allow-list проходит', () => {
     expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
       action: 'tracker',

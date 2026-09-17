@@ -13,9 +13,10 @@ import { UseSheetsReturn } from '../hooks/useSheets';
 import { KeepMountedSection } from './KeepMountedSection';
 
 interface Props {
-  /** Вкладки, собранные заранее в простое (usePrerenderSections) — их
-   *  KeepMountedSection монтирует скрытыми до первого тапа. */
+  /** Вкладки, собранные заранее в простое (usePrerenderSections) — KeepMountedSection монтирует их скрытыми до первого тапа. */
   prerenderedSections: Set<Section>;
+  /** `inert`, пока открыт оверлей-сиблинг (App.tsx: anyOverlayOpen) — фон не читается табом/скринридером сквозь него (аудит 2026-09). */
+  inert: boolean;
   therapistMode: boolean;
   section: Section;
   needs: Need[];
@@ -39,19 +40,17 @@ interface Props {
   onStartCase: () => void;
   onOpenMap: () => void;
   onSteadyDay: () => void;
-  /** null = нет ожидающего явного перехода — SchemasSection сам решает
-   *  вкладку (последняя открытая, см. patternsTabStorage.ts). */
+  /** null = нет ожидающего явного перехода — SchemasSection сам решает вкладку (последняя открытая, см. patternsTabStorage.ts). */
   patternsTab: 'schemas' | 'modes' | null;
   onOpenPatterns: (tab: 'schemas' | 'modes') => void;
 }
 
-// Четыре главных экрана (Сегодня/Паттерны/Помощь/Профиль). Однажды
-// открытая вкладка держится смонтированной (KeepMountedSection) — тап
-// переключает видимость, а не перестраивает экран (замер 2026-08-24:
-// перемонтирование стоило ~100мс мёртвых + мигание + тяжёлый коммит на
-// каждом переключении; см. комментарий в KeepMountedSection.tsx).
+// Четыре главных экрана (Сегодня/Паттерны/Помощь/Профиль). Открытая вкладка
+// держится смонтированной (KeepMountedSection) — тап переключает видимость,
+// не перестраивает экран (замер 2026-08-24: без этого ~100мс мёртвых + мигание; см. KeepMountedSection.tsx).
 export function AppSections({
   prerenderedSections,
+  inert,
   therapistMode,
   section,
   needs,
@@ -84,7 +83,8 @@ export function AppSections({
     window.scrollTo(0, 0);
   }, [section]);
   return (
-    <>
+    // display:contents — обёртка не участвует в раскладке, нужна только как узел DOM для inert.
+    <div style={{ display: 'contents' }} inert={inert}>
       <KeepMountedSection
         active={!therapistMode && section === 'today'}
         prerender={prerenderedSections.has('today')}
@@ -205,6 +205,6 @@ export function AppSections({
           </ErrorBoundary>
         }
       </KeepMountedSection>
-    </>
+    </div>
   );
 }

@@ -43,6 +43,9 @@
   "src/bot/data-export-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts"
   },
+  "src/bot/entry-delete-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+  },
   "src/bot/game-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts"
   },
