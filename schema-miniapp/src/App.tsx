@@ -30,6 +30,7 @@ import {
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
+import { isAnyOverlayOpen } from './hooks/anyOverlayOpen';
 import { useHostBackButton } from './hooks/useHostBackButton';
 import { TherapistBottomNav } from './components/TherapistBottomNav';
 import { TrackerHistoryOverlay } from './components/TrackerHistoryOverlay';
@@ -512,20 +513,12 @@ export default function App() {
     setPairData,
   });
 
-  const anyOverlayOpen = !!(
-    newDiaryEntry ||
-    sheets.trackerOverlay ||
-    sheets.tracker ||
-    sheets.diaries ||
-    sheets.schemaInfo ||
-    sheets.settings ||
-    sheets.practices ||
-    sheets.plans ||
-    sheets.about ||
-    sheets.pairSheet ||
-    sheets.childhoodWheel ||
-    sheets.todayNote
-  );
+  // Выключает свайп секций и кладёт `inert` на AppSections (аудит 2026-09).
+  const anyOverlayOpen = isAnyOverlayOpen(sheets, {
+    newDiaryEntry,
+    celebrationStreak,
+    onboardingVisible: onboarding.visible,
+  });
 
   const swipe = useSectionSwipe({
     sections: SECTIONS,
@@ -601,6 +594,7 @@ export default function App() {
 
       {/* ── Main sections (hidden when therapistMode) ── */}
       <AppSections
+        inert={anyOverlayOpen}
         prerenderedSections={prerenderedSections}
         therapistMode={therapistMode}
         section={section}
