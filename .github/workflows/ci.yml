@@ -425,6 +425,13 @@ jobs:
       # scripts/frontend-coverage-baseline.json. Раньше coverage тут вообще
       # не гейтился — джоба просто гоняла `npm test`.
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package webapp
+      # Второй прогон под НЕ-UTC зоной — см. комментарий в джобе shared
+      # (инцидент 2026-09-17). Раньше такой прогон был только у бэкендового
+      # jest, поэтому TZ-зависимый код фронтендов CI не проверял вообще.
+      - name: vitest под не-UTC таймзоной
+        run: npm test --prefix webapp
+        env:
+          TZ: Australia/Sydney
       # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
       # не проходят; исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-address-form.mjs
@@ -477,6 +484,19 @@ jobs:
           cache-dependency-path: shared/package-lock.json
       - run: npm ci --prefix shared
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package shared
+      # Тот же пакет под НЕ-UTC зоной, по образцу второго прогона jest в
+      # джобе backend (инцидент 2026-07-20). Инцидент 2026-09-17 показал, что
+      # у фронтендов и shared такого прогона не было: календарный день
+      # `YYYY-MM-DD` разбирался как полночь ЗОНЫ МАШИНЫ, запись выпадала из
+      # недельной выборки «Моего пути» на UTC+3 — и CI (раннер всегда UTC)
+      # оставался зелёным. Поломку нашёл владелец, а не проверка (правило №14:
+      # зелёный CI не значит «у пользователей работает»).
+      # Sydney — та же зона, что у бэкенда: ненулевое смещение и DST в
+      # противофазе к северному полушарию.
+      - name: vitest под не-UTC таймзоной — ловит зависимость от зоны машины
+        run: npm test --prefix shared
+        env:
+          TZ: Australia/Sydney
 
   # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
   # пакетов + prisma generate: typed-линт без типов зависимостей видит
@@ -527,6 +547,12 @@ jobs:
       # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1) —
       # см. комментарий в джобе webapp; здесь гоняет только свой пакет.
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package schema-miniapp
+      # Второй прогон под НЕ-UTC зоной — см. комментарий в джобе shared
+      # (инцидент 2026-09-17).
+      - name: vitest под не-UTC таймзоной
+        run: npm test --prefix schema-miniapp
+        env:
+          TZ: Australia/Sydney
       # dist коммитится в git (Docker его только копирует) — проверяем,
       # что закоммиченный dist не разошёлся с исходником.
       - name: dist актуален

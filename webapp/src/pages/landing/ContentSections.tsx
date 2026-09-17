@@ -43,7 +43,7 @@ export function EducationSection() {
               Подготовка<br /><span style={{ fontStyle: 'italic' }}>и обучение</span>
             </h2>
             <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0, maxWidth: 290 }}>
-              Регулярно повышаю квалификацию – это методы, которые использую в работе с вами.
+              Учусь постоянно. Ниже – то, на что опираюсь в работе с вами.
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -79,7 +79,7 @@ export function TrustSection() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Этика и качество практики</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>
-            Почему мне можно <span style={{ fontStyle: 'italic' }}>доверять</span>
+            На что можно <span style={{ fontStyle: 'italic' }}>опереться</span>
           </h2>
           <div className="trust-grid">
             {TRUST.map((t, i) => (
@@ -104,9 +104,9 @@ export function ApproachSection() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как я работаю</h2>
           <div className="bento-grid">
             <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
-            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии." /></div>
-            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия – один из наиболее исследованных методов работы с хроническими трудностями, это подтверждают клинические исследования." /></div>
-            <div><BentoCard num="04" title="Долгосрочный результат" text="Работаем глубже одного симптома — на то, как вы воспринимаете себя. Медленнее, зато надолго." /></div>
+            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. В сессии я живой человек и использую этот контакт как часть терапии." /></div>
+            <div><BentoCard num="03" title="Доказательная база" text="У схема-терапии есть рандомизированные исследования при расстройствах личности и хронических паттернах. Где данных меньше – скажу прямо." /></div>
+            <div><BentoCard num="04" title="Долгосрочный результат" text="Работаем не с одним симптомом, а с тем, как вы воспринимаете себя. Медленнее, зато надолго." /></div>
           </div>
         </div>
       </section>

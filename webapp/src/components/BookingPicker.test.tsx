@@ -150,7 +150,7 @@ describe('BookingPicker — сабмит записи', () => {
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
-    await screen.findByText('Слот зарезервирован');
+    await screen.findByText('Время зарезервировано');
     expect(screen.queryByText('Время забронировано')).toBeNull();
     expect(screen.getByRole('link', { name: /Перейти к оплате/ }).getAttribute('href')).toBe('https://pay.example/x');
   });

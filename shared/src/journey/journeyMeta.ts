@@ -2,6 +2,15 @@
 // (правило №3: общий код — в shared). Типы ленты зеркалят бэкендовый
 // JourneyItemType (src/bot/journey.service.ts); незнакомый тип не ломает
 // UI — journeyTypeMeta отдаёт нейтральный фолбэк.
+//
+// Даты записей (`at`) бывают двух видов — момент времени и календарный день.
+// Разбор и показ обоих живёт в utils/calendarDate (инцидент 2026-09-17), а
+// не строкой `at.length === 10 ? …` в каждой функции.
+import {
+  dateStringMs,
+  dateStringParts,
+  formatDateString,
+} from '../utils/calendarDate';
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
@@ -139,7 +148,7 @@ export function sortJourneyItems(
 ): JourneyItem[] {
   const sign = dir === 'desc' ? -1 : 1;
   return [...items].sort(
-    (a, b) => sign * (Date.parse(a.at) - Date.parse(b.at)),
+    (a, b) => sign * (dateStringMs(a.at) - dateStringMs(b.at)),
   );
 }
 
@@ -195,10 +204,10 @@ export function journeyItemSubtitle(
 
 /** «21 июля» / «21 июля 2025» (год — только если не текущий). Чистая. */
 export function formatJourneyDate(at: string, now = new Date()): string {
-  const d = new Date(at.length === 10 ? `${at}T00:00:00` : at);
-  if (Number.isNaN(d.getTime())) return '';
-  const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString('ru-RU', {
+  const parts = dateStringParts(at);
+  if (!parts) return '';
+  const sameYear = parts.year === now.getFullYear();
+  return formatDateString(at, {
     day: 'numeric',
     month: 'long',
     ...(sameYear ? {} : { year: 'numeric' }),
@@ -224,20 +233,20 @@ export function groupJourneyByMonth(
   const groups: JourneyMonthGroup[] = [];
   const undated: JourneyItem[] = [];
   for (const item of items) {
-    const d = new Date(item.at.length === 10 ? `${item.at}T00:00:00` : item.at);
-    if (Number.isNaN(d.getTime())) {
+    const parts = dateStringParts(item.at);
+    if (!parts) {
       undated.push(item);
       continue;
     }
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const key = `${parts.year}-${String(parts.month).padStart(2, '0')}`;
     const last = groups[groups.length - 1];
     if (last && last.key === key) {
       last.items.push(item);
       continue;
     }
-    const raw = d.toLocaleDateString('ru-RU', {
+    const raw = formatDateString(item.at, {
       month: 'long',
-      ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+      ...(parts.year === now.getFullYear() ? {} : { year: 'numeric' }),
     });
     const label = raw.charAt(0).toUpperCase() + raw.slice(1);
     groups.push({ key, label, items: [item] });
@@ -249,9 +258,7 @@ export function groupJourneyByMonth(
 
 /** «21 июля» без года — для компактной строки таймлайна. Чистая. */
 export function formatJourneyDay(at: string): string {
-  const d = new Date(at.length === 10 ? `${at}T00:00:00` : at);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  return formatDateString(at, { day: 'numeric', month: 'long' });
 }
 
 export interface JourneyCardRow {
