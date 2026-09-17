@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-// Прохождение дыхания засчитывается только после полного цикла
+// «Дыши со мной» на сайте — зеркало schema-miniapp/BreathingCard.test.tsx.
+// Прохождение засчитывается только после полного цикла
 // (BREATH_IN_S+BREATH_HOLD_S+BREATH_OUT_S=BREATH_CYCLE_S) — правило CLAUDE.md
 // «никаких хардкод-заглушек»: досрочная остановка не должна попасть в
 // счётчик как «практика пройдена».
@@ -12,15 +13,17 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { BreathingCard } from './BreathingCard';
-import { BREATH_CYCLE_S } from '../../../shared/src/practices/breathing';
-import { asMockApi } from '../test-support/mockApi';
+import { BREATH_CYCLE_S } from '../../../../shared/src/practices/breathing';
 
-vi.mock('../api', async () => {
-  const { mockPracticeApi } = await import('../test-support/mockApi');
-  return { api: mockPracticeApi() };
-});
-import { api } from '../api';
-const mockApi = asMockApi(api);
+vi.mock('../../api', () => ({
+  api: {
+    trackEvent: vi.fn(),
+    getPracticeSessions: vi.fn(),
+    recordPracticeSession: vi.fn(),
+  },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -45,7 +48,7 @@ async function flush() {
   });
 }
 
-describe('BreathingCard', () => {
+describe('BreathingCard (webapp)', () => {
   it('остановка ДО первого полного цикла — прохождение не записывается', async () => {
     render(<BreathingCard />);
     fireEvent.click(screen.getByText('Начать дыхание'));

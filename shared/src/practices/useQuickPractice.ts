@@ -1,9 +1,21 @@
 // Одна механика — один хук (правило CLAUDE.md): три быстрые практики «Здесь
 // и сейчас» (дыхание/заземление/«Стоп») читают и пишут свой счётчик
 // прохождений через один общий хук, а не копипастят fetch-логику по экранам.
+// Жил в schema-miniapp/src/hooks/useQuickPractice.ts и импортировал `../api`
+// напрямую; при переносе раздела на сайт переехал в shared, а площадочный
+// api приходит инъекцией — как getHealthyPhrase в usePhraseShareCard
+// (правило №3: один источник, транспорт у каждого фронтенда свой).
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../api';
-import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
+import type { QuickPracticeId } from './quickPractices';
+
+/** Срез api площадки, нужный быстрым практикам. Ссылки обязаны быть
+ * стабильными (методы модуля `api`) — они уходят в зависимости эффекта. */
+export interface QuickPracticeApi {
+  getPracticeSessions: () => Promise<Record<QuickPracticeId, number>>;
+  recordPracticeSession: (
+    tool: QuickPracticeId,
+  ) => Promise<{ ok: true; count: number }>;
+}
 
 export interface UseQuickPracticeResult {
   /** Сколько раз пройдена ИМЕННО эта практика. null — ещё грузится/неизвестно
@@ -17,7 +29,10 @@ export interface UseQuickPracticeResult {
   completed: boolean;
 }
 
-export function useQuickPractice(id: QuickPracticeId): UseQuickPracticeResult {
+export function useQuickPractice(
+  id: QuickPracticeId,
+  api: QuickPracticeApi,
+): UseQuickPracticeResult {
   const [count, setCount] = useState<number | null>(null);
   const [completed, setCompleted] = useState(false);
   // Флаг «запрос уже в пути или уже удался» — защита от повторной отправки
@@ -35,7 +50,7 @@ export function useQuickPractice(id: QuickPracticeId): UseQuickPracticeResult {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, api]);
 
   const complete = useCallback(() => {
     if (sentRef.current) return;
@@ -52,7 +67,7 @@ export function useQuickPractice(id: QuickPracticeId): UseQuickPracticeResult {
         // раз sentRef сброшен).
         sentRef.current = false;
       });
-  }, [id]);
+  }, [id, api]);
 
   return { count, complete, completed };
 }
