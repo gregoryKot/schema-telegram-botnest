@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { TherapyClientSummary } from '../../api';
-import { todayStr } from '../../utils/format';
+import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 import { calcTherapyDuration, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
@@ -58,7 +58,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
               style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 'var(--r-4)', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать" aria-label="Переименовать">✎</button>
             {/* Inline meta */}
             <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
-              {selectedClient.lastActiveDate === todayStr() && (
+              {selectedClient.lastActiveDate === todayCalendarDate() && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', fontSize: 12, color: 'var(--c-moss)', flexShrink: 0 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--c-moss)' }} />был сегодня
                 </span>

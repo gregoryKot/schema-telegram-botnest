@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
 import type { TherapyClientSummary } from '../api';
-import { todayStr } from '../utils/format';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
@@ -81,7 +81,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   interface Row { type: RowType; label: string; sub?: string; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
-    const today = todayStr();
+    const today = todayCalendarDate();
     const term = q.trim().toLowerCase();
 
     const clientRows: Row[] = clients.map(c => ({

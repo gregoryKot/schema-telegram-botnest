@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { TherapyClientSummary } from '../api';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 
 const DAY_NAMES_RU = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
 const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -18,12 +19,11 @@ function greeting(name: string | null) {
 
 /** True if the client has a session scheduled for today */
 function hasSessionToday(c: TherapyClientSummary): boolean {
-  const todayStr = new Date().toISOString().slice(0, 10);
   const todayDay = new Date().getDay();
   // nextSession wins: if explicitly set to today, show it
   if (c.nextSession) {
     const sessionDate = c.nextSession.slice(0, 10);
-    if (sessionDate === todayStr) return true;
+    if (sessionDate === todayCalendarDate()) return true;
     // If nextSession is in the future or past – don't fall through to meetingDays
     // (meetingDays is the recurring pattern, nextSession is the specific override)
     return false;
@@ -35,8 +35,7 @@ function hasSessionToday(c: TherapyClientSummary): boolean {
 /** Extract HH:MM time from nextSession if it's today */
 function sessionTime(c: TherapyClientSummary): string {
   if (!c.nextSession) return '';
-  const todayStr = new Date().toISOString().slice(0, 10);
-  if (c.nextSession.slice(0, 10) !== todayStr) return '';
+  if (c.nextSession.slice(0, 10) !== todayCalendarDate()) return '';
   return c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : '';
 }
 

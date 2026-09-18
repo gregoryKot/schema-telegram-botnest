@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError, TherapyClientSummary } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
-import { todayStr } from '../utils/format';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { useSafeTop } from '../utils/safezone';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
@@ -117,7 +117,7 @@ export function TherapistClientSheet({
 
   const { addMode } = addClient;
 
-  const today = todayStr();
+  const today = todayCalendarDate();
 
   // ─── Autofocus via refs (jsx-a11y/no-autofocus) ──────────────────────────────
   const telegramInputRef = useRef<HTMLInputElement>(null);
