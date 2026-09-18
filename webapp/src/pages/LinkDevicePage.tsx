@@ -4,6 +4,7 @@ import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
@@ -157,11 +158,7 @@ function LinkDeviceContent({ code }: { code: string }) {
             </>
           )}
 
-          {preview.twoFactorLost && (
-            <p className="text-sm u-mb14" style={{ color: 'var(--c-rose)', lineHeight: 1.7 }}>
-              {tr('Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включи её заново в настройках.', 'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включите её заново в настройках.')}
-            </p>
-          )}
+          {preview.twoFactorLost && <TwoFactorLossNote />}
 
           <button className="btn" onClick={() => void approve()} disabled={busy} style={{ minHeight: 44 }}>
             {busy ? 'Привязываю…' : 'Разрешить доступ'}

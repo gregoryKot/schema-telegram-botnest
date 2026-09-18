@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { useAuth } from '../auth/authContext';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels'; import { useTr } from '../utils/addressForm';
+import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { useTr } from '../utils/addressForm';
+import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -90,9 +92,7 @@ export function MergePage() {
 
       {twoFactorLost && (
         <div className="section">
-          <div className="text-sm" style={{ color: 'var(--c-rose)', lineHeight: 1.6, maxWidth: 600 }}>
-            {tr('Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включи её заново в настройках.', 'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включите её заново в настройках.')}
-          </div>
+          <TwoFactorLossNote />
         </div>
       )}
 
