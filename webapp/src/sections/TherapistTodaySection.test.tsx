@@ -7,6 +7,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistTodaySection } from './TherapistTodaySection';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
@@ -128,6 +130,39 @@ describe('TherapistTodaySection — сессии сегодня', () => {
 
     await waitFor(() => expect(screen.getAllByText('Клиент В').length).toBeGreaterThanOrEqual(1));
     expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+  });
+
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): hasSessionToday/sessionTime
+  // сравнивают календарный день `nextSession` с «сегодня» — здесь уже через
+  // общий todayCalendarDate(), а не инлайн-копию помощника. Моменты
+  // зафиксированы там, где зоны заведомо расходятся с UTC — иначе тест
+  // зеленеет под TZ=UTC и молчит про регресс. Клиенты грузятся асинхронно,
+  // поэтому первичная загрузка идёт под текущей зоной процесса, а проверка
+  // по зонам — синхронный `rerender` (без повторного фетча), чтобы момент
+  // смены TZ совпадал с моментом пересчёта sessionsToday/sessionTime.
+  it('сессия на сегодняшний календарный день сервера видна в "Сессии сегодня" в любой зоне', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        mockApi.getTherapyClients.mockResolvedValue([
+          client({ telegramId: 1, name: 'Клиент А', nextSession: `${todayCalendarDate()}T14:30:00Z` }),
+        ]);
+        const { unmount, rerender } = render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+        await waitFor(() => expect(screen.getAllByText('Клиент А').length).toBeGreaterThanOrEqual(1));
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          rerender(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+          expect(screen.getByText('14:30')).toBeTruthy();
+          expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+        });
+
+        unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

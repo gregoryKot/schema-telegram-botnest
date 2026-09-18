@@ -8,6 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CommandPalette } from './CommandPalette';
 import type { TherapyClientSummary } from '../api';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getTherapyClients = vi.fn();
 vi.mock('../api', () => ({
@@ -127,6 +129,38 @@ describe('CommandPalette — клиенты терапевта', () => {
     await screen.findByText('Иван');
     fireEvent.click(screen.getByText('Иван'));
     expect(onOpenClient).toHaveBeenCalledWith(42);
+  });
+
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): `lastActiveDate` — календарный
+  // день сервера (полночь UTC), а «сегодня» здесь раньше считалось локальной
+  // датой машины (todayStr()). Моменты зафиксированы там, где зоны заведомо
+  // расходятся с UTC — иначе тест зеленеет под TZ=UTC и молчит про регресс.
+  // Клиент грузится асинхронно (api.getTherapyClients), поэтому первичная
+  // загрузка идёт под текущей зоной процесса, а сама проверка по зонам —
+  // синхронный пересчёт `rows` (смена текста поиска), чтобы момент смены TZ
+  // совпадал с моментом пересчёта «сегодня», а не терялся в микротаске.
+  it('клиент, активный сегодня по календарному дню сервера, помечен в любой зоне', async () => {
+    const search = () => screen.getByPlaceholderText('Найти клиента, страницу или действие…');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        getTherapyClients.mockResolvedValue([{ ...CLIENT, lastActiveDate: todayCalendarDate() }]);
+        const { unmount } = renderPalette({ userRole: 'THERAPIST' });
+        await screen.findByText('Иван');
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          fireEvent.change(search(), { target: { value: 'ив' } });
+          fireEvent.change(search(), { target: { value: '' } });
+          expect(screen.getByText('Активен сегодня')).toBeTruthy();
+        });
+
+        unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

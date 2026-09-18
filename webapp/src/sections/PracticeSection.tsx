@@ -17,6 +17,7 @@ import { useTaskActions } from './today/useTaskActions';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -202,9 +203,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   const sessionBanner = (() => {
     if (relation?.role !== 'client' || !relation.nextSession) return null;
-    const d = new Date(relation.nextSession);
-    const label = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-    const isToday = relation.nextSession.slice(0, 10) === new Date().toISOString().slice(0, 10);
+    const label = new Date(relation.nextSession).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+    const isToday = relation.nextSession.slice(0, 10) === todayCalendarDate();
     return { label, isToday, partnerName: relation.partnerName };
   })();
 

@@ -11,6 +11,8 @@ import { render, screen, within, fireEvent, cleanup, waitFor, act } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
@@ -168,6 +170,41 @@ describe('TherapistClientSheet — открытие карточки клиен�
     fireEvent.click(screen.getByText('Анна'));
 
     await screen.findByText(/Заполни концептуализацию, чтобы увидеть схемы и режимы клиента/);
+  });
+
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): бейдж «был сегодня» в
+  // ClientHeader сравнивал календарный день сервера (`lastActiveDate`,
+  // полночь UTC) с локальной датой машины (todayStr()). Моменты фиксированы
+  // там, где зоны заведомо расходятся с UTC. Список клиентов грузится
+  // асинхронно, поэтому загрузка идёт под текущей зоной процесса, а сама
+  // проверка по зонам — синхронный клик (открыть карточку → назад → снова
+  // открыть), чтобы момент смены TZ совпадал с моментом рендера бейджа.
+  it('бейдж «был сегодня» учитывает календарный день сервера в любой зоне', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        mockApi.getTherapyClients.mockResolvedValue([
+          client({ telegramId: 7, name: 'Анна', lastActiveDate: todayCalendarDate() }),
+        ]);
+        renderSheet();
+        // Клиент, активный сегодня, попадает и в дашборд «Активны сегодня»,
+        // и в обычный список — оба клика открывают ту же карточку.
+        await screen.findAllByText('Анна');
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          const [row] = screen.getAllByText('Анна');
+          fireEvent.click(row);
+          expect(screen.getByText('был сегодня')).toBeTruthy();
+          fireEvent.click(screen.getByText('← Все клиенты'));
+        });
+
+        cleanup();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

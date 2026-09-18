@@ -3,14 +3,16 @@
 // давал разный ответ на UTC и на UTC+3, а CI (всегда UTC) молчал. Проверки
 // ниже сами обходят зоны — так расхождение видно на любой машине, а не только
 // под второй CI-джобой.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   isCalendarDate,
   dateStringMs,
   dateStringParts,
   formatDateString,
+  todayCalendarDate,
 } from './calendarDate';
 import { withTimeZone, forEachTimeZone } from './timeZone.test-helpers';
+import { todayStr } from './format';
 
 describe('forEachTimeZone', () => {
   it('возвращает зону процесса обратно — иначе соседние тесты поедут', () => {
@@ -118,5 +120,49 @@ describe('formatDateString', () => {
 
   it('нечитаемая строка — пусто, а не «Invalid Date»', () => {
     expect(formatDateString('мусор', { day: 'numeric' })).toBe('');
+  });
+});
+
+describe('todayCalendarDate', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // Момент зафиксирован там, где локальная дата машины заведомо расходится
+  // с UTC — иначе тест зеленел бы в любой час прогона и ничего не доказывал
+  // бы (инцидент 2026-09-17 дожил до сегодня именно так).
+  it('одна и та же строка в любой зоне — в отличие от todayStr()', () => {
+    for (const at of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+      const seen = new Set<string>();
+      // Зона ставится раньше системного времени (forEachTimeZone делает это
+      // до вызова fn) — иначе смена TZ после фиксации момента не гарантирует
+      // порядок, в котором баг воспроизводился на проде.
+      forEachTimeZone(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(at));
+        seen.add(todayCalendarDate());
+        vi.useRealTimers();
+      });
+      expect(seen.size, at).toBe(1);
+    }
+  });
+
+  // Контрольная проверка (правило №15): без неё предыдущий тест мог бы
+  // зеленеть просто потому, что момент выбран неудачно.
+  it('контроль: на том же моменте todayStr() в какой-то зоне другой', () => {
+    const seen = new Set<string>();
+    forEachTimeZone(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-18T23:30:00Z'));
+      seen.add(todayStr());
+      vi.useRealTimers();
+    });
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
+  it('совпадает с днём, который отдаёт сервер', () => {
+    forEachTimeZone(() => {
+      expect(todayCalendarDate()).toBe(new Date().toISOString().slice(0, 10));
+    });
   });
 });
