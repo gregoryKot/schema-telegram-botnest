@@ -22,6 +22,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { PATTERNS } from './render-poison-patterns.mjs';
+import { stripComments } from './gate-strip-comments.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'render-poison-baseline.json');
@@ -52,66 +53,6 @@ function walk(dir, acc = []) {
     }
   }
   return acc;
-}
-
-// Комментарии — не поражённый код: в мини-аппе оставлены пояснения «Без
-// backdrop-filter — см. BottomNav.tsx», а webapp/src/index.css объясняет
-// снятие размытия текстом вида «Без backdrop-filter: в установленном…» —
-// с двоеточием сразу после имени свойства. Без вырезания комментария такая
-// строка ложно матчится как настоящее объявление. Стираем `//` и `/* */`
-// пробелами, СОХРАНЯЯ переводы строк — номера строк в отчёте не съезжают
-// (приём — scripts/second-person-blanking.mjs).
-function stripComments(text, isCss) {
-  const n = text.length;
-  let out = '';
-  let i = 0;
-  let quote = null;
-  while (i < n) {
-    const c = text[i];
-    if (quote) {
-      if (c === '\\' && i + 1 < n) {
-        out += text[i + 1] === '\n' ? '\n' : ' ';
-        i += 2;
-        continue;
-      }
-      out += c;
-      if (c === quote) quote = null;
-      i++;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === '`') {
-      quote = c;
-      out += c;
-      i++;
-      continue;
-    }
-    // В CSS `//` комментарием НЕ является: строка `url(https://…)` в одном
-    // объявлении с размытием прятала бы его от гейта (найдено ревью
-    // 2026-08-26). Там режем только `/* */`.
-    if (!isCss && c === '/' && text[i + 1] === '/') {
-      while (i < n && text[i] !== '\n') {
-        out += ' ';
-        i++;
-      }
-      continue;
-    }
-    if (c === '/' && text[i + 1] === '*') {
-      out += '  ';
-      i += 2;
-      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) {
-        out += text[i] === '\n' ? '\n' : ' ';
-        i++;
-      }
-      if (i < n) {
-        out += '  ';
-        i += 2;
-      }
-      continue;
-    }
-    out += c;
-    i++;
-  }
-  return out;
 }
 
 function scanFile(src, isCss) {
