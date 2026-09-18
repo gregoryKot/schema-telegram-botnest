@@ -45,8 +45,8 @@ export function ModeSelectScreen({
         <div
           className="aside-card"
           style={{
-            borderColor: 'var(--c-slate)40',
-            background: 'var(--c-slate)08',
+            borderColor: 'color-mix(in srgb, var(--c-slate) 25%, transparent)',
+            background: 'color-mix(in srgb, var(--c-slate) 3%, transparent)',
           }}
         >
           <div
