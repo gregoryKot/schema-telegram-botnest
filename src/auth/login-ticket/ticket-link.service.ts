@@ -43,14 +43,18 @@ export class TicketLinkService {
           where: { userId: row.userId, provider: row.provider },
         })
       : null;
+    // Этот поток тоже зовёт merge.merge() ниже, значит и здесь второй фактор
+    // переносимого аккаунта пропадает — предпросмотр обязан это показать.
+    const { counts, twoFactorLost } =
+      sameAccount || !row.userId
+        ? { counts: {}, twoFactorLost: false }
+        : await this.merge.summarize(row.userId, targetUserId);
     return {
       provider: row.provider,
       displayName: source?.displayName ?? null,
       sameAccount,
-      summary:
-        sameAccount || !row.userId
-          ? {}
-          : await this.merge.summarize(row.userId),
+      summary: counts,
+      twoFactorLost,
     };
   }
 

@@ -533,7 +533,12 @@ describe('MergeService — лог длительности merge', () => {
 // строк 95-126 хоть раз исполнялись тестом). ────────────────────────────────
 type CountSpec = number | 'THROW' | 'EMPTY_ROWS';
 
-function makeSummarizePrisma(counts: Record<string, CountSpec>) {
+// totp — totpEnabledAt по userId (ключ — String(id)); отсутствующий id читается
+// как null (2FA не включена), как и настоящий Prisma-null.
+function makeSummarizePrisma(
+  counts: Record<string, CountSpec>,
+  totp: Record<string, Date | null> = {},
+) {
   const spy = jest.fn((query: { sql: string; values: unknown[] }) => {
     const sql = normalize(query.sql);
     const table = sql.match(/FROM "(\w+)" WHERE/)?.[1] ?? '';
@@ -542,16 +547,27 @@ function makeSummarizePrisma(counts: Record<string, CountSpec>) {
     if (spec === 'EMPTY_ROWS') return Promise.resolve([]);
     return Promise.resolve([{ c: BigInt(spec) }]);
   });
-  return { prisma: { $queryRaw: spy } as unknown as FakePrisma };
+  const findUnique = jest.fn(({ where }: { where: { id: bigint } }) =>
+    Promise.resolve({ totpEnabledAt: totp[String(where.id)] ?? null }),
+  );
+  return {
+    prisma: {
+      $queryRaw: spy,
+      user: { findUnique },
+    } as unknown as FakePrisma,
+  };
 }
 
 describe('MergeService.summarize()', () => {
+  const SRC = BigInt(1001);
+  const TGT = BigInt(2002);
+
   afterEach(() => jest.restoreAllMocks());
 
   it('считает только таблицы с ненулевым количеством строк у юзера', async () => {
     const { prisma } = makeSummarizePrisma({ Rating: 5, Note: 3 });
-    const result = await new MergeService(prisma).summarize(BigInt(1001));
-    expect(result).toEqual({ Rating: 5, Note: 3 });
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.counts).toEqual({ Rating: 5, Note: 3 });
   });
 
   it('на чистом аккаунте (все счётчики — 0) отчёт пустой, без 0/NaN по каждой таблице', async () => {
@@ -559,8 +575,8 @@ describe('MergeService.summarize()', () => {
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     const { prisma } = makeSummarizePrisma({});
-    const result = await new MergeService(prisma).summarize(BigInt(1001));
-    expect(result).toEqual({});
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.counts).toEqual({});
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
@@ -569,8 +585,8 @@ describe('MergeService.summarize()', () => {
       .spyOn(Logger.prototype, 'warn')
       .mockImplementation(() => undefined);
     const { prisma } = makeSummarizePrisma({ Rating: 5, Note: 'EMPTY_ROWS' });
-    const result = await new MergeService(prisma).summarize(BigInt(1001));
-    expect(result).toEqual({ Rating: 5 });
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.counts).toEqual({ Rating: 5 });
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
@@ -582,12 +598,54 @@ describe('MergeService.summarize()', () => {
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     const { prisma } = makeSummarizePrisma({ Rating: 5, Note: 'THROW' });
-    const result = await new MergeService(prisma).summarize(BigInt(1001));
-    expect(result).toEqual({ Rating: 5 });
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.counts).toEqual({ Rating: 5 });
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Note'));
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Note'));
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('failed tables'),
     );
+  });
+});
+
+// ── twoFactorLost: предупреждение «2FA source-аккаунта не переедет» ────────
+describe('MergeService.summarize() — twoFactorLost', () => {
+  const SRC = BigInt(1001);
+  const TGT = BigInt(2002);
+
+  it('у source 2FA включена, у target — нет: merge её сотрёт, предупреждаем', async () => {
+    const { prisma } = makeSummarizePrisma(
+      {},
+      { [String(SRC)]: new Date(), [String(TGT)]: null },
+    );
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.twoFactorLost).toBe(true);
+  });
+
+  it('2FA включена у обоих — терять нечего', async () => {
+    const { prisma } = makeSummarizePrisma(
+      {},
+      { [String(SRC)]: new Date(), [String(TGT)]: new Date() },
+    );
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.twoFactorLost).toBe(false);
+  });
+
+  it('2FA выключена у обоих — предупреждать не о чем', async () => {
+    const { prisma } = makeSummarizePrisma(
+      {},
+      { [String(SRC)]: null, [String(TGT)]: null },
+    );
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.twoFactorLost).toBe(false);
+  });
+
+  it('2FA включена только у target — у source и так её не было', async () => {
+    const { prisma } = makeSummarizePrisma(
+      {},
+      { [String(SRC)]: null, [String(TGT)]: new Date() },
+    );
+    const result = await new MergeService(prisma).summarize(SRC, TGT);
+    expect(result.twoFactorLost).toBe(false);
   });
 });

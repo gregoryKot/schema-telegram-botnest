@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { useAuth } from '../auth/authContext';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels'; import { useTr } from '../utils/addressForm';
+import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { useTr } from '../utils/addressForm';
+import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -19,6 +21,7 @@ export function MergePage() {
   const summaryStr = params.get('summary') ?? '{}';
   const providerName = params.get('provider') ?? 'провайдер';
   const otherName = params.get('name') ?? '';
+  const twoFactorLost = params.get('twofa') === '1';
 
   let summary: Record<string, number> = {};
   try { summary = JSON.parse(summaryStr); } catch { /* keep empty */ }
@@ -86,6 +89,12 @@ export function MergePage() {
           Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
         </div>
       </div>
+
+      {twoFactorLost && (
+        <div className="section">
+          <TwoFactorLossNote />
+        </div>
+      )}
 
       {error && (
         <div style={{ marginTop: 8, marginBottom: 16, padding: '12px 14px', borderLeft: '3px solid var(--c-rose)', background: 'color-mix(in srgb, var(--c-rose) 6%, transparent)' }}>

@@ -94,7 +94,10 @@ function makeAuth(): AuthMock {
 function makeMerge(): MergeMock {
   return {
     merge: jest.fn().mockResolvedValue(undefined),
-    summarize: jest.fn().mockResolvedValue({ Note: 3, Rating: 12 }),
+    summarize: jest.fn().mockResolvedValue({
+      counts: { Note: 3, Rating: 12 },
+      twoFactorLost: false,
+    }),
   };
 }
 
@@ -503,11 +506,12 @@ describe('AuthAccountController.linkProvider', () => {
       'telegram',
       'tg-1',
     );
-    expect(merge.summarize).toHaveBeenCalledWith(555n);
+    expect(merge.summarize).toHaveBeenCalledWith(555n, 5n);
     expect(res).toEqual({
       merge: true,
       mergeToken: 'merge-tok',
       summary: { Note: 3, Rating: 12 },
+      twoFactorLost: false,
     });
   });
 });

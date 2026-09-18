@@ -277,6 +277,7 @@ describe('AuthTelegramController.telegramWidget — resolveLinkUserId и outcome
       kind: 'merge',
       mergeToken: 'merge-tok',
       summary: { notes: 3 },
+      twoFactorLost: false,
       otherDisplay: 'Old Name',
     };
     flowMocks.signInOrLinkOrMerge.mockResolvedValue(mergeOutcome);

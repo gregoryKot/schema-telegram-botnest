@@ -131,7 +131,9 @@ export function makeDeps() {
 
   const merge = {
     merge: jest.fn().mockResolvedValue(undefined),
-    summarize: jest.fn().mockResolvedValue({ Rating: 12 }),
+    summarize: jest
+      .fn()
+      .mockResolvedValue({ counts: { Rating: 12 }, twoFactorLost: false }),
   } as unknown as MergeService;
 
   const securityLog = { log: jest.fn() } as unknown as SecurityLogService;

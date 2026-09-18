@@ -23,7 +23,36 @@ describe('preview — что человек видит до подтвержде
       displayName: 'Гриша',
       sameAccount: false,
       summary: { Rating: 12 },
+      twoFactorLost: false,
     });
+  });
+
+  // Этот поток тоже зовёт merge.merge() в approve, значит второй фактор
+  // переносимого аккаунта здесь так же пропадает. Предпросмотр обязан сказать
+  // об этом — иначе человек молча остаётся без 2FA (аудит 2026-07, M4).
+  it('второй фактор переносимого аккаунта пропадёт — предпросмотр предупреждает', async () => {
+    const { links, tickets, merge } = makeDeps();
+    (merge.summarize as unknown as jest.Mock).mockResolvedValue({
+      counts: { Rating: 12 },
+      twoFactorLost: true,
+    });
+    const { userCode } = await startLink(tickets);
+
+    const preview = await links.preview(userCode, WEB_USER);
+    expect(preview.twoFactorLost).toBe(true);
+  });
+
+  it('тот же аккаунт — переносить нечего, про 2FA не пугаем', async () => {
+    const { links, tickets, merge } = makeDeps();
+    (merge.summarize as unknown as jest.Mock).mockResolvedValue({
+      counts: { Rating: 12 },
+      twoFactorLost: true,
+    });
+    const { userCode } = await startLink(tickets);
+
+    const preview = await links.preview(userCode, MAX_USER);
+    expect(preview.sameAccount).toBe(true);
+    expect(preview.twoFactorLost).toBe(false);
   });
 
   it('подтверждающий вошёл под тем же аккаунтом — переносить нечего', async () => {

@@ -4,6 +4,7 @@ import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
@@ -17,6 +18,7 @@ interface Preview {
   displayName: string | null;
   sameAccount: boolean;
   summary: Record<string, number>;
+  twoFactorLost: boolean;
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
@@ -155,6 +157,8 @@ function LinkDeviceContent({ code }: { code: string }) {
               </div>
             </>
           )}
+
+          {preview.twoFactorLost && <TwoFactorLossNote />}
 
           <button className="btn" onClick={() => void approve()} disabled={busy} style={{ minHeight: 44 }}>
             {busy ? 'Привязываю…' : 'Разрешить доступ'}
