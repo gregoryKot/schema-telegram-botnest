@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CronLeaderService, LEASE_WINDOW } from '../cron-leader.service';
@@ -15,7 +20,9 @@ import { selfCheckAlerts } from './alert-tracker';
 const POST_DEPLOY_DELAY_MS = 60_000;
 
 @Injectable()
-export class SelfCheckService implements OnApplicationBootstrap {
+export class SelfCheckService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(SelfCheckService.name);
   private readonly bootTimer = new CatchupTimer();
 
@@ -29,6 +36,13 @@ export class SelfCheckService implements OnApplicationBootstrap {
       () => void this.run('post-deploy'),
       POST_DEPLOY_DELAY_MS,
     );
+  }
+
+  // Снять таймер на закрытии — ровно то, для чего CatchupTimer и сделан:
+  // неснятый, он стреляет в закрытый Prisma-пул и роняет e2e-шаг целиком
+  // (pg → net.Socket после teardown), стоит сьюту прожить дольше 60с.
+  onModuleDestroy(): void {
+    this.bootTimer.clear();
   }
 
   // Без аренды второй инстанс (масштабирование/деплой) тикает тем же часом и
