@@ -285,6 +285,44 @@ describe('PracticeSection — баннер ближайшей сессии', () 
     expect(screen.getByText(/с Анна/)).toBeTruthy();
   });
 
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): isToday сравнивал календарный
+  // день `nextSession` с «сегодня» через `new Date().toISOString().slice(0,10)`
+  // — уже UTC, но инлайн-копией; теперь общий todayCalendarDate(). Моменты
+  // зафиксированы там, где зоны заведомо расходятся с UTC. Данные грузятся
+  // асинхронно (api.getTherapyRelation), поэтому первичная загрузка идёт под
+  // текущей зоной процесса, а проверка по зонам — синхронный `rerender`, чтобы
+  // момент смены TZ совпадал с моментом пересчёта isToday.
+  it('сессия на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        mockApi.getTherapyRelation.mockResolvedValue({
+          role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+          nextSession: `${todayCalendarDate()}T10:00:00Z`,
+        });
+        const { unmount, rerender } = renderSection();
+        await screen.findByText('● Сегодня встреча');
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          rerender(
+            <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+              <MemoryRouter>
+                <PracticeSection {...noopProps} />
+              </MemoryRouter>
+            </AddressFormContext.Provider>,
+          );
+          expect(screen.getByText('● Сегодня встреча')).toBeTruthy();
+        });
+
+        unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('терапевт (role=therapist) не видит баннер сессии клиента', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({
       role: 'therapist', status: 'active', partnerName: null, partnerId: null, code: 'x', nextSession: null,
