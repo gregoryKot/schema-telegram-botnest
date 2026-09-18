@@ -8,6 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Мок фабрики `../api` возвращает только `{ api: {...} }` по умолчанию, но
 // хук useTaskActions (используемый внутри PracticeSection) импортирует ещё и
