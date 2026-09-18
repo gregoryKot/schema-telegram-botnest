@@ -59,7 +59,11 @@ vi.mock('./therapistClientSheet/ClientListView', () => ({
       {!loading && (
         <span>
           АКТИВНЫХ:{' '}
-          {clients.filter((c: TherapyClientSummary) => c.lastActiveDate === today).length}
+          {
+            clients.filter(
+              (c: TherapyClientSummary) => c.lastActiveDate === today,
+            ).length
+          }
         </span>
       )}
       <button onClick={onClose}>close-sheet</button>
@@ -353,7 +357,10 @@ describe('TherapistClientSheet — «сегодня» у today считаетс�
           ]);
           const { unmount } = render(<Harness />);
           await waitFor(() =>
-            expect(screen.getByText('АКТИВНЫХ: 1'), `${at} / ${tz}`).toBeTruthy(),
+            expect(
+              screen.getByText('АКТИВНЫХ: 1'),
+              `${at} / ${tz}`,
+            ).toBeTruthy(),
           );
           unmount();
         } finally {

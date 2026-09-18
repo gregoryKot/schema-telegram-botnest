@@ -92,7 +92,10 @@ describe('NextSessionBanner — «сегодня» сверяется с кал�
           nextSession: todayCalendarDate(),
         } as unknown as TherapyRelationInfo;
         const { unmount } = render(<NextSessionBanner relation={relation} />);
-        expect(screen.getByText('Сегодня встреча'), `${at} / ${tz}`).toBeTruthy();
+        expect(
+          screen.getByText('Сегодня встреча'),
+          `${at} / ${tz}`,
+        ).toBeTruthy();
         unmount();
         vi.useRealTimers();
       });
