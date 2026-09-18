@@ -69,9 +69,13 @@ function makeRegistry(handler?: Partial<AuthProviderHandler>): {
   return { registry: { get } as unknown as AuthProviderRegistry, get };
 }
 
-function makeMerge(): MergeService & { summarize: jest.Mock } {
+function makeMerge(
+  twoFactorLost = false,
+): MergeService & { summarize: jest.Mock } {
   return {
-    summarize: jest.fn().mockResolvedValue({ Note: 3, Rating: 12 }),
+    summarize: jest
+      .fn()
+      .mockResolvedValue({ counts: { Note: 3, Rating: 12 }, twoFactorLost }),
   } as unknown as MergeService & { summarize: jest.Mock };
 }
 
@@ -226,13 +230,30 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
       'google',
       'g-42',
     );
-    expect(merge.summarize).toHaveBeenCalledWith(555n);
+    expect(merge.summarize).toHaveBeenCalledWith(555n, 777n);
     expect(outcome).toEqual({
       kind: 'merge',
       mergeToken: 'merge-tok',
       summary: { Note: 3, Rating: 12 },
+      twoFactorLost: false,
       otherDisplay: 'Грег',
     });
+  });
+
+  it('linkUserId задан, конфликт, у source включена 2FA, у target — нет → twoFactorLost: true', async () => {
+    const auth = makeAuth();
+    auth.linkProviderToUser.mockResolvedValue({
+      ok: false,
+      conflictUserId: '555',
+    });
+    const merge = makeMerge(true);
+    const svc = makeService({ auth, merge });
+    const outcome = await svc.signInOrLinkOrMerge('google', makeIdentity(), {
+      linkUserId: 777n,
+    });
+    expect(outcome).toEqual(
+      expect.objectContaining({ kind: 'merge', twoFactorLost: true }),
+    );
   });
 
   it('merge-исход: otherDisplay падает на email, если displayName отсутствует', async () => {
@@ -283,6 +304,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       kind: 'merge',
       mergeToken: 'mt-1',
       summary: { Note: 2 },
+      twoFactorLost: false,
       otherDisplay: 'Грег',
     };
     svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
@@ -294,6 +316,36 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     expect(url).toContain(encodeURIComponent('Грег'));
   });
 
+  it('исход "merge" с twoFactorLost: true → в query есть twofa=1', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'merge',
+      mergeToken: 'mt-1',
+      summary: { Note: 2 },
+      twoFactorLost: true,
+      otherDisplay: 'Грег',
+    };
+    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    const url = res.redirect.mock.calls[0][0] as string;
+    expect(url).toContain('twofa=1');
+  });
+
+  it('исход "merge" с twoFactorLost: false → параметра twofa в query нет вовсе', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'merge',
+      mergeToken: 'mt-1',
+      summary: { Note: 2 },
+      twoFactorLost: false,
+      otherDisplay: 'Грег',
+    };
+    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
+    const url = res.redirect.mock.calls[0][0] as string;
+    expect(url).not.toContain('twofa');
+  });
+
   it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', async () => {
     const svc = makeService({});
     const res = makeRes();
@@ -301,6 +353,7 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       kind: 'merge',
       mergeToken: 'mt-1',
       summary: { Note: 2 },
+      twoFactorLost: false,
       otherDisplay: null,
     };
     svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);

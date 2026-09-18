@@ -31,6 +31,10 @@ export type SignInOutcome =
       kind: 'merge';
       mergeToken: string;
       summary: Record<string, number>;
+      // 2FA source-аккаунта не переезжает (merge-user-rules.ts, totpSecret:
+      // skip) — экран подтверждения обязан об этом сказать, иначе человек
+      // молча теряет второй фактор.
+      twoFactorLost: boolean;
       otherDisplay: string | null;
     };
 
@@ -112,11 +116,15 @@ export class AuthFlowService {
       providerId_,
       identity.providerId,
     );
-    const summary = await this.merge.summarize(sourceId);
+    const { counts, twoFactorLost } = await this.merge.summarize(
+      sourceId,
+      linkUserId,
+    );
     return {
       kind: 'merge',
       mergeToken,
-      summary,
+      summary: counts,
+      twoFactorLost,
       otherDisplay: identity.displayName ?? identity.email ?? null,
     };
   }
@@ -141,6 +149,9 @@ export class AuthFlowService {
         provider,
         name: outcome.otherDisplay ?? '',
       });
+      // Только когда правда теряется — параметр без значения true/false,
+      // чтобы отсутствие читалось как «нечего терять», а не как «неизвестно».
+      if (outcome.twoFactorLost) params.set('twofa', '1');
       res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
       return;
     }

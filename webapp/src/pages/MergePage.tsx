@@ -19,6 +19,7 @@ export function MergePage() {
   const summaryStr = params.get('summary') ?? '{}';
   const providerName = params.get('provider') ?? 'провайдер';
   const otherName = params.get('name') ?? '';
+  const twoFactorLost = params.get('twofa') === '1';
 
   let summary: Record<string, number> = {};
   try { summary = JSON.parse(summaryStr); } catch { /* keep empty */ }
@@ -86,6 +87,14 @@ export function MergePage() {
           Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
         </div>
       </div>
+
+      {twoFactorLost && (
+        <div className="section">
+          <div className="text-sm" style={{ color: 'var(--c-rose)', lineHeight: 1.6, maxWidth: 600 }}>
+            {tr('Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включи её заново в настройках.', 'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включите её заново в настройках.')}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div style={{ marginTop: 8, marginBottom: 16, padding: '12px 14px', borderLeft: '3px solid var(--c-rose)', background: 'color-mix(in srgb, var(--c-rose) 6%, transparent)' }}>

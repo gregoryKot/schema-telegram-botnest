@@ -20,6 +20,10 @@ export interface LinkPreview {
   sameAccount: boolean;
   /** Сколько чего переедет: {'Оценки': 12, …}. Пусто при sameAccount. */
   summary: Record<string, number>;
+  /** Второй фактор переносимого аккаунта не переедет (merge-user-rules.ts,
+   * totpSecret: skip). Этот поток тоже зовёт merge.merge(), поэтому говорим
+   * это вслух и здесь, не только на /account/merge. Пусто при sameAccount. */
+  twoFactorLost: boolean;
 }
 
 /**

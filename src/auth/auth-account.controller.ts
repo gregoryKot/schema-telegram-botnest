@@ -25,6 +25,7 @@ import {
   emailCallbackNextUrl,
 } from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
+import type { LinkProviderResult } from './merge-summary.types';
 import {
   EmailBodyDto,
   TokenBodyDto,
@@ -241,10 +242,7 @@ export class AuthAccountController {
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, unknown>,
     @Req() req: Request,
-  ): Promise<
-    | { ok: true }
-    | { merge: true; mergeToken: string; summary: Record<string, number> }
-  > {
+  ): Promise<LinkProviderResult> {
     const handler = this.providers.get(provider);
     if (!handler.verifyClientData) {
       throw new BadRequestException(
@@ -271,8 +269,9 @@ export class AuthAccountController {
       provider,
       identity.providerId,
     );
-    const summary = await this.merge.summarize(sourceId);
-    return { merge: true, mergeToken, summary };
+    const s = await this.merge.summarize(sourceId, webUser.userId);
+    const { counts: summary, twoFactorLost } = s;
+    return { merge: true, mergeToken, summary, twoFactorLost };
   }
 
   // ─── Unlink a provider ────────────────────────────────────────────────────

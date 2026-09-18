@@ -12,6 +12,8 @@ import {
   type ReassignOutcome,
 } from './merge-subscriptions';
 import { SecurityLogService } from './security-log.service';
+import { twoFactorWillBeLost } from './merge-two-factor';
+import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -87,15 +89,17 @@ export class MergeService {
     private readonly securityLog: SecurityLogService,
   ) {}
 
-  // Returns a row-count summary so the UI can present an informed merge
-  // confirmation ("you'll move 87 ratings, 14 diary entries, …").
-  async summarize(userId: bigint): Promise<Record<string, number>> {
+  // Сводка для экрана подтверждения: сколько строк переедет + пропадёт ли
+  // второй фактор. Флаг отдаётся ЗДЕСЬ, вместе со счётчиками, а не отдельным
+  // методом — иначе подтверждение можно собрать, «забыв» предупредить
+  // (аудит 2026-07, M4; детали — merge-two-factor.ts).
+  async summarize(sourceId: bigint, targetId: bigint): Promise<MergeSummary> {
     const counts: Record<string, number> = {};
     const failed: string[] = [];
     for (const table of USER_OWNED_TABLES) {
       try {
         const rows = await this.prisma.$queryRaw<Array<{ c: bigint }>>(
-          Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${userId}`,
+          Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${sourceId}`,
         );
         const n = Number(rows[0]?.c ?? 0n);
         if (n > 0) counts[table] = n;
@@ -111,7 +115,13 @@ export class MergeService {
         `summarize partial — failed tables: ${failed.join(', ')}`,
       );
     }
-    return counts;
+
+    const twoFactorLost = await twoFactorWillBeLost(
+      this.prisma,
+      sourceId,
+      targetId,
+    );
+    return { counts, twoFactorLost };
   }
 
   // Move all user-owned data from `source` to `target`, then delete `source`.

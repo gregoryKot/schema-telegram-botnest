@@ -17,6 +17,7 @@ interface Preview {
   displayName: string | null;
   sameAccount: boolean;
   summary: Record<string, number>;
+  twoFactorLost: boolean;
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
@@ -154,6 +155,12 @@ function LinkDeviceContent({ code }: { code: string }) {
                 ))}
               </div>
             </>
+          )}
+
+          {preview.twoFactorLost && (
+            <p className="text-sm u-mb14" style={{ color: 'var(--c-rose)', lineHeight: 1.7 }}>
+              {tr('Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включи её заново в настройках.', 'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включите её заново в настройках.')}
+            </p>
           )}
 
           <button className="btn" onClick={() => void approve()} disabled={busy} style={{ minHeight: 44 }}>

@@ -64,7 +64,9 @@ describe('MergePage — без токена', () => {
 describe('MergePage — сводка переносимых данных', () => {
   it('показывает реальные счётчики из ?summary, а не выдуманные', async () => {
     const summary = JSON.stringify({ Rating: 12, Note: 3 });
-    renderAt(`/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=Google&name=user%40gmail.com`);
+    renderAt(
+      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=Google&name=user%40gmail.com`,
+    );
 
     await screen.findByText('оценки потребностей');
     expect(screen.getByText('12')).toBeTruthy();
@@ -80,12 +82,35 @@ describe('MergePage — сводка переносимых данных', () =>
   });
 });
 
+describe('MergePage — потеря двухфакторной защиты', () => {
+  it('с ?twofa=1 показывает предупреждение о том, что 2FA не переедет', async () => {
+    renderAt('/merge?token=abc&twofa=1');
+    await screen.findByText('Объединить аккаунты?');
+
+    expect(
+      screen.getByText(/Двухфакторная защита второго аккаунта не переедет/),
+    ).toBeTruthy();
+  });
+
+  it('без ?twofa в URL предупреждение не рендерится', async () => {
+    renderAt('/merge?token=abc');
+    await screen.findByText('Объединить аккаунты?');
+
+    expect(
+      screen.queryByText(/Двухфакторная защита второго аккаунта не переедет/),
+    ).toBeNull();
+  });
+});
+
 describe('MergePage — подтверждение обязательно', () => {
   it('кнопка «Объединить» задизейблена, пока чекбокс не отмечен', async () => {
     renderAt('/merge?token=abc');
     await screen.findByText('Объединить аккаунты?');
 
-    expect((screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
   });
 
   it('после отметки чекбокса кнопка активна', async () => {
@@ -93,13 +118,18 @@ describe('MergePage — подтверждение обязательно', () =
     await screen.findByText('Объединить аккаунты?');
     fireEvent.click(screen.getByRole('checkbox'));
 
-    expect((screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(
+      (screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
   });
 });
 
 describe('MergePage — успешное объединение', () => {
   it('вызывает POST /api/auth/merge с токеном, обновляет accessToken и уходит на /account', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'new-tok', expiresIn: 900 }));
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { accessToken: 'new-tok', expiresIn: 900 }),
+    );
     const setAccessToken = vi.fn();
     renderAt('/merge?token=secret-token', authValue({ setAccessToken }));
     await screen.findByText('Объединить аккаунты?');
@@ -110,13 +140,17 @@ describe('MergePage — успешное объединение', () => {
     expect(setAccessToken).toHaveBeenCalledWith('new-tok', 900);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/api/auth/merge');
-    expect(JSON.parse((init as RequestInit).body as string)).toEqual({ token: 'secret-token' });
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      token: 'secret-token',
+    });
   });
 });
 
 describe('MergePage — ошибка объединения', () => {
   it('ошибка API показывает причину, не переходит на /account, чекбокс/кнопка остаются', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(409, { message: 'Токен истёк, запроси объединение заново' }));
+    fetchMock.mockResolvedValue(
+      jsonResponse(409, { message: 'Токен истёк, запроси объединение заново' }),
+    );
     renderAt('/merge?token=secret-token');
     await screen.findByText('Объединить аккаунты?');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -124,7 +158,10 @@ describe('MergePage — ошибка объединения', () => {
 
     await screen.findByText(/Токен истёк, запроси объединение заново/);
     expect(screen.queryByText('account-page')).toBeNull();
-    expect((screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(
+      (screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
   });
 });
 
