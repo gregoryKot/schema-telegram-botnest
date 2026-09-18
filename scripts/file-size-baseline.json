@@ -1491,7 +1491,7 @@
   "webapp/src/sections/profile/heatmapShare.tsx": 17,
   "webapp/src/sections/ProfileSection.tsx": 572,
   "webapp/src/sections/SchemasSection.tsx": 514,
-  "webapp/src/sections/TherapistTodaySection.tsx": 226,
+  "webapp/src/sections/TherapistTodaySection.tsx": 225,
   "webapp/src/sections/today/AllTasksOverlay.tsx": 64,
   "webapp/src/sections/today/CaseEntryBlock.tsx": 125,
   "webapp/src/sections/today/CaseEntryCard.tsx": 61,
