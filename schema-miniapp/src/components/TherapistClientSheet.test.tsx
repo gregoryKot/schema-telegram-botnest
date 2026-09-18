@@ -37,7 +37,14 @@ const mockReportClientError = reportClientError as unknown as ReturnType<
 >;
 
 vi.mock('./therapistClientSheet/ClientListView', () => ({
-  ClientListView: ({ clients, loading, loadFailed, onClose, detail }: any) => (
+  ClientListView: ({
+    clients,
+    loading,
+    loadFailed,
+    onClose,
+    detail,
+    today,
+  }: any) => (
     <div data-testid="list-view">
       <span>
         {loading
@@ -46,6 +53,15 @@ vi.mock('./therapistClientSheet/ClientListView', () => ({
             ? 'сбой-загрузки'
             : `Клиентов: ${clients.length}`}
       </span>
+      {/* Тот же расчёт, что StatCards — проверяет проводку today в контейнере,
+          не переизобретает компонент (см. TherapistClientSheet — «сегодня»
+          ниже). */}
+      {!loading && (
+        <span>
+          АКТИВНЫХ:{' '}
+          {clients.filter((c: TherapyClientSummary) => c.lastActiveDate === today).length}
+        </span>
+      )}
       <button onClick={onClose}>close-sheet</button>
       {clients[0] && (
         <button onClick={() => detail.openClient(clients[0])}>
@@ -299,5 +315,53 @@ describe('TherapistClientSheet — каскад аппаратной кнопк�
 
     fireEvent.click(screen.getByText('fire-back'));
     await waitFor(() => expect(screen.getByTestId('list-view')).toBeTruthy());
+  });
+});
+
+// Регрессия инцидента 2026-09-17: `today` считался локальной зоной машины
+// (todayStr()), а `lastActiveDate` приходит от сервера календарным днём в
+// UTC — терапевт с UTC+10 после полудня видел «активных» ноль. Моменты
+// зафиксированы там, где локальная дата машины заведомо расходится с UTC,
+// поэтому тест краснеет в любой час прогона, а не только когда TZ раннера
+// разошёлся с UTC. TZ ставится вручную вокруг всего await-блока (а не через
+// forEachTimeZone) — зона обязана оставаться выставленной, пока идёт
+// асинхронная догрузка списка клиентов и повторный рендер после неё;
+// forEachTimeZone сбрасывает её сразу после синхронного вызова fn, не
+// дожидаясь промиса.
+describe('TherapistClientSheet — «сегодня» у today считается календарным днём сервера', () => {
+  const ZONES = [
+    'UTC',
+    'Asia/Jerusalem',
+    'Australia/Sydney',
+    'America/Los_Angeles',
+  ];
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('клиент с lastActiveDate = todayCalendarDate() — «АКТИВНЫХ: 1» в любой зоне', async () => {
+    for (const at of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+      for (const tz of ZONES) {
+        const prevTz = process.env.TZ;
+        process.env.TZ = tz;
+        try {
+          vi.useFakeTimers({ toFake: ['Date'] });
+          vi.setSystemTime(new Date(at));
+          mockApi.getTherapyClients.mockResolvedValue([
+            { ...client, lastActiveDate: todayCalendarDate() },
+          ]);
+          const { unmount } = render(<Harness />);
+          await waitFor(() =>
+            expect(screen.getByText('АКТИВНЫХ: 1'), `${at} / ${tz}`).toBeTruthy(),
+          );
+          unmount();
+        } finally {
+          vi.useRealTimers();
+          if (prevTz === undefined) delete process.env.TZ;
+          else process.env.TZ = prevTz;
+        }
+      }
+    }
   });
 });
