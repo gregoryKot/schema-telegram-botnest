@@ -161,8 +161,8 @@ export function SafePlaceEx({
           <div
             className="aside-card"
             style={{
-              borderColor: 'var(--c-moss)40',
-              background: 'var(--c-moss)08',
+              borderColor: 'color-mix(in srgb, var(--c-moss) 25%, transparent)',
+              background: 'color-mix(in srgb, var(--c-moss) 3%, transparent)',
             }}
           >
             <div

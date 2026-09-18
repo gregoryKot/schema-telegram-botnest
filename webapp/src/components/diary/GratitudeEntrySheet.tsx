@@ -77,7 +77,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       title={<>Три вещи,<br /><span className="it">за которые сегодня – спасибо</span></>}
       lede="Даже самое маленькое. Особенно – самое маленькое. Запоминается то, что назвал."
       aside={
-        <div className="aside-card" style={{ borderColor: 'var(--c-moss)40', background: 'var(--c-moss)08', position: 'sticky', top: 40 }}>
+        <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--c-moss) 25%, transparent)', background: 'color-mix(in srgb, var(--c-moss) 3%, transparent)', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Почему это работает</div>
           <h3>Мозг учится замечать</h3>
           <p className="body">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>

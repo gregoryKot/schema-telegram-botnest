@@ -18,7 +18,7 @@ export function DeleteBtn({ color, onClick }: { color: string; onClick: () => vo
   );
   return (
     <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }} role="presentation" onClick={e => e.stopPropagation()}>
-      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 'var(--r-8)', border: 'none', background: 'var(--c-rose)18', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
+      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 'var(--r-8)', border: 'none', background: 'color-mix(in srgb, var(--c-rose) 9%, transparent)', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
       <button onClick={() => setConfirm(false)} style={{ padding: '8px 14px', borderRadius: 'var(--r-8)', border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
     </div>
   );
