@@ -6,6 +6,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { NextSessionBanner } from './NextSessionBanner';
 import type { TherapyRelationInfo } from '../../api';
+import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 afterEach(() => {
   cleanup();
@@ -71,5 +73,29 @@ describe('NextSessionBanner — содержимое', () => {
     } as unknown as TherapyRelationInfo;
     render(<NextSessionBanner relation={relation} />);
     expect(screen.getByText('с Анна Петровна')).toBeTruthy();
+  });
+});
+
+describe('NextSessionBanner — «сегодня» сверяется с календарным днём UTC, а не зоной машины (инцидент 2026-09-17)', () => {
+  // Моменты зафиксированы там, где локальная дата машины заведомо расходится
+  // с UTC: в Сиднее это уже 19-е, в Лос-Анджелесе ещё 18-е — тест краснеет
+  // в любой час прогона, а не только когда TZ раннера случайно не совпал с UTC.
+  it('nextSession на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', () => {
+    for (const at of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+      // Зона ставится раньше системного времени — тем же порядком, что и в
+      // shared/src/utils/calendarDate.test.ts.
+      forEachTimeZone((tz) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(at));
+        const relation = {
+          role: 'client',
+          nextSession: todayCalendarDate(),
+        } as unknown as TherapyRelationInfo;
+        const { unmount } = render(<NextSessionBanner relation={relation} />);
+        expect(screen.getByText('Сегодня встреча'), `${at} / ${tz}`).toBeTruthy();
+        unmount();
+        vi.useRealTimers();
+      });
+    }
   });
 });

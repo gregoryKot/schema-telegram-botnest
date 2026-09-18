@@ -16,6 +16,7 @@ import {
 import { useRef, useState } from 'react';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 
 vi.mock('../api', () => ({
   api: {
