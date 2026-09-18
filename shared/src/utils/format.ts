@@ -40,11 +40,18 @@ export function fmtDateLong(dateStr: string): string {
   return `${parseInt(d)} ${MONTHS_LONG[parseInt(m) - 1]}`;
 }
 
+/** YYYY-MM-DD произвольной даты в ЛОКАЛЬНОЙ зоне. Нужен всем, кто считает
+ *  «сегодня/вчера» рядом с todayStr(): смешивать его с
+ *  `toISOString().split('T')[0]` (UTC) нельзя — в зонах, где локальная дата
+ *  уже другая, получаются два разных «сегодня». */
+export function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /** YYYY-MM-DD for today in the local browser timezone */
 export function todayStr(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return localDateStr(new Date());
 }

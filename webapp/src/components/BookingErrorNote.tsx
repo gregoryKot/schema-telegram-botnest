@@ -7,7 +7,7 @@ export function BookingErrorNote({ kind }: { kind: 'taken' | 'error' }) {
   }
   return (
     <p style={noteSt}>
-      Заявка не сохранилась: сбой на нашей стороне, повторная отправка не поможет.
+      Заявка не сохранилась: сбой на моей стороне, повторная отправка не поможет.
       Самый быстрый путь — написать в Telegram: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a>, запишу вручную.
     </p>
   );

@@ -13,7 +13,7 @@ export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
       style={{
         display: 'flex', alignItems: 'center', gap: 'var(--space-10)', justifyContent: 'space-between', flexWrap: 'wrap',
         padding: '10px 16px', marginBottom: 20,
-        background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 'var(--r-12)',
+        background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)', borderRadius: 'var(--r-12)',
         fontSize: 13, color: 'var(--c-rose)', lineHeight: 1.5,
       }}
     >
@@ -25,7 +25,7 @@ export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
       </span>
       <button onClick={onRetry} style={{
         flexShrink: 0, padding: '6px 14px', borderRadius: 'var(--r-10)', border: 'none', fontFamily: 'inherit',
-        background: 'rgba(248,113,113,0.15)', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
       }}>
         Обновить
       </button>

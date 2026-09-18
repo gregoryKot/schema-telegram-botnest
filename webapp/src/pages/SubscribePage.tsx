@@ -93,7 +93,7 @@ export function SubscribePage() {
       <>
         <div style={icon}>✓</div>
         <h1 style={h1}>Спасибо за поддержку!</h1>
-        <p style={sub_}>Подписка оформлена. Управлять ей можно по ссылке, которую мы пришлём, или в настройках.</p>
+        <p style={sub_}>Подписка оформлена. Управлять ею можно по ссылке, которую мы пришлём, или в настройках.</p>
         <a href="/" style={primaryBtn}>На главную</a>
       </>
     );
@@ -113,7 +113,7 @@ export function SubscribePage() {
     body = (
       <>
         <h1 style={{ ...h1, marginTop: 8 }}>Поддержать подпиской</h1>
-        <p style={sub_}>SchemeHappens бесплатный. Регулярная поддержка помогает его развивать. Отписаться можно в любой момент.</p>
+        <p style={sub_}>«Всё по схеме» бесплатно. Регулярная поддержка помогает развивать проект. Отписаться можно в любой момент.</p>
         {ret === 'fail' && <p style={{ ...sub_, color: 'var(--accent-red)', fontSize: 14 }}>Оплата не прошла. Можно попробовать снова.</p>}
 
         <div style={{ display: 'flex', gap: 'var(--space-10)', margin: '4px 0 16px' }}>
@@ -139,7 +139,7 @@ export function SubscribePage() {
         <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
           <span className="u-sub13-lh16">
-            Согласен на <b>регулярные автосписания</b> раз в {periodLabel(period)}. Отменить можно в любой момент.
+            Соглашаюсь на <b>регулярные автосписания</b> раз в {periodLabel(period)}. Отменить можно в любой момент.
           </span>
         </label>
 

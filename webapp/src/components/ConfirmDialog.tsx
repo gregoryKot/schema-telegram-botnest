@@ -141,8 +141,11 @@ export function ConfirmDialog({
               padding: '13px',
               borderRadius: 'var(--r-14)',
               border: 'none',
-              background: danger ? 'var(--c-rose)' : 'var(--accent)',
-              color: '#fff',
+              background: danger ? 'var(--accent-red)' : 'var(--accent)',
+              // Не '#fff': в тёмной теме осветляются и акцент, и красный —
+              // белый на них даёт 3.20:1 / 2.78:1. Токены «текст на заливке»
+              // уже посчитаны под свою тему каждый.
+              color: danger ? 'var(--on-accent-red)' : 'var(--on-accent)',
               fontSize: 15,
               fontWeight: 600,
               cursor: busy ? 'default' : 'pointer',

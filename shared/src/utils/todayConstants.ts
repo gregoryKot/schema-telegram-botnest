@@ -1,4 +1,4 @@
-import { todayStr } from './format';
+import { localDateStr, todayStr } from './format';
 import type { DayHistory } from '../types';
 
 // Константы «сегодня/вчера» на момент загрузки бандла — единственная копия
@@ -8,8 +8,7 @@ export const TODAY_DATE = todayStr();
 export const TODAY_KEY = 'celebrated_' + TODAY_DATE;
 export const YESTERDAY_DATE = (() => {
   const [y, m, d] = TODAY_DATE.split('-').map(Number);
-  const prev = new Date(y, m - 1, d - 1);
-  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
+  return localDateStr(new Date(y, m - 1, d - 1));
 })();
 
 // Заполнение дырок в истории трекера пустыми днями (read-after-write: сервер
@@ -28,7 +27,13 @@ export function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   const cursor = new Date();
   cursor.setDate(cursor.getDate() - 1); // start from yesterday
   for (let i = 0; i < 60; i++) {
-    const date = cursor.toISOString().split('T')[0];
+    // localDateStr, а НЕ toISOString(): TODAY_DATE выше считается по
+    // локальной зоне, и в зонах, где локальная дата уже другая (UTC+10
+    // после полудня UTC), UTC-курсор давал «вчера», равное локальному
+    // сегодня — день выпадал из календаря истории, а тест падал только в
+    // те часы, когда даты расходятся (джоба TZ=Australia/Sydney, правило
+    // про TZ-тесты в CLAUDE.md).
+    const date = localDateStr(cursor);
     if (date < earliest) break;
     filled.push(byDate.get(date) ?? { date, ratings: {} });
     cursor.setDate(cursor.getDate() - 1);

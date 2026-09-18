@@ -14,7 +14,7 @@ export function LogoutSection() {
         {/* «Выйти» — инфинитив: ни рода, ни формы обращения не несёт. */}
         <Row
           label="Выйти"
-          color="var(--danger, #e5484d)"
+          color="var(--accent-red)"
           onClick={() => void logout()}
         />
       </div>

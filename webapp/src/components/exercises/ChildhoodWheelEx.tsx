@@ -323,8 +323,8 @@ export function ChildhoodWheelEx({
           <div
             className="aside-card"
             style={{
-              borderColor: 'var(--c-amber)40',
-              background: 'var(--c-amber)08',
+              borderColor: 'color-mix(in srgb, var(--c-amber) 25%, transparent)',
+              background: 'color-mix(in srgb, var(--c-amber) 3%, transparent)',
             }}
           >
             <div

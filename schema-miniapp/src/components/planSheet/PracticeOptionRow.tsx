@@ -82,13 +82,16 @@ export function PracticeOptionRow({
             height: 32,
             borderRadius: 'var(--r-8)',
             flexShrink: 0,
-            background: 'rgba(255,100,100,0.1)',
+            background:
+              'color-mix(in srgb, var(--accent-red) 10%, transparent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: deleting ? 'default' : 'pointer',
             fontSize: 16,
-            color: deleting ? 'rgba(255,100,100,0.2)' : 'rgba(255,100,100,0.5)',
+            color: deleting
+              ? 'color-mix(in srgb, var(--accent-red) 20%, transparent)'
+              : 'color-mix(in srgb, var(--accent-red) 50%, transparent)',
           }}
         >
           ×

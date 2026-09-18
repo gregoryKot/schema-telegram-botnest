@@ -67,7 +67,7 @@ export function DonateNudge() {
         <div style={{ fontSize: 44, marginBottom: 12 }}>💛</div>
         <div
           style={{
-            fontFamily: 'var(--serif, inherit)',
+            fontFamily: 'var(--serif)',
             fontSize: 22,
             fontWeight: 700,
             color: 'var(--text)',

@@ -104,20 +104,34 @@
   --c-slate:   #5d6d8a;
   --c-plum:    #8a5a85;
   --c-clay:    #b06f4a;
-  /* --c-rose как текст на --bg-rail (кнопка «Выйти» в сайдбаре) даёт только
-     3.12:1 в светлой теме — темнее вариант того же оттенка (а11y аудит
-     2026-08). В тёмной теме обычный --c-rose уже 6.82:1, отдельного значения
-     не нужно (см. переопределение ниже). */
-  --c-rose-strong: #ad4545; /* 4.76:1 к --bg-rail (#efebe1) */
+  /* --c-rose — палитровый оттенок (схемы, графики, декоративные заливки), как
+     текстом он не читается: 3.32:1 к --bg, 3.71:1 к --surface, 3.12:1 к
+     --bg-rail в светлой теме (а11y аудит 2026-08). Отсюда второе значение
+     того же оттенка — «красный, которым можно писать». В тёмной теме обычный
+     --c-rose уже 6.60:1 к --bg, отдельного значения не нужно (переопределение
+     ниже). */
+  --c-rose-strong: #ad4545; /* 5.06:1 к --bg, 5.65:1 к --surface, 4.75:1 к --bg-rail */
 
   /* Legacy accent-color aliases (used in existing components).
      --accent-indigo теперь = --accent (shared/theme/tokens.css). */
   --accent-blue:   var(--c-slate);
   --accent-green:  var(--c-moss);
   --accent-yellow: var(--c-amber);
-  --accent-red:    var(--c-rose);
+  /* Роль «ошибка/опасность» — текст (сообщения об ошибке, «Выйти», «Удалить
+     все данные»), поэтому берётся читаемый вариант, а не палитровый --c-rose:
+     с ним ошибки рисовались на 3.32:1 и не проходили WCAG AA. */
+  --accent-red:    var(--c-rose-strong);
   --accent-orange: var(--c-clay);
   --accent-pink:   var(--c-plum);
+
+  /* Текст НА залитом --accent-red (кнопка «Снять роль», «Да, удалить всё
+     навсегда») — та же роль, что --on-accent у акцента, и по той же причине
+     отдельным токеном: белый годится только в светлой теме. Белый на светлом
+     --accent-red — 5.65:1, в тёмной теме тот же белый на #d68585 даёт 2.78:1
+     и WCAG AA (4.5:1) не проходит — см. переопределение ниже.
+     Инвариант пары (≥4.5:1 в обеих темах, оба фронтенда) держит тест
+     index.css.contrast.test.ts: меняешь --accent-red — пересчитается само. */
+  --on-accent-red: #ffffff;
 
   /* Legacy aliases for backward compat */
   --border-color:  var(--line);
@@ -168,7 +182,9 @@ html[data-theme="dark"] {
   /* --accent и производные — shared/src/theme/tokens.css, см. светлую тему выше. */
 
   --c-rose:    #d68585;
-  --c-rose-strong: var(--c-rose); /* тёмная тема: обычный --c-rose уже 6.82:1 к --bg-rail */
+  /* тёмная тема: обычный --c-rose и так читается — 6.60:1 к --bg, 6.03:1 к
+     --surface, 6.82:1 к --bg-rail, отдельное значение не нужно. */
+  --c-rose-strong: var(--c-rose);
   --c-amber:   #d9a456;
   --c-ochre:   #c5a247;
   --c-moss:    #91a87a;
@@ -180,9 +196,14 @@ html[data-theme="dark"] {
   --accent-blue:   var(--c-slate);
   --accent-green:  var(--c-moss);
   --accent-yellow: var(--c-amber);
-  --accent-red:    var(--c-rose);
+  --accent-red:    var(--c-rose-strong);
   --accent-orange: var(--c-clay);
   --accent-pink:   var(--c-plum);
+
+  /* Тёмная тема осветляет красный до #d68585, и белый текст на нём даёт
+     2.78:1 — ниже нормы. Тёплые ночные чернила (то же значение, что
+     --on-accent тёмной темы в shared/src/theme/tokens.css) — 6.70:1. */
+  --on-accent-red: #16120f;
 
   --border-color:  var(--line);
   --sheet-bg:      var(--bg-elev);
@@ -318,11 +339,12 @@ a { color: inherit; text-decoration: none; }
   transition: background .1s, color .1s;
 }
 .sb-item:hover { background: var(--surface-2); color: var(--text); }
-/* Кнопка «Выйти» — обычный --c-rose как текст на --bg-rail даёт только
-   3.12:1 в светлой теме (а11y аудит 2026-08); hover переопределён отдельно,
-   иначе общий .sb-item:hover перекрасил бы её в нейтральный --text. */
-.sb-item.sb-danger { color: var(--c-rose-strong); }
-.sb-item.sb-danger:hover { background: var(--surface-2); color: var(--c-rose-strong); }
+/* Кнопка «Выйти» — роль «опасность», то есть --accent-red (обычный --c-rose
+   как текст на --bg-rail даёт только 3.12:1 в светлой теме, а11y аудит
+   2026-08); hover переопределён отдельно, иначе общий .sb-item:hover
+   перекрасил бы её в нейтральный --text. */
+.sb-item.sb-danger { color: var(--accent-red); }
+.sb-item.sb-danger:hover { background: var(--surface-2); color: var(--accent-red); }
 .sb-item.is-active {
   background: color-mix(in srgb, var(--accent) 9%, transparent);
   /* --accent-hi, не --accent: обычный --accent как текст здесь даёт только
@@ -1087,7 +1109,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   background: var(--accent);
   border-radius: var(--r-12);
   padding: 10px 16px;
-  color: var(--on-accent, #fff);
+  color: var(--on-accent);
   font-size: 13px; font-weight: 700;
   text-decoration: none;
 }
@@ -1116,7 +1138,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   padding-top: var(--space-12);
   border-top: 1px dashed color-mix(in srgb, currentColor 20%, transparent);
   font-size: 13px;
-  color: var(--text-sub, inherit);
+  color: var(--text-sub);
 }
 .install-guide-native {
   display: block; width: 100%;
@@ -1124,13 +1146,13 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   background: var(--accent);
   border: none; border-radius: var(--r-12);
   padding: 11px 16px; margin-bottom: var(--space-10);
-  color: var(--on-accent, #fff);
+  color: var(--on-accent);
   font-size: 13.5px; font-weight: 700;
   font-family: inherit; cursor: pointer;
 }
-.install-guide-browser { font-weight: 600; color: var(--text, inherit); margin-bottom: var(--space-6); }
+.install-guide-browser { font-weight: 600; color: var(--text); margin-bottom: var(--space-6); }
 .install-guide-steps { margin: 0 0 10px; padding-left: var(--space-20); display: grid; gap: 5px; line-height: 1.5; }
-.install-guide-note { font-size: 12px; color: var(--text-faint, inherit); line-height: 1.5; }
+.install-guide-note { font-size: 12px; color: var(--text-faint); line-height: 1.5; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -1253,7 +1275,10 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .bottom-sheet-desktop > div {
   width: 100%;
-  max-width: var(--modal-width, 560px);
+  /* было var(--modal-width, 560px) — крючок для переопределения, которым за
+     всё время никто не воспользовался: свойство не задано ни в одном файле,
+     то есть работал всегда фолбэк. */
+  max-width: 560px;
   pointer-events: all;
 }
 
@@ -1493,7 +1518,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 
 /* Letter */
 .letter-paper {
-  background: linear-gradient(transparent 31px, color-mix(in srgb, var(--c-ochre, #a17f1f) 14%, transparent) 31px, color-mix(in srgb, var(--c-ochre, #a17f1f) 14%, transparent) 32px, transparent 32px);
+  background: linear-gradient(transparent 31px, color-mix(in srgb, var(--c-ochre) 14%, transparent) 31px, color-mix(in srgb, var(--c-ochre) 14%, transparent) 32px, transparent 32px);
   background-size: 100% 32px; background-position: 0 4px;
   border: 1px solid var(--line); border-radius: var(--r-4); padding: 28px 32px;
   box-shadow: inset 16px 0 0 -15px color-mix(in srgb, var(--c-rose) 35%, transparent);
@@ -1503,7 +1528,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .letter-meta { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--text-faint); margin-top: 18px; }
 
 /* Safe place */
-.sp-scene { position: relative; height: 200px; border-radius: var(--r-14); overflow: hidden; border: 1px solid var(--line); background: radial-gradient(120% 80% at 30% 100%, color-mix(in srgb, var(--c-moss) 24%, transparent), transparent 60%), radial-gradient(80% 60% at 80% 30%, color-mix(in srgb, var(--c-amber) 18%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--c-teal, #4f8285) 12%, transparent), color-mix(in srgb, var(--c-moss) 6%, transparent)); margin-bottom: 28px; display: grid; place-items: center; }
+.sp-scene { position: relative; height: 200px; border-radius: var(--r-14); overflow: hidden; border: 1px solid var(--line); background: radial-gradient(120% 80% at 30% 100%, color-mix(in srgb, var(--c-moss) 24%, transparent), transparent 60%), radial-gradient(80% 60% at 80% 30%, color-mix(in srgb, var(--c-amber) 18%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--c-teal) 12%, transparent), color-mix(in srgb, var(--c-moss) 6%, transparent)); margin-bottom: 28px; display: grid; place-items: center; }
 .sp-scene-text { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--text-sub); letter-spacing: 0.02em; padding: 0 24px; text-align: center; }
 .sp-sense-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-bottom: var(--space-32); border-top: 1px solid var(--line); }
 .sp-sense { padding: 18px 24px 18px 0; border-bottom: 1px solid var(--line); }
@@ -1527,7 +1552,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .cw-track-fill { position: absolute; height: 1px; background: var(--c-color, var(--accent)); left: 0; top: 0; }
 .cw-thumb { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--c-color, var(--accent)); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px var(--bg); pointer-events: none; }
 .cw-row-value { font-family: var(--serif); font-size: 26px; line-height: 1; color: var(--c-color, var(--accent)); text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.cw-row-value .of { font-size: 12px; color: var(--text-faint); font-family: var(--sans, inherit); margin-left: 1px; }
+.cw-row-value .of { font-size: 12px; color: var(--text-faint); font-family: var(--sans); margin-left: 1px; }
 .cw-wheel-card { border: 1px solid var(--line); border-radius: var(--r-14); padding: var(--space-24); background: var(--surface); position: sticky; top: 40px; }
 .cw-wheel-card h4 { font-size: 13px; font-weight: 600; margin-bottom: var(--space-4); }
 .cw-wheel-card .sub { font-size: 12px; color: var(--text-faint); margin-bottom: var(--space-16); }
