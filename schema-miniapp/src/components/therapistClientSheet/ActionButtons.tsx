@@ -1,5 +1,5 @@
 import { pressable } from '../../utils/a11y';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { ClientDetail } from './types';
 
 interface ActionButtonsProps {
@@ -90,7 +90,7 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
         label="Концептуализация"
         sub={
           concept?.updatedAt
-            ? `Обновлено ${fmtDate(concept.updatedAt.slice(0, 10))}`
+            ? `Обновлено ${fmtDate(momentDayKey(concept.updatedAt))}`
             : undefined
         }
         onClick={() => setShowConceptSheet(true)}

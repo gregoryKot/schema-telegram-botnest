@@ -1,7 +1,7 @@
 import type { UserTask } from '../../api';
 import { GlyphArrowLeft } from '../../components/exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { resolveTaskText, taskStatusMark } from './helpers';
 
 // Оверлей «Все задания» экрана «Сегодня». Вынесено из TodaySection.tsx
@@ -48,7 +48,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
                 <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{taskStatusMark(task.done)}</span>
                 <div className="u-fill">
                   <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-                  {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
+                  {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(momentDayKey(task.completedAt))}</div>}
                 </div>
               </div>
             ))}

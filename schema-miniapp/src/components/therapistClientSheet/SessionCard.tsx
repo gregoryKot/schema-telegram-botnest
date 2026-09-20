@@ -1,6 +1,6 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
 import { ClientDetail } from './types';
 
@@ -127,15 +127,16 @@ export function SessionCard({
               {...pressable(() => {
                 setLocalStartDate(
                   selectedClient.therapyStartDate ??
-                    selectedClient.relationCreatedAt?.slice(0, 10) ??
-                    '',
+                    (selectedClient.relationCreatedAt
+                      ? momentDayKey(selectedClient.relationCreatedAt)
+                      : ''),
                 );
                 setEditingStartDate(true);
               })}
             >
               <span className="u-sub13">
                 {effectiveStart
-                  ? `С ${fmtDate(effectiveStart.slice(0, 10))}`
+                  ? `С ${fmtDate(momentDayKey(effectiveStart))}`
                   : 'Начало не указано'}
               </span>
               {duration && <span className="u-sub12">· {duration}</span>}

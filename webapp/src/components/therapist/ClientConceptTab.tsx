@@ -1,5 +1,5 @@
 import type { ClientConceptualization } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
 import { CONCEPT_FIELDS } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
@@ -181,7 +181,7 @@ export function ClientConceptTab({ detail }: Props) {
                       >
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
                         <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {vNum}</span>
-                        <span className="u-faint11">{fmtDate(h.savedAt.slice(0, 10))}</span>
+                        <span className="u-faint11">{fmtDate(momentDayKey(h.savedAt))}</span>
                         <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
                       </button>
                       {isOpen && (

@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
-import { fmtDate } from '../utils/format';
+import { fmtDate, momentDayKey } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { useNeedData, NEED_ORDER } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
@@ -143,7 +143,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               <h3>{tr('Твои выраженные схемы', 'Ваши выраженные схемы')}</h3>
               {ysqCompletedAt && (
                 <span className="u-sub12">
-                  Тест от {fmtDate(ysqCompletedAt.slice(0, 10))}
+                  Тест от {fmtDate(momentDayKey(ysqCompletedAt))}
                 </span>
               )}
             </div>
@@ -195,7 +195,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               {ysqProgressAnswered !== null
                 ? `продолжить (${ysqProgressAnswered} из 116) →`
                 : ysqCompletedAt
-                  ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты →`
+                  ? `пройден ${fmtDate(momentDayKey(ysqCompletedAt))} · результаты →`
                   : 'Начать →'}
             </button>
           </div>

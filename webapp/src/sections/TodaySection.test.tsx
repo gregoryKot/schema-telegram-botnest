@@ -10,6 +10,7 @@ import { AddressFormContext } from '../utils/addressForm';
 import { TodaySection } from './TodaySection';
 import { saveDraft, clearDraft } from '../utils/drafts';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 /** Дата N дней назад от реального «сегодня» теста (без хардкода абсолютной даты). */
 function daysAgoStr(n: number): string {
@@ -559,4 +560,35 @@ describe('TodaySection — оверлей «Все задания»: отмет�
 
     await screen.findByText('Новое задание');
   });
+});
+
+// ── Регрессия «момент, показанный по Гринвичу» ───────────────────────────────
+// Зеркало инцидента 2026-09-17: календарный день там читали локальной
+// полночью, а МОМЕНТ здесь резали строкой — `createdAt.slice(0, 10)` давал
+// гринвичский день и сравнивался с локальным `todayStr()`, `slice(11, 16)`
+// показывал гринвичское время. Проверка замораживает «сейчас» на моментах,
+// где гринвичский день и локальный заведомо разные, и сама обходит зоны —
+// поэтому краснеет в любой час прогона, а не только во второй CI-джобе.
+describe('TodaySection — день и время записи в зоне читателя', () => {
+  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
+
+  for (const iso of MOMENTS) {
+    it(`запись, сделанная в ${iso}, подписана «Сегодня» и локальным временем`, async () => {
+      await forEachTimeZoneAsync(async tz => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(iso));
+        try {
+          mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'ссора с коллегой', createdAt: iso }]);
+          renderSection();
+          await screen.findByText('ссора с коллегой');
+          const at = new Date(iso);
+          const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+          expect(screen.getByText(`Сегодня · ${hhmm}`), tz).toBeTruthy();
+        } finally {
+          cleanup();
+          vi.useRealTimers();
+        }
+      });
+    });
+  }
 });
