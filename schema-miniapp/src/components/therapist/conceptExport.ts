@@ -1,5 +1,5 @@
 import { getHost } from '../../../../shared/src/host';
-import { fmtDate, todayStr } from '../../utils/format';
+import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import type { TherapyClientSummary, ClientConceptualization } from '../../api';
 
@@ -25,7 +25,7 @@ export function buildConceptExport({
     selectedClient.name ??
     `ID ${selectedClient.telegramId}`;
   const date = concept.updatedAt
-    ? fmtDate(concept.updatedAt.slice(0, 10))
+    ? fmtDate(momentDayKey(concept.updatedAt))
     : todayStr();
   const c = { ...concept, ...localConcept };
   const schemaNames = activeSchemaIds.map((id) => {

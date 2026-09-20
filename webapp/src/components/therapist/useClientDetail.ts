@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../../api';
-import { fmtDate, todayStr } from '../../utils/format';
+import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useTr } from '../../utils/addressForm';
@@ -285,7 +285,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   function buildExportText(): string {
     if (!selectedClient || !concept) return '';
     const clientName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
-    const date = concept.updatedAt ? fmtDate(concept.updatedAt.slice(0, 10)) : todayStr();
+    const date = concept.updatedAt ? fmtDate(momentDayKey(concept.updatedAt)) : todayStr();
     const c = { ...concept, ...localConcept };
     const schemaNames = activeSchemaIds.map(id => {
       const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);

@@ -19,6 +19,7 @@ import { TodaySection } from './TodaySection';
 import { TODAY_MORE_KEY } from './today/helpers';
 import { setSecondaryHidden } from '../utils/todayFocus';
 import { ONBOARDING_DONE_KEY } from './today/onboardingSteps';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Даты — относительные к моменту запуска теста (не литералы): компонент
 // сравнивает createdAt с «сегодня» (todayStr()), и фиксированная дата в
@@ -51,11 +52,19 @@ vi.mock('./today/SecondaryCards', () => ({
     recentDiaries,
     onSetDiaryTask,
   }: {
-    recentDiaries: { label: string }[];
+    recentDiaries: { label: string; dateStr: string; time: string }[];
     onSetDiaryTask: () => void;
   }) => (
     <div data-testid="secondary-cards">
       diaries={recentDiaries.length}
+      {/* Подпись дня и времени — ровно то, что рисует настоящий
+          SecondaryCards: без неё регрессию зоны в моке не увидеть. */}
+      {recentDiaries.map((e, i) => (
+        <div key={i} data-testid="diary-stamp">
+          {e.dateStr}
+          {e.time ? ` · ${e.time}` : ''}
+        </div>
+      ))}
       <button onClick={onSetDiaryTask}>secondary-set-diary-task</button>
     </div>
   ),
@@ -415,4 +424,45 @@ describe('TodaySection — одно главное действие у нови�
     fireEvent.click(screen.getByText(/Разобрать · ≈ 3 мин/));
     expect(onStartCase).toHaveBeenCalledTimes(1);
   });
+});
+
+// ── Регрессия «момент, показанный по Гринвичу» ───────────────────────────────
+// Зеркало инцидента 2026-09-17: календарный день там читали локальной
+// полночью, а МОМЕНТ здесь резали строкой — `createdAt.slice(0, 10)` давал
+// гринвичский день и сравнивался с локальным `todayStr()`, `slice(11, 16)`
+// показывал гринвичское время. Проверка замораживает «сейчас» на моментах,
+// где гринвичский день и локальный заведомо разные, и сама обходит зоны —
+// поэтому краснеет в любой час прогона, а не только во второй CI-джобе.
+describe('TodaySection — день и время записи в зоне читателя', () => {
+  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
+
+  for (const iso of MOMENTS) {
+    it(`запись, сделанная в ${iso}, подписана «Сегодня» и локальным временем`, async () => {
+      await forEachTimeZoneAsync(async (tz) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(iso));
+        localStorage.clear();
+        try {
+          mockApi.getSchemaDiary.mockResolvedValue([
+            { id: 1, trigger: 'триггер', createdAt: iso },
+          ]);
+          mockApi.getModeDiary.mockResolvedValue([]);
+          await renderReady();
+          fireEvent.click(screen.getByText('Что ещё можно сегодня'));
+          const at = new Date(iso);
+          const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(
+            at.getMinutes(),
+          ).padStart(2, '0')}`;
+          await waitFor(() =>
+            expect(screen.getByTestId('diary-stamp').textContent, tz).toBe(
+              `Сегодня · ${hhmm}`,
+            ),
+          );
+        } finally {
+          cleanup();
+          vi.useRealTimers();
+        }
+      });
+    });
+  }
 });

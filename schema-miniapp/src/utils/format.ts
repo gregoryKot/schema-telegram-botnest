@@ -1,5 +1,6 @@
 // Реэкспорт из shared (правило №3, волна 2) — единственная копия там.
 export * from '../../../shared/src/utils/format';
+export * from '../../../shared/src/utils/momentDate';
 
 // Было продублировано в LetterEx.tsx и BeliefCheckEx.tsx (webapp), вынесено
 // сюда (правило №11); файл парный webapp ↔ miniapp — копии идентичны.

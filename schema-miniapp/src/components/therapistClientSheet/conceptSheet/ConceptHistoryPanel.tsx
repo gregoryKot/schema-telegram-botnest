@@ -1,4 +1,4 @@
-import { fmtDate } from '../../../utils/format';
+import { fmtDate, momentDayKey } from '../../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../../schemaTherapyData';
 import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
@@ -65,7 +65,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                     color: 'var(--text-sub)',
                   }}
                 >
-                  {fmtDate(snap.savedAt.slice(0, 10))}
+                  {fmtDate(momentDayKey(snap.savedAt))}
                 </span>
                 <button
                   onClick={() => {
