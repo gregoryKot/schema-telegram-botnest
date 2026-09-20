@@ -42,19 +42,18 @@ export interface CreateBookingDto {
   source?: string;
 }
 
-const SCHEMA: EncryptSchema = {
+// Экспортирован: admin-calendar.service.ts расшифровывает тем же EncryptSchema — не копией.
+export const SCHEMA: EncryptSchema = {
   strings: ['clientName', 'clientContact', 'message'],
 };
 
 const HOLD_MINUTES = 15;
 
 /**
- * Thrown by confirm() specifically when the webhook-reported paid amount
- * doesn't match the expected price. Deliberately a distinct subclass of
- * ConflictException (not a plain one) so PaymentController can tell it apart
- * from the ordinary idempotent-repeat ConflictException: the two need
- * opposite Robokassa acks — repeat → "OK" (stop retrying, already handled),
- * mismatch → "FAIL" (keep retrying / keep it visible, it is NOT handled).
+ * Thrown by confirm() when the webhook-reported paid amount doesn't match
+ * the expected price. A distinct ConflictException subclass so PaymentController
+ * tells it apart from an idempotent-repeat: opposite Robokassa acks — repeat
+ * → "OK" (already handled), mismatch → "FAIL" (NOT handled, keep it visible).
  */
 export class PaymentAmountMismatchError extends ConflictException {}
 

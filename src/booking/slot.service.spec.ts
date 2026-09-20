@@ -11,10 +11,14 @@ function makeService(opts: {
   bookings?: any[];
   busy?: { start: Date; end: Date }[];
   blockBusy?: boolean;
+  overrides?: any[];
 }) {
   const prisma: any = {
     availabilityRule: {
       findMany: jest.fn(() => Promise.resolve(opts.rules ?? [])),
+    },
+    slotOverride: {
+      findMany: jest.fn(() => Promise.resolve(opts.overrides ?? [])),
     },
     booking: {
       findMany: jest.fn(({ where }: any) => {
@@ -341,5 +345,109 @@ describe('SlotService.getSlots — часовые пояса и переход �
       '2026-07-13T17:00:00.000Z',
       '2026-07-13T18:00:00.000Z',
     ]);
+  });
+});
+
+// Контракт «Календарь слотов в админке»: ручной слой SlotOverride поверх
+// публичной выдачи /slots (см. src/booking/slot-filters.ts — applyOverrides).
+describe('SlotService.getSlots — ручной слой SlotOverride', () => {
+  const DAY_END = new Date('2026-07-13T23:59:59.999Z');
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('BLOCK убирает пересекающийся слот из выдачи', async () => {
+    const overrides = [
+      {
+        kind: 'BLOCK',
+        startsAt: new Date('2026-07-13T17:00:00Z'),
+        durationMin: 50,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN добавляет разовый слот вне окна правил', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+      '2026-07-13T20:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN до начала запрошенного окна (в запасе скана для BLOCK) — не отдаётся', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        // 23:00 UTC предыдущих суток — попадает в запас −180 мин от rangeStart.
+        startsAt: new Date('2026-07-12T23:00:00Z'),
+        durationMin: 50,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN работает и при нуле активных правил (ранний выход не срабатывает)', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service, prisma } = makeService({ rules: [], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T20:00:00.000Z',
+    ]);
+    // Раз мы не вышли рано — бронирования и календарь всё же проверяются.
+    expect(prisma.booking.findMany).toHaveBeenCalled();
+  });
+
+  it('OPEN, пересекающий существующую бронь, не добавляется', async () => {
+    const booking = {
+      startsAt: new Date('2026-07-13T20:10:00Z'),
+      durationMin: 30,
+      status: BookingStatus.CONFIRMED,
+    };
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [booking],
+      overrides,
+    });
+    const slots = await service.getSlots(MONDAY, DAY_END);
+    expect(
+      slots.some(
+        (s) => s.startsAt.toISOString() === '2026-07-13T20:00:00.000Z',
+      ),
+    ).toBe(false);
   });
 });

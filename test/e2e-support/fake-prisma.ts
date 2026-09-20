@@ -99,11 +99,9 @@ export function makeFakePrisma() {
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
     // с clientId вызывает notificationService.schedule).
     scheduledNotification: makeTable(),
-    // Платёжный контур (test/payment-webhooks.e2e-spec.ts, TEST_IMPROVEMENT_PLAN.md
-    // этап 1.4): один общий Robokassa Result-вебхук (POST /api/payment/result)
-    // маршрутизирует по диапазону InvId между booking/donation/subscriptionCharge.
-    // BookingNotifyService.onConfirmed на успешном confirm() дополнительно трогает
-    // clientMeeting (MeetingService.createMeeting) — без неё confirm падает.
+    // Платёжный контур (test/payment-webhooks.e2e-spec.ts): общий Robokassa
+    // Result-вебхук маршрутизирует по InvId между booking/donation/subscriptionCharge;
+    // BookingNotifyService.onConfirmed на confirm() ещё трогает clientMeeting.
     booking: makeTable(),
     clientMeeting: makeTable(),
     donation: makeTable(),
@@ -112,6 +110,8 @@ export function makeFakePrisma() {
     // Аренда прогона кронов (CronLeaderService): любой крон с захватом,
     // поднятый в смоуке, ходит сюда до первого побочного эффекта.
     cronLease: makeTable(),
+    availabilityRule: withDefaults(makeTable(), { isActive: true }), // @default(true)
+    slotOverride: makeTable(),
   };
 
   const prisma: any = {

@@ -2,8 +2,7 @@
 // Единственная фронтовая копия типов — в shared (правило №3); методы, которые
 // их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
-import type { QuizDto } from '../../shared/src/quiz/quizEngine';
-export type { QuizDto } from '../../shared/src/quiz/quizEngine';
+import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
 import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
@@ -23,7 +22,6 @@ import {
   setTokenProvider,
   setRefreshHandler,
 } from './apiClient';
-
 export { ApiError, setTokenProvider, setRefreshHandler };
 
 // Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
@@ -63,7 +61,7 @@ import type {
   AvailabilityRule,
   NewAvailabilityRule,
   AdminBooking,
-  AdminBookingStatus,
+  AdminBookingStatus, AdminCalendar, SlotOverridePatch,
   ArticleSummary,
   Article,
   ArticleDto,
@@ -93,7 +91,7 @@ export type {
   AvailabilityRule,
   NewAvailabilityRule,
   AdminBooking,
-  AdminBookingStatus,
+  AdminBookingStatus, AdminCalendar, AdminCalendarDay, AdminCalendarCell,
   ArticleSummary,
   Article,
   ArticleDto,
@@ -101,7 +99,7 @@ export type {
   AuditedPhrase,
   HealthyAdultPhrase,
   HealthyAdultPoolStatus,
-  PhraseIssue,
+  PhraseIssue, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch,
   SiteContent,
   UserPractice,
   PartnerInfo,
@@ -206,6 +204,8 @@ export const api = {
   adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
     adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
   adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  adminCalendar:     (key: string, from: string, to: string) => adminReq<AdminCalendar>('GET', `/api/booking/admin/calendar?from=${from}&to=${to}`, key),
+  adminSetOverrides: (key: string, patch: SlotOverridePatch) => adminReq<{ ok: true }>('POST', '/api/booking/admin/calendar/overrides', key, patch),
   // Articles
   listArticles:      () => get<ArticleSummary[]>('/api/articles'),
   getArticle:        (slug: string) => get<Article>(`/api/articles/${slug}`),

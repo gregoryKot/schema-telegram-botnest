@@ -15,7 +15,16 @@
 //
 // Парсинг простой (regex по спискам `controllers:`), как и у соседних
 // трипваеров: цель — поймать очевидный дрейф, а не разобрать TypeScript.
+//
+// Реестр может жить не только литералом в @Module(...): правило №10
+// CLAUDE.md заставляет модули с длинным списком контроллеров/провайдеров
+// выносить массив в отдельный `*.registry.ts` (см. booking.module.ts →
+// booking.registry.ts) — тогда в самом модуле стоит `controllers:
+// BOOKING_CONTROLLERS` (идентификатор, не `[...]`). Ниже это тоже
+// распознаётся: находим `import { ИМЯ } from './путь'` в модуле и читаем
+// `export const ИМЯ = [...]` из указанного файла.
 import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
 
 import { collectSourceFiles } from './collect-source-files';
 import { SRC, walkControllers } from './controller-classification';
@@ -37,7 +46,45 @@ function declaredControllerClasses(): Map<string, string> {
   return byClass;
 }
 
-/** Имена классов, перечисленных в `controllers: [...]` любого модуля. */
+function addNames(raw: string, out: Set<string>): void {
+  for (const part of raw.split(',')) {
+    const name = part
+      .trim()
+      .replace(/\/\/.*$/, '')
+      .trim();
+    if (/^\w+$/.test(name)) out.add(name);
+  }
+}
+
+/**
+ * `controllers: ИМЯ` (идентификатор, не массив-литерал) — реестр вынесен в
+ * отдельный файл. Находим, откуда ИМЯ импортировано в модуле, и читаем
+ * `export const ИМЯ = [...]` там. Возвращает null, если файл/экспорт не
+ * нашёлся — тогда контроллер честно остаётся orphan, а не проходит молча.
+ */
+function resolveIndirectArray(
+  moduleText: string,
+  moduleFile: string,
+  name: string,
+): string | null {
+  const importRe = new RegExp(
+    `import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*['"](\\.[^'"]+)['"]`,
+  );
+  const importMatch = importRe.exec(moduleText);
+  if (!importMatch) return null;
+  const targetPath = join(dirname(moduleFile), `${importMatch[1]}.ts`);
+  let targetText: string;
+  try {
+    targetText = readFileSync(targetPath, 'utf8');
+  } catch {
+    return null;
+  }
+  const arrRe = new RegExp(`export const ${name}\\s*=\\s*\\[([^\\]]*)\\]`);
+  return arrRe.exec(targetText)?.[1] ?? null;
+}
+
+/** Имена классов, перечисленных в `controllers: [...]` любого модуля (прямо
+ *  или через вынесенный `*.registry.ts`, см. комментарий у импортов). */
 function registeredControllerClasses(): Set<string> {
   const registered = new Set<string>();
   const modules = collectSourceFiles(SRC, {
@@ -45,15 +92,14 @@ function registeredControllerClasses(): Set<string> {
   });
   for (const file of modules) {
     const text = readFileSync(file, 'utf8');
-    const re = /controllers\s*:\s*\[([^\]]*)\]/g;
-    for (let m = re.exec(text); m !== null; m = re.exec(text)) {
-      for (const raw of m[1].split(',')) {
-        const name = raw
-          .trim()
-          .replace(/\/\/.*$/, '')
-          .trim();
-        if (/^\w+$/.test(name)) registered.add(name);
-      }
+    const literalRe = /controllers\s*:\s*\[([^\]]*)\]/g;
+    for (let m = literalRe.exec(text); m !== null; m = literalRe.exec(text)) {
+      addNames(m[1], registered);
+    }
+    const indirectMatch = /controllers\s*:\s*(\w+)/.exec(text);
+    if (indirectMatch) {
+      const resolved = resolveIndirectArray(text, file, indirectMatch[1]);
+      if (resolved) addNames(resolved, registered);
     }
   }
   return registered;

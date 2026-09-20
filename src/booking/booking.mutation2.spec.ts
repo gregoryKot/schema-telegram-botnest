@@ -37,6 +37,7 @@ describe('BookingService.book — if(isFree) реально короткозам
     };
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
       $transaction: jest.fn(async (fn: any) => fn(tx)),
       booking: { update: jest.fn(async () => ({})) },
     };
@@ -121,6 +122,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
     };
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
       $transaction: jest.fn(async (fn: any) => fn(tx)),
     };
     const notify = { onConfirmed: jest.fn(async () => undefined) };
@@ -247,6 +249,7 @@ describe('BookingService.assertWithinAvailability — точный where:{isActi
   it('findMany вызывается ровно с {isActive:true}, а не пустым фильтром', async () => {
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
     };
     await assertWithinAvailability(prisma, new Date(), 50);
     expect(prisma.availabilityRule.findMany).toHaveBeenCalledWith({
