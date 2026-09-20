@@ -11,6 +11,8 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
 import type { Need } from '../api';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { localDateStr } from '../../../shared/src/utils/format';
 
 vi.mock('../api', () => ({
   api: {
@@ -79,9 +81,11 @@ function renderSheet(props: Partial<Parameters<typeof HistorySheet>[0]> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Только Date подделан (fillHistoryGaps читает `new Date()` как «сегодня»);
-  // setTimeout/микротаски остаются реальными, иначе findByText/Suspense
-  // зависают — RTL ждёт их через реальные таймеры.
+  // Только Date подделан (день теперь приходит пропом todayDate, но сам
+  // проп в тестах ниже считается через `new Date()`/localDateStr — фейковый
+  // Date им и новым TZ-тестам нужен); setTimeout/микротаски остаются
+  // реальными, иначе findByText/Suspense зависают — RTL ждёт их через
+  // реальные таймеры.
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2020-01-10T12:00:00Z'));
 });
@@ -156,5 +160,66 @@ describe('HistorySheet — fillHistoryGaps после сохранения (read
     });
 
     expect(onHistoryRefreshed).toHaveBeenCalledWith([{ date: '2020-01-10', ratings: { attachment: 5 } }]);
+  });
+});
+
+// Регресс копии fillHistoryGaps в HistorySheet: локальная реализация вела
+// курсор от `new Date()` в UTC, а `todayDate` приходил локальным пропом —
+// в зонах, где локальная дата уже разошлась с UTC, локальное «вчера»
+// пропадало из календаря истории, а первый прошедший день дублировал
+// «сегодня». Копия удалена (общая `fillHistoryGaps` из shared принимает
+// день аргументом и ведёт курсор от него), но регресс фиксируем именно на
+// моментах, где расхождение заведомо есть — иначе тест зеленел бы в те часы
+// суток, когда зоны совпадают (тот же класс, что инцидент 2026-09-17,
+// docs/INCIDENTS.md).
+describe('HistorySheet — fillHistoryGaps не теряет и не дублирует дни при расхождении локальной зоны и UTC', () => {
+  // 23:30 UTC 18 сентября — в Australia/Sydney (UTC+10/+11) уже 19-е.
+  // 00:30 UTC 19 сентября — в America/Los_Angeles (UTC-7/-8) ещё 18-е.
+  const MOMENTS = ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z'];
+
+  it('список дат после бэкафилла — подряд идущие локальные дни без дыр и без дублей', async () => {
+    const zones: string[] = [];
+    forEachTimeZone((tz) => zones.push(tz));
+    const originalTz = process.env.TZ;
+
+    try {
+      for (const moment of MOMENTS) {
+        for (const tz of zones) {
+          const label = `${moment} @ ${tz}`;
+          process.env.TZ = tz;
+          vi.setSystemTime(new Date(moment));
+
+          // Тот же источник дня, что и реализация: локальные «сегодня» и
+          // предыдущие дни считаем localDateStr ПОСЛЕ установки зоны и
+          // системного времени.
+          const today = localDateStr(new Date());
+          const [y, m, d] = today.split('-').map(Number);
+          const day1 = localDateStr(new Date(y, m - 1, d - 1));
+          const day2 = localDateStr(new Date(y, m - 1, d - 2));
+          const day3 = localDateStr(new Date(y, m - 1, d - 3));
+
+          mockApi.history.mockResolvedValue([
+            { date: today, ratings: { attachment: 5 } },
+            { date: day3, ratings: { attachment: 2 } },
+          ]);
+
+          const { onHistoryRefreshed, unmount } = renderSheet({ todayDate: today });
+          fireEvent.click(await screen.findByText('открыть-бэкафилл-09'));
+          const finishBtn = await screen.findByText('завершить-бэкафилл');
+          await act(async () => {
+            fireEvent.click(finishBtn);
+          });
+
+          const call = onHistoryRefreshed.mock.calls[0] as [{ date: string }[]] | undefined;
+          const dates = call?.[0].map((entry) => entry.date);
+          expect(dates, label).toEqual([today, day1, day2, day3]);
+
+          unmount();
+        }
+      }
+    } finally {
+      if (originalTz === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTz;
+    }
   });
 });

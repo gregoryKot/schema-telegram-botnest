@@ -8,27 +8,10 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { needColor } from '../../../shared/src/needs/needColors';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import { fillHistoryGaps } from './appShell/navigation';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
-
-function fillHistoryGaps(h: DayHistory[], todayDate: string): DayHistory[] {
-  if (h.length === 0) return h;
-  const byDate = new Map(h.map(d => [d.date, d]));
-  const todayEntry = h.find(d => d.date === todayDate);
-  const nonToday = h.filter(d => d.date !== todayDate);
-  if (nonToday.length === 0) return h;
-  const filled: DayHistory[] = todayEntry ? [todayEntry] : [];
-  const cursor = new Date();
-  cursor.setDate(cursor.getDate() - 1);
-  for (let i = 0; i < 60; i++) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (key < nonToday[nonToday.length - 1].date) break;
-    filled.push(byDate.get(key) ?? { date: key, ratings: {} });
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return filled;
-}
 
 interface Props {
   needs: Need[];
