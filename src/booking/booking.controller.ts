@@ -97,10 +97,10 @@ export class BookingController {
   }
 }
 
+// n×24ч в мс, не setDate: местные сутки на переходе DST бывают 23/25 часов —
+// jest под TZ=Australia/Sydney (правило №25) краснел две недели до перехода.
 function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
+  return new Date(d.getTime() + n * 86_400_000);
 }
 
 // L11 аудита 2026-08: сырой query-параметр уходил в new Date() и на кривой

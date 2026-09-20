@@ -4,12 +4,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
-import { localDate, localMidnightUTC } from '../utils/tz';
+import { localDate } from '../utils/tz';
+import { expandRuleForDay, weekdayOf } from './rule-expand';
+import { isOccupied, overlapsBusy, applyOverrides } from './slot-filters';
 
 // D1 (аудит 2026-08): жёсткий потолок перебора по суткам в getSlots — год с
 // запасом. Контроллер режет пользовательский запрос строже (92 дня); это —
 // абсолютный предохранитель от зависания event-loop при вызове в обход него.
 const MAX_SLOT_SCAN_DAYS = 366;
+
+// Override живёт максимум 180 мин (SlotOverrideItemDto) — запас скана назад
+// от rangeStart, чтобы поймать BLOCK, начавшийся раньше окна, но
+// пересекающий его.
+const MAX_OVERRIDE_MIN = 180;
 
 export interface Slot {
   startsAt: Date;
@@ -36,14 +43,42 @@ export class SlotService {
 
   /**
    * Return available slots between fromDate and toDate (inclusive).
-   * Uses therapist's active AvailabilityRules. Excludes HELD/CONFIRMED bookings
-   * AND busy times from the therapist's Apple Calendar (if CalDAV configured).
+   * Uses therapist's active AvailabilityRules PLUS ручной слой SlotOverride
+   * (BLOCK убирает, OPEN добавляет вне правил). Excludes HELD/CONFIRMED
+   * bookings AND busy times from the therapist's Apple Calendar (if configured).
    */
   async getSlots(fromDate: Date, toDate: Date): Promise<Slot[]> {
     const rules = await this.prisma.availabilityRule.findMany({
       where: { isActive: true },
     });
-    if (!rules.length) return [];
+
+    // Окно, в которое обязан попасть каждый возвращённый слот — целые UTC-сутки
+    // fromDate..toDate (так исторически трактует диапазон вызывающий код,
+    // /api/booking/slots?from=YYYY-MM-DD&to=YYYY-MM-DD без времени).
+    const rangeStart = new Date(fromDate);
+    rangeStart.setUTCHours(0, 0, 0, 0);
+    const rawRangeEnd = new Date(toDate);
+    rawRangeEnd.setUTCHours(23, 59, 59, 999);
+    // D1 (аудит 2026-08): защитный потолок перебора по суткам. Контроллер уже
+    // режет запрос на 92 дня (400) — это второй рубеж на случай вызова в обход
+    // него: без него огромный диапазон вешал event-loop (DoS всего API).
+    const maxEndMs = rangeStart.getTime() + MAX_SLOT_SCAN_DAYS * 86_400_000;
+    const rangeEnd =
+      rawRangeEnd.getTime() > maxEndMs ? new Date(maxEndMs) : rawRangeEnd;
+
+    // Ручной слой нужен ДО раннего выхода: OPEN обязан работать и без единого
+    // правила (см. slot.service.spec.ts). Запас назад — максимальная
+    // длительность override'а, BLOCK мог начаться раньше rangeStart.
+    const overrides = await this.prisma.slotOverride.findMany({
+      where: {
+        startsAt: {
+          gte: new Date(rangeStart.getTime() - MAX_OVERRIDE_MIN * 60_000),
+          lte: rangeEnd,
+        },
+      },
+    });
+    const hasOpen = overrides.some((o) => o.kind === 'OPEN');
+    if (!rules.length && !hasOpen) return [];
 
     // Fetch all bookings in window that occupy a slot
     const busyBookings = await this.prisma.booking.findMany({
@@ -62,20 +97,6 @@ export class SlotService {
 
     // Earliest bookable instant: now + minimum lead time.
     const earliest = Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000;
-
-    // Окно, в которое обязан попасть каждый возвращённый слот — целые UTC-сутки
-    // fromDate..toDate (так исторически трактует диапазон вызывающий код,
-    // /api/booking/slots?from=YYYY-MM-DD&to=YYYY-MM-DD без времени).
-    const rangeStart = new Date(fromDate);
-    rangeStart.setUTCHours(0, 0, 0, 0);
-    const rawRangeEnd = new Date(toDate);
-    rawRangeEnd.setUTCHours(23, 59, 59, 999);
-    // D1 (аудит 2026-08): защитный потолок перебора по суткам. Контроллер уже
-    // режет запрос на 92 дня (400) — это второй рубеж на случай вызова в обход
-    // него: без него огромный диапазон вешал event-loop (DoS всего API).
-    const maxEndMs = rangeStart.getTime() + MAX_SLOT_SCAN_DAYS * 86_400_000;
-    const rangeEnd =
-      rawRangeEnd.getTime() > maxEndMs ? new Date(maxEndMs) : rawRangeEnd;
 
     // ПОДВОХ UTC-vs-местное время (был баг, см. slot.service.spec.ts): курсор
     // ниже бежит по суткам В UTC, но день недели и календарная дата правила
@@ -99,25 +120,13 @@ export class SlotService {
     const slots: Slot[] = [];
     while (cursor <= cursorEnd) {
       for (const rule of rules) {
-        const tz = rule.timezone;
-        const dateStr = localDate(tz, cursor);
-        const localDow = new Date(`${dateStr}T00:00:00Z`).getUTCDay();
-        if (rule.dayOfWeek !== localDow) continue;
+        const dateStr = localDate(rule.timezone, cursor);
+        if (rule.dayOfWeek !== weekdayOf(dateStr)) continue;
 
-        const dayStartMs = localMidnightUTC(dateStr, tz).getTime();
-        const slotStartMs =
-          dayStartMs + (rule.startHour * 60 + rule.startMinute) * 60_000;
-        const slotEndMs =
-          dayStartMs + (rule.endHour * 60 + rule.endMinute) * 60_000;
-        const step = (rule.sessionDuration + rule.bufferMin) * 60_000;
-
-        for (
-          let t = slotStartMs;
-          t + rule.sessionDuration * 60_000 <= slotEndMs;
-          t += step
-        ) {
-          const start = new Date(t);
-          const finish = new Date(t + rule.sessionDuration * 60_000);
+        for (const { startsAt: start, endsAt: finish } of expandRuleForDay(
+          rule,
+          dateStr,
+        )) {
           if (start < rangeStart || start > rangeEnd) continue; // вне запрошенного окна (запас курсора)
           if (isOccupied(start, finish, busyBookings)) continue;
           if (overlapsBusy(start, finish, calBusy)) continue; // therapist's calendar
@@ -132,34 +141,17 @@ export class SlotService {
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
-    slots.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-    return slots;
+    // Запас −180 мин выше нужен только BLOCK; OPEN вне запрошенного окна —
+    // не слот этого окна (иначе /slots?from=… отдавал бы прошлые сутки).
+    const inWindow = overrides.filter(
+      (o) =>
+        o.kind !== 'OPEN' ||
+        (o.startsAt >= rangeStart && o.startsAt <= rangeEnd),
+    );
+    return applyOverrides(slots, inWindow, {
+      earliest,
+      bookings: busyBookings,
+      busy: calBusy,
+    });
   }
-}
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-function overlapsBusy(
-  start: Date,
-  end: Date,
-  busy: { start: Date; end: Date }[],
-): boolean {
-  for (const b of busy) {
-    if (start.getTime() < b.end.getTime() && end.getTime() > b.start.getTime())
-      return true;
-  }
-  return false;
-}
-
-function isOccupied(
-  start: Date,
-  end: Date,
-  bookings: { startsAt: Date; durationMin: number }[],
-): boolean {
-  for (const b of bookings) {
-    const bs = b.startsAt.getTime();
-    const be = bs + b.durationMin * 60_000;
-    if (start.getTime() < be && end.getTime() > bs) return true;
-  }
-  return false;
 }

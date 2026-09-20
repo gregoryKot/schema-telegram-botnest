@@ -7,6 +7,7 @@ import { assertWithinAvailability } from './booking.availability';
 function makeService(rules: any[]) {
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => rules) },
+    slotOverride: { findMany: jest.fn(async () => []) },
   };
   const assert = (startsAt: Date, durationMin: number) =>
     assertWithinAvailability(prisma, startsAt, durationMin);

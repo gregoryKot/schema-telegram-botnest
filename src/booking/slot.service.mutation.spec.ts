@@ -11,10 +11,14 @@ function makeService(opts: {
   bookings?: any[];
   busy?: { start: Date; end: Date }[];
   blockBusy?: boolean;
+  overrides?: any[];
 }) {
   const prisma: any = {
     availabilityRule: {
       findMany: jest.fn(() => Promise.resolve(opts.rules ?? [])),
+    },
+    slotOverride: {
+      findMany: jest.fn(() => Promise.resolve(opts.overrides ?? [])),
     },
     booking: {
       findMany: jest.fn(({ where }: any) => {

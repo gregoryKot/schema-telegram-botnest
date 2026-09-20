@@ -1,6 +1,5 @@
 // Типы API webapp (зеркало бэкенда, ранее инлайном в api.ts).
 // Вынесено из api.ts (правило №10).
-//
 // Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
 // только ре-экспорт. ConceptSnapshot ещё и импортируется: на него ссылается
 // локальный ClientConceptualization (в webapp он с mode-map, потому локальный).
@@ -23,6 +22,7 @@ export type {
 } from '../../shared/src/apiTypes';
 
 // ─── Site-only types (booking, articles, mode-map) ───────────────────────────
+export type { AdminCalendar, AdminCalendarDay, AdminCalendarCell, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch } from './api.calendar.types';
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
 export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
 export interface AvailabilityRule {

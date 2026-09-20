@@ -61,6 +61,7 @@ export const ADMIN_KEY_GATED = new Set([
   'articles/articles-admin.controller.ts',
   'booking/booking-admin.controller.ts',
   'telegram/healthy-adult-admin.controller.ts',
+  'booking/booking-calendar-admin.controller.ts', // тот же x-admin-key, что booking-admin
 ]);
 
 export const GUARD_RE =

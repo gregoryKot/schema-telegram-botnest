@@ -38,6 +38,7 @@ function makeService(
   };
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => []) },
+    slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: { update: jest.fn(async () => ({})) },
   };

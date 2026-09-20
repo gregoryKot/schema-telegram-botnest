@@ -1,19 +1,18 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ruleCoversSlot } from './availability-window';
+import { overlapsInterval, overrideInterval } from './slot-filters';
 
-// Проверки доступности слота: попадание в окно AvailabilityRule и
-// отсутствие пересечений с существующими бронями. Вынесено из
-// booking.service.ts (правило №10) — чистые функции над prisma/tx.
+// Проверки доступности слота: окно AvailabilityRule + ручной слой
+// SlotOverride, и пересечения с бронями (правило №10, вынесено из booking.service.ts).
+// MAX_OVERRIDE_MIN=180: override живёт максимум 180 мин — запас скана назад
+// для BLOCK, начавшегося раньше startsAt, но пересекающего его.
+const MAX_OVERRIDE_MIN = 180;
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-/**
- * Время и длительность запрошенной сессии обязаны попадать в активное окно
- * AvailabilityRule (в таймзоне правила). Если правил нет вообще
- * (dev/расписание не настроено) — пропускаем, сохраняя прежнее поведение:
- * легитимный клиент в этом случае и так не видит слотов.
- */
+// Слот обязан попадать в окно правила (его TZ) либо быть разрешён OPEN;
+// BLOCK отклоняет бронь ДАЖЕ если правило её разрешает. Правил нет вообще
+// (dev) — пропускаем как раньше.
 export async function assertWithinAvailability(
   prisma: PrismaService,
   startsAt: Date,
@@ -22,28 +21,29 @@ export async function assertWithinAvailability(
   if (!Number.isInteger(durationMin) || durationMin < 15 || durationMin > 180) {
     throw new BadRequestException('Invalid duration');
   }
+  const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
+  const scanFrom = new Date(startsAt.getTime() - MAX_OVERRIDE_MIN * 60_000);
+  const overrides = await prisma.slotOverride.findMany({
+    where: { startsAt: { gte: scanFrom, lt: endsAt } },
+  });
+  const blocked = overrides.some(
+    (o) =>
+      o.kind === 'BLOCK' &&
+      overlapsInterval(startsAt, endsAt, [overrideInterval(o)]),
+  );
+  if (blocked) throw new BadRequestException('SLOT_BLOCKED');
+
   const rules = await prisma.availabilityRule.findMany({
     where: { isActive: true },
   });
   if (rules.length === 0) return;
+  if (rules.some((r) => ruleCoversSlot(r, startsAt, durationMin))) return;
 
-  const ok = rules.some((r) => {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: r.timezone,
-      hour12: false,
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).formatToParts(startsAt);
-    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-    const day = WEEKDAYS.indexOf(get('weekday'));
-    if (day !== r.dayOfWeek) return false;
-    const startMin = (Number(get('hour')) % 24) * 60 + Number(get('minute'));
-    const winStart = r.startHour * 60 + r.startMinute;
-    const winEnd = r.endHour * 60 + r.endMinute;
-    return startMin >= winStart && startMin + durationMin <= winEnd;
-  });
-  if (!ok) throw new BadRequestException('OUTSIDE_AVAILABILITY');
+  const open = overrides.find(
+    (o) => o.kind === 'OPEN' && o.startsAt.getTime() === startsAt.getTime(),
+  );
+  if (open && durationMin <= open.durationMin) return;
+  throw new BadRequestException('OUTSIDE_AVAILABILITY');
 }
 
 // Overlap test: an existing HELD/CONFIRMED booking collides when

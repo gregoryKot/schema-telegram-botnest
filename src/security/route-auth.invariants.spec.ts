@@ -67,6 +67,8 @@ describe('трипваер: каждый контроллер защищён (gu
     // 11 → 12 (2026-07-30): +auth-max.controller — вход из мини-аппа MAX,
     // обоснование в PUBLIC_BY_DESIGN выше, ревью безопасности — в PR фичи.
     expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(12);
-    expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(4);
+    // 4 → 5: +booking-calendar-admin.controller.ts — контракт «Календарь
+    // слотов в админке», тот же x-admin-key, обоснование в ADMIN_KEY_GATED.
+    expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(5);
   });
 });

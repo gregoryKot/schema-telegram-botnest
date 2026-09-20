@@ -18,6 +18,11 @@ vi.mock('../../api', () => ({
     adminCreateRule: vi.fn(),
     adminToggleRule: vi.fn(),
     adminDeleteRule: vi.fn(),
+    // ScheduleSection (замена ScheduleManager) рендерит CalendarWeek безусловно —
+    // без мока адрес useAsyncData внутри падает на undefined.then(). Детальные
+    // тесты самого календаря — в calendar/CalendarWeek.test.tsx.
+    adminCalendar: vi.fn(),
+    adminSetOverrides: vi.fn(),
     adminListBookings: vi.fn(),
     adminConfirm: vi.fn(),
     cancelBooking: vi.fn(),
@@ -56,6 +61,9 @@ beforeEach(() => {
     { period: 'year', price: 50000 },
   ]);
   mockApi.adminListRules.mockResolvedValue([]);
+  mockApi.adminCalendar.mockResolvedValue({
+    timezone: 'Europe/Moscow', calendarConnected: false, calendarBlocking: false, calendarReadError: null, days: [],
+  });
   mockApi.adminListBookings.mockResolvedValue([]);
 });
 
@@ -199,58 +207,9 @@ describe('BookingSection — цены подписки', () => {
   });
 });
 
-describe('BookingSection — расписание', () => {
-  it('без правил — подсказка добавить слоты, а не пустой список без объяснения', async () => {
-    render(<BookingSection adminKey="k" />);
-    await screen.findByText('Пока нет правил. Добавьте слоты ниже.');
-  });
-
-  it('сбой ≠ пусто: отказ загрузки правил показывает ошибку, а не «Пока нет правил»', async () => {
-    mockApi.adminListRules.mockRejectedValue(new Error('API error: 403'));
-    render(<BookingSection adminKey="wrong" />);
-    expect(await screen.findByText(/Не удалось загрузить расписание/)).toBeTruthy();
-    expect(screen.queryByText('Пока нет правил. Добавьте слоты ниже.')).toBeNull();
-  });
-
-  it('показывает существующее правило человеческим текстом', async () => {
-    mockApi.adminListRules.mockResolvedValue([
-      { id: 1, dayOfWeek: 1, startHour: 10, startMinute: 0, endHour: 19, endMinute: 0, sessionDuration: 50, bufferMin: 10, isActive: true },
-    ]);
-    render(<BookingSection adminKey="k" />);
-    await screen.findByText(/10:00–19:00 · 50 мин \(\+10\)/);
-  });
-
-  it('добавление правила вызывает API с введёнными параметрами', async () => {
-    mockApi.adminCreateRule.mockResolvedValue({ id: 2 });
-    render(<BookingSection adminKey="k" />);
-    await screen.findByText('Пока нет правил. Добавьте слоты ниже.');
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
-
-    expect(mockApi.adminCreateRule).toHaveBeenCalledWith('k', {
-      dayOfWeek: 1, startHour: 10, startMinute: 0, endHour: 19, endMinute: 0,
-      sessionDuration: 50, bufferMin: 10,
-    });
-  });
-
-  it('выключенное правило показано полупрозрачным, кнопка предлагает включить', async () => {
-    mockApi.adminListRules.mockResolvedValue([
-      { id: 1, dayOfWeek: 2, startHour: 9, startMinute: 0, endHour: 12, endMinute: 0, sessionDuration: 50, bufferMin: 10, isActive: false },
-    ]);
-    render(<BookingSection adminKey="k" />);
-    await screen.findByRole('button', { name: 'Вкл' });
-  });
-
-  it('удаление правила вызывает adminDeleteRule', async () => {
-    mockApi.adminListRules.mockResolvedValue([
-      { id: 7, dayOfWeek: 3, startHour: 9, startMinute: 0, endHour: 12, endMinute: 0, sessionDuration: 50, bufferMin: 10, isActive: true },
-    ]);
-    mockApi.adminDeleteRule.mockResolvedValue(undefined);
-    render(<BookingSection adminKey="k" />);
-    await screen.findByLabelText('Удалить правило');
-    fireEvent.click(screen.getByLabelText('Удалить правило'));
-    expect(mockApi.adminDeleteRule).toHaveBeenCalledWith('k', 7);
-  });
-});
+// Тесты недельных правил переехали в ScheduleSection.test.tsx вместе с
+// ScheduleManager (правило №10 CLAUDE.md — BookingSection.tsx упирался в
+// потолок размера файла). CalendarWeek внутри ScheduleSection — там же.
 
 describe('BookingSection — записи', () => {
   it('без записей в выбранном фильтре — явный текст «Записей нет», не пусто', async () => {

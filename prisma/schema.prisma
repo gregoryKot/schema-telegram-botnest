@@ -730,6 +730,21 @@ model AvailabilityRule {
   createdAt       DateTime @default(now())
 }
 
+enum SlotOverrideKind {
+  BLOCK // закрыть время, которое иначе открыто правилом (или встречей при выключенной блокировке)
+  OPEN  // открыть разовый слот вне недельных правил
+}
+
+// Ручной слой поверх недельных AvailabilityRule: одна строка на момент времени
+// (startsAt @unique — BLOCK и OPEN на одну ячейку не могут сосуществовать по построению).
+model SlotOverride {
+  id          Int              @id @default(autoincrement())
+  kind        SlotOverrideKind
+  startsAt    DateTime         @unique // UTC, начало слота
+  durationMin Int              @default(50)
+  createdAt   DateTime         @default(now())
+}
+
 enum BookingStatus {
   HELD        // slot reserved, not yet confirmed (hold expires in 15 min)
   CONFIRMED
