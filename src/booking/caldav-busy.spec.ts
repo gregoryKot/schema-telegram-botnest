@@ -224,3 +224,32 @@ describe('parseBusy — несколько событий и общая усто
     expect(parseBusy('<d:multistatus></d:multistatus>')).toEqual([]);
   });
 });
+
+describe('parseBusy — SUMMARY события (только для отображения владельцу, см. admin-calendar.ts)', () => {
+  it('VEVENT с SUMMARY — у интервала есть раз-экранированное поле summary', () => {
+    const xml = multistatus([
+      vevent(
+        'DTSTART:20260713T170000Z\nDTEND:20260713T175000Z\nSUMMARY:Встреча с клиентом',
+      ),
+    ]);
+    const out = parseBusy(xml);
+    expect(out).toHaveLength(1);
+    expect(out[0].summary).toBe('Встреча с клиентом');
+  });
+
+  it('VEVENT без SUMMARY — поле summary отсутствует, а не пустая строка', () => {
+    const xml = multistatus([
+      vevent('DTSTART:20260713T170000Z\nDTEND:20260713T175000Z'),
+    ]);
+    const out = parseBusy(xml);
+    expect(out).toHaveLength(1);
+    expect(out[0].summary).toBeUndefined();
+    expect('summary' in out[0]).toBe(false);
+    // Старый ассерт (до summary) остаётся зелёным: toEqual игнорирует
+    // отсутствующий ключ — регресс для существующих потребителей исключён.
+    expect(out[0]).toEqual({
+      start: new Date('2026-07-13T17:00:00.000Z'),
+      end: new Date('2026-07-13T17:50:00.000Z'),
+    });
+  });
+});

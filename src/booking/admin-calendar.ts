@@ -5,7 +5,9 @@ import {
   addDaysToDateString,
   ExpandableRule,
 } from './rule-expand';
-import { overlapsInterval, overrideInterval, Interval } from './slot-filters';
+import { overlapsInterval } from './slot-filters';
+import { Interval } from './caldav-busy';
+import { resolveCell, toInterval } from './admin-calendar-cell';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 
 // Чистая сборка недельного календаря админки: правила расписания + ручной
@@ -21,6 +23,9 @@ export interface AdminCalendarCell {
   durationMin: number;
   state: AdminCalendarCellState;
   busy: boolean;
+  // Названия пересекающих ячейку событий календаря — видно только владельцу
+  // в админке (ответ за x-admin-key), наружу (/api/booking/slots) не течёт.
+  busyTitle?: string;
   past: boolean;
   booking?: { id: number; clientName: string; status: 'HELD' | 'CONFIRMED' };
   // startsAt строки SlotOverride, породившей blocked/extra. Для blocked может
@@ -65,7 +70,7 @@ export interface BuildAdminCalendarInput {
   now: Date;
 }
 
-interface WorkingCell {
+export interface WorkingCell {
   startsAt: Date;
   durationMin: number;
   fromRule: boolean; // отличает «ячейку правила» (fallback→free) от фоновой (fallback→off)
@@ -206,61 +211,6 @@ function buildDay(
   return {
     date: dateStr,
     cells: sorted.map((c) => resolveCell(c, earliest, input)),
-  };
-}
-
-/** Пункт 6 контракта: busy/booking/override → state по приоритету
- *  booked > blocked > busy(если calendarBlocking) > extra > free > off. */
-function resolveCell(
-  cell: WorkingCell,
-  earliest: number,
-  input: BuildAdminCalendarInput,
-): AdminCalendarCell {
-  const end = new Date(cell.startsAt.getTime() + cell.durationMin * 60_000);
-  const booking = input.bookings.find((b) =>
-    overlapsInterval(cell.startsAt, end, [toInterval(b)]),
-  );
-  const blockedBy = input.overrides.find(
-    (o) =>
-      o.kind === 'BLOCK' &&
-      overlapsInterval(cell.startsAt, end, [overrideInterval(o)]),
-  );
-  const exact = input.overrides.find(
-    (o) => o.startsAt.getTime() === cell.startsAt.getTime(),
-  );
-  const busyHit = overlapsInterval(cell.startsAt, end, input.busy);
-
-  let state: AdminCalendarCellState;
-  let override: AdminCalendarOverrideInput | undefined;
-  if (booking) state = 'booked';
-  else if (blockedBy) [state, override] = ['blocked', blockedBy];
-  else if (busyHit && input.calendarBlocking) state = 'busy';
-  else if (exact?.kind === 'OPEN') [state, override] = ['extra', exact];
-  else state = cell.fromRule ? 'free' : 'off';
-
-  return {
-    startsAt: cell.startsAt.toISOString(),
-    durationMin: cell.durationMin,
-    state,
-    busy: busyHit,
-    past: cell.startsAt.getTime() <= earliest,
-    ...(override ? { overrideStartsAt: override.startsAt.toISOString() } : {}),
-    ...(booking
-      ? {
-          booking: {
-            id: booking.id,
-            clientName: booking.clientName,
-            status: booking.status,
-          },
-        }
-      : {}),
-  };
-}
-
-function toInterval(x: { startsAt: Date; durationMin: number }): Interval {
-  return {
-    start: x.startsAt,
-    end: new Date(x.startsAt.getTime() + x.durationMin * 60_000),
   };
 }
 

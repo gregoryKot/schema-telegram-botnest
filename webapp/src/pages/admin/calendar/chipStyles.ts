@@ -6,7 +6,17 @@
 import type { CSSProperties } from 'react';
 import type { AdminCalendarCellState } from '../../../api';
 
-export function chipStyles(state: AdminCalendarCellState): CSSProperties {
+/**
+ * `past` — чипу больше не про что говорить цветом состояния: слот уже
+ * прошёл, «свободно»/«встреча» клиенту ничего не предлагают, а сетка —
+ * инструмент про будущее. Booked остаётся в своём стиле и в прошлом — имя
+ * клиента полезно как история дня; приглушение даёт только opacity
+ * (SlotChip), не смена палитры.
+ */
+export function chipStyles(state: AdminCalendarCellState, past = false): CSSProperties {
+  if (past && state !== 'booked') {
+    return { background: 'transparent', border: '1.5px solid var(--line)', color: 'var(--text-ghost)' };
+  }
   switch (state) {
     case 'free':
       return { background: 'color-mix(in srgb, var(--accent-green) 16%, transparent)', border: '1.5px solid var(--accent-green)', color: 'var(--text)' };

@@ -80,6 +80,69 @@ describe('buildAdminCalendar — занятость календаря (busy) и
   });
 });
 
+describe('buildAdminCalendar — busyTitle (название события из календаря, видно только владельцу)', () => {
+  it('одно пересекающее событие с summary → busyTitle равен ему', () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T12:00:00Z'),
+        end: new Date('2026-07-13T13:00:00Z'),
+        summary: 'Встреча с клиентом',
+      },
+    ];
+    const days = base({ busy, calendarBlocking: true });
+    expect(cellAt(days, MONDAY, '2026-07-13T12:00:00.000Z')?.busyTitle).toBe(
+      'Встреча с клиентом',
+    );
+  });
+
+  it('два пересекающих события → объединены через « · », без дублей', () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T12:00:00Z'),
+        end: new Date('2026-07-13T12:30:00Z'),
+        summary: 'A',
+      },
+      {
+        start: new Date('2026-07-13T12:20:00Z'),
+        end: new Date('2026-07-13T13:00:00Z'),
+        summary: 'B',
+      },
+    ];
+    const days = base({ busy, calendarBlocking: true });
+    expect(cellAt(days, MONDAY, '2026-07-13T12:00:00.000Z')?.busyTitle).toBe(
+      'A · B',
+    );
+  });
+
+  it('пересекающее событие без summary — поля busyTitle нет вовсе', () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T12:00:00Z'),
+        end: new Date('2026-07-13T13:00:00Z'),
+      },
+    ];
+    const days = base({ busy, calendarBlocking: true });
+    expect(cellAt(days, MONDAY, '2026-07-13T12:00:00.000Z')).not.toHaveProperty(
+      'busyTitle',
+    );
+  });
+
+  it('calendarBlocking=false: state свободной ячейки не меняется, но busyTitle владельцу всё равно виден', () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T12:00:00Z'),
+        end: new Date('2026-07-13T13:00:00Z'),
+        summary: 'Личное',
+      },
+    ];
+    const days = base({ busy, calendarBlocking: false });
+    const cell = cellAt(days, MONDAY, '2026-07-13T12:00:00.000Z');
+    expect(cell?.state).toBe('free');
+    expect(cell?.busy).toBe(true);
+    expect(cell?.busyTitle).toBe('Личное');
+  });
+});
+
 describe('buildAdminCalendar — SlotOverride BLOCK/OPEN', () => {
   it('BLOCK на существующей ячейке → blocked', () => {
     const overrides: AdminCalendarOverrideInput[] = [
