@@ -11,6 +11,8 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
 import type { Need } from '../api';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { localDateStr } from '../../../shared/src/utils/format';
 
 vi.mock('../api', () => ({
   api: {
@@ -79,9 +81,11 @@ function renderSheet(props: Partial<Parameters<typeof HistorySheet>[0]> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Только Date подделан (fillHistoryGaps читает `new Date()` как «сегодня»);
-  // setTimeout/микротаски остаются реальными, иначе findByText/Suspense
-  // зависают — RTL ждёт их через реальные таймеры.
+  // Только Date подделан (день теперь приходит пропом todayDate, но сам
+  // проп в тестах ниже считается через `new Date()`/localDateStr — фейковый
+  // Date им и новым TZ-тестам нужен); setTimeout/микротаски остаются
+  // реальными, иначе findByText/Suspense зависают — RTL ждёт их через
+  // реальные таймеры.
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2020-01-10T12:00:00Z'));
 });
