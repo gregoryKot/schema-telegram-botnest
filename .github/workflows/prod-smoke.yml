@@ -112,7 +112,7 @@ jobs:
     steps:
       - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на воркфлоу)
         id: issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           # needs['prod-smoke'] — дефис в имени джобы не даёт писать needs.prod-smoke
           # напрямую ни в YAML-выражении, ни здесь: тянем результат через env.
