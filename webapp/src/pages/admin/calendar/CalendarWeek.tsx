@@ -9,7 +9,7 @@ import { Skeleton } from '../../../components/Skeleton';
 import { btnGhost } from '../shared';
 import { DayCard } from './DayCard';
 import { chipStyles } from './chipStyles';
-import { cellAction, dayAction, shiftWeek, todayIn, weekFrom } from './calendarModel';
+import { cellAction, dayAction, shiftWeek, todayIn, weekOf } from './calendarModel';
 import { fmtWeekTitle, stateLabel } from './calendarFormat';
 import type { AdminCalendarCellState } from '../../../api';
 
@@ -19,7 +19,7 @@ const LEGEND_STATES: AdminCalendarCellState[] = ['free', 'busy', 'booked', 'bloc
 const START_TZ = 'Europe/Moscow';
 
 export function CalendarWeek({ adminKey }: { adminKey: string }) {
-  const [{ from, to }, setRange] = useState(() => weekFrom(todayIn(START_TZ)));
+  const [{ from, to }, setRange] = useState(() => weekOf(todayIn(START_TZ)));
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [mutateError, setMutateError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function CalendarWeek({ adminKey }: { adminKey: string }) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 6, flexWrap: 'wrap' }}>
         <button type="button" aria-label="Предыдущая неделя" style={{ ...btnGhost, padding: '4px 10px', fontSize: 14 }} onClick={() => setRange(shiftWeek(from, -1))}>‹</button>
-        <button type="button" style={{ ...btnGhost, padding: '4px 10px', fontSize: 12 }} onClick={() => setRange(weekFrom(todayIn(timezone)))}>Сегодня</button>
+        <button type="button" style={{ ...btnGhost, padding: '4px 10px', fontSize: 12 }} onClick={() => setRange(weekOf(todayIn(timezone)))}>Сегодня</button>
         <button type="button" aria-label="Следующая неделя" style={{ ...btnGhost, padding: '4px 10px', fontSize: 14 }} onClick={() => setRange(shiftWeek(from, 1))}>›</button>
         <strong style={{ fontSize: 14, color: 'var(--text)', marginLeft: 'var(--space-4)' }}>{fmtWeekTitle(from, to)}</strong>
       </div>

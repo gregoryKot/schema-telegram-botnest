@@ -9,7 +9,7 @@ import {
   dayAction,
   shiftWeek,
   todayIn,
-  weekFrom,
+  weekOf,
 } from './calendarModel';
 
 function cell(overrides: Partial<AdminCalendarCell> = {}): AdminCalendarCell {
@@ -23,31 +23,35 @@ function cell(overrides: Partial<AdminCalendarCell> = {}): AdminCalendarCell {
   };
 }
 
-describe('weekFrom', () => {
-  it('окно 7 дней начиная с dateStr — не Пн..Вс, воскресенье становится первым днём', () => {
+describe('weekOf — неделя с воскресенья по субботу', () => {
+  it('воскресенье, среда и суббота одной недели дают одну и ту же неделю Вс..Сб', () => {
     forEachTimeZone((tz) => {
-      // Инцидент 2026-09-20: владелец открыл календарь в воскресенье и увидел
-      // Пн 14 сен – Вс 20 сен, где «сегодня» — последняя, седьмая карточка.
-      // Окно от сегодня начинается с того же дня, в который его открыли.
-      expect(weekFrom('2026-09-20'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' });
+      // Решение владельца 2026-09-20: неделя начинается с воскресенья — открытый
+      // в воскресенье календарь начинается с «сегодня», а не с прошлого понедельника.
+      expect(weekOf('2026-09-20'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // вс
+      expect(weekOf('2026-09-23'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // ср
+      expect(weekOf('2026-09-26'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // сб — конец ТОЙ ЖЕ недели
+      expect(weekOf('2026-09-27'), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' }); // следующее вс — новая неделя
     });
   });
 
-  it('окно через границу месяца', () => {
+  it('неделя через границу месяца', () => {
     forEachTimeZone((tz) => {
-      expect(weekFrom('2026-09-29'), tz).toEqual({ from: '2026-09-29', to: '2026-10-05' });
+      expect(weekOf('2026-09-29'), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' });
     });
   });
 
-  it('окно через границу года', () => {
+  it('неделя через границу года — 31 декабря и 1 января в одной неделе', () => {
     forEachTimeZone((tz) => {
-      expect(weekFrom('2026-12-28'), tz).toEqual({ from: '2026-12-28', to: '2027-01-03' });
+      expect(weekOf('2026-12-27'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
+      expect(weekOf('2026-12-31'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
+      expect(weekOf('2027-01-01'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
     });
   });
 });
 
 describe('shiftWeek', () => {
-  it('вперёд и назад на 7 дней — окно едет целиком, длина не меняется', () => {
+  it('вперёд и назад на неделю — воскресенье остаётся воскресеньем', () => {
     forEachTimeZone((tz) => {
       expect(shiftWeek('2026-09-20', 1), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' });
       expect(shiftWeek('2026-09-20', -1), tz).toEqual({ from: '2026-09-13', to: '2026-09-19' });
@@ -57,7 +61,7 @@ describe('shiftWeek', () => {
 
   it('сдвиг через границу года', () => {
     forEachTimeZone((tz) => {
-      expect(shiftWeek('2026-12-28', 1), tz).toEqual({ from: '2027-01-04', to: '2027-01-10' });
+      expect(shiftWeek('2026-12-27', 1), tz).toEqual({ from: '2027-01-03', to: '2027-01-09' });
     });
   });
 });

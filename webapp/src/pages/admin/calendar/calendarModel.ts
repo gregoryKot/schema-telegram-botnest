@@ -21,20 +21,22 @@ export function todayIn(timezone: string): string {
 }
 
 /**
- * Окно из 7 дней, начинающееся с dateStr — НЕ календарная неделя Пн..Вс.
- * Владелец открыл календарь в воскресенье 2026-09-20 и увидел неделю
- * Пн 14 сен – Вс 20 сен: шесть из семи карточек уже прошли, а «сегодня»
- * оказалась последней и незаметной. Окно от сегодняшнего дня всегда
- * НАЧИНАЕТСЯ актуальным днём, а не заканчивается им.
+ * Календарная неделя, содержащая dateStr, — с ВОСКРЕСЕНЬЯ по субботу
+ * (решение владельца 2026-09-20: его неделя начинается с воскресенья).
+ * До этого была Пн..Вс, и открытый в воскресенье календарь показывал шесть
+ * прошедших дней перед «сегодня». Прошедшие дни внутри недели теперь
+ * рисуются серым «прошло» (SlotChip/chipStyles), так что открытие в субботу
+ * читается как «неделя на исходе», а не как поломка.
  */
-export function weekFrom(dateStr: string): { from: string; to: string } {
-  const to = msToDateStr(dateStringMs(dateStr) + 6 * DAY_MS);
-  return { from: dateStr, to };
+export function weekOf(dateStr: string): { from: string; to: string } {
+  const ms = dateStringMs(dateStr);
+  const sundayMs = ms - new Date(ms).getUTCDay() * DAY_MS; // getUTCDay: 0 = воскресенье; ms — уже полночь UTC
+  return { from: msToDateStr(sundayMs), to: msToDateStr(sundayMs + 6 * DAY_MS) };
 }
 
-/** Сдвиг окна на deltaWeeks (отрицательный — назад) — по-прежнему 7 дней от новой точки. */
+/** Сдвиг на deltaWeeks недель (отрицательный — назад); воскресенье остаётся воскресеньем. */
 export function shiftWeek(from: string, deltaWeeks: number): { from: string; to: string } {
-  return weekFrom(msToDateStr(dateStringMs(from) + deltaWeeks * 7 * DAY_MS));
+  return weekOf(msToDateStr(dateStringMs(from) + deltaWeeks * 7 * DAY_MS));
 }
 
 /** Ключ снятия override'а: строка SlotOverride, а не ячейка — BLOCK по пересечению может стоять на другом времени. */
