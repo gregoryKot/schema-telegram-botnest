@@ -20,7 +20,10 @@ export const YESTERDAY_DATE = (() => {
 // он читался изнутри из `new Date()`, и вызывающий код не мог его задать
 // (функция была нечистой относительно входа). Теперь день приходит
 // аргументом, дефолт — `TODAY_DATE`, поведение старых вызовов не меняется.
-export function fillHistoryGaps(h: DayHistory[], todayDate: string = TODAY_DATE): DayHistory[] {
+export function fillHistoryGaps(
+  h: DayHistory[],
+  todayDate: string = TODAY_DATE,
+): DayHistory[] {
   if (h.length === 0) return h;
   const byDate = new Map(h.map((d) => [d.date, d]));
   const todayEntry = h.find((d) => d.date === todayDate);
