@@ -15,7 +15,7 @@ function makeService(opts: {
   rules?: any[];
   overrides?: any[];
   bookings?: any[];
-  busy?: { start: Date; end: Date }[];
+  busy?: { start: Date; end: Date; summary?: string }[];
   calDavEnabled?: boolean;
   blockBusy?: boolean;
 }) {
@@ -82,6 +82,26 @@ describe('AdminCalendarService.getCalendar — CalDAV выключен', () => {
     const cal = await service.getCalendar(FROM, TO);
     expect(calDav.getBusyTimes).toHaveBeenCalledTimes(1);
     expect(cal.calendarConnected).toBe(true);
+  });
+});
+
+describe('AdminCalendarService.getCalendar — busyTitle из CalDavService.getBusyTimes', () => {
+  it('summary события доезжает до ячейки как busyTitle', async () => {
+    const { service } = makeService({
+      calDavEnabled: true,
+      busy: [
+        {
+          start: new Date('2026-07-13T10:00:00Z'),
+          end: new Date('2026-07-13T11:00:00Z'),
+          summary: 'Встреча с Иваном',
+        },
+      ],
+    });
+    const cal = await service.getCalendar(FROM, TO);
+    const cell = cal.days[0].cells.find(
+      (c) => c.startsAt === '2026-07-13T10:00:00.000Z',
+    );
+    expect(cell?.busyTitle).toBe('Встреча с Иваном');
   });
 });
 

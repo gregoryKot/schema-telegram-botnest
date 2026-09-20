@@ -2,7 +2,8 @@
 // день) + ряд чипов-слотов. Пустой день — тонкая подпись, не пустота без причины.
 import type { AdminCalendarCell, AdminCalendarDay } from '../../../api';
 import { btnGhost } from '../shared';
-import { dayAction, fmtDayTitle } from './calendarModel';
+import { dayAction } from './calendarModel';
+import { dayStatus, fmtDayTitle } from './calendarFormat';
 import { SlotChip } from './SlotChip';
 
 export function DayCard({
@@ -17,8 +18,7 @@ export function DayCard({
   onDayAction: (day: AdminCalendarDay, action: NonNullable<ReturnType<typeof dayAction>>) => void;
 }) {
   const isToday = day.date === today;
-  // Открытые вручную (extra) — такие же свободные для клиента, как и free по правилу.
-  const freeCount = day.cells.filter((c) => (c.state === 'free' || c.state === 'extra') && !c.past).length;
+  const status = dayStatus(day.cells);
   const action = dayAction(day.cells);
   const dayPending = pending.has(day.date);
 
@@ -26,11 +26,9 @@ export function DayCard({
     <div style={{ padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', marginBottom: 10 }}>
         <strong style={{ fontSize: 14, fontWeight: isToday ? 700 : 600, color: isToday ? 'var(--accent)' : 'var(--text)' }}>
-          {fmtDayTitle(day.date)}
+          {isToday ? `Сегодня · ${fmtDayTitle(day.date)}` : fmtDayTitle(day.date)}
         </strong>
-        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-          {freeCount > 0 ? `${freeCount} свободно` : 'свободных нет'}
-        </span>
+        {status && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{status}</span>}
         <span className="u-flex1" />
         {action && (
           <button

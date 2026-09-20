@@ -23,6 +23,8 @@ export interface AdminCalendarCell {
   busy: boolean; // встреча пересекает ячейку НЕЗАВИСИМО от state — при выключенной блокировке слот может быть free И busy разом
   past: boolean; // startsAt <= now + MIN_BOOK_LEAD_HOURS — клиент всё равно не запишется, ячейка не нажимается
   booking?: { id: number; clientName: string; status: 'HELD' | 'CONFIRMED' };
+  /** Названия событий календаря, пересекающих ячейку (через « · »), — только владельцу, за x-admin-key. */
+  busyTitle?: string;
   /** startsAt строки SlotOverride у blocked/extra — clear идёт по нему (BLOCK действует по пересечению и может не совпадать с startsAt ячейки). */
   overrideStartsAt?: string;
 }

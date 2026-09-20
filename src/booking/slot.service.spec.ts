@@ -9,7 +9,7 @@ import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 function makeService(opts: {
   rules?: any[];
   bookings?: any[];
-  busy?: { start: Date; end: Date }[];
+  busy?: { start: Date; end: Date; summary?: string }[];
   blockBusy?: boolean;
   overrides?: any[];
 }) {
@@ -259,6 +259,23 @@ describe('SlotService.getSlots — занятость из внешнего ка
     expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
       '2026-07-13T18:00:00.000Z',
     ]);
+  });
+
+  it('summary события календаря (админский busyTitle) не утекает в публичный ответ /slots', async () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T17:20:00.000Z'),
+        end: new Date('2026-07-13T17:40:00.000Z'),
+        summary: 'Приватная встреча — не для клиентов',
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], blockBusy: true, busy });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    // Слот 17:00 вычеркнут занятостью (как в тесте выше) — тут же проверяем,
+    // что ни в одном из ОСТАВШИХСЯ слотов нет ни поля, ни текста названия.
+    expect(slots.length).toBeGreaterThan(0);
+    expect(slots.every((s) => !('summary' in s))).toBe(true);
+    expect(JSON.stringify(slots)).not.toContain('Приватная встреча');
   });
 });
 

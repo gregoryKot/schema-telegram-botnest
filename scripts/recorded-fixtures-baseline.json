@@ -69,6 +69,10 @@
     "fixtures": ["icloud-propfind-calendars.xml"],
     "spec": "src/booking/caldav-resourcetype.spec.ts"
   },
+  "src/booking/caldav-summary.ts": {
+    "status": "exempt",
+    "reason": "SUMMARY с прода не сохранялся — readSummary покрыт синтетическими VEVENT по RFC 5545 (параметр LANGUAGE, экранирование спецсимволов, обрезка длинных названий до 120 символов), но ни один кейс не сверен с реальным ответом iCloud."
+  },
   "src/booking/meeting.service.ts": {
     "status": "exempt",
     "reason": "Ответы Zoom S2S OAuth (access_token) и Create Meeting (join_url/id) в спеке — авторская форма по документации Zoom API, не захваченный с прода вызов; боевых Zoom-учётных данных для записи нет."

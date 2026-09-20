@@ -7,13 +7,9 @@ import type { AdminCalendarCell } from '../../../api';
 import {
   cellAction,
   dayAction,
-  fmtChipTime,
-  fmtDayTitle,
-  fmtWeekTitle,
   shiftWeek,
-  stateLabel,
   todayIn,
-  weekRange,
+  weekOf,
 } from './calendarModel';
 
 function cell(overrides: Partial<AdminCalendarCell> = {}): AdminCalendarCell {
@@ -27,41 +23,45 @@ function cell(overrides: Partial<AdminCalendarCell> = {}): AdminCalendarCell {
   };
 }
 
-describe('weekRange', () => {
-  it('среда и воскресенье той же недели дают одну и ту же неделю (Пн..Вс)', () => {
+describe('weekOf — неделя с воскресенья по субботу', () => {
+  it('воскресенье, среда и суббота одной недели дают одну и ту же неделю Вс..Сб', () => {
     forEachTimeZone((tz) => {
-      expect(weekRange('2026-09-16'), tz).toEqual({ from: '2026-09-14', to: '2026-09-20' });
-      expect(weekRange('2026-09-20'), tz).toEqual({ from: '2026-09-14', to: '2026-09-20' }); // воскресенье — конец ТОЙ ЖЕ недели
+      // Решение владельца 2026-09-20: неделя начинается с воскресенья — открытый
+      // в воскресенье календарь начинается с «сегодня», а не с прошлого понедельника.
+      expect(weekOf('2026-09-20'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // вс
+      expect(weekOf('2026-09-23'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // ср
+      expect(weekOf('2026-09-26'), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' }); // сб — конец ТОЙ ЖЕ недели
+      expect(weekOf('2026-09-27'), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' }); // следующее вс — новая неделя
     });
   });
 
   it('неделя через границу месяца', () => {
     forEachTimeZone((tz) => {
-      expect(weekRange('2026-09-29'), tz).toEqual({ from: '2026-09-28', to: '2026-10-04' });
+      expect(weekOf('2026-09-29'), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' });
     });
   });
 
   it('неделя через границу года — 31 декабря и 1 января в одной неделе', () => {
     forEachTimeZone((tz) => {
-      expect(weekRange('2026-12-28'), tz).toEqual({ from: '2026-12-28', to: '2027-01-03' });
-      expect(weekRange('2026-12-31'), tz).toEqual({ from: '2026-12-28', to: '2027-01-03' });
-      expect(weekRange('2027-01-01'), tz).toEqual({ from: '2026-12-28', to: '2027-01-03' });
+      expect(weekOf('2026-12-27'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
+      expect(weekOf('2026-12-31'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
+      expect(weekOf('2027-01-01'), tz).toEqual({ from: '2026-12-27', to: '2027-01-02' });
     });
   });
 });
 
 describe('shiftWeek', () => {
-  it('вперёд и назад на 7 дней, понедельник остаётся понедельником', () => {
+  it('вперёд и назад на неделю — воскресенье остаётся воскресеньем', () => {
     forEachTimeZone((tz) => {
-      expect(shiftWeek('2026-09-14', 1), tz).toEqual({ from: '2026-09-21', to: '2026-09-27' });
-      expect(shiftWeek('2026-09-14', -1), tz).toEqual({ from: '2026-09-07', to: '2026-09-13' });
-      expect(shiftWeek('2026-09-14', 0), tz).toEqual({ from: '2026-09-14', to: '2026-09-20' });
+      expect(shiftWeek('2026-09-20', 1), tz).toEqual({ from: '2026-09-27', to: '2026-10-03' });
+      expect(shiftWeek('2026-09-20', -1), tz).toEqual({ from: '2026-09-13', to: '2026-09-19' });
+      expect(shiftWeek('2026-09-20', 0), tz).toEqual({ from: '2026-09-20', to: '2026-09-26' });
     });
   });
 
   it('сдвиг через границу года', () => {
     forEachTimeZone((tz) => {
-      expect(shiftWeek('2026-12-28', 1), tz).toEqual({ from: '2027-01-04', to: '2027-01-10' });
+      expect(shiftWeek('2026-12-27', 1), tz).toEqual({ from: '2027-01-03', to: '2027-01-09' });
     });
   });
 });
@@ -193,43 +193,5 @@ describe('dayAction', () => {
   it('прошедшая blocked-ячейка в «Открыть день» не попадает', () => {
     const cells = [cell({ startsAt: 'b1', state: 'blocked', past: true })];
     expect(dayAction(cells)).toBeNull();
-  });
-});
-
-describe('fmt*', () => {
-  it('fmtChipTime — HH:mm в переданной зоне', () => {
-    expect(fmtChipTime('2026-09-21T07:00:00.000Z', 'Europe/Moscow')).toBe('10:00');
-    expect(fmtChipTime('2026-09-21T07:00:00.000Z', 'UTC')).toBe('07:00');
-  });
-
-  it('fmtDayTitle — «Пн 21 сен»', () => {
-    expect(fmtDayTitle('2026-09-21')).toBe('Пн 21 сен');
-  });
-
-  it('fmtDayTitle — нечитаемая строка не падает, отдаёт пустоту', () => {
-    expect(fmtDayTitle('мусор')).toBe('');
-  });
-
-  it('fmtWeekTitle — внутри месяца, без повторного месяца в начале', () => {
-    expect(fmtWeekTitle('2026-09-21', '2026-09-27')).toBe('21–27 сентября');
-  });
-
-  it('fmtWeekTitle — на стыке месяцев, месяц у каждой даты свой', () => {
-    expect(fmtWeekTitle('2026-09-28', '2026-10-04')).toBe('28 сентября – 4 октября');
-  });
-
-  it('fmtWeekTitle — на стыке годов ведёт себя как обычный стык месяцев', () => {
-    expect(fmtWeekTitle('2026-12-28', '2027-01-03')).toBe('28 декабря – 3 января');
-  });
-});
-
-describe('stateLabel', () => {
-  it('слово для каждого состояния', () => {
-    expect(stateLabel('free')).toBe('свободно');
-    expect(stateLabel('busy')).toBe('встреча в календаре');
-    expect(stateLabel('booked')).toBe('бронь');
-    expect(stateLabel('blocked')).toBe('закрыто вручную');
-    expect(stateLabel('extra')).toBe('открыто вручную');
-    expect(stateLabel('off')).toBe('вне расписания');
   });
 });

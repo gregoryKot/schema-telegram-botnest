@@ -1,22 +1,21 @@
-// Read busy intervals from the therapist's iCloud calendar via a CalDAV
-// calendar-query REPORT, so slots that overlap real calendar events are hidden.
-// Best-effort: recurring events (RRULE) are ignored; on any parse issue we
-// simply return fewer/no intervals (fail-open — slots still show).
+// Read busy intervals (each with an optional SUMMARY, see caldav-summary.ts)
+// from the iCloud calendar via CalDAV. Best-effort: RRULE events are skipped;
+// on parse issues we fail open with fewer/no intervals (slots still show).
 
 import { zonedWallClockToUtc } from '../utils/tz';
+import { readSummary } from './caldav-summary';
 
 export interface Interval {
   start: Date;
   end: Date;
+  summary?: string;
 }
 
 export function busyQueryXml(from: Date, to: Date): string {
   const f = fmtUtc(from),
     t = fmtUtc(to);
-  // <c:expand> asks the server to return each recurring event as concrete
-  // instances within [from,to] (no RRULE), so weekly/repeating meetings count
-  // as busy. If iCloud ignores expand it just returns the master event, which
-  // we then skip — fail-open, no regression.
+  // <c:expand> unrolls recurring events into instances within [from,to]; if
+  // iCloud ignores it, we just skip the (RRULE) master event — fail-open.
   return `<?xml version="1.0" encoding="utf-8"?>
 <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
   <d:prop><c:calendar-data><c:expand start="${f}" end="${t}"/></c:calendar-data></d:prop>
@@ -41,7 +40,8 @@ export function parseBusy(xml: string): Interval[] {
     let end = findDate(ev, 'DTEND');
     if (!start) continue;
     if (!end) end = new Date(start.getTime() + 60 * 60_000); // default 1h
-    out.push({ start, end });
+    const summary = readSummary(ev);
+    out.push({ start, end, ...(summary ? { summary } : {}) });
   }
   return out;
 }
