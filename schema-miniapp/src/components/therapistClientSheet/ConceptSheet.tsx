@@ -1,7 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { SCHEMA_DOMAINS, ALL_SCHEMAS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { CONCEPT_FIELDS } from './helpers';
@@ -273,7 +273,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             : conceptDirty
               ? 'Сохранить концептуализацию'
               : concept
-                ? `✓ Сохранено ${fmtDate(concept.updatedAt.slice(0, 10))}`
+                ? `✓ Сохранено ${fmtDate(momentDayKey(concept.updatedAt))}`
                 : 'Нет изменений'}
         </button>
         {conceptError && (

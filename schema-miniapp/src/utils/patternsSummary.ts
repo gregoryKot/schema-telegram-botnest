@@ -4,6 +4,7 @@
 // Обобщена на схемы (schemaIds: string[]) и режимы (modeId: string).
 
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
+import { momentDayKey } from './format';
 
 export const SUMMARY_WINDOW_DAYS = 7;
 
@@ -32,7 +33,8 @@ export function weekFrequencyMap(
   for (const e of entries) {
     const d = new Date(e.createdAt);
     if (isNaN(d.getTime()) || d < from || d > now) continue;
-    const dayKey = e.createdAt.slice(0, 10);
+    // Окно `from` — от ЛОКАЛЬНОЙ полуночи, поэтому и день записи локальный.
+    const dayKey = momentDayKey(e.createdAt);
     for (const id of e.ids) {
       let set = daysById.get(id);
       if (!set) {

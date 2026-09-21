@@ -13,7 +13,7 @@
 // button: корень — div c role="button" через pressable, не сам <button>).
 import type { CSSProperties, MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import {
@@ -224,7 +224,7 @@ export function PortraitCard({
           }}
         >
           <span className="u-faint11">
-            Тест на схемы · {fmtDate(ysqCompletedAt.slice(0, 10))}
+            Тест на схемы · {fmtDate(momentDayKey(ysqCompletedAt))}
           </span>
           {delta != null && delta !== 0 && (
             <span

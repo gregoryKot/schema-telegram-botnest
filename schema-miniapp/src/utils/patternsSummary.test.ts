@@ -5,6 +5,7 @@ import {
   weekModeSummary,
   weekSchemaFrequency,
 } from './patternsSummary';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const NOW = new Date('2026-07-17T20:00:00');
 const entry = (iso: string, ids: string[]) => ({
@@ -96,5 +97,37 @@ describe('weekSchemaSummary', () => {
       days: 2,
       windowDays: 7,
     });
+  });
+});
+
+// ── Регрессия «день записи по Гринвичу» ──────────────────────────────────────
+// Окно недели отсчитывается от ЛОКАЛЬНОЙ полуночи, а день записи брался
+// срезом строки (`createdAt.slice(0, 10)`) — то есть по Гринвичу. Два вечера
+// одного местного дня расходились на два «дня из семи», и наоборот. Проверка
+// сама обходит зоны и не зависит от часа прогона: ожидание считается
+// локальными геттерами Date, мимо самой сводки.
+describe('weekFrequency — дни считаются в зоне читателя', () => {
+  const PAIR = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
+  const NOW_PAIR = new Date('2026-09-19T01:00:00.000Z');
+  const localDays = (isos: string[]) =>
+    new Set(isos.map((iso) => new Date(iso).toDateString())).size;
+
+  it('две записи одного местного дня — один день, в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      const freq = weekSchemaFrequency(
+        PAIR.map((iso) => entry(iso, ['abandonment'])),
+        NOW_PAIR,
+      );
+      expect(freq.abandonment, tz).toBe(localDays(PAIR));
+    });
+  });
+
+  // Контроль (правило №15): без него проверка выше могла бы совпасть с
+  // прежним поведением во всех зонах и ничего не доказывать.
+  it('контроль: гринвичский срез в какой-то зоне даёт другое число дней', () => {
+    const grinwich = new Set(PAIR.map((iso) => iso.slice(0, 10))).size;
+    const seen = new Set<number>();
+    forEachTimeZone(() => seen.add(localDays(PAIR)));
+    expect([...seen].some((n) => n !== grinwich)).toBe(true);
   });
 });

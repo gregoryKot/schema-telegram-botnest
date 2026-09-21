@@ -1,5 +1,5 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
 
 interface Props {
@@ -72,7 +72,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
         <div>
           <h2 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>YSQ</h2>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-            {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '–'}
+            {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
           </div>
         </div>
         <div className="u-row8">
@@ -101,7 +101,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
             ))}
             {chronHist.map((run, i) => (
               <text key={i} x={xOf(i)} y={CB + 18} fontSize={10} fill="var(--text-faint)" textAnchor="middle">
-                {fmtDate(run.completedAt.slice(0, 10))}
+                {fmtDate(momentDayKey(run.completedAt))}
               </text>
             ))}
             {top5.map(({ id }) => {
@@ -141,8 +141,8 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
         <div className="eyebrow u-mb16">Все шкалы</div>
         <div style={{ display: 'grid', gridTemplateColumns: `1fr repeat(${prev ? 3 : 1}, 80px)`, gap: '0 8px', marginBottom: 8 }}>
           <span className="eyebrow">Схема</span>
-          <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(latest.completedAt.slice(0, 10))}</span>
-          {prev && <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(prev.completedAt.slice(0, 10))}</span>}
+          <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(momentDayKey(latest.completedAt))}</span>
+          {prev && <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(momentDayKey(prev.completedAt))}</span>}
           {prev && <span className="eyebrow" style={{ textAlign: 'right' }}>Δ</span>}
         </div>
         {allSorted.map(score => {

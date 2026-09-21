@@ -36,3 +36,24 @@ export function withTimeZone<T>(tz: string, fn: () => T): T {
 export function forEachTimeZone(fn: (tz: string) => void): void {
   for (const tz of TIME_ZONES) withTimeZone(tz, () => fn(tz));
 }
+
+/**
+ * То же для асинхронной проверки (рендер компонента, waitFor). Отдельная
+ * функция, а не ветка в withTimeZone: у синхронной версии finally отработал
+ * бы ДО того, как промис внутри дождался своего — зона вернулась бы раньше
+ * первого же await, и прогон проверял бы зону процесса, а не заданную.
+ */
+export async function forEachTimeZoneAsync(
+  fn: (tz: string) => Promise<void>,
+): Promise<void> {
+  for (const tz of TIME_ZONES) {
+    const previous = process.env.TZ;
+    process.env.TZ = tz;
+    try {
+      await fn(tz);
+    } finally {
+      if (previous === undefined) delete process.env.TZ;
+      else process.env.TZ = previous;
+    }
+  }
+}

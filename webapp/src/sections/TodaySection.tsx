@@ -12,7 +12,7 @@ import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-import { fmtDate, todayStr } from '../utils/format';
+import { momentDayLabel, momentIsToday, momentTime } from '../utils/format';
 import { greeting, formatHeaderDate, readLocalIds, resolveTaskText } from './today/helpers';
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { Sparkline } from './today/Sparkline';
@@ -99,12 +99,11 @@ export function TodaySection({
     Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
       .then(([schema, mode, gratitude]) => {
         if (ignore) return;
-        const today = todayStr();
-        const label = (iso: string) => iso.slice(0, 10) === today ? 'Сегодня' : fmtDate(iso.slice(0, 10));
+        // Момент — в зоне читателя, календарный день — как есть: см. utils/momentDate.
         const all = [
-          ...schema.slice(0, 2).map(e => ({ type: 'schema', label: e.trigger.slice(0, 50), time: e.createdAt.slice(11, 16), dateStr: label(e.createdAt), sortKey: e.createdAt })),
-          ...mode.slice(0, 2).map(e => ({ type: 'mode', label: e.situation.slice(0, 50), time: e.createdAt.slice(11, 16), dateStr: label(e.createdAt), sortKey: e.createdAt })),
-          ...gratitude.slice(0, 2).map(e => ({ type: 'gratitude', label: e.items[0]?.slice(0, 50) ?? 'Благодарность', time: '', dateStr: e.date === today ? 'Сегодня' : fmtDate(e.date), sortKey: e.date })),
+          ...schema.slice(0, 2).map(e => ({ type: 'schema', label: e.trigger.slice(0, 50), time: momentTime(e.createdAt), dateStr: momentDayLabel(e.createdAt), sortKey: e.createdAt })),
+          ...mode.slice(0, 2).map(e => ({ type: 'mode', label: e.situation.slice(0, 50), time: momentTime(e.createdAt), dateStr: momentDayLabel(e.createdAt), sortKey: e.createdAt })),
+          ...gratitude.slice(0, 2).map(e => ({ type: 'gratitude', label: e.items[0]?.slice(0, 50) ?? 'Благодарность', time: '', dateStr: momentDayLabel(e.date), sortKey: e.date })),
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
@@ -116,7 +115,6 @@ export function TodaySection({
 
     api.history(14).then(days => {
       if (ignore) return;
-      const today = todayStr();
       const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
       const vals = sorted.map(d => {
         const rs = Object.values(d.ratings) as number[];
@@ -124,7 +122,7 @@ export function TodaySection({
         return rs.reduce((s, v) => s + v, 0) / rs.length;
       });
       // Add today if not already in history
-      const hasToday = sorted.some(d => d.date === today);
+      const hasToday = sorted.some(d => momentIsToday(d.date));
       if (!hasToday) {
         const rs = Object.values(ratings);
         const avg = rs.length > 0 ? rs.reduce((s, v) => s + v, 0) / rs.length : 0;
