@@ -8,7 +8,7 @@ import { getTaskDisplayText } from '../components/taskDisplayText';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
-import { fmtDate } from '../utils/format';
+import { fmtAgo, fmtDate } from '../utils/format';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
@@ -42,14 +42,6 @@ const EXERCISES = [
   { id: 'phrase' as ExId, num: '08', eyebrow: 'Внутренний голос',      title: 'Критик или забота?',         desc: 'Разобрать фразу внутреннего голоса по девяти приметам, переписать её.', time: '6–10 мин', color: 'var(--c-teal)' },
 ];
 
-function fmtAgo(d: string | null): string {
-  if (!d) return 'пройдено';
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
 function fmtCount(n: number): string {
   if (n === 1) return `1 запись`;
   if (n < 5) return `${n} записи`;
@@ -300,7 +292,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
                     {s ? (
                       <span className="done">
                         <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--c-moss)', display: 'inline-block' }} />
-                        {fmtCount(s.count)} · {fmtAgo(s.lastDone)}
+                        {fmtCount(s.count)} · {s.lastDone ? fmtAgo(s.lastDone) : 'пройдено'}
                       </span>
                     ) : <span>не начато</span>}
                   </div>

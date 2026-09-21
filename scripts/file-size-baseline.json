@@ -1489,7 +1489,7 @@
   "webapp/src/sections/DiarySection.tsx": 330,
   "webapp/src/sections/practice/CrisisBlock.tsx": 23,
   "webapp/src/sections/practice/HereAndNowBlock.tsx": 94,
-  "webapp/src/sections/PracticeSection.tsx": 400,
+  "webapp/src/sections/PracticeSection.tsx": 392,
   "webapp/src/sections/profile/DeleteAccountDialog.tsx": 56,
   "webapp/src/sections/profile/heatmapShare.tsx": 17,
   "webapp/src/sections/ProfileSection.tsx": 572,
