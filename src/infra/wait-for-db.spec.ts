@@ -62,6 +62,28 @@ async function reservePort(): Promise<number> {
 const url = (port: number) => `postgresql://u:p@127.0.0.1:${port}/db`;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Бинд на ЗАДАННЫЙ порт с бюджетом ретраев. Между reservePort() и этим вызовом
+// номер свободен для всей машины: его может занять и слушатель соседнего
+// jest-воркера, и локальный порт исходящего соединения (таких в прогоне на
+// порядки больше — каждый supertest-запрос берёт эфемерный порт). Одна попытка
+// бинда и делала тест флаки: EADDRINUSE ронял джобу `backend` на посторонних
+// PR (PR #542). Порт освобождается за миллисекунды, поэтому ждём его, а не
+// сдаёмся с первого отказа.
+async function listenWithRetry(port: number, attempts = 20): Promise<Server> {
+  for (let i = 0; ; i++) {
+    const { server, port: bound } = listen(port);
+    try {
+      await bound;
+      return server;
+    } catch (e) {
+      server.close();
+      if (i >= attempts || (e as NodeJS.ErrnoException).code !== 'EADDRINUSE')
+        throw e;
+      await wait(50);
+    }
+  }
+}
+
 describe('wait-for-db (ждём готовности БД перед migrate deploy)', () => {
   const alive: ChildProcess[] = [];
   const servers: Server[] = [];
@@ -89,14 +111,27 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
 
   it('БД недоступна за отведённый бюджет → выходит с кодом 1 (не виснет)', async () => {
     // Порт, где никто не слушает (connect → ECONNREFUSED), маленький таймаут.
-    const { proc, code } = runWait({
-      DATABASE_URL: url(await reservePort()),
-      DB_WAIT_INTERVAL_MS: '100',
-      DB_WAIT_CONNECT_MS: '200',
-      DB_WAIT_TIMEOUT_MS: '600',
-    });
-    alive.push(proc);
-    expect(await code).toBe(1);
+    //
+    // Зеркало той же гонки: порт от reservePort() пуст в момент выдачи, но за
+    // 600мс бюджета на нём может подняться слушатель соседнего воркера — тогда
+    // connect удастся, процесс выйдет с 0, и тест упадёт с другой стороны.
+    // Держать порт «закрытым» нельзя: bind без listen в Node не выражается, а
+    // слушающий сокет принимает соединение, как бы мы его потом ни рвали.
+    // Поэтому нарушенное предусловие не замалчиваем, а переигрываем на новом
+    // порту. Настоящий регресс (код 0 на реально пустом порту) даёт 0 на ВСЕХ
+    // попытках — тест всё равно краснеет, просто на пару секунд позже.
+    let code = 0;
+    for (let i = 0; i < 5 && code !== 1; i++) {
+      const run = runWait({
+        DATABASE_URL: url(await reservePort()),
+        DB_WAIT_INTERVAL_MS: '100',
+        DB_WAIT_CONNECT_MS: '200',
+        DB_WAIT_TIMEOUT_MS: '600',
+      });
+      alive.push(run.proc);
+      code = await run.code;
+    }
+    expect(code).toBe(1);
   }, 20000);
 
   it('БД поднялась позже (та самая гонка старта) → ретраи дожидаются, код 0', async () => {
@@ -112,9 +147,7 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
     });
     alive.push(proc);
     await wait(600); // БД ещё «спит» — идут ретраи
-    const late = listen(PORT); // «под встал»
-    servers.push(late.server);
-    await late.port; // не дождаться биндинга — значит проверять нечего
+    servers.push(await listenWithRetry(PORT)); // «под встал»
     expect(await code).toBe(0);
   }, 20000);
 
