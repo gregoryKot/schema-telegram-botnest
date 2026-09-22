@@ -17,6 +17,7 @@ import { FaqList } from './landing/cards';
 import { LandingStyles } from './landing/LandingStyles';
 import { trackGoalOnce } from '../lib/metrika';
 import { useLandingGoals } from './landing/useLandingGoals';
+import { useHashJump } from './landing/useHashJump';
 import {
   WorkSection,
   EducationSection,
@@ -36,6 +37,7 @@ export function LandingPage() {
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   useLandingGoals();
+  useHashJump();
   // Live session price (editable in admin) — keep the landing in sync with checkout.
   const [sessionPrice, setSessionPrice] = useState(4000);
   useEffect(() => {
@@ -107,12 +109,6 @@ export function LandingPage() {
     // search обязателен: без него терялись utm_source/yclid Яндекс.Директа.
     window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + hash);
   }, [activeSection]);
-
-  // On first load with a hash (e.g. shared /#prices) jump to that block
-  useEffect(() => {
-    const el = window.location.hash && document.getElementById(window.location.hash.slice(1));
-    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
-  }, []);
 
   return (
     // landing-personal-brand изолирует эту страницу от продуктового акцента

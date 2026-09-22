@@ -234,7 +234,9 @@ describe('LandingPage — хэш-переход при первой загруз
       const scrollSpy = vi.fn();
       pricesSection.scrollIntoView = scrollSpy;
       act(() => { vi.runAllTimers(); });
-      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+      // instant, не auto/smooth: html{scroll-behavior:smooth} из LandingStyles
+      // превращал бы прыжок в анимацию на тысячи пикселей — см. useHashJump.
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
     } finally {
       vi.useRealTimers();
       Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
@@ -281,7 +283,59 @@ describe('LandingPage — хэш-переход при первой загруз
       const scrollSpy = vi.fn();
       anxietySection.scrollIntoView = scrollSpy;
       act(() => { vi.runAllTimers(); });
-      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+      // instant, не auto/smooth: та же причина, что у теста /#prices выше —
+      // smooth из LandingStyles съедал переход на восемь тысяч пикселей.
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
+  it('после догрузки вёрстки прыжок повторяется (0/200/600мс)', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      act(() => { vi.runAllTimers(); });
+      // Один прыжок в начале не защищает от того, что карточка уедет вниз,
+      // пока догружаются картинки — нужен повтор, а не однократный вызов.
+      expect(scrollSpy.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
+  it('живой скролл пользователя (wheel) отменяет оставшиеся повторы', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      const callsAfterFirstJump = scrollSpy.mock.calls.length;
+      act(() => { window.dispatchEvent(new Event('wheel')); });
+      act(() => { vi.runAllTimers(); });
+      // Пользователь уже сам скроллит — оставшиеся 200/600мс не должны
+      // дёргать экран у него под рукой.
+      expect(scrollSpy.mock.calls.length).toBe(callsAfterFirstJump);
     } finally {
       vi.useRealTimers();
       Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
