@@ -9,6 +9,7 @@ import {
   TOPICS_A, TOPICS_B,
 } from './landing/constants';
 import { isPracticeHost } from '../utils/domainChrome';
+import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 import { TgLink, SectionNav, MobileMenu } from './landing/nav';
 import { MarqueeStrip } from './landing/MarqueeStrip';
 import { BookingForm } from './landing/BookingForm';
@@ -418,7 +419,7 @@ export function LandingPage() {
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--line)', padding: '28px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} Григорий Котляревский</span>
+          <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5 }}>© {new Date().getFullYear()} {OPERATOR_NAME} · {OPERATOR_STATUS} · ИНН {OPERATOR_INN}</span>
           <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
             <a href="/articles" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Статьи</a>
             <a href="/reviews" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Отзывы</a>

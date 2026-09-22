@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingPage } from './LandingPage';
+import { OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 
 vi.mock('../api', () => ({
   api: {
@@ -128,6 +129,18 @@ describe('LandingPage — smoke', () => {
     const menuBtns = screen.getAllByLabelText('Открыть меню');
     fireEvent.click(menuBtns[0]);
     expect(screen.getByLabelText('Закрыть меню')).toBeTruthy();
+  });
+});
+
+describe('LandingPage — футер показывает реквизиты', () => {
+  it('в футере есть ИНН и статус самозанятого из общего источника реквизитов', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const footer = document.querySelector('footer');
+    expect(footer).toBeTruthy();
+    const text = footer?.textContent ?? '';
+    expect(text).toMatch(new RegExp(`ИНН\\s+${OPERATOR_INN}`));
+    expect(text).toMatch(new RegExp(OPERATOR_STATUS));
   });
 });
 
