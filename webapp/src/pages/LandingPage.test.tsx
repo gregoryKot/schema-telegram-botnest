@@ -242,6 +242,53 @@ describe('LandingPage — хэш-переход при первой загруз
   });
 });
 
+// Регрессия (задача 2026-09-22): объявления Яндекс.Директа ведут прямо на
+// карточку темы («Отношения», «Тревога и контроль» и т.п.), а не на верх
+// блока — карточке нужен свой id и отступ прокрутки под липкую шапку.
+describe('LandingPage — якоря карточек «С чем я работаю» (для объявлений Директа)', () => {
+  it.each([
+    ['Отношения', 'relationships'],
+    ['Самооценка', 'self-esteem'],
+    ['Тревога и контроль', 'anxiety'],
+    ['Повторяющиеся паттерны', 'patterns'],
+  ])('у карточки «%s» есть id=%s и отступ прокрутки под липкую шапку', async (title, id) => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const heading = screen.getByText(title);
+    const card = heading.closest('div[id]') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.id).toBe(id);
+    // Без scrollMarginTop карточка при переходе по якорю прячется под sticky-bar (58px).
+    expect(card.style.scrollMarginTop).toBe('72px');
+  });
+});
+
+describe('LandingPage — хэш-переход при первой загрузке (/#anxiety)', () => {
+  const originalLocation = window.location;
+
+  it('открытие ссылки с хэшем на карточку прокручивает к ней', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      act(() => { vi.runAllTimers(); });
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+});
+
 // Продуктовые цели лендинга (Яндекс.Метрика, владелец решил не ждать
 // согласия на баннере — см. lib/metrika). Гоняем на реальной очереди
 // window.ym.a, а не на моке '../lib/metrika': для booking_start важно

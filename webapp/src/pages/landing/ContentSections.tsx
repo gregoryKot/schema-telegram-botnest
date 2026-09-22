@@ -20,8 +20,9 @@ export function WorkSection() {
             Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально – достаточно ощущения «это про меня».
           </p>
           <div className="work-grid">
+            {/* Якоря карточек — для объявлений Директа, ведущих сразу на конкретную карточку; 72 = высота липкой шапки (58) плюс воздух, иначе карточка прячется под шапкой. */}
             {WORK_THEMES.map(t => (
-              <div key={t.title} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px 22px' }}>
+              <div key={t.title} id={t.id} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px 22px', scrollMarginTop: 72 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>{t.title}</h3>
                 <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{t.text}</p>
               </div>
