@@ -31,7 +31,15 @@ function fillValid() {
   fireEvent.click(screen.getByRole('checkbox'));
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Метрика (lib/metrika) грузится реально, не мокается — тест цели ниже
+  // читает очередь window.ym.a напрямую (единый приём с LandingPage/BookingPicker).
+  sessionStorage.clear();
+  delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
+  delete (window as unknown as { ym?: unknown }).ym;
+  document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
+});
 afterEach(() => cleanup());
 
 describe('BookingForm — валидация', () => {
@@ -135,6 +143,25 @@ describe('BookingForm — отказ сети виден пользовател�
     expect(
       screen.getByRole('button', { name: /Записаться на знакомство/ }),
     ).toHaveProperty('disabled', false);
+  });
+});
+
+// Продуктовая цель лендинга: эта форма — резервная запись только на
+// бесплатное знакомство 15 минут (см. lib/metrika trackBookingSubmit).
+describe('BookingForm — цель Метрики', () => {
+  it('успешная отправка шлёт booking_submit и booking_intro', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(
+      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+    );
+
+    await screen.findByText('Заявка отправлена');
+    const goals = ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [])
+      .filter((c) => c[1] === 'reachGoal')
+      .map((c) => c[2]);
+    expect(goals).toEqual(['booking_submit', 'booking_intro']);
   });
 });
 

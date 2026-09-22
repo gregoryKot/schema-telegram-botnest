@@ -14,6 +14,8 @@ import { MarqueeStrip } from './landing/MarqueeStrip';
 import { BookingForm } from './landing/BookingForm';
 import { FaqList } from './landing/cards';
 import { LandingStyles } from './landing/LandingStyles';
+import { trackGoalOnce } from '../lib/metrika';
+import { useLandingGoals } from './landing/useLandingGoals';
 import {
   WorkSection,
   EducationSection,
@@ -32,6 +34,7 @@ export function LandingPage() {
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  useLandingGoals();
   // Live session price (editable in admin) — keep the landing in sync with checkout.
   const [sessionPrice, setSessionPrice] = useState(4000);
   useEffect(() => {
@@ -55,12 +58,9 @@ export function LandingPage() {
   // Запись живёт на сайте практики (kotlarewski). На самом kotlarewski —
   // плавно скроллим к форме; на schemehappens и прочих — уводим на практику.
   const scrollToBooking = useCallback(() => {
-    const onPractice = isPracticeHost();
-    if (onPractice) {
-      scrollIntoViewSafe(bookingRef.current, { block: 'start' });
-    } else {
-      window.location.href = PRACTICE_BOOKING_URL;
-    }
+    trackGoalOnce('booking_start');
+    if (isPracticeHost()) scrollIntoViewSafe(bookingRef.current, { block: 'start' });
+    else window.location.href = PRACTICE_BOOKING_URL;
   }, []);
 
   useEffect(() => {
@@ -103,14 +103,13 @@ export function LandingPage() {
   useEffect(() => {
     if (!scrollspyReadyRef.current) return;
     const hash = activeSection ? `#${activeSection}` : '';
-    window.history.replaceState(window.history.state, '', window.location.pathname + hash);
+    // search обязателен: без него терялись utm_source/yclid Яндекс.Директа.
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + hash);
   }, [activeSection]);
 
   // On first load with a hash (e.g. shared /#prices) jump to that block
   useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (!id) return;
-    const el = document.getElementById(id);
+    const el = window.location.hash && document.getElementById(window.location.hash.slice(1));
     if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
   }, []);
 

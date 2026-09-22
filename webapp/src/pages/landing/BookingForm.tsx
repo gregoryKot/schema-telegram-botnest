@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { Btn } from '../../components/landing-kit';
 import { leadSource } from '../../utils/leadSource';
 import { TG_URL } from './constants';
+import { trackBookingSubmit } from '../../lib/metrika';
 
 // ─── Booking form (fallback when slot picker unavailable) ────────────────────
 export function BookingForm() {
@@ -19,7 +20,7 @@ export function BookingForm() {
     try {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource() });
       setStatus('done');
-      (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
+      trackBookingSubmit('INTRO_15');
     } catch { setStatus('error'); }
   };
 

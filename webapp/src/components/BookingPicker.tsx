@@ -4,6 +4,7 @@ import { BookingErrorNote } from './BookingErrorNote';
 import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { trackBookingSubmit, trackGoalOnce } from '../lib/metrika';
 
 const MSK = 'Europe/Moscow';
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -186,7 +187,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         returning, acceptedOffer: consent, website, source: leadSource(),
       });
       setCancelToken(res.cancelToken);
-      (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
+      trackBookingSubmit(sessionType);
       if (res.paymentUrl) {
         // Paid session: show a "reserved, go to pay" screen first (so the client
         // always sees the booking is registered even if Robokassa fails), then
@@ -233,7 +234,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         <div style={labelSt}>Выберите день</div>
         <div style={{ display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
           {dayList.map((k) => (
-            <Chip key={k} active={k === day} onClick={() => { setDay(k); setSlot(null); }}>
+            <Chip key={k} active={k === day} onClick={() => { trackGoalOnce('booking_start'); setDay(k); setSlot(null); }}>
               {dayLabel(days.get(k)![0].startsAt)}
             </Chip>
           ))}
@@ -244,7 +245,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         <div style={labelSt}>Время · МСК</div>
         <div className="u-wrap8">
           {(days.get(day) ?? []).map((s) => (
-            <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => setSlot(s)}>
+            <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => { trackGoalOnce('booking_start'); setSlot(s); }}>
               {timeLabel(s.startsAt)}
             </Chip>
           ))}

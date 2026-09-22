@@ -836,14 +836,8 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .cookie-btn:active { transform: scale(0.97); }
 .cookie-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Equal prominence (2026 GDPR): both reject + accept are solid, same size & weight */
-.cookie-btn-reject {
-  background: var(--surface-3);
-  color: var(--text);
-  border: 1px solid var(--line);
-}
-.cookie-btn-reject:hover { background: var(--line-strong); border-color: var(--line-strong); }
-
+/* Кнопка у баннера одна («Понятно»): .cookie-btn-reject удалён вместе с
+   выбором «Только необходимые» — мёртвый CSS не живёт до следующего раза. */
 .cookie-btn-accept {
   color: var(--on-accent);
   border: 1px solid transparent;
