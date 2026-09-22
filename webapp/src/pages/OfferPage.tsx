@@ -1,7 +1,6 @@
+import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
+
 const EFFECTIVE_DATE = '17 сентября 2026 г.';
-const OPERATOR_NAME  = 'Котляревский Григорий Юрьевич';
-const OPERATOR_INN   = '450163793969';
-const OPERATOR_EMAIL = 'gregorykot@gmail.com';
 
 export function OfferPage() {
   return (
