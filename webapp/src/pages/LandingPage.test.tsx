@@ -316,6 +316,36 @@ describe('LandingPage — хэш-переход при первой загруз
     }
   });
 
+  it('позднее уезжание вёрстки (после 600мс) всё равно ловится растянутой лестницей', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      // Замер на проде 2026-09-22: карточка вставала на 44px вместо 72px —
+      // шрифты/картинки уводят вёрстку уже ПОСЛЕ 600мс, где кончалась старая
+      // лестница повторов. 700мс — только первые повторы (0/150/400).
+      act(() => { vi.advanceTimersByTime(700); });
+      const callsAt700ms = scrollSpy.mock.calls.length;
+      // Оставшиеся повторы растянутой лестницы (900/1600/2500) обязаны
+      // прыгнуть ЕЩЁ раз — именно они и ловят поздний сдвиг, который прежняя
+      // лестница на 600мс уже пропускала.
+      act(() => { vi.advanceTimersByTime(2000); });
+      expect(scrollSpy.mock.calls.length).toBeGreaterThan(callsAt700ms);
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
   it('живой скролл пользователя (wheel) отменяет оставшиеся повторы', async () => {
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
