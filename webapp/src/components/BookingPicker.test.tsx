@@ -40,6 +40,12 @@ beforeEach(() => {
   // jsdom не реализует scrollIntoView (компонент скроллит результат в
   // видимую область на терминальных экранах) — без стаба падает с TypeError.
   Element.prototype.scrollIntoView = vi.fn();
+  // Метрика (lib/metrika) грузится реально, не мокается — тесты ниже читают
+  // очередь window.ym.a напрямую.
+  sessionStorage.clear();
+  delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
+  delete (window as unknown as { ym?: unknown }).ym;
+  document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
 });
 
 afterEach(() => {
@@ -188,5 +194,59 @@ describe('BookingPicker — занятый слот и ошибки API', () => 
     expect(screen.queryByText(/Обновите страницу/)).toBeNull();
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(reportClientError).toHaveBeenCalledWith({ message: 'booking submit failed: HTTP 500', section: 'booking' });
+  });
+});
+
+// Продуктовые цели лендинга (Яндекс.Метрика) — trackGoalOnce/trackBookingSubmit
+// не мокаются, тесты читают реальную очередь window.ym.a напрямую (единый
+// приём с LandingPage.test.tsx).
+describe('BookingPicker — цели Метрики', () => {
+  function ymQueue(): unknown[][] {
+    return (window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [];
+  }
+  function goalHits(name: string) {
+    return ymQueue().filter((c) => c[1] === 'reachGoal' && c[2] === name);
+  }
+
+  it('клик по чипу дня шлёт booking_start', async () => {
+    await renderLoaded();
+    // День — первая кнопка в DOM-порядке: формат-селектор скрыт при одной
+    // опции (SLOTS/OPTIONS выше), кнопка сабмита появляется только после
+    // выбора слота.
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(goalHits('booking_start').length).toBe(1);
+  });
+
+  it('клик по чипу времени шлёт booking_start', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    expect(goalHits('booking_start').length).toBe(1);
+  });
+
+  it('успешная запись (дефолтный тип INTRO_15) шлёт booking_submit и booking_intro', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+    expect(goalHits('booking_submit').length).toBe(1);
+    expect(goalHits('booking_intro').length).toBe(1);
+  });
+
+  it('успешная запись с выбранным SESSION_50 шлёт booking_submit и booking_session', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+    ]);
+    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 'tok2', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на|Оплатить/ }));
+    await act(async () => {});
+    expect(goalHits('booking_submit').length).toBe(1);
+    expect(goalHits('booking_session').length).toBe(1);
   });
 });

@@ -24,19 +24,47 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-// jsdom не реализует IntersectionObserver (useReveal) — минимальный мок,
-// как рекомендует сам хук в комментарии про failsafe.
+// jsdom не реализует IntersectionObserver (useReveal, useLandingGoals) —
+// минимальный мок, как рекомендует сам хук useReveal в комментарии про
+// failsafe. Инстансы и их callback сохраняются в статическом поле, чтобы
+// тесты на цель prices_view могли дёрнуть пересечение вручную.
 class MockIntersectionObserver {
-  observe() {}
-  disconnect() {}
+  static instances: MockIntersectionObserver[] = [];
+  callback: IntersectionObserverCallback;
+  elements: Element[] = [];
+  disconnected = false;
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    MockIntersectionObserver.instances.push(this);
+  }
+  observe(el: Element) { this.elements.push(el); }
+  disconnect() { this.disconnected = true; }
   unobserve() {}
 }
 vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+
+// Имитирует реальное поведение браузера: после disconnect() колбэк больше
+// не вызывается (наш мок сам по себе этого не гарантирует — this.callback
+// вызывается тестом напрямую, а не движком).
+function fireIntersection(inst: MockIntersectionObserver, isIntersecting: boolean) {
+  if (inst.disconnected) return;
+  inst.callback([{ isIntersecting } as IntersectionObserverEntry], inst as unknown as IntersectionObserver);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getSiteContent.mockResolvedValue({ heroPhoto: null, marqueeTopicsA: [], marqueeTopicsB: [] });
   localStorage.clear();
+  sessionStorage.clear();
+  MockIntersectionObserver.instances = [];
+  // Метрика (lib/metrika) грузится реально, не мокается — booking_start
+  // проверяет именно дедуп «одна цель за сессию» из trackGoalOnce.
+  delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
+  delete (window as unknown as { ym?: unknown }).ym;
+  document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
+  // jsdom не реализует scrollIntoView — глобальный дефолт-стаб; отдельные
+  // тесты ниже переопределяют его точечно на конкретном элементе.
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(() => cleanup());
@@ -198,5 +226,80 @@ describe('LandingPage — хэш-переход при первой загруз
       vi.useRealTimers();
       Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
     }
+  });
+});
+
+// Продуктовые цели лендинга (Яндекс.Метрика, владелец решил не ждать
+// согласия на баннере — см. lib/metrika). Гоняем на реальной очереди
+// window.ym.a, а не на моке '../lib/metrika': для booking_start важно
+// проверить именно дедуп «одна цель за сессию», который живёт в
+// trackGoalOnce — мок его не воспроизведёт.
+describe('LandingPage — цели Метрики', () => {
+  function ymQueue(): unknown[][] {
+    return (window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [];
+  }
+  function goalHits(name: string) {
+    return ymQueue().filter((c) => c[1] === 'reachGoal' && c[2] === name);
+  }
+
+  it('клик по ссылке t.me/kotlarewski шлёт цель tg_click (делегированный слушатель)', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const link = document.querySelector('a[href="https://t.me/kotlarewski"]') as HTMLAnchorElement;
+    expect(link).toBeTruthy();
+    // jsdom пытается «перейти» по реальной ссылке — гасим переход, тестируем
+    // только факт клика (как MobileAppBanner.test.tsx).
+    link.addEventListener('click', (e) => e.preventDefault());
+    fireEvent.click(link);
+    expect(goalHits('tg_click').length).toBe(1);
+  });
+
+  it('клик по кнопке записи шлёт booking_start, повторный клик по другой кнопке — уже нет (одна цель за сессию)', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByText('Записаться бесплатно →')[0]);
+    fireEvent.click(screen.getAllByText('Записаться на знакомство →')[0]);
+    expect(goalHits('booking_start').length).toBe(1);
+  });
+
+  it('пересечение блока #prices на 50% шлёт цель prices_view один раз', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const pricesEl = document.getElementById('prices')!;
+    const inst = MockIntersectionObserver.instances.find((i) => i.elements.includes(pricesEl));
+    expect(inst).toBeTruthy();
+    act(() => {
+      fireIntersection(inst!, true);
+      fireIntersection(inst!, true);
+    });
+    expect(goalHits('prices_view').length).toBe(1);
+  });
+});
+
+// Регрессия: эффект зеркалирования активной секции в адресную строку раньше
+// писал только pathname + hash и СРЕЗАЛ query — ссылка из Яндекс.Директа
+// (?utm_source=yandex&yclid=123) теряла параметры через миг после загрузки,
+// ещё до того, как tag.js успевал их прочитать.
+describe('LandingPage — UTM/yclid не теряются при скролле (регрессия)', () => {
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('utm_source и yclid остаются в адресной строке после скролла', async () => {
+    window.history.replaceState({}, '', '/?utm_source=yandex&yclid=123#booking');
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    // Первый scroll — служебный прогон скроллспая (firstRun), второй уже
+    // пишет activeSection и триггерит replaceState.
+    await act(async () => {
+      fireEvent.scroll(window);
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    await act(async () => {
+      fireEvent.scroll(window);
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(window.location.search).toContain('utm_source=yandex');
+    expect(window.location.search).toContain('yclid=123');
   });
 });
