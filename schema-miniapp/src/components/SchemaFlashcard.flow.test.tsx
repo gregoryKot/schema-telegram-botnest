@@ -87,7 +87,7 @@ describe('SchemaFlashcard — весь путь mode → response → need → a
   it('пустая рефлексия уходит в api как undefined, а не пустая строка', async () => {
     render(<SchemaFlashcard onClose={() => {}} />);
     passGrounding();
-    fireEvent.click(screen.getByText('Злой Ребёнок'));
+    fireEvent.click(screen.getByText('Сердитый Ребёнок'));
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Автономия'));
     fireEvent.change(

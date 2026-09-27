@@ -376,7 +376,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             {/* Tools */}
             <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}><MMIcon name="auto" size={17} /></TbBtn>
             <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}><MMIcon name="grid" size={17} /></TbBtn>
-            <TbBtn label="Зоны: здоровый взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}><MMIcon name="zones" size={17} /></TbBtn>
+            <TbBtn label="Зоны: Здоровый Взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}><MMIcon name="zones" size={17} /></TbBtn>
             <div ref={tplWrapRef} style={{ position: 'relative' }}>
               <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret><MMIcon name="layers" size={17} /></TbBtn>
               {tplOpen && (

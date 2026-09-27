@@ -98,7 +98,7 @@ describe('ResultPhase — низкие потребности → подсказ
       />,
     );
     expect(screen.getByText('Возможные активные схемы')).toBeTruthy();
-    expect(screen.getByText('Домен: Отчуждение и отвержение')).toBeTruthy();
+    expect(screen.getByText('Домен: Нарушение связи и отвержение')).toBeTruthy();
     expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
     expect(screen.getByText('2/10 в детстве')).toBeTruthy();
   });

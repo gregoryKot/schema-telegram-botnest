@@ -52,7 +52,7 @@ export const api = {
     get<{ providers: { provider: string }[] }>('/api/auth/me').then((r) =>
       r.providers.map((p) => p.provider),
     ),
-  // Случайная фраза Здорового взрослого (пул канала; готовый контент).
+  // Случайная фраза Здорового Взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   // ─── Case Conceptualization ──────────────────────────────────────────────────
   getConceptualization: (clientId: number) =>

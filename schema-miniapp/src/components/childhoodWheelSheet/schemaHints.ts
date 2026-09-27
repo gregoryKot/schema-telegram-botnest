@@ -6,7 +6,7 @@ export const SCHEMA_HINTS: Record<
   { domain: string; color: string; schemas: string[] }
 > = {
   attachment: {
-    domain: 'Отчуждение и отвержение',
+    domain: 'Нарушение связи и отвержение',
     color: 'var(--accent-red)',
     schemas: [
       'Покинутость / Нестабильность',
@@ -16,7 +16,7 @@ export const SCHEMA_HINTS: Record<
     ],
   },
   autonomy: {
-    domain: 'Нарушение автономии',
+    domain: 'Нарушенная автономия',
     color: 'var(--accent-orange)',
     schemas: [
       'Зависимость / Беспомощность',
@@ -25,7 +25,7 @@ export const SCHEMA_HINTS: Record<
     ],
   },
   expression: {
-    domain: 'Ориентация на других + Бдительность',
+    domain: 'Направленность на других + Бдительность',
     color: 'var(--accent-green)',
     schemas: [
       'Покорность',
@@ -36,7 +36,7 @@ export const SCHEMA_HINTS: Record<
     ],
   },
   play: {
-    domain: 'Бдительность и подавление',
+    domain: 'Сверхбдительность и подавление эмоций',
     color: 'var(--accent-indigo)',
     schemas: [
       'Жёсткие стандарты / Придирчивость',
@@ -46,7 +46,7 @@ export const SCHEMA_HINTS: Record<
     ],
   },
   limits: {
-    domain: 'Нарушение границ',
+    domain: 'Нарушенные границы',
     color: 'var(--accent-yellow)',
     schemas: [
       'Привилегированность / Грандиозность',

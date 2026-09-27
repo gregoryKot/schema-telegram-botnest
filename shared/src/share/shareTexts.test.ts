@@ -158,7 +158,7 @@ describe('phraseShareText', () => {
   it('сама фраза в кавычках-ёлочках, подпись и ссылка следом', () => {
     const text = phraseShareText('Я справлюсь', 't.me/TestBot');
     expect(text).toBe(
-      '«Я справлюсь»\n\nФраза Здорового взрослого · t.me/TestBot',
+      '«Я справлюсь»\n\nФраза Здорового Взрослого · t.me/TestBot',
     );
   });
 });
