@@ -45,7 +45,7 @@ describe('schemaTherapyData', () => {
 
   it('getSchemaById/getModeById находят реальные записи и не находят чужие', () => {
     expect(getSchemaById('mistrust')?.name).toBe(
-      'Недоверие / Жестокое обращение',
+      'Недоверие / Ожидание жестокого обращения',
     );
     expect(getSchemaById('does_not_exist')).toBeUndefined();
     expect(getModeById('vulnerable_child')?.name).toBe('Уязвимый Ребёнок');

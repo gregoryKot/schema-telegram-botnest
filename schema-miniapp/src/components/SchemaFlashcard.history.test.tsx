@@ -67,7 +67,7 @@ describe('SchemaFlashcard — история карточек из api.getFlashc
     );
     fireEvent.click(screen.getByText('История карточек (1)'));
     expect(screen.getByText('История карточек')).toBeTruthy();
-    expect(screen.getByText(/Злой Ребёнок.*Границы/)).toBeTruthy();
+    expect(screen.getByText(/Сердитый Ребёнок.*Границы/)).toBeTruthy();
     expect(screen.getByText('→ Сказал прямо, что не согласен')).toBeTruthy();
   });
 

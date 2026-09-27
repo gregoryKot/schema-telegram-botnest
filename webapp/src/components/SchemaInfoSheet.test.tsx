@@ -54,7 +54,7 @@ describe('SchemaInfoSheet — вкладки', () => {
   it('клик по домену схем раскрывает список схем внутри него', () => {
     renderSheet();
     fireEvent.click(screen.getByText('Схемы'));
-    const domainHeader = screen.getAllByRole('button').find(b => b.textContent?.includes('Отчуждение и отвержение'));
+    const domainHeader = screen.getAllByRole('button').find(b => b.textContent?.includes('Нарушение связи и отвержение'));
     expect(domainHeader).toBeTruthy();
     fireEvent.click(domainHeader!);
     // После раскрытия появляется хотя бы одна схема этого домена.

@@ -136,7 +136,7 @@ export function LetterEx({
         <>
           Письмо
           <br />
-          <span className="it">уязвимому ребёнку</span>
+          <span className="it">Уязвимому Ребёнку</span>
         </>
       }
       lede={tr(

@@ -21,8 +21,8 @@ describe('SchemaPicker — фильтр по активным схемам (useF
         onToggleShowAll={vi.fn()}
       />,
     );
-    expect(screen.getByText('Отчуждение и отвержение')).toBeTruthy();
-    expect(screen.queryByText('Нарушение автономии')).toBeNull();
+    expect(screen.getByText('Нарушение связи и отвержение')).toBeTruthy();
+    expect(screen.queryByText('Нарушенная автономия')).toBeNull();
   });
 
   it('клик по отфильтрованной схеме вызывает onToggle с её id', () => {
@@ -54,10 +54,10 @@ describe('SchemaPicker — заголовок домена открывает/з
     );
     expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
 
-    fireEvent.click(screen.getByText('Отчуждение и отвержение'));
+    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
     expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('Отчуждение и отвержение'));
+    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
     expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
   });
 });

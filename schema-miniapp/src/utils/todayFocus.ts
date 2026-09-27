@@ -84,7 +84,7 @@ export function setTherapistBannerHidden(hidden: boolean): void {
   else localStorage.removeItem(THERAPIST_BANNER_KEY);
 }
 
-// Скрывать ли «Фразу для себя» (цитата Здорового взрослого). По умолчанию
+// Скрывать ли «Фразу для себя» (цитата Здорового Взрослого). По умолчанию
 // показываем; кому цитаты не заходят — убирают, как и счётчик серии.
 export function isPhraseHidden(): boolean {
   return localStorage.getItem(PHRASE_KEY) === '1';

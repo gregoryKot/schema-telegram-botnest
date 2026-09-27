@@ -27,7 +27,7 @@ export interface RawPattern {
   flags: string;
 }
 
-function importExport(
+export function importExport(
   scriptName: string,
   exportName: string,
   mapExpr: string,
