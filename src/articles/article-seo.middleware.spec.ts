@@ -20,7 +20,7 @@ const fs = require('fs') as {
 const BASE_HTML = `<!doctype html>
 <html lang="ru">
   <head>
-    <title>Григорий Котляревский – схема-терапия онлайн | schemehappens.ru</title>
+    <title>Григорий Котляревский – схема-терапия онлайн</title>
     <meta name="description" content="Онлайн-консультации в подходе схема-терапии." />
     <link rel="canonical" href="https://schemehappens.ru/" />
     <meta property="og:url"         content="https://schemehappens.ru/" />
@@ -79,7 +79,7 @@ describe('ArticleSeoMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     const html = getSent()!;
     expect(html).toContain(
-      '<title>18 схем Янга: полный список | schemehappens.ru</title>',
+      '<title>18 схем Янга: полный список – Григорий Котляревский</title>',
     );
     expect(html).toContain(
       'content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."',
@@ -143,7 +143,7 @@ describe('ArticleSeoMiddleware', () => {
     await mw.use(req, res, () => {});
     const html = getSent()!;
     expect(html).toContain(
-      '<title>КПТ &amp; «схемы» &lt;тест&gt; | schemehappens.ru</title>',
+      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Григорий Котляревский</title>',
     );
   });
 
