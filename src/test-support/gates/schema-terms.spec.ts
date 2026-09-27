@@ -9,6 +9,7 @@
 // красный образец идёт в паре с КОНТРОЛЬНЫМ (правило №15 CLAUDE.md): похожим,
 // но легитимным употреблением, которое обязано остаться зелёным.
 import { runGate } from './gate-sandbox';
+import { importExport } from './pattern-loader';
 
 const OK_PREFIX = '✓ терминология схема-терапии:';
 
@@ -366,4 +367,42 @@ describe('check-schema-terms.mjs', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain(OK_PREFIX);
   });
+});
+
+// Реестр правил — scripts/schema-terms-rules.mjs — читается напрямую, а не
+// только через CLI: у каждого правила свой id, и канонический вариант, который
+// правило предлагает взамен, само правило не ловит (иначе гейт требовал бы
+// заменить термин на него же, и исправить текст было бы нельзя).
+interface TermRule {
+  id: string;
+  source: string;
+  flags: string;
+  canonical: string;
+}
+
+describe('schema-terms-rules.mjs: реестр правил', () => {
+  const RULES = JSON.parse(
+    importExport(
+      'schema-terms-rules.mjs',
+      'RULES',
+      '(list) => list.map((r) => ({ id: r.id, source: r.pattern.source, flags: r.pattern.flags, canonical: r.canonical }))',
+    ),
+  ) as TermRule[];
+
+  it('правил не меньше 30, id уникальны', () => {
+    expect(RULES.length).toBeGreaterThanOrEqual(30);
+    expect(new Set(RULES.map((r) => r.id)).size).toBe(RULES.length);
+  });
+
+  it.each(RULES.map((r) => [r.id, r] as const))(
+    '%s: канонический вариант правилом не ловится',
+    (_id, r) => {
+      expect(r.canonical.trim()).not.toBe('');
+      for (const variant of r.canonical.split(/\s*[,;]\s*|\s+или\s+/)) {
+        expect(
+          new RegExp(r.source, r.flags.replace('g', '')).test(variant),
+        ).toBe(false);
+      }
+    },
+  );
 });
