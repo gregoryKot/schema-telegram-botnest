@@ -63,6 +63,27 @@ export function isMoscowOffset(tz: string, at: Date): boolean {
   return offsetMinutes(tz, at) === offsetMinutes(MSK, at);
 }
 
+/**
+ * Пояс посетителя — САМА Москва или её российский синоним (то же смещение,
+ * та же страна), а не просто пояс, чьё СМЕЩЕНИЕ сейчас совпадает с
+ * московским. Стамбул круглый год UTC+3, Израиль летом UTC+3 — оба дают
+ * `isMoscowOffset === true`, но подпись «по московскому времени» посетителю
+ * из Израиля не про его пояс, а про чужую страну (инцидент: найдено на
+ * проде 2026-09-28). Волгоград/Киров/Симферополь — с 2014/2016/2018 гг. на
+ * том же смещении, что Москва, но это по-прежнему Россия, а не совпадение.
+ */
+const MOSCOW_TIME_ZONES: readonly string[] = [
+  'Europe/Moscow',
+  'Europe/Simferopol',
+  'Europe/Kirov',
+  'Europe/Volgograd',
+];
+
+/** Пояс посетителя — сама Москва (или российский синоним), см. MOSCOW_TIME_ZONES выше. */
+export function isMoscowTimeZone(tz: string): boolean {
+  return MOSCOW_TIME_ZONES.includes(tz);
+}
+
 /** Календарный день слота в зоне `tz` — ключ для группировки (en-CA = YYYY-MM-DD). */
 export function localDayKey(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -113,19 +134,19 @@ export function mskTimeLabel(iso: string): string {
  * смещение зоны посетителя сейчас совпадает с московским.
  */
 export function timeZoneCaption(tz: string, at: Date = new Date()): string {
-  if (isMoscowOffset(tz, at)) return 'Время указано по московскому времени.';
+  if (isMoscowTimeZone(tz)) return 'Время указано по московскому времени.';
   return `Время указано по вашему часовому поясу (${cityLabel(tz)}, ${offsetLabel(tz, at)}).`;
 }
 
-/** «(15:00 МСК)» рядом с выбранным слотом — пусто, если зона и есть московская. */
+/** «(15:00 МСК)» рядом с выбранным слотом — пусто, только если зона и есть московская. */
 export function mskHintLabel(iso: string, tz: string): string {
-  if (isMoscowOffset(tz, new Date(iso))) return '';
+  if (isMoscowTimeZone(tz)) return '';
   return `(${mskTimeLabel(iso)} МСК)`;
 }
 
-/** Хвост кнопки отправки: «по вашему времени» либо «МСК». */
-export function submitTimeSuffix(tz: string, at: Date): string {
-  return isMoscowOffset(tz, at) ? 'МСК' : 'по вашему времени';
+/** Хвост кнопки отправки: «по вашему времени» либо «МСК» (только для московского пояса). */
+export function submitTimeSuffix(tz: string): string {
+  return isMoscowTimeZone(tz) ? 'МСК' : 'по вашему времени';
 }
 
 /**

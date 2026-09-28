@@ -59,6 +59,23 @@ export function isMoscowOffset(tz: string, at: Date): boolean {
   return offsetMinutes(tz, at) === offsetMinutes(MSK, at);
 }
 
+/**
+ * Пояс — САМА Москва или её российский синоним, а не любой пояс с сейчас
+ * совпадающим смещением (Израиль летом тоже UTC+3, но это не Москва) — см.
+ * комментарий у MOSCOW_TIME_ZONES в shared/src/booking/clientTimeZone.ts,
+ * копия синхронизируется client-timezone.sync.spec.ts.
+ */
+const MOSCOW_TIME_ZONES: readonly string[] = [
+  'Europe/Moscow',
+  'Europe/Simferopol',
+  'Europe/Kirov',
+  'Europe/Volgograd',
+];
+
+export function isMoscowTimeZone(tz: string): boolean {
+  return MOSCOW_TIME_ZONES.includes(tz);
+}
+
 /** «19:00» — время в зоне `tz`. */
 export function localTimeLabel(at: Date, tz: string): string {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -70,14 +87,17 @@ export function localTimeLabel(at: Date, tz: string): string {
 
 /**
  * Строка «у клиента» для уведомления админу: «у клиента 19:00 (Бангкок,
- * UTC+7)». `null`, если пояс не задан/невалиден/совпадает с московским —
- * тогда сообщение выглядит как раньше (только МСК).
+ * UTC+7)». `null`, если пояс не задан/невалиден/и есть Москва (или её
+ * российский синоним) — тогда сообщение выглядит как раньше (только МСК).
+ * Для чужого пояса с совпадающим смещением (Стамбул, Израиль летом) строка
+ * всё равно показывается — офсет случайно совпал, но время «у клиента»
+ * всё ещё стоит подтвердить явно.
  */
 export function clientTimeLine(
   at: Date,
   clientTz: string | null | undefined,
 ): string | null {
-  if (!clientTz || !isValidTimeZone(clientTz) || isMoscowOffset(clientTz, at))
+  if (!clientTz || !isValidTimeZone(clientTz) || isMoscowTimeZone(clientTz))
     return null;
   return `у клиента ${localTimeLabel(at, clientTz)} (${cityLabel(clientTz)}, ${offsetLabel(clientTz, at)})`;
 }

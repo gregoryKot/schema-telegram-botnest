@@ -23,6 +23,14 @@ const labelSt: React.CSSProperties = {
   display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
   textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
 };
+const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
+
+type InvalidField = 'name' | 'contact' | 'consent';
+const FIELD_HINTS: Record<InvalidField, string> = {
+  name: 'Как к вам обращаться?',
+  contact: 'Оставьте Telegram или телефон — пришлю подтверждение',
+  consent: 'Нужно согласие на обработку данных',
+};
 
 /** Slot-based booking widget. Falls back to `fallback` when no slots are open. */
 export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
@@ -53,6 +61,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
   const formFocused = useRef(false);
+  const [invalidField, setInvalidField] = useState<InvalidField | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const contactRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLInputElement>(null);
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -100,11 +112,15 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     trackGoalOnce('booking_submit_click');
-    if (!slot || !name.trim() || !contact.trim() || !consent) {
-      const missingField = !name.trim() ? 'name' : !contact.trim() ? 'contact' : !consent ? 'consent' : 'slot';
-      trackGoal('booking_error', { reason: 'validation', field: missingField });
+    if (!slot) return; // форма скрыта без выбранного слота — сюда не дойти
+    const missing: InvalidField | null = !name.trim() ? 'name' : !contact.trim() ? 'contact' : !consent ? 'consent' : null;
+    if (missing) {
+      trackGoal('booking_error', { reason: 'validation', field: missing });
+      setInvalidField(missing);
+      (missing === 'name' ? nameRef : missing === 'contact' ? contactRef : consentRef).current?.focus();
       return;
     }
+    setInvalidField(null);
     setStatus('loading');
     try {
       const res = await api.bookSlot({
@@ -138,7 +154,11 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   };
 
   return (
-    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+    // noValidate: поля несут `required` для скринридеров/семантики, но
+    // нативная HTML5-валидация браузера должна её не блокировать сабмит
+    // молча (без наших trackGoal/подсказок) — обработчик submit сам решает,
+    // что показать и куда поставить фокус.
+    <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
       {options.length > 1 && (
         <div>
           <div style={labelSt}>Формат встречи</div>
@@ -177,8 +197,28 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           <div className="form-grid">
             {/* ym-disable-keys: Вебвизор (визитка, см. metrika.ts shouldRecordSession)
                 не пишет ввод в этих полях — имя и контакт клиента. */}
-            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
-            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" className="ym-disable-keys" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
+            <div>
+              <label style={labelSt} htmlFor="bp-name">Имя *</label>
+              <input
+                id="bp-name" ref={nameRef} className="ym-disable-keys" style={field} placeholder="Ваше имя"
+                value={name} onChange={(e) => { setName(e.target.value); if (invalidField === 'name') setInvalidField(null); }}
+                onFocus={onFieldFocus} required maxLength={100}
+                aria-invalid={invalidField === 'name' || undefined}
+                aria-describedby={invalidField === 'name' ? 'bp-name-hint' : undefined}
+              />
+              {invalidField === 'name' && <p id="bp-name-hint" style={hintSt}>{FIELD_HINTS.name}</p>}
+            </div>
+            <div>
+              <label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label>
+              <input
+                id="bp-contact" ref={contactRef} className="ym-disable-keys" style={field} placeholder="@username или телефон"
+                value={contact} onChange={(e) => { setContact(e.target.value); if (invalidField === 'contact') setInvalidField(null); }}
+                onFocus={onFieldFocus} required maxLength={100}
+                aria-invalid={invalidField === 'contact' || undefined}
+                aria-describedby={invalidField === 'contact' ? 'bp-contact-hint' : undefined}
+              />
+              {invalidField === 'contact' && <p id="bp-contact-hint" style={hintSt}>{FIELD_HINTS.contact}</p>}
+            </div>
           </div>
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
@@ -199,41 +239,44 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             <textarea id="bp-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+            <input
+              type="checkbox" ref={consentRef} checked={consent}
+              onChange={(e) => { setConsent(e.target.checked); if (invalidField === 'consent') setInvalidField(null); }}
+              style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }}
+              aria-invalid={invalidField === 'consent' || undefined}
+              aria-describedby={invalidField === 'consent' ? 'bp-consent-hint' : undefined}
+            />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
               Я принимаю условия <a href="/offer" target="_blank" className="u-link">Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" className="u-link">Политики конфиденциальности</a>, даю согласие на обработку данных
             </span>
           </label>
+          {invalidField === 'consent' && <p id="bp-consent-hint" style={{ ...hintSt, margin: '-8px 0 0' }}>{FIELD_HINTS.consent}</p>}
           {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
           {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
-          <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent}
+          {chosen && chosen.price > 0 && (
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-8px 0 0' }}>
+              {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}
+            </p>
+          )}
+          <button type="submit" disabled={status === 'loading'}
             style={{
               alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
-              cursor: 'pointer', opacity: status === 'loading' || !name.trim() || !contact.trim() || !consent ? 0.4 : 1,
+              cursor: status === 'loading' ? 'default' : 'pointer',
+              opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent) ? 0.7 : 1,
               boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px',
             }}>
             {status === 'loading'
               ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')
               : chosen && chosen.price > 0
                 ? `Оплатить ${chosen.price.toLocaleString('ru-RU')} ₽ и записаться →`
-                : `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz, new Date(slot.startsAt))} →`}
+                : `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz)} →`}
           </button>
-          {(!name.trim() || !contact.trim() || !consent) ? (
-            <p style={{ fontSize: 13, color: 'var(--accent-red)', margin: 0 }}>
-              Чтобы записаться, заполните: {[
-                !name.trim() && 'имя',
-                !contact.trim() && 'Telegram или телефон',
-                !consent && 'согласие с офертой',
-              ].filter(Boolean).join(', ')}.
-            </p>
-          ) : (
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
-              {chosen && chosen.price > 0
-                ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
-                : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
-            </p>
-          )}
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
+            {chosen && chosen.price > 0
+              ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
+              : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
+          </p>
         </>
       )}
     </form>

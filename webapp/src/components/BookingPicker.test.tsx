@@ -117,17 +117,57 @@ describe('BookingPicker — выбор слота и обязательные п
     expect(screen.queryByLabelText('Имя *')).toBeNull();
   });
 
-  it('кнопка сабмита задизейблена, пока не заполнены имя, контакт и согласие', async () => {
+  // Инцидент 2026-09-28 (проверка на проде): кнопка была задизейблена, пока
+  // форма не заполнена — клик по отключённой кнопке в браузере ничего не
+  // делает, и цели Метрики booking_submit_click/booking_error(validation) не
+  // срабатывали НИКОГДА. Кнопка теперь отключена только во время отправки —
+  // клик по незаполненной форме должен реально дойти до обработчика.
+  it('кнопка сабмита нажимаема даже без заполненных полей (не задизейблена)', async () => {
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     const btn = screen.getByRole('button', { name: /Записаться на/ });
-    expect((btn as HTMLButtonElement).disabled).toBe(true);
+    expect((btn as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('после заполнения имени, контакта и согласия кнопка активна', async () => {
+  it('после заполнения имени, контакта и согласия кнопка по-прежнему активна', async () => {
     await fillAndSelectSlot();
     const btn = screen.getByRole('button', { name: /Записаться на/ });
     expect((btn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('клик по кнопке при незаполненной форме показывает подсказку у первого поля и ставит на него фокус', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    const nameInput = screen.getByLabelText('Имя *');
+    await screen.findByText('Как к вам обращаться?');
+    expect(nameInput).toBe(document.activeElement);
+    expect(nameInput.getAttribute('aria-invalid')).toBe('true');
+    expect(nameInput.getAttribute('aria-describedby')).toBe('bp-name-hint');
+    expect(mockApi.bookSlot).not.toHaveBeenCalled();
+  });
+
+  it('подсказка про контакт появляется, когда заполнено только имя', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    const contactInput = screen.getByLabelText('Telegram / телефон *');
+    await screen.findByText('Оставьте Telegram или телефон — пришлю подтверждение');
+    expect(contactInput).toBe(document.activeElement);
+  });
+
+  it('подсказка про согласие появляется, когда имя и контакт заполнены', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    await screen.findByText('Нужно согласие на обработку данных');
+    expect(mockApi.bookSlot).not.toHaveBeenCalled();
   });
 
   // Вебвизор (визитка kotlarewski.gr, metrika.ts shouldRecordSession) не должен
@@ -353,5 +393,31 @@ describe('BookingPicker — часовой пояс посетителя', () =>
     expect(mockApi.bookSlot).toHaveBeenCalledWith(
       expect.objectContaining({ clientTimeZone: 'Asia/Bangkok' }),
     );
+  });
+});
+
+// Проверка на проде нашла: у платной сессии на кнопке не было времени слота
+// вообще (только «Оплатить N ₽ и записаться →») — человек не видел, на какое
+// время записывается, пока не открывал оплату. Строка с датой/временем
+// вынесена мелким текстом над кнопкой (см. PR-описание почему не инлайн).
+describe('BookingPicker — время слота у платной сессии', () => {
+  it('над кнопкой оплаты показано время слота в поясе посетителя', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+    ]);
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+
+    const btn = screen.getByRole('button', { name: /Оплатить/ });
+    expect(btn.textContent).toContain(`Оплатить ${(3000).toLocaleString('ru-RU')} ₽ и записаться →`);
+    // Дата/время — отдельной строкой перед кнопкой (маркер «МСК» встречается
+    // только там: в тексте кнопки его больше нет, а чип времени показывает
+    // голое «12:00» без суффикса).
+    const mskMentions = screen.getAllByText(/МСК/);
+    expect(mskMentions.length).toBe(1);
+    expect(mskMentions[0].tagName.toLowerCase()).toBe('p');
+    expect(mskMentions[0].textContent).toContain(timeLabel(SLOT_A.startsAt));
   });
 });

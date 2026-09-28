@@ -7,7 +7,12 @@ import {
   RUSSIAN_TZ_NAMES as BACKEND_NAMES,
   cityLabel as backendCityLabel,
 } from './client-timezone-names';
-import { offsetMinutes, offsetLabel, isMoscowOffset } from './client-timezone';
+import {
+  offsetMinutes,
+  offsetLabel,
+  isMoscowOffset,
+  isMoscowTimeZone,
+} from './client-timezone';
 
 const SHARED_NAMES_PATH = join(
   __dirname,
@@ -41,6 +46,17 @@ function parseSharedNames(): Record<string, string> {
   return out;
 }
 
+/** Достаёт литерал MOSCOW_TIME_ZONES из shared-исходника без компиляции TS. */
+function parseSharedMoscowZones(): string[] {
+  const src = readFileSync(SHARED_TZ_PATH, 'utf8');
+  const body = src.match(/MOSCOW_TIME_ZONES[\s\S]*?=\s*\[([\s\S]*?)\];/);
+  if (!body)
+    throw new Error(
+      'Не нашёл MOSCOW_TIME_ZONES в shared/src/booking/clientTimeZone.ts',
+    );
+  return [...body[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+}
+
 describe('client-timezone ↔ shared/src/booking/clientTimeZone', () => {
   it('словарь городов совпадает', () => {
     expect(BACKEND_NAMES).toEqual(parseSharedNames());
@@ -61,5 +77,21 @@ describe('client-timezone ↔ shared/src/booking/clientTimeZone', () => {
     expect(offsetLabel('Asia/Kolkata', at)).toBe('UTC+5:30');
     expect(isMoscowOffset('Europe/Istanbul', at)).toBe(true);
     expect(isMoscowOffset('Asia/Bangkok', at)).toBe(false);
+  });
+
+  it('список MOSCOW_TIME_ZONES совпадает со shared/src/booking/clientTimeZone.ts', () => {
+    expect(parseSharedMoscowZones()).toEqual([
+      'Europe/Moscow',
+      'Europe/Simferopol',
+      'Europe/Kirov',
+      'Europe/Volgograd',
+    ]);
+  });
+
+  it('isMoscowTimeZone — Москва и синонимы да, совпадающий офсет чужого пояса нет', () => {
+    expect(isMoscowTimeZone('Europe/Moscow')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Simferopol')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Istanbul')).toBe(false);
+    expect(isMoscowTimeZone('Asia/Jerusalem')).toBe(false);
   });
 });

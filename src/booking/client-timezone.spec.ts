@@ -7,6 +7,7 @@ import {
   offsetMinutes,
   offsetLabel,
   isMoscowOffset,
+  isMoscowTimeZone,
   cityLabel,
   isValidTimeZone,
   clientTimeLine,
@@ -40,6 +41,24 @@ describe('isMoscowOffset', () => {
     expect(isMoscowOffset('Europe/Istanbul', at)).toBe(true));
   it('Бангкок — нет', () =>
     expect(isMoscowOffset('Asia/Bangkok', at)).toBe(false));
+});
+
+// Инцидент 2026-09 (см. docs/INCIDENTS.md): «по московскому времени» писалось
+// посетителю из Израиля летом (UTC+3 совпадает с московским смещением), хотя
+// пояс — не Москва. isMoscowOffset проверяет только СМЕЩЕНИЕ; isMoscowTimeZone
+// проверяет, что пояс и есть Москва (или её российский синоним).
+describe('isMoscowTimeZone', () => {
+  it('Москва и российские синонимы — да', () => {
+    expect(isMoscowTimeZone('Europe/Moscow')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Simferopol')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Kirov')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Volgograd')).toBe(true);
+  });
+
+  it('Стамбул и Израиль летом — офсет совпадает, но это не Москва', () => {
+    expect(isMoscowTimeZone('Europe/Istanbul')).toBe(false);
+    expect(isMoscowTimeZone('Asia/Jerusalem')).toBe(false);
+  });
 });
 
 describe('isValidTimeZone', () => {
@@ -76,6 +95,26 @@ describe('clientTimeLine', () => {
   it('не московский — строка «у клиента HH:MM (Город, UTC+N)»', () => {
     expect(clientTimeLine(at, 'Asia/Bangkok')).toBe(
       'у клиента 19:00 (Бангкок, UTC+7)',
+    );
+  });
+
+  it('Стамбул — офсет совпадает с московским, но строка всё равно показана (это не Москва)', () => {
+    expect(clientTimeLine(at, 'Europe/Istanbul')).toBe(
+      'у клиента 15:00 (Стамбул, UTC+3)',
+    );
+  });
+
+  it('Израиль летом (UTC+3, совпадает с московским) — строка показана', () => {
+    // 30 сентября — ещё летнее время в Израиле (DST до конца октября).
+    expect(clientTimeLine(at, 'Asia/Jerusalem')).toBe(
+      'у клиента 15:00 (Израиль, UTC+3)',
+    );
+  });
+
+  it('Израиль зимой (UTC+2) — строка показана с другим смещением', () => {
+    const winter = new Date('2026-01-15T12:00:00Z'); // 15:00 МСК, 14:00 в Израиле
+    expect(clientTimeLine(winter, 'Asia/Jerusalem')).toBe(
+      'у клиента 14:00 (Израиль, UTC+2)',
     );
   });
 });

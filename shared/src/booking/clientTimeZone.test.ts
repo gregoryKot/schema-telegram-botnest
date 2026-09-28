@@ -12,6 +12,7 @@ import {
   offsetMinutes,
   offsetLabel,
   isMoscowOffset,
+  isMoscowTimeZone,
   localDayKey,
   localDayLabel,
   localTimeLabel,
@@ -76,6 +77,28 @@ describe('isMoscowOffset', () => {
   });
 });
 
+// Инцидент 2026-09 (docs/INCIDENTS.md): посетитель из Израиля летом (UTC+3,
+// то же смещение, что у Москвы) видел подпись «по московскому времени» —
+// isMoscowOffset ловит только совпадение СМЕЩЕНИЯ, а не то, что пояс и есть
+// Москва. isMoscowTimeZone — идентичность пояса (Москва и её российские
+// синонимы), не совпадение офсета с чужой страной.
+describe('isMoscowTimeZone', () => {
+  it('Москва и российские синонимы (Симферополь/Киров/Волгоград) — да', () => {
+    expect(isMoscowTimeZone('Europe/Moscow')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Simferopol')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Kirov')).toBe(true);
+    expect(isMoscowTimeZone('Europe/Volgograd')).toBe(true);
+  });
+
+  it('Стамбул (круглый год UTC+3) — офсет совпадает, но это не Москва', () => {
+    expect(isMoscowTimeZone('Europe/Istanbul')).toBe(false);
+  });
+
+  it('Израиль летом (UTC+3) и зимой (UTC+2) — в обоих случаях не Москва', () => {
+    expect(isMoscowTimeZone('Asia/Jerusalem')).toBe(false);
+  });
+});
+
 describe('localDayKey / localDayLabel — переход дня через полночь', () => {
   it('23:30 МСК — уже следующий день в Бангкоке (UTC+7)', () => {
     // 23:30 МСК (UTC+3) 27 сентября = 20:30 UTC 27 сентября = 03:30 28 сентября в Бангкоке.
@@ -126,6 +149,18 @@ describe('timeZoneCaption', () => {
       timeZoneCaption('Asia/Bangkok', new Date('2026-09-28T00:00:00Z')),
     ).toBe('Время указано по вашему часовому поясу (Бангкок, UTC+7).');
   });
+
+  it('Израиль летом (UTC+3, офсет совпадает с московским) — всё равно «по вашему поясу»', () => {
+    expect(
+      timeZoneCaption('Asia/Jerusalem', new Date('2026-09-28T00:00:00Z')),
+    ).toBe('Время указано по вашему часовому поясу (Израиль, UTC+3).');
+  });
+
+  it('Израиль зимой (UTC+2, DST выключен) — тот же принцип с другим смещением', () => {
+    expect(
+      timeZoneCaption('Asia/Jerusalem', new Date('2026-01-15T00:00:00Z')),
+    ).toBe('Время указано по вашему часовому поясу (Израиль, UTC+2).');
+  });
 });
 
 describe('mskHintLabel', () => {
@@ -138,13 +173,22 @@ describe('mskHintLabel', () => {
       '(15:00 МСК)',
     );
   });
+
+  it('Израиль летом (офсет совпадает с московским) — скобка всё равно показана', () => {
+    expect(mskHintLabel('2026-09-28T12:00:00Z', 'Asia/Jerusalem')).toBe(
+      '(15:00 МСК)',
+    );
+  });
 });
 
 describe('submitTimeSuffix', () => {
   it('московский пояс — «МСК», иначе — «по вашему времени»', () => {
-    const at = new Date('2026-09-28T00:00:00Z');
-    expect(submitTimeSuffix('Europe/Moscow', at)).toBe('МСК');
-    expect(submitTimeSuffix('Asia/Seoul', at)).toBe('по вашему времени');
+    expect(submitTimeSuffix('Europe/Moscow')).toBe('МСК');
+    expect(submitTimeSuffix('Asia/Seoul')).toBe('по вашему времени');
+  });
+
+  it('Израиль (офсет совпадает с московским) — всё равно «по вашему времени»', () => {
+    expect(submitTimeSuffix('Asia/Jerusalem')).toBe('по вашему времени');
   });
 });
 

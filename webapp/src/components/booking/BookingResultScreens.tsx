@@ -13,7 +13,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Время зарезервировано</h3>
       {slot && (
         <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 6px' }}>
-          {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz, new Date(slot.startsAt))} — держу за вами 15 минут.
+          {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)} — держу за вами 15 минут.
         </p>
       )}
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
@@ -52,7 +52,7 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
       </h3>
       {!cancelled && slot && (
         <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 8px' }}>
-          {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz, new Date(slot.startsAt))}.
+          {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}.
         </p>
       )}
       {!cancelled && meetingUrl && (
