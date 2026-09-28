@@ -59,6 +59,17 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   а не файлами.
 
 **Тесты и даты — открыто:**
+- Тост-таймер без очистки при размонтировании (`setX(true); setTimeout(() =>
+  setX(false), N)`): таймер срабатывает после сноса jsdom и роняет весь прогон
+  vitest с `window is not defined` при зелёных тестах (CI main, run
+  36409902702, webapp под `TZ=Australia/Sydney`). Настройки обоих фронтов
+  переведены на `shared/src/hooks/useTimedFlag.ts`; класс ещё живёт в
+  `webapp/src/components/PracticesScreen.tsx:58,62,74`,
+  `webapp/src/pages/admin/{PhotoSection,MarqueeSection,HealthyAdultSection}.tsx`,
+  `webapp/src/pages/tests/QuizPage.tsx:67`, обоих `therapist/useClientDetail.ts`,
+  `schema-miniapp/src/components/SafePlace.tsx:103`,
+  `schema-miniapp/src/hooks/{useIntroSheetData,usePracticesData}.ts`. Переводить
+  на тот же хук; гейта у класса нет.
 - Гонка «занял эфемерный порт → отпустил → занимаю обратно» живёт ещё в двух
   спеках джобы `backend`: `src/infra/front-server.spec.ts:91` (захардкоженный
   `APP_PORT = 58123` — тот самый класс, который `wait-for-db.spec.ts:53`
