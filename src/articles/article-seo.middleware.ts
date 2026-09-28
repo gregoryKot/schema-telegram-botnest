@@ -54,7 +54,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
 
     try {
       const url = `${CANONICAL_HOST}/articles/${slug}`;
-      const title = `${article.title} | schemehappens.ru`;
+      const title = `${article.title} – Григорий Котляревский`;
       const desc = article.description;
       const dateIso = new Date(article.date).toISOString();
 

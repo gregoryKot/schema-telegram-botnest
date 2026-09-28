@@ -13,6 +13,41 @@ export function siteTitleSuffix(): string {
   return isPracticeHost() ? 'kotlarewski.gr' : 'schemehappens.ru';
 }
 
+const PRODUCT_HOST = 'https://schemehappens.ru';
+const PRACTICE_URL = 'https://kotlarewski.gr';
+
+// JSON-LD в index.html статичен и общий для обоих доменов — "url" полей
+// Person/ProfessionalService/availableChannel указывает на schemehappens.ru,
+// что для визитки практики неверно (домен страницы и canonical в разметке
+// расходятся). "@id" и "image" не трогаем — это идентификаторы/ассет, не
+// canonical-адрес страницы, и jobTitle под отдельным пином (правило №12).
+function rewritePersonalStructuredData(doc: Document): void {
+  const script = doc.querySelector("script[type='application/ld+json']");
+  if (!script?.textContent) return;
+  let data: unknown;
+  try {
+    data = JSON.parse(script.textContent);
+  } catch {
+    return;
+  }
+  const replaceUrl = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    const obj = node as Record<string, unknown>;
+    if (obj.url === PRODUCT_HOST) obj.url = PRACTICE_URL;
+    if (
+      obj.availableChannel &&
+      typeof obj.availableChannel === 'object' &&
+      (obj.availableChannel as Record<string, unknown>).serviceUrl === PRODUCT_HOST
+    ) {
+      (obj.availableChannel as Record<string, unknown>).serviceUrl = PRACTICE_URL;
+    }
+  };
+  const graph = (data as Record<string, unknown>)?.['@graph'];
+  if (Array.isArray(graph)) graph.forEach(replaceUrl);
+  else replaceUrl(data);
+  script.textContent = JSON.stringify(data);
+}
+
 export function applyPersonalSiteChrome(doc: Document = document): void {
   doc.querySelectorAll("link[rel='icon']").forEach((el) => {
     const link = el as HTMLLinkElement;
@@ -26,7 +61,8 @@ export function applyPersonalSiteChrome(doc: Document = document): void {
   doc.querySelector("link[rel='manifest']")?.remove();
   doc.title = 'Григорий Котляревский – схема-терапия онлайн';
   const canonical = doc.querySelector("link[rel='canonical']");
-  if (canonical) canonical.setAttribute('href', 'https://kotlarewski.gr/');
+  if (canonical) canonical.setAttribute('href', `${PRACTICE_URL}/`);
   const ogUrl = doc.querySelector("meta[property='og:url']");
-  if (ogUrl) ogUrl.setAttribute('content', 'https://kotlarewski.gr/');
+  if (ogUrl) ogUrl.setAttribute('content', `${PRACTICE_URL}/`);
+  rewritePersonalStructuredData(doc);
 }
