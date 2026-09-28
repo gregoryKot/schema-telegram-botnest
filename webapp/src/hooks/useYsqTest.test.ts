@@ -59,7 +59,7 @@ afterEach(() => {
 
 // ── Скоринг ──────────────────────────────────────────────────────────────────
 describe('computeScores', () => {
-  // Схема «Эмоциональная депривация» = вопросы 1..5 (индексы 0..4).
+  // Схема «Эмоциональная депривированность» = вопросы 1..5 (индексы 0..4).
   it('100% pct5plus когда все ответы схемы >= 5', () => {
     const answers = Array(QUESTIONS.length).fill(0);
     answers[0] = 5;
@@ -67,7 +67,7 @@ describe('computeScores', () => {
     answers[2] = 5;
     answers[3] = 5;
     answers[4] = 6;
-    const s = computeScores(answers)['Эмоциональная депривация'];
+    const s = computeScores(answers)['Эмоциональная депривированность'];
     expect(s.pct5plus).toBe(100);
     expect(s.sum).toBe(27);
     expect(s.max).toBe(30);
@@ -81,14 +81,14 @@ describe('computeScores', () => {
     answers[2] = 4;
     answers[3] = 3;
     answers[4] = 1;
-    expect(computeScores(answers)['Эмоциональная депривация'].pct5plus).toBe(0);
+    expect(computeScores(answers)['Эмоциональная депривированность'].pct5plus).toBe(0);
   });
 
   it('неотвеченные (0) вопросы не считаются числителем, но входят в знаменатель схемы', () => {
     const answers = Array(QUESTIONS.length).fill(0);
     answers[0] = 5; // отвечен только 1 из 5 вопросов схемы
     // 1 из 5 вопросов схемы >= 5 → 20%, а не 100% (знаменатель — вся схема, не только отвеченные)
-    expect(computeScores(answers)['Эмоциональная депривация'].pct5plus).toBe(
+    expect(computeScores(answers)['Эмоциональная депривированность'].pct5plus).toBe(
       20,
     );
   });
@@ -100,7 +100,7 @@ describe('computeScores', () => {
     answers[2] = 3;
     answers[3] = 4;
     answers[4] = 6;
-    const s = computeScores(answers)['Эмоциональная депривация'];
+    const s = computeScores(answers)['Эмоциональная депривированность'];
     expect(s.n5plus).toBe(3); // ответы 6,5,6
     expect(s.nQuestions).toBe(5);
   });
@@ -109,7 +109,7 @@ describe('computeScores', () => {
   // профиль из сплошных «4» давал 0% по всем схемам и пустой результат.
   it('все ответы «4»: классика 0%, но схема активна по среднему баллу', () => {
     const answers = Array(QUESTIONS.length).fill(4);
-    const s = computeScores(answers)['Эмоциональная депривация'];
+    const s = computeScores(answers)['Эмоциональная депривированность'];
     expect(s.pct5plus).toBe(0);
     expect(s.avg).toBe(4);
     expect(isSchemaScoreActive(s)).toBe(true);
@@ -117,7 +117,7 @@ describe('computeScores', () => {
 
   it('все ответы «3»: не активна ни по одному критерию', () => {
     const answers = Array(QUESTIONS.length).fill(3);
-    const s = computeScores(answers)['Эмоциональная депривация'];
+    const s = computeScores(answers)['Эмоциональная депривированность'];
     expect(isSchemaScoreActive(s)).toBe(false);
   });
 

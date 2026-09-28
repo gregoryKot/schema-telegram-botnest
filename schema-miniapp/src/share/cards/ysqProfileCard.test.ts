@@ -69,14 +69,14 @@ describe('buildYsqProfile', () => {
     // База 4.0 — уже выраженная, но ниже двух named-схем ниже.
     const scores = allScores(4, 80);
     scores['Покинутость/Нестабильность'] = { avg: 5.5, pct5plus: 80 };
-    scores['Дефективность/Стыд'] = { avg: 4.2, pct5plus: 60 };
+    scores['Дефективность / Стыдливость'] = { avg: 4.2, pct5plus: 60 };
     const attachment = buildYsqProfile(scores)[0];
     expect(attachment.needId).toBe('attachment');
     expect(attachment.rows[0].label).toBe(
       shortSchemaLabel('Покинутость/Нестабильность'),
     );
     expect(attachment.rows[1].label).toBe(
-      shortSchemaLabel('Дефективность/Стыд'),
+      shortSchemaLabel('Дефективность / Стыдливость'),
     );
     const avgs = attachment.rows.map((r) => r.avg);
     expect(avgs).toEqual([...avgs].sort((a, b) => b - a));

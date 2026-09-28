@@ -30,7 +30,7 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-// Вопросы схемы «Эмоциональная депривация» — 1..5 (1-indexed), домен attachment
+// Вопросы схемы «Эмоциональная депривированность» — 1..5 (1-indexed), домен attachment
 // (shared/src/hooks/ysqSchemas.ts). Answers длиной 116 (QUESTIONS.length).
 const TOTAL_QUESTIONS = 116;
 function buildAnswers(
@@ -147,7 +147,7 @@ describe('YSQTestSheet — результат с активными схемам
     seedResult(buildAnswers(DEPRIVATION_IDXS));
     render(<YSQTestSheet onClose={vi.fn()} />);
 
-    expect(await screen.findByText('Эмоциональная депривация')).toBeTruthy();
+    expect(await screen.findByText('Эмоциональная депривированность')).toBeTruthy();
     expect(screen.getByText(/1.{1}выраженная схема/)).toBeTruthy();
     expect(screen.getByText('Читать карточку схемы')).toBeTruthy();
   });
@@ -173,7 +173,7 @@ describe('YSQTestSheet — история прохождений', () => {
     seedResult(buildAnswers(DEPRIVATION_IDXS));
     render(<YSQTestSheet onClose={vi.fn()} />);
 
-    await screen.findByText('Эмоциональная депривация');
+    await screen.findByText('Эмоциональная депривированность');
     await act(async () => {}); // flush getYsqHistory().then(...)
     expect(screen.queryByText('История прохождений')).toBeNull();
   });
@@ -186,7 +186,7 @@ describe('YSQTestSheet — история прохождений', () => {
     seedResult(buildAnswers(DEPRIVATION_IDXS));
     render(<YSQTestSheet onClose={vi.fn()} />);
 
-    await screen.findByText('Эмоциональная депривация');
+    await screen.findByText('Эмоциональная депривированность');
     expect(await screen.findByText('История прохождений')).toBeTruthy();
   });
 });
@@ -228,7 +228,7 @@ describe('YSQTestSheet — сетевые сбои видны пользоват
     });
 
     // Результат виден несмотря на провал сохранения (данные не потеряны для юзера)
-    expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
+    expect(screen.getByText('Эмоциональная депривированность')).toBeTruthy();
     const retryBtn = screen.getByRole('button', { name: 'Отправить ещё раз' });
     expect(mockApi.deleteYsqProgress).not.toHaveBeenCalled();
 
@@ -250,7 +250,7 @@ describe('YSQTestSheet — пройти заново', () => {
   it('подтверждение «Пройти заново» удаляет результат и возвращает к интро', async () => {
     seedResult(buildAnswers(DEPRIVATION_IDXS));
     render(<YSQTestSheet onClose={vi.fn()} />);
-    await screen.findByText('Эмоциональная депривация');
+    await screen.findByText('Эмоциональная депривированность');
 
     fireEvent.click(screen.getByRole('button', { name: 'Пройти заново' }));
     expect(

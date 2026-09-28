@@ -37,12 +37,12 @@ afterEach(() => cleanup());
 describe('SchemaDetailSheet — рендер', () => {
   it('показывает домен, название и типичные убеждения схемы', () => {
     renderSheet();
-    // «Нарушение связи и отвержение» встречается дважды: eyebrow экрана и
+    // «Разобщение / Отвержение» встречается дважды: eyebrow экрана и
     // заголовок aside-карточки «Домен» — оба легитимны, проверяем что есть.
     expect(
-      screen.getAllByText('Нарушение связи и отвержение').length,
+      screen.getAllByText('Разобщение / Отвержение').length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
+    expect(screen.getByText('Эмоциональная депривированность')).toBeTruthy();
     expect(screen.getByText('Типичные убеждения')).toBeTruthy();
     expect(
       screen.getByText('«Никто никогда по-настоящему не позаботится обо мне»'),

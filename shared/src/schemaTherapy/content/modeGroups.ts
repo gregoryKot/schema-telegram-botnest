@@ -147,7 +147,7 @@ export const MODE_GROUPS: ModeGroup[] = [
       },
       {
         id: 'perfectionistic_oc',
-        name: 'Перфекционист-Гиперконтролёр',
+        name: 'Перфекционист',
         emoji: '✅',
         short: 'Недостижимые стандарты, страх малейшей ошибки',
       },
@@ -215,7 +215,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   },
   {
     id: 'critic',
-    group: 'Критикующие режимы',
+    group: 'Дисфункциональные режимы Критика',
     color: 'var(--accent-red)',
     items: [
       {
@@ -240,7 +240,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   },
   {
     id: 'healthy',
-    group: 'Здоровые режимы',
+    group: 'Здоровые и функциональные режимы',
     color: 'var(--accent-green)',
     items: [
       {

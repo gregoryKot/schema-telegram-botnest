@@ -367,7 +367,7 @@ describe('TherapistClientSheet — вкладка «Концептуализац
     await screen.findByText('Актуальные схемы');
 
     // Клик по чипу схемы включает patchConcept → debounce 700мс → autoSave.
-    fireEvent.click(screen.getByText('Эмоциональная депривация'));
+    fireEvent.click(screen.getByText('Эмоциональная депривированность'));
 
     await waitFor(
       () => expect(screen.getByText(/Не удалось сохранить изменения/)).toBeTruthy(),

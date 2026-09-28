@@ -21,7 +21,7 @@ describe('SchemaPicker — фильтр по активным схемам (useF
         onToggleShowAll={vi.fn()}
       />,
     );
-    expect(screen.getByText('Нарушение связи и отвержение')).toBeTruthy();
+    expect(screen.getByText('Разобщение / Отвержение')).toBeTruthy();
     expect(screen.queryByText('Нарушенная автономия')).toBeNull();
   });
 
@@ -37,7 +37,7 @@ describe('SchemaPicker — фильтр по активным схемам (useF
         onToggleShowAll={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText('Эмоциональная депривация'));
+    fireEvent.click(screen.getByText('Эмоциональная депривированность'));
     expect(onToggle).toHaveBeenCalledWith('emotional_deprivation');
   });
 });
@@ -52,12 +52,12 @@ describe('SchemaPicker — заголовок домена открывает/з
         onToggleShowAll={vi.fn()}
       />,
     );
-    expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
+    expect(screen.queryByText('Эмоциональная депривированность')).toBeNull();
 
-    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
-    expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
+    fireEvent.click(screen.getByText('Разобщение / Отвержение'));
+    expect(screen.getByText('Эмоциональная депривированность')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
-    expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
+    fireEvent.click(screen.getByText('Разобщение / Отвержение'));
+    expect(screen.queryByText('Эмоциональная депривированность')).toBeNull();
   });
 });

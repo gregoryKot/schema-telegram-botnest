@@ -60,7 +60,7 @@ afterEach(() => {
 const FILLED_ITEM: MyCardItem = {
   id: 'abandonment',
   name: 'Покинутость',
-  subtitle: 'Нарушение связи и отвержение',
+  subtitle: 'Разобщение / Отвержение',
   color: '#5aa8f7',
   excerpt: 'Когда не отвечают',
   cardFields: [{ label: 'Что включает', text: 'Когда не отвечают' }],
