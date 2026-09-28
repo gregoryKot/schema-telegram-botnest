@@ -39,7 +39,7 @@ describe('schemaTherapyData', () => {
   it('ALL_MODES несёт groupId/groupColor/groupName из своей группы', () => {
     const mode = ALL_MODES.find((m) => m.id === 'healthy_adult');
     expect(mode?.groupId).toBe('healthy');
-    expect(mode?.groupName).toBe('Здоровые и функциональные режимы');
+    expect(mode?.groupName).toBe('Здоровые режимы');
     expect(mode?.groupColor).toBe('var(--accent-green)');
   });
 

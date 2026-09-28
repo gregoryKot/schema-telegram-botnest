@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 // id атрибут не может содержать пробелы (HTML5) — домены схем на кириллице
-// с пробелами («Разобщение / Отвержение»), делаем безопасный slug для aria-controls.
+// с пробелами («Нарушение связи и отвержение»), делаем безопасный slug для aria-controls.
 function domainPanelId(domain: string): string {
   return `schema-domain-${domain.replace(/\s+/g, '-')}`;
 }

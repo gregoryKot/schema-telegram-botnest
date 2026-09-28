@@ -20,12 +20,12 @@ import type { SchemaDomain } from '../types';
 export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'rejection',
-    domain: 'Разобщение / Отвержение',
+    domain: 'Нарушение связи и отвержение',
     color: 'var(--accent-red)',
     schemas: [
       {
         id: 'emotional_deprivation',
-        name: 'Эмоциональная депривированность',
+        name: 'Эмоциональная депривация',
         emoji: '🫤',
         desc: 'Убеждение, что эмоциональные потребности никогда не будут удовлетворены',
         libraryDesc:
@@ -49,7 +49,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       },
       {
         id: 'defectiveness',
-        name: 'Дефективность / Стыдливость',
+        name: 'Дефективность / Стыд',
         emoji: '😶‍🌫️',
         desc: 'Ощущение себя плохим, неполноценным — страх что отвергнут если узнают правду',
         libraryDesc:
@@ -88,7 +88,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       },
       {
         id: 'enmeshment',
-        name: 'Запутанность / Неразвитая идентичность',
+        name: 'Спутанность / Неразвитая идентичность',
         emoji: '🌀',
         desc: 'Чрезмерная слитость с близкими в ущерб собственной идентичности',
         libraryDesc:
@@ -160,7 +160,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'vigilance',
-    domain: 'Сверхбдительность и запреты',
+    domain: 'Сверхбдительность и подавление эмоций',
     color: 'var(--accent-indigo)',
     schemas: [
       {

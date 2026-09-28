@@ -95,9 +95,9 @@ const ANX_DEP = `
     <rect class="dg-node" x="326" y="14" width="300" height="230" rx="16"/>
     <text class="dg-cap-acc" x="346" y="44">ЗА ДЕПРЕССИЕЙ</text>
     <rect class="dg-chip" x="342" y="60" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="82">Дефективность / Стыдливость</text>
+    <text class="dg-s" x="358" y="82">Дефективность / Стыд</text>
     <rect class="dg-chip" x="342" y="102" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="124" font-size="10.5">Эмоциональная депривированность</text>
+    <text class="dg-s" x="358" y="124">Эмоциональная депривация</text>
     <rect class="dg-chip" x="342" y="144" width="268" height="34" rx="9"/>
     <text class="dg-s" x="358" y="166">Неуспешность</text>
     <rect class="dg-chip" x="342" y="186" width="268" height="34" rx="9"/>

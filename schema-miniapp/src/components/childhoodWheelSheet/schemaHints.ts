@@ -6,13 +6,13 @@ export const SCHEMA_HINTS: Record<
   { domain: string; color: string; schemas: string[] }
 > = {
   attachment: {
-    domain: 'Разобщение / Отвержение',
+    domain: 'Нарушение связи и отвержение',
     color: 'var(--accent-red)',
     schemas: [
       'Покинутость / Нестабильность',
       'Недоверие',
-      'Эмоциональная депривированность',
-      'Дефективность / Стыдливость',
+      'Эмоциональная депривация',
+      'Дефективность / Стыд',
     ],
   },
   autonomy: {
@@ -21,7 +21,7 @@ export const SCHEMA_HINTS: Record<
     schemas: [
       'Зависимость / Беспомощность',
       'Неуспешность',
-      'Запутанность / Неразвитая идентичность',
+      'Спутанность / Неразвитая идентичность',
     ],
   },
   expression: {
@@ -36,7 +36,7 @@ export const SCHEMA_HINTS: Record<
     ],
   },
   play: {
-    domain: 'Сверхбдительность и запреты',
+    domain: 'Сверхбдительность и подавление эмоций',
     color: 'var(--accent-indigo)',
     schemas: [
       'Жёсткие стандарты / Придирчивость',

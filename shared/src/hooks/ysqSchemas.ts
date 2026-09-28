@@ -70,15 +70,15 @@ export function getSchemaForQuestion(qIdx: number): SchemaInfo | undefined {
 // Соответствие названия схемы её id в истории (`YsqHistoryEntry.scores`),
 // нужно только для дельты «изменилось с прошлого прохождения».
 export const SCHEMA_NAME_TO_ID: Record<string, string> = {
-  'Эмоциональная депривированность': 'emotional_deprivation',
+  'Эмоциональная депривация': 'emotional_deprivation',
   'Покинутость/Нестабильность': 'abandonment',
   'Недоверие/Ожидание жестокого обращения': 'mistrust',
   'Социальная отчужденность': 'social_isolation',
-  'Дефективность / Стыдливость': 'defectiveness',
+  'Дефективность/Стыд': 'defectiveness',
   Неуспешность: 'failure',
   'Зависимость/Беспомощность': 'dependence',
   Уязвимость: 'vulnerability',
-  'Запутанность / Неразвитая идентичность': 'enmeshment',
+  'Спутанность/Неразвитая идентичность': 'enmeshment',
   Покорность: 'subjugation',
   Самопожертвование: 'self_sacrifice',
   'Страх потери контроля над эмоциями': 'emotion_inhibition_fear',

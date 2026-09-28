@@ -128,7 +128,7 @@ describe('SchemasSection — реальные данные YSQ/профиля', 
     ]);
     renderSection();
 
-    await screen.findByText('Эмоциональная депривированность');
+    await screen.findByText('Эмоциональная депривация');
     expect(screen.getByText('4.5/6')).toBeTruthy();
   });
 

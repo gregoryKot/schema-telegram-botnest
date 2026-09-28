@@ -6,7 +6,7 @@ import type { SchemaInfo, Tr } from './ysqSchemas';
 
 export const buildYsqSchemas = (tr: Tr): SchemaInfo[] => [
   {
-    name: 'Эмоциональная депривированность',
+    name: 'Эмоциональная депривация',
     questions: [1, 2, 3, 4, 5],
     color: 'var(--accent-red)',
     desc: 'Ощущение, что никто по-настоящему не понимает и не заботится так, как нужно.',
@@ -50,7 +50,7 @@ export const buildYsqSchemas = (tr: Tr): SchemaInfo[] => [
     needId: 'attachment',
   },
   {
-    name: 'Дефективность / Стыдливость',
+    name: 'Дефективность/Стыд',
     questions: [24, 25, 26, 27, 28, 29],
     color: 'var(--accent-red)',
     desc: 'Глубокое ощущение собственной дефективности: если узнают настоящего – отвернутся.',
@@ -94,7 +94,7 @@ export const buildYsqSchemas = (tr: Tr): SchemaInfo[] => [
     needId: 'autonomy',
   },
   {
-    name: 'Запутанность / Неразвитая идентичность',
+    name: 'Спутанность/Неразвитая идентичность',
     questions: [50, 51, 52, 53, 54, 55, 56],
     color: 'var(--accent-orange)',
     desc: 'Трудно ощущать себя отдельной личностью – слишком много слияния с близкими.',
