@@ -1,26 +1,17 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, type BookingSlot, type SessionOption } from '../api';
 import { BookingErrorNote } from './BookingErrorNote';
 import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
-import { trackBookingSubmit, trackGoalOnce } from '../lib/metrika';
+import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
+import { useClientTimeZone } from './booking/useClientTimeZone';
+import { BookingSlotsSection } from './booking/BookingSlotsSection';
+import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
+import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
 
-const MSK = 'Europe/Moscow';
-const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
-const dayLblFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, weekday: 'short', day: 'numeric', month: 'short' });
-const timeFmt   = new Intl.DateTimeFormat('ru-RU', { timeZone: MSK, hour: '2-digit', minute: '2-digit' });
-
-const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso)), timeLabel = (iso: string) => timeFmt.format(new Date(iso));
-
-function dayLabel(iso: string): string {
-  const todayKey = dayKeyFmt.format(new Date());
-  const tomorrowKey = dayKeyFmt.format(new Date(Date.now() + 86_400_000));
-  const k = dayKey(iso);
-  if (k === todayKey) return 'Сегодня';
-  if (k === tomorrowKey) return 'Завтра';
-  return dayLblFmt.format(new Date(iso));
-}
+const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
+const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
 
 const field: React.CSSProperties = {
   width: '100%', padding: '14px 16px', fontSize: 15,
@@ -33,20 +24,9 @@ const labelSt: React.CSSProperties = {
   textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
 };
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      padding: '9px 16px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-      borderRadius: 100, whiteSpace: 'nowrap', transition: 'all .15s',
-      background: active ? 'var(--accent)' : 'transparent',
-      color: active ? '#fff' : 'var(--text-sub)',
-      border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
-    }}>{children}</button>
-  );
-}
-
 /** Slot-based booking widget. Falls back to `fallback` when no slots are open. */
 export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
+  const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [day, setDay] = useState('');
@@ -72,6 +52,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [options, setOptions] = useState<SessionOption[]>([]);
   const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
+  const formFocused = useRef(false);
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -99,16 +80,6 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     }
   }, [status]);
 
-  // Group slots by MSK day, preserving chronological order.
-  const days = useMemo(() => {
-    const map = new Map<string, BookingSlot[]>();
-    for (const s of slots ?? []) {
-      const k = dayKey(s.startsAt);
-      (map.get(k) ?? map.set(k, []).get(k)!).push(s);
-    }
-    return map;
-  }, [slots]);
-
   if (slots === null && !loadFailed) {
     return <p style={{ color: 'var(--text-faint)', fontSize: 15, padding: '24px 0' }}>Загружаю свободное время…</p>;
   }
@@ -117,74 +88,29 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     return <>{fallback}</>;
   }
 
-  if (status === 'await_payment') return (
-    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
-      <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Время зарезервировано</h3>
-      {slot && (
-        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 6px' }}>
-          {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК — держу за вами 15 минут.
-        </p>
-      )}
-      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
-        Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
-      </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
-        Перейти к оплате →
-      </a>
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
-        Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
-      </p>
-    </div>
-  );
-
-  if (status === 'payment_fail') return (
-    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
-      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Время снова свободно. Выберите другое или напишите напрямую.</p>
-      <button type="button" onClick={() => setStatus('idle')} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer' }}>
-        Выбрать другое время
-      </button>
-    </div>
-  );
-
+  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} />;
+  if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
-    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
-        {cancelled ? 'Запись отменена' : 'Время забронировано'}
-      </h3>
-      {!cancelled && slot && (
-        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 8px' }}>
-          {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК.
-        </p>
-      )}
-      {!cancelled && meetingUrl && (
-        <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)' }}>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 6px' }}>Ваша персональная ссылка на встречу — она же для всех будущих сессий:</p>
-          <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, wordBreak: 'break-all', textDecoration: 'none' }}>{meetingUrl}</a>
-        </div>
-      )}
-      {!cancelled && !meetingUrl && (
-        <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>
-      )}
-      {!cancelled && cancelToken && (
-        <button type="button" onClick={async () => { try { await api.cancelBooking(cancelToken); setCancelled(true); } catch { /* ignore */ } }}
-          style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 13, fontFamily: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}>
-          Отменить запись
-        </button>
-      )}
-    </div>
+    <DoneScreen
+      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
+      onCancel={async () => { try { await api.cancelBooking(cancelToken); setCancelled(true); } catch { /* ignore */ } }}
+    />
   );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slot || !name.trim() || !contact.trim() || !consent) return;
+    trackGoalOnce('booking_submit_click');
+    if (!slot || !name.trim() || !contact.trim() || !consent) {
+      const missingField = !name.trim() ? 'name' : !contact.trim() ? 'contact' : !consent ? 'consent' : 'slot';
+      trackGoal('booking_error', { reason: 'validation', field: missingField });
+      return;
+    }
     setStatus('loading');
     try {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning, acceptedOffer: consent, website, source: leadSource(),
+        returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz,
       });
       setCancelToken(res.cancelToken);
       trackBookingSubmit(sessionType);
@@ -199,11 +125,17 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
     } catch (err) {
+      trackGoal('booking_error', { reason: 'server' });
       setStatus(handleBookingFailure(err));
     }
   };
 
-  const dayList = [...days.keys()];
+  const onFieldFocus = () => {
+    if (!formFocused.current) {
+      formFocused.current = true;
+      trackGoalOnce('booking_form_focus');
+    }
+  };
 
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -214,7 +146,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             {options.map((o) => {
               const active = o.type === sessionType;
               return (
-                <button key={o.type} type="button" onClick={() => setSessionType(o.type)} style={{
+                <button key={o.type} type="button" onClick={() => {
+                  setSessionType(o.type);
+                  trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
+                }} style={{
                   flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
                   borderRadius: 'var(--r-12)', fontFamily: 'inherit', transition: 'all .15s',
                   background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
@@ -230,33 +165,18 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           </div>
         </div>
       )}
-      <div>
-        <div style={labelSt}>Выберите день</div>
-        <div style={{ display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
-          {dayList.map((k) => (
-            <Chip key={k} active={k === day} onClick={() => { trackGoalOnce('booking_start'); setDay(k); setSlot(null); }}>
-              {dayLabel(days.get(k)![0].startsAt)}
-            </Chip>
-          ))}
-        </div>
-      </div>
 
-      <div>
-        <div style={labelSt}>Время · МСК</div>
-        <div className="u-wrap8">
-          {(days.get(day) ?? []).map((s) => (
-            <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => { trackGoalOnce('booking_start'); setSlot(s); }}>
-              {timeLabel(s.startsAt)}
-            </Chip>
-          ))}
-        </div>
-      </div>
+      <BookingSlotsSection
+        slots={slots!} tz={tz} onTzChange={setTz}
+        day={day} onDayChange={setDay}
+        slot={slot} onSlotChange={setSlot}
+      />
 
       {slot && (
         <>
           <div className="form-grid">
-            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
-            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
+            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
+            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
           </div>
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
@@ -295,7 +215,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')
               : chosen && chosen.price > 0
                 ? `Оплатить ${chosen.price.toLocaleString('ru-RU')} ₽ и записаться →`
-                : `Записаться на ${dayLabel(slot.startsAt).toLowerCase()}, ${timeLabel(slot.startsAt)} →`}
+                : `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz, new Date(slot.startsAt))} →`}
           </button>
           {(!name.trim() || !contact.trim() || !consent) ? (
             <p style={{ fontSize: 13, color: 'var(--accent-red)', margin: 0 }}>

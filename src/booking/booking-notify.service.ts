@@ -32,6 +32,8 @@ interface PlainBooking {
   cancelToken: string;
   /** Атрибуция лида (страница + referrer), хранится открыто. */
   source?: string | null;
+  /** IANA-пояс посетителя. */
+  clientTimeZone?: string | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */

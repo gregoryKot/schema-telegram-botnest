@@ -20,6 +20,13 @@ import { api, reportClientError } from '../api';
 import { ApiError } from '../apiClient';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
+// Пояс посетителя мокается — иначе тесты зависели бы от TZ раннера. Дефолт
+// «Москва» сохраняет старое поведение (время слотов совпадает с прежними
+// ожиданиями); часовой-поясный блок ниже подменяет его на Бангкок.
+vi.mock('./booking/useClientTimeZone', () => ({ useClientTimeZone: vi.fn() }));
+import { useClientTimeZone } from './booking/useClientTimeZone';
+const mockUseClientTimeZone = useClientTimeZone as unknown as ReturnType<typeof vi.fn>;
+
 const timeLabelFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' });
 const timeLabel = (iso: string) => timeLabelFmt.format(new Date(iso));
 
@@ -37,6 +44,7 @@ beforeEach(() => {
   resetLocation();
   mockApi.getSlots.mockResolvedValue(SLOTS);
   mockApi.getBookingOptions.mockResolvedValue(OPTIONS);
+  mockUseClientTimeZone.mockReturnValue(['Europe/Moscow', vi.fn()]);
   // jsdom не реализует scrollIntoView (компонент скроллит результат в
   // видимую область на терминальных экранах) — без стаба падает с TypeError.
   Element.prototype.scrollIntoView = vi.fn();
@@ -139,6 +147,7 @@ describe('BookingPicker — сабмит записи', () => {
         clientContact: '@anya',
         acceptedOffer: true,
         website: '',
+        clientTimeZone: 'Europe/Moscow',
       }),
     );
   });
@@ -248,5 +257,91 @@ describe('BookingPicker — цели Метрики', () => {
     await act(async () => {});
     expect(goalHits('booking_submit').length).toBe(1);
     expect(goalHits('booking_session').length).toBe(1);
+  });
+
+  it('выбор формата встречи шлёт booking_format с {format: "session"}', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+    ]);
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    const call = ymQueue().find((c) => c[1] === 'reachGoal' && c[2] === 'booking_format');
+    expect(call?.[3]).toEqual({ format: 'session' });
+  });
+
+  it('первый фокус в поле «Имя» шлёт booking_form_focus один раз', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.focus(screen.getByLabelText('Имя *'));
+    fireEvent.focus(screen.getByLabelText('Telegram / телефон *'));
+    expect(goalHits('booking_form_focus').length).toBe(1);
+  });
+
+  it('клик по кнопке отправки шлёт booking_submit_click', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+    expect(goalHits('booking_submit_click').length).toBe(1);
+  });
+
+  it('незаполненная форма (submit до валидации) — booking_submit_click ДО booking_error(validation)', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    // Кнопка задизейблена без имени/контакта/согласия — сабмитим форму напрямую,
+    // как сделал бы Enter в поле: обработчик обязан отработать «до валидации».
+    const form = screen.getByRole('button', { name: /Записаться на/ }).closest('form')!;
+    fireEvent.submit(form);
+    const clickIdx = ymQueue().findIndex((c) => c[1] === 'reachGoal' && c[2] === 'booking_submit_click');
+    const errorIdx = ymQueue().findIndex((c) => c[1] === 'reachGoal' && c[2] === 'booking_error');
+    expect(clickIdx).toBeGreaterThanOrEqual(0);
+    expect(errorIdx).toBeGreaterThan(clickIdx);
+    const errorCall = ymQueue().find((c) => c[1] === 'reachGoal' && c[2] === 'booking_error');
+    expect(errorCall?.[3]).toEqual({ reason: 'validation', field: 'name' });
+    expect(mockApi.bookSlot).not.toHaveBeenCalled();
+  });
+
+  it('booking_error может уходить многократно (не trackGoalOnce)', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    const form = screen.getByRole('button', { name: /Записаться на/ }).closest('form')!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(goalHits('booking_error').length).toBe(2);
+  });
+
+  it('сбой сервера (500) шлёт booking_error с {reason: "server"}, без поля', async () => {
+    mockApi.bookSlot.mockRejectedValue(new ApiError(500, 'Internal server error'));
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await screen.findByText(/Заявка не сохранилась/);
+    const call = ymQueue().find((c) => c[1] === 'reachGoal' && c[2] === 'booking_error');
+    expect(call?.[3]).toEqual({ reason: 'server' });
+  });
+});
+
+describe('BookingPicker — часовой пояс посетителя', () => {
+  it('слот показывается в поясе посетителя, не в МСК', async () => {
+    mockUseClientTimeZone.mockReturnValue(['Asia/Bangkok', vi.fn()]);
+    render(<BookingPicker />);
+    // SLOT_A = 09:00 UTC = 12:00 МСК = 16:00 в Бангкоке.
+    await screen.findByText('16:00');
+    expect(screen.queryByText(timeLabel(SLOT_A.startsAt))).toBeNull();
+  });
+
+  it('отправка брони несёт фактически используемый пояс', async () => {
+    mockUseClientTimeZone.mockReturnValue(['Asia/Bangkok', vi.fn()]);
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    render(<BookingPicker />);
+    fireEvent.click(await screen.findByText('16:00'));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(
+      expect.objectContaining({ clientTimeZone: 'Asia/Bangkok' }),
+    );
   });
 });

@@ -777,6 +777,10 @@ model Booking {
   // Атрибуция лида: страница + referrer в момент брони (собирает фронт).
   // Структурные данные, не PII — хранится открыто, идёт в уведомление админу.
   source          String?
+  // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — собирает фронт из
+  // Intl, сервер проверяет валидность и игнорирует мусор (не 400). Нужен,
+  // чтобы уведомление админу показывало и местное время клиента.
+  clientTimeZone  String?
   // Legal: when the client accepted the public offer (consent checkbox) — proof
   // of the basis on which payment is taken. Not encrypted (a timestamp only).
   acceptedOfferAt  DateTime?

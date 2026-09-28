@@ -76,6 +76,7 @@ export class BookingController {
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,
       source: dto.source?.trim() || undefined,
+      clientTimeZone: dto.clientTimeZone?.trim() || undefined,
     };
     return this.booking.book(payload);
   }

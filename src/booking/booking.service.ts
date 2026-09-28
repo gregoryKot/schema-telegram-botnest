@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
+import { isValidTimeZone } from './client-timezone';
 import {
   listBookings,
   getBookingById,
@@ -40,6 +41,8 @@ export interface CreateBookingDto {
   acceptedOffer?: boolean;
   /** Атрибуция лида (страница + referrer). Не PII, хранится открыто. */
   source?: string;
+  /** IANA-пояс посетителя из Intl. Невалидный — игнорируется (не 400). */
+  clientTimeZone?: string;
 }
 
 // Экспортирован: admin-calendar.service.ts расшифровывает тем же EncryptSchema — не копией.
@@ -130,6 +133,10 @@ export class BookingService {
         cancelToken,
         acceptedOfferAt: new Date(),
         source: dto.source?.slice(0, 200) ?? null,
+        clientTimeZone:
+          dto.clientTimeZone && isValidTimeZone(dto.clientTimeZone)
+            ? dto.clientTimeZone
+            : null,
       },
       SCHEMA,
     );

@@ -151,6 +151,24 @@ describe('check-second-person.mjs', () => {
     expect(res.status).toBe(0);
   });
 
+  it('подкомпоненты BookingPicker (webapp/src/components/booking/) исключены — та же гостевая зона', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/booking/BookingSlotsSection.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('shared/src/booking/clientTimeZone.ts (подпись пояса гостя) исключён', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'shared/src/booking/clientTimeZone.ts':
+        "export const msg = 'по вашему времени';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('КОНТРОЛЬ: соседний компонент с тем же императивом — по-прежнему exit 1', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
@@ -413,6 +431,8 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'webapp/src/pages/landing/BookingForm.tsx',
       'webapp/src/components/BookingPicker.tsx',
       'webapp/src/components/BookingErrorNote.tsx',
+      'webapp/src/components/booking/BookingSlotsSection.tsx',
+      'shared/src/booking/clientTimeZone.ts',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',
