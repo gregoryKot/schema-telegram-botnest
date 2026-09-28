@@ -293,141 +293,40 @@ describe('check-schema-terms.mjs', () => {
     expect(ok.stdout).toContain(OK_PREFIX);
   });
 
-  // ——— «Сверхбдительность и подавление эмоций» — раньше канон, теперь тоже
-  // старое имя (документ АНИМА/МИСТ переименовал в «Сверхбдительность и
-  // запреты») ———
-  it('«Сверхбдительность и подавление эмоций» — exit 1', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'src/r2.ts':
-        'export const d = "Домен Сверхбдительность и подавление эмоций — про контроль.";\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Сверхбдительность и запреты');
-  });
-
-  // ——— «Нарушение связи и отвержение» — тоже старое имя домена 1, канон —
-  // «Разобщение / Отвержение» ———
-  it('«Нарушение связи и отвержение» — exit 1, «Разобщение / Отвержение» — exit 0', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'src/r3.ts':
-        'export const d = "Домен Нарушение связи и отвержение — про близость.";\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Разобщение / Отвержение');
-
+  // ——— Законны оба источника: документ АНИМА/МИСТ/БИСТ и сайт МИСТ
+  // (решение владельца 2026-09-28). Варианты, в которых они расходятся,
+  // гейт пропускает; контроль — вариант, которого нет ни там, ни там. ———
+  it.each([
+    ['<strong>Спутанность / Неразвитая идентичность</strong>', 'сайт'],
+    ['<strong>Запутанность / Неразвитая идентичность</strong>', 'документ'],
+    ['<strong>Дефективность / Стыд</strong>', 'сайт'],
+    ['<strong>Дефективность / Стыдливость</strong>', 'документ'],
+    ['<strong>Эмоциональная депривация</strong>', 'сайт'],
+    ['<strong>Эмоциональная депривированность</strong>', 'документ'],
+    ['<strong>Подавление эмоций</strong>', 'сайт'],
+    ['<strong>Подавленность эмоций</strong>', 'документ'],
+    ['Перфекционист-Гиперконтролёр требует безупречности', 'сайт'],
+    ['Перфекционист требует безупречности', 'документ'],
+    ['Карающий Критик', 'сайт и документ'],
+    ['Наказывающий Критик', 'документ'],
+    ['Домен Нарушение связи и отвержение', 'сайт'],
+    ['Домен Разобщение / Отвержение', 'документ'],
+    ['Домен Сверхбдительность и подавление эмоций', 'сайт'],
+    ['Домен Сверхбдительность и запреты', 'документ'],
+  ])('«%s» (%s) — exit 0', (text) => {
     const ok = runGate('check-schema-terms.mjs', {
-      'src/r3.ts':
-        'export const d = "Домен Разобщение / Отвержение — про близость.";\n',
+      'webapp/src/both.tsx': `export const m = '${text}';\n`,
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
   });
 
-  // ——— «Спутанность» — старое имя схемы «Запутанность / Неразвитая
-  // идентичность» ———
-  it('схема-контекст «Спутанность» — exit 1, контроль «Запутанность / Неразвитая идентичность» и бытовая «спутанность» — exit 0', () => {
+  it('«Слияние» как название схемы (нет ни в документе, ни на сайте) — exit 1', () => {
     const bad = runGate('check-schema-terms.mjs', {
-      'webapp/src/u.tsx': 'const m = <strong>Спутанность</strong>;\n',
+      'webapp/src/u.tsx': 'const m = <strong>Слияние</strong>;\n',
     });
     expect(bad.status).toBe(1);
     expect(bad.stderr).toContain('Запутанность / Неразвитая идентичность');
-
-    const okCanonical = runGate('check-schema-terms.mjs', {
-      'webapp/src/u.tsx':
-        'const m = "Схема «Запутанность / Неразвитая идентичность» — про размытые границы.";\n',
-    });
-    expect(okCanonical.status).toBe(0);
-    expect(okCanonical.stdout).toContain(OK_PREFIX);
-
-    const okProse = runGate('check-schema-terms.mjs', {
-      'webapp/src/u.tsx':
-        'const m = "От спутанности мыслей помогает пауза перед ответом.";\n',
-    });
-    expect(okProse.status).toBe(0);
-    expect(okProse.stdout).toContain(OK_PREFIX);
-  });
-
-  // ——— «Дефективность / Стыд» — старое имя схемы «Дефективность /
-  // Стыдливость» (тоже со строчной «стыд» после слэша) ———
-  it('«Дефективность / Стыд» — exit 1 (в т.ч. со строчной «стыд»), «Дефективность / Стыдливость» — exit 0', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'src/v.ts':
-        'export const d = "Схема Дефективность / Стыд — про ощущение изъяна.";\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Дефективность / Стыдливость');
-
-    const badLowercase = runGate('check-schema-terms.mjs', {
-      'src/v2.ts':
-        'export const d = "Схема Дефективность / стыд — про ощущение изъяна.";\n',
-    });
-    expect(badLowercase.status).toBe(1);
-
-    const ok = runGate('check-schema-terms.mjs', {
-      'src/v.ts':
-        'export const d = "Схема Дефективность / Стыдливость — про ощущение изъяна.";\n',
-    });
-    expect(ok.status).toBe(0);
-    expect(ok.stdout).toContain(OK_PREFIX);
-  });
-
-  // ——— «Эмоциональная депривация» — старое имя схемы «Эмоциональная
-  // депривированность»; строчная бытовая фраза не трогается ———
-  it('схема-контекст «Эмоциональная депривация» — exit 1, строчная проза — exit 0', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'webapp/src/w.tsx':
-        'const m = <strong>Эмоциональная депривация</strong>;\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Эмоциональная депривированность');
-
-    const ok = runGate('check-schema-terms.mjs', {
-      'webapp/src/w.tsx':
-        'const m = "Долгая эмоциональная депривация в детстве оставляет след.";\n',
-    });
-    expect(ok.status).toBe(0);
-    expect(ok.stdout).toContain(OK_PREFIX);
-  });
-
-  // ——— «Подавление эмоций» — старое имя схемы «Подавленность эмоций»;
-  // строчная бытовая фраза не трогается ———
-  it('схема-контекст «Подавление эмоций» — exit 1, строчная проза — exit 0', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'webapp/src/x.tsx': 'const m = <strong>Подавление эмоций</strong>;\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Подавленность эмоций');
-
-    const ok = runGate('check-schema-terms.mjs', {
-      'webapp/src/x.tsx':
-        'const m = "Хроническое подавление эмоций истощает так же, как их выплеск.";\n',
-    });
-    expect(ok.status).toBe(0);
-    expect(ok.stdout).toContain(OK_PREFIX);
-  });
-
-  // ——— «Перфекционист-Гиперконтролёр» — устаревшее двойное имя, канон —
-  // просто «Перфекционист» ———
-  it('«Перфекционист-Гиперконтролёр»/«-Гиперконтролер» — exit 1, «Перфекционист» — exit 0', () => {
-    const bad = runGate('check-schema-terms.mjs', {
-      'shared/src/y.ts':
-        'export const m = "Перфекционист-Гиперконтролёр требует безупречности.";\n',
-    });
-    expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Перфекционист');
-
-    const badLatinE = runGate('check-schema-terms.mjs', {
-      'shared/src/y2.ts':
-        'export const m = "Перфекционист-Гиперконтролер требует безупречности.";\n',
-    });
-    expect(badLatinE.status).toBe(1);
-
-    const ok = runGate('check-schema-terms.mjs', {
-      'shared/src/y.ts':
-        'export const m = "Перфекционист требует безупречности.";\n',
-    });
-    expect(ok.status).toBe(0);
-    expect(ok.stdout).toContain(OK_PREFIX);
   });
 
   // ——— Слэш-варианты ———
