@@ -86,6 +86,11 @@ export const ENCLOSING_ALLOW = [
   // ошибка сети/API глотается намеренно, это не забытый error-стейт.
   /\btrackEvent\s*[:(]/,
   /\btrackPublicEvent\s*[:(]/,
+  // resolveClientTimeZone (часовой пояс посетителя BookingPicker): Intl
+  // недоступен/бросил — единственный осмысленный ответ уже стоит СЛЕДУЮЩЕЙ
+  // строкой (return Europe/Moscow), показывать тут нечего и откатывать
+  // нечего — это не запрос к API, а чтение возможности рантайма.
+  /\bresolveClientTimeZone\s*\(/,
 ];
 
 // 3. FILE — файл целиком является best-effort примитивом (ср. ALLOWED_CHANNELS

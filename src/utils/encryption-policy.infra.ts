@@ -17,6 +17,9 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
     source: plain(
       'страница + referrer при брони — структурная атрибуция лида, не PII',
     ),
+    clientTimeZone: plain(
+      'IANA-идентификатор часового пояса посетителя, не свободный текст',
+    ),
   },
   ClientMeeting: {
     clientKey: plain('sha256 от контакта — уже псевдонимизирован'),

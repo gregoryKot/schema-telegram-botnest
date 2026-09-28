@@ -1,6 +1,7 @@
 import { escapeHtml } from '../utils/escape-html';
 import { SessionType } from '@prisma/client';
 import { sessionLabel } from './caldav-event.util';
+import { clientTimeLine } from './client-timezone';
 
 // Чистые форматтеры уведомлений админу о бронировании — вынесены из
 // booking-notify.service.ts (правило №10), проверяются без сервиса и его зависимостей.
@@ -13,6 +14,8 @@ export interface BookingCard {
   message: string | null;
   meetingUrl?: string | null;
   source?: string | null;
+  /** IANA-пояс посетителя (если собрался и не совпадает с московским). */
+  clientTimeZone?: string | null;
 }
 
 /** Заявка, которую не удалось сохранить (НЕ бронь — строки в БД нет). */
@@ -46,13 +49,22 @@ export function formatTime(date: Date): string {
   );
 }
 
+/** «вт, 30 сент., 15:00 МСК» либо, если посетитель прислал непустой не-МСК
+ * пояс, «вт, 30 сент., 15:00 МСК · у клиента 19:00 (Бангкок, UTC+7)». */
+function timeWithClientTz(
+  b: Pick<BookingCard, 'startsAt' | 'clientTimeZone'>,
+): string {
+  const line = clientTimeLine(b.startsAt, b.clientTimeZone);
+  return line ? `${formatTime(b.startsAt)} · ${line}` : formatTime(b.startsAt);
+}
+
 export function bookingCardText(title: string, b: BookingCard): string {
   return [
     title,
     '',
     `👤 ${b.clientName}`,
     `📬 ${b.clientContact}`,
-    `🗓 ${formatTime(b.startsAt)}`,
+    `🗓 ${timeWithClientTz(b)}`,
     b.message ? `💬 ${b.message}` : null,
     b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
     b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,

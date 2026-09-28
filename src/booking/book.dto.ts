@@ -59,6 +59,15 @@ export class BookDto {
   @IsBoolean()
   returning?: boolean;
 
+  // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — из Intl на фронте.
+  // Валидность проверяется сервисом через Intl; невалидное значение
+  // игнорируется, а не отклоняет запрос (правило №14: чужой ввод не должен
+  // ронять заявку с деньгами из-за странного значения пояса).
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  clientTimeZone?: string;
+
   @IsBoolean()
   acceptedOffer!: boolean;
 
