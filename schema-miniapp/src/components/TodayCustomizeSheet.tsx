@@ -74,7 +74,7 @@ export function TodayCustomizeSheet({
     focus: { title: 'Фокус дня', sub: 'главное дело — выбирается выше' },
     phrase: {
       title: 'Фраза для себя',
-      sub: 'цитата Здорового взрослого на главном',
+      sub: 'цитата Здорового Взрослого на главном',
       on: !phraseHidden,
       onToggle: onTogglePhrase,
     },

@@ -66,7 +66,7 @@ export function achievementsShareText(
 }
 
 export function phraseShareText(phrase: string, link: string): string {
-  return `«${phrase}»\n\nФраза Здорового взрослого · ${link}`;
+  return `«${phrase}»\n\nФраза Здорового Взрослого · ${link}`;
 }
 
 /** Текст записи в сообщение не кладём — он на картинке (юзер видит превью). */

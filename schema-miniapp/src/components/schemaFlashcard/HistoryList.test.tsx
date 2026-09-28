@@ -17,7 +17,7 @@ const MODES: ModeData[] = [
   {
     id: 'angry_child',
     emoji: '😡',
-    label: 'Злой Ребёнок',
+    label: 'Сердитый Ребёнок',
     desc: 'Злость',
     response: '...',
     color: '#f87171',

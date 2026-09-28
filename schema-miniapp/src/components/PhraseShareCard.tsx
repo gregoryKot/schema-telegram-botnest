@@ -55,7 +55,7 @@ export function PhraseShareCard() {
             }}
           >
             <div className="u-faint11">
-              Голос Здорового взрослого — тёплая опора в моменте
+              Голос Здорового Взрослого — тёплая опора в моменте
             </div>
             <button
               onClick={reload}

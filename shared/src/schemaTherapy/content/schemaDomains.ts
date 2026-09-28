@@ -20,7 +20,7 @@ import type { SchemaDomain } from '../types';
 export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'rejection',
-    domain: 'Отчуждение и отвержение',
+    domain: 'Нарушение связи и отвержение',
     color: 'var(--accent-red)',
     schemas: [
       {
@@ -41,7 +41,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       },
       {
         id: 'mistrust',
-        name: 'Недоверие / Жестокое обращение',
+        name: 'Недоверие / Ожидание жестокого обращения',
         emoji: '🛡️',
         desc: 'Ожидание, что люди причинят боль, используют или обманут',
         libraryDesc:
@@ -67,7 +67,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'autonomy',
-    domain: 'Нарушение автономии',
+    domain: 'Нарушенная автономия',
     color: 'var(--accent-orange)',
     schemas: [
       {
@@ -106,7 +106,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'limits',
-    domain: 'Нарушение границ',
+    domain: 'Нарушенные границы',
     color: 'var(--accent-yellow)',
     schemas: [
       {
@@ -129,7 +129,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'other_directed',
-    domain: 'Ориентация на других',
+    domain: 'Направленность на других',
     color: 'var(--accent-green)',
     schemas: [
       {
@@ -160,7 +160,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'vigilance',
-    domain: 'Бдительность и подавление',
+    domain: 'Сверхбдительность и подавление эмоций',
     color: 'var(--accent-indigo)',
     schemas: [
       {

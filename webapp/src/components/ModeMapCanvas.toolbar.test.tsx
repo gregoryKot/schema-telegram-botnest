@@ -132,7 +132,7 @@ describe('ModeMapCanvas — привязка к сетке и зоны', () => {
     expect(screen.queryByText(/Здоровый Взрослый — над системой/)).toBeNull();
     clickToolbarButton(
       container,
-      'Зоны: здоровый взрослый / копинги / детские и критики',
+      'Зоны: Здоровый Взрослый / копинги / детские и критики',
     );
     expect(screen.getByText(/Здоровый Взрослый — над системой/)).toBeTruthy();
   });

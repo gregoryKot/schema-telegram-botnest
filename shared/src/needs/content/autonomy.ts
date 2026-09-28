@@ -6,7 +6,7 @@ import type { NeedExtra, Tr } from '../types';
 export const buildAutonomy = (tr: Tr): NeedExtra => ({
   name: 'Автономия',
   short: 'Автон.',
-  subtitle: 'Контроль и компетентность',
+  subtitle: 'Компетентность и идентичность',
   emoji: '🧭',
   hint: 'свобода выбора · компетентность · идентичность',
   desc: tr(
