@@ -69,7 +69,7 @@ describe('NameSection', () => {
     const setEditName = vi.fn();
     const setNameSaving = vi.fn();
     const onNameChanged = vi.fn();
-    const setSavedToast = vi.fn();
+    const flashSaved = vi.fn();
     render(
       <NameSection
         editName="Аня"
@@ -79,11 +79,11 @@ describe('NameSection', () => {
         setEditName={setEditName}
         setNameSaving={setNameSaving}
         onNameChanged={onNameChanged}
-        setSavedToast={setSavedToast}
+        flashSaved={flashSaved}
         {...overrides}
       />,
     );
-    return { setEditName, setNameSaving, onNameChanged, setSavedToast };
+    return { setEditName, setNameSaving, onNameChanged, flashSaved };
   }
 
   it('имя совпадает с сохранённым — кнопка «Сохранить» не показана', () => {
@@ -93,7 +93,7 @@ describe('NameSection', () => {
 
   it('имя изменено — кнопка появляется, клик сохраняет через api и вызывает onNameChanged', async () => {
     mockApi.updateName.mockResolvedValue(undefined);
-    const { onNameChanged, setSavedToast } = renderSection({
+    const { onNameChanged, flashSaved } = renderSection({
       editName: 'Новое имя',
     });
     const saveBtn = screen.getByText('Сохранить');
@@ -103,7 +103,7 @@ describe('NameSection', () => {
       expect(mockApi.updateName).toHaveBeenCalledWith('Новое имя'),
     );
     expect(onNameChanged).toHaveBeenCalledWith('Новое имя');
-    expect(setSavedToast).toHaveBeenCalledWith(true);
+    expect(flashSaved).toHaveBeenCalledTimes(1);
   });
 
   it('ввод в поле вызывает setEditName с новым значением', () => {

@@ -3,7 +3,8 @@
 // оставался в новом положении. Теперь отказ откатывает settings к прежнему
 // значению и показывает видимую ошибку (см. webapp/SettingsSheet.tsx — та же
 // правка, правило №3 CLAUDE.md).
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 import { api, UserSettings } from '../../api';
 
 export function usePatchSettings(
@@ -11,7 +12,7 @@ export function usePatchSettings(
   setSettings: Dispatch<SetStateAction<UserSettings | null>>,
   onSaved: () => void,
 ) {
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, flashSaveError] = useTimedFlag(2400);
 
   async function patch(update: Partial<UserSettings>) {
     if (!settings) return;
@@ -22,8 +23,7 @@ export function usePatchSettings(
       onSaved();
     } catch {
       setSettings(prev);
-      setSaveError(true);
-      setTimeout(() => setSaveError(false), 2400);
+      flashSaveError();
     }
   }
 

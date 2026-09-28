@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api } from '../api';
-import type { UserSettings } from '../api';
+import { api, type UserSettings } from '../api';
 import { Loader } from './Loader';
 import { useSetAddressForm, useTr } from '../utils/addressForm';
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
+import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { botHandle, botShortUrl } from '../utils/botConfig';
@@ -70,7 +70,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   // Авто-копия при открытии сводки — свой инстанс: иначе она подсвечивала бы
   // кнопку «Скопировать» в модалке, которую человек ещё не нажимал.
   const exportAutoCopy = useCopyToClipboard();
-  const [savedToast, setSavedToast] = useState(false); const [saveError, setSaveError] = useState(false); // «Сохранено» раньше шло даже при отказе api
+  const [savedToast, flashSaved] = useTimedFlag(1800); const [saveError, flashSaveError] = useTimedFlag(2400); // «Сохранено» раньше шло даже при отказе api
   const {
     therapyRelation, therapyJoinCode, setTherapyJoinCode, therapyJoinError,
     leaveTherapyError, therapyInviteUrl, inviteCopied, inviteError,
@@ -89,8 +89,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   async function patch(update: Partial<UserSettings>) {
     if (!settings) return;
     const prev = settings; setSettings(s => s ? { ...s, ...update } : s);
-    try { await api.updateSettings(update); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
-    catch { setSettings(prev); setSaveError(true); setTimeout(() => setSaveError(false), 2400); }
+    try { await api.updateSettings(update); flashSaved(); }
+    catch { setSettings(prev); flashSaveError(); }
   }
 
   // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо голого
@@ -252,7 +252,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   therapistMode={therapistMode}
                   onToggleTherapistMode={onToggleTherapistMode}
                   onResignTherapist={onResignTherapist}
-                  onSaved={() => { setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }}
+                  onSaved={() => { flashSaved(); }}
                 />
 
                 {/* Имя */}
@@ -270,7 +270,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       onClick={async () => {
                         const name = editName.trim(); if (!name) return;
                         setNameSaving(true); setNameError(false);
-                        try { await api.updateName(name); onNameChanged?.(name); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
+                        try { await api.updateName(name); onNameChanged?.(name); flashSaved(); }
                         catch { setNameError(true); } finally { setNameSaving(false); }
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}

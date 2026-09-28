@@ -242,6 +242,24 @@ describe('сводка для терапевта: отказ API виден по
   });
 });
 
+// Регрессия (CI run 36409902702): таймер тоста «Сохранено ✓» не чистился при
+// размонтировании и стрелял после сноса jsdom — «ReferenceError: window is not
+// defined» валил весь прогон vitest, хотя все тесты уже прошли.
+describe('SettingsSheet — таймеры тоста не переживают размонтирование', () => {
+  it('после сохранения и unmount не остаётся висящих таймеров', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { unmount } = await renderSheet();
+      fireEvent.click(toggleForRow('Итоги дня'));
+      await screen.findByText('Сохранено ✓');
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 // ── Сохранение настройки (patch): успех и отказ ──────────────────────────────
 // Регрессия: patch() показывало «Сохранено ✓» независимо от того, удался ли
 // api.updateSettings — отказ сети выглядел как успех. Тест ловит именно это.
