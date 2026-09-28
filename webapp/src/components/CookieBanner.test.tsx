@@ -4,7 +4,9 @@
 // баннер показан, а метрика уже грузится без всякого клика; кнопка
 // «Понятно» скрывает баннер и пишет cookie_consent='all'; при любом уже
 // сохранённом решении ('all' или 'necessary') баннера нет, метрика всё
-// равно подключена; init — без webvisor.
+// равно подключена; init — без webvisor (тесты этого файла гоняются на
+// не-визитке — jsdom-хост localhost; условие «только визитка» и его
+// переключение по пути /admin проверены отдельно в lib/metrika.test.ts).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CookieBanner } from './CookieBanner';

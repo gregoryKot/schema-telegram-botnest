@@ -36,6 +36,16 @@ describe('AdminPage — вход по ключу', () => {
     expect(screen.getByText('Введите ключ доступа (ADMIN_BOOKING_KEY).')).toBeTruthy();
   });
 
+  // Вебвизор включается на визитке (kotlarewski.gr, metrika.ts shouldRecordSession),
+  // и /admin — часть её allow-list (practice-domain.middleware.ts). Экран
+  // редактирования сайта не должен уйти в запись сессии — ym-hide-content
+  // (метка Яндекса «не писать содержимое») на обоих состояниях экрана.
+  it('экран входа по ключу несёт ym-hide-content — Вебвизор не пишет содержимое', () => {
+    render(<AdminPage />);
+    const heading = screen.getByText('Введите ключ доступа (ADMIN_BOOKING_KEY).');
+    expect(heading.closest('.ym-hide-content')).toBeTruthy();
+  });
+
   it('неверный ключ показывает видимую ошибку, не пускает в админку молча', async () => {
     adminStatus.mockRejectedValue(new Error('403'));
     render(<AdminPage />);
@@ -78,5 +88,13 @@ describe('AdminPage — переключение вкладок', () => {
     fireEvent.click(screen.getByText('Канал ЗВ'));
     expect(screen.getByText('Секция: Канал ЗВ')).toBeTruthy();
     expect(screen.queryByText('Секция: Запись')).toBeNull();
+  });
+
+  it('авторизованный экран тоже несёт ym-hide-content', async () => {
+    render(<AdminPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ключ'), { target: { value: 'k' } });
+    fireEvent.click(screen.getByText('Войти'));
+    const section = await screen.findByText('Секция: Запись');
+    expect(section.closest('.ym-hide-content')).toBeTruthy();
   });
 });

@@ -3,6 +3,7 @@
 // файла, а не через window.ym напрямую — иначе легко повторить баг, из-за
 // которого терялся самый первый hit (см. комментарий у ym() ниже).
 import { telemetryUrl } from '../utils/telemetryUrl';
+import { isPracticeHost } from '../utils/domainChrome';
 
 export const YM_ID = 109568051;
 
@@ -12,6 +13,37 @@ declare global {
   interface Window {
     ym?: YmFn;
   }
+}
+
+/**
+ * Вебвизор (запись сессий/DOM) — только на визитке практики (kotlarewski.gr),
+ * и только если стартовая страница не админка. Решение владельца 2026-09-28
+ * по итогам H2 (docs/security/AUDIT_2026-08-12.md): изначально Webvisor был
+ * выключен целиком, потому что тот же SPA-бандл на schemehappens.ru рендерит
+ * авторизованные клинические экраны (дневники, письма, YSQ) — рекордер,
+ * запущенный один раз на домен, не остановить при переходе на такой экран.
+ * Визитка — другой домен и другой allow-list (`src/practice-domain.middleware.ts`
+ * → `PRACTICE_PAGES`): клинических экранов там нет и быть не может, а переход
+ * между `kotlarewski.gr` и `schemehappens.ru` — полная перезагрузка страницы
+ * (разные origin), не SPA-навигация, так что кабинет никогда не окажется под
+ * уже запущенной записью визитки.
+ *
+ * Внутри самой визитки один экран всё же не для чужих глаз — админка
+ * (`/admin`, там правится контент сайта, PhotoSection/ArticlesSection и
+ * т.д.). Эта функция решает по СТАРТОВОМУ пути (init вызывается один раз на
+ * загрузке страницы — при заходе сразу на `/admin` запись не включаем).
+ * SPA-переход НА `/admin` после старта на другой странице этим не поймать
+ * (тот же аргумент «рекордер уже запущен») — там защита второго слоя,
+ * класс `ym-hide-content` на корне `AdminPage` (метка Яндекса: не писать
+ * содержимое). Поля формы записи в `BookingPicker` — `ym-disable-keys`
+ * (не писать ввод), хотя это и не клинический текст.
+ */
+export function shouldRecordSession(
+  hostname: string = typeof window === 'undefined' ? '' : window.location.hostname,
+  pathname: string = typeof window === 'undefined' ? '' : window.location.pathname,
+): boolean {
+  if (!isPracticeHost(hostname)) return false;
+  return pathname !== '/admin' && !pathname.startsWith('/admin/');
 }
 
 /**
@@ -34,7 +66,7 @@ export function loadMetrika(): void {
   s.src = `https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`;
   document.head.appendChild(s);
   w.ym(YM_ID, 'init', {
-    webvisor: false, // аудит H2: Webvisor слал бы клинический текст SPA в Яндекс
+    webvisor: shouldRecordSession(), // см. shouldRecordSession выше — только визитка, не кабинет
     clickmap: true,
     accurateTrackBounce: true,
     trackLinks: true,

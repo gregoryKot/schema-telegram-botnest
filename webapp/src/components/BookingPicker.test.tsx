@@ -121,6 +121,16 @@ describe('BookingPicker — выбор слота и обязательные п
     const btn = screen.getByRole('button', { name: /Записаться на/ });
     expect((btn as HTMLButtonElement).disabled).toBe(false);
   });
+
+  // Вебвизор (визитка kotlarewski.gr, metrika.ts shouldRecordSession) не должен
+  // записывать ввод в полях с личными данными клиента — метка ym-disable-keys.
+  it('поля имени/контакта/сообщения несут ym-disable-keys', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Telegram / телефон *').className).toContain('ym-disable-keys');
+    expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
+  });
 });
 
 describe('BookingPicker — сабмит записи', () => {
