@@ -84,7 +84,7 @@ describe('check-schema-terms.mjs', () => {
   });
 
   // ——— Режимы: «…Родитель» вместо «…Критик» ———
-  it('«Карающий Родитель» — exit 1, «Хороший Родитель» — exit 0', () => {
+  it('«Карающий Родитель» — exit 1, «Наказывающий Родитель» — exit 1, «Хороший Родитель» — exit 0', () => {
     const bad = runGate('check-schema-terms.mjs', {
       'schema-miniapp/src/h.tsx':
         'const m = "Карающий Родитель говорит: ты плохой.";\n',
@@ -94,13 +94,26 @@ describe('check-schema-terms.mjs', () => {
 
     const bad2 = runGate('check-schema-terms.mjs', {
       'schema-miniapp/src/h2.tsx':
-        'const m = "Наказывающий Критик тут неуместен.";\n',
+        'const m = "Наказывающий Родитель тут неуместен.";\n',
     });
     expect(bad2.status).toBe(1);
+    expect(bad2.stderr).toContain('Критик');
 
     const ok = runGate('check-schema-terms.mjs', {
       'schema-miniapp/src/h.tsx':
         'const m = "Хороший Родитель поддерживает тебя.";\n',
+    });
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toContain(OK_PREFIX);
+  });
+
+  // ——— «Наказывающий Критик» — теперь допустимая альтернатива «Карающему
+  // Критику» (документ АНИМА/МИСТ), запрещён остался только вариант с
+  // «Родитель» (тест выше) ———
+  it('«Наказывающий Критик» — допустимая альтернатива, exit 0', () => {
+    const ok = runGate('check-schema-terms.mjs', {
+      'schema-miniapp/src/h3.tsx':
+        'const m = "Наказывающий Критик тут неуместен.";\n',
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
@@ -263,21 +276,57 @@ describe('check-schema-terms.mjs', () => {
     expect(ok.stdout).toContain(OK_PREFIX);
   });
 
-  // ——— Старые названия доменов, «Сверхбдительность» как контрольный образец ———
-  it('«Бдительность и подавление» — exit 1, «Сверхбдительность и подавление эмоций» — exit 0', () => {
+  // ——— Старые названия доменов, «Сверхбдительность и запреты» как контрольный образец ———
+  it('«Бдительность и подавление» — exit 1, «Сверхбдительность и запреты» — exit 0', () => {
     const bad = runGate('check-schema-terms.mjs', {
       'src/r.ts':
         'export const d = "Домен Бдительность и подавление — про контроль.";\n',
     });
     expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Сверхбдительность');
+    expect(bad.stderr).toContain('Сверхбдительность и запреты');
 
     const ok = runGate('check-schema-terms.mjs', {
       'src/r.ts':
-        'export const d = "Домен Сверхбдительность и подавление эмоций — про контроль.";\n',
+        'export const d = "Домен Сверхбдительность и запреты — про контроль.";\n',
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
+  });
+
+  // ——— Законны оба источника: документ АНИМА/МИСТ/БИСТ и сайт МИСТ
+  // (решение владельца 2026-09-28). Варианты, в которых они расходятся,
+  // гейт пропускает; контроль — вариант, которого нет ни там, ни там. ———
+  it.each([
+    ['<strong>Спутанность / Неразвитая идентичность</strong>', 'сайт'],
+    ['<strong>Запутанность / Неразвитая идентичность</strong>', 'документ'],
+    ['<strong>Дефективность / Стыд</strong>', 'сайт'],
+    ['<strong>Дефективность / Стыдливость</strong>', 'документ'],
+    ['<strong>Эмоциональная депривация</strong>', 'сайт'],
+    ['<strong>Эмоциональная депривированность</strong>', 'документ'],
+    ['<strong>Подавление эмоций</strong>', 'сайт'],
+    ['<strong>Подавленность эмоций</strong>', 'документ'],
+    ['Перфекционист-Гиперконтролёр требует безупречности', 'сайт'],
+    ['Перфекционист требует безупречности', 'документ'],
+    ['Карающий Критик', 'сайт и документ'],
+    ['Наказывающий Критик', 'документ'],
+    ['Домен Нарушение связи и отвержение', 'сайт'],
+    ['Домен Разобщение / Отвержение', 'документ'],
+    ['Домен Сверхбдительность и подавление эмоций', 'сайт'],
+    ['Домен Сверхбдительность и запреты', 'документ'],
+  ])('«%s» (%s) — exit 0', (text) => {
+    const ok = runGate('check-schema-terms.mjs', {
+      'webapp/src/both.tsx': `export const m = '${text}';\n`,
+    });
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toContain(OK_PREFIX);
+  });
+
+  it('«Слияние» как название схемы (нет ни в документе, ни на сайте) — exit 1', () => {
+    const bad = runGate('check-schema-terms.mjs', {
+      'webapp/src/u.tsx': 'const m = <strong>Слияние</strong>;\n',
+    });
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain('Запутанность / Неразвитая идентичность');
   });
 
   // ——— Слэш-варианты ———
@@ -405,4 +454,22 @@ describe('schema-terms-rules.mjs: реестр правил', () => {
       }
     },
   );
+
+  // Правила по режимам вынесены в отдельный модуль (правило №10 CLAUDE.md —
+  // schema-terms-rules.mjs дошёл бы до 300 строк). Проверяем, что
+  // schema-terms-modes.mjs реально существует и его правила не потерялись
+  // при склейке в общий RULES выше — иначе главный файл мог бы забыть
+  // заспредить MODE_RULES, и гейт молча перестал бы ловить режимы.
+  it('MODE_RULES из schema-terms-modes.mjs целиком входят в общий RULES', () => {
+    const modeIds = JSON.parse(
+      importExport(
+        'schema-terms-modes.mjs',
+        'MODE_RULES',
+        '(list) => list.map((r) => r.id)',
+      ),
+    ) as string[];
+    expect(modeIds.length).toBeGreaterThanOrEqual(10);
+    const ruleIds = new Set(RULES.map((r) => r.id));
+    for (const id of modeIds) expect(ruleIds.has(id)).toBe(true);
+  });
 });

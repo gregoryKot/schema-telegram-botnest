@@ -175,8 +175,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       {slot && (
         <>
           <div className="form-grid">
-            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
-            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
+            {/* ym-disable-keys: Вебвизор (визитка, см. metrika.ts shouldRecordSession)
+                не пишет ввод в этих полях — имя и контакт клиента. */}
+            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
+            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" className="ym-disable-keys" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} onFocus={onFieldFocus} required maxLength={100} /></div>
           </div>
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
@@ -194,7 +196,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           </p>
           <div>
             <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-            <textarea id="bp-message" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
+            <textarea id="bp-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
