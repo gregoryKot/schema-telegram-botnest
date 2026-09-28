@@ -1440,7 +1440,7 @@
   "webapp/src/hooks/useSelfMapData.ts": 51,
   "webapp/src/hooks/useYsqTest.ts": 2,
   "webapp/src/legal/operator.ts": 9,
-  "webapp/src/lib/metrika.ts": 128,
+  "webapp/src/lib/metrika.ts": 160,
   "webapp/src/main.tsx": 12,
   "webapp/src/modeChainVm.ts": 13,
   "webapp/src/needData.ts": 14,
