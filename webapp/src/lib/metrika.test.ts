@@ -14,6 +14,7 @@ import {
   trackGoalOnce,
   trackBookingSubmit,
   analyticsUrl,
+  shouldRecordSession,
 } from './metrika';
 
 function ymQueue(): unknown[][] {
@@ -36,11 +37,42 @@ describe('loadMetrika', () => {
     expect(scripts[0].getAttribute('src')).toBe(`https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`);
   });
 
-  it('инициализирует счётчик с webvisor: false', () => {
+  it('инициализирует счётчик с webvisor: false (jsdom-хост не визитка)', () => {
     loadMetrika();
     const initCall = ymQueue().find((c) => c[1] === 'init');
     expect(initCall).toBeTruthy();
     expect((initCall![2] as { webvisor?: boolean }).webvisor).toBe(false);
+  });
+});
+
+// H2 (docs/security/AUDIT_2026-08-12.md) + решение владельца 2026-09-28:
+// Вебвизор включается точечно, только на визитке практики (kotlarewski.gr),
+// и только если стартовая страница — не админка. Кабинет/приложение
+// schemehappens.ru и localhost (контроль) — всегда false.
+describe('shouldRecordSession', () => {
+  it('визитка + "/" → true', () => {
+    expect(shouldRecordSession('kotlarewski.gr', '/')).toBe(true);
+  });
+
+  it('визитка + "/articles/some-slug" → true', () => {
+    expect(shouldRecordSession('kotlarewski.gr', '/articles/some-slug')).toBe(true);
+  });
+
+  it('визитка + "/admin" → false', () => {
+    expect(shouldRecordSession('kotlarewski.gr', '/admin')).toBe(false);
+  });
+
+  it('визитка + "/admin/anything" → false', () => {
+    expect(shouldRecordSession('kotlarewski.gr', '/admin/anything')).toBe(false);
+  });
+
+  it('schemehappens.ru → false (кабинет/приложение)', () => {
+    expect(shouldRecordSession('schemehappens.ru', '/')).toBe(false);
+  });
+
+  it('контрольный: localhost/прочий хост → false', () => {
+    expect(shouldRecordSession('localhost', '/')).toBe(false);
+    expect(shouldRecordSession('example.com', '/')).toBe(false);
   });
 });
 

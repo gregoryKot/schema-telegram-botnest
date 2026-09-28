@@ -42,8 +42,12 @@ export function AdminPage() {
     } catch { setKeyError(true); }
   };
 
+  // ym-hide-content: метка Яндекс.Вебвизора «не писать содержимое узла».
+  // Вебвизор включается только на визитке (kotlarewski.gr, см. metrika.ts
+  // shouldRecordSession), и админка технически внутри её allow-list —
+  // экран редактирования сайта не должен уйти в запись сессии.
   if (!authed) return (
-    <div style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
+    <div className="ym-hide-content" style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
       <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }}>
@@ -56,7 +60,7 @@ export function AdminPage() {
   );
 
   return (
-    <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
+    <div className="ym-hide-content" style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 20 }}>Админка</h1>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
