@@ -457,11 +457,35 @@ describe('правила гейта: каждый паттерн со своим
     const CORPUS = [
       'trackEvent: (name, meta) => {',
       'trackPublicEvent(name) {',
+      'export function resolveClientTimeZone(): string {',
     ];
     const unmatched = ENCLOSING_ALLOW.filter(
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
     expect(unmatched).toEqual([]);
+  });
+
+  // resolveClientTimeZone (shared/src/booking/clientTimeZone.ts): Intl
+  // бросил/недоступен — ответ уже стоит следующей строкой (фолбэк
+  // Europe/Moscow), показывать и откатывать нечего.
+  it('runGate: resolveClientTimeZone — Intl-фолбэк, не проглоченный запрос', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/booking/clientTimeZone.ts': [
+        'export function resolveClientTimeZone(): string {',
+        '  try {',
+        '    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;',
+        '    if (tz) return tz;',
+        '  } catch {',
+        '    // Intl недоступен/бросил — берём фолбэк ниже.',
+        '  }',
+        "  return 'Europe/Moscow';",
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
   it('runGate: trackPublicEvent — тоже легитимно, не только trackEvent', () => {
