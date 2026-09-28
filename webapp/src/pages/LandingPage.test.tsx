@@ -253,6 +253,7 @@ describe('LandingPage — якоря карточек «С чем я работ�
     ['Самооценка', 'self-esteem'],
     ['Тревога и контроль', 'anxiety'],
     ['Повторяющиеся паттерны', 'patterns'],
+    ['Жизнь после переезда', 'emigration'],
   ])('у карточки «%s» есть id=%s и отступ прокрутки под липкую шапку', async (title, id) => {
     mockApi.getBookingOptions.mockResolvedValue([]);
     await act(async () => { renderPage(); });
