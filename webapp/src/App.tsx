@@ -99,6 +99,10 @@ const personalRoutes = [
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/booking/paid',   element: <BookingPaidPage /> },
+  // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
+  // что у /booking/paid: путь переименовывать нельзя, туда редиректит
+  // Робокасса, а новая capability-ссылка ведёт на другой путь.
+  { path: '/booking/manage', element: <BookingPaidPage /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },

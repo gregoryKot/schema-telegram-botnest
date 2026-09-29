@@ -15,12 +15,16 @@ function makeController() {
     cancel: jest.fn(),
   };
   const pricing = { getOptions: jest.fn() };
+  const prisma = { booking: { findUnique: jest.fn() } };
+  const config = { get: jest.fn().mockReturnValue(undefined) };
   const controller = new BookingController(
     slots as any,
     booking as any,
     pricing as any,
+    prisma as any,
+    config as any,
   );
-  return { controller, slots, booking, pricing };
+  return { controller, slots, booking, pricing, prisma };
 }
 
 const BASE_DTO = {
@@ -209,5 +213,33 @@ describe('BookingController.getByToken / cancelByToken', () => {
       ok: true,
     });
     expect(booking.cancel).toHaveBeenCalledWith('tok-1');
+  });
+});
+
+// getIcs — сборка сама покрыта booking-ics.spec.ts; здесь проверяем только
+// то, что контроллер делает сам: заголовки ответа.
+describe('BookingController.getIcs', () => {
+  it('ставит Content-Type text/calendar и Content-Disposition attachment', async () => {
+    const { controller, prisma } = makeController();
+    prisma.booking.findUnique.mockResolvedValue({
+      id: 1,
+      status: 'CONFIRMED',
+      type: 'SESSION_50',
+      startsAt: new Date('2026-08-10T10:00:00Z'),
+      durationMin: 50,
+      meetingUrl: null,
+    });
+    const setHeader = jest.fn();
+    const res = { setHeader } as any;
+    const ics = await controller.getIcs('tok-1', res);
+    expect(setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'text/calendar; charset=utf-8',
+    );
+    expect(setHeader).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="zapis.ics"',
+    );
+    expect(ics).toContain('BEGIN:VCALENDAR');
   });
 });

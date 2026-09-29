@@ -105,7 +105,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   if (status === 'done') return (
     <DoneScreen
       resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
-      onCancelled={() => setCancelled(true)}
+      sessionType={sessionType} onCancelled={() => setCancelled(true)}
     />
   );
 
