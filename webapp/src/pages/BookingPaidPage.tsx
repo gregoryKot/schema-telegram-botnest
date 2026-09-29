@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { BookingCancelControl } from '../components/booking/BookingCancelControl';
 
 type Booking = { status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null };
 
@@ -26,8 +27,6 @@ export function BookingPaidPage() {
   const [loaded, setLoaded] = useState(() => !token);
   const [reloadTick, setReloadTick] = useState(0);
   const [cancelled, setCancelled] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
 
   // The token is a capability (view + cancel). Drop it from the visible URL so
   // it doesn't linger in browser history or leak via the Referer to analytics.
@@ -47,22 +46,6 @@ export function BookingPaidPage() {
       .finally(() => { if (alive) setLoaded(true); });
     return () => { alive = false; };
   }, [token, reloadTick]);
-
-  const doCancel = async () => {
-    if (!token) return;
-    try {
-      await api.cancelBooking(token);
-      setCancelled(true);
-      setConfirmCancel(false);
-    } catch (err) {
-      setConfirmCancel(false);
-      setCancelError(
-        err instanceof Error && err.message === 'CANCEL_TOO_LATE'
-          ? 'Отменить онлайн можно не позднее чем за 24 часа до встречи. Напишите мне в Telegram — решим.'
-          : 'Не получилось отменить. Попробуйте ещё раз или напишите мне.',
-      );
-    }
-  };
 
   let body: React.ReactNode;
 
@@ -108,17 +91,8 @@ export function BookingPaidPage() {
         )}
         <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
 
-        {cancelError && <p style={{ ...sub, fontSize: 13, color: 'var(--accent-red)', margin: '0 0 14px' }}>{cancelError}</p>}
-        {!confirmCancel ? (
-          <button onClick={() => setConfirmCancel(true)} style={textLink}>Отменить запись</button>
-        ) : (
-          <div style={{ marginTop: 4 }}>
-            <p style={{ ...sub, fontSize: 14, margin: '0 0 12px' }}>Точно отменить эту встречу?</p>
-            <div style={{ display: 'flex', gap: 'var(--space-10)', justifyContent: 'center' }}>
-              <button onClick={doCancel} style={dangerBtn}>Да, отменить</button>
-              <button onClick={() => setConfirmCancel(false)} style={ghostSmall}>Оставить</button>
-            </div>
-          </div>
+        {token && (
+          <BookingCancelControl cancelToken={token} startsAt={booking.startsAt} onCancelled={() => setCancelled(true)} />
         )}
       </>
     );
@@ -167,7 +141,4 @@ const primaryBtn: React.CSSProperties = {
 };
 const ghostBtn: React.CSSProperties = { ...primaryBtn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' };
 const hint: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '14px 0 22px' };
-const textLink: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline' };
-const dangerBtn: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)', border: '1.5px solid var(--accent-red)', background: 'transparent', color: 'var(--accent-red)' };
-const ghostSmall: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)', border: '1.5px solid var(--line-strong)', background: 'transparent', color: 'var(--text-sub)' };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };
