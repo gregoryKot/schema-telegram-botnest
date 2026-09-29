@@ -220,6 +220,14 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               {invalidField === 'contact' && <p id="bp-contact-hint" style={hintSt}>{FIELD_HINTS.contact}</p>}
             </div>
           </div>
+          {sessionType === 'INTRO_15' && (
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-8px 0 0' }}>
+              Знакомство бесплатное, поэтому каждую запись подтверждаю лично – свяжусь с вами по контакту, который вы
+              оставите. Проверьте, что по нему до вас можно достучаться. Не получили подтверждения за 3 часа до
+              встречи – напишите мне сами: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
+              Без подтверждения встреча не состоится.
+            </p>
+          )}
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />

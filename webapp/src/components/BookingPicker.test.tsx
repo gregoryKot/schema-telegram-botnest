@@ -4,7 +4,7 @@
 // платный/бесплатный формат, занятый слот (CLIENT_NOT_FOUND / общая ошибка).
 // Образец сетапа: DonatePage.test.tsx, SubscribePage.test.tsx (мок '../api').
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import { BookingPicker } from './BookingPicker';
 
 vi.mock('../api', () => ({
@@ -202,12 +202,45 @@ describe('BookingPicker — сабмит записи', () => {
     );
   });
 
-  it('успешная бесплатная запись без paymentUrl показывает «Время забронировано»', async () => {
+  it('успешная бесплатная запись (INTRO_15) без paymentUrl показывает «Заявка принята»', async () => {
     mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
+    await screen.findByText('Заявка принята');
+    expect(screen.queryByText('Время забронировано')).toBeNull();
+  });
+
+  // PR C: знакомство подтверждается лично, поэтому DoneScreen для INTRO_15
+  // заголовок и текст-предупреждение отличаются от оплаченной сессии.
+  it('«Заявка принята» (INTRO_15) — под временем текст про личное подтверждение со ссылкой на @kotlarewski', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    await screen.findByText('Заявка принята');
+    const note = screen.getByText(/Напишу вам, чтобы подтвердить встречу/);
+    expect(note).toBeTruthy();
+    const link = within(note).getByRole('link', { name: '@kotlarewski' }) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('https://t.me/kotlarewski');
+  });
+
+  it('SESSION_50 — «Время забронировано», без текста про личное подтверждение', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 0, note: '' },
+    ]);
+    mockApi.bookSlot.mockResolvedValue({ id: 3, cancelToken: 'tok3', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
     await screen.findByText('Время забронировано');
+    expect(screen.queryByText(/Напишу вам, чтобы подтвердить встречу/)).toBeNull();
   });
 
   it('запись с paymentUrl уводит на экран ожидания оплаты, а не сразу «забронировано»', async () => {
@@ -248,10 +281,12 @@ describe('BookingPicker — занятый слот и ошибки API', () => 
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
-    await screen.findByText(/Заявка не сохранилась/);
+    const errorNote = await screen.findByText(/Заявка не сохранилась/);
     expect(screen.queryByText(/только что заняли/)).toBeNull();
     expect(screen.queryByText(/Обновите страницу/)).toBeNull();
-    expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
+    // Форма для INTRO_15 несёт свою ссылку на @kotlarewski (PR C) — берём
+    // ссылку именно из текста ошибки, не первую попавшуюся на странице.
+    expect(within(errorNote).getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(reportClientError).toHaveBeenCalledWith({ message: 'booking submit failed: HTTP 500', section: 'booking' });
   });
 });
@@ -368,6 +403,43 @@ describe('BookingPicker — цели Метрики', () => {
     await screen.findByText(/Заявка не сохранилась/);
     const call = ymQueue().find((c) => c[1] === 'reachGoal' && c[2] === 'booking_error');
     expect(call?.[3]).toEqual({ reason: 'server' });
+  });
+});
+
+// PR C: знакомство (INTRO_15) — бесплатное, подтверждается лично автором, а
+// не автоматически; форма предупреждает об этом заранее, ещё до отправки.
+describe('BookingPicker — предупреждение о личном подтверждении (только INTRO_15)', () => {
+  const TEXT = /каждую запись подтверждаю лично/;
+
+  it('видно, пока выбран формат «Знакомство» (дефолт)', async () => {
+    await fillAndSelectSlot();
+    expect(screen.getByText(TEXT)).toBeTruthy();
+    const link = screen.getByRole('link', { name: '@kotlarewski' }) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('https://t.me/kotlarewski');
+  });
+
+  it('не видно для оплаченной сессии SESSION_50', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+    ]);
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    expect(screen.queryByText(TEXT)).toBeNull();
+  });
+
+  it('переключение обратно на «Знакомство» возвращает текст', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+    ]);
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    expect(screen.queryByText(TEXT)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Знакомство/ }));
+    expect(screen.getByText(TEXT)).toBeTruthy();
   });
 });
 

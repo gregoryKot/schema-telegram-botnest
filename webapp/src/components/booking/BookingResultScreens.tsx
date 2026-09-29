@@ -50,11 +50,17 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
   return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
-        {cancelled ? 'Запись отменена' : 'Время забронировано'}
+        {cancelled ? 'Запись отменена' : sessionType === 'INTRO_15' ? 'Заявка принята' : 'Время забронировано'}
       </h3>
       {!cancelled && slot && (
         <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 8px' }}>
           {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}.
+        </p>
+      )}
+      {!cancelled && sessionType === 'INTRO_15' && (
+        <p style={{ color: 'var(--text-faint)', fontSize: 13, lineHeight: 1.6, margin: '0 0 8px' }}>
+          Напишу вам, чтобы подтвердить встречу. Не получили сообщения за 3 часа до встречи – напишите мне:{' '}
+          <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>. Без подтверждения встреча не состоится.
         </p>
       )}
       {!cancelled && meetingUrl && (
