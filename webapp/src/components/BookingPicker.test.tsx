@@ -262,10 +262,57 @@ describe('BookingPicker — сабмит записи', () => {
   });
 });
 
+const TWO_OPTIONS = [
+  { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+  { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 0, note: '' },
+];
+const RETURNING_BOX = /повторная встреча/;
+
+describe('BookingPicker — галочка «повторная встреча»', () => {
+  const OK = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null };
+
+  it('у знакомства (INTRO_15) галочки и пояснения про комнату нет, returning=false', async () => {
+    mockApi.bookSlot.mockResolvedValue(OK);
+    await fillAndSelectSlot();
+    expect(screen.queryByRole('checkbox', { name: RETURNING_BOX })).toBeNull();
+    expect(screen.queryByText(/персональную комнату/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await screen.findByText('Заявка принята');
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'INTRO_15', returning: false }));
+  });
+
+  it('у сессии (SESSION_50) галочка есть, отмеченная уходит returning=true', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    mockApi.bookSlot.mockResolvedValue(OK);
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: RETURNING_BOX }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await screen.findByText('Время забронировано');
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'SESSION_50', returning: true }));
+  });
+
+  it('SESSION_50 (отмечено) → INTRO_15: галочка пропадает, уходит returning=false', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    mockApi.bookSlot.mockResolvedValue(OK);
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: RETURNING_BOX }));
+    fireEvent.click(screen.getByRole('button', { name: /Знакомство/ }));
+    expect(screen.queryByRole('checkbox', { name: RETURNING_BOX })).toBeNull(); // плашка «Понятно» уже отмечена до переключения
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await screen.findByText('Заявка принята');
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'INTRO_15', returning: false }));
+  });
+});
+
 describe('BookingPicker — занятый слот и ошибки API', () => {
   it('ошибка CLIENT_NOT_FOUND (не найден контакт «повторной» записи) показывает объяснение, а не общую ошибку', async () => {
     mockApi.bookSlot.mockRejectedValue(new Error('CLIENT_NOT_FOUND'));
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
     await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /повторная встреча/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
     await screen.findByText(/Не нашёл вас по этому контакту/);

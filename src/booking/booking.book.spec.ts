@@ -159,6 +159,20 @@ describe('BookingService.book — валидация до транзакции',
     ).rejects.toThrow('CLIENT_NOT_FOUND');
   });
 
+  it('INTRO_15 с returning=true (старый клиент) — returning игнорируется, бронь создаётся без проверки личной встречи', async () => {
+    const { service, meeting } = makeService();
+    meeting.hasMeetingForContact.mockResolvedValue(false);
+    const res = await service.book({
+      ...BASE_DTO,
+      returning: true,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(meeting.hasMeetingForContact).not.toHaveBeenCalled();
+  });
+
   it('слот раньше MIN_BOOK_LEAD_HOURS (12ч) — TOO_SOON', async () => {
     const { service } = makeService();
     await expect(
