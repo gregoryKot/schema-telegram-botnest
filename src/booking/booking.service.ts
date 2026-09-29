@@ -97,11 +97,11 @@ export class BookingService {
     if (!dto.acceptedOffer) {
       throw new BadRequestException('OFFER_NOT_ACCEPTED');
     }
-    // Returning client: the contact must match an existing personal meeting,
-    // otherwise we'd silently create a duplicate room. Reject with a code the
-    // frontend turns into a friendly "check your contact" message.
+    // Returning client: contact must match an existing personal meeting, else a
+    // duplicate room. INTRO_15 — всегда первая встреча: returning игнорируем.
     if (
       dto.returning &&
+      dto.type !== SessionType.INTRO_15 &&
       !(await this.meeting.hasMeetingForContact(dto.clientContact))
     ) {
       throw new BadRequestException('CLIENT_NOT_FOUND');

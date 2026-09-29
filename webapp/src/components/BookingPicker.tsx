@@ -7,6 +7,7 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
+import { ReturningVisitField } from './booking/ReturningVisitField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
@@ -124,7 +125,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz,
+        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz,
       });
       setCancelToken(res.cancelToken);
       trackBookingSubmit(sessionType);
@@ -166,6 +167,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               return (
                 <button key={o.type} type="button" onClick={() => {
                   setSessionType(o.type);
+                  if (o.type === 'INTRO_15') { setReturning(false); if (status === 'not_found') setStatus('idle'); } // знакомство — всегда первая встреча
                   trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
                 }} style={{
                   flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
@@ -227,17 +229,9 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={returning} onChange={(e) => { setReturning(e.target.checked); if (status === 'not_found') setStatus('idle'); }} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
-            <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Мы уже занимались — это повторная встреча
-            </span>
-          </label>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-8px 0 0' }}>
-            {returning
-              ? 'Хорошо! Укажите, пожалуйста, тот же контакт, что и в прошлый раз — я узнаю вас и открою вашу постоянную комнату для встреч. Если контакт не совпадёт, я не смогу вас найти и попрошу проверить.'
-              : 'Если занимаемся впервые — я заведу для вас персональную комнату для встреч. Она будет одна и та же для всех наших будущих сессий, чтобы не искать новую ссылку каждый раз.'}
-          </p>
+          {sessionType === 'SESSION_50' && (
+            <ReturningVisitField returning={returning} onChange={(v) => { setReturning(v); if (status === 'not_found') setStatus('idle'); }} />
+          )}
           <div>
             <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
             <textarea id="bp-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
@@ -255,7 +249,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             </span>
           </label>
           {invalidField === 'consent' && <p id="bp-consent-hint" style={{ ...hintSt, margin: '-8px 0 0' }}>{FIELD_HINTS.consent}</p>}
-          {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
+          {sessionType === 'SESSION_50' && status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
           {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
           {chosen && chosen.price > 0 && (
             <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-8px 0 0' }}>
