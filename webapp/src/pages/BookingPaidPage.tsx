@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { BookingCancelControl } from '../components/booking/BookingCancelControl';
+import { BookingSaveBlock } from '../components/booking/BookingSaveBlock';
 
 type Booking = { status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null };
 
@@ -91,6 +92,12 @@ export function BookingPaidPage() {
         )}
         <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
 
+        {token && (
+          <BookingSaveBlock
+            cancelToken={token} startsAt={booking.startsAt} durationMin={booking.durationMin}
+            type={booking.type} meetingUrl={booking.meetingUrl} tz="Europe/Moscow"
+          />
+        )}
         {token && (
           <BookingCancelControl cancelToken={token} startsAt={booking.startsAt} onCancelled={() => setCancelled(true)} />
         )}

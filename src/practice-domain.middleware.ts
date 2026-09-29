@@ -47,6 +47,7 @@ export const PRACTICE_PAGES: readonly string[] = [
   '/booking-admin',
   '/articles-admin',
   '/booking/paid',
+  '/booking/manage',
   '/subscribe',
   '/donate',
   '/privacy',

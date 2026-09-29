@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { BookingSlot, SessionOption } from '../../api';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../../shared/src/booking/clientTimeZone';
 import { BookingCancelControl } from './BookingCancelControl';
+import { BookingSaveBlock } from './BookingSaveBlock';
 
 /** Терминальные экраны BookingPicker (ожидание оплаты / провал / готово) — вынесены отдельно (правило №10). */
 export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
@@ -42,9 +43,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, onCancelled }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  meetingUrl: string | null; cancelToken: string; onCancelled: () => void;
+  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void;
 }) {
   return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -64,6 +65,12 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
       )}
       {!cancelled && !meetingUrl && (
         <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>
+      )}
+      {!cancelled && cancelToken && slot && (
+        <BookingSaveBlock
+          cancelToken={cancelToken} startsAt={slot.startsAt} durationMin={slot.durationMin}
+          type={sessionType} meetingUrl={meetingUrl} tz={tz}
+        />
       )}
       {!cancelled && cancelToken && slot && (
         <div style={{ marginTop: 12 }}>

@@ -5,15 +5,20 @@ import {
   Body,
   Param,
   Query,
+  Res,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { PersistentThrottle } from '../api/persistent-throttle.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
 import { PricingService } from './pricing.service';
+import { buildBookingIcsText } from './booking-ics';
 import { SessionType } from '@prisma/client';
 import { BookDto } from './book.dto';
 
@@ -24,11 +29,22 @@ const MAX_SLOTS_RANGE_MS = 92 * 24 * 60 * 60 * 1000;
 /** Public booking endpoints: browse slots, book one, self-cancel. */
 @Controller('api/booking')
 export class BookingController {
+  private readonly siteUrl: string;
+
   constructor(
     private readonly slots: SlotService,
     private readonly booking: BookingService,
     private readonly pricing: PricingService,
-  ) {}
+    private readonly prisma: PrismaService,
+    config: ConfigService,
+  ) {
+    // Тот же env и тот же дефолт, что у booking-notify.service.ts.
+    // /booking/manage — страница визитки (PRACTICE_PAGES), поэтому
+    // дефолт-хост — kotlarewski.gr, а не канонический хост приложения.
+    this.siteUrl = (
+      config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
+    ).replace(/\/$/, '');
+  }
 
   /** GET /api/booking/options — session types, durations and prices for the UI. */
   @Get('options')
@@ -86,6 +102,19 @@ export class BookingController {
   @Throttle({ long: { limit: 60, ttl: 3_600_000 } })
   async getByToken(@Param('token') token: string) {
     return this.booking.getPublicByToken(token);
+  }
+
+  /** GET /api/booking/ics/:token — .ics для клиента (Apple/Outlook), без PII. */
+  @Get('ics/:token')
+  @Throttle({ long: { limit: 60, ttl: 3_600_000 } })
+  async getIcs(
+    @Param('token') token: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ics = await buildBookingIcsText(this.prisma, token, this.siteUrl);
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="zapis.ics"');
+    return ics;
   }
 
   /** POST /api/booking/cancel/:token — client self-cancel */

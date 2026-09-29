@@ -354,6 +354,11 @@ jobs:
       # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
       - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # PR B (.ics для клиента): POST /api/booking/book той же advisory-lock
+      # дорогой, что и booking-slot-lock.e2e-spec.ts выше — фейковая Prisma
+      # не эмулирует $executeRaw, поэтому тоже только тут.
+      - name: e2e .ics для клиента на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт
