@@ -2,16 +2,22 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "npm",
   "testRunner": "jest",
+  "appendPlugins": [
+    "./scripts/stryker/covering-test-files.plugin.mjs"
+  ],
   "jest": {
     "projectType": "custom",
-    "configFile": "package.json"
+    "configFile": "package.json",
+    "config": {
+      "filter": "<rootDir>/../scripts/stryker/covering-test-files.cjs"
+    }
   },
   "mutate": [
     "src/bot/bot.service.ts",
     "src/bot/bot.analytics.service.ts",
     "src/bot/account.service.ts"
   ],
-  "reporters": ["clear-text", "progress", "html", "json"],
+  "reporters": ["clear-text", "progress", "html", "json", "covering-test-files"],
   "htmlReporter": {
     "fileName": "reports/mutation/bot.html"
   },
