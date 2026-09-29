@@ -137,12 +137,20 @@ describe('SlotService.getSlots — границы rangeStart/rangeEnd (start</> 
   afterEach(() => jest.useRealTimers());
 
   it('слот, начинающийся РОВНО в rangeStart — включён (не строгое <)', async () => {
-    const fromDate = new Date('2026-07-13T17:00:00Z');
-    const toDate = new Date('2026-07-13T23:59:59.999Z');
-    const { service } = makeService({ rules: [RULE] });
-    const slots = await service.getSlots(fromDate, toDate);
+    // rangeStart — полночь UTC дня fromDate (окно — целые UTC-сутки), поэтому
+    // на границе стоит только слот в 00:00 UTC. Прежний вариант теста брал
+    // слот 17:00 при fromDate=17:00 — после перехода на целые сутки он
+    // перестал стоять на границе, и тест молча проверял ничего.
+    const midnightRule = {
+      ...RULE,
+      startHour: 0,
+      endHour: 1,
+      timezone: 'UTC',
+    };
+    const { service } = makeService({ rules: [midnightRule] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
     expect(slots.map((s) => s.startsAt.toISOString())).toContain(
-      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T00:00:00.000Z',
     );
   });
 

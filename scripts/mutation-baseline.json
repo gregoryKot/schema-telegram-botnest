@@ -2,7 +2,7 @@
   "total": 90.95,
   "files": {
     "src/auth/auth.service.ts": 91.61,
-    "src/auth/merge.service.ts": 92,
+    "src/auth/merge.service.ts": 94.57,
     "src/booking/robokassa.service.ts": 92.52,
     "src/therapy/therapy-relations.service.ts": 97.95,
     "src/utils/crypto.ts": 89.86,
@@ -15,6 +15,6 @@
     "src/booking/slot.service.ts": 93.69,
     "src/booking/payment.controller.ts": 87.95,
     "src/auth/security-log.service.ts": 95.74,
-    "src/donation/donation.service.ts": 94.44
+    "src/donation/donation.service.ts": 96.46
   }
 }
