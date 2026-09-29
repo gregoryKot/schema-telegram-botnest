@@ -76,7 +76,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
   useEffect(() => {
     api.getSlots()
-      .then((s) => { setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
+      .then((raw) => { const s = raw.filter((x, i) => raw.findIndex((y) => y.startsAt === x.startsAt) === i); /* дубли startsAt, инцидент 2026-09-29 */ setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
       .catch(() => setLoadFailed(true));
     api.getBookingOptions().then(setOptions).catch(() => setLoadFailed(true)); // сбой ≠ пусто: без опций не собрать цену — та же loadFailed, что у слотов
   }, []);

@@ -468,3 +468,34 @@ describe('SlotService.getSlots — ручной слой SlotOverride', () => {
     ).toBe(false);
   });
 });
+
+// Инцидент 2026-09-29: /api/booking/slots отдавал каждый слот четверга дважды —
+// два активных AvailabilityRule на один день недели с пересекающимися окнами
+// порождали один и тот же startsAt. Регрессия: слоты уникальны по startsAt.
+describe('SlotService.getSlots — пересекающиеся правила не дублируют слоты', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('два правила на один день с общим окном дают уникальные слоты', async () => {
+    const ruleA = { ...RULE, id: 1 }; // 17:00–19:00 UTC
+    const ruleB = { ...RULE, id: 2, startHour: 19, endHour: 22 }; // 19:00–22:00 МСК = 16:00–19:00 UTC
+    const { service } = makeService({ rules: [ruleA, ruleB] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    const starts = slots.map((s) => s.startsAt.toISOString());
+    expect(new Set(starts).size).toBe(starts.length);
+    expect(starts).toEqual([
+      '2026-07-13T16:00:00.000Z',
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('идентичные правила-дубли в данных не задваивают слоты', async () => {
+    const { service } = makeService({ rules: [RULE, { ...RULE, id: 9 }] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots).toHaveLength(2);
+  });
+});

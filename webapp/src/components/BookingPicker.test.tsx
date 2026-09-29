@@ -493,3 +493,21 @@ describe('BookingPicker — время слота у платной сессии
     expect(mskMentions[0].textContent).toContain(timeLabel(SLOT_A.startsAt));
   });
 });
+
+// Инцидент 2026-09-29: сервер отдал каждый слот дважды — в форме «13:00, 13:00».
+describe('BookingPicker — дубли startsAt в ответе сервера', () => {
+  beforeEach(() => {
+    resetLocation();
+    mockUseClientTimeZone.mockReturnValue(['Europe/Moscow', vi.fn()]);
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS);
+  });
+  afterEach(() => cleanup());
+
+  it('одинаковый слот показывается один раз', async () => {
+    mockApi.getSlots.mockResolvedValue([SLOT_A, SLOT_A, SLOT_B, SLOT_B]);
+    render(<BookingPicker fallback={<div />} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getAllByText(timeLabel(SLOT_A.startsAt))).toHaveLength(1);
+    expect(screen.getAllByText(timeLabel(SLOT_B.startsAt))).toHaveLength(1);
+  });
+});
