@@ -109,3 +109,14 @@ export function applyOverrides(
     (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
   );
 }
+
+/** Слоты с одинаковым startsAt схлопываются в один (первый по порядку правил). */
+export function dedupeByStart<T extends SlotLike>(slots: T[]): T[] {
+  const seen = new Set<number>();
+  return slots.filter((s) => {
+    const key = s.startsAt.getTime();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

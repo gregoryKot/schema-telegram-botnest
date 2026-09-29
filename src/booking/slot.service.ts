@@ -6,7 +6,12 @@ import { BookingStatus } from '@prisma/client';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 import { localDate } from '../utils/tz';
 import { expandRuleForDay, weekdayOf } from './rule-expand';
-import { isOccupied, overlapsBusy, applyOverrides } from './slot-filters';
+import {
+  isOccupied,
+  overlapsBusy,
+  applyOverrides,
+  dedupeByStart,
+} from './slot-filters';
 
 // D1 (аудит 2026-08): жёсткий потолок перебора по суткам в getSlots — год с
 // запасом. Контроллер режет пользовательский запрос строже (92 дня); это —
@@ -148,7 +153,8 @@ export class SlotService {
         o.kind !== 'OPEN' ||
         (o.startsAt >= rangeStart && o.startsAt <= rangeEnd),
     );
-    return applyOverrides(slots, inWindow, {
+    // Пересекающиеся правила рождают один startsAt дважды (инцидент 2026-09-29).
+    return applyOverrides(dedupeByStart(slots), inWindow, {
       earliest,
       bookings: busyBookings,
       busy: calBusy,
