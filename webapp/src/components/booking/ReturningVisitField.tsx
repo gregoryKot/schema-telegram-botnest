@@ -3,7 +3,7 @@ export function ReturningVisitField({ returning, onChange }: { returning: boolea
   return (
     <>
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
-        <input type="checkbox" checked={returning} onChange={(e) => onChange(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+        <input type="checkbox" checked={returning} onChange={(e) => onChange(e.target.checked)} style={{ marginTop: 'var(--space-4)', flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
         <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
           Мы уже занимались — это повторная встреча
         </span>
