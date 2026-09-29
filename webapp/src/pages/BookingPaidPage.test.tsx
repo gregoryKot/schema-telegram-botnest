@@ -14,6 +14,7 @@ vi.mock('../api', () => ({
     getBookingByToken: (...a: unknown[]) => getBookingByToken(...a),
     cancelBooking: (...a: unknown[]) => cancelBooking(...a),
   },
+  reportClientError: vi.fn(),
 }));
 
 function setUrl(search: string) {
@@ -29,9 +30,12 @@ afterEach(() => {
   setUrl('');
 });
 
+// startsAt — далеко в будущем (не привязано к "сегодня" прогона теста), чтобы
+// BookingCancelControl всегда показывал кнопку отмены в этих тестах; для
+// проверки окна < 24 часов — отдельный тест с относительным временем.
 const BOOKING = {
   status: 'CONFIRMED', type: 'SESSION_50' as const,
-  startsAt: '2026-08-10T10:00:00Z', endsAt: '2026-08-10T10:50:00Z',
+  startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z',
   durationMin: 50, meetingUrl: 'https://meet.example/xyz',
 };
 
@@ -136,7 +140,7 @@ describe('BookingPaidPage — отмена записи', () => {
     expect(screen.getByText('Оплата прошла')).toBeTruthy();
   });
 
-  it('прочая ошибка отмены показывает видимый текст, встреча остаётся активной', async () => {
+  it('прочая ошибка отмены показывает видимый текст со ссылкой на Telegram, встреча остаётся активной', async () => {
     // Регрессия «провал не выглядит как успех»: без этого текста юзер решил
     // бы, что запись отменилась.
     cancelBooking.mockRejectedValue(new Error('network'));
@@ -144,7 +148,23 @@ describe('BookingPaidPage — отмена записи', () => {
     await screen.findByText('Оплата прошла');
     fireEvent.click(screen.getByText('Отменить запись'));
     fireEvent.click(screen.getByText('Да, отменить'));
-    expect(await screen.findByText('Не получилось отменить. Попробуйте ещё раз или напишите мне.')).toBeTruthy();
+    expect(await screen.findByText(/Не получилось отменить/)).toBeTruthy();
+    const link = screen.getByText('Telegram') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(screen.queryByText('Запись отменена')).toBeNull();
+  });
+
+  // Инцидент 2026-09-29 (docs/INCIDENTS.md): BookingPicker.tsx глотал ошибку
+  // отмены (`catch { /* ignore */ }`) — сервер отвечал CANCEL_TOO_LATE, а
+  // пользователь видел тишину. Общий BookingCancelControl прячет кнопку
+  // заранее, если до встречи меньше 24 часов, и всегда показывает текст при
+  // отказе сервера — здесь та же гарантия, что и в общем компоненте.
+  it('до встречи меньше 24 часов — кнопки нет, сразу текст про Telegram', async () => {
+    const soon = { ...BOOKING, startsAt: new Date(Date.now() + 3 * 3_600_000).toISOString() };
+    getBookingByToken.mockResolvedValue(soon);
+    render(<BookingPaidPage />);
+    await screen.findByText('Оплата прошла');
+    expect(screen.queryByText('Отменить запись')).toBeNull();
+    expect(screen.getByText(/не позднее чем за 24 часа/)).toBeTruthy();
   });
 });

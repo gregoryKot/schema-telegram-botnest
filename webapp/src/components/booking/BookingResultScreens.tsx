@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import type { BookingSlot, SessionOption } from '../../api';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../../shared/src/booking/clientTimeZone';
+import { BookingCancelControl } from './BookingCancelControl';
 
 /** Терминальные экраны BookingPicker (ожидание оплаты / провал / готово) — вынесены отдельно (правило №10). */
 export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
@@ -41,9 +42,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, onCancel }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, onCancelled }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  meetingUrl: string | null; cancelToken: string; onCancel: () => void;
+  meetingUrl: string | null; cancelToken: string; onCancelled: () => void;
 }) {
   return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -64,11 +65,10 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
       {!cancelled && !meetingUrl && (
         <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>
       )}
-      {!cancelled && cancelToken && (
-        <button type="button" onClick={onCancel}
-          style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 13, fontFamily: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}>
-          Отменить запись
-        </button>
+      {!cancelled && cancelToken && slot && (
+        <div style={{ marginTop: 12 }}>
+          <BookingCancelControl cancelToken={cancelToken} startsAt={slot.startsAt} onCancelled={onCancelled} />
+        </div>
       )}
     </div>
   );
