@@ -183,3 +183,22 @@ describe('zoneFormatter — кэш форматтера по зоне', () => {
     }
   });
 });
+
+describe('localDate — кэш форматтера даты по зоне (D1 аудита 2026-08)', () => {
+  it('повторный вызов с той же зоной не строит новый Intl.DateTimeFormat', () => {
+    // localDate зовётся в цикле slot.service на каждые сутки диапазона;
+    // мутация `if (!fmt)` → `if (true)` возвращала бы по конструктору на
+    // вызов, и ни один тест этого не видел. Зона не встречается в других
+    // тестах файла — кэш общий на модуль, чужой прогрев сбил бы счёт.
+    const constructorSpy = jest.spyOn(Intl, 'DateTimeFormat');
+    try {
+      const a = localDate('Pacific/Auckland', new Date('2026-01-15T12:00:00Z'));
+      const b = localDate('Pacific/Auckland', new Date('2026-01-16T12:00:00Z'));
+      expect(constructorSpy).toHaveBeenCalledTimes(1);
+      // Переиспользованный форматтер обязан считать в той же зоне (+13 летом).
+      expect([a, b]).toEqual(['2026-01-16', '2026-01-17']);
+    } finally {
+      constructorSpy.mockRestore();
+    }
+  });
+});

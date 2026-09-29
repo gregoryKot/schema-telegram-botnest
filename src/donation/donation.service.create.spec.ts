@@ -124,6 +124,39 @@ describe('DonationService.create — Robokassa включена', () => {
     const call = robokassa.buildPaymentUrl.mock.calls[0][0];
     expect(call.email).toBeUndefined();
   });
+
+  // Фейк create() сам подставлял status: 'pending', поэтому статус из кода
+  // (мутант `status: ''`) и описание платежа не проверял никто. Статус —
+  // то, по чему markPaid отличает неоплаченный донат; описание человек видит
+  // на форме Robokassa и в выписке.
+  it('донат записывается в статусе pending, а платёж — с описанием проекта', async () => {
+    const { service, prisma, robokassa } = makeService({
+      robokassaEnabled: true,
+    });
+    await service.create({ amount: 300 });
+    const { data } = prisma.donation.create.mock.calls[0][0];
+    expect(data.status).toBe('pending');
+    expect(robokassa.buildPaymentUrl.mock.calls[0][0].desc).toBe(
+      'Поддержка проекта SchemeHappens',
+    );
+  });
+
+  it('адрес возврата берётся из APP_URL, без него — канонический хост', async () => {
+    const staging = makeService({
+      robokassaEnabled: true,
+      appUrl: 'https://staging.example.test',
+    });
+    await staging.service.create({ amount: 300 });
+    expect(staging.robokassa.buildPaymentUrl.mock.calls[0][0].successUrl).toBe(
+      'https://staging.example.test/donate?donation=ok',
+    );
+
+    const bare = makeService({ robokassaEnabled: true });
+    await bare.service.create({ amount: 300 });
+    expect(bare.robokassa.buildPaymentUrl.mock.calls[0][0].successUrl).toBe(
+      'https://schemehappens.ru/donate?donation=ok',
+    );
+  });
 });
 
 // email/comment попадают дальше в текст DM админу (markPaid) — их точное

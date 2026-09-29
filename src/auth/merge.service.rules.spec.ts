@@ -218,7 +218,7 @@ function applyPairDeleteSelf(rows: PairRow[], values: unknown[]): PairRow[] {
   return rows.filter((r) => !(r.userId1 === s1 || r.userId2 === s2));
 }
 
-// ── Основной прогон merge(): один вызов на весь файл (кроме секций email/
+// ── Основной прогон merge(): свой вызов на каждый тест (кроме секций email/
 // логирования — там нужны разные $queryRaw-ответы/моки Date.now). ──────────
 describe('MergeService — реестры таблиц и SQL-инварианты merge()', () => {
   const SRC = BigInt(1001);
@@ -227,7 +227,13 @@ describe('MergeService — реестры таблиц и SQL-инвариант
 
   let execCalls: RawCall[];
 
-  beforeAll(async () => {
+  // beforeEach, а не beforeAll — ради mutation-замера. Код, исполненный в
+  // beforeAll, Stryker не приписывает ни одному тесту (для него это загрузка
+  // модуля), и с ignoreStatic мутант в теле merge() проверяли только тесты,
+  // вызывающие merge() внутри it: 37 поломок реестров «выжили», хотя эти
+  // тесты их ловят (счёт файла 58.7% при поле 92%). Фейк в памяти — прогон
+  // на тест стоит миллисекунды.
+  beforeEach(async () => {
     const { prisma, execCalls: calls } = makeMergePrisma({
       re: null,
       rev: null,
@@ -292,6 +298,15 @@ describe('MergeService — реестры таблиц и SQL-инвариант
           rows.find((r) => r.id === 4),
         ); // другой ключ — дедуп-шаг не трогает
       }
+    });
+
+    // extractConflictCols вынимает колонки регэкспом и не видит, чем они
+    // склеены: без AND условие по двум колонкам — не SQL, и merge падал бы на
+    // первом же юзере с оценками.
+    it('колонки ключа склеены через AND', () => {
+      expect(findDedupeCall(execCalls, 'Rating')!.sql).toContain(
+        'src."date" = tgt."date" AND src."needId" = tgt."needId"',
+      );
     });
   });
 
@@ -525,6 +540,27 @@ describe('MergeService — лог длительности merge', () => {
     // при каждом расширении сводки, ничего не проверяя дополнительно.
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('Merged user 1001 → 2002 (732ms)'),
+    );
+  });
+
+  it('число перенесённых подписок берётся из исхода переноса; без подписок — 0', async () => {
+    const logSpy = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    // Живых подписок нет ни у кого, у источника две завершённые — переезжают.
+    const moved = makeMergePrisma([
+      { re: null, rev: null, live: BigInt(0), total: BigInt(2) },
+    ]);
+    await new MergeService(moved.prisma).merge(BigInt(1001), BigInt(2002));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('подписок перенесено: 2'),
+    );
+
+    logSpy.mockClear();
+    const none = makeMergePrisma({ re: null, rev: null });
+    await new MergeService(none.prisma).merge(BigInt(1001), BigInt(2002));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('подписок перенесено: 0'),
     );
   });
 });

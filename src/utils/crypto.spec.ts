@@ -98,6 +98,18 @@ describe('конфигурация ключей', () => {
     );
   });
 
+  it('текст падения говорит, как сгенерировать ключ — читают его при упавшем проде', () => {
+    expect(() => loadCrypto({ nodeEnv: 'production' })).toThrow(
+      /randomBytes\(32\)\.toString\('hex'\)/,
+    );
+  });
+
+  it('перевод строки или пробелы вокруг ключа (вставка в панель хостинга) — тот же ключ', () => {
+    const blob = loadCrypto({ key: `${KEY_A}\n` }).encrypt('текст')!;
+    expect(loadCrypto({ key: KEY_A }).decrypt(blob)).toBe('текст');
+    expect(loadCrypto({ key: `  ${KEY_A} ` }).decrypt(blob)).toBe('текст');
+  });
+
   it('encrypt() перепроверяет NODE_ENV динамически при каждом вызове, а не только на загрузке модуля', () => {
     // Модуль грузим НЕ в production (падения при загрузке не будет), затем окружение
     // переключается в production уже после загрузки — encrypt() обязан среагировать
@@ -216,6 +228,11 @@ describe('GCM-аутентификация и алерт о порче (ауди
     // возвращается как есть (легаси-фолбэк), но никогда — расшифрованный текст
     expect(decrypt(tampered)).toBe(tampered);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[crypto]'));
+    // Предупреждение называет вероятную причину — иначе по логу не понять,
+    // куда смотреть (порча данных или недокатившаяся ротация ключа).
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('неполная ротация ENCRYPTION_KEY'),
+    );
   });
 
   it('блоб от неизвестного ключа (неполная ротация) тоже даёт warn', () => {

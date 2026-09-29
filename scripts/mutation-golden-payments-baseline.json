@@ -8,7 +8,7 @@
     "src/booking/slot.service.ts": 93.69,
     "src/booking/pricing.service.ts": 89.47,
     "src/booking/payment.controller.ts": 87.95,
-    "src/donation/donation.service.ts": 94.44,
+    "src/donation/donation.service.ts": 96.46,
     "src/notification/notification.planner.service.ts": 91.52
   }
 }
