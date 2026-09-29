@@ -2,9 +2,15 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "npm",
   "testRunner": "jest",
+  "appendPlugins": [
+    "./scripts/stryker/covering-test-files.plugin.mjs"
+  ],
   "jest": {
     "projectType": "custom",
-    "configFile": "package.json"
+    "configFile": "package.json",
+    "config": {
+      "filter": "<rootDir>/../scripts/stryker/covering-test-files.cjs"
+    }
   },
   "mutate": [
     "src/utils/crypto.ts",
@@ -27,7 +33,8 @@
     "clear-text",
     "progress",
     "html",
-    "json"
+    "json",
+    "covering-test-files"
   ],
   "htmlReporter": {
     "fileName": "reports/mutation/mutation.html"
