@@ -72,7 +72,14 @@ async function fillAndSelectSlot() {
   fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
   fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
   fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+  tickConfirmNotice();
   fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+}
+
+/** Галочка «Понятно…» есть только у знакомства (INTRO_15) — у платного формата её нет. */
+function tickConfirmNotice() {
+  const box = screen.queryByRole('checkbox', { name: /Понятно: встреча состоится только после подтверждения/ });
+  if (box) fireEvent.click(box);
 }
 
 describe('BookingPicker — загрузка и пустое состояние', () => {
@@ -164,6 +171,7 @@ describe('BookingPicker — выбор слота и обязательные п
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
     fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    tickConfirmNotice();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
     await screen.findByText('Нужно согласие на обработку данных');
@@ -459,6 +467,7 @@ describe('BookingPicker — часовой пояс посетителя', () =>
     fireEvent.click(await screen.findByText('16:00'));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
     fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    tickConfirmNotice();
     fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
     await act(async () => {});
@@ -509,5 +518,69 @@ describe('BookingPicker — дубли startsAt в ответе сервера',
     await act(async () => { await Promise.resolve(); });
     expect(screen.getAllByText(timeLabel(SLOT_A.startsAt))).toHaveLength(1);
     expect(screen.getAllByText(timeLabel(SLOT_B.startsAt))).toHaveLength(1);
+  });
+});
+
+// Знакомство подтверждается лично, поэтому перед отправкой нужна галочка
+// «Понятно: встреча состоится только после подтверждения» (только INTRO_15).
+describe('BookingPicker — галочка «понятно про подтверждение» (INTRO_15)', () => {
+  const NOTICE = /Понятно: встреча состоится только после подтверждения/;
+  const TWO_OPTIONS = [
+    { type: 'INTRO_15' as const, label: 'Знакомство', durationMin: 15, price: 0, note: '' },
+    { type: 'SESSION_50' as const, label: 'Сессия', durationMin: 50, price: 3000, note: '' },
+  ];
+
+  async function fillEverythingButNotice() {
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+  }
+
+  it('без галочки: booking_error validation/confirmNotice, фокус на галочку, запроса нет', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    await fillEverythingButNotice();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+
+    const box = screen.getByRole('checkbox', { name: NOTICE });
+    await screen.findByText('Отметьте, что прочитали про подтверждение');
+    expect(box).toBe(document.activeElement);
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(box.getAttribute('aria-describedby')).toBe('bp-confirm-hint');
+    expect(mockApi.bookSlot).not.toHaveBeenCalled();
+    const calls = JSON.stringify((window as unknown as { ym?: { a?: unknown[] } }).ym?.a ?? []);
+    expect(calls).toContain('booking_error');
+    expect(calls).toContain('confirmNotice');
+  });
+
+  it('с галочкой запрос уходит', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillEverythingButNotice();
+    fireEvent.click(screen.getByRole('checkbox', { name: NOTICE }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'INTRO_15' }));
+  });
+
+  it('у SESSION_50 галочки нет и она не требуется', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'held', paymentUrl: null, meetingUrl: null });
+    await fillEverythingButNotice();
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    expect(screen.queryByRole('checkbox', { name: NOTICE })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Оплатить/ }));
+    await act(async () => {});
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'SESSION_50' }));
+  });
+
+  it('отметка сохраняется при возврате на «Знакомство» (ответ на тот же текст)', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
+    await fillEverythingButNotice();
+    fireEvent.click(screen.getByRole('checkbox', { name: NOTICE }));
+    fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Знакомство/ }));
+    expect((screen.getByRole('checkbox', { name: NOTICE }) as HTMLInputElement).checked).toBe(true);
   });
 });

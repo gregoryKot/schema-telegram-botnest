@@ -6,6 +6,8 @@ import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
+import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
+import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
@@ -25,13 +27,6 @@ const labelSt: React.CSSProperties = {
 };
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
-type InvalidField = 'name' | 'contact' | 'consent';
-const FIELD_HINTS: Record<InvalidField, string> = {
-  name: 'Как к вам обращаться?',
-  contact: 'Оставьте Telegram или телефон — пришлю подтверждение',
-  consent: 'Нужно согласие на обработку данных',
-};
-
 /** Slot-based booking widget. Falls back to `fallback` when no slots are open. */
 export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [tz, setTz] = useClientTimeZone();
@@ -43,6 +38,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
+  const [confirmNotice, setConfirmNotice] = useState(false); // переживает переключение формата: ответ на тот же текст
   const [returning, setReturning] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
     // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
@@ -65,6 +61,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const contactRef = useRef<HTMLInputElement>(null);
   const consentRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -113,11 +110,12 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     e.preventDefault();
     trackGoalOnce('booking_submit_click');
     if (!slot) return; // форма скрыта без выбранного слота — сюда не дойти
-    const missing: InvalidField | null = !name.trim() ? 'name' : !contact.trim() ? 'contact' : !consent ? 'consent' : null;
+    const needConfirm = sessionType === 'INTRO_15' && !confirmNotice;
+    const missing: InvalidField | null = !name.trim() ? 'name' : !contact.trim() ? 'contact' : needConfirm ? 'confirmNotice' : !consent ? 'consent' : null;
     if (missing) {
       trackGoal('booking_error', { reason: 'validation', field: missing });
       setInvalidField(missing);
-      (missing === 'name' ? nameRef : missing === 'contact' ? contactRef : consentRef).current?.focus();
+      ({ name: nameRef, contact: contactRef, confirmNotice: confirmRef, consent: consentRef })[missing].current?.focus();
       return;
     }
     setInvalidField(null);
@@ -221,12 +219,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             </div>
           </div>
           {sessionType === 'INTRO_15' && (
-            <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-8px 0 0' }}>
-              Знакомство бесплатное, поэтому каждую запись подтверждаю лично – свяжусь с вами по контакту, который вы
-              оставите. Проверьте, что по нему до вас можно достучаться. Не получили подтверждения за 3 часа до
-              встречи – напишите мне сами: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
-              Без подтверждения встреча не состоится.
-            </p>
+            <IntroConfirmNotice
+              checked={confirmNotice} invalid={invalidField === 'confirmNotice'} inputRef={confirmRef}
+              onChange={(v) => { setConfirmNotice(v); if (invalidField === 'confirmNotice') setInvalidField(null); }}
+            />
           )}
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
@@ -271,7 +267,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
               cursor: status === 'loading' ? 'default' : 'pointer',
-              opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent) ? 0.7 : 1,
+              opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
               boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px',
             }}>
             {status === 'loading'
