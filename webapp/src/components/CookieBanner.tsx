@@ -1,7 +1,62 @@
 import { useState, useEffect } from 'react';
 import { loadMetrika } from '../lib/metrika';
+import { isPracticeHost } from '../utils/domainChrome';
 
 const CONSENT_KEY = 'cookie_consent';
+
+function PrivacyLink() {
+  return (
+    <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
+      Подробнее
+    </a>
+  );
+}
+
+// Визитка практики: входа там нет, а высокая карточка на телефоне закрывала
+// главную кнопку первого экрана — поэтому одна компактная строка.
+function CompactBody({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <>
+      <p className="u-fill" style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.45 }}>
+        Сайт обезличенно считает посещения в Яндекс.Метрике.{' '}
+        <PrivacyLink />
+      </p>
+      {/* flex: 0 0 auto — класс .cookie-btn задаёт flex: 1, в строке это растянуло бы кнопку */}
+      <button onClick={onDismiss} className="cookie-btn cookie-btn-accept" style={{ flex: '0 0 auto' }}>
+        Понятно
+      </button>
+    </>
+  );
+}
+
+function CardBody({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <>
+      {/* Header row */}
+      <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'flex-start', position: 'relative' }}>
+        <div className="u-fill">
+          <div style={{
+            fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
+            color: 'var(--text)', marginBottom: 6, letterSpacing: '0.01em',
+          }}>
+            Немного о куки
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
+            Часть нужна для входа — без них сайт не работает. Ещё сайт собирает обезличенную статистику посещений в Яндекс.Метрике: сколько людей заходит и какие страницы читают.{' '}
+            <PrivacyLink />
+          </p>
+        </div>
+      </div>
+
+      {/* Action */}
+      <div className="u-row10">
+        <button onClick={onDismiss} className="cookie-btn cookie-btn-accept">
+          Понятно
+        </button>
+      </div>
+    </>
+  );
+}
 
 export function CookieBanner() {
   // Начальная видимость выводится из localStorage на маунте (lazy-init), а не
@@ -24,6 +79,8 @@ export function CookieBanner() {
     setVisible(false);
   };
 
+  const compact = isPracticeHost();
+
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -37,35 +94,13 @@ export function CookieBanner() {
         aria-label="Уведомление об использовании куки"
         style={{
           width: 'min(100%, 440px)', margin: '0 auto',
-          padding: '20px 22px 18px',
-          display: 'flex', flexDirection: 'column', gap: 18,
           pointerEvents: 'auto',
+          ...(compact
+            ? { padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }
+            : { padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 18 }),
         }}
       >
-        {/* Header row */}
-        <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'flex-start', position: 'relative' }}>
-          <div className="u-fill">
-            <div style={{
-              fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
-              color: 'var(--text)', marginBottom: 6, letterSpacing: '0.01em',
-            }}>
-              Немного о куки
-            </div>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Часть нужна для входа — без них сайт не работает. Ещё сайт собирает обезличенную статистику посещений в Яндекс.Метрике: сколько людей заходит и какие страницы читают.{' '}
-              <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
-                Подробнее
-              </a>
-            </p>
-          </div>
-        </div>
-
-        {/* Action */}
-        <div className="u-row10">
-          <button onClick={dismiss} className="cookie-btn cookie-btn-accept">
-            Понятно
-          </button>
-        </div>
+        {compact ? <CompactBody onDismiss={dismiss} /> : <CardBody onDismiss={dismiss} />}
       </div>
     </div>
   );

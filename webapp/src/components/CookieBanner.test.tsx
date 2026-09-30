@@ -7,6 +7,10 @@
 // равно подключена; init — без webvisor (тесты этого файла гоняются на
 // не-визитке — jsdom-хост localhost; условие «только визитка» и его
 // переключение по пути /admin проверены отдельно в lib/metrika.test.ts).
+// На визитке практики (kotlarewski.*) вместо высокой карточки — компактная
+// строка: карточка на телефоне закрывала главную кнопку первого экрана, а
+// фраза про вход там лишняя (входа на визитке нет). Продуктовый хост
+// рисуется как раньше.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CookieBanner } from './CookieBanner';
@@ -21,6 +25,17 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
 });
+
+// Подмена хоста: isPracticeHost() читает window.location.hostname (образец —
+// LandingPage.test.tsx). Восстанавливается в afterEach блока ниже.
+const originalLocation = window.location;
+function stubHost(hostname: string) {
+  Object.defineProperty(window, 'location', {
+    value: { ...originalLocation, hostname, pathname: '/', href: `https://${hostname}/` },
+    configurable: true,
+    writable: true,
+  });
+}
 
 describe('CookieBanner — первый визит', () => {
   it('на чистом localStorage баннер показан', () => {
@@ -64,5 +79,66 @@ describe('CookieBanner — повторный визит (решение уже 
     render(<CookieBanner />);
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
+  });
+});
+
+describe('CookieBanner — визитка практики (kotlarewski.gr): компактный вариант', () => {
+  beforeEach(() => stubHost('kotlarewski.gr'));
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+  });
+
+  it('показывает короткий текст про Метрику и ссылку «Подробнее» на /privacy#cookies', () => {
+    render(<CookieBanner />);
+    const dialog = screen.getByRole('dialog', { name: 'Уведомление об использовании куки' });
+    expect(dialog.textContent).toContain('Сайт обезличенно считает посещения в Яндекс.Метрике.');
+    const link = screen.getByRole('link', { name: 'Подробнее' }) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/privacy#cookies');
+  });
+
+  it('не показывает текст про вход и заголовок карточки — входа на визитке нет', () => {
+    render(<CookieBanner />);
+    expect(screen.queryByText(/нужна для входа/)).toBeNull();
+    expect(screen.queryByText('Немного о куки')).toBeNull();
+  });
+
+  it('«Понятно» скрывает баннер и сохраняет решение', () => {
+    render(<CookieBanner />);
+    fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(localStorage.getItem('cookie_consent')).toBe('all');
+  });
+
+  it('метрика грузится и в компактном варианте — без клика', () => {
+    render(<CookieBanner />);
+    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
+  });
+
+  it('при сохранённом решении баннера нет и на визитке', () => {
+    localStorage.setItem('cookie_consent', 'all');
+    render(<CookieBanner />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('CookieBanner — продуктовый хост (schemehappens.ru): карточка как раньше', () => {
+  beforeEach(() => stubHost('schemehappens.ru'));
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+  });
+
+  it('показывает заголовок «Немного о куки» и текст про вход', () => {
+    render(<CookieBanner />);
+    expect(screen.getByText('Немного о куки')).toBeTruthy();
+    expect(screen.getByRole('dialog').textContent).toContain('Часть нужна для входа');
+  });
+
+  it('«Понятно» скрывает карточку и сохраняет решение', () => {
+    render(<CookieBanner />);
+    fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(localStorage.getItem('cookie_consent')).toBe('all');
   });
 });
