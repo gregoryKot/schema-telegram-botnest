@@ -14,6 +14,8 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createHash } from 'crypto';
+import { SessionType } from '@prisma/client';
+import { SESSION_DEFAULT_PRICE } from '../src/booking/booking.config';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
@@ -31,6 +33,11 @@ const BOOKING_CANCEL_TOKENS = ['bk-ct-1', 'bk-ct-2', 'bk-ct-3', 'bk-ct-4'];
 const SUBSCRIPTION_CANCEL_TOKENS = ['sub-ct-1', 'sub-ct-2', 'sub-ct-3'];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
+// Цена сессии 50 минут — из конфига, не литералом: на фейке PricingService
+// отдаёт дефолт, а на реальном Postgres — строку BookingSetting
+// price:SESSION_50, которую заводит миграция 20261001090000_session_price_3000
+// (равна дефолту). Литерал «4000.00» не пережил бы смену цены.
+const SESSION_OUT_SUM = `${SESSION_DEFAULT_PRICE[SessionType.SESSION_50]}.00`;
 
 describe('e2e smoke: платёжный контур Robokassa по HTTP', () => {
   let app: INestApplication;
@@ -91,7 +98,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       data: {
         startsAt: new Date(Date.now() + 3_600_000),
         durationMin: 50,
-        type: 'SESSION_50', // default price 4000₽ — см. booking.config.ts
+        type: 'SESSION_50', // цена — SESSION_DEFAULT_PRICE, см. SESSION_OUT_SUM
         status: 'HELD',
         heldUntil: new Date(Date.now() + 15 * 60_000),
         clientName: 'Клиент',
@@ -106,7 +113,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
   describe('booking webhook', () => {
     it('валидная подпись → OK + бронь CONFIRMED (read-after-write)', async () => {
       const booking = await makeHeldBooking('bk-ct-1');
-      const outSum = '4000.00';
+      const outSum = SESSION_OUT_SUM;
       const invId = String(booking.id);
 
       const res = await postResult(outSum, invId, resultSig(outSum, invId));
@@ -120,7 +127,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const booking = await makeHeldBooking('bk-ct-2');
       const invId = String(booking.id);
 
-      const res = await postResult('4000.00', invId, 'deadbeef');
+      const res = await postResult(SESSION_OUT_SUM, invId, 'deadbeef');
 
       expect(res.text).toBe(`FAIL${invId}`);
       expect(await bookingStatus(booking.id)).toBe('HELD');
@@ -128,7 +135,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
     it('идемпотентный повтор того же уведомления → OK, без дублей', async () => {
       const booking = await makeHeldBooking('bk-ct-3');
-      const outSum = '4000.00';
+      const outSum = SESSION_OUT_SUM;
       const invId = String(booking.id);
       const sig = resultSig(outSum, invId);
 
@@ -146,7 +153,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
     it('расхождение суммы → FAIL, бронь НЕ подтверждается (регресс бага №5, PR #66)', async () => {
       const booking = await makeHeldBooking('bk-ct-4');
-      const outSum = '1.00'; // ожидали 4000
+      const outSum = '1.00'; // ожидали цену сессии (SESSION_OUT_SUM)
       const invId = String(booking.id);
 
       const res = await postResult(outSum, invId, resultSig(outSum, invId));

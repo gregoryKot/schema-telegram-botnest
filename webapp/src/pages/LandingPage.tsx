@@ -12,6 +12,7 @@ import { isPracticeHost } from '../utils/domainChrome';
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 import { TgLink, SectionNav, MobileMenu } from './landing/nav';
 import { HeroSection } from './landing/HeroSection';
+import { AuthorAvatar } from './landing/AuthorAvatar';
 import { MarqueeStrip } from './landing/MarqueeStrip';
 import { BookingForm } from './landing/BookingForm';
 import { FaqList } from './landing/cards';
@@ -40,7 +41,7 @@ export function LandingPage() {
   useLandingGoals();
   useHashJump();
   // Live session price (editable in admin) — keep the landing in sync with checkout.
-  const [sessionPrice, setSessionPrice] = useState(4000);
+  const [sessionPrice, setSessionPrice] = useState(3000);
   useEffect(() => {
     api.getBookingOptions()
       .then((o) => { const s = o.find((x) => x.type === 'SESSION_50'); if (s) setSessionPrice(s.price); })
@@ -144,10 +145,7 @@ export function LandingPage() {
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
-            <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-          </div>
+          <AuthorAvatar photo={siteContent.heroPhoto ?? '/gregory.jpg'} size={30} letterSize={13} />
           {/* Узкий экран: имя ужимается с многоточием, кнопка и бургер не сжимаются. */}
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
         </div>
@@ -218,7 +216,7 @@ export function LandingPage() {
               Меня интересует «что» происходит с человеком и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-              Работаю самостоятельно и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
+              Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
@@ -277,6 +275,7 @@ export function LandingPage() {
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
               <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{priceStr} ₽</p>
+              <p style={{ fontSize: 14, lineHeight: 1.5, color: INK_ON_DARK, opacity: 0.6, margin: '10px 0 0' }}>Практикую с 2025 года, поэтому цена ниже, чем у коллег с многолетним стажем.</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (

@@ -55,7 +55,7 @@ describe('PricingService.getPrice', () => {
     );
   });
 
-  it('override "0" на SESSION_50 (дефолт 4000≠0) — возвращает именно 0, не откатывается на дефолт (EqualityOperator >=0 vs >0)', async () => {
+  it('override "0" на SESSION_50 (дефолт 3000≠0) — возвращает именно 0, не откатывается на дефолт (EqualityOperator >=0 vs >0)', async () => {
     // INTRO_15 не подходит для этой проверки: его дефолт тоже 0, поэтому
     // n>=0 и n>0 дают одинаковый видимый результат — мутант там неотличим.
     const { service } = makeService({ 'price:SESSION_50': '0' });
