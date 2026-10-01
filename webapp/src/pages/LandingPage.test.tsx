@@ -79,10 +79,10 @@ function renderPage() {
 }
 
 describe('LandingPage — цена сессии из реальных данных', () => {
-  it('на чистом состоянии (пока API не ответил) показывает дефолт 4000 ₽, а не пусто/NaN', () => {
+  it('на чистом состоянии (пока API не ответил) показывает дефолт 3000 ₽, а не пусто/NaN', () => {
     mockApi.getBookingOptions.mockReturnValue(new Promise(() => {})); // не резолвится
     renderPage();
-    expect(screen.getByText('4 000 ₽')).toBeTruthy();
+    expect(screen.getByText('3 000 ₽')).toBeTruthy();
   });
 
   it('после ответа API цена берётся из SESSION_50, а не из хардкода', async () => {
@@ -91,7 +91,7 @@ describe('LandingPage — цена сессии из реальных данны
     ]);
     await act(async () => { renderPage(); });
     expect(screen.getByText('5 500 ₽')).toBeTruthy();
-    expect(screen.queryByText('4 000 ₽')).toBeNull();
+    expect(screen.queryByText('3 000 ₽')).toBeNull();
   });
 
   it('ответ без SESSION_50 не ломает рендер — остаётся дефолтная цена', async () => {
@@ -99,7 +99,60 @@ describe('LandingPage — цена сессии из реальных данны
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
     ]);
     await act(async () => { renderPage(); });
-    expect(screen.getByText('4 000 ₽')).toBeTruthy();
+    expect(screen.getByText('3 000 ₽')).toBeTruthy();
+  });
+});
+
+// Решение владельца 2026-10-01: цена ниже рынка, и страница честно говорит
+// почему — практика с 2025 года. Подпись стоит прямо под ценой в тёмной
+// карточке «Сессия», а в «Обо мне» год практики назван в третьем абзаце.
+describe('LandingPage — год практики (цена и «Обо мне»)', () => {
+  it('под ценой сессии стоит пояснение про практику с 2025 года', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const note = screen.getByText('Практикую с 2025 года, поэтому цена ниже, чем у коллег с многолетним стажем.');
+    const price = screen.getByText('3 000 ₽');
+    // Подпись — следующий соседний блок сразу за ценой, а не где-то в карточке.
+    expect(price.nextElementSibling).toBe(note);
+    expect(price.closest('div')).toBe(note.closest('div'));
+  });
+
+  it('пояснение под ценой остаётся и при цене из API', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500, note: '' },
+    ]);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText('3 500 ₽').nextElementSibling?.textContent).toContain('Практикую с 2025 года');
+  });
+
+  it('«Обо мне»: частная практика с 2025 года, без «работаю самостоятельно»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const about = document.getElementById('about')!;
+    expect(about.textContent).toContain('Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором.');
+    expect(about.textContent).not.toContain('Работаю самостоятельно');
+    // Личная терапия — из прежнего абзаца, на месте.
+    expect(about.textContent).toContain('Шестой год прохожу личную терапию');
+  });
+});
+
+// Липкая панель и навигация первого экрана рисуют аватар одним компонентом
+// (AuthorAvatar): фото из админки доезжает в обе точки, без него — файл по умолчанию.
+describe('LandingPage — аватар в липкой панели', () => {
+  it('без фото из админки — /gregory.jpg', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const img = document.querySelector('.sticky-bar img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('/gregory.jpg');
+    expect(img.parentElement!.style.width).toBe('30px');
+  });
+
+  it('фото из админки доезжает и в липкую панель, и в навигацию первого экрана', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    mockApi.getSiteContent.mockResolvedValue({ heroPhoto: '/uploads/hero.jpg', marqueeTopicsA: [], marqueeTopicsB: [] });
+    await act(async () => { renderPage(); });
+    expect(document.querySelector('.sticky-bar img')!.getAttribute('src')).toBe('/uploads/hero.jpg');
+    expect(document.querySelector('a[href="#about"] img')!.getAttribute('src')).toBe('/uploads/hero.jpg');
   });
 });
 

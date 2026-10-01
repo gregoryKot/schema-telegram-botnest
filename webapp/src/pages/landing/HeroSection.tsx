@@ -2,12 +2,10 @@ import { Btn, ThemeIcon } from '../../components/landing-kit';
 import type { useTheme } from '../../components/landing-kit-hooks';
 import { TG_URL, menuBtnStyle, burgerLine } from './constants';
 import { TgLink, SectionNav } from './nav';
+import { AuthorAvatar } from './AuthorAvatar';
+import { hideOnError } from './hideOnError';
 
 type Theme = ReturnType<typeof useTheme>['theme'];
-
-const hideOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.style.display = 'none';
-};
 
 interface HeroSectionProps {
   /** Адрес фото терапевта (из админки либо /gregory.jpg по умолчанию). */
@@ -22,7 +20,8 @@ interface HeroSectionProps {
 
 // Первый экран визитки: навигация, заголовок, абзац с кнопками и лицо автора.
 // Разметка адаптивна через .hero-below / .hero-person в LandingStyles:
-// на десктопе портрет справа от текста, на телефоне — компактная строка над ним.
+// на десктопе портрет справа от текста, на телефоне он скрыт — единственное
+// фото на первом экране это аватар в навигации (решение владельца 2026-10-01).
 export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook, onOpenMenu }: HeroSectionProps) {
   return (
     <div className="hero-wrap" style={{ position: 'relative', zIndex: 1 }}>
@@ -34,10 +33,7 @@ export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook
           <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}
             onMouseEnter={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--accent)'; }}
             onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
-            <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-              <img src={photo} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={hideOnError} />
-            </div>
+            <AuthorAvatar photo={photo} size={34} letterSize={14} />
             <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', transition: 'color .15s' }}>Григорий Котляревский</span>
           </a>
         </div>
@@ -92,8 +88,20 @@ export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook
       {/* ── Divider ── */}
       <div style={{ height: 1, background: 'var(--line-strong)', margin: '36px 0', animation: 'hero-in .5s .7s both' }} />
 
-      {/* ── Below divider: текст + лицо автора (порядок колонок — в LandingStyles) ── */}
+      {/* ── Below divider: текст + лицо автора (раскладка колонок — в LandingStyles) ── */}
       <div className="hero-below">
+        <div className="hero-text" style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
+          <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
+            Одни и те же сценарии повторяются – в отношениях, в самооценке, в тревоге. Схема-терапия помогает понять, почему так, – и найти выход.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <Btn size="lg" onClick={onBook}>Записаться на знакомство →</Btn>
+            <TgLink label="Написать в Telegram" size="lg" />
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>
+            Первая встреча бесплатно · 15 минут · без обязательств
+          </p>
+        </div>
         <figure className="hero-person" style={{ animation: 'hero-in .7s .8s both' }}>
           <img
             className="hero-person-photo"
@@ -107,21 +115,9 @@ export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook
           />
           <figcaption>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Григорий Котляревский</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>Схема-терапия и КПТ · онлайн · под супервизией</div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>Схема-терапия и КПТ · онлайн</div>
           </figcaption>
         </figure>
-        <div className="hero-text" style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
-          <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
-            Одни и те же сценарии повторяются – в отношениях, в самооценке, в тревоге. Схема-терапия помогает понять, почему так, – и найти выход.
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-            <Btn size="lg" onClick={onBook}>Записаться на знакомство →</Btn>
-            <TgLink label="Написать в Telegram" size="lg" />
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>
-            Первая встреча бесплатно · 15 минут · без обязательств
-          </p>
-        </div>
       </div>
 
       {/* ── Subtle scroll cue ── */}

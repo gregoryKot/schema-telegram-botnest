@@ -6,7 +6,7 @@ import { SessionType } from '@prisma/client';
 
 export const SESSION_DEFAULT_PRICE: Record<SessionType, number> = {
   [SessionType.INTRO_15]: 0,
-  [SessionType.SESSION_50]: 4000,
+  [SessionType.SESSION_50]: 3000,
 };
 
 // Booking window rules.

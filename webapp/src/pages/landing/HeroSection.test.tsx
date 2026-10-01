@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 // HeroSection — первый экран визитки практики. Логики мало, но три вещи
 // завязаны на поведение: фото автора лежит в figure.hero-person (от него
-// зависит вёрстка: десктоп — портрет справа, телефон — строка над текстом),
-// кнопки зовут переданные колбэки, а подпись под фото не теряется.
-// Порядок в DOM (фигура ПЕРЕД текстом) закреплён отдельным тестом: на нём
-// держится mobile-раскладка — там у обоих order:0, и наверх фигуру ставит
-// только порядок в разметке.
+// зависит вёрстка: десктоп — портрет справа от текста, телефон — портрета
+// нет совсем), кнопки зовут переданные колбэки, а подпись под фото не
+// теряется. Скрытие портрета на телефоне — решение владельца 2026-10-01
+// (фото дважды на первом экране — аватар в навигации и портрет — это
+// слишком): оно живёт в CSS LandingStyles, поэтому закреплено тестом на
+// текст стилей, jsdom медиазапросов не считает.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { HeroSection } from './HeroSection';
+import { LandingStyles } from './LandingStyles';
 
 afterEach(() => cleanup());
 
@@ -37,12 +39,14 @@ describe('HeroSection — фото и подпись автора', () => {
     expect(img!.getAttribute('height')).toBe('250');
   });
 
-  it('под фото — имя и строка «Схема-терапия и КПТ · онлайн · под супервизией»', () => {
+  it('под фото — имя и строка «Схема-терапия и КПТ · онлайн», без «под супервизией»', () => {
     const { container } = renderHero();
     const caption = container.querySelector('figure.hero-person figcaption') as HTMLElement;
     expect(caption).toBeTruthy();
     expect(caption.textContent).toContain('Григорий Котляревский');
-    expect(screen.getByText('Схема-терапия и КПТ · онлайн · под супервизией')).toBeTruthy();
+    expect(screen.getByText('Схема-терапия и КПТ · онлайн')).toBeTruthy();
+    // Владелец убрал хвост: подпись под фото выглядела «ужасно».
+    expect(caption.textContent).not.toContain('супервизией');
   });
 
   it('если фото не загрузилось, картинка скрывается, а подпись остаётся', () => {
@@ -50,17 +54,19 @@ describe('HeroSection — фото и подпись автора', () => {
     const img = container.querySelector('img.hero-person-photo') as HTMLImageElement;
     fireEvent.error(img);
     expect(img.style.display).toBe('none');
-    expect(screen.getByText('Схема-терапия и КПТ · онлайн · под супервизией')).toBeTruthy();
+    expect(screen.getByText('Схема-терапия и КПТ · онлайн')).toBeTruthy();
   });
 
-  it('фигура стоит в DOM перед текстовой колонкой (на этом держится мобильная раскладка)', () => {
+  it('в .hero-below две колонки — текст и портрет; аватар в навигации есть отдельно', () => {
     const { container } = renderHero();
     const below = container.querySelector('.hero-below') as HTMLElement;
     expect(below).toBeTruthy();
-    const [first, second] = Array.from(below.children);
-    expect(first.tagName).toBe('FIGURE');
-    expect(first.classList.contains('hero-person')).toBe(true);
-    expect(second.classList.contains('hero-text')).toBe(true);
+    expect(below.querySelectorAll(':scope > .hero-text').length).toBe(1);
+    expect(below.querySelectorAll(':scope > figure.hero-person').length).toBe(1);
+    // Аватар в навигации — единственное фото, которое остаётся на телефоне.
+    const navAvatar = container.querySelector('a[href="#about"] img') as HTMLImageElement | null;
+    expect(navAvatar).toBeTruthy();
+    expect(navAvatar!.getAttribute('src')).toBe('/gregory.jpg');
   });
 
   it('текстовая колонка сохраняет ширину 460 и абзац с обещанием', () => {
@@ -68,6 +74,40 @@ describe('HeroSection — фото и подпись автора', () => {
     const text = container.querySelector('.hero-text') as HTMLElement;
     expect(text.style.maxWidth).toBe('460px');
     expect(text.textContent).toContain('Первая встреча бесплатно · 15 минут · без обязательств');
+  });
+});
+
+describe('HeroSection — на телефоне портрет скрыт (стили LandingStyles)', () => {
+  function css(): string {
+    const { container } = render(<LandingStyles />);
+    return container.querySelector('style')!.textContent ?? '';
+  }
+  // Тело медиаблока «@media (max-width:900px)»: правила в нём однострочные,
+  // поэтому блок кончается первой закрывающей скобкой в начале строки.
+  function mobileBlock(styles: string): string {
+    const m = styles.match(/@media \(max-width:900px\) \{([\s\S]*?)\n\s*\}/);
+    expect(m).toBeTruthy();
+    return m![1];
+  }
+
+  it('в max-width:900px .hero-person получает display:none, колонка одна', () => {
+    const block = mobileBlock(css());
+    expect(block).toMatch(/\.hero-person\s*\{\s*display:none;\s*\}/);
+    expect(block).toMatch(/\.hero-below\s*\{\s*grid-template-columns:1fr;/);
+  });
+
+  it('в мобильном блоке не осталось раскладки «строкой»: круглое фото 56px и порядок', () => {
+    const block = mobileBlock(css());
+    expect(block).not.toContain('.hero-person-photo');
+    expect(block).not.toContain('order:');
+  });
+
+  it('на десктопе портрет не переупорядочивается (order не нужен — фигура в DOM после текста)', () => {
+    const styles = css();
+    const desktop = styles.match(/\.hero-person\s*\{([^}]*)\}/);
+    expect(desktop).toBeTruthy();
+    expect(desktop![1]).not.toContain('order');
+    expect(desktop![1]).toContain('display:flex');
   });
 });
 
