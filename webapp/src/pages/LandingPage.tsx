@@ -275,7 +275,6 @@ export function LandingPage() {
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
               <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{priceStr} ₽</p>
-              <p style={{ fontSize: 14, lineHeight: 1.5, color: INK_ON_DARK, opacity: 0.6, margin: '10px 0 0' }}>Практикую с 2025 года, поэтому цена ниже, чем у коллег с многолетним стажем.</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (

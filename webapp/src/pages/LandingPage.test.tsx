@@ -103,26 +103,16 @@ describe('LandingPage — цена сессии из реальных данны
   });
 });
 
-// Решение владельца 2026-10-01: цена ниже рынка, и страница честно говорит
-// почему — практика с 2025 года. Подпись стоит прямо под ценой в тёмной
-// карточке «Сессия», а в «Обо мне» год практики назван в третьем абзаце.
+// Решение владельца 2026-10-01: год практики назван в «Обо мне». Пояснение
+// под ценой («ниже, чем у коллег…») 2026-10-02 владелец убрал — цена в
+// карточке «Сессия» стоит без подписи.
 describe('LandingPage — год практики (цена и «Обо мне»)', () => {
-  it('под ценой сессии стоит пояснение про практику с 2025 года', async () => {
+  it('под ценой сессии нет подписи про коллег — решение владельца 2026-10-02', async () => {
     mockApi.getBookingOptions.mockResolvedValue([]);
     await act(async () => { renderPage(); });
-    const note = screen.getByText('Практикую с 2025 года, поэтому цена ниже, чем у коллег с многолетним стажем.');
     const price = screen.getByText('3 000 ₽');
-    // Подпись — следующий соседний блок сразу за ценой, а не где-то в карточке.
-    expect(price.nextElementSibling).toBe(note);
-    expect(price.closest('div')).toBe(note.closest('div'));
-  });
-
-  it('пояснение под ценой остаётся и при цене из API', async () => {
-    mockApi.getBookingOptions.mockResolvedValue([
-      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500, note: '' },
-    ]);
-    await act(async () => { renderPage(); });
-    expect(screen.getByText('3 500 ₽').nextElementSibling?.textContent).toContain('Практикую с 2025 года');
+    expect(price.nextElementSibling).toBeNull();
+    expect(screen.queryByText(/многолетним стажем/)).toBeNull();
   });
 
   it('«Обо мне»: частная практика с 2025 года, без «работаю самостоятельно»', async () => {
