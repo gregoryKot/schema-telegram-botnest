@@ -1516,7 +1516,7 @@
   "webapp/src/pages/landing/ProductMobileMenu.tsx": 85,
   "webapp/src/pages/landing/useHashJump.ts": 72,
   "webapp/src/pages/landing/useLandingGoals.ts": 44,
-  "webapp/src/pages/LandingPage.tsx": 354,
+  "webapp/src/pages/LandingPage.tsx": 353,
   "webapp/src/pages/LinkDevicePage.tsx": 170,
   "webapp/src/pages/login/LoginProviderButtons.tsx": 154,
   "webapp/src/pages/LoginPage.tsx": 263,
