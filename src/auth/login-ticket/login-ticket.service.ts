@@ -15,34 +15,28 @@
 // Выросло из device-link (RFC 8628). Второго механизма рядом не заводим —
 // привязка аккаунта это тот же билет с `intent: 'link'` (CLAUDE.md, «одна
 // механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { createHash, randomBytes, randomInt } from 'crypto';
-import { Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
+import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth.service';
 import { SecurityLogService } from '../security-log.service';
-import { viewerMayAct } from './ticket-viewer';
+import { newUserCode, staleTicketsWhere } from './ticket-user-code';
+import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import type {
+  StartTicketInput,
   TicketForConfirm,
   TicketIntent,
   TicketStatus,
 } from './login-ticket.types';
 
-// Без похожих начертаний (0/O, 1/I/L) — код читают с экрана и сверяют глазами.
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const USER_CODE_LENGTH = 8;
 const TTL_S = 300;
 export const POLL_INTERVAL_S = 3;
-
-export interface StartTicketInput {
-  intent: TicketIntent;
-  provider: string;
-  /** Кто просит. У `intent: 'login'` хозяина нет — там null. */
-  requesterUserId: bigint | null;
-  hostId: string;
-  deviceLabel: string;
-}
 
 @Injectable()
 export class LoginTicketService {
@@ -55,36 +49,8 @@ export class LoginTicketService {
     @Optional() private readonly securityLog?: SecurityLogService,
   ) {}
 
-  /**
-   * Сверка «карточку нажал тот, кому её показали». `viaTelegramId` — СЫРОЙ
-   * telegramId нажавшего (не канонический: после слияния они расходятся, а
-   * карточке показываем и запоминаем именно сырой). Без него (HTTP с
-   * проверенной сессией, MAX initData) проверки нет: там личность уже
-   * подтверждена подписью. Чужое нажатие неотличимо от «код не найден».
-   */
-  assertViewer(
-    row: { id: string; intent: string; shownToTelegramId: bigint | null },
-    viaTelegramId: bigint | undefined,
-  ): void {
-    if (viewerMayAct(row.shownToTelegramId, viaTelegramId)) return;
-    this.securityLog?.log('login_ticket_cross_user', {
-      intent: row.intent,
-      shownTo: row.shownToTelegramId,
-      actor: viaTelegramId,
-    });
-    throw new BadRequestException('Код не найден или истёк');
-  }
-
   hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
-  }
-
-  private newUserCode(): string {
-    let out = '';
-    for (let i = 0; i < USER_CODE_LENGTH; i++) {
-      out += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
-    }
-    return out;
   }
 
   /** Шаг 1: контейнер просит билет. Длинный секрет наружу больше не выходит. */
@@ -94,23 +60,13 @@ export class LoginTicketService {
     expiresIn: number;
     interval: number;
   }> {
-    // Протухшие подчищаем всегда, а прежний билет ЭТОГО аккаунта гасим: иначе
-    // код, забытый на другом экране, остаётся годным для подтверждения.
-    // У входа (requesterUserId === null) гасить по хозяину нечего — иначе
-    // условие `{ userId: null }` снесло бы чужие билеты всех анонимов разом.
+    // Что подчистить перед выпиской — см. staleTicketsWhere.
     await this.prisma.loginTicket.deleteMany({
-      where: input.requesterUserId
-        ? {
-            OR: [
-              { userId: input.requesterUserId },
-              { expiresAt: { lt: new Date() } },
-            ],
-          }
-        : { expiresAt: { lt: new Date() } },
+      where: staleTicketsWhere(input.requesterUserId),
     });
 
     const deviceCode = randomBytes(32).toString('hex');
-    const userCode = this.newUserCode();
+    const userCode = newUserCode();
     await this.prisma.loginTicket.create({
       data: {
         deviceCodeHash: this.hash(deviceCode),
@@ -134,14 +90,18 @@ export class LoginTicketService {
     };
   }
 
-  /** Живой билет по короткому коду. Бросает, если его нет, он погашен или протух. */
-  async liveByUserCode(userCode: string) {
+  /**
+   * Живой билет по короткому коду. Бросает, если его нет, он погашен или
+   * протух — или (viaTelegramId задан) карточку показали не этому человеку.
+   */
+  async liveByUserCode(userCode: string, viaTelegramId?: bigint) {
     const row = await this.prisma.loginTicket.findUnique({
       where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
     });
     if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
       throw new BadRequestException('Код не найден или истёк');
     }
+    assertTicketViewer(this.securityLog, row, viaTelegramId);
     return row;
   }
 
@@ -175,15 +135,14 @@ export class LoginTicketService {
         this.report.step('too_late', row.hostId);
       return null;
     }
-    // Карточка уходит в чат конкретному человеку — запоминаем кому. Первый
-    // увидевший выигрывает; остальным код «не найден» (билет, начатый в
-    // браузере атакующего, нельзя подсунуть чужой карточкой в группе).
-    if (
-      viewerTelegramId !== undefined &&
-      !(await this.claimView(row, viewerTelegramId))
-    ) {
-      return null;
-    }
+    // Карточку закрепляем за первым увидевшим; остальным код «не найден».
+    const mine = await claimTicketView(
+      this.prisma,
+      this.securityLog,
+      row,
+      viewerTelegramId,
+    );
+    if (!mine) return null;
     if (row.intent === 'login') this.report.step('bot_opened', row.hostId);
     return {
       userCode: userCode.trim().toUpperCase(),
@@ -191,34 +150,6 @@ export class LoginTicketService {
       deviceLabel: row.deviceLabel,
       hostId: row.hostId,
     };
-  }
-
-  /** Атомарно закрепляет билет за первым увидевшим; true — билет его. */
-  private async claimView(
-    row: { id: string; intent: string; shownToTelegramId: bigint | null },
-    viewer: bigint,
-  ): Promise<boolean> {
-    let shownTo = row.shownToTelegramId;
-    if (shownTo === null) {
-      const claimed = await this.prisma.loginTicket.updateMany({
-        where: { id: row.id, shownToTelegramId: null },
-        data: { shownToTelegramId: viewer },
-      });
-      if (claimed.count === 1) return true;
-      // Гонка: между чтением и записью билет закрепил другой.
-      const fresh = await this.prisma.loginTicket.findUnique({
-        where: { id: row.id },
-      });
-      shownTo = fresh?.shownToTelegramId ?? null;
-    }
-    if (shownTo === viewer) return true;
-    this.securityLog?.log('login_ticket_cross_user', {
-      intent: row.intent,
-      shownTo,
-      actor: viewer,
-      step: 'show',
-    });
-    return false;
   }
 
   /**
@@ -231,8 +162,7 @@ export class LoginTicketService {
     approvedUserId: bigint,
     viaTelegramId?: bigint,
   ): Promise<void> {
-    const row = await this.liveByUserCode(userCode);
-    this.assertViewer(row, viaTelegramId);
+    const row = await this.liveByUserCode(userCode, viaTelegramId);
     if (row.intent !== 'login') {
       throw new BadRequestException('Этот код не для входа');
     }
@@ -277,8 +207,7 @@ export class LoginTicketService {
    * что вход отклонили — а тому, кого пытались обмануть, важно это увидеть.
    */
   async deny(userCode: string, viaTelegramId?: bigint): Promise<void> {
-    const row = await this.liveByUserCode(userCode);
-    this.assertViewer(row, viaTelegramId);
+    const row = await this.liveByUserCode(userCode, viaTelegramId);
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { deniedAt: new Date() },

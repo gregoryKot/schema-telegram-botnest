@@ -1,4 +1,5 @@
 import { NotificationService, PROACTIVE_TYPES } from './notification.service';
+import { decryptPayload } from './notification-payload.crypto';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
 function makePrisma() {
@@ -50,11 +51,12 @@ describe('NotificationService', () => {
       const prisma = makePrisma();
       const svc = new NotificationService(prisma);
       await svc.schedule(BigInt(1), 'summary', new Date(), { text: 'hello' });
-      expect(prisma.scheduledNotification.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ payload: { text: 'hello' } }),
-        }),
-      );
+      // payload хранится зашифрованной JSON-строкой (T1, аудит 2026-10); без
+      // ключа в этом файле — та же строка открытым JSON. Шифрование под ключом
+      // проверяет notification-payload.crypto.spec.ts.
+      const stored =
+        prisma.scheduledNotification.create.mock.calls[0][0].data.payload;
+      expect(decryptPayload(stored)).toEqual({ text: 'hello' });
     });
   });
 

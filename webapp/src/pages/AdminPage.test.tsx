@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // AdminPage — единая админка с ключом доступа и вкладками (0% покрытия).
 // Секции-вкладки мокаем заглушками (у каждой свои тесты) — здесь проверяем
-// только сам AdminPage: гейт по ключу (сохранение/сброс в localStorage,
+// только сам AdminPage: гейт по ключу (ключ только в памяти,
 // видимая ошибка на неверный ключ) и переключение вкладок.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { AdminPage } from './AdminPage';
 
 const adminStatus = vi.fn();
@@ -54,22 +54,29 @@ describe('AdminPage — вход по ключу', () => {
     expect(await screen.findByText('Неверный ключ')).toBeTruthy();
   });
 
-  it('верный ключ сохраняется в sessionStorage (L7), НЕ в localStorage, и открывает вкладки', async () => {
+  // Аудит 2026-10, E4: ключ только в памяти страницы — XSS не вычитает его из хранилища.
+  it('верный ключ открывает вкладки и НЕ пишется ни в sessionStorage, ни в localStorage', async () => {
     adminStatus.mockResolvedValue({});
     render(<AdminPage />);
     fireEvent.change(screen.getByPlaceholderText('Ключ'), { target: { value: 'right-key' } });
     fireEvent.click(screen.getByText('Войти'));
 
     expect(await screen.findByText('Секция: Запись')).toBeTruthy();
-    expect(sessionStorage.getItem('booking_admin_key')).toBe('right-key');
+    expect(sessionStorage.getItem('booking_admin_key')).toBeNull();
     expect(localStorage.getItem('booking_admin_key')).toBeNull();
+    for (const store of [sessionStorage, localStorage]) {
+      for (let i = 0; i < store.length; i++) {
+        expect(store.getItem(store.key(i) as string)).not.toContain('right-key');
+      }
+    }
   });
 
-  it('сохранённый, но более не валидный ключ сбрасывается — не залипает без доступа', async () => {
+  it('ключ от прежней версии в sessionStorage не используется для входа', async () => {
     sessionStorage.setItem('booking_admin_key', 'stale-key');
-    adminStatus.mockRejectedValue(new Error('403'));
+    adminStatus.mockResolvedValue({});
     render(<AdminPage />);
-    await waitFor(() => expect(sessionStorage.getItem('booking_admin_key')).toBeNull());
+    await act(async () => {});
+    expect(adminStatus).not.toHaveBeenCalled();
     expect(screen.getByText('Введите ключ доступа (ADMIN_BOOKING_KEY).')).toBeTruthy();
   });
 });

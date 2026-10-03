@@ -14,9 +14,8 @@ import { getHost } from '../../shared/src/host';
 import { renewWithRetries } from '../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../shared/src/auth/crossTabLock';
 import { clearApiCache } from '../../shared/src/api/apiCache';
-import { markAuthSeen } from '../../shared/src/auth/authSeen';
+import { markSessionStarted } from '../../shared/src/auth/dataOwnerGuard';
 import { clearLocalData } from '../../shared/src/auth/clearLocalData';
-import { ensureDataOwnerForToken } from '../../shared/src/auth/dataOwnerGuard';
 import { attemptRenewOnce } from './sessionRenew';
 import { registerSessionRetryListeners } from './sessionRetryListeners';
 
@@ -45,12 +44,8 @@ function tokenIsFresh(now = Date.now()): boolean {
 }
 
 function remember(token: string, expiresIn: number): void {
-  // Сессия принадлежит другому аккаунту, чем локальные данные (смена без
-  // выхода) — стираем их ДО отметки входа и до первого экрана (аудит 2026-10, E1).
-  ensureDataOwnerForToken(token);
-  // Отметка «в этом контейнере вход удавался» — по ней экран входа отличит
-  // новичка от человека, у которого истекла сессия (shared/auth/authSeen).
-  markAuthSeen();
+  // Отметка «вход удавался» (shared/auth/authSeen) + стирание данных прежнего аккаунта (E1).
+  markSessionStarted(token);
   accessToken = token;
   accessExpiresAt = Date.now() + expiresIn * 1000;
   deadUntil = 0;
@@ -138,18 +133,13 @@ export function ensureSession(): Promise<boolean> {
   return bootstrapped;
 }
 
-/** Принять сессию от привязки к другому аккаунту (device-link). Прежний
- *  стартовый обмен надо забыть: иначе перевыпуск вернул бы в пустой аккаунт. */
+/** Принять сессию другого аккаунта (device-link); прежний стартовый обмен забыт — иначе перевыпуск вернул бы в пустой. */
 export function adoptSession(token: string, expiresIn: number): void {
   bootstrapped = Promise.resolve(true);
   inFlight = null;
-  // Сессия — от ДРУГОГО аккаунта (device-link): локальная копия клинических
-  // данных прежнего не переживает смену (иначе экран с фолбэком на
-  // localStorage покажет её новому и автосохранением запишет в его аккаунт,
-  // аудит 2026-10, E1). До remember: он ставит отметку входа и владельца.
+  // Данные (E1; до remember — он ставит отметку входа) и кеш API прежнего аккаунта не переживают смену.
   clearLocalData();
   remember(token, expiresIn);
-  // Кеш API прежнего userId тоже не переживает смену.
   clearApiCache();
 }
 

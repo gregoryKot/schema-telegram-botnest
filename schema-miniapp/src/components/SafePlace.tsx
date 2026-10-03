@@ -7,6 +7,7 @@ import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
 import { SaveErrorNote } from './SaveErrorNote';
 import { SafePlaceSavedView } from './safePlace/SavedView';
+import { buildPrompts } from './safePlace/prompts';
 
 const STORAGE_KEY = 'safe_place';
 
@@ -24,21 +25,6 @@ function loadLocal(): SafePlaceData | null {
     return null;
   }
 }
-
-const buildPrompts = (tr: (ty: string, vy: string) => string) => [
-  tr(
-    'Вспомни или представь место, где тебе спокойно и безопасно. Реальное или воображаемое.',
-    'Вспомните или представьте место, где вам спокойно и безопасно. Реальное или воображаемое.',
-  ),
-  tr(
-    'Что ты там видишь? Какие звуки, запахи, ощущения в теле?',
-    'Что вы там видите? Какие звуки, запахи, ощущения в теле?',
-  ),
-  tr(
-    'Почему именно здесь ты чувствуешь себя в безопасности?',
-    'Почему именно здесь вы чувствуете себя в безопасности?',
-  ),
-];
 
 interface Props {
   onClose: () => void;

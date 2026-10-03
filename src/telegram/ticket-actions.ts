@@ -1,22 +1,12 @@
-// Общая обвязка кнопок на карточках сверки — их две (вход и объединение
-// аккаунтов), и обе устроены одинаково: сначала гасим спиннер на кнопке,
-// потом узнаём, ЧЕЙ это аккаунт, и только потом делаем дело. Две копии
-// разъехались бы на первой правке (правило «одна механика — один компонент»).
+// Общая обвязка кнопок на карточках сверки (вход и объединение аккаунтов):
+// гасим спиннер, узнаём, ЧЕЙ это аккаунт, и только потом делаем дело. Две
+// копии разъехались бы на первой правке («одна механика — один компонент»).
 import { Context } from 'telegraf';
 import { Logger } from '@nestjs/common';
 import { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { AccountService } from '../bot/account.service';
-
-/**
- * Сырой telegramId как «кому показали карточку». НЕ userId: для сверки
- * карточки нужен именно номер, под которым человек пишет боту, а не
- * канонический (трипвайр в telegram.invariants.spec.ts ловит прямое приведение сырого номера
- * как попытку взять его за userId — здесь это осознанно другое).
- */
-export function viewerTelegramId(telegramId: number | undefined) {
-  return telegramId === undefined ? undefined : BigInt(telegramId);
-}
+import { viewerTelegramId } from './viewer-id';
 
 export interface DenyDeps {
   tickets: LoginTicketService;
@@ -37,8 +27,6 @@ export async function handleTicketDeny(
   text: string,
 ): Promise<void> {
   try {
-    // Сырой номер нажавшего: отклонить карточку может только тот, кому её
-    // показали (иначе пересланную карточку гасил бы кто угодно).
     await deps.tickets.deny(code, viewerTelegramId(ctx.from?.id));
     deps.securityLog.log('login_ticket_denied', {
       telegramId: ctx.from?.id,

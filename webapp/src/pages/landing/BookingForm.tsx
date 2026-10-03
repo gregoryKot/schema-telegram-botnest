@@ -46,8 +46,6 @@ export function BookingForm() {
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
-        {/* ym-disable-keys: Вебвизор не пишет нажатия клавиш в полях с личными
-            данными (как в BookingPicker, аудит 2026-10, E2). */}
         <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
         <div><label htmlFor="booking-contact" style={labelSt}>Telegram / телефон *</label><input id="booking-contact" className="ym-disable-keys" style={field} placeholder="@username или телефон" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
       </div>

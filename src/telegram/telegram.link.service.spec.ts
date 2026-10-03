@@ -9,11 +9,8 @@
 //      поля `merged` в ответе не видит, отправить событие ему нечем;
 //   4. тексты звучат в обеих формах и не приписывают читателю род.
 import { Logger } from '@nestjs/common';
-import {
-  TelegramLinkService,
-  linkConfirmText,
-  summaryLine,
-} from './telegram.link.service';
+import { TelegramLinkService } from './telegram.link.service';
+import { linkConfirmText, summaryLine } from './telegram.link-card';
 import { makeFakeBot, makeCtx, runAction } from './telegram.test-helpers.spec';
 import type { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import type { TicketLinkService } from '../auth/login-ticket/ticket-link.service';

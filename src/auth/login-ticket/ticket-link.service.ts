@@ -65,15 +65,13 @@ export class TicketLinkService {
     ip?: string,
     viaTelegramId?: bigint,
   ): Promise<{ merged: boolean }> {
-    const row = await this.tickets.liveByUserCode(userCode);
-    this.tickets.assertViewer(row, viaTelegramId);
+    const row = await this.tickets.liveByUserCode(userCode, viaTelegramId);
     if (row.intent !== 'link') {
       throw new BadRequestException('Этот код не для привязки');
     }
     if (row.approvedUserId)
       throw new BadRequestException('Код уже подтверждён');
-    // Запоминаем источник до всякой записи: дальше хозяин строки меняется, и
-    // читать его оттуда уже нельзя.
+    // Источник запоминаем до записи: дальше хозяин строки меняется.
     const sourceUserId = row.userId;
 
     const approved = { approvedUserId: targetUserId, approvedAt: new Date() };

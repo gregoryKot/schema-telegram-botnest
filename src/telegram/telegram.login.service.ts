@@ -21,47 +21,19 @@ import {
   OnModuleInit,
   Optional,
 } from '@nestjs/common';
-import { Markup, Telegraf, Context } from 'telegraf';
+import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { resolveForm } from './telegram.reply-helpers';
-import { formatUserCode, parseLoginCode } from './login-payload';
+import { parseLoginCode } from './login-payload';
+import { confirmKeyboard, confirmText } from './telegram.login-card';
 import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
-import {
-  handleTicketDeny,
-  viewerTelegramId,
-  withConfirmingUser,
-} from './ticket-actions';
-
-export function confirmText(
-  form: AddressForm,
-  code: string,
-  deviceLabel: string,
-): string {
-  const device = deviceLabel ? `\nУстройство: ${deviceLabel}` : '';
-  return (
-    `🔐 <b>Вход в «Всё по схеме»</b>\n\n` +
-    `Код на экране: <b>${formatUserCode(code)}</b>${device}\n\n` +
-    t(
-      form,
-      'Совпадает с тем, что видишь в приложении? Тогда подтверждай. ' +
-        'Не совпадает или вход начинал не ты — жми «Это не я».',
-      'Совпадает с тем, что видите в приложении? Тогда подтверждайте. ' +
-        'Не совпадает или вход начинали не вы — жмите «Это не я».',
-    )
-  );
-}
-
-export function confirmKeyboard(code: string) {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('Это я, войти', `tglogin:yes:${code}`)],
-    [Markup.button.callback('Это не я', `tglogin:no:${code}`)],
-  ]);
-}
+import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
+import { viewerTelegramId } from './viewer-id';
 
 @Injectable()
 export class TelegramLoginService implements OnModuleInit {

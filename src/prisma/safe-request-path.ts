@@ -38,7 +38,8 @@ export function safeRequestPath(url: string | undefined): string {
     .map((seg, i) =>
       i > 0 &&
       seg &&
-      (TOKEN_PRECEDERS.has(segments[i - 1].toLowerCase()) || looksLikeToken(seg))
+      (TOKEN_PRECEDERS.has(segments[i - 1].toLowerCase()) ||
+        looksLikeToken(seg))
         ? '<token>'
         : seg,
     )

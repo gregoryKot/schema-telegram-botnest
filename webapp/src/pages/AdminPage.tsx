@@ -9,7 +9,6 @@ import { btn, input } from './admin/shared';
 
 // L7 (аудит 2026-08): ключ админа в sessionStorage, не localStorage — XSS не
 // утащит его из закрытой вкладки и он не переживает браузер (вводится раз в сессию).
-const KEY_STORE = 'booking_admin_key';
 
 type Tab = 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
 const TABS: { id: Tab; label: string }[] = [
@@ -22,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 /** Single admin panel for the whole site — one key, tabbed sections. */
 export function AdminPage() {
-  const [key, setKey] = useState<string>(() => sessionStorage.getItem(KEY_STORE) ?? '');
+  const [key, setKey] = useState<string>('') // только в памяти: в sessionStorage ключ утёк бы при XSS (E4);
   const [authed, setAuthed] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [keyError, setKeyError] = useState(false);
@@ -30,14 +29,13 @@ export function AdminPage() {
 
   useEffect(() => {
     if (!key) return;
-    api.adminStatus(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); sessionStorage.removeItem(KEY_STORE); setKey(''); });
+    api.adminStatus(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); setKey(''); });
   }, [key]);
 
   const tryKey = async () => {
     setKeyError(false);
     try {
       await api.adminStatus(keyInput);
-      sessionStorage.setItem(KEY_STORE, keyInput);
       setKey(keyInput);
     } catch { setKeyError(true); }
   };

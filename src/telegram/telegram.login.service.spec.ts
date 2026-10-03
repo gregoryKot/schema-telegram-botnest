@@ -6,7 +6,8 @@
 //   2. «Это не я» доезжает до билета отказом, а не тишиной;
 //   3. тексты звучат в обеих формах обращения и не приписывают читателю род.
 import { Logger } from '@nestjs/common';
-import { TelegramLoginService, confirmText } from './telegram.login.service';
+import { TelegramLoginService } from './telegram.login.service';
+import { confirmText } from './telegram.login-card';
 import { makeFakeBot, makeCtx, runAction } from './telegram.test-helpers.spec';
 import type { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import type { BotService } from '../bot/bot.service';

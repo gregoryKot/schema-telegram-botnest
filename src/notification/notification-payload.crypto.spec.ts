@@ -1,13 +1,11 @@
 // Аудит 2026-10, T1: текст задания терапевта лежал в ScheduledNotification.payload
 // открытым текстом, а реестр шифрования уверял «свободного текста нет».
-// Шифрование подменяем видимым и обратимым: в тестовой среде ENCRYPTION_KEY нет
-// и настоящий encrypt отдаёт текст как есть — проверка «в БД не открытый текст»
-// тогда ничего бы не значила.
 // Ключ выставляем ДО загрузки crypto.ts (он читает env при загрузке модуля):
 // без ключа encrypt() отдаёт текст как есть, и проверка «в БД не открытый
 // текст» ничего бы не значила.
 process.env.ENCRYPTION_KEY = 'ab'.repeat(32);
 
+import { decryptPayload } from './notification-payload.crypto';
 import { NotificationService } from './notification.service';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 import { renderTemplate } from './notification.templates';
@@ -88,5 +86,9 @@ describe('NotificationService — шифрование payload', () => {
     const { svc, table } = makeSvc();
     await svc.schedule(5n, 'reminder', new Date());
     expect(table.create.mock.calls[0][0].data.payload).toBeUndefined();
+  });
+
+  it('нерасшифровываемая строка → null (шаблон вернёт «нечего слать»), не исключение', () => {
+    expect(decryptPayload('это не шифротекст и не JSON')).toBeNull();
   });
 });

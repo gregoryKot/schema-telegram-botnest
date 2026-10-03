@@ -47,3 +47,12 @@ export interface TicketForConfirm {
   deviceLabel: string;
   hostId: string;
 }
+
+export interface StartTicketInput {
+  intent: TicketIntent;
+  provider: string;
+  /** Кто просит. У `intent: 'login'` хозяина нет — там null. */
+  requesterUserId: bigint | null;
+  hostId: string;
+  deviceLabel: string;
+}

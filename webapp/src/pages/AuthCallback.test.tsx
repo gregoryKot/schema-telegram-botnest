@@ -122,3 +122,31 @@ describe('AuthCallback — бэкенд не вернул access_token (ошиб
     expect(replaceSpy).not.toHaveBeenCalled();
   });
 });
+
+// Аудит 2026-10, E3: раньше при window.opener токен из хэша уходил в
+// opener.location.href — в окно, чьё происхождение никто не проверял. Попап-входа
+// нет, ветка удалена: opener не трогаем, вход идёт обычным путём.
+describe('AuthCallback — window.opener не получает токен', () => {
+  it('с чужим opener присваивания location.href нет, вход завершается как обычно', async () => {
+    const hrefSet = vi.fn();
+    const foreignOpener = {
+      get location() {
+        return {
+          get href() { return ''; },
+          set href(v: string) { hrefSet(v); },
+        };
+      },
+    };
+    const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => undefined);
+    Object.defineProperty(window, 'opener', { configurable: true, value: foreignOpener });
+    try {
+      const { findByText } = renderAt('#access_token=tok123&expires_in=900', '/today');
+      await findByText('today-page');
+      expect(hrefSet).not.toHaveBeenCalled();
+      expect(closeSpy).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'opener', { configurable: true, value: null });
+      closeSpy.mockRestore();
+    }
+  });
+});

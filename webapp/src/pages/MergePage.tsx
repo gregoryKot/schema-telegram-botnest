@@ -1,20 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { clearApiCache } from '../../../shared/src/api/apiCache';
-import { useAuth } from '../auth/authContext';
 import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
 import { useTr } from '../utils/addressForm';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
-
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
+import { useMergeConfirm } from './merge/useMergeConfirm';
+import { SourceTotpField } from './merge/SourceTotpField';
 
 export function MergePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setAccessToken } = useAuth();
-  const tr = useTr(); const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const tr = useTr();
   const [acknowledged, setAcknowledged] = useState(false);
 
   const token = params.get('token') ?? '';
@@ -26,36 +21,11 @@ export function MergePage() {
   let summary: Record<string, number> = {};
   try { summary = JSON.parse(summaryStr); } catch { /* keep empty */ }
   const totalItems = sumItems(summary);
+  const { busy, error, needCode, code, setCode, confirm } = useMergeConfirm(token);
 
   useEffect(() => {
     if (!token) navigate('/account', { replace: true });
   }, [token, navigate]);
-
-  const confirm = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/merge`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        body: JSON.stringify({ token }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Merge failed' }));
-        throw new Error(body.message ?? 'Merge failed');
-      }
-      const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-      setAccessToken(accessToken, expiresIn);
-      // Данные другого аккаунта переехали на текущий userId — старый кеш
-      // (списки без перенесённых записей) обязан уйти вместе с ним.
-      clearApiCache();
-      navigate('/account', { replace: true });
-    } catch (e) {
-      setError(String(e));
-      setBusy(false);
-    }
-  };
 
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 720, margin: '0 auto' }}>
@@ -96,6 +66,8 @@ export function MergePage() {
         </div>
       )}
 
+      {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
+
       {error && (
         <div style={{ marginTop: 8, marginBottom: 16, padding: '12px 14px', borderLeft: '3px solid var(--c-rose)', background: 'color-mix(in srgb, var(--c-rose) 6%, transparent)' }}>
           <div className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>{error}</div>
@@ -116,7 +88,7 @@ export function MergePage() {
       </label>
 
       <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 20 }}>
-        <button disabled={busy || !acknowledged} onClick={confirm} className="btn btn-primary">
+        <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="btn btn-primary">
           {busy ? (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)' }}>
               <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />

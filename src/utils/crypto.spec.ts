@@ -92,6 +92,35 @@ describe('конфигурация ключей', () => {
     expect(encrypt('текст')).toBe('текст');
   });
 
+  // Аудит 2026-10 (D3): 64 символа, но не hex — Buffer.from(…, 'hex') даёт
+  // короткий буфер, раньше ключ проходил проверку длины.
+  it('ключ из 64 НЕ-hex символов в production — падение на буте, а не на первой записи', () => {
+    expect(() =>
+      loadCrypto({ key: 'zz'.repeat(32), nodeEnv: 'production' }),
+    ).toThrow(/ENCRYPTION_KEY missing or malformed/);
+  });
+
+  it('ключ из 64 НЕ-hex символов вне production — как «ключа нет» (passthrough), без короткого буфера', () => {
+    const { encrypt } = loadCrypto({ key: 'zz'.repeat(32) });
+    expect(encrypt('текст')).toBe('текст');
+  });
+
+  it('ENCRYPTION_KEY_OLD с битым ключом в production — падение на буте', () => {
+    expect(() =>
+      loadCrypto({
+        key: KEY_A,
+        old: `${KEY_B},${'zz'.repeat(32)}`,
+        nodeEnv: 'production',
+      }),
+    ).toThrow(/ENCRYPTION_KEY_OLD/);
+  });
+
+  it('валидные hex-ключи в любом регистре принимаются (контрольный случай)', () => {
+    const { encrypt, decrypt } = loadCrypto({ key: 'AB'.repeat(32) });
+    expect(decrypt(encrypt('x'))).toBe('x');
+    expect(encrypt('x')).not.toBe('x');
+  });
+
   it('в production без ключа модуль падает на загрузке (крash на буте, не тихий плейнтекст)', () => {
     expect(() => loadCrypto({ nodeEnv: 'production' })).toThrow(
       /ENCRYPTION_KEY missing/,

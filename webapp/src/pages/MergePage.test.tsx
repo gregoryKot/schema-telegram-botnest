@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
+import { AddressFormContext } from '../utils/addressForm';
 import { MergePage } from './MergePage';
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -41,17 +42,29 @@ function authValue(overrides: Partial<AuthState> = {}): AuthState {
   };
 }
 
-function renderAt(path: string, auth: AuthState = authValue()) {
+function renderAt(
+  path: string,
+  auth: AuthState = authValue(),
+  form: 'ty' | 'vy' = 'ty',
+) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <AuthContext.Provider value={auth}>
-        <Routes>
-          <Route path="/merge" element={<MergePage />} />
-          <Route path="/account" element={<div>account-page</div>} />
-        </Routes>
-      </AuthContext.Provider>
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+        <AuthContext.Provider value={auth}>
+          <Routes>
+            <Route path="/merge" element={<MergePage />} />
+            <Route path="/account" element={<div>account-page</div>} />
+          </Routes>
+        </AuthContext.Provider>
+      </AddressFormContext.Provider>
     </MemoryRouter>,
   );
+}
+
+async function confirmMerge() {
+  await screen.findByText('Объединить аккаунты?');
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Объединить' }));
 }
 
 describe('MergePage — без токена', () => {
@@ -174,5 +187,96 @@ describe('MergePage — отмена', () => {
 
     await screen.findByText('account-page');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+// A2 (аудит 2026-10): сервер больше не принимает merge-токен от анонима —
+// доказательство «это тот аккаунт» едет refresh-кукой (и Bearer, если есть).
+describe('MergePage — доказательство личности (A2)', () => {
+  it('запрос идёт с credentials:include (refresh-кука) и Bearer, когда токен есть', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'n', expiresIn: 1 }));
+    renderAt('/merge?token=abc', authValue({ accessToken: 'tok123' }));
+    await confirmMerge();
+    await screen.findByText('account-page');
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.credentials).toBe('include');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer tok123');
+  });
+
+  it('без accessToken в памяти (после OAuth-редиректа) Authorization не шлётся, кука остаётся', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'n', expiresIn: 1 }));
+    renderAt('/merge?token=abc', authValue({ accessToken: null }));
+    await confirmMerge();
+    await screen.findByText('account-page');
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.credentials).toBe('include');
+    expect(init.headers as Record<string, string>).not.toHaveProperty('Authorization');
+  });
+});
+
+// A4: у поглощаемого аккаунта включён TOTP — сервер просит его код (403).
+describe('MergePage — второй фактор второго аккаунта (A4)', () => {
+  const need = () => jsonResponse(403, { message: 'Нужен код', reason: 'source_totp_required' });
+
+  it('поле кода не показывается, пока сервер его не потребовал', async () => {
+    renderAt('/merge?token=abc');
+    await screen.findByText('Объединить аккаунты?');
+    expect(screen.queryByLabelText('Код второго аккаунта')).toBeNull();
+  });
+
+  it('403 source_totp_required → появляется поле кода, ошибкой не считается, на /account не уходим', async () => {
+    fetchMock.mockResolvedValueOnce(need());
+    renderAt('/merge?token=abc');
+    await confirmMerge();
+    await screen.findByLabelText('Код второго аккаунта');
+    expect(screen.queryByText('account-page')).toBeNull();
+    expect(screen.queryByText(/Нужен код/)).toBeNull();
+    // Пока код не введён (< 6 знаков), отправить нельзя.
+    expect((screen.getByRole('button', { name: 'Объединить' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('ввод кода → повторный запрос с code, успех ведёт на /account', async () => {
+    fetchMock
+      .mockResolvedValueOnce(need())
+      .mockResolvedValueOnce(jsonResponse(200, { accessToken: 'n', expiresIn: 900 }));
+    renderAt('/merge?token=abc');
+    await confirmMerge();
+    fireEvent.change(await screen.findByLabelText('Код второго аккаунта'), { target: { value: ' 123456 ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Объединить' }));
+    await screen.findByText('account-page');
+    expect(JSON.parse((fetchMock.mock.calls[1][1] as RequestInit).body as string)).toEqual({
+      token: 'abc',
+      code: '123456',
+    });
+  });
+
+  it('неверный код → «Код не подошёл», поле остаётся, на /account не уходим', async () => {
+    fetchMock.mockResolvedValue(need());
+    renderAt('/merge?token=abc');
+    await confirmMerge();
+    fireEvent.change(await screen.findByLabelText('Код второго аккаунта'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Объединить' }));
+    await screen.findByText(/Код не подошёл\. Проверь его/);
+    expect(screen.getByLabelText('Код второго аккаунта')).toBeTruthy();
+    expect(screen.queryByText('account-page')).toBeNull();
+  });
+
+  it('форма «вы»: подсказка и ошибка без «ты»-форм', async () => {
+    fetchMock.mockResolvedValue(need());
+    renderAt('/merge?token=abc', authValue(), 'vy');
+    await confirmMerge();
+    await screen.findByText(/Чтобы подтвердить, что он ваш, введите код/);
+    fireEvent.change(screen.getByLabelText('Код второго аккаунта'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Объединить' }));
+    await screen.findByText(/Проверьте его и попробуйте ещё раз/);
+    expect(screen.queryByText(/введи код|Проверь его/)).toBeNull();
+  });
+
+  it('403 с другой причиной остаётся обычной ошибкой, поле кода не появляется', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(403, { message: 'Запрещено' }));
+    renderAt('/merge?token=abc');
+    await confirmMerge();
+    await screen.findByText(/Запрещено/);
+    expect(screen.queryByLabelText('Код второго аккаунта')).toBeNull();
   });
 });

@@ -14,6 +14,7 @@
 // под которым сервер отвечает на запросы (у привязанного устройства он не равен
 // id пользователя площадки, поэтому getHost().user() для этого не годится).
 import { clearLocalData } from './clearLocalData';
+import { markAuthSeen } from './authSeen';
 import { readLocal, writeLocal } from '../utils/safeLocalStorage';
 
 export const DATA_OWNER_KEY = 'data_owner_id';
@@ -48,4 +49,12 @@ export function ensureDataOwner(serverUserId: string): boolean {
 export function ensureDataOwnerForToken(token: string): boolean {
   const sub = tokenSubject(token);
   return sub ? ensureDataOwner(sub) : false;
+}
+
+/** «Сессия жива» для обоих фронтендов: сначала проверка владельца данных (чужие
+ *  стираются, в том числе отметка входа), затем отметка «вход удавался». Порядок
+ *  важен — обратный стёр бы только что поставленную отметку. */
+export function markSessionStarted(token: string): void {
+  ensureDataOwnerForToken(token);
+  markAuthSeen();
 }

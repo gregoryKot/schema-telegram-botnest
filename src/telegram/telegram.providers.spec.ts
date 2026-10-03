@@ -18,11 +18,8 @@ jest.mock('telegraf', () => ({
   })),
 }));
 
-import {
-  TELEGRAM_PROVIDERS,
-  telegramAgent,
-  telegramViaProxy,
-} from './telegram.providers';
+import { TELEGRAM_PROVIDERS } from './telegram.providers';
+import { telegramAgent, telegramViaProxy } from './telegram-agent';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { privateChatOnly } from './private-chat-only';
 

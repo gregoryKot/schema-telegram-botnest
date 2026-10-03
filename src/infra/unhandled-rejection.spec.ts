@@ -14,10 +14,8 @@ describe('registerUnhandledRejectionHandler', () => {
     const logger = { error: jest.fn(), log: jest.fn(), warn: jest.fn() };
     const exit = jest.fn();
     const timers: { fn: () => void; ms: number }[] = [];
-    const handler = registerUnhandledRejectionHandler(
-      logger,
-      exit,
-      (fn, ms) => timers.push({ fn, ms }),
+    const handler = registerUnhandledRejectionHandler(logger, exit, (fn, ms) =>
+      timers.push({ fn, ms }),
     );
     return { logger, exit, timers, handler };
   };

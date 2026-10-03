@@ -17,7 +17,7 @@ import { createHmac } from 'crypto';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserThrottlerGuard } from './throttler.guard';
-import { verifiedInitDataSubject } from './throttler-identity';
+import { verifiedInitDataSubject } from './throttler-init-data';
 import { PersistentThrottle } from './persistent-throttle.decorator';
 
 const JWT_SECRET = 'secret-for-tests';
