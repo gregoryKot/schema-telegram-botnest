@@ -47,7 +47,7 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
   if (!s) return null;
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>Интеграции</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>Интеграции</h2>
       <StatusRow label="Zoom (видео-ссылки)" on={!!s.zoom} note="вкл" />
       {!s.zoom && (
         <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
@@ -122,7 +122,7 @@ function PricesManager({ adminKey }: { adminKey: string }) {
     guard(() => api.adminSetPrice(adminKey, type as 'SESSION_50', draft[type] ?? 0).then(() => load()));
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Цены</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Цены</h2>
       {paid.map((o) => (
         <div key={o.type} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
           <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.label} · {o.durationMin} мин</span>
@@ -154,7 +154,7 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
     guard(() => api.adminSetSubPrice(adminKey, period, draft[period] ?? 0).then(() => load()));
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
       {opts.map((o) => (
         <div key={o.period} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
           <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.period === 'year' ? 'Год' : 'Месяц'}</span>
@@ -197,7 +197,7 @@ function BookingsManager({ adminKey }: { adminKey: string }) {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Записи</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Записи</h2>
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {FILTERS.map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{

@@ -112,9 +112,11 @@ describe('ConfirmDialog — busy/error состояния', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('danger=false — кнопка подтверждения использует акцентный, не тревожный цвет', () => {
+  it('danger=false — кнопка подтверждения не красная; по умолчанию — красная', () => {
     renderDialog({ danger: false });
-    const btn = screen.getByText('Удалить') as HTMLButtonElement;
-    expect(btn.style.background).toContain('accent');
+    expect(screen.getByText('Удалить').className).not.toContain('btn-primary--danger');
+    cleanup();
+    renderDialog();
+    expect(screen.getByText('Удалить').className).toContain('btn-primary--danger');
   });
 });

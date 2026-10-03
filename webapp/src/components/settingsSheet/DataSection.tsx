@@ -51,7 +51,7 @@ export function DataSection() {
       {/* ── Privacy modal ── */}
       {showPrivacy && (
         <InfoModal onClose={() => setShowPrivacy(false)}>
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Данные и конфиденциальность</div>
+          <h2 className="dialog-title" style={{ marginBottom: 16 }}>Данные и конфиденциальность</h2>
           {[
             { title: 'Что хранится', text: privacyStorageText('аккаунту') },
             { title: 'Передача третьим лицам', text: PRIVACY_NO_SHARE_TEXT },
@@ -86,7 +86,7 @@ export function DataSection() {
       {/* ── Delete modal ── */}
       {showDeleteSheet && (
         <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
+          <h2 className="dialog-title" style={{ color: 'var(--accent-red)' }}>Удалить все данные</h2>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
             Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
           </div>
@@ -103,7 +103,7 @@ export function DataSection() {
                 setDeleting(true); setDeleteError(false);
                 try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
                 catch { setDeleting(false); setDeleteConfirm(false); setDeleteError(true); }
-              }} style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: 'var(--on-accent-red)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+              }} style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: 'var(--on-accent-red)', fontSize: 15, fontWeight: 600, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
                 {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
               </button>
             </div>

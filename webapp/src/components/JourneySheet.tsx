@@ -76,8 +76,8 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
             <div className="u-ac12">
               <h1
                 style={{
-                  fontSize: 24,
-                  fontWeight: 700,
+                  fontFamily: 'var(--serif)', fontSize: 30,
+                  fontWeight: 400, letterSpacing: '-0.02em',
                   color: 'var(--text)',
                   margin: 0,
                 }}
