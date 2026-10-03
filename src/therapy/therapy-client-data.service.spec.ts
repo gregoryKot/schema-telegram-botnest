@@ -54,6 +54,7 @@ function makeDb(rels: Rel[]) {
   const schemaNotes: any[] = [];
   const modeNotes: any[] = [];
   const tasks: any[] = [];
+  const modeMaps: any[] = [];
   const desc = (rows: any[], userId: bigint, key: string, take: number) =>
     rows
       .filter((r) => r.userId === userId)
@@ -99,6 +100,18 @@ function makeDb(rels: Rel[]) {
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
+    modeMap: {
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = modeMaps.length;
+        for (let i = modeMaps.length - 1; i >= 0; i--)
+          if (
+            modeMaps[i].therapistId === where.therapistId &&
+            modeMaps[i].clientId === where.clientId
+          )
+            modeMaps.splice(i, 1);
+        return Promise.resolve({ count: before - modeMaps.length });
+      }),
+    },
     userTask: {
       deleteMany: jest.fn(({ where }: any) => {
         const before = tasks.length;
@@ -124,6 +137,7 @@ function makeDb(rels: Rel[]) {
     schemaNotes,
     modeNotes,
     tasks,
+    modeMaps,
   };
 }
 
@@ -163,6 +177,14 @@ const relB: Rel = {
   clientId: CLIENT_B,
   status: 'active',
   code: 'BBB222',
+};
+
+const relVirtual: Rel = {
+  id: 3,
+  therapistId: T1,
+  clientId: null,
+  status: 'active',
+  code: 'VVV333',
 };
 
 describe('TherapyClientDataService — граница доступа (assertHasClient)', () => {
@@ -340,20 +362,47 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
   });
 
   it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {
-    const { svc, rels } = makeService([relA]); // relA.id === 1
-    await svc.removeClient(T1, -1);
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.removeClient(T1, -3);
     expect(rels).toHaveLength(0);
   });
 
-  it('removeClient виртуального клиента удаляет его задания, чужие и «свои» задания других остаются', async () => {
-    const { svc, tasks } = makeService([relA]); // relA.id === 1 → userId -1
-    tasks.push(
-      { id: 1, userId: -1n, assignedBy: T1 }, // задание виртуальному клиенту
-      { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
-      { id: 3, userId: -1n, assignedBy: T2 }, // не от этого терапевта
-    );
+  it('removeClient с отрицательным id связи с РЕАЛЬНЫМ клиентом — no-op (иначе заметки остались бы сиротами)', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
     await svc.removeClient(T1, -1);
+    expect(rels).toHaveLength(1);
+  });
+
+  it('removeClient виртуального клиента удаляет его задания, чужие и «свои» задания других остаются', async () => {
+    const { svc, tasks } = makeService([relVirtual]); // id 3 → userId -3
+    tasks.push(
+      { id: 1, userId: -3n, assignedBy: T1 }, // задание виртуальному клиенту
+      { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
+      { id: 3, userId: -3n, assignedBy: T2 }, // не от этого терапевта
+    );
+    await svc.removeClient(T1, -3);
     expect(tasks.map((t) => t.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient стирает именные карты режимов пары, чужие карты остаются', async () => {
+    const { svc, modeMaps } = makeService([relA]); // relA.id === 1
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: CLIENT_A }, // карта этой пары
+      { id: 2, therapistId: T1, clientId: 777n }, // другой клиент того же терапевта
+      { id: 3, therapistId: T2, clientId: CLIENT_A }, // другой терапевт, тот же клиент
+    );
+    await svc.removeClient(T1, CID_A);
+    expect(modeMaps.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient виртуального клиента стирает его карты режимов', async () => {
+    const { svc, modeMaps } = makeService([relVirtual]); // id 3 → clientId -3
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: -3n },
+      { id: 2, therapistId: T1, clientId: -2n },
+    );
+    await svc.removeClient(T1, -3);
+    expect(modeMaps.map((m) => m.id)).toEqual([2]);
   });
 
   it('removeClient клиента с аккаунтом НЕ трогает задания — они у клиента', async () => {

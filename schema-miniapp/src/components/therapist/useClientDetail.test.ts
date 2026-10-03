@@ -268,6 +268,7 @@ describe('deleteClient', () => {
     const text = confirmSpy.mock.calls[0][0] as string;
     expect(text).toContain('Удалить клиента «Иван»?');
     expect(text).toContain('удалятся насовсем');
+    expect(text).toContain('карты режимов');
     expect(text).not.toMatch(/Связь будет разорвана/);
   });
 
