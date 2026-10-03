@@ -5,21 +5,25 @@
 // свой tr (ты/вы) и track (аналитика). Показ/нажатие — useCrisisCardTracking.
 import { CRISIS_HOTLINES } from '../utils/crisisMarkers';
 import { useCrisisCardTracking } from '../analytics/useCrisisCardTracking';
+import { crisisCardCopy } from './crisisCardCopy';
 
 type Tr = (ty: string, vy: string) => string;
 type Track = (name: string, meta?: Record<string, unknown>) => void;
 
 export function CrisisCardView({
   surface,
+  standing,
   tr,
   track,
 }: {
   /** экран, где показалась карточка (без текста пользователя, правило №7) */
   surface?: string;
+  standing?: boolean; // постоянный блок, а не показ по детекции — crisisCardCopy
   tr: Tr;
   track: Track;
 }) {
   const onHotlineTap = useCrisisCardTracking(surface, track);
+  const copy = crisisCardCopy(standing, tr);
   return (
     <div
       role="status"
@@ -40,13 +44,10 @@ export function CrisisCardView({
           marginBottom: 6,
         }}
       >
-        💛 Похоже, сейчас очень тяжело
+        {copy.title}
       </div>
       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>
-        {tr(
-          'С этим не нужно справляться в одиночку. Если тяжело прямо сейчас — позвони на бесплатный телефон доверия:',
-          'Вы не обязаны справляться с этим в одиночку. Если тяжело прямо сейчас — позвоните на бесплатный телефон доверия:',
-        )}
+        {copy.lead}
       </div>
       {CRISIS_HOTLINES.map((hotline) => (
         <div key={hotline.tel} className="u-mb4">
@@ -78,8 +79,7 @@ export function CrisisCardView({
         </div>
       ))}
       <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6 }}>
-        Круглосуточно, бесплатно, анонимно. Запись сохранится как обычно — эта
-        карточка ничего никуда не отправляет.
+        {copy.foot}
       </div>
     </div>
   );
