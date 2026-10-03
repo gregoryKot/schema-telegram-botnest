@@ -93,3 +93,36 @@ describe('StepFlowBody', () => {
     expect(screen.getByText('ДополнениеDone')).toBeTruthy();
   });
 });
+
+describe('StepFlowBody — вариант вёрстки', () => {
+  it('app (по умолчанию): эмодзи-иллюстрация есть, «Шаг N из M» нет', () => {
+    renderFlow();
+    expect(screen.getByText('1️⃣')).toBeTruthy();
+    expect(screen.queryByText('Шаг 1 из 2')).toBeNull();
+  });
+
+  it('site: без эмодзи, эйбрау «Шаг N из M», логика шагов та же', () => {
+    const onClose = renderFlow({ variant: 'site' });
+    expect(screen.queryByText('1️⃣')).toBeNull();
+    expect(screen.getByText('Шаг 1 из 2')).toBeTruthy();
+    expect(screen.getByText('Шаг первый')).toBeTruthy();
+    fireEvent.click(screen.getByText('Дальше'));
+    expect(screen.getByText('Шаг 2 из 2')).toBeTruthy();
+    fireEvent.click(screen.getByText('Готово'));
+    expect(screen.queryByText('✅')).toBeNull();
+    expect(screen.getByText('Готово, всё получилось')).toBeTruthy();
+    expect(screen.getByText('Ещё круг')).toBeTruthy();
+    fireEvent.click(screen.getByText('Ещё круг'));
+    expect(screen.getByText('Шаг 1 из 2')).toBeTruthy();
+    fireEvent.click(screen.getByText('Закрыть'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('site: doneExtra только на done-экране', () => {
+    renderFlow({ variant: 'site', doneExtra: <div>ДополнениеDone</div> });
+    expect(screen.queryByText('ДополнениеDone')).toBeNull();
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText('Готово'));
+    expect(screen.getByText('ДополнениеDone')).toBeTruthy();
+  });
+});

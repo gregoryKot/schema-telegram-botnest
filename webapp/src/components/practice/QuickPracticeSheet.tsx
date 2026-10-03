@@ -1,9 +1,8 @@
 // Быстрая практика «Здесь и сейчас» (заземление 5-4-3-2-1, техника «Стоп») на
 // сайте — обёртка над общим QuickPracticeFlow: подставляет своё (api,
 // пошаговый лист на BottomSheetShell, ShareCardSheet, botShortUrl), логика и
-// контент общие с мини-аппом (правило №3). Карточка шаринга ложится поверх
-// листа практики: лист 300 → карточка 320 (слои webapp, как у
-// PhraseHistoryCard над шитом).
+// контент общие с мини-аппом (правило №3), вёрстка — variant="site". Карточка
+// шаринга поверх листа: лист 300 → карточка 320 (слои webapp).
 import { StepFlowSheet } from './StepFlowSheet';
 import { api } from '../../api';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
@@ -26,6 +25,7 @@ export function QuickPracticeSheet({ id, onClose }: Props) {
       ShareCardSheet={ShareCardSheet}
       botShortUrl={botShortUrl}
       shareZIndex={320}
+      variant="site"
     />
   );
 }
