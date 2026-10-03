@@ -19,9 +19,6 @@ import { ProductMobileMenu } from './landing/ProductMobileMenu';
 // крупная жирная типографика. Намеренно НЕ похоже на тёплую serif-страничку терапевта.
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
-const BOT_URL = botUrl;
-
-
 // ─── Страница ─────────────────────────────────────────────────────────────────
 // Данные (STEPS/FEATURES/TRUST/FAQ, H2/EYEBROW) — в landing/productContent.tsx,
 // карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
@@ -129,35 +126,13 @@ export function ProductLandingPage() {
           </div>
         </section>
 
-        {/* ── Telegram ── */}
-        <section style={{ padding: '20px 24px 72px' }}>
-          <div className="pl2-tg" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 48, alignItems: 'center', background: 'linear-gradient(120deg, rgba(167,139,250,.12), rgba(56,224,208,.08))', border: `1px solid ${GLASS_BORDER}`, borderRadius: 28, padding: '48px 44px' }}>
-            <div>
-              <span style={EYEBROW}>Telegram</span>
-              <h2 style={{ ...H2, margin: '14px 0 18px' }}>Живёт и в&nbsp;Telegram</h2>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 470, margin: '0 0 26px' }}>
-                Бот <strong style={{ color: INK }}>{botHandle}</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
-                а мини-приложение открывается прямо в чате — тот же дневник, те же схемы.
-                Данные общие с сайтом: начните в телефоне, продолжите в браузере.
-              </p>
-              <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
-            </div>
-            <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 340, width: '100%', justifySelf: 'center' }}>
-              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: 7, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🧠</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>Всё по схеме</span>
-                </div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: SUB, margin: 0 }}>🌤️ Как ты в этом месяце? Пара минут на чек-ин помогут увидеть динамику.</p>
-                <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 10, background: AURORA, color: '#1a0f2e', fontSize: 13, fontWeight: 800, textAlign: 'center' }}>Открыть чек-ин</div>
-              </div>
-              <span style={{ fontSize: 11.5, color: FAINT, alignSelf: 'center' }}>мини-приложение открывается прямо в чате</span>
-            </div>
-          </div>
-        </section>
-
         {/* ── Значок на экран (PWA) ── */}
         <AppInstallSection />
+        {/* Telegram — тихой строкой, а не отдельной секцией: главное здесь —
+            значок на экране, бот лишь вторая дверь к тем же данным. */}
+        <p style={{ maxWidth: 1208, margin: '-44px auto 72px', padding: '0 24px', boxSizing: 'border-box', fontSize: 13, lineHeight: 1.6, color: FAINT }}>
+          Есть и в Telegram — <a href={botUrl} target="_blank" rel="noopener noreferrer" style={{ color: SUB }}>{botHandle}</a>, данные общие с сайтом.
+        </p>
 
         {/* ── Доверие ── */}
         <section style={{ padding: '20px 24px 72px' }}>
@@ -240,7 +215,6 @@ export function ProductLandingPage() {
         @media (max-width: 900px) {
           .pl2-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
           .pl2-3 { grid-template-columns: 1fr !important; }
-          .pl2-tg { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
           .pl2-author { grid-template-columns: 1fr !important; gap: 32px !important; padding: 36px 28px !important; }
           .pl2-chip { display: none; }
         }
