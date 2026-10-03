@@ -73,7 +73,7 @@ export function AddClientForm({ addClient }: Props) {
             {tr('Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.', 'Введите имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.')}
           </p>
 
-          {/* Рамка + подпись: голая линия-подчёркивание не читалась как поле ввода */}
+          {/* Подпись сверху + заметная линия: бледная линия не читалась как поле ввода */}
           <label htmlFor="add-client-name" className="eyebrow u-mb10" style={{ display: 'block' }}>Имя клиента</label>
           <div className="name-field" style={{ maxWidth: 480, marginBottom: 20 }}>
             <input
@@ -87,7 +87,7 @@ export function AddClientForm({ addClient }: Props) {
             <button
               onClick={submitAddClient}
               disabled={!addValid || addSubmitting}
-              style={{ padding: '9px 20px', borderRadius: 'var(--r-20)', border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.06)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
+              style={{ padding: '7px 18px', borderRadius: 'var(--r-20)', border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
             >
               {addSubmitting ? '...' : 'Добавить'}
             </button>
