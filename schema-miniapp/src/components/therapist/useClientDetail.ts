@@ -8,6 +8,7 @@ import type {
 } from '../../api';
 import { todayStr } from '../../utils/format';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import {
   fetchClientDetail,
   type ClientSchemaNoteRow,
@@ -123,14 +124,8 @@ export function useClientDetail({ switchView, setClients }: Params) {
   // ── Delete ─────────────────────────────────────────────────────────────────────
   async function deleteClient() {
     if (!selectedClient) return;
-    const name =
-      selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
-    if (
-      !window.confirm(
-        `Удалить ${name}? Связь будет разорвана, данные сохранятся.`,
-      )
-    )
-      return;
+    const { title, message } = removeClientConfirmCopy(selectedClient);
+    if (!window.confirm(`${title}\n\n${message}`)) return;
     setDeleteLoading(true);
     setDeleteError('');
     try {

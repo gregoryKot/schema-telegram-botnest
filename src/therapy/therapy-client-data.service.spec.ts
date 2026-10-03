@@ -98,6 +98,7 @@ function makeDb(rels: Rel[]) {
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
+    userTask: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
     $transaction: jest.fn((arg: any) =>
       Array.isArray(arg) ? Promise.all(arg) : arg(db),
     ),
@@ -329,6 +330,20 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
     const { svc, rels } = makeService([relA]); // relA.id === 1
     await svc.removeClient(T1, -1);
     expect(rels).toHaveLength(0);
+  });
+
+  it('removeClient виртуального клиента удаляет и его задания (userId=-id, assignedBy=терапевт)', async () => {
+    const { svc, db } = makeService([relA]);
+    await svc.removeClient(T1, -1);
+    expect(db.userTask.deleteMany).toHaveBeenCalledWith({
+      where: { userId: -1n, assignedBy: T1 },
+    });
+  });
+
+  it('removeClient клиента с аккаунтом НЕ трогает задания — они у клиента', async () => {
+    const { svc, db } = makeService([relA]);
+    await svc.removeClient(T1, CID_A);
+    expect(db.userTask.deleteMany).not.toHaveBeenCalled();
   });
 });
 
