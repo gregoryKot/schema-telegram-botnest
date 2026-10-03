@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
-import { botUrl, botHandle } from '../utils/botConfig';
 // Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
 import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AURORA, glow } from './landing/aurora';
 import { Logo, Cta } from './landing/BrandKit';
@@ -13,6 +11,7 @@ import { AppInstallSection } from './landing/AppInstallSection';
 import { AppPreview } from './landing/AppPreview';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 import { ProductMobileMenu } from './landing/ProductMobileMenu';
+import { entryCta } from './landing/entryCta';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
@@ -24,11 +23,10 @@ import { ProductMobileMenu } from './landing/ProductMobileMenu';
 // карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const articles = useRecentArticles(3);
   const [menuOpen, setMenuOpen] = useState(false);
+  const entry = entryCta(isAuthenticated);
 
-  useEffect(() => { if (isAuthenticated) navigate('/today', { replace: true }); }, [isAuthenticated, navigate]);
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
 
   return (
@@ -52,7 +50,7 @@ export function ProductLandingPage() {
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="pl2-nav">
-              <Cta href="/login">Войти</Cta>
+              <Cta href={entry.href}>{entry.nav}</Cta>
             </div>
             {/* Бургер — виден только ≤640px, .pl2-nav скрыт там же (В4, аудит 2026-08) */}
             <button
@@ -66,7 +64,7 @@ export function ProductLandingPage() {
           </div>
         </header>
 
-        {menuOpen && <ProductMobileMenu onClose={() => setMenuOpen(false)} />}
+        {menuOpen && <ProductMobileMenu entry={entry} onClose={() => setMenuOpen(false)} />}
 
         {/* ── Hero ── */}
         <section style={{ padding: '140px 24px 90px' }}>
@@ -85,10 +83,10 @@ export function ProductLandingPage() {
                 «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Cta href="/login" size="lg">Начать бесплатно →</Cta>
+                <Cta href={entry.href} size="lg">{entry.main}</Cta>
                 <Cta href="/tests" variant="ghost" size="lg">🎲 Мини-тесты без регистрации</Cta>
               </div>
-              <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
+              {!isAuthenticated && <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>}
             </div>
             <div style={{ animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) .15s both' }}><AppPreview /></div>
           </div>
@@ -128,11 +126,6 @@ export function ProductLandingPage() {
 
         {/* ── Значок на экран (PWA) ── */}
         <AppInstallSection />
-        {/* Telegram — тихой строкой, а не отдельной секцией: главное здесь —
-            значок на экране, бот лишь вторая дверь к тем же данным. */}
-        <p style={{ maxWidth: 1208, margin: '-44px auto 72px', padding: '0 24px', boxSizing: 'border-box', fontSize: 13, lineHeight: 1.6, color: FAINT }}>
-          Есть и в Telegram — <a href={botUrl} target="_blank" rel="noopener noreferrer" style={{ color: SUB }}>{botHandle}</a>, данные общие с сайтом.
-        </p>
 
         {/* ── Доверие ── */}
         <section style={{ padding: '20px 24px 72px' }}>
@@ -178,7 +171,7 @@ export function ProductLandingPage() {
             <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto' }}>
               <h2 style={{ fontFamily: 'inherit', fontSize: 'clamp(32px, 4.6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.06, margin: '0 0 18px', color: '#1a0f2e' }}>Первый шаг — просто заметить</h2>
               <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(26,15,46,.78)', margin: '0 0 34px', fontWeight: 500 }}>Минутный чек-ин в день — и через пару недель паттерны станут видимыми. Бесплатно, бережно, в вашем темпе.</p>
-              <a href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>Начать бесплатно →</a>
+              <a href={entry.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>{entry.main}</a>
             </div>
           </div>
         </section>
