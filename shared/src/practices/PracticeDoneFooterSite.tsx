@@ -1,14 +1,19 @@
-// Подвал завершённой практики для сайта (variant="site" у PracticeDoneFooter):
+// Подвал завершённой практики для сайта:
 // подпись счётчика слева, «поделиться →» текстовой ссылкой цветом --accent.
+// Тот же контракт, что у PracticeDoneFooter (мини-апп); выбирает площадка.
+import { useEffect } from 'react';
 import { pluralRu } from '../utils/pluralRu';
+import type { PracticeDoneFooterProps } from './PracticeDoneFooter';
 
 export function PracticeDoneFooterSite({
   count,
   onShare,
-}: {
-  count: number | null;
-  onShare: () => void;
-}) {
+  onShown,
+}: PracticeDoneFooterProps) {
+  useEffect(() => {
+    onShown?.();
+  }, [onShown]);
+
   return (
     <div
       style={{

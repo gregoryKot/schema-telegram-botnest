@@ -1,13 +1,19 @@
-// Вёрстка дыхания 4-4-6 для мини-аппа (variant="app"): тонированная карточка
+// Вёрстка дыхания 4-4-6 для мини-аппа: тонированная карточка
 // с кругом и зелёной пилюлей. Логика — useBreathingSession.
 import { BREATH_PHASE_LABEL } from './breathing';
 import {
   BREATHE_IDLE_KEYFRAMES,
-  type BreathingSession,
-} from './useBreathingSession';
+  type BreathingViewProps,
+} from './createBreathingCard';
 
-export function BreathingAppView({ s }: { s: BreathingSession }) {
-  const { tr, active, st, scale, phaseDur } = s;
+export function BreathingAppView({
+  tr,
+  active,
+  st,
+  pulse,
+  start,
+  stop,
+}: BreathingViewProps) {
   return (
     <div
       style={{
@@ -33,9 +39,7 @@ export function BreathingAppView({ s }: { s: BreathingSession }) {
           fontWeight: 800,
           color: 'var(--accent-green)',
           fontVariantNumeric: 'tabular-nums',
-          animation: active ? 'none' : 'breathe-idle 5s ease-in-out infinite',
-          transform: `scale(${scale})`,
-          transition: `transform ${phaseDur}s ease-in-out`,
+          ...pulse,
         }}
       >
         <style>{BREATHE_IDLE_KEYFRAMES}</style>
@@ -72,7 +76,7 @@ export function BreathingAppView({ s }: { s: BreathingSession }) {
         )}
       </div>
       <button
-        onClick={active ? s.stop : s.start}
+        onClick={active ? stop : start}
         style={{
           marginTop: 16,
           border: 'none',

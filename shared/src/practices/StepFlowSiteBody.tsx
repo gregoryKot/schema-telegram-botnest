@@ -1,22 +1,25 @@
-// Вёрстка пошагового листа для сайта (variant="site"): editorial — без
+// Тело пошагового листа сайта: editorial — без
 // эмодзи-иллюстрации, выравнивание по левому краю; эйбрау «Шаг N из M»,
 // serif-заголовок шага, прогресс — тонкие линии-сегменты, «Дальше» — чёрная
-// пилюля сайта (.btn-primary), «Закрыть» — текстовая. Логика шагов —
-// в StepFlowBody (сюда приходит готовое состояние).
-import type { StepFlowViewProps } from './StepFlowBody';
+// пилюля сайта (.btn-primary), «Закрыть» — текстовая. Логика шагов — useStepFlow,
+// общая с StepFlowBody мини-аппа; площадка импортирует только свою вёрстку.
+import { useStepFlow } from './useStepFlow';
+import type { StepFlowProps } from './stepFlowTypes';
 
-export function StepFlowSiteView({
+export function StepFlowSiteBody({
   title,
   subtitle,
   steps,
+  done,
+  repeatLabel,
   doneExtra,
   onClose,
-  step,
-  isDone,
-  cur,
-  nextLabel,
-  onNext,
-}: StepFlowViewProps) {
+}: StepFlowProps) {
+  const [step, isDone, cur, nextLabel, onNext] = useStepFlow(
+    steps,
+    done,
+    repeatLabel,
+  );
   return (
     <div style={{ paddingTop: 4 }}>
       <div className="eyebrow">{title}</div>

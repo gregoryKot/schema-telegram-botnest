@@ -12,7 +12,9 @@ import {
   act,
   cleanup,
 } from '@testing-library/react';
+import type { ComponentType } from 'react';
 import { BreathingCard, type BreathingCardProps } from './BreathingCard';
+import { BreathingSiteCard } from './BreathingSiteCard';
 import { BREATH_CYCLE_S } from './breathing';
 import type { ShareCardSheetProps } from '../share/shareCardSheetProps';
 
@@ -67,10 +69,9 @@ async function flush() {
   });
 }
 
-function renderCard(variant?: BreathingCardProps['variant']) {
+function renderCard(Card: ComponentType<BreathingCardProps> = BreathingCard) {
   return render(
-    <BreathingCard
-      variant={variant}
+    <Card
       api={fakeApi}
       ShareCardSheet={FakeShareCardSheet}
       botShortUrl="https://t.me/test_bot"
@@ -167,7 +168,7 @@ describe('BreathingCard — карточка «Поделиться»', () => {
   });
 });
 
-describe('BreathingCard — вариант вёрстки', () => {
+describe('BreathingCard / BreathingSiteCard — вёрстка площадки', () => {
   it('app (по умолчанию): «Поделиться» плашкой, без эйбрау сайта', async () => {
     mockApi.getPracticeSessions.mockResolvedValue({
       breathing: 2,
@@ -186,7 +187,7 @@ describe('BreathingCard — вариант вёрстки', () => {
       grounding: 0,
       stop: 0,
     });
-    renderCard('site');
+    renderCard(BreathingSiteCard);
     await flush();
     expect(screen.getByText('Дыхание 4-4-6')).toBeTruthy();
     expect(screen.getByText('Дыши со мной')).toBeTruthy();

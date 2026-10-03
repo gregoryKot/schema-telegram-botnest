@@ -10,7 +10,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { StepFlowSheet } from './StepFlowSheet';
-import type { FlowStep } from '../../../../shared/src/practices/StepFlowBody';
+import type { FlowStep } from '../../../../shared/src/practices/stepFlowTypes';
 
 const STEPS: FlowStep[] = [
   { emoji: '1️⃣', title: 'Шаг первый', hint: 'Подсказка первая' },

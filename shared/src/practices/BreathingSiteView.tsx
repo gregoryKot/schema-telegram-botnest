@@ -1,12 +1,12 @@
-// Вёрстка дыхания 4-4-6 для сайта (variant="site"): editorial — без плашки,
+// Вёрстка дыхания 4-4-6 для сайта: editorial — без плашки,
 // между двумя тонкими линиями; эйбрау, serif-заголовок, подпись слева, круг —
 // тонкий контур справа, главная кнопка — чёрная пилюля сайта (.btn-primary).
 // Без blur/backdrop-filter и цветов мини-аппа. Логика — useBreathingSession.
 import { BREATH_PHASE_LABEL } from './breathing';
 import {
   BREATHE_IDLE_KEYFRAMES,
-  type BreathingSession,
-} from './useBreathingSession';
+  type BreathingViewProps,
+} from './createBreathingCard';
 
 const SERIF_28 = {
   fontFamily: 'var(--serif)',
@@ -16,8 +16,14 @@ const SERIF_28 = {
   color: 'var(--text)',
 } as const;
 
-export function BreathingSiteView({ s }: { s: BreathingSession }) {
-  const { tr, active, st, scale, phaseDur } = s;
+export function BreathingSiteView({
+  tr,
+  active,
+  st,
+  pulse,
+  start,
+  stop,
+}: BreathingViewProps) {
   return (
     <div
       style={{
@@ -57,7 +63,7 @@ export function BreathingSiteView({ s }: { s: BreathingSession }) {
         </div>
         <button
           className={active ? undefined : 'btn btn-primary'}
-          onClick={active ? s.stop : s.start}
+          onClick={active ? stop : start}
           style={{
             marginTop: 'var(--space-16)',
             minHeight: 44,
@@ -91,9 +97,7 @@ export function BreathingSiteView({ s }: { s: BreathingSession }) {
           fontSize: 32,
           color: 'var(--text)',
           fontVariantNumeric: 'tabular-nums',
-          animation: active ? 'none' : 'breathe-idle 5s ease-in-out infinite',
-          transform: `scale(${scale})`,
-          transition: `transform ${phaseDur}s ease-in-out`,
+          ...pulse,
         }}
       >
         <style>{BREATHE_IDLE_KEYFRAMES}</style>
