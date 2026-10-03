@@ -155,10 +155,10 @@ describe('achievementsShareText', () => {
 });
 
 describe('phraseShareText', () => {
-  it('сама фраза в кавычках-ёлочках, подпись и ссылка следом', () => {
-    const text = phraseShareText('Я справлюсь', 't.me/TestBot');
+  it('сама фраза в кавычках-ёлочках, ссылка ведёт в канал, а не в бота', () => {
+    const text = phraseShareText('Я справлюсь');
     expect(text).toBe(
-      '«Я справлюсь»\n\nФраза Здорового Взрослого · t.me/TestBot',
+      '«Я справлюсь»\n\nКаждый день новая фраза — в канале «Здоровый Взрослый»: t.me/MyHealthyAdult',
     );
   });
 });
