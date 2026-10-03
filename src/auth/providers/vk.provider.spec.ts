@@ -4,11 +4,13 @@
 // robokassa.service.spec.ts (global.fetch = jest.fn(...)).
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 import { VkProvider } from './vk.provider';
 
 const CONFIG_MAP: Record<string, string> = {
   VK_APP_ID: '123456',
   VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
+  JWT_SECRET: 'test-jwt-secret',
 };
 
 function makeConfig(overrides: Record<string, string> = {}): ConfigService {
@@ -65,54 +67,6 @@ describe('VkProvider.buildAuthUrl', () => {
     const provider = new VkProvider(makeConfig());
     expect(provider.callbackOrigin()).toBe('https://schemehappens.ru');
   });
-
-  it('аварийный потолок стора верификаторов (L9): поток buildAuthUrl не растит его без предела', () => {
-    const provider = new VkProvider(makeConfig());
-    const CAP = 5000;
-    for (let i = 0; i < CAP + 200; i++) provider.buildAuthUrl(`state-${i}`);
-    const verifiers = (
-      provider as unknown as { verifiers: Map<string, unknown> }
-    ).verifiers;
-    expect(verifiers.size).toBeLessThanOrEqual(CAP);
-    // Старейшие вытеснены, свежие на месте — эвикция по возрасту, не clear().
-    expect(verifiers.has('state-0')).toBe(false);
-    expect(verifiers.has(`state-${CAP + 199}`)).toBe(true);
-  });
-});
-
-// Щит, волна 3: "упомянут ≠ исполняется" (SHIELD_PROMPT.md). Прунинг-цикл
-// (setInterval(() => this.prune(), 15 мин).unref() в конструкторе) до этого
-// теста не запускал ни один тест НАПРЯМУЮ — тест выше на L9 и тест на
-// просрочку в exchangeCodeWithContext вызывают prune() опосредованно, через
-// buildAuthUrl/expiresAt-проверку, а не через сам таймер. Тест ниже —
-// единственный, кто реально продвигает часы и смотрит, чистит ли карту
-// именно сам interval-колбэк, а не что-то другое.
-describe('VkProvider — прунинг-цикл (setInterval в конструкторе)', () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('таймер сам подчищает протухший verifier — без внешнего вызова buildAuthUrl/exchange', () => {
-    jest.useFakeTimers();
-    const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-swept'); // verifier живёт 10 минут
-    const verifiers = (
-      provider as unknown as { verifiers: Map<string, unknown> }
-    ).verifiers;
-    expect(verifiers.has('state-swept')).toBe(true);
-
-    // Verifier уже протух (>10 мин), но карту чистит только сам sweep —
-    // до его срабатывания (интервал 15 мин) запись обязана ещё лежать.
-    // Без этой промежуточной проверки тест не отличал бы «чистит таймер»
-    // от «чистит что-то ещё при первом обращении».
-    jest.advanceTimersByTime(14 * 60_000);
-    expect(verifiers.has('state-swept')).toBe(true);
-
-    // Интервал сработал (15 мин от старта) — теперь протухшая запись ушла
-    // сама, без единого вызова buildAuthUrl/exchangeCodeWithContext.
-    jest.advanceTimersByTime(60_000 + 1);
-    expect(verifiers.has('state-swept')).toBe(false);
-  });
 });
 
 describe('VkProvider.exchangeCode (без контекста)', () => {
@@ -126,37 +80,69 @@ describe('VkProvider.exchangeCode (без контекста)', () => {
   });
 });
 
-describe('VkProvider.exchangeCodeWithContext — PKCE-verifier', () => {
-  it('неизвестный state (verifier не создавался) → UnauthorizedException', async () => {
-    const provider = new VkProvider(makeConfig());
-    await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'never-seen-state'),
-    ).rejects.toThrow('VK PKCE verifier expired or missing');
-  });
+// Инцидент 2026-10-03: verifier жил в Map одного процесса, а на Amvera
+// больше одного инстанса — колбэк на соседнем инстансе (или после деплоя) не
+// находил его, и вход через VK падал vk_failed. Теперь verifier выводится из
+// state, и любой инстанс с тем же JWT_SECRET получает тот же самый.
+describe('VkProvider — PKCE-verifier без состояния в памяти', () => {
+  function verifierSent(fetchMock: jest.Mock): string | null {
+    const [, init] = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith('/oauth2/auth'),
+    ) as [string, { body: string }];
+    return new URLSearchParams(init.body).get('code_verifier');
+  }
 
-  it('просроченный verifier (>10 минут) → UnauthorizedException', async () => {
-    const provider = new VkProvider(makeConfig());
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
-    provider.buildAuthUrl('state-expired');
-    nowSpy.mockReturnValue(1_000_000 + 11 * 60_000);
+  function challengeOf(verifier: string): string {
+    return createHash('sha256').update(verifier).digest('base64url');
+  }
 
-    await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-expired'),
-    ).rejects.toThrow('VK PKCE verifier expired or missing');
-    nowSpy.mockRestore();
-  });
-
-  it('verifier одноразовый: повторное использование того же state отвергается (anti-replay)', async () => {
-    global.fetch = jest.fn((url: any) =>
+  it('колбэк на ДРУГОМ инстансе шлёт verifier, совпадающий с challenge из authorize', async () => {
+    const fetchMock = jest.fn((url: any) =>
       String(url).includes('user_info') ? userInfoOk() : tokenOk(),
-    ) as any;
-    const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-once');
+    );
+    global.fetch = fetchMock as any;
+    const instanceA = new VkProvider(makeConfig());
+    const instanceB = new VkProvider(makeConfig());
 
-    await provider.exchangeCodeWithContext('code', 'device-1', 'state-once');
-    await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-once'),
-    ).rejects.toThrow('VK PKCE verifier expired or missing');
+    const challenge = new URL(
+      instanceA.buildAuthUrl('state-cross'),
+    ).searchParams.get('code_challenge');
+    const identity = await instanceB.exchangeCodeWithContext(
+      'code',
+      'device-1',
+      'state-cross',
+    );
+
+    expect(identity.providerId).toBe('555666');
+    const verifier = verifierSent(fetchMock);
+    expect(verifier).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
+    expect(challengeOf(verifier!)).toBe(challenge);
+  });
+
+  it('у разных state — разные challenge', () => {
+    const provider = new VkProvider(makeConfig());
+    const c1 = new URL(provider.buildAuthUrl('state-1')).searchParams.get(
+      'code_challenge',
+    );
+    const c2 = new URL(provider.buildAuthUrl('state-2')).searchParams.get(
+      'code_challenge',
+    );
+    expect(c1).not.toBe(c2);
+  });
+
+  it('verifier зависит от секрета: зная только state, его не вычислить', async () => {
+    const fetchMock = jest.fn((url: any) =>
+      String(url).includes('user_info') ? userInfoOk() : tokenOk(),
+    );
+    global.fetch = fetchMock as any;
+    const challenge = new URL(
+      new VkProvider(makeConfig()).buildAuthUrl('state-s'),
+    ).searchParams.get('code_challenge');
+
+    await new VkProvider(
+      makeConfig({ JWT_SECRET: 'other-secret' }),
+    ).exchangeCodeWithContext('code', 'device-1', 'state-s');
+    expect(challengeOf(verifierSent(fetchMock)!)).not.toBe(challenge);
   });
 });
 
