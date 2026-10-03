@@ -346,7 +346,17 @@ jobs:
       - name: проба 1 — порченый байт шифртекста ОБЯЗАН ронять restore
         run: |
           cp "$ENC_FILE" /tmp/corrupt.sql.gz.enc
-          printf '\xff' | dd of=/tmp/corrupt.sql.gz.enc bs=1 seek=19 count=1 conv=notrunc status=none
+          # Байт ИНВЕРТИРУЕМ (XOR 0xff, как buf[19] ^= 0xff в backup-restore.spec.ts),
+          # а не записываем константу: IV случайный, шифртекст каждую ночь свой,
+          # и раз в ~256 прогонов на месте 19 уже стоял 0xff — «порча» ничего не
+          # меняла, restore честно проходил, проба краснела (2026-10-03, run 37110222033).
+          ORIG=$(od -An -tu1 -j19 -N1 "$ENC_FILE" | tr -d ' ')
+          printf "\\$(printf '%03o' $((ORIG ^ 255)))" | dd of=/tmp/corrupt.sql.gz.enc bs=1 seek=19 count=1 conv=notrunc status=none
+          # Проба обязана пробовать: файл, не отличающийся от исходного, — не порча.
+          if cmp -s "$ENC_FILE" /tmp/corrupt.sql.gz.enc; then
+            echo "::error::порча не изменила файл — проба ничего не проверяет"
+            exit 1
+          fi
           if ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" bash scripts/restore-backup.sh /tmp/corrupt.sql.gz.enc; then
             echo "::error::restore-backup.sh ОБЯЗАН был упасть на порченом файле, но не упал"
             exit 1
