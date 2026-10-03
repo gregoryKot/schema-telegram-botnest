@@ -14,6 +14,8 @@ function mockFetchOnce(body?: unknown) {
     ok: true,
     status: 200,
     json,
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: vi.fn().mockResolvedValue(JSON.stringify(body ?? {})),
   });
 }
 

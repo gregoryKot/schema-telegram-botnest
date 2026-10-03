@@ -13,7 +13,9 @@ import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function mockFetchOnce(status: number, body?: unknown) {
   const json = vi.fn().mockResolvedValue(body ?? {});
-  const res = { ok: status >= 200 && status < 300, status, json };
+  // readJsonBody читает тело через text() — мок отдаёт обе формы.
+  const text = vi.fn().mockResolvedValue(JSON.stringify(body ?? {}));
+  const res = { ok: status >= 200 && status < 300, status, json, text };
   (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(res);
   return res;
 }
