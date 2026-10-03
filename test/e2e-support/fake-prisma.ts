@@ -89,7 +89,14 @@ export function makeFakePrisma() {
     // (matches() трактует cond===null как «== null», но здесь прямое сравнение
     // в сервисе — `undefined !== null` даёт true и ломает инвайт-флоу).
     therapyRelation: withUserJoin(
-      withDefaults(makeTable(), { status: 'pending', clientId: null }),
+      // createdAt/meetingDays — @default схемы: getClients читает
+      // rel.createdAt.toISOString() у виртуальных клиентов.
+      withDefaults(makeTable(), {
+        status: 'pending',
+        clientId: null,
+        createdAt: new Date(),
+        meetingDays: [],
+      }),
       userTable,
     ),
     therapistNote: makeTable(),
