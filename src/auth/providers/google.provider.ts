@@ -1,6 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyGoogleIdToken } from './google-id-token';
+import { buildGoogleAuthUrl } from './google-auth-url';
 import { AuthProviderHandler, ProviderIdentity } from './types';
 
 // Token endpoint + его легаси-алиасы на других доменах. С хостинга (Amvera)
@@ -22,32 +23,14 @@ export class GoogleProvider implements AuthProviderHandler {
 
   constructor(private readonly config: ConfigService) {}
 
-  // ── Step 1: build redirect URL (OAuth 2.0 Authorization Code flow) ────────
-  // response_type=code → Google redirects back to GOOGLE_REDIRECT_URI with
-  // ?code=&state= via a top-level GET. We exchange the code server-side.
-  // (The legacy implicit flow — response_type=id_token + response_mode=form_post
-  // — is deprecated and relied on a SameSite=None cookie that third-party-cookie
-  // phase-out breaks, so we no longer use it.)
+  // ── Step 1: ссылка входа — в google-auth-url.ts (её же строит самопроверка).
   buildAuthUrl(state: string, _nonce?: string, forceChooser = false): string {
-    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'openid email profile',
+    return buildGoogleAuthUrl(
+      this.config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+      this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
       state,
-      access_type: 'online',
-    });
-    // ВХОД: `prompt` не ставим. Google сам вернёт уже вошедшего одним касанием
-    // («Continue as X»), а если аккаунтов несколько или сессии нет — покажет
-    // выбор. Прежний хардкод `prompt=select_account` заставлял ЗАНОВО выбирать
-    // аккаунт на каждый вход — это и читалось как «авторизация с нуля».
-    // ПРИВЯЗКА второго аккаунта (forceChooser): выбор оставляем принудительным,
-    // чтобы человек не прицепил случайно уже открытый в браузере Google вместо
-    // нужного (разбор 2026-08-31).
-    if (forceChooser) params.set('prompt', 'select_account');
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+      forceChooser,
+    );
   }
 
   // Origin редиректа Google (GOOGLE_REDIRECT_URI) — на нём обязана жить кука

@@ -1,0 +1,6 @@
+{
+  "source": "Google OAuth GET https://accounts.google.com/o/oauth2/v2/auth и VK ID GET https://id.vk.com/authorize — клиенты сайта schemehappens.ru (Google client 283410385894-…, VK app 54774325); сохранены HTTP-статус и Location первого ответа (без перехода по редиректу)",
+  "recordedAt": "2026-10-03",
+  "how": "записано живым curl из сессии разбора инцидента 2026-10-03 (Google: точка в конце адреса в Console; VK: вырезанные точки state). googleAccepted — правильный адрес возврата; googleRedirectMismatch — тот же адрес с точкой на конце, как стояло в Console; vkAccepted — правильный адрес и state в base64url (как шлёт toVkState); vkWrongRedirect — чужой адрес возврата, VK отвечает страницей 200 без редиректа",
+  "redacted": "ничего персонального: запросы анонимные, без входа в аккаунт. В Location Google остались одноразовые служебные идентификаторы сессии экрана входа (dsh, as, aes) — они истекают и ни к кому не привязаны; client_id публичен (он в каждой ссылке входа)"
+}

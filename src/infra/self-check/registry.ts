@@ -11,6 +11,7 @@ import {
 import { throttleStorageProbe } from './probe-throttle-storage';
 import { cronLeasesProbe } from './probe-cron-leases';
 import { ciRunsProbe } from './probe-ci-runs';
+import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
 
 /** Полный набор проб самопроверки прода (правило №14 CLAUDE.md). */
 export function buildProbes(prisma: PrismaService): Probe[] {
@@ -19,6 +20,8 @@ export function buildProbes(prisma: PrismaService): Probe[] {
     telegramProbe(),
     caldavProbe(),
     oauthRedirectsProbe(),
+    googleOAuthProbe(),
+    vkOAuthProbe(),
     emailProbe(),
     alertsProbe(),
     throttleStorageProbe(prisma),
