@@ -1,6 +1,6 @@
-// Единственная копия — в shared (правило №3); здесь только инъекция
+// Единственная копия разметки — CelebrationDialog; здесь только инъекция
 // платформенного: tr (ты/вы), ссылка бота и трекинг событий.
-import { Celebration as SharedCelebration } from '../../../shared/src/components/Celebration';
+import { CelebrationDialog } from './CelebrationDialog';
 import { botShortUrl } from '../utils/botConfig';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
@@ -14,7 +14,7 @@ interface Props {
 export function Celebration(props: Props) {
   const tr = useTr();
   return (
-    <SharedCelebration
+    <CelebrationDialog
       {...props}
       tr={tr}
       botShortUrl={botShortUrl}

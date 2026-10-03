@@ -90,7 +90,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 {schema.name}
               </div>
             )}
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.45 }}>
+            <div style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.35 }}>
               {QUESTIONS[qIdx]}
             </div>
           </div>

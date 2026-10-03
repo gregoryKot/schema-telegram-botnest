@@ -21,7 +21,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
       </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
         Перейти к оплате →
       </a>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
@@ -36,7 +36,7 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Время снова свободно. Выберите другое или напишите напрямую.</p>
-      <button type="button" onClick={onRetry} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer' }}>
+      <button type="button" onClick={onRetry} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer' }}>
         Выбрать другое время
       </button>
     </div>

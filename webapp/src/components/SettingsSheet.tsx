@@ -398,7 +398,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       <div key={p.code} className="u-mb16">
                         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 4 }}>{p.partnerName ?? 'Друг'} сегодня</div>
                         {p.partnerTodayDone && p.partnerIndex !== null
-                          ? <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span></div>
+                          ? <div style={{ fontFamily: 'var(--serif)', fontSize: 38, fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 10 }}>{(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span></div>
                           : <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>Ещё не заполнил</div>
                         }
                         <button onClick={() => leavePair(p.code)}

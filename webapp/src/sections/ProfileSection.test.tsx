@@ -178,11 +178,11 @@ describe('ProfileSection — реальные данные пользовате�
     // «Первый шаг» дублируется — в полосе достижений на странице и в
     // открывшейся модалке; берём последнее вхождение (из модалки).
     const cards = screen.getAllByText('Первый шаг');
-    const before = screen.getAllByText('Первая запись в дневнике').length;
     fireEvent.click(cards[cards.length - 1]);
-    // AchievementDetail рендерится ПОВЕРХ модалки (обе видны одновременно) —
-    // проверяем, что описание достижения появилось ещё раз (не просто «уже было»).
-    await waitFor(() => expect(screen.getAllByText('Первая запись в дневнике').length).toBe(before + 1));
+    // Деталь заменяет список (два диалога с фокус-ловушкой на одном документе
+    // дерутся за Tab): остаётся одно окно — достижение, список скрыт.
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Первый шаг' })).toBeTruthy());
+    expect(screen.queryByText('5/7')).toBeNull();
   });
 
   it('прогресс к недостигнутым достижениям (стрик/всего) показывает реальные числа, а не заглушку', async () => {
