@@ -31,7 +31,14 @@ afterEach(cleanup);
 
 async function renderReady(onSession = vi.fn()) {
   render(<LoginProviderButtons onSession={onSession} />);
-  await waitFor(() => expect(screen.getByText('K7M2-QX94')).toBeTruthy());
+  // Билет выписан — код уже в ссылке Telegram (на экране он свёрнут).
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole('link', { name: /Войти через Telegram/ })
+        .getAttribute('href'),
+    ).toContain('login_K7M2QX94'),
+  );
   return onSession;
 }
 
@@ -46,22 +53,43 @@ describe('способы входа', () => {
     expect(href).not.toContain('oauth.telegram.org');
   });
 
-  it('Google и ВКонтакте несут код билета', async () => {
+  // 2026-10-03: во вкладке браузера билет для Google/VK не нужен — кука
+  // общая. По билету вход уходил в новое окно и кончался экраном «это вы?» с
+  // кодом, что владелец принял за поломку.
+  it('во вкладке браузера Google и ВКонтакте — прямой вход в той же вкладке, без билета', async () => {
     await renderReady();
-    expect(
-      screen.getByRole('link', { name: /Войти через Google/ }).getAttribute('href'),
-    ).toBe('/api/auth/google?ticket=K7M2QX94');
-    expect(
-      screen
-        .getByRole('link', { name: /Войти через ВКонтакте/ })
-        .getAttribute('href'),
-    ).toBe('/api/auth/vk?ticket=K7M2QX94');
+    const google = screen.getByRole('link', { name: /Войти через Google/ });
+    const vk = screen.getByRole('link', { name: /Войти через ВКонтакте/ });
+    expect(google.getAttribute('href')).toBe('/api/auth/google');
+    expect(vk.getAttribute('href')).toBe('/api/auth/vk');
+    expect(google.getAttribute('target')).toBeNull();
+    expect(vk.getAttribute('target')).toBeNull();
   });
 
-  it('ссылки открываются снаружи — страница остаётся ждать сессию', async () => {
+  it('в установленном приложении Google и ВКонтакте несут код билета и открываются снаружи', async () => {
+    const matchMedia = vi.fn((q: string) => ({
+      matches: q === '(display-mode: standalone)',
+    }));
+    vi.stubGlobal('matchMedia', matchMedia);
+    try {
+      await renderReady();
+      const google = screen.getByRole('link', { name: /Войти через Google/ });
+      expect(google.getAttribute('href')).toBe('/api/auth/google?ticket=K7M2QX94');
+      expect(google.getAttribute('target')).toBe('_blank');
+      expect(
+        screen
+          .getByRole('link', { name: /Войти через ВКонтакте/ })
+          .getAttribute('href'),
+      ).toBe('/api/auth/vk?ticket=K7M2QX94');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('Telegram открывается снаружи — страница остаётся ждать сессию', async () => {
     await renderReady();
     expect(
-      screen.getByRole('link', { name: /Войти через Google/ }).getAttribute('target'),
+      screen.getByRole('link', { name: /Войти через Telegram/ }).getAttribute('target'),
     ).toBe('_blank');
   });
 

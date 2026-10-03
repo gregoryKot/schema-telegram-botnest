@@ -8,6 +8,7 @@ import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWa
 import { botUsername } from '../../utils/botConfig';
 import { reportClientError } from '../../api';
 import { useGoogleOneTap } from '../../hooks/useGoogleOneTap';
+import { isStandalone } from '../../../../shared/src/host/web';
 
 // Вход по билету — та же механика, что у мини-аппа (правило №3 и «одна
 // механика — один компонент»: общий хук в shared/src/auth/useLoginTicket).
@@ -103,6 +104,14 @@ export function LoginProviderButtons({
   const deps = { botUsername, apiBase: API_BASE };
   const href = (p: 'telegram' | 'google' | 'vk') =>
     code ? loginUrl(p, code, deps) : undefined;
+  // Google/VK по билету — только из установленного приложения: оно не видит
+  // куку браузера. Во вкладке кука общая — прямой вход в той же вкладке, без
+  // экрана «это вы?» с кодом (2026-10-03).
+  const ticketed = isStandalone();
+  const oauthLink = (p: 'google' | 'vk') =>
+    ticketed
+      ? { href: href(p), target: '_blank', rel: 'noopener noreferrer' }
+      : { href: `${API_BASE}/api/auth/${p}` };
 
   return (
     <>
@@ -118,22 +127,12 @@ export function LoginProviderButtons({
         Войти через Telegram
       </a>
       {/* Google — официальные брендовые цвета логотипа, не токены продукта */}
-      <a
-        className="btn-outline u-mb8"
-        href={href('google')}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a className="btn-outline u-mb8" {...oauthLink('google')}>
         <GoogleIcon />
         Войти через Google
       </a>
       {/* VK — официальный брендовый цвет (#0077FF), не токен продукта */}
-      <a
-        className="btn-outline u-mb12"
-        href={href('vk')}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a className="btn-outline u-mb12" {...oauthLink('vk')}>
         <span
           style={{
             background: '#0077FF',
