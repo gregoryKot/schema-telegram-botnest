@@ -47,7 +47,7 @@ export function ShareCardSheet({
   });
 
   return (
-    <BottomSheetShell goBack={goBack} zIndex={zIndex} padding="24px 24px 48px">
+    <BottomSheetShell goBack={goBack} zIndex={zIndex}>
         <div
           style={{
             fontSize: 17,
@@ -66,10 +66,9 @@ export function ShareCardSheet({
 
         <div
           style={{
-            borderRadius: 'var(--r-20)',
+            borderRadius: 'var(--r-16)',
             overflow: 'hidden',
             border: '1px solid var(--line)',
-            boxShadow: '0 14px 34px rgba(0,0,0,0.22)',
             marginBottom: 18,
           }}
         >
@@ -110,9 +109,6 @@ export function ShareCardSheet({
             alignItems: 'center',
             justifyContent: 'center',
             gap: 'var(--space-8)',
-            background: 'var(--accent)',
-            color: 'var(--on-accent)',
-            opacity: s.sharing ? 0.6 : 1,
           }}
         >
           <ShareIcon size={17} />

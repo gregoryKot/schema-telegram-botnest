@@ -65,15 +65,15 @@ export function ChevronVal({ text, small }: { text: string; small?: boolean }) {
 
 export function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="settings-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="sheet-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
       <div
         role="presentation"
-        className="settings-modal-box"
+        className="sheet-modal-box"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="settings-modal-handle" />
+        <div className="sheet-modal-handle" />
         {children}
       </div>
     </div>
