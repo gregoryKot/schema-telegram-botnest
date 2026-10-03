@@ -1,0 +1,11 @@
+{
+  "request": {
+    "url": "https://id.vk.com/authorize",
+    "state": "eyJhbGciOiJIUzI1NiJ9.eyJraW5kIjoib2F1dGhfc3RhdGUifQ.c2lnbmF0dXJlLXRlc3Q~plus+eq=slash/"
+  },
+  "response": {
+    "status": "302",
+    "locationPath": "id.vk.com/auth",
+    "redirect_state": "eyJhbGciOiJIUzI1NiJ9eyJraW5kIjoib2F1dGhfc3RhdGUifQc2lnbmF0dXJlLXRlc3Qpluseqslash"
+  }
+}
