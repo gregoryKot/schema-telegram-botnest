@@ -224,6 +224,8 @@ describe('practiceDomainMiddleware', () => {
       '/assets/index-abc.js',
       '/favicon-personal-32.png',
       '/fonts/a.woff2',
+      '/og-cover-v3.jpg', // og:image главной визитки
+      '/gregory.jpg', // image в JSON-LD Person
     ])('статика %s → next', (path) => {
       const { sent, nextCalled } = run('kotlarewski.gr', path);
       expect(nextCalled).toBe(true);
