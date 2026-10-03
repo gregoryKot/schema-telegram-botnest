@@ -27,34 +27,32 @@ export function Btn({
   newTab?: boolean;
 }) {
   const variants: Record<BtnVariant, React.CSSProperties> = {
-    // rgba(var(--accent-rgb),…) вместо буквального индиго — тон следует за
-    // --accent (продукт: терракота; личный сайт: изолированный индиго,
-    // .landing-personal-brand в index.css переопределяет --accent-rgb).
-    primary: { background: 'var(--accent)', color: '#fff', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' },
+    // Цвет следует за --accent (продукт: терракота; личный сайт: изолированный
+    // индиго). Свечения-тени нет: на бумажном сайте кнопка плоская.
+    primary: { background: 'var(--accent)', color: '#fff' },
     ghost:   { background: 'transparent', borderColor: 'var(--line-strong)', color: 'var(--text-sub)', fontWeight: 500 },
     dark:    { background: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.2)', color: INK_ON_DARK },
   };
   const css: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)',
-    padding: BTN_PAD[size], fontSize: BTN_FS[size], fontWeight: 700, fontFamily: 'inherit',
+    padding: BTN_PAD[size], fontSize: BTN_FS[size], fontWeight: 600, fontFamily: 'inherit',
     borderRadius: radius === 'pill' ? R.pill : R.btn,
     border: '1.5px solid transparent', boxSizing: 'border-box',
     cursor: disabled ? 'default' : 'pointer', textDecoration: 'none',
     width: full ? '100%' : undefined, opacity: disabled ? 0.4 : 1,
-    transition: 'transform .15s, box-shadow .15s, background .15s, border-color .15s, color .15s',
+    transition: 'transform .15s, background .15s, border-color .15s, color .15s',
     ...variants[variant], ...style,
   };
   const enter = (e: React.MouseEvent) => {
     if (disabled) return;
     const el = e.currentTarget as HTMLElement;
-    if (variant === 'primary') { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = 'rgba(var(--accent-rgb),.4) 0 12px 40px'; }
+    if (variant === 'primary') { el.style.transform = 'translateY(-1px)'; }
     else if (variant === 'ghost') { el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }
     else { el.style.background = 'rgba(255,255,255,.18)'; }
   };
   const leave = (e: React.MouseEvent) => {
     const el = e.currentTarget as HTMLElement;
     el.style.transform = '';
-    el.style.boxShadow = variant === 'primary' ? 'rgba(var(--accent-rgb),.28) 0 8px 28px' : '';
     if (variant === 'ghost') { el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--text-sub)'; }
     if (variant === 'dark') { el.style.background = 'rgba(255,255,255,.1)'; }
   };

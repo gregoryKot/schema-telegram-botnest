@@ -36,27 +36,26 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
   return (
     // Клик по фону = «Пропустить»; пока идёт сохранение — не закрываем.
     <BottomSheetShell goBack={() => { if (!saving) goBack(); }} zIndex={250}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
             {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
             <IdentityDot color={needColor} /> {needLabel}
           </div>
         </div>
 
         <div style={{
-          background: color + '18',
-          border: `1px solid ${color}33`,
-          borderRadius: 'var(--r-14)', padding: '16px 18px',
+          border: '1px solid var(--line)', // цвет потребности — полоской слева, не заливкой
+          borderLeft: `3px solid ${color}`,
+          borderRadius: 'var(--r-8)', padding: '14px 16px',
           marginBottom: 28,
-          fontSize: 16, color: 'rgba(var(--fg-rgb),0.9)', lineHeight: 1.55,
-          textAlign: 'center',
+          fontSize: 16, color: 'var(--text)', lineHeight: 1.55,
         }}>
           {plan.practiceText}
         </div>
 
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 16 }}>
           Получилось?
         </div>
 
@@ -65,9 +64,9 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
             onClick={() => checkin(false)}
             disabled={saving}
             style={{
-              flex: 1, padding: '15px 0', borderRadius: 'var(--r-14)',
-              border: '1px solid rgba(var(--fg-rgb),0.1)',
-              background: 'rgba(var(--fg-rgb),0.05)',
+              flex: 1, padding: '13px 0', borderRadius: 'var(--r-8)',
+              border: '1px solid var(--line-strong)',
+              background: 'transparent',
               color: 'var(--text-sub)', fontSize: 15, cursor: 'pointer',
             }}
           >
@@ -77,27 +76,28 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
             onClick={() => checkin(true)}
             disabled={saving}
             style={{
-              flex: 2, padding: '15px 0', borderRadius: 'var(--r-14)', border: 'none',
-              background: saving ? 'rgba(var(--fg-rgb),0.1)' : color,
-              color: saving ? 'var(--text-sub)' : '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'default' : 'pointer',
+              flex: 2, padding: '13px 0', borderRadius: 'var(--r-8)', border: 'none',
+              background: 'var(--text)',
+              color: 'var(--bg)', fontSize: 15, fontWeight: 600, cursor: saving ? 'default' : 'pointer',
+              opacity: saving ? 0.5 : 1,
             }}
           >
             {saving ? 'Сохранение...' : 'Да, получилось ✓'}
           </button>
         </div>
         {error && (
-          <div style={{ marginTop: 12, fontSize: 13, color: 'var(--accent-red)', textAlign: 'center' }}>
+          <div style={{ marginTop: 12, fontSize: 13, color: 'var(--accent-red)' }}>
             {tr(
               'Не удалось сохранить – попробуй ещё раз',
               'Не удалось сохранить – попробуйте ещё раз',
             )}
           </div>
         )}
-        <div style={{ textAlign: 'center', marginTop: 14 }}>
+        <div style={{ marginTop: 14 }}>
           <button
             onClick={goBack}
             disabled={saving}
-            style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer', padding: '4px 12px' }}
+            style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer', padding: '4px 0' }}
           >
             Пропустить
           </button>

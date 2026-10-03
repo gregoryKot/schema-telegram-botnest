@@ -33,7 +33,7 @@ export function PhraseRewriteStep({
     <>
       <div className="aside-card u-mb20">
         <div className="aside-card-eyebrow">Вердикт</div>
-        <h3>{verdict.emoji} {verdict.title}</h3>
+        <h3>{verdict.title}</h3>
         <p className="body">{verdict.text}</p>
       </div>
 

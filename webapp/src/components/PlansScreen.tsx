@@ -14,10 +14,12 @@ interface Props {
   onOpenTracker?: () => void;
 }
 
+// Статус плана — цвет значка, а не заливка карточки: на сайте карточка всегда
+// бумажная с тонкой рамкой.
 function statusColor(done: boolean | null) {
-  if (done === true)  return { bg: 'color-mix(in srgb, var(--accent-green) 8%, transparent)', border: 'color-mix(in srgb, var(--accent-green) 20%, transparent)', text: 'var(--accent-green)' };
-  if (done === false) return { bg: 'color-mix(in srgb, var(--accent-red) 7%, transparent)', border: 'color-mix(in srgb, var(--accent-red) 18%, transparent)', text: 'var(--accent-red)' };
-  return { bg: 'transparent', border: 'var(--line)', text: 'var(--text-sub)' };
+  if (done === true)  return 'var(--accent-green)';
+  if (done === false) return 'var(--accent-red)';
+  return 'var(--text-sub)';
 }
 
 function statusIcon(done: boolean | null) {
@@ -74,34 +76,27 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             <p style={{ color: 'var(--c-rose)', fontSize: 14, margin: '0 0 16px' }}>
               {tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
             </p>
-            <button onClick={load} style={{
-              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
-              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+            <button onClick={load} className="btn btn-primary">
               Попробовать ещё раз
             </button>
           </div>
         ) : !plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
-          /* Empty state */
-          <div style={{ paddingTop: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+          /* Empty state: слева, serif-заголовок + подпись + действие-ссылка */
+          <div style={{ paddingTop: 40, maxWidth: 420 }}>
+            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.01em', color: 'var(--text)', margin: '0 0 10px' }}>
               Планов пока нет
-            </div>
-            <div style={{
-              fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65,
-              marginBottom: 24, maxWidth: 280, margin: '0 auto 24px',
-            }}>
+            </h2>
+            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: '0 0 20px' }}>
               {tr(
                 'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
                 'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
               )}
-            </div>
+            </p>
             {onOpenTracker && (
               <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
-                padding: '12px 28px', borderRadius: 'var(--r-14)', border: 'none', fontFamily: 'inherit',
-                background: 'transparent', outline: '1px solid var(--line)',
+                padding: 0, border: 'none', background: 'none', fontFamily: 'inherit',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
                 Открыть трекер →
@@ -143,7 +138,6 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
 
 function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Dispatch<React.SetStateAction<PracticePlan[] | null>> }) {
   const isPending  = plan.done === null;
-  const colors     = statusColor(plan.done);
   const needColor  = COLORS[plan.needId] ?? 'var(--accent)';
   const NEED_DATA = useNeedData();
   const needData   = NEED_DATA[plan.needId];
@@ -157,9 +151,8 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
 
   return (
     <div style={{
-      background: colors.bg,
-      border: `1px solid ${colors.border}`,
-      borderRadius: 'var(--r-20)',
+      border: '1px solid var(--line)',
+      borderRadius: 'var(--r-12)',
       padding: '14px 16px',
       overflow: 'hidden',
     }}>
@@ -175,7 +168,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
             {formatDate(plan.scheduledDate)}
           </span>
         </div>
-        <span style={{ fontSize: 16 }}>{statusIcon(plan.done)}</span>
+        <span style={{ fontSize: 16, color: statusColor(plan.done) }}>{statusIcon(plan.done)}</span>
       </div>
 
       {/* Practice text */}
@@ -187,16 +180,15 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
       {isPending && (
         <div className="u-row8">
           <button onClick={() => checkin(true)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'color-mix(in srgb, var(--accent-green) 12%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-green) 22%, transparent)',
-            color: 'var(--accent-green)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            flex: 1, padding: '9px 0', borderRadius: 'var(--r-8)', fontFamily: 'inherit',
+            background: 'transparent', border: '1px solid var(--line-strong)',
+            color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>
-            ✓ Выполнено
+            Выполнено
           </button>
           <button onClick={() => checkin(false)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-red) 18%, transparent)',
-            color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-8)', fontFamily: 'inherit',
+            background: 'none', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
           }}>
             Не вышло
           </button>

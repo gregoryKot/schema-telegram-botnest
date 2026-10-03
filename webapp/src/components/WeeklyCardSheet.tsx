@@ -125,12 +125,10 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               onClick={handleShare}
               disabled={sharing}
               className="ex-btn ex-btn-primary"
-              style={{
-                background: copied
-                  ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
-                  : 'var(--accent)',
-                color: copied ? 'var(--c-moss)' : 'var(--on-accent)',
-              }}
+              style={copied ? {
+                background: 'color-mix(in srgb, var(--c-moss) 20%, transparent)',
+                color: 'var(--c-moss)',
+              } : undefined}
             >
               {copied
                 ? '✓ Скопировано'

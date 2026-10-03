@@ -1,9 +1,10 @@
-// Hero-блоки «Моего пути» (вынесены из JourneyView — лимит размера файла,
-// правило №10): градиентная шапка с итогом и кнопкой «Поделиться итогами»
-// и пустое состояние «Путь ещё впереди».
+// Hero-блоки «Моего пути» мини-аппа (вынесены из JourneyView, правило №10):
+// градиентная шапка с итогом и пустое состояние «Путь ещё впереди».
 
+const mix = (c: string, n: number) =>
+  `color-mix(in srgb, var(--${c}) ${n}%, transparent)`;
 const heroBg = (a: number, b: number) =>
-  `linear-gradient(135deg, color-mix(in srgb, var(--accent) ${a}%, transparent), color-mix(in srgb, var(--accent-blue) ${b}%, transparent))`;
+  `linear-gradient(135deg, ${mix('accent', a)}, ${mix('accent-blue', b)})`;
 
 export function JourneyEmptyHero({
   tr,
@@ -97,9 +98,8 @@ export function JourneyHero({
           minHeight: 36,
           padding: '0 14px',
           borderRadius: 999,
-          border:
-            '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
-          background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+          border: `1px solid ${mix('accent', 30)}`,
+          background: mix('accent', 12),
           color: 'var(--accent)',
           fontSize: 12.5,
           fontWeight: 600,

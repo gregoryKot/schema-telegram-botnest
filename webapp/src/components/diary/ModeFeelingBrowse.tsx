@@ -31,13 +31,13 @@ export function ModeFeelingBrowse({
           <button
             key={g.id}
             type="button"
-            className={'chip-pill ' + (openId === g.id ? 'is-selected' : '')}
+            className={'chip-pill chip-pill-outline ' + (openId === g.id ? 'is-selected' : '')}
             onClick={() => {
               haptic.tap();
               setOpenId((v) => (v === g.id ? null : g.id));
             }}
           >
-            {g.emoji} {g.title}
+            {g.title}
           </button>
         ))}
       </div>

@@ -1,7 +1,5 @@
-// «Мой путь» (мини-апп) — обёртка над общими useJourney/JourneyView
-// (shared/src/journey, правило №3): BottomSheet, заголовок, открытие записи
-// (тап → детальный вид) и шаринг ленты/шага.
-// Парный файл: webapp/src/components/JourneySheet.tsx.
+// «Мой путь» (мини-апп) — обёртка над общими useJourney/JourneyView (правило
+// №3): BottomSheet, заголовок, запись, шаринг. Парный: webapp/…/JourneySheet.tsx.
 import { BottomSheet } from './BottomSheet';
 import { SkeletonCard, SkeletonList } from './Skeleton';
 import { api } from '../api';
@@ -15,6 +13,7 @@ import {
   useJourney,
 } from '../../../shared/src/journey/useJourney';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
+import { MINIAPP_JOURNEY_HEROES } from '../../../shared/src/journey/miniappJourneyHeroes';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
 import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
 import { JourneyDetailPane } from '../../../shared/src/journey/JourneyDetailPane';
@@ -58,6 +57,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
+              heroes={MINIAPP_JOURNEY_HEROES}
               skeleton={
                 <>
                   <SkeletonCard h={96} />

@@ -1,7 +1,5 @@
-// «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView
-// (shared/src/journey, правило №3): fixed-оверлей с useHistorySheet,
-// заголовок, шаринг ленты (кнопка) и одного шага (тап по записи).
-// Парный файл: schema-miniapp/src/components/JourneySheet.tsx.
+// «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView (правило №3):
+// fixed-оверлей с useHistorySheet, заголовок, шаринг. Парный: schema-miniapp/…
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -14,6 +12,7 @@ import {
   useJourney,
   makeJourneyProps,
 } from '../../../shared/src/journey/useJourney';
+import { WEB_JOURNEY_HEROES } from './journey/webJourneyHeroes';
 import { botShortUrl } from '../utils/botConfig';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
@@ -118,6 +117,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
+              heroes={WEB_JOURNEY_HEROES}
               skeleton={
                 // Форма — как у реального JourneyView: hero-итог + счётчик +
                 // строки ленты (JourneyTimeline минимальная высота строки —

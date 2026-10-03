@@ -21,7 +21,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
       </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none', boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px' }}>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none' }}>
         Перейти к оплате →
       </a>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>

@@ -11,7 +11,10 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AddressFormContext } from '../utils/addressForm';
 import { JourneySheet } from './JourneySheet';
+import { MINIAPP_JOURNEY_HEROES } from '../../../shared/src/journey/miniappJourneyHeroes';
 
+// Какой набор героев сверять: подставляется тестом после импорта обёртки.
+const HEROES_PROBE: { value: unknown } = { value: null };
 const shareFeed = vi.fn();
 const shareSummary = vi.fn();
 const shareItem = vi.fn();
@@ -57,9 +60,18 @@ vi.mock('../../../shared/src/journey/journeyShare', () => ({
   }),
 }));
 vi.mock('../../../shared/src/journey/JourneyView', () => ({
-  JourneyView: ({ onShareFeed }: { onShareFeed: () => void }) => (
+  JourneyView: ({
+    onShareFeed,
+    heroes,
+  }: {
+    onShareFeed: () => void;
+    heroes: unknown;
+  }) => (
     <div>
       Лента пути
+      <span data-testid="journey-heroes">
+        {String(heroes === HEROES_PROBE.value)}
+      </span>
       <button onClick={onShareFeed}>Поделиться лентой</button>
     </div>
   ),
@@ -111,6 +123,12 @@ function renderSheet(onClose = vi.fn()) {
 }
 
 describe('JourneySheet (мини-апп) — список', () => {
+  it('передаёт в JourneyView героев своей площадки пропсом (а не чужих)', () => {
+    HEROES_PROBE.value = MINIAPP_JOURNEY_HEROES;
+    renderSheet();
+    expect(screen.getByTestId('journey-heroes').textContent).toBe('true');
+  });
+
   it('без выбранной записи показывает заголовок и ленту пути', () => {
     renderSheet();
     expect(screen.getByText('Мой путь')).toBeTruthy();
