@@ -7,9 +7,15 @@
 // И оставить дорогу назад: ссылка открывается заново, если человек закрыл
 // вкладку мессенджера или свернул её и потерял.
 //
+// Код свёрнут, пока о нём не спросили (2026-10-03, владелец): билет
+// выписывается при открытии экрана входа, ещё до нажатия, и крупный код без
+// запроса читался как непонятная проверка. Сверять его нужно только тому, кто
+// уже ушёл подтверждать в бота, — ему хватает одного нажатия «Показать код».
+//
 // Обращения в тексте нет намеренно: экран показывается ДО входа, профиль ещё
 // не загружен и форма (ты/вы) неизвестна — вилку строить не из чего. Тот же
 // приём, что в AuthFailureHelp.
+import { useState } from 'react';
 import { formatUserCode } from '../auth/loginTicketCode';
 import type { LoginTicketState } from '../auth/useLoginTicket';
 
@@ -76,6 +82,29 @@ export function LoginTicketWait({
   }
 
   if (state.kind !== 'waiting') return null;
+  return <WaitingCode state={state} />;
+}
+
+function WaitingCode({
+  state,
+}: {
+  state: Extract<LoginTicketState, { kind: 'waiting' }>;
+}) {
+  const [shown, setShown] = useState(false);
+  if (!shown) {
+    return (
+      <div className="u-tc">
+        <button
+          type="button"
+          onClick={() => setShown(true)}
+          aria-expanded={false}
+          style={{ ...LINK, background: 'none', border: 'none' }}
+        >
+          Показать код входа
+        </button>
+      </div>
+    );
+  }
 
   const where = PROVIDER_NAMES[state.provider] ?? state.provider;
   return (

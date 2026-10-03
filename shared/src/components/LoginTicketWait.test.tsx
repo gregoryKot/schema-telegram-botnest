@@ -14,14 +14,32 @@ const waiting = {
   url: 'https://t.me/Bot?start=login_K7M2QX94',
 };
 
+function renderOpened(state = waiting) {
+  const r = render(<LoginTicketWait state={state} onRetry={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Показать код входа' }));
+  return r;
+}
+
 describe('ожидание подтверждения', () => {
-  it('показывает код в том же виде, что и бот', () => {
+  // 2026-10-03: билет выписывается при открытии экрана входа, до нажатия —
+  // крупный код без запроса владелец принял за непонятную проверку.
+  it('код свёрнут, пока о нём не спросили', () => {
     render(<LoginTicketWait state={waiting} onRetry={() => {}} />);
+    expect(screen.queryByText('K7M2-QX94')).toBeNull();
+    expect(
+      screen
+        .getByRole('button', { name: 'Показать код входа' })
+        .getAttribute('aria-expanded'),
+    ).toBe('false');
+  });
+
+  it('по нажатию показывает код в том же виде, что и бот', () => {
+    renderOpened();
     expect(screen.getByText('K7M2-QX94')).toBeTruthy();
   });
 
   it('оставляет дорогу назад — ссылку можно открыть заново', () => {
-    render(<LoginTicketWait state={waiting} onRetry={() => {}} />);
+    renderOpened();
     const link = screen.getByRole('link');
     expect(link.getAttribute('href')).toBe(waiting.url);
     // Открываем СНАРУЖИ: приложение обязано остаться живым, иначе забирать
@@ -30,12 +48,7 @@ describe('ожидание подтверждения', () => {
   });
 
   it('называет площадку, а не «провайдера»', () => {
-    render(
-      <LoginTicketWait
-        state={{ ...waiting, provider: 'vk' }}
-        onRetry={() => {}}
-      />,
-    );
+    renderOpened({ ...waiting, provider: 'vk' });
     expect(screen.getByText(/ВКонтакте/)).toBeTruthy();
   });
 
