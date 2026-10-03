@@ -4,6 +4,7 @@ import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 import { calcTherapyDuration, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -20,8 +21,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     clientTab, setClientTab, saveAlias,
   } = detail;
 
-  const clientName = selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
-
+  const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (renamingAlias) aliasInputRef.current?.focus();
@@ -123,8 +123,8 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
 
       {confirmingDelete && (
         <ConfirmDialog
-          title={`Удалить ${clientName}?`}
-          message="Связь будет разорвана, данные сохранятся."
+          title={removeCopy.title}
+          message={removeCopy.message}
           confirmLabel="Удалить"
           onConfirm={deleteClient}
           onCancel={cancelDeleteClient}

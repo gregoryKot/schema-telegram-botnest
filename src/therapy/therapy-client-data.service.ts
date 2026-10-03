@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { removeTherapistClient } from './remove-client';
 import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
@@ -282,22 +283,6 @@ export class TherapyClientDataService {
 
   // ─── Remove client from list ─────────────────────────────────────────────────
   async removeClient(therapistId: bigint, clientId: number): Promise<void> {
-    const tid = therapistId;
-    const cid = BigInt(clientId);
-    await this.prisma.$transaction([
-      this.prisma.therapistNote.deleteMany({
-        where: { therapistId: tid, clientId: cid },
-      }),
-      this.prisma.clientConceptualization.deleteMany({
-        where: { therapistId: tid, clientId: cid },
-      }),
-      clientId < 0
-        ? this.prisma.therapyRelation.deleteMany({
-            where: { id: -clientId, therapistId: tid },
-          })
-        : this.prisma.therapyRelation.deleteMany({
-            where: { therapistId: tid, clientId: cid },
-          }),
-    ]);
+    await removeTherapistClient(this.prisma, therapistId, clientId);
   }
 }

@@ -636,8 +636,25 @@ describe('TherapistClientSheet — удаление клиента', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(within(dialog).getByText('Удалить Иван Петров?')).toBeTruthy();
+    expect(within(dialog).getByText('Удалить клиента «Иван Петров»?')).toBeTruthy();
+    // клиент с аккаунтом: честно про заметки и про то, что остаётся у клиента
+    expect(within(dialog).getByText(/останутся в аккаунте клиента/)).toBeTruthy();
+    expect(within(dialog).queryByText(/Связь будет разорвана/)).toBeNull();
     expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+
+  it('виртуальный клиент (telegramId < 0): диалог говорит, что удаляется вся карточка', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -3, name: 'Иван Петров' })]);
+    renderSheet();
+    await screen.findByText('Иван Петров');
+    fireEvent.click(screen.getByText('Иван Петров'));
+    await screen.findByText('Обзор');
+
+    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText(/Карточка, заметки по сессиям/)).toBeTruthy();
+    expect(within(dialog).queryByText(/останутся в аккаунте/)).toBeNull();
   });
 
   it('подтверждение в диалоге вызывает api.removeClient и возвращает к списку', async () => {

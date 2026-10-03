@@ -1,0 +1,52 @@
+import { describe, it, expect } from 'vitest';
+import { removeClientConfirmCopy } from './removeClientConfirm';
+
+describe('removeClientConfirmCopy', () => {
+  it('клиент с аккаунтом: данные клиента остаются, доступ закрывается', () => {
+    const { title, message } = removeClientConfirmCopy({
+      telegramId: 555,
+      name: 'Иван',
+    });
+    expect(title).toBe('Удалить клиента «Иван»?');
+    expect(message).toContain('удалятся насовсем');
+    expect(message).toContain('останутся в аккаунте клиента');
+    expect(message).not.toContain('Карточка');
+  });
+
+  it('виртуальный клиент (telegramId < 0): удаляется вся карточка с заданиями', () => {
+    const { message } = removeClientConfirmCopy({
+      telegramId: -7,
+      name: 'Иван',
+    });
+    expect(message).toContain('Карточка');
+    expect(message).toContain('задания');
+    expect(message).not.toContain('останутся');
+  });
+
+  it('без имени и алиаса — заголовок без кавычек', () => {
+    expect(removeClientConfirmCopy({ telegramId: 1 }).title).toBe(
+      'Удалить клиента?',
+    );
+    expect(
+      removeClientConfirmCopy({ telegramId: 1, name: null, clientAlias: null })
+        .title,
+    ).toBe('Удалить клиента?');
+  });
+
+  it('алиас приоритетнее имени', () => {
+    expect(
+      removeClientConfirmCopy({
+        telegramId: 1,
+        clientAlias: 'К.',
+        name: 'Иван',
+      }).title,
+    ).toBe('Удалить клиента «К.»?');
+  });
+
+  it('старая неправда про «связь будет разорвана» не возвращается', () => {
+    for (const id of [1, -1]) {
+      const { message } = removeClientConfirmCopy({ telegramId: id });
+      expect(message).not.toMatch(/разорван|данные сохранятся/);
+    }
+  });
+});

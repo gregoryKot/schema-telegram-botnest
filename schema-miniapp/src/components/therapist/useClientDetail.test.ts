@@ -259,6 +259,18 @@ describe('deleteClient', () => {
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
 
+  it('confirm говорит правду: заметки удалятся насовсем, «связь разорвана» нет', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { result } = await openedHook({ telegramId: 5, name: 'Иван' });
+    await act(async () => {
+      await result.current.deleteClient();
+    });
+    const text = confirmSpy.mock.calls[0][0] as string;
+    expect(text).toContain('Удалить клиента «Иван»?');
+    expect(text).toContain('удалятся насовсем');
+    expect(text).not.toMatch(/Связь будет разорвана/);
+  });
+
   it('удаляет клиента, чистит список и переключает вид на list', async () => {
     mockApi.removeClient.mockResolvedValue(undefined);
     const { result, setClients, switchView } = await openedHook({
