@@ -24,7 +24,7 @@ describe('BottomSheetShell', () => {
         <div>Содержимое</div>
       </BottomSheetShell>,
     );
-    fireEvent.click(screen.getAllByRole('presentation')[0]);
+    fireEvent.click(screen.getByRole('presentation'));
     expect(goBack).toHaveBeenCalledTimes(1);
   });
 
@@ -35,7 +35,46 @@ describe('BottomSheetShell', () => {
         <div>Содержимое</div>
       </BottomSheetShell>,
     );
-    fireEvent.click(screen.getAllByRole('presentation')[1]);
+    fireEvent.click(screen.getByRole('dialog'));
+    fireEvent.click(screen.getByText('Содержимое'));
     expect(goBack).not.toHaveBeenCalled();
+  });
+
+  it('карточка — модальный диалог с подписью', () => {
+    render(
+      <BottomSheetShell goBack={vi.fn()} zIndex={300} label="Поделиться">
+        <div>Содержимое</div>
+      </BottomSheetShell>,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-label')).toBe('Поделиться');
+  });
+
+  it('zIndex уходит на бэкдроп, классы дают десктопное окно', () => {
+    render(
+      <BottomSheetShell goBack={vi.fn()} zIndex={321}>
+        <div>Содержимое</div>
+      </BottomSheetShell>,
+    );
+    const backdrop = screen.getByRole('presentation');
+    expect(backdrop.className).toBe('sheet-modal');
+    expect(backdrop.style.zIndex).toBe('321');
+    expect(screen.getByRole('dialog').className).toBe('sheet-modal-box');
+  });
+
+  it('maxWidth — только если задан', () => {
+    const { rerender } = render(
+      <BottomSheetShell goBack={vi.fn()} zIndex={300}>
+        <div>x</div>
+      </BottomSheetShell>,
+    );
+    expect(screen.getByRole('dialog').style.maxWidth).toBe('');
+    rerender(
+      <BottomSheetShell goBack={vi.fn()} zIndex={300} maxWidth={440}>
+        <div>x</div>
+      </BottomSheetShell>,
+    );
+    expect(screen.getByRole('dialog').style.maxWidth).toBe('440px');
   });
 });

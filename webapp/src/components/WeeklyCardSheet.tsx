@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
 import { TherapyNote } from './TherapyNote';
+import { BottomSheetShell } from './BottomSheetShell';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
 import {
@@ -150,39 +151,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       )}
 
       {fallbackText && (
-        <div
-          role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 300,
-            background: 'rgba(0,0,0,0.55)',
-            display: 'flex',
-            alignItems: 'flex-end',
-          }}
-          onClick={() => setFallbackText(null)}
-        >
-          <div
-            role="presentation"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg)',
-              borderRadius: '20px 20px 0 0',
-              padding: '24px 24px 48px',
-              width: '100%',
-              maxWidth: 560,
-              margin: '0 auto',
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 'var(--r-2)',
-                background: 'var(--surface-3)',
-                margin: '0 auto 20px',
-              }}
-            />
+        <BottomSheetShell goBack={() => setFallbackText(null)} zIndex={300}>
             <div
               style={{
                 fontSize: 16,
@@ -229,8 +198,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             >
               {fallbackCopied ? '✓ Скопировано' : 'Скопировать'}
             </button>
-          </div>
-        </div>
+        </BottomSheetShell>
       )}
     </ExScreen>
   );
