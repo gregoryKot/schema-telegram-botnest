@@ -13,60 +13,39 @@ import { AuthProviderHandler, ProviderIdentity } from './types';
 //     authorize, verifier sent on token exchange
 //   - device_id is returned alongside `code` and must be replayed on exchange
 //
-// PKCE verifiers are kept in a short-lived in-memory map keyed by state.
-// 10-min TTL — matches the state-cookie expiry. Works on a single instance;
-// for horizontal scaling move into Redis or sign-in-cookie.
-
-// L9 (аудит 2026-08): аварийный потолок стора верификаторов. prune() чистит
-// только протухшие, а всплеск buildAuthUrl без парных колбэков (в пределах
-// 10-мин TTL) рос бы неограниченно. Нормальная нагрузка — десятки одновременно;
-// 5000 = явный флуд, тогда выкидываем старейшие (как AlertThrottle.maxKeys).
-const MAX_VERIFIERS = 5000;
+// PKCE verifier не хранится — он выводится из state: HMAC(JWT_SECRET, state).
+// Раньше он жил в Map в памяти процесса, а на Amvera больше одного инстанса
+// (правило №5) и каждый деплой перезапускает процесс: колбэк, попавший на
+// другой инстанс или после рестарта, не находил verifier → «VK PKCE verifier
+// expired or missing» → /auth/error?reason=vk_failed (инцидент 2026-10-03).
+// Секретность verifier держит ключ: state виден в адресе, HMAC без ключа —
+// нет. Срок и одноразовость держат кука oauth_state (10 минут, стирается в
+// колбэке) и сам VK: code одноразовый и короткоживущий.
 
 @Injectable()
 export class VkProvider implements AuthProviderHandler {
   readonly id = 'vk';
   readonly displayName = 'ВКонтакте';
 
-  private readonly verifiers = new Map<
-    string,
-    { verifier: string; expiresAt: number }
-  >();
+  constructor(private readonly config: ConfigService) {}
 
-  constructor(private readonly config: ConfigService) {
-    // Sweep expired verifiers every 15 min so the map doesn't grow unboundedly
-    // on sustained traffic where buildAuthUrl is never paired with a callback.
-    setInterval(() => this.prune(), 15 * 60_000).unref();
-  }
-
-  private prune(): void {
-    const now = Date.now();
-    for (const [k, v] of this.verifiers)
-      if (v.expiresAt < now) this.verifiers.delete(k);
+  private verifierFor(state: string): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return crypto
+      .createHmac('sha256', secret)
+      .update(`vk-pkce-verifier:${state}`)
+      .digest('base64url');
   }
 
   buildAuthUrl(state: string): string {
-    this.prune();
     const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
 
-    // PKCE: 64-byte verifier → base64url-encoded → sha256 → base64url(challenge)
-    const verifier = crypto.randomBytes(48).toString('base64url');
+    // PKCE S256: verifier (43 символа base64url) → sha256 → base64url.
     const challenge = crypto
       .createHash('sha256')
-      .update(verifier)
+      .update(this.verifierFor(state))
       .digest('base64url');
-    this.verifiers.set(state, {
-      verifier,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    });
-    // Сверх потолка (L9) выкидываем старейшие — Map хранит порядок вставки,
-    // так что первые ключи и есть самые старые.
-    if (this.verifiers.size > MAX_VERIFIERS) {
-      const excess = this.verifiers.size - MAX_VERIFIERS;
-      for (const k of [...this.verifiers.keys()].slice(0, excess))
-        this.verifiers.delete(k);
-    }
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -108,17 +87,12 @@ export class VkProvider implements AuthProviderHandler {
   ): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
-    const entry = this.verifiers.get(state);
-    this.verifiers.delete(state);
-    if (!entry || entry.expiresAt < Date.now()) {
-      throw new UnauthorizedException('VK PKCE verifier expired or missing');
-    }
 
     // Token exchange: POST application/x-www-form-urlencoded
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      code_verifier: entry.verifier,
+      code_verifier: this.verifierFor(state),
       redirect_uri: redirectUri,
       client_id: clientId,
       device_id: deviceId,
