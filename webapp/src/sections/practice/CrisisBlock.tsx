@@ -13,7 +13,7 @@ export function CrisisBlock() {
       <div className="section-head">
         <h3>Помощь рядом</h3>
       </div>
-      <CrisisCard />
+      <CrisisCard standing />
       <p className="text-sm muted" style={{ lineHeight: 1.6, marginTop: 4 }}>
         Если есть угроза жизни — 112. Разговор с близким человеком тоже
         считается: иногда одно сообщение «мне плохо» — уже первый шаг.

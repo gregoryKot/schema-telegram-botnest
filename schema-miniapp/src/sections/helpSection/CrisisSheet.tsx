@@ -18,7 +18,7 @@ export function CrisisSheet({ onClose }: { onClose: () => void }) {
         >
           Помощь рядом
         </div>
-        <CrisisCard />
+        <CrisisCard standing />
         <div
           style={{
             fontSize: 12,
