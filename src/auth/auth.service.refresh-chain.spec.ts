@@ -4,6 +4,7 @@
 // Тест гоняет настоящий AuthService поверх stateful-фейка Prisma: цепочку
 // строит сам сервис (ротация + recover), а не руками вписанные строки.
 // Плюс регрессия R2: logout закрывает всю family, а не одну строку.
+import { createHash } from 'crypto';
 import { UnauthorizedException } from '@nestjs/common';
 import {
   createFakeTable,
@@ -113,10 +114,7 @@ describe('logout: отзыв всей family (аудит 2026-10, R2)', () => {
     webSessions.push({
       id: 'thief',
       userId: 1n,
-      tokenHash: require('crypto')
-        .createHash('sha256')
-        .update(thiefRaw)
-        .digest('hex'),
+      tokenHash: createHash('sha256').update(thiefRaw).digest('hex'),
       family,
       expiresAt: new Date(Date.now() + 86_400_000),
     });

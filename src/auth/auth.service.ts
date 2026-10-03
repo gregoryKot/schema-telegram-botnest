@@ -19,7 +19,7 @@ import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { shouldSkipRotation } from './refresh-rotation';
 import { resolveReuse } from './refresh-reuse';
-import { revokeFamilyQuiet } from './refresh-theft';
+import { revokeFamilyQuiet } from './refresh-logout';
 import { unlinkProviderSafely } from './unlink-provider';
 
 function isValidEmail(s: string): boolean {
