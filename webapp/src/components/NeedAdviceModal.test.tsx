@@ -46,8 +46,15 @@ describe('NeedAdviceModal', () => {
   it('клик по фону закрывает оверлей', () => {
     const onClose = vi.fn();
     render(<NeedAdviceModal onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(screen.getByRole('presentation'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('кнопка «Понятно» закрывает оверлей', () => {
+    const onClose = vi.fn();
+    render(<NeedAdviceModal onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('клик по самой карточке НЕ закрывает оверлей (stopPropagation)', () => {
