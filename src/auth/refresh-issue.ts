@@ -82,9 +82,13 @@ export async function issueRotatedPair(
   const newHash = deps.hashToken(newRaw);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + deps.refreshTtlS * 1000);
+  // Фиксируем ДО claim: фейковая Prisma отдаёт строку по ссылке, и claim
+  // дописал бы replacedByHash в `session`, превратив обычную ротацию в
+  // «восстановление» (реальный клиент отдаёт копию, но тест не должен зависеть).
+  const isRecovery = Boolean(session.replacedByHash);
 
   const won = await deps.prisma.$transaction(async (tx) => {
-    if (session.replacedByHash) {
+    if (isRecovery) {
       // Восстановление: живой претендент — прежний наследник. Гасим его
       // атомарно; выиграли — репойнтим старую строку на НОВОГО наследника
       // (`replacedByHash` — то, по чему следующий повтор отличат от кражи,
@@ -115,6 +119,8 @@ export async function issueRotatedPair(
         tokenHash: newHash,
         family: session.family,
         expiresAt,
+        // Рождён восстановлением — счётчик детекции кражи (refresh-recover-budget.ts).
+        ...(isRecovery ? { recoveredAt: now } : {}),
         ipAddress: ip,
         userAgent,
       },

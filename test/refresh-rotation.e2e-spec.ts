@@ -306,4 +306,62 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
     expect(refreshCookieCleared(echoRes)).toBe(true);
     logSpy.mockRestore();
   });
+
+  // Аудит 2026-10 (High): `recover` без счёта позволял вору со старым токеном
+  // и жертве по очереди получать новые пары вечно — `theft` не срабатывал.
+  // Третье восстановление в семье за сутки — кража. Живая БД важна: счёт идёт
+  // по `recoveredAt` через count/gte, а не по памяти процесса.
+  it('чередующееся использование цепочки двумя участниками → кража на третьем восстановлении', async () => {
+    resetRefreshThrottle();
+    const family = randomUUID();
+    const r0 = await seedSession(family);
+    const securityLog = app.get(SecurityLogService);
+    const logSpy = jest.spyOn(securityLog, 'log');
+
+    await agePast(family);
+    const r1 = cookieFrom(await refresh(r0)); // жертва: R0 → R1
+    await agePast(family);
+    const stolen = await refresh(r0); // вор с R0: recover №1
+    expect(stolen.status).toBe(200);
+    const r2 = cookieFrom(stolen);
+    await agePast(family);
+    const victim = await refresh(r1); // жертва с R1: recover №2
+    expect(victim.status).toBe(200);
+    expect(logSpy).not.toHaveBeenCalledWith(
+      'refresh_token_reuse',
+      expect.anything(),
+    );
+
+    await agePast(family);
+    expect((await refresh(r2)).status).toBe(401); // третье — кража
+    const calls = logSpy.mock.calls.filter(
+      ([event]) => event === 'refresh_token_reuse',
+    );
+    expect(calls).toHaveLength(1);
+    const live = await prisma.webSession.findMany({
+      where: { userId: USER, family, revokedAt: null },
+    });
+    expect(live).toHaveLength(0);
+    logSpy.mockRestore();
+  });
+
+  // Аудит 2026-10, R2: «Выйти» закрывает всю family, а не одну строку.
+  it('logout отзывает всю семью — соседний живой токен вора перестаёт работать', async () => {
+    resetRefreshThrottle();
+    const family = randomUUID();
+    const mine = await seedSession(family);
+    const thief = await seedSession(family);
+
+    const res = await srv()
+      .post('/api/auth/logout')
+      .set('Cookie', `refresh_token=${mine}`)
+      .set('x-requested-with', 'webapp');
+    expect(res.status).toBe(200);
+
+    const live = await prisma.webSession.findMany({
+      where: { userId: USER, family, revokedAt: null },
+    });
+    expect(live).toHaveLength(0);
+    expect((await refresh(thief)).status).toBe(401);
+  });
 });

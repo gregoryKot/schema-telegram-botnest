@@ -253,6 +253,10 @@ model WebSession {
   // клиента, и предъявление старого токена это потерянный ответ, а не кража
   // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
   replacedByHash String?
+  // Строка рождена восстановлением потерянного ответа ротации; счётчик детекции
+  // кражи: третье восстановление в семье за сутки — второй участник цепочки
+  // (src/auth/refresh-recover-budget.ts).
+  recoveredAt  DateTime?
   ipAddress    String?
   userAgent    String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)

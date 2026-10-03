@@ -9,8 +9,11 @@ export const PAIR_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const newPairCode = () => randomBytes(6).toString('hex').toUpperCase();
 
-const isInviteFresh = (createdAt: Date) =>
-  Date.now() - createdAt.getTime() <= PAIR_INVITE_TTL_MS;
+// `createdAt` может отсутствовать только в фейковой Prisma e2e (Postgres
+// ставит `@default(now())` всегда) — тогда не тормозим, а считаем свежим,
+// как `shouldSkipRotation` в refresh-rotation.ts.
+const isInviteFresh = (createdAt: Date | null | undefined) =>
+  !createdAt || Date.now() - createdAt.getTime() <= PAIR_INVITE_TTL_MS;
 
 // Пары (2 юзера сверяют трекеры друг друга) — коды приглашений, join/leave.
 @Injectable()

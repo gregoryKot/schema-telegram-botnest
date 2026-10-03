@@ -35,7 +35,7 @@ if (process.env.NODE_ENV === 'production') {
     .filter((s) => s && !HEX_KEY_RE.test(s));
   if (bad.length > 0)
     throw new Error(
-      `FATAL: ENCRYPTION_KEY_OLD содержит ${bad.length} ключ(а) не в формате 64 hex-символа — ` +
+      `FATAL: ENCRYPTION_KEY_OLD содержит ключи не в формате 64 hex-символа (${bad.length} шт.) — ` +
         'такой ключ молча не использовался бы для расшифровки.',
     );
 }

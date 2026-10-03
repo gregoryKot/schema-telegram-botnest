@@ -62,3 +62,19 @@ export async function revokeFamilyAndAlert(
     deps.onEcho(DEAD_FAMILY_ECHO);
   }
 }
+
+/**
+ * Тихий отзыв всей family — для «Выйти»: человек сам закрывает цепочку, это не
+ * событие безопасности. Без алерта и эха. Раньше logout гасил только
+ * предъявленный токен, и вор с соседом/наследником в той же семье переживал
+ * выход жертвы (аудит 2026-10).
+ */
+export async function revokeFamilyQuiet(
+  prisma: PrismaService,
+  family: string,
+): Promise<void> {
+  await prisma.webSession.updateMany({
+    where: { family, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}

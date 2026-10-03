@@ -86,9 +86,9 @@ describe('tokenSubject / ensureDataOwnerForToken', () => {
 
 describe('markSessionStarted', () => {
   it('при смене владельца стирает данные, но отметка входа остаётся (порядок)', () => {
-    markSessionStarted(jwt('1'));
+    markSessionStarted(jwt({ sub: '1' }));
     localStorage.setItem('safe_place', 'текст А');
-    markSessionStarted(jwt('2'));
+    markSessionStarted(jwt({ sub: '2' }));
     expect(localStorage.getItem('safe_place')).toBeNull();
     expect(localStorage.getItem('auth_seen')).toBe('1');
     expect(localStorage.getItem(DATA_OWNER_KEY)).toBe('2');
