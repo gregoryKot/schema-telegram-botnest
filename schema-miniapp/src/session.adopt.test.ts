@@ -6,7 +6,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { adoptSession, clearSession, renewSession } from './session';
 import { DATA_OWNER_KEY } from '../../shared/src/auth/dataOwnerGuard';
 
-const jwt = (sub: string) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`;
+const jwt = (sub: string) =>
+  `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`;
 
 beforeEach(() => {
   clearSession();
@@ -44,7 +45,9 @@ describe('смена владельца при обычном перевыпус
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValue({ accessToken: jwt('77'), expiresIn: 900 }),
+      json: vi
+        .fn()
+        .mockResolvedValue({ accessToken: jwt('77'), expiresIn: 900 }),
     });
 
     await renewSession();

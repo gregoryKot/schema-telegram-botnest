@@ -41,7 +41,9 @@ describe('ensureDataOwner', () => {
   it('владельца не было → только запоминаем, имеющееся не трогаем', () => {
     localStorage.setItem('safe_place', 'текст до внедрения защиты');
     expect(ensureDataOwner('42')).toBe(false);
-    expect(localStorage.getItem('safe_place')).toBe('текст до внедрения защиты');
+    expect(localStorage.getItem('safe_place')).toBe(
+      'текст до внедрения защиты',
+    );
     expect(localStorage.getItem(DATA_OWNER_KEY)).toBe('42');
   });
 
@@ -64,7 +66,9 @@ describe('ensureDataOwner', () => {
 
 describe('tokenSubject / ensureDataOwnerForToken', () => {
   it('читает sub из base64url-полезной нагрузки', () => {
-    expect(tokenSubject(jwt({ sub: '123456789', type: 'access' }))).toBe('123456789');
+    expect(tokenSubject(jwt({ sub: '123456789', type: 'access' }))).toBe(
+      '123456789',
+    );
     expect(tokenSubject(jwt({ sub: 'u??>>~~' }))).toBe('u??>>~~'); // символы, дающие + и / в base64
   });
 

@@ -133,8 +133,13 @@ describe('AdminKeyAuditInterceptor', () => {
   });
 
   it('чужая ошибка (не про ключ) — события нет', async () => {
-    const { securityLog } = await run(throwError(() => new Error('boom')));
+    const { securityLog, result } = await run(
+      throwError(() => new Error('boom')),
+    );
     expect(securityLog.log).not.toHaveBeenCalled();
+    // Чужая ошибка проходит сквозь интерцептор как есть — он не глотает её.
+    expect(result).toBeInstanceOf(Error);
+    expect((result as Error).message).toBe('boom');
   });
 
   it('успешный ответ — события нет', async () => {

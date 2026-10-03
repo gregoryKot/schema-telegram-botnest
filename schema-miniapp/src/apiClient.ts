@@ -12,6 +12,7 @@ import {
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 import { readJsonBody } from '../../shared/src/api/readJsonBody';
+import { readErrorBody } from '../../shared/src/api/readErrorBody';
 
 export { BASE, authHeaders };
 
@@ -42,9 +43,14 @@ function isNetworkError(err: unknown): boolean {
 
 // Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы вызывающий
 // код мог различить «сервер ответил 4xx» и «ответа не было вообще».
+// message — текст из тела ответа (если есть), reason — машинный код причины.
 export class HttpStatusError extends Error {
-  constructor(public status: number) {
-    super(`API error: ${status}`);
+  constructor(
+    public status: number,
+    message = `API error: ${status}`,
+    public reason?: string,
+  ) {
+    super(message);
   }
 }
 
@@ -131,16 +137,8 @@ async function sendWithBody(
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (res.ok) return res;
-  let msg = `API error: ${res.status}`;
-  try {
-    const j = (await res.json()) as { message?: unknown };
-    if (j?.message)
-      msg =
-        typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-  } catch {
-    /* тело ответа не распарсилось — оставляем дефолтный msg */
-  }
-  throw new Error(msg);
+  const { message, reason } = await readErrorBody(res);
+  throw new HttpStatusError(res.status, message, reason);
 }
 
 export async function post(path: string, body: unknown): Promise<void> {

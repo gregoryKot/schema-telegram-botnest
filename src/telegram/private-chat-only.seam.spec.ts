@@ -22,11 +22,13 @@ function makeBot(withGuard: boolean) {
   if (withGuard) installPrivateChatOnly(bot);
   const startSeen = jest.fn();
   const actionSeen = jest.fn();
-  bot.command('start', () => {
-    startSeen();
+  // Хендлеры запоминают тип чата, из которого их дёрнули: так проверка
+  // «дошёл до хендлера» видит ещё и ОТКУДА дошёл, а не только факт вызова.
+  bot.command('start', (ctx) => {
+    startSeen(ctx.chat?.type);
   });
-  bot.action(/^tglogin:yes:([A-Z0-9]{8})$/, () => {
-    actionSeen();
+  bot.action(/^tglogin:yes:([A-Z0-9]{8})$/, (ctx) => {
+    actionSeen(ctx.chat?.type);
   });
   // Исходящие вызовы Telegram перехватываем: сеть не нужна.
   // handleUpdate создаёт клиент заново на каждый апдейт, поэтому подменяем
@@ -71,9 +73,12 @@ describe('privateChatOnly — шов с настоящим telegraf', () => {
   it.each(['group', 'supergroup', 'channel'])(
     '/start login_ в чате типа %s: хендлер не вызван',
     async (type) => {
-      const { bot, startSeen } = makeBot(true);
+      const { bot, startSeen, callApi } = makeBot(true);
       await bot.handleUpdate(startUpdate(type));
       expect(startSeen).not.toHaveBeenCalled();
+      // И ответа в чат нет: ни sendMessage, ни чего-либо ещё — апдейт
+      // проигнорирован целиком, а не «обработан молча».
+      expect(callApi.mock.calls.map((c) => c[0])).toEqual([]);
     },
   );
 
@@ -89,15 +94,15 @@ describe('privateChatOnly — шов с настоящим telegraf', () => {
     const { bot, startSeen, actionSeen } = makeBot(true);
     await bot.handleUpdate(startUpdate('private'));
     await bot.handleUpdate(tapUpdate('private'));
-    expect(startSeen).toHaveBeenCalledTimes(1);
-    expect(actionSeen).toHaveBeenCalledTimes(1);
+    expect(startSeen).toHaveBeenCalledWith('private');
+    expect(actionSeen).toHaveBeenCalledWith('private');
   });
 
   it('контроль: без middleware тот же апдейт из группы доходит до хендлера', async () => {
     const { bot, startSeen, actionSeen } = makeBot(false);
     await bot.handleUpdate(startUpdate('supergroup'));
     await bot.handleUpdate(tapUpdate('supergroup'));
-    expect(startSeen).toHaveBeenCalledTimes(1);
-    expect(actionSeen).toHaveBeenCalledTimes(1);
+    expect(startSeen).toHaveBeenCalledWith('supergroup');
+    expect(actionSeen).toHaveBeenCalledWith('supergroup');
   });
 });

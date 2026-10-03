@@ -948,6 +948,31 @@ describe('SettingsSheet — вход по коду терапевта (клие�
 
     await screen.findByText('Игорь подключён');
   });
+
+  // 409 { reason: 'already_connected' }: код верный, мешает действующее
+  // подключение — «Неверный код» вводил бы в заблуждение.
+  it('409 already_connected — текст про действующее подключение, а не «Неверный код»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('already'), { status: 409, reason: 'already_connected' }),
+    );
+    await renderSheet();
+    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+
+    await screen.findByText(/У тебя уже есть подключение к терапевту/);
+    expect(screen.queryByText('Неверный код')).toBeNull();
+  });
+
+  it('любой другой отказ — прежний «Неверный код»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(Object.assign(new Error('nf'), { status: 404 }));
+    await renderSheet();
+    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+
+    await screen.findByText('Неверный код');
+  });
 });
 
 describe('SettingsSheet — заявка на специалиста: необязательное сообщение и отмена формы', () => {

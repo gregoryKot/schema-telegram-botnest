@@ -673,7 +673,10 @@ describe('AuthAccountController.confirmMerge', () => {
       const { controller, totp, merge } = makeController();
       await controller.confirmMerge({ token: 'tok-1' }, asTarget(), makeRes());
       expect(totp.verifyCode).not.toHaveBeenCalled();
-      expect(merge.merge).toHaveBeenCalled();
+      expect(merge.merge).toHaveBeenCalledWith(
+        expect.any(BigInt),
+        expect.any(BigInt),
+      );
     });
 
     it('проверка TOTP идёт только ПОСЛЕ доказательства личности target', async () => {

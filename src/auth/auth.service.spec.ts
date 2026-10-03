@@ -930,7 +930,11 @@ describe('AuthService — linkEmailToAccount', () => {
   it('обычный вход по почте по-прежнему шлёт письмо входа, не привязки', async () => {
     const { svc, emailSvc } = makeService();
     await svc.requestEmailLogin('login@example.com');
-    expect(emailSvc.sendLoginLink).toHaveBeenCalled();
+    expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
+      'login@example.com',
+      expect.stringContaining('/api/auth/email/callback?token='),
+      expect.anything(),
+    );
     expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
   });
 });

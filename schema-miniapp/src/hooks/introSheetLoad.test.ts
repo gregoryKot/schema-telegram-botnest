@@ -14,7 +14,9 @@ beforeEach(() => {
 describe('loadIntroSheetData', () => {
   it('сервер вернул карточку → она', async () => {
     localStorage.setItem(KEY, JSON.stringify({ a: 'локальное' }));
-    expect(await loadIntroSheetData(KEY, async () => ({ a: 'серверное' }))).toEqual({
+    expect(
+      await loadIntroSheetData(KEY, async () => ({ a: 'серверное' })),
+    ).toEqual({
       a: 'серверное',
     });
   });

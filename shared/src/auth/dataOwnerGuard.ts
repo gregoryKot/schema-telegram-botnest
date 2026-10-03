@@ -26,9 +26,13 @@ export function tokenSubject(token: string): string | null {
     const payload = token.split('.')[1];
     if (!payload) return null;
     const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '='));
+    const json = atob(
+      b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '='),
+    );
     const sub = (JSON.parse(json) as { sub?: unknown }).sub;
-    return typeof sub === 'string' || typeof sub === 'number' ? String(sub) : null;
+    return typeof sub === 'string' || typeof sub === 'number'
+      ? String(sub)
+      : null;
   } catch {
     return null; // битый токен — владельца не знаем, не гадаем
   }
