@@ -175,6 +175,18 @@ describe('assertOAuthStateMatches', () => {
     );
   });
 
+  // 2026-10-03: VK вырезал точки JWT — DM об ошибке читался как «второе окно
+  // у одного человека», а вход не работал ни у кого.
+  it('площадка вернула state без части символов → «поломка интеграции», а не «второе окно»', () => {
+    const req = makeReq({
+      headers: { host: 'schemehappens.ru' },
+      cookies: { [OAUTH_STATE_COOKIE]: 'aaa.bbb.ccc' },
+    });
+    expect(() => assertOAuthStateMatches(req, 'aaabbbccc', ORIGIN)).toThrow(
+      'поломка интеграции',
+    );
+  });
+
   it('кука есть и совпадает, но хост чужой → НЕ бросает (проверка только по куке)', () => {
     const req = makeReq({
       headers: { host: 'kotlarewski.gr' },
