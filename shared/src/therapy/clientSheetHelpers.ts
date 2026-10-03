@@ -13,6 +13,15 @@ import { fmtDate } from '../utils/format';
 
 export const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
+/**
+ * Офлайн-клиент (без Telegram): бэкенд отдаёт для него отрицательный
+ * telegramId (-rel.id). По `name` его не отличить: name у такого клиента —
+ * расшифрованное virtualClientName, то есть непустое.
+ */
+export function isVirtualClient(c: { telegramId: number }): boolean {
+  return c.telegramId < 0;
+}
+
 export function calcTherapyDuration(startDateStr: string): string {
   const start = dateStringParts(startDateStr);
   if (!start) return '';
