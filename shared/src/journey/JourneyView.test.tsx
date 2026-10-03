@@ -3,27 +3,25 @@
 // заполненный вид (hero + счётчики + фильтры + таймлайн). Правило онбординга
 // CLAUDE.md: explainer обязан звучать в обеих формах через tr() — проверяем,
 // что вилка реально доезжает до разметки.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { JourneyView } from './JourneyView';
-import { journeyHeroes } from './journeyHeroes';
-import { registerMiniappJourneyHeroes } from './miniappJourneyHeroes';
+import { JourneyView, type JourneyViewProps } from './JourneyView';
+import { MINIAPP_JOURNEY_HEROES } from './miniappJourneyHeroes';
 import type { JourneyState } from './useJourney';
 import type { JourneyItem } from './journeyMeta';
 
 const tr = (ty: string, vy: string) => `${ty}|${vy}`;
 
-// Героя регистрирует площадка (journeyHeroes.ts) — как miniappJourneyHeroes
-// в мини-аппе; тесты ниже проверяют тело экрана вместе с ним.
-const NOTHING = { ...journeyHeroes };
-beforeEach(() => {
-  registerMiniappJourneyHeroes();
-});
-
 afterEach(() => {
   cleanup();
-  Object.assign(journeyHeroes, NOTHING);
 });
+
+// Героя передаёт обёртка площадки пропсом (journeyHeroes.ts) — как
+// JourneySheet мини-аппа; по умолчанию тесты берут его вёрстку.
+const View = (
+  p: Omit<JourneyViewProps, 'heroes'> &
+    Partial<Pick<JourneyViewProps, 'heroes'>>,
+) => <JourneyView heroes={MINIAPP_JOURNEY_HEROES} {...p} />;
 
 function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
   return {
@@ -45,7 +43,7 @@ function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
 describe('JourneyView — состояния загрузки', () => {
   it('data=null и не failed — показывает переданный скелетон', () => {
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState()}
         subtitle={() => null}
@@ -59,7 +57,7 @@ describe('JourneyView — состояния загрузки', () => {
 
   it('failed=true — сообщение об ошибке, обе формы обращения через tr()', () => {
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({ failed: true })}
         subtitle={() => null}
@@ -75,7 +73,7 @@ describe('JourneyView — состояния загрузки', () => {
 describe('JourneyView — пустой путь', () => {
   it('total=0 — пустое hero-состояние, а не список с нулями', () => {
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({ data: { counts: {} as never, items: [] } })}
         subtitle={() => null}
@@ -88,42 +86,46 @@ describe('JourneyView — пустой путь', () => {
   });
 });
 
-describe('JourneyView — без героя от площадки', () => {
-  const view = (total: number) => (
-    <JourneyView
+describe('JourneyView — герой от площадки', () => {
+  const state = (total: number) =>
+    baseState({
+      data: { counts: {} as never, items: [] },
+      total,
+      items: total ? [{ type: 'gratitude', at: '2026-07-21T10:00:00Z' }] : [],
+    });
+  const view = (total: number, heroes: JourneyViewProps['heroes']) => (
+    <View
       tr={tr}
-      j={baseState({
-        data: { counts: {} as never, items: [] },
-        total,
-        items: total ? [{ type: 'gratitude', at: '2026-07-21T10:00:00Z' }] : [],
-      })}
+      j={state(total)}
       subtitle={() => null}
       onOpenItem={vi.fn()}
       onShareFeed={vi.fn()}
+      heroes={heroes}
       skeleton={<div />}
     />
   );
 
-  it('герой не зарегистрирован — тело экрана работает, шапки нет (а не падение)', () => {
-    Object.assign(journeyHeroes, NOTHING);
-    render(view(3));
-    expect(screen.queryByText('Поделиться лентой шагов')).toBeNull();
-    expect(screen.getByText('Неделя')).toBeTruthy();
-  });
-
-  it('герой берётся из реестра: зарегистрированный компонент получает total', () => {
-    Object.assign(journeyHeroes, {
+  it('переданный компонент получает total, пустой — пояснение; свой не мешает телу экрана', () => {
+    const heroes = {
       Hero: ({ total }: { total: number }) => <div>свой герой {total}</div>,
-    });
-    render(view(7));
+      EmptyHero: ({ explainer }: { explainer: string }) => (
+        <div>свой пустой: {explainer.slice(0, 7)}</div>
+      ),
+    };
+    render(view(7, heroes));
     expect(screen.getByText('свой герой 7')).toBeTruthy();
+    expect(screen.getByText('Неделя')).toBeTruthy();
+    cleanup();
+    render(view(0, heroes));
+    expect(screen.getByText(/свой пустой: Всё, чт/)).toBeTruthy();
   });
 
-  it('мини-апп: miniappJourneyHeroes регистрирует градиентного героя ', () => {
-    Object.assign(journeyHeroes, NOTHING);
-    registerMiniappJourneyHeroes();
-    render(view(4));
+  it('мини-апп: MINIAPP_JOURNEY_HEROES — градиентный герой с компасом', () => {
+    render(view(4, MINIAPP_JOURNEY_HEROES));
     expect(screen.getByText('шагов заботы о себе')).toBeTruthy();
+    cleanup();
+    render(view(0, MINIAPP_JOURNEY_HEROES));
+    expect(screen.getByText('🧭')).toBeTruthy();
   });
 });
 
@@ -133,7 +135,7 @@ describe('JourneyView — заполненный путь', () => {
   it('рендерит hero с итогом, счётчики и таймлайн; кнопка hero зовёт onShareFeed', () => {
     const onShareFeed = vi.fn();
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({
           data: { counts: {} as never, items: [ITEM] },
@@ -156,7 +158,7 @@ describe('JourneyView — заполненный путь', () => {
     const setGroup = vi.fn();
     const setPeriod = vi.fn();
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({
           data: { counts: {} as never, items: [ITEM] },
@@ -180,7 +182,7 @@ describe('JourneyView — заполненный путь', () => {
   it('кнопка сортировки переключает направление через setSortDir', () => {
     const setSortDir = vi.fn();
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({
           data: { counts: {} as never, items: [ITEM] },
@@ -201,7 +203,7 @@ describe('JourneyView — заполненный путь', () => {
 
   it('total>0, но текущий фильтр/период дал пустой items — «здесь пока пусто»', () => {
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({
           data: { counts: {} as never, items: [ITEM] },
@@ -220,7 +222,7 @@ describe('JourneyView — заполненный путь', () => {
   it('тап по записи таймлайна зовёт onOpenItem', () => {
     const onOpenItem = vi.fn();
     render(
-      <JourneyView
+      <View
         tr={tr}
         j={baseState({
           data: { counts: {} as never, items: [ITEM] },

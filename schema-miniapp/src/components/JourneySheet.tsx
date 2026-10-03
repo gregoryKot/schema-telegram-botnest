@@ -13,15 +13,14 @@ import {
   useJourney,
 } from '../../../shared/src/journey/useJourney';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
-import { registerMiniappJourneyHeroes } from '../../../shared/src/journey/miniappJourneyHeroes';
+import { MINIAPP_JOURNEY_HEROES } from '../../../shared/src/journey/miniappJourneyHeroes';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
 import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
 import { JourneyDetailPane } from '../../../shared/src/journey/JourneyDetailPane';
 import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
 
-// Уровень модуля — стабильные ссылки (см. makeJourneyProps) и герой пути.
+// Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
-registerMiniappJourneyHeroes();
 
 export function JourneySheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
@@ -58,6 +57,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
+              heroes={MINIAPP_JOURNEY_HEROES}
               skeleton={
                 <>
                   <SkeletonCard h={96} />

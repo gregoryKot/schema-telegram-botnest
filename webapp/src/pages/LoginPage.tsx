@@ -170,7 +170,7 @@ export function LoginPage() {
               он не требует установленного Telegram, но при первом визите в
               браузер просит телефон и код — отсюда «получается со второй
               попытки», из-за которого диплинк и стал основным. */}
-          <p style={{ textAlign: 'center', marginBottom: 12 }}>
+          <p style={{ marginBottom: 12 }}>
             <button
               onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
               style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
@@ -181,7 +181,7 @@ export function LoginPage() {
 
           {/* Email magic link */}
           {!showEmail ? (
-            <p style={{ textAlign: 'center', marginTop: 12 }}>
+            <p style={{ marginTop: 12 }}>
               <button
                 onClick={() => { setShowEmail(true); setError(null); }}
                 style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
@@ -190,7 +190,7 @@ export function LoginPage() {
               </button>
             </p>
           ) : emailSent ? (
-            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-10)', textAlign: 'center' }}>
+            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-10)' }}>
               <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 4px' }}>Письмо отправлено</p>
               <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>Проверь почту и перейди по ссылке — она действует 30 минут</p>
               <button
@@ -213,14 +213,15 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={emailLoading}
-                style={{ width: '100%', padding: '11px', fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-10)', cursor: emailLoading ? 'default' : 'pointer', opacity: emailLoading ? 0.7 : 1 }}
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: 14, borderRadius: 'var(--r-8)', opacity: emailLoading ? 0.7 : 1 }}
               >
                 {emailLoading ? 'Отправляем…' : 'Отправить ссылку'}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowEmail(false); setError(null); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: '6px 0 0', width: '100%' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: '10px 0 0' }}
               >
                 Отмена
               </button>
@@ -228,10 +229,10 @@ export function LoginPage() {
           )}
 
           {error && (
-            <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</p>
+            <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12 }}>{error}</p>
           )}
 
-          <p style={{ textAlign: 'center', marginTop: 18 }}>
+          <p style={{ marginTop: 18 }}>
             <a href="/auth/recovery" style={{ color: 'var(--text-faint)', fontSize: 12, textDecoration: 'underline' }}>
               Потерял доступ ко всем способам входа?
             </a>
@@ -239,7 +240,7 @@ export function LoginPage() {
         </div>
 
         {/* Consent note */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: 20, lineHeight: 1.7 }}>
           Нажимая «Войти», вы подтверждаете, что вам исполнилось 18 лет, и даёте согласие
           на обработку персональных данных — включая сведения о психоэмоциональном состоянии
           (дневники, ответы на опросники), которые вы добровольно вносите, —
@@ -250,7 +251,7 @@ export function LoginPage() {
         </p>
 
         {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: 14 }}>
           Проект бесплатный{' '}
           <a href="/donate" className="u-link">поддержать</a>
         </p>

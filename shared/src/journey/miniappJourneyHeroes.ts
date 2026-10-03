@@ -1,13 +1,10 @@
-// Герой «Моего пути» мини-аппа — градиентный JourneyHero. Регистрируется
-// из JourneySheet мини-аппа; сайт регистрирует свою editorial-вёрстку
-// (webapp/src/components/journey/WebJourneyHeroes.tsx), так что каждая
-// площадка бандлит только свою (journeyHeroes.ts).
-import { journeyHeroes } from './journeyHeroes';
+// Герои «Моего пути» мини-аппа — градиентный JourneyHero; передаются в
+// JourneyView пропсом `heroes` (journeyHeroes.ts). Сайт передаёт свою
+// editorial-вёрстку (webapp/src/components/journey/webJourneyHeroes.ts).
+import type { JourneyHeroes } from './journeyHeroes';
 import { JourneyEmptyHero, JourneyHero } from './JourneyHero';
 
-export function registerMiniappJourneyHeroes(): void {
-  Object.assign(journeyHeroes, {
-    Hero: JourneyHero,
-    EmptyHero: JourneyEmptyHero,
-  });
-}
+export const MINIAPP_JOURNEY_HEROES: JourneyHeroes = {
+  Hero: JourneyHero,
+  EmptyHero: JourneyEmptyHero,
+};

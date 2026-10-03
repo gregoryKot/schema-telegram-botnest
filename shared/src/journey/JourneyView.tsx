@@ -11,7 +11,7 @@ import {
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
 import { JourneyTimeline } from './JourneyTimeline';
-import { journeyHeroes } from './journeyHeroes';
+import type { JourneyHeroes } from './journeyHeroes';
 
 export interface JourneyViewProps {
   tr: (ty: string, vy: string) => string;
@@ -22,6 +22,8 @@ export interface JourneyViewProps {
   onOpenItem: (item: JourneyItem) => void;
   /** Кнопка в hero → карточка итогов («дневник 5 раз, трекер 7 раз…») */
   onShareFeed: () => void;
+  /** Вёрстка героя от площадки (journeyHeroes.ts) */
+  heroes: JourneyHeroes;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
 }
@@ -50,6 +52,7 @@ export function JourneyView({
   subtitle,
   onOpenItem,
   onShareFeed,
+  heroes,
   skeleton,
 }: JourneyViewProps) {
   const {
@@ -65,7 +68,7 @@ export function JourneyView({
     setSortDir,
   } = j;
   const loading = !j.data && !failed;
-  const { Hero, EmptyHero } = journeyHeroes; // вёрстку даёт площадка
+  const { Hero, EmptyHero } = heroes;
 
   // Откуда это и зачем — до первого действия (правило онбординга).
   const explainer = tr(

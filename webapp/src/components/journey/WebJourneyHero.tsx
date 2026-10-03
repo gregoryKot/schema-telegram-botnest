@@ -2,6 +2,7 @@
 // слева, эйбрау + крупная serif-цифра + подпись между тонкими линиями.
 // Мини-апп берёт градиентный JourneyHero (shared/journey/JourneyHero.tsx);
 // общее — данные и пояснение, которые приходят пропсами из JourneyView.
+// Связка героев — webJourneyHeroes.ts.
 import type {
   JourneyEmptyHeroProps,
   JourneyHeroProps,

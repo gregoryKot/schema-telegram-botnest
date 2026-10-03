@@ -1,17 +1,13 @@
 // @vitest-environment jsdom
 // Герой «Моего пути» сайта: editorial-вёрстка (без градиента и эмодзи),
-// регистрация в реестре (journeyHeroes.ts) и сквозной путь JourneyView →
+// связка WEB_JOURNEY_HEROES (пропс `heroes` в JourneyView) и сквозной путь JourneyView →
 // герой сайта. Мини-апп берёт градиентный JourneyHero.
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { registerWebJourneyHeroes } from './registerWebJourneyHeroes';
-import { journeyHeroes } from '../../../../shared/src/journey/journeyHeroes';
+import { WEB_JOURNEY_HEROES } from './webJourneyHeroes';
 import { JourneyView } from '../../../../shared/src/journey/JourneyView';
 import type { JourneyState } from '../../../../shared/src/journey/useJourney';
 
-registerWebJourneyHeroes();
 afterEach(cleanup);
 
 const tr = (ty: string, vy: string) => `${ty}|${vy}`;
@@ -19,7 +15,7 @@ const tr = (ty: string, vy: string) => `${ty}|${vy}`;
 describe('WebJourneyHero', () => {
   it('показывает реальный итог, пояснение и зовёт onShareFeed', () => {
     const onShareFeed = vi.fn();
-    const { Hero } = journeyHeroes;
+    const { Hero } = WEB_JOURNEY_HEROES;
     const { container } = render(
       <Hero total={12} explainer="Собирается здесь." onShareFeed={onShareFeed} />,
     );
@@ -33,7 +29,7 @@ describe('WebJourneyHero', () => {
   });
 
   it('total=0 остаётся «0», а не пропадает', () => {
-    const { Hero } = journeyHeroes;
+    const { Hero } = WEB_JOURNEY_HEROES;
     render(<Hero total={0} explainer="Пояснение" onShareFeed={vi.fn()} />);
     expect(screen.getByText('0')).toBeTruthy();
   });
@@ -41,7 +37,7 @@ describe('WebJourneyHero', () => {
 
 describe('WebJourneyEmptyHero', () => {
   it('пустое состояние слева, без эмодзи, обе формы обращения через tr()', () => {
-    const { EmptyHero } = journeyHeroes;
+    const { EmptyHero } = WEB_JOURNEY_HEROES;
     const { container } = render(
       <EmptyHero tr={tr} explainer="Здесь копится путь." />,
     );
@@ -75,6 +71,7 @@ describe('JourneyView на сайте', () => {
         subtitle={() => null}
         onOpenItem={vi.fn()}
         onShareFeed={vi.fn()}
+        heroes={WEB_JOURNEY_HEROES}
         skeleton={<div />}
       />
     );
@@ -89,10 +86,5 @@ describe('JourneyView на сайте', () => {
   it('пустой путь — пустой герой сайта', () => {
     render(view(0));
     expect(screen.getByText('Путь ещё впереди')).toBeTruthy();
-  });
-
-  it('шов: App.tsx подключает регистрацию героя сайта (без неё шапки нет)', () => {
-    const app = readFileSync(resolve(__dirname, '../../App.tsx'), 'utf8');
-    expect(app).toMatch(/^registerWebJourneyHeroes\(\);/m);
   });
 });
