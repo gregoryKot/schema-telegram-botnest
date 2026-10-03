@@ -1,8 +1,8 @@
 // Тексты для шаринга — чистые билдеры (тесты в schema-miniapp/src/share).
-// Все формулировки от 1-го лица или безличные: не зависят ни от формы
-// обращения (ты/вы), ни от рода пользователя (никаких «получил/получила»).
+// Формулировки от 1-го лица или безличные: не зависят ни от ты/вы, ни от рода.
 // link — ссылка на бота (botShortUrl конкретного фронтенда).
 import { pluralDays } from '../utils/celebrationText';
+import { HEALTHY_ADULT_CHANNEL_SHORT_URL } from './channelLinks';
 
 export function pluralEntries(n: number): string {
   if (n % 10 === 1 && n % 100 !== 11) return 'запись';
@@ -65,8 +65,8 @@ export function achievementsShareText(
   return `🏅 Достижения в дневнике потребностей: ${earned} из ${total}.\n\n${link}`;
 }
 
-export function phraseShareText(phrase: string, link: string): string {
-  return `«${phrase}»\n\nФраза Здорового Взрослого · ${link}`;
+export function phraseShareText(phrase: string): string {
+  return `«${phrase}»\n\nКаждый день новая фраза — в канале «Здоровый Взрослый»: ${HEALTHY_ADULT_CHANNEL_SHORT_URL}`;
 }
 
 /** Текст записи в сообщение не кладём — он на картинке (юзер видит превью). */

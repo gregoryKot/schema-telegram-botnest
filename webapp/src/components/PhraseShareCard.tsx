@@ -8,7 +8,6 @@ import { ShareCardSheet } from '../share/ShareCardSheet';
 import { SharePillButton } from '../share/SharePillButton';
 import { usePhraseShareCard } from '../../../shared/src/share/usePhraseShareCard';
 import { phraseShareText } from '../../../shared/src/share/shareTexts';
-import { botShortUrl } from '../utils/botConfig';
 
 export function PhraseShareCard() {
   const { phrase, loading, showShare, setShowShare, reload, draw } =
@@ -45,7 +44,7 @@ export function PhraseShareCard() {
         <ShareCardSheet
           title="Фраза для себя"
           draw={draw}
-          shareText={phraseShareText(phrase, botShortUrl)}
+          shareText={phraseShareText(phrase)}
           filename="phrase.png"
           eventKind="phrase"
           onClose={() => setShowShare(false)}

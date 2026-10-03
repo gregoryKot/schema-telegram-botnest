@@ -43,3 +43,24 @@ describe('resolveCardTheme', () => {
     expect(resolveCardTheme().sheetBg).toBe('#0a0a0a');
   });
 });
+
+describe('serif темы', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('без DOM — фолбэк Georgia', () => {
+    vi.stubGlobal('document', undefined);
+    expect(resolveCardTheme().serif).toMatch(/Georgia.*serif/);
+  });
+
+  it('--serif мини-аппа (var(--font-serif)) разворачивается до списка шрифтов', () => {
+    const vars: Record<string, string> = {
+      '--serif': 'var(--font-serif)',
+      '--font-serif': "'Spectral', Georgia, serif",
+    };
+    vi.stubGlobal('document', { documentElement: {} });
+    vi.stubGlobal('getComputedStyle', () => ({
+      getPropertyValue: (name: string) => vars[name] ?? '',
+    }));
+    expect(resolveCardTheme().serif).toBe("'Spectral', Georgia, serif");
+  });
+});
