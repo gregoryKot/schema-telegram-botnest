@@ -1526,7 +1526,7 @@
   "webapp/src/pages/MergePage.tsx": 133,
   "webapp/src/pages/OfferPage.tsx": 327,
   "webapp/src/pages/PrivacyPage.tsx": 290,
-  "webapp/src/pages/ProductLandingPage.tsx": 252,
+  "webapp/src/pages/ProductLandingPage.tsx": 226,
   "webapp/src/pages/RecoveryPage.tsx": 126,
   "webapp/src/pages/ReviewsPage.tsx": 84,
   "webapp/src/pages/SubscribePage.tsx": 178,
