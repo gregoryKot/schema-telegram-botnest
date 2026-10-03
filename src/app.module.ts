@@ -30,6 +30,7 @@ import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
 import { practiceDomainMiddleware } from './practice-domain.middleware';
+import { practiceIndexHtml } from './practice-index-html';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
@@ -98,16 +99,7 @@ export class AppModule implements NestModule {
       .apply((req: Request, res: Response, next: () => void) => {
         if (!html) return next();
         if (!ALIAS_DOMAINS.has(req.hostname)) return next();
-        const domain = req.hostname;
-        const modified = html
-          .replace(
-            'href="https://schemehappens.ru/"',
-            `href="https://${domain}/"`,
-          )
-          .replace(
-            'content="https://schemehappens.ru/"',
-            `content="https://${domain}/"`,
-          );
+        const modified = practiceIndexHtml(html, req.hostname);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(modified);
       })

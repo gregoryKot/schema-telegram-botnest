@@ -35,7 +35,7 @@ describe('cacheControlFor', () => {
     expect(cacheControlFor('/add-icon.html')).toBe(REVALIDATE);
     expect(cacheControlFor('/telegram-web-app.js')).toBe(REVALIDATE);
     expect(cacheControlFor('/icon-192.png')).toBe(REVALIDATE);
-    expect(cacheControlFor('/og-cover-v2.jpg')).toBe(REVALIDATE);
+    expect(cacheControlFor('/og-cover-v3.jpg')).toBe(REVALIDATE);
   });
 
   it('незнакомый путь получает безопасный дефолт, а не годовой кэш', () => {
