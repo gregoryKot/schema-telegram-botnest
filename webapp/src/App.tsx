@@ -9,8 +9,7 @@ function MetrikaTracker() {
   useEffect(() => {
     // L6 (аудит 2026-08): голая location.href уносила во фрагменте живой JWT
     // (/auth/callback#access_token=…) в Метрику. analyticsUrl режет секреты
-    // из query как telemetryUrl, но сохраняет utm/yclid — иначе реклама
-    // Директа не атрибутируется (defer:true — автохита нет, только этот).
+    // из query, но сохраняет utm/yclid — иначе Директ не атрибутируется.
     trackHit(analyticsUrl(window.location.href), { referer: telemetryUrl(document.referrer) });
   }, [loc.pathname, loc.search]);
   return null;
@@ -33,6 +32,7 @@ import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { AddressFormPicker } from './components/AddressFormPicker';
 import { AddressFormProvider } from './utils/AddressFormProvider';
+import { registerWebJourneyHeroes } from './components/journey/registerWebJourneyHeroes';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -41,13 +41,13 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
-// bundle every visitor downloads just for the public site.
+// Lazy: TipTap WYSIWYG не должен раздувать основной бандл публичного сайта.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
 import { BookingPaidPage } from './pages/BookingPaidPage';
 import { SubscribePage } from './pages/SubscribePage';
 
+registerWebJourneyHeroes(); // герой «Моего пути» сайта (shared/journey/journeyHeroes.ts)
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
 if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');

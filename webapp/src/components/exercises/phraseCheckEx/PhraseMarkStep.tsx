@@ -39,7 +39,7 @@ export function PhraseMarkStep({
             Примета {index + 1} из {total} · «{phrase}»
           </div>
           <div className="ex-prompt-label" style={{ fontSize: 26, marginBottom: 4 }}>
-            {c.emoji} {c.question}
+            {c.question}
           </div>
         </div>
       </div>

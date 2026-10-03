@@ -5,7 +5,6 @@ import { getHost } from '../../../shared/src/host';
 import { AuthFailureHelp } from '../../../shared/src/components/AuthFailureHelp';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
-import { MMIcon } from '../components/modeMapIcons';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { useTr } from '../utils/addressForm';
@@ -140,11 +139,11 @@ export function LoginPage() {
          webapp/shared — рисовалась пустота, а blur(80px) x2 считался
          честно каждый кадр (см. index.css/.mobile-nav). */}
       <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 'var(--r-20)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}><MMIcon name="compass" size={34} stroke={1.6} /></div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Всё по схеме</h1>
-          <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
+        {/* Знак — тот же «ВС» в тёмном квадрате, что в сайдбаре кабинета */}
+        <div style={{ marginBottom: 32 }}>
+          <div className="sb-logo" style={{ width: 44, height: 44, borderRadius: 'var(--r-10)', fontSize: 15, marginBottom: 20 }}>ВС</div>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 40, fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.015em', marginBottom: 12 }}>Всё по схеме</h1>
+          <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 340 }}>
             Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
           </p>
         </div>
@@ -154,7 +153,7 @@ export function LoginPage() {
           {/* Новичку и человеку с истёкшей сессией нужно сказать разное:
               «Войдите, чтобы продолжить» второму — молчание о случившемся
               (парная правка к LoginScreen мини-аппа, правило №3). */}
-          <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20, textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20 }}>
             {hasAuthSeen()
               ? 'Вход устарел — данные на месте, нужно войти заново'
               : 'Войдите, чтобы продолжить'}

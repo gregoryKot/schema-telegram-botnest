@@ -258,11 +258,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           )}
           <button type="submit" disabled={status === 'loading'}
             style={{
-              alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
+              alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
               cursor: status === 'loading' ? 'default' : 'pointer',
               opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
-              boxShadow: 'rgba(var(--accent-rgb),.28) 0 8px 28px',
             }}>
             {status === 'loading'
               ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')

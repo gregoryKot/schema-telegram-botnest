@@ -1,9 +1,7 @@
 // Тело экрана «Мой путь» — единственная копия для обоих фронтендов
-// (правило №3 / «одна механика — один компонент»): hero с итогом и
-// пояснением, мини-карточки счётчиков, фильтр + сортировка, таймлайн
-// (JourneyTimeline). Обёртка (BottomSheet / fixed-оверлей, заголовок,
-// кнопка «поделиться лентой») — per-frontend. CSS-переменные определены
-// в обоих фронтендах.
+// (правило №3): hero (вёрстку даёт площадка, journeyHeroes.ts), счётчики,
+// фильтр + сортировка, таймлайн. Обёртка (BottomSheet / оверлей, заголовок)
+// — per-frontend. CSS-переменные определены в обоих фронтендах.
 import type { CSSProperties, ReactNode } from 'react';
 import {
   type JourneyItem,
@@ -13,7 +11,7 @@ import {
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
 import { JourneyTimeline } from './JourneyTimeline';
-import { JourneyEmptyHero, JourneyHero } from './JourneyHero';
+import { journeyHeroes } from './journeyHeroes';
 
 export interface JourneyViewProps {
   tr: (ty: string, vy: string) => string;
@@ -67,6 +65,7 @@ export function JourneyView({
     setSortDir,
   } = j;
   const loading = !j.data && !failed;
+  const { Hero, EmptyHero } = journeyHeroes; // вёрстку даёт площадка
 
   // Откуда это и зачем — до первого действия (правило онбординга).
   const explainer = tr(
@@ -95,16 +94,12 @@ export function JourneyView({
       )}
 
       {!loading && !failed && total === 0 && (
-        <JourneyEmptyHero tr={tr} explainer={explainer} />
+        <EmptyHero tr={tr} explainer={explainer} />
       )}
 
       {!loading && !failed && total > 0 && (
         <>
-          <JourneyHero
-            total={total}
-            explainer={explainer}
-            onShareFeed={onShareFeed}
-          />
+          <Hero total={total} explainer={explainer} onShareFeed={onShareFeed} />
 
           {/* Счётчики «сколько чего» — лента мини-карточек */}
           <div

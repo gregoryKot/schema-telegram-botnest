@@ -21,8 +21,8 @@ function CompactBody({ onDismiss }: { onDismiss: () => void }) {
         Сайт обезличенно считает посещения в Яндекс.Метрике.{' '}
         <PrivacyLink />
       </p>
-      {/* flex: 0 0 auto — класс .cookie-btn задаёт flex: 1, в строке это растянуло бы кнопку */}
-      <button onClick={onDismiss} className="cookie-btn cookie-btn-accept" style={{ flex: '0 0 auto' }}>
+      {/* flex: 0 0 auto — в строке кнопка не должна растягиваться */}
+      <button onClick={onDismiss} className="cookie-btn" style={{ flex: '0 0 auto' }}>
         Понятно
       </button>
     </>
@@ -50,7 +50,7 @@ function CardBody({ onDismiss }: { onDismiss: () => void }) {
 
       {/* Action */}
       <div className="u-row10">
-        <button onClick={onDismiss} className="cookie-btn cookie-btn-accept">
+        <button onClick={onDismiss} className="cookie-btn">
           Понятно
         </button>
       </div>

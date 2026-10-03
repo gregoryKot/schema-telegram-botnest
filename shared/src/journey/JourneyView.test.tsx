@@ -3,16 +3,26 @@
 // заполненный вид (hero + счётчики + фильтры + таймлайн). Правило онбординга
 // CLAUDE.md: explainer обязан звучать в обеих формах через tr() — проверяем,
 // что вилка реально доезжает до разметки.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { JourneyView } from './JourneyView';
+import { journeyHeroes } from './journeyHeroes';
+import { registerMiniappJourneyHeroes } from './miniappJourneyHeroes';
 import type { JourneyState } from './useJourney';
 import type { JourneyItem } from './journeyMeta';
 
 const tr = (ty: string, vy: string) => `${ty}|${vy}`;
 
+// Героя регистрирует площадка (journeyHeroes.ts) — как miniappJourneyHeroes
+// в мини-аппе; тесты ниже проверяют тело экрана вместе с ним.
+const NOTHING = { ...journeyHeroes };
+beforeEach(() => {
+  registerMiniappJourneyHeroes();
+});
+
 afterEach(() => {
   cleanup();
+  Object.assign(journeyHeroes, NOTHING);
 });
 
 function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
@@ -75,6 +85,45 @@ describe('JourneyView — пустой путь', () => {
       />,
     );
     expect(screen.getByText('Путь ещё впереди')).toBeTruthy();
+  });
+});
+
+describe('JourneyView — без героя от площадки', () => {
+  const view = (total: number) => (
+    <JourneyView
+      tr={tr}
+      j={baseState({
+        data: { counts: {} as never, items: [] },
+        total,
+        items: total ? [{ type: 'gratitude', at: '2026-07-21T10:00:00Z' }] : [],
+      })}
+      subtitle={() => null}
+      onOpenItem={vi.fn()}
+      onShareFeed={vi.fn()}
+      skeleton={<div />}
+    />
+  );
+
+  it('герой не зарегистрирован — тело экрана работает, шапки нет (а не падение)', () => {
+    Object.assign(journeyHeroes, NOTHING);
+    render(view(3));
+    expect(screen.queryByText('Поделиться лентой шагов')).toBeNull();
+    expect(screen.getByText('Неделя')).toBeTruthy();
+  });
+
+  it('герой берётся из реестра: зарегистрированный компонент получает total', () => {
+    Object.assign(journeyHeroes, {
+      Hero: ({ total }: { total: number }) => <div>свой герой {total}</div>,
+    });
+    render(view(7));
+    expect(screen.getByText('свой герой 7')).toBeTruthy();
+  });
+
+  it('мини-апп: miniappJourneyHeroes регистрирует градиентного героя ', () => {
+    Object.assign(journeyHeroes, NOTHING);
+    registerMiniappJourneyHeroes();
+    render(view(4));
+    expect(screen.getByText('шагов заботы о себе')).toBeTruthy();
   });
 });
 

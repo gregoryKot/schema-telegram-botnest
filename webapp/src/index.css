@@ -790,73 +790,40 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
    текст с кнопками каждый кадр на первом экране; opacity+translateY дают
    тот же эффект появления. */
 @keyframes cookie-in   { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes cookie-sheen{ from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
 @keyframes spin        { to { transform: rotate(360deg); } }
 
 .animate-fade  { animation: fade-in .18s ease both; }
 .animate-slide { animation: slide-up .22s ease both; }
 
-/* ─── Cookie consent banner – glass card ─────────────────────────────────── */
+/* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
 .cookie-banner {
-  position: relative;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--bg-elev) 78%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid var(--line);
-  border-radius: var(--r-20);
-  box-shadow:
-    0 24px 60px -12px rgba(28,25,20,0.28),
-    0 8px 20px -8px rgba(28,25,20,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.10);
-  animation: cookie-in .5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-/* Top accent hairline */
-.cookie-banner::before {
-  content: '';
-  position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: .6;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-12);
+  box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
+  animation: cookie-in .35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Кнопка у баннера одна («Понятно») — главная чёрная, как .btn-primary. */
 .cookie-btn {
-  position: relative;
-  overflow: hidden;
-  flex: 1;
-  min-height: 46px;
-  padding: 12px 18px;
-  border-radius: var(--r-12);
+  min-height: 44px;
+  padding: 11px 22px;
+  border: none;
+  border-radius: var(--r-8);
+  background: var(--text);
+  color: var(--bg);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+  transition: background .12s, color .12s;
   -webkit-tap-highlight-color: transparent;
 }
-.cookie-btn:active { transform: scale(0.97); }
+.cookie-btn:hover { background: var(--accent); color: var(--on-accent); }
 .cookie-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* Кнопка у баннера одна («Понятно»): .cookie-btn-reject удалён вместе с
-   выбором «Только необходимые» — мёртвый CSS не живёт до следующего раза. */
-.cookie-btn-accept {
-  color: var(--on-accent);
-  border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 4px 16px -4px var(--accent);
-}
-.cookie-btn-accept:hover { box-shadow: 0 6px 22px -4px var(--accent); }
-/* Sheen sweep across accept button on hover */
-.cookie-btn-accept::after {
-  content: '';
-  position: absolute; top: 0; left: 0; width: 40%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-  transform: translateX(-120%) skewX(-18deg);
-}
-.cookie-btn-accept:hover::after { animation: cookie-sheen .7s ease; }
 
 @media (prefers-reduced-motion: reduce) {
   .cookie-banner { animation: fade-in .2s ease both; }
-  .cookie-btn-accept:hover::after { animation: none; }
 }
 
 /* ─── Loader / spinner ───────────────────────────────────────────────────── */
@@ -1657,6 +1624,8 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .chip-row { display: flex; flex-wrap: wrap; gap: var(--space-6); margin-bottom: var(--space-16); }
 .chip-pill { font-size: 13px; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text-sub); border: 1px solid var(--line); cursor: pointer; transition: background .12s, color .12s, border-color .12s; font-weight: 500; letter-spacing: -0.005em; }
 .chip-pill:hover { background: var(--surface-3); color: var(--text); }
+.chip-pill-outline:not(.is-selected) { background: transparent; color: var(--text); border-color: var(--line-strong); }
+.chip-pill-outline:not(.is-selected):hover { background: var(--surface-2); }
 .chip-pill.is-selected { background: var(--pill-color, var(--accent-soft)); color: var(--pill-fg, var(--accent)); border-color: var(--pill-border, var(--accent-line)); font-weight: 600; }
 .chip-section-eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; margin: 18px 0 8px; display: flex; align-items: center; gap: var(--space-8); }
 .chip-section-eyebrow .dot { width: 6px; height: 6px; border-radius: 3px; }
