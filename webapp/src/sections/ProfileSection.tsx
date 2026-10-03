@@ -188,7 +188,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)' }}>
                 <div style={{
-                  fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
+                  fontSize: 56, fontWeight: 500, lineHeight: 1, letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums',
                   color: currentStreak > 0
                     ? (todayDone ? 'var(--accent)' : 'var(--text)')
                     : 'rgba(var(--fg-rgb),0.2)',
