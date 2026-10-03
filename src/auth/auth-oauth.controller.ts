@@ -18,6 +18,7 @@ import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import type { Request, Response } from 'express';
 import { VkProvider } from './providers/vk.provider';
+import { fromVkState } from './providers/vk-state';
 import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { AuthFlowService } from './auth-flow.service';
 import {
@@ -105,15 +106,16 @@ export class AuthOauthController {
   @Get('vk/callback')
   async vkCallback(
     @Query('code') code: string,
-    @Query('state') state: string,
+    @Query('state') vkState: string,
     @Query('device_id') deviceId: string,
     @Query('error') error: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    // VK ID needs device_id + PKCE state for token exchange. Bypass the
-    // generic helper and call the provider-specific method.
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    // VK ID: обмен кода требует device_id + PKCE, общий хелпер не подходит.
+    // state ушёл к VK в base64url (VK режет точки JWT) — см. vk-state.ts.
+    const state = vkState ? fromVkState(vkState) : vkState;
     try {
       const vk = this.providers.get('vk') as VkProvider;
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);

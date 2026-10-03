@@ -31,6 +31,11 @@
     "status": "exempt",
     "reason": "Старый Telegram Login Widget hash — тест сам подписывает data-check-string фейковым BOT_TOKEN; реальных данных от виджета на живом домене не записывалось."
   },
+  "src/auth/providers/vk-state.ts": {
+    "status": "recorded",
+    "fixtures": ["vk-id-authorize-state.json"],
+    "spec": "src/auth/providers/vk-state.spec.ts"
+  },
   "src/auth/providers/vk.provider.ts": {
     "status": "exempt",
     "reason": "Ответы VK ID OAuth (token/userинфо) в спеке — авторская форма по документации VK ID, не захваченный с прода вызов; тестового VK-приложения с логами нет."
