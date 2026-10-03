@@ -11,6 +11,7 @@ import {
 } from './session';
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+import { readJsonBody } from '../../shared/src/api/readJsonBody';
 
 export { BASE, authHeaders };
 
@@ -32,9 +33,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// fetch() отклоняет промис TypeError-ом при обрыве связи/DNS-фейле; таймаут
-// из fetchWithTimeout отклоняет AbortError. Оба случая — «сети нет прямо
-// сейчас», а не осмысленный ответ сервера.
+// fetch() отклоняется TypeError-ом при обрыве связи/DNS-фейле, таймаут из
+// fetchWithTimeout — AbortError: оба случая «сети нет», а не ответ сервера.
 function isNetworkError(err: unknown): boolean {
   if (err instanceof DOMException && err.name === 'AbortError') return true;
   return err instanceof TypeError;
@@ -81,9 +81,9 @@ export async function authedFetch(
   return retried;
 }
 
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки
-// и 502/503/504. 4xx и прочие 5xx не ретраятся — осмысленный ответ сервера.
-// POST/DELETE не участвуют — не идемпотентны (см. outbox.ts, исключение — оценки).
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки и
+// 502/503/504; 4xx и прочие 5xx — осмысленный ответ. POST/DELETE не участвуют:
+// не идемпотентны (см. outbox.ts, исключение — оценки).
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
@@ -101,7 +101,7 @@ async function rawGet<T>(path: string): Promise<T> {
         }
         throw new HttpStatusError(res.status);
       }
-      return res.json() as Promise<T>;
+      return readJsonBody<T>(res);
     } catch (err) {
       if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
         await delay(GET_RETRY_DELAYS_MS[attempt]);
@@ -149,7 +149,7 @@ export async function post(path: string, body: unknown): Promise<void> {
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await sendWithBody(path, 'POST', body);
-  return res.json() as Promise<T>;
+  return readJsonBody<T>(res);
 }
 
 export async function del(path: string, body?: unknown): Promise<void> {

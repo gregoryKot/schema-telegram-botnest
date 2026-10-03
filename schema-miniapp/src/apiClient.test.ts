@@ -19,6 +19,8 @@ function jsonRes(status: number, body: unknown = {}) {
     ok: status >= 200 && status < 300,
     status,
     json: vi.fn().mockResolvedValue(body),
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: vi.fn().mockResolvedValue(JSON.stringify(body)),
   };
 }
 

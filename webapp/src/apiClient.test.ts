@@ -17,6 +17,8 @@ function jsonResponse(status: number, body: unknown): Response {
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(body),
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: () => Promise.resolve(body === undefined ? '' : JSON.stringify(body)),
   } as unknown as Response;
 }
 

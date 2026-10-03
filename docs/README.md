@@ -64,6 +64,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   «catch с телом без исполняемого кода» (комментарии/пробелы), проверить
   контрольным образцом на `silent-catch.spec.ts`, что легитимные
   `.catch(() => null) // fire-and-forget` из ALLOW не покраснеют.
+- Отчёты фронта об ошибках несут только имя источника, без причины:
+  `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
+  `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
+  постоянное `login ticket start failed`. Код ответа и тип сбоя (сеть, 429,
+  5xx, разбор JSON) никуда не попадают, даже в лог: разбор 2026-10-03
+  (`docs/INCIDENTS.md`, пустое тело на `null`) потребовал чтения кода. Путь —
+  структурная причина из allow-list (тип + числовой статус), не текст
+  исключения (инвариант H0/H6 `src/api/client-errors.controller.ts`).
 - Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
 - Унификация разошедшихся webapp/miniapp-версий компонентов по мере касания.

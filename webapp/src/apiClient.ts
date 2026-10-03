@@ -14,6 +14,7 @@
 // точка отправки, хук здесь покрывает и ratingApi (прямой вызов authedFetch).
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+import { readJsonBody } from '../../shared/src/api/readJsonBody';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -59,9 +60,8 @@ export class ApiError extends Error {
   }
 }
 
-// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
-// res.json() отклоняется, и body остаётся пустым объектом: message ниже не
-// найдётся, в ход идёт дефолтное сообщение по статусу.
+// Тело может прийти не-JSON (502 от прокси, обрыв) — res.json() отклоняется,
+// body остаётся {}: message не найдётся, в ход идёт сообщение по статусу.
 async function apiError(res: Response): Promise<ApiError> {
   const body = await res.json().catch(() => ({}) as { message?: unknown });
   const msg = body?.message
@@ -89,7 +89,7 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
 async function rawGet<T>(path: string): Promise<T> {
   const res = await authedFetch(path);
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 // Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
@@ -108,13 +108,13 @@ export async function post(path: string, body: unknown): Promise<void> {
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) });
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 export async function del(path: string, body?: unknown): Promise<void> {
