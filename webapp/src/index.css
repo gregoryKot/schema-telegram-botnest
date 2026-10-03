@@ -1458,20 +1458,18 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   transition: border-color .15s; resize: none; line-height: 1.6;
 }
 .paper-input:focus { outline: none; border-bottom-color: var(--accent); }
-/* Поле ввода с кнопкой внутри рамки (форма «Добавить клиента»). */
+/* Поле «Имя клиента»: родная линия-подчёркивание, но заметная — без коробки
+   и теней (белая рамка с ореолом выбивалась из бумажного стиля, #588). */
 .name-field {
-  display: flex; align-items: center; gap: var(--space-12);
-  background: var(--surface);
-  border: 1.5px solid var(--line-strong); border-radius: calc(var(--r-20) + 6px);
-  padding: 6px 6px 6px 18px;
-  transition: border-color .15s, box-shadow .15s;
+  display: flex; align-items: center; gap: var(--space-16);
+  border-bottom: 1.5px solid var(--text-faint);
+  transition: border-color .15s;
 }
-.name-field:hover { border-color: var(--text-faint); }
-.name-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.name-field:hover, .name-field:focus-within { border-color: var(--text); }
 .name-field input {
   flex: 1; min-width: 0; background: none; border: none; outline: none;
-  font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em;
-  color: var(--text); padding: 8px 0;
+  font-family: var(--serif); font-size: 26px; letter-spacing: -0.01em;
+  color: var(--text); padding: 10px 0;
 }
 .name-field input::placeholder { color: var(--text-faint); }
 .paper-area {
