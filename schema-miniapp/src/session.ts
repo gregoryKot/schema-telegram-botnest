@@ -15,6 +15,8 @@ import { renewWithRetries } from '../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../shared/src/auth/crossTabLock';
 import { clearApiCache } from '../../shared/src/api/apiCache';
 import { markAuthSeen } from '../../shared/src/auth/authSeen';
+import { clearLocalData } from '../../shared/src/auth/clearLocalData';
+import { ensureDataOwnerForToken } from '../../shared/src/auth/dataOwnerGuard';
 import { attemptRenewOnce } from './sessionRenew';
 import { registerSessionRetryListeners } from './sessionRetryListeners';
 
@@ -43,6 +45,9 @@ function tokenIsFresh(now = Date.now()): boolean {
 }
 
 function remember(token: string, expiresIn: number): void {
+  // Сессия принадлежит другому аккаунту, чем локальные данные (смена без
+  // выхода) — стираем их ДО отметки входа и до первого экрана (аудит 2026-10, E1).
+  ensureDataOwnerForToken(token);
   // Отметка «в этом контейнере вход удавался» — по ней экран входа отличит
   // новичка от человека, у которого истекла сессия (shared/auth/authSeen).
   markAuthSeen();
@@ -138,8 +143,13 @@ export function ensureSession(): Promise<boolean> {
 export function adoptSession(token: string, expiresIn: number): void {
   bootstrapped = Promise.resolve(true);
   inFlight = null;
+  // Сессия — от ДРУГОГО аккаунта (device-link): локальная копия клинических
+  // данных прежнего не переживает смену (иначе экран с фолбэком на
+  // localStorage покажет её новому и автосохранением запишет в его аккаунт,
+  // аудит 2026-10, E1). До remember: он ставит отметку входа и владельца.
+  clearLocalData();
   remember(token, expiresIn);
-  // Сессия — от ДРУГОГО аккаунта (device-link): кеш прежнего userId не переживает смену.
+  // Кеш API прежнего userId тоже не переживает смену.
   clearApiCache();
 }
 

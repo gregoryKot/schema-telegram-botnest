@@ -25,7 +25,11 @@ import { parseLinkCode } from './link-payload';
 import { formatUserCode } from './ticket-code';
 import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
-import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
+import {
+  handleTicketDeny,
+  viewerTelegramId,
+  withConfirmingUser,
+} from './ticket-actions';
 
 /** Сколько строк «что переедет» показываем, чтобы карточка осталась читаемой. */
 const MAX_SUMMARY_ROWS = 4;
@@ -137,9 +141,14 @@ export class TelegramLinkService implements OnModuleInit {
           { accountService: this.accountService, logger: this.logger },
           ctx,
           'tglink approve',
-          async (code, userId) => {
+          async (code, userId, rawId) => {
             const form = await this.form(ctx.from?.id);
-            const { merged } = await this.links.approve(code, userId);
+            const { merged } = await this.links.approve(
+              code,
+              userId,
+              undefined,
+              rawId,
+            );
             // Событие пишет сервер: подтверждение произошло здесь, а сайт
             // узнаёт об исходе только опросом и поля `merged` не видит.
             void this.analytics.track(userId, 'account_link_confirmed', {
@@ -211,7 +220,9 @@ export class TelegramLinkService implements OnModuleInit {
   ): Promise<void> {
     const form = await this.form(rawId);
     const code = parseLinkCode(payload);
-    const found = code ? await this.ticketService.forConfirm(code) : null;
+    const found = code
+      ? await this.ticketService.forConfirm(code, viewerTelegramId(rawId))
+      : null;
     // Билет ВХОДА, подставленный в ссылку привязки, обязан выглядеть как
     // негодный код: иначе человек подтверждал бы перенос данных там, где на
     // деле открывается чужая сессия.

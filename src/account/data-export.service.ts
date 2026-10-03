@@ -6,6 +6,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { SecurityLogService } from '../auth/security-log.service';
 import { decryptRecord } from '../utils/crypto';
 import {
   EXPORT_POLICY,
@@ -42,6 +43,23 @@ const WITHHELD_OUT_OF_CONTOUR = {
     'контакту недостоверно: указавший чужой адрес получил бы чужую запись со ' +
     'свободным текстом. Доступны только ручным запросом администратору',
 };
+// Аудит 2026-10 (D2): модели терапевтической стороны хранят данные О человеке
+// (клиент), но принадлежат другому человеку (терапевт) или связывают двоих —
+// у них нет userId, поэтому в EXPORT_POLICY их нет. Раньше файл молчал об этом
+// и выглядел полным; теперь человек видит, чего в нём нет и почему.
+const WITHHELD_THERAPY_SIDE = {
+  table: 'TherapistNote, ClientConceptualization, ModeMap, TherapyRelation',
+  reason:
+    'записи психолога о вас (заметки, концептуализация, карты режимов, связь ' +
+    'с психологом) — это рабочие материалы специалиста; решение об их выдаче ' +
+    'принимает владелец проекта по отдельному запросу',
+};
+const WITHHELD_PAIR = {
+  table: 'Pair',
+  reason:
+    'связи с другими людьми (пара с другом) содержат данные второго человека, ' +
+    'без его согласия они в ваш файл не попадают',
+};
 
 @Injectable()
 export class DataExportService {
@@ -50,6 +68,7 @@ export class DataExportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly analytics: AnalyticsService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   async buildExport(userId: bigint): Promise<DataExportResult> {
@@ -72,6 +91,8 @@ export class DataExportService {
     const withheld: { table: string; reason: string }[] = [
       WITHHELD_USER_SECRETS,
       WITHHELD_OUT_OF_CONTOUR,
+      WITHHELD_THERAPY_SIDE,
+      WITHHELD_PAIR,
     ];
 
     for (const [model, decision] of Object.entries(EXPORT_POLICY)) {
@@ -102,6 +123,12 @@ export class DataExportService {
       tables: Object.keys(data).length + 1, // +providers
       rows,
     });
+    // M7 (аудит 2026-10): выгрузка всех данных — самое чувствительное чтение
+    // в продукте (угнанная сессия забирает дневники одним запросом). Аналитика
+    // — про воронку, не аудит; след для расследования пишется сюда. Только
+    // userId, без содержимого. В DM админу не уходит (не ALERT_EVENTS) —
+    // законная выгрузка не повод будить, но в логах она видна.
+    this.securityLog.log('data_exported', { userId });
     this.logger.log(`data export: userId=${userId} rows=${rows}`);
 
     return {

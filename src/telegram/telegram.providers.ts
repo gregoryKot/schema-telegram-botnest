@@ -4,6 +4,7 @@ import { Telegraf } from 'telegraf';
 import { Agent } from 'https';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { installPrivateChatOnly } from './private-chat-only';
 
 const logger = new Logger('TelegramProviders');
 
@@ -52,6 +53,8 @@ export const TELEGRAM_PROVIDERS: Provider[] = [
       const bot = new Telegraf(token, {
         telegram: { agent: telegramAgent() },
       });
+      // Первым, до любых хендлеров: группы и каналы бот не обслуживает.
+      installPrivateChatOnly(bot);
       try {
         const me = await bot.telegram.getMe();
         logger.log(`Bot authorized: @${me.username ?? me.id}`);

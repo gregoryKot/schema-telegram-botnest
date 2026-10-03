@@ -8,7 +8,7 @@ import { SessionType } from '@prisma/client';
 import { BookingAdminController } from './booking-admin.controller';
 import { calDavHealth } from './caldav-health';
 
-const ADMIN_KEY = 'super-secret-key';
+const ADMIN_KEY = 'super-secret-key-0123456789-abcdefghij';
 
 function makeController(configOverrides: Record<string, string> = {}) {
   const booking = { confirm: jest.fn(), list: jest.fn() };

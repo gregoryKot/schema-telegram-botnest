@@ -3,6 +3,7 @@ import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
 import { markAuthSeen, clearAuthSeen } from '../../../shared/src/auth/authSeen';
 import { postLogout } from '../../../shared/src/auth/logout';
+import { ensureDataOwnerForToken } from '../../../shared/src/auth/dataOwnerGuard';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
 import { refreshSession } from './refreshSession';
@@ -39,6 +40,9 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   // Общая точка «сессия жива» для refresh/Telegram-auth/логина — сбрасывает
   // authError и бэкофф ретраев, планирует следующий проактивный refresh.
   const applyToken = useCallback((token: string, expiresIn: number) => {
+    // Токен другого пользователя, чем владелец локальных данных (вход поверх
+    // живой сессии без выхода) → стереть их до отметки входа (аудит 2026-10, E1).
+    ensureDataOwnerForToken(token);
     // Отметка «в этом контейнере вход удавался» (shared/auth/authSeen):
     // экран входа обязан отличать новичка от истёкшей сессии.
     markAuthSeen();

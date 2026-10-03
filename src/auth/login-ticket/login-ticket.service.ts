@@ -17,8 +17,11 @@
 // механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes, randomInt } from 'crypto';
+import { Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth.service';
+import { SecurityLogService } from '../security-log.service';
+import { viewerMayAct } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import type {
   TicketForConfirm,
@@ -49,7 +52,28 @@ export class LoginTicketService {
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
     private readonly report: LoginTicketReport,
+    @Optional() private readonly securityLog?: SecurityLogService,
   ) {}
+
+  /**
+   * Сверка «карточку нажал тот, кому её показали». `viaTelegramId` — СЫРОЙ
+   * telegramId нажавшего (не канонический: после слияния они расходятся, а
+   * карточке показываем и запоминаем именно сырой). Без него (HTTP с
+   * проверенной сессией, MAX initData) проверки нет: там личность уже
+   * подтверждена подписью. Чужое нажатие неотличимо от «код не найден».
+   */
+  assertViewer(
+    row: { id: string; intent: string; shownToTelegramId: bigint | null },
+    viaTelegramId: bigint | undefined,
+  ): void {
+    if (viewerMayAct(row.shownToTelegramId, viaTelegramId)) return;
+    this.securityLog?.log('login_ticket_cross_user', {
+      intent: row.intent,
+      shownTo: row.shownToTelegramId,
+      actor: viaTelegramId,
+    });
+    throw new BadRequestException('Код не найден или истёк');
+  }
 
   hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
@@ -126,7 +150,10 @@ export class LoginTicketService {
    * бот получает только то, что покажет человеку, и не может случайно
    * отправить в чат хеши или чужой userId.
    */
-  async forConfirm(userCode: string): Promise<TicketForConfirm | null> {
+  async forConfirm(
+    userCode: string,
+    viewerTelegramId?: bigint,
+  ): Promise<TicketForConfirm | null> {
     const row = await this.prisma.loginTicket
       .findUnique({
         where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
@@ -148,6 +175,15 @@ export class LoginTicketService {
         this.report.step('too_late', row.hostId);
       return null;
     }
+    // Карточка уходит в чат конкретному человеку — запоминаем кому. Первый
+    // увидевший выигрывает; остальным код «не найден» (билет, начатый в
+    // браузере атакующего, нельзя подсунуть чужой карточкой в группе).
+    if (
+      viewerTelegramId !== undefined &&
+      !(await this.claimView(row, viewerTelegramId))
+    ) {
+      return null;
+    }
     if (row.intent === 'login') this.report.step('bot_opened', row.hostId);
     return {
       userCode: userCode.trim().toUpperCase(),
@@ -157,13 +193,46 @@ export class LoginTicketService {
     };
   }
 
+  /** Атомарно закрепляет билет за первым увидевшим; true — билет его. */
+  private async claimView(
+    row: { id: string; intent: string; shownToTelegramId: bigint | null },
+    viewer: bigint,
+  ): Promise<boolean> {
+    let shownTo = row.shownToTelegramId;
+    if (shownTo === null) {
+      const claimed = await this.prisma.loginTicket.updateMany({
+        where: { id: row.id, shownToTelegramId: null },
+        data: { shownToTelegramId: viewer },
+      });
+      if (claimed.count === 1) return true;
+      // Гонка: между чтением и записью билет закрепил другой.
+      const fresh = await this.prisma.loginTicket.findUnique({
+        where: { id: row.id },
+      });
+      shownTo = fresh?.shownToTelegramId ?? null;
+    }
+    if (shownTo === viewer) return true;
+    this.securityLog?.log('login_ticket_cross_user', {
+      intent: row.intent,
+      shownTo,
+      actor: viewer,
+      step: 'show',
+    });
+    return false;
+  }
+
   /**
    * Подтверждение входа (`intent: 'login'`): билет получает хозяина, и опрос
    * выдаст сессию именно этого аккаунта. Привязка идёт другим путём —
    * TicketLinkService, там нужен перенос данных.
    */
-  async approveLogin(userCode: string, approvedUserId: bigint): Promise<void> {
+  async approveLogin(
+    userCode: string,
+    approvedUserId: bigint,
+    viaTelegramId?: bigint,
+  ): Promise<void> {
     const row = await this.liveByUserCode(userCode);
+    this.assertViewer(row, viaTelegramId);
     if (row.intent !== 'login') {
       throw new BadRequestException('Этот код не для входа');
     }
@@ -207,8 +276,9 @@ export class LoginTicketService {
    * протуханием: экран, который просто ждёт пять минут, не скажет человеку,
    * что вход отклонили — а тому, кого пытались обмануть, важно это увидеть.
    */
-  async deny(userCode: string): Promise<void> {
+  async deny(userCode: string, viaTelegramId?: bigint): Promise<void> {
     const row = await this.liveByUserCode(userCode);
+    this.assertViewer(row, viaTelegramId);
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { deniedAt: new Date() },

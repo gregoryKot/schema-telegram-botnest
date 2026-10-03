@@ -63,8 +63,10 @@ export class TicketLinkService {
     userCode: string,
     targetUserId: bigint,
     ip?: string,
+    viaTelegramId?: bigint,
   ): Promise<{ merged: boolean }> {
     const row = await this.tickets.liveByUserCode(userCode);
+    this.tickets.assertViewer(row, viaTelegramId);
     if (row.intent !== 'link') {
       throw new BadRequestException('Этот код не для привязки');
     }

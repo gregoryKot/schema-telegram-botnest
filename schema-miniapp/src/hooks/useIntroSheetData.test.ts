@@ -52,7 +52,9 @@ describe('useIntroSheetData — загрузка', () => {
     expect(result.current.data.q1).toBe('из бэка');
   });
 
-  it('loadExisting вернул null — фолбэк на localStorage, если там что-то есть', async () => {
+  // Аудит 2026-10, E1: раньше тест требовал здесь фолбэк — он и переносил текст
+  // прежнего аккаунта в новый. Сервер сказал «пусто» — локальная копия не нужна.
+  it('loadExisting вернул null — локальная копия НЕ подмешивается и удаляется', async () => {
     localStorage.setItem('k2', JSON.stringify({ q1: 'из хранилища', q2: '' }));
     const loadExisting = vi.fn().mockResolvedValue(null);
     const saveNote = vi.fn().mockResolvedValue(undefined);
@@ -66,7 +68,8 @@ describe('useIntroSheetData — загрузка', () => {
     );
 
     await flushLoad();
-    expect(result.current.data.q1).toBe('из хранилища');
+    expect(result.current.data.q1).toBe('');
+    expect(localStorage.getItem('k2')).toBeNull();
   });
 
   it('loadExisting упал (реджект) — тоже фолбэк на localStorage', async () => {

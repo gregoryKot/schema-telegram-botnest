@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { PrismaService } from '../prisma/prisma.service';
 import type { Request } from 'express';
 
 export interface WebUser {
@@ -13,11 +14,16 @@ export interface WebUser {
 
 // Validates JWT Bearer token issued by AuthService.
 // Sets req.webUser = { userId } on success.
+// Аккаунт обязан быть жив (A5, аудит 2026-10): токен живёт 15 минут — дольше
+// удаления/слияния аккаунта. Как в TelegramAuthGuard, но без upsert.
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
     const header = req.headers['authorization'];
     if (!header?.startsWith('Bearer '))
@@ -25,6 +31,11 @@ export class JwtAuthGuard implements CanActivate {
 
     const token = header.slice(7);
     const { userId } = this.auth.verifyAccessToken(token);
+    const a = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { deletedAt: true },
+    });
+    if (!a || a.deletedAt) throw new UnauthorizedException('Account gone');
     req.webUser = { userId };
     return true;
   }
@@ -48,14 +59,13 @@ export class OptionalJwtGuard implements CanActivate {
         /* ignore — treat as anonymous */
       }
     }
-    // Link-token для OAuth-редиректов (top-level навигация — Authorization
-    // header поставить нельзя). Основной канал — httpOnly-cookie `link_token`
-    // (ставится эндпоинтом /link-token); query-параметр оставлен как legacy
-    // fallback для закэшированных клиентов и будет удалён (аудит 2026-07,
-    // S-4: токены в URL утекают в логи прокси и историю браузера).
+    // Link-token для OAuth-редиректов — ТОЛЬКО httpOnly-кука `link_token`
+    // (/link-token). `?link_token=` убран (A1, аудит 2026-10): login-CSRF —
+    // злоумышленник выпускает токен СВОЕГО аккаунта и шлёт жертву на
+    // /api/auth/google?link_token=…, чужой Google привязывается к нему.
+    // Куку чужому браузеру не поставить, URL — можно.
     const cookies = req.cookies as Record<string, string | undefined>;
-    const linkToken = (cookies?.['link_token'] ?? req.query?.link_token) as
-      string | undefined;
+    const linkToken = cookies?.['link_token'];
     if (!req.webUser && linkToken) {
       try {
         const { userId } = this.auth.verifyLinkToken(linkToken);

@@ -9,12 +9,12 @@ import { checkEnv } from './env-check';
 // иначе checkEnv(ALL_VALID) сообщал бы о «missing» не из-за теста, а из-за
 // самого реестра.
 const ALL_VALID = {
-  ADMIN_BOOKING_KEY: 'super-secret-key',
+  ADMIN_BOOKING_KEY: 'super-secret-key-0123456789-abcdefghij',
   ADMIN_ID: '123456789',
   BOT_TOKEN: `123456789:${'A'.repeat(35)}`,
   DATABASE_URL: 'postgres://localhost/db',
   ENCRYPTION_KEY: 'a'.repeat(64),
-  JWT_SECRET: 'jwt-secret-value',
+  JWT_SECRET: 'Zr8k2VqLx9Tn4Wc7Hb3Yd6Fm1Pj5Ug0aKs',
   WEBAPP_URL: 'https://schemehappens.ru',
 };
 
@@ -52,6 +52,18 @@ describe('checkEnv', () => {
       name: 'ADMIN_ID',
       problem: 'не похоже на Telegram id (ожидались только цифры)',
     });
+  });
+
+  // H2 аудита 2026-10: JWT_SECRET подписывает access/link/merge/challenge-токены
+  // и выводит PKCE-verifier VK; формат nonEmpty пускал секрет из одного символа.
+  it('JWT_SECRET короче 32 символов или заглушка — в invalid (в проде это error)', () => {
+    const short = checkEnv({ ...ALL_VALID, JWT_SECRET: 'jwt-secret-value' });
+    expect(short.invalid.map((i) => i.name)).toContain('JWT_SECRET');
+    const placeholder = checkEnv({
+      ...ALL_VALID,
+      JWT_SECRET: 'secretsecretsecretsecretsecret12',
+    });
+    expect(placeholder.invalid.map((i) => i.name)).toContain('JWT_SECRET');
   });
 
   it('необязательная переменная с неверным форматом тоже попадает в invalid', () => {
@@ -93,6 +105,30 @@ describe('checkEnv', () => {
       const result = checkEnv({ ...ALL_VALID, VK_APP_ID: 'vk1' });
       expect(result.crossCheckIssues.map((i) => i.id)).toContain(
         'vkAppRequiresRedirect',
+      );
+    });
+
+    it('ROBOKASSA_MERCHANT_LOGIN без паролей — одна проблема с обоими именами (M3)', () => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        ROBOKASSA_MERCHANT_LOGIN: 'shop',
+      });
+      const issue = result.crossCheckIssues.find(
+        (i) => i.id === 'robokassaLoginRequiresPasswords',
+      );
+      expect(issue?.problem).toContain('ROBOKASSA_PASSWORD1');
+      expect(issue?.problem).toContain('ROBOKASSA_PASSWORD2');
+    });
+
+    it('ROBOKASSA_MERCHANT_LOGIN с обоими паролями — без проблемы (M3)', () => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        ROBOKASSA_MERCHANT_LOGIN: 'shop',
+        ROBOKASSA_PASSWORD1: 'p1',
+        ROBOKASSA_PASSWORD2: 'p2',
+      });
+      expect(result.crossCheckIssues.map((i) => i.id)).not.toContain(
+        'robokassaLoginRequiresPasswords',
       );
     });
 

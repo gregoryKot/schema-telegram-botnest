@@ -15,6 +15,12 @@ on:
   # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
   workflow_dispatch:
 
+# Токен раннера по умолчанию — только чтение (аудит 2026-10, I5): ни одной
+# джобе ниже не нужна запись в репозиторий/PR/issues. Нужна запись — выдавай
+# её на уровне конкретной джобы (`permissions:` внутри job), а не здесь.
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest

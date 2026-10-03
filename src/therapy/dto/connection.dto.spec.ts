@@ -25,6 +25,17 @@ describe('JoinTherapyDto', () => {
   });
 });
 
+describe('JoinTherapyDto — длина кода (T5)', () => {
+  it('код длиннее 32 символов — отказ; обычный 12-символьный проходит', async () => {
+    await expect(
+      errorsFor(JoinTherapyDto, { code: 'A'.repeat(33) }),
+    ).resolves.toContain('code');
+    await expect(
+      errorsFor(JoinTherapyDto, { code: 'AABBCCDDEEFF' }),
+    ).resolves.toEqual([]);
+  });
+});
+
 describe('VirtualClientDto', () => {
   it('имя не строка — отказ', async () => {
     await expect(errorsFor(VirtualClientDto, { name: 42 })).resolves.toContain(

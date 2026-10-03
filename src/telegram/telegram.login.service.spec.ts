@@ -76,6 +76,12 @@ describe('/start login_<КОД> — карточка сверки', () => {
     expect(JSON.stringify(extra)).toContain('tglogin:no:K7M2QX94');
   });
 
+  it('карточку закрепляют за тем, кому показали: forConfirm получает сырой telegramId (B1)', async () => {
+    const { service, ticketService } = makeDeps();
+    await service.handleStart(makeCtx(), 'login_K7M2QX94', 42);
+    expect(ticketService.forConfirm).toHaveBeenCalledWith('K7M2QX94', 42n);
+  });
+
   it('негодный код — говорит об этом, а не молчит и не показывает карточку', async () => {
     const { service } = makeDeps({ card: null });
     const ctx = makeCtx();
@@ -121,7 +127,11 @@ describe('кнопки подтверждения', () => {
       from: { id: 42 },
     });
 
-    expect(ticketService.approveLogin).toHaveBeenCalledWith('K7M2QX94', 42n);
+    expect(ticketService.approveLogin).toHaveBeenCalledWith(
+      'K7M2QX94',
+      42n,
+      42n,
+    );
     expect(ctx.editMessageText.mock.calls[0][0]).toMatch(/Готово/);
   });
 
@@ -133,7 +143,7 @@ describe('кнопки подтверждения', () => {
       from: { id: 42 },
     });
 
-    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94');
+    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94', 42n);
     expect(ticketService.approveLogin).not.toHaveBeenCalled();
     // Причина отказа теперь в аудите: ручное «это не я» отличается от
     // перебора кодов, хотя событие у них одно.
@@ -276,9 +286,14 @@ describe('tglogin:yes — чей аккаунт впускаем', () => {
 
     await runAction(fakeBot, 'tglogin:yes:K7M2QX94', { from: { id: 42 } });
 
-    expect(ticketService.approveLogin).toHaveBeenCalledWith('K7M2QX94', WEB);
+    expect(ticketService.approveLogin).toHaveBeenCalledWith(
+      'K7M2QX94',
+      WEB,
+      42n,
+    );
     expect(ticketService.approveLogin).not.toHaveBeenCalledWith(
       'K7M2QX94',
+      42n,
       42n,
     );
   });

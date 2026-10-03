@@ -13,13 +13,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ArticlesService } from './articles.service';
-import { assertAdminKey } from '../booking/admin-key.util';
+import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import { ArticleDto, UpdateArticleDto } from './article.dto';
 
 /**
  * Admin article endpoints, guarded by the same ADMIN_BOOKING_KEY used by the
  * booking admin panel (one key for the whole admin panel, x-admin-key header).
  */
+@AdminThrottle()
 @Controller('api/articles/admin')
 export class ArticlesAdminController {
   private readonly adminKey: string;

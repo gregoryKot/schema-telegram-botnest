@@ -268,19 +268,8 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    // Clear YSQ data from localStorage if it belongs to a different user.
-    // Prevents a shared-device scenario where person B reads person A's clinical data.
-    const currentUserId = getHost().user()?.id ?? '';
-    if (currentUserId) {
-      const storedUserId = localStorage.getItem('ysq_owner_id');
-      if (storedUserId && storedUserId !== currentUserId) {
-        localStorage.removeItem(YSQ_RESULT_KEY);
-        localStorage.removeItem(YSQ_PROGRESS_KEY);
-      }
-      localStorage.setItem('ysq_owner_id', currentUserId);
-    }
-  }, []);
+  // Чужие локальные данные при смене аккаунта стирает ensureDataOwnerForToken
+  // в session.ts (раньше здесь была проверка ysq_owner_id — слепая на веб-хосте).
 
   useEffect(() => {
     getHost().ready();

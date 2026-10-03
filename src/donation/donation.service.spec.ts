@@ -157,3 +157,20 @@ describe('DonationService.markPaidByInvId — точный текст карто
     );
   });
 });
+
+// M1 (аудит 2026-10): email/comment донора уходят админу в HTML-сообщении.
+describe('DonationService.markPaidByInvId — экранирование HTML в алерте (M1)', () => {
+  it('email и comment с разметкой не доходят до DM сырыми', async () => {
+    const evil = '<a href="https://evil/">x</a>';
+    const { service, notify } = makeService({
+      ...PENDING,
+      email: evil,
+      comment: evil,
+    });
+    await service.markPaidByInvId(DONATION_INVID_BASE + 10, 300);
+    const text = notify.alertAdmin.mock.calls[0][0] as string;
+    expect(text).not.toContain('<a href');
+    expect(text).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
+    expect(text).toContain('<b>Донат 300 ₽</b>');
+  });
+});

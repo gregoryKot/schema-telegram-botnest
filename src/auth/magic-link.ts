@@ -18,6 +18,8 @@ export interface MagicLinkDeps {
   encryptEmail: (email: string) => string;
   addressForm: (userId: bigint) => Promise<AddressForm>;
   send: (email: string, link: string, form: AddressForm) => Promise<void>;
+  // Письмо привязки адреса (link_email_auth) — не «Войти» (аудит 2026-10, A3).
+  sendLink: (email: string, link: string, form: AddressForm) => Promise<void>;
   onSendError: (message: string) => void;
 }
 
@@ -52,7 +54,8 @@ export async function sendMagicLink(
   const tail = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
   const link = `${base}/api/auth/email/callback?token=${raw}${tail}`;
   const form = await deps.addressForm(userId);
-  void deps.send(lower, link, form).catch((err: Error) => {
+  const send = purpose === 'link_email_auth' ? deps.sendLink : deps.send;
+  void send(lower, link, form).catch((err: Error) => {
     deps.onSendError(err.message);
   });
 }

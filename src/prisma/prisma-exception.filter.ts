@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
+import { safeRequestPath } from './safe-request-path';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
 //
@@ -25,11 +26,19 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
     const req = host.switchToHttp().getRequest<Request>();
-    const path = req.url ?? '?';
-
-    // Always log the full internal message — admin gets the alert via
-    // AlertLogger and we keep the trail in case we need to debug.
-    this.logger.error(`Prisma error on ${path}: ${exception.message}`);
+    // Аудит 2026-10 (D1): AlertLogger шлёт админу в DM и на почту ТОЛЬКО
+    // первый аргумент `.error()`. Сырой `req.url` (токены записи в пути,
+    // `?token=`, OAuth `?code=&state=`) и `exception.message` (у
+    // PrismaClientValidationError внутри полный `args` с открытыми колонками)
+    // туда попадать не должны. Поэтому первый аргумент — маскированный путь +
+    // код/класс ошибки, а полный message — вторым (только stdout; конвенция
+    // H0/H6, см. client-errors.controller.ts).
+    const path = safeRequestPath(req.url);
+    const kind =
+      exception instanceof Prisma.PrismaClientKnownRequestError
+        ? exception.code
+        : exception.name;
+    this.logger.error(`Prisma error on ${path} (${kind})`, exception.message);
 
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       switch (exception.code) {
@@ -86,9 +95,12 @@ export class GenericExceptionFilter implements ExceptionFilter {
     }
     const req = host.switchToHttp().getRequest<Request>();
     const err = exception instanceof Error ? exception : undefined;
+    // D1: первый аргумент уходит в ALERT-канал — только маскированный путь и
+    // класс ошибки; message и стек — вторым (stdout), см. PrismaExceptionFilter.
+    const path = safeRequestPath(req.url);
     this.logger.error(
-      `Unhandled error on ${req.url ?? '?'}: ${err?.message ?? String(exception)}`,
-      err?.stack,
+      `Unhandled error on ${path} (${err?.name ?? typeof exception})`,
+      err?.stack ?? err?.message ?? String(exception),
     );
     host.switchToHttp().getResponse<Response>().status(500).json({
       statusCode: 500,

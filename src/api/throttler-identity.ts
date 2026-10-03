@@ -13,6 +13,7 @@
 // не нужна: у настоящего пользователя подпись сходится всегда, у подделки —
 // никогда, и она падает в IP-бакет, где ротация уже ничего не даёт.
 import { createHmac, timingSafeEqual } from 'crypto';
+import { INIT_DATA_MAX_AGE_S } from './init-data-window';
 
 /** Постоянное по времени сравнение строк разной длины. */
 function sameDigest(a: string, b: string): boolean {
@@ -63,11 +64,15 @@ export function verifiedJwtSubject(
 /**
  * Подпись initData Telegram сходится? Схема площадки: ключ — HMAC от токена
  * бота по строке `WebAppData`, им подписан отсортированный список полей.
- * Свежесть тут не проверяется — это забота auth-гарда, а не счётчика.
+ * Свежесть проверяется тем же окном, что и в auth-гарде: пересланная старая
+ * initData чужого пользователя иначе позволяла бы с любого адреса выжигать его
+ * личный бакет (аудит 2026-10, B2). Старше окна или без `auth_date` — null, то
+ * есть бакет адреса.
  */
 export function verifiedInitDataSubject(
   initData: string,
   botToken: string | undefined,
+  nowMs: number = Date.now(),
 ): string | null {
   if (!botToken) return null;
   try {
@@ -86,6 +91,11 @@ export function verifiedInitDataSubject(
       .update(checkString)
       .digest('hex');
     if (!sameDigest(hash, expected)) return null;
+    // auth_date входит в подписанную строку, так что подделать его нельзя —
+    // можно только переслать старую подпись целиком.
+    const authDate = Number(params.get('auth_date'));
+    if (!Number.isFinite(authDate) || authDate <= 0) return null;
+    if (nowMs / 1000 - authDate > INIT_DATA_MAX_AGE_S) return null;
     const user = JSON.parse(params.get('user') ?? '{}') as {
       id?: string | number;
     };

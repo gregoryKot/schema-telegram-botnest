@@ -125,11 +125,11 @@ describe('PrismaExceptionFilter', () => {
     expect(JSON.stringify(sentBody)).not.toContain('UserWhereUniqueInput');
   });
 
-  it('логирует полное внутреннее сообщение (для отладки/алертов), но не отправляет его клиенту', () => {
+  it('логирует полное внутреннее сообщение ВТОРЫМ аргументом (stdout), клиенту не отдаёт', () => {
     const filter = new PrismaExceptionFilter();
     const logSpy = jest
       .spyOn(
-        (filter as unknown as { logger: { error: (s: string) => void } })
+        (filter as unknown as { logger: { error: (...a: unknown[]) => void } })
           .logger,
         'error',
       )
@@ -138,11 +138,102 @@ describe('PrismaExceptionFilter', () => {
     const secretMessage = 'internal detail: column "ssn" does not exist';
     filter.catch(knownError('P2002', secretMessage), host);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(secretMessage));
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/api/secret-path'),
-    );
+    // Первый аргумент уходит в ALERT-канал: путь и код, без message (D1).
+    const [first, second] = logSpy.mock.calls[0] as [string, string];
+    expect(first).toContain('/api/secret-path');
+    expect(first).toContain('P2002');
+    expect(first).not.toContain(secretMessage);
+    expect(second).toBe(secretMessage);
     expect(JSON.stringify(json.mock.calls[0][0])).not.toContain('ssn');
+  });
+
+  // D1 (аудит 2026-10): первый аргумент logger.error уходит админу в DM и на
+  // почту. Раньше туда ехали сырой req.url (токены) и exception.message
+  // (у ValidationError — полный args с открытым текстом).
+  describe('D1: первый аргумент (ALERT-канал) не содержит секретов', () => {
+    const TOKEN = 'Zk3Qp9xLmN2vB7tYhR4sWc8UaE1dGj';
+
+    function firstArg(
+      run: (f: PrismaExceptionFilter, host: ArgumentsHost) => void,
+      url: string,
+    ): string {
+      const filter = new PrismaExceptionFilter();
+      const logSpy = jest
+        .spyOn(
+          (
+            filter as unknown as {
+              logger: { error: (...a: unknown[]) => void };
+            }
+          ).logger,
+          'error',
+        )
+        .mockImplementation(() => undefined);
+      run(filter, makeHost(url).host);
+      return logSpy.mock.calls[0][0] as string;
+    }
+
+    it('?token= / ?code=&state= срезаются', () => {
+      const first = firstArg(
+        (f, h) => f.catch(knownError('P2002', 'x'), h),
+        '/api/auth/email/callback?token=SECRETTOKEN&code=AUTHCODE&state=ST',
+      );
+      expect(first).not.toMatch(/SECRETTOKEN|AUTHCODE|state=/);
+      expect(first).toContain('/api/auth/email/callback');
+    });
+
+    it('токен в сегменте пути (by-token / ics) маскируется', () => {
+      const a = firstArg(
+        (f, h) => f.catch(knownError('P2025', 'x'), h),
+        `/api/booking/by-token/${TOKEN}`,
+      );
+      const b = firstArg(
+        (f, h) => f.catch(knownError('P2025', 'x'), h),
+        `/api/booking/ics/${TOKEN}`,
+      );
+      expect(a).not.toContain(TOKEN);
+      expect(b).not.toContain(TOKEN);
+      expect(a).toContain('<token>');
+    });
+
+    it('PrismaClientValidationError: args с открытым текстом не в первом аргументе', () => {
+      const first = firstArg(
+        (f, h) =>
+          f.catch(
+            new Prisma.PrismaClientValidationError(
+              'Invalid `prisma.note.create()`: data: { text: "я не хочу жить" }',
+              { clientVersion: '5.0.0' },
+            ),
+            h,
+          ),
+        '/api/notes',
+      );
+      expect(first).not.toContain('не хочу жить');
+      expect(first).toContain('PrismaClientValidationError');
+    });
+
+    it('GenericExceptionFilter: URL и message не в первом аргументе', () => {
+      const filter = new GenericExceptionFilter();
+      const logSpy = jest
+        .spyOn(
+          (
+            filter as unknown as {
+              logger: { error: (...a: unknown[]) => void };
+            }
+          ).logger,
+          'error',
+        )
+        .mockImplementation(() => undefined);
+      const err = new TypeError('boom: user text leaked');
+      filter.catch(
+        err,
+        makeHost(`/api/booking/by-token/${TOKEN}?code=AUTHCODE`).host,
+      );
+      const [first, second] = logSpy.mock.calls[0] as [string, string];
+      expect(first).not.toMatch(/AUTHCODE|user text leaked/);
+      expect(first).not.toContain(TOKEN);
+      expect(first).toContain('TypeError');
+      expect(second).toContain('boom: user text leaked');
+    });
   });
 
   it('req.url отсутствует → не падает, использует "?" вместо краша', () => {
@@ -206,8 +297,9 @@ describe('GenericExceptionFilter', () => {
     const secret = new Error('boom: leaked internal detail');
     filter.catch(secret, host);
 
+    // message — в stack (второй аргумент, stdout), в первый (ALERT) не идёт.
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('boom: leaked internal detail'),
+      expect.not.stringContaining('boom: leaked internal detail'),
       secret.stack,
     );
     expect(JSON.stringify(json.mock.calls[0][0])).not.toContain(

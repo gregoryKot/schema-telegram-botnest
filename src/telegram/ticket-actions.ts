@@ -8,6 +8,16 @@ import { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { AccountService } from '../bot/account.service';
 
+/**
+ * Сырой telegramId как «кому показали карточку». НЕ userId: для сверки
+ * карточки нужен именно номер, под которым человек пишет боту, а не
+ * канонический (трипвайр в telegram.invariants.spec.ts ловит прямое приведение сырого номера
+ * как попытку взять его за userId — здесь это осознанно другое).
+ */
+export function viewerTelegramId(telegramId: number | undefined) {
+  return telegramId === undefined ? undefined : BigInt(telegramId);
+}
+
 export interface DenyDeps {
   tickets: LoginTicketService;
   securityLog: SecurityLogService;
@@ -27,7 +37,9 @@ export async function handleTicketDeny(
   text: string,
 ): Promise<void> {
   try {
-    await deps.tickets.deny(code);
+    // Сырой номер нажавшего: отклонить карточку может только тот, кому её
+    // показали (иначе пересланную карточку гасил бы кто угодно).
+    await deps.tickets.deny(code, viewerTelegramId(ctx.from?.id));
     deps.securityLog.log('login_ticket_denied', {
       telegramId: ctx.from?.id,
       reason,
@@ -64,7 +76,7 @@ export async function withConfirmingUser(
   deps: ConfirmDeps,
   ctx: Context,
   what: string,
-  body: (code: string, userId: bigint) => Promise<void>,
+  body: (code: string, userId: bigint, rawId: bigint) => Promise<void>,
 ): Promise<void> {
   const rawId = ctx.from?.id;
   if (!rawId) return;
@@ -72,7 +84,7 @@ export async function withConfirmingUser(
   try {
     const userId = await deps.accountService.canonicalUserId(rawId);
     await deps.accountService.registerUser(userId, ctx.from?.first_name);
-    await body(code, userId);
+    await body(code, userId, viewerTelegramId(rawId)!);
   } catch (err) {
     deps.logger.error(
       `${what} failed: ${(err as Error).message}`,

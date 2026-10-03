@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { ClientErrorDto } from './dto/client-error.dto';
-import { stripUrlSecrets } from './telemetry-url.util';
+import { stripUrlSecrets, stripUrlSecretsInText } from './telemetry-url.util';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { classifyClientErrorSection } from './client-error-section';
 import { AlertThrottle } from '../utils/alert-throttle';
@@ -51,10 +51,13 @@ export class ClientErrorsController {
   @HttpCode(204)
   report(@Body() body: ClientErrorDto, @Req() req: Request): void {
     const safeUrl = stripUrlSecrets(body.url);
+    // M8 (аудит 2026-10): url чистился, а message/stack — нет, хотя в стек
+    // попадает location.href с живой подписью initData/JWT во фрагменте.
     const detail = [
-      `${body.section}: ${body.message}`,
+      stripUrlSecretsInText(`${body.section}: ${body.message}`),
       safeUrl ? `url=${safeUrl}` : null,
-      body.stack ?? body.componentStack ?? null,
+      stripUrlSecretsInText(body.stack ?? body.componentStack ?? undefined) ??
+        null,
     ]
       .filter(Boolean)
       .join('\n');

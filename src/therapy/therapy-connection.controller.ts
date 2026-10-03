@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -17,6 +18,7 @@ import { uid, parseId as parseIdShared } from '../api/request-utils';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
@@ -69,7 +71,20 @@ export class TherapyConnectionController {
   @Post('join')
   async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
-    const ok = await this.relationsService.joinAsClient(uid(req), body.code);
+    let ok: boolean;
+    try {
+      ok = await this.relationsService.joinAsClient(uid(req), body.code);
+    } catch (e) {
+      // Уже есть активная связь с другим терапевтом (аудит 2026-10, T3): 409 с
+      // машиночитаемой причиной — фронт может показать точный текст вместо
+      // общего «неверный код». Форма успешного ответа не меняется.
+      if (e instanceof Error && e.message === ALREADY_CONNECTED_ERROR)
+        throw new ConflictException({
+          message: 'Already connected to another therapist',
+          reason: 'already_connected',
+        });
+      throw e;
+    }
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };
   }

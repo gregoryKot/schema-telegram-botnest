@@ -6,12 +6,14 @@
 // (roleGuardedRoutes), argument-passing и happy path — по каждому хендлеру.
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from './therapist-request.service';
@@ -166,6 +168,30 @@ describe('TherapyConnectionController.join', () => {
       'Invalid or expired code',
     );
     expect(relations.joinAsClient).toHaveBeenCalledWith(5n, 'BAD');
+  });
+
+  // Аудит 2026-10, T3: уже есть связь с другим терапевтом → 409 с причиной
+  // (не 400 «неверный код» и не тихий успех).
+  it('связь с другим терапевтом → 409 с reason: already_connected', async () => {
+    const { controller, relations } = makeController();
+    relations.joinAsClient.mockRejectedValue(
+      new Error(ALREADY_CONNECTED_ERROR),
+    );
+    const err = await controller
+      .join(makeReq(5n), { code: 'GOOD' })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as ConflictException).getResponse()).toMatchObject({
+      reason: 'already_connected',
+    });
+  });
+
+  it('неизвестная ошибка сервиса пробрасывается как есть (не маскируется под 409)', async () => {
+    const { controller, relations } = makeController();
+    relations.joinAsClient.mockRejectedValue(new Error('db down'));
+    await expect(
+      controller.join(makeReq(5n), { code: 'GOOD' }),
+    ).rejects.toThrow('db down');
   });
 
   it('валидный код → { ok: true }', async () => {

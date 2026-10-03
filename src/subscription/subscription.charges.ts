@@ -5,6 +5,7 @@ import { BookingNotifyService } from '../booking/booking-notify.service';
 import { SubPeriod } from '../booking/booking.config';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
+import { escapeHtml } from '../utils/escape-html';
 
 // Списания по подписке: подтверждение оплаченного charge из вебхука и
 // почасовой прогон due-подписок. Вынесено из subscription.service.ts
@@ -72,7 +73,8 @@ export async function markChargePaid(
   const plain = decryptRecord(sub, SCHEMA);
   await deps.notify.alertAdmin(
     `${charge.isFirst ? '🎉 <b>Новая подписка</b>' : '🔁 <b>Продление подписки</b>'} ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'}` +
-      (plain.email ? `\n📬 ${plain.email}` : '') +
+      // M1 (аудит 2026-10): email вводит подписчик, уходит админу как HTML.
+      (plain.email ? `\n📬 ${escapeHtml(plain.email)}` : '') +
       (sub.telegramId ? `\n👤 tg:${sub.telegramId}` : ''),
   );
   deps.logger.log(

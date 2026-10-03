@@ -52,7 +52,7 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
       'Подписывает access/refresh/merge JWT сайта — без него вход через ' +
       'Google/VK и merge аккаунтов не работает.',
     requiredInProd: true,
-    format: formats.nonEmpty,
+    format: formats.secret32,
     group: 'auth',
   },
   {

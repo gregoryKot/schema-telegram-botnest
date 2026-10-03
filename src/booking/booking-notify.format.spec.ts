@@ -66,3 +66,22 @@ describe('bookingCardText — часовой пояс клиента', () => {
     expect(text).toContain('у клиента');
   });
 });
+
+// M1 (аудит 2026-10): имя/контакт/сообщение — ввод посетителя, текст идёт админу
+// с parse_mode HTML. Раньше экранировался только `source`.
+describe('bookingCardText — экранирование пользовательских строк (M1)', () => {
+  const EVIL = '<a href="https://evil/">x</a>';
+
+  it('имя, контакт и сообщение с HTML не попадают в текст сырыми', () => {
+    const text = bookingCardText('<b>Заголовок</b>', {
+      clientName: EVIL,
+      clientContact: EVIL,
+      startsAt,
+      message: EVIL,
+    });
+    expect(text).not.toContain('<a href');
+    expect(text).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
+    // заголовок — наша разметка, остаётся как есть
+    expect(text).toContain('<b>Заголовок</b>');
+  });
+});

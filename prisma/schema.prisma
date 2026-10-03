@@ -308,6 +308,11 @@ model LoginTicket {
   deniedAt       DateTime?
   // Сессия забрана — код больше не действует (одноразовость).
   consumedAt     DateTime?
+  // СЫРОЙ telegramId того, кому бот показал карточку сверки (первый увидевший
+  // выигрывает). Подтвердить/отклонить из Telegram может только он: иначе
+  // карточку из группы или пересылки нажал бы кто угодно и отдал свою сессию
+  // (аудит 2026-10, B1). Null — в Telegram билет не показывали (MAX/веб).
+  shownToTelegramId BigInt?
   user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])

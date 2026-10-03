@@ -56,6 +56,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    const seededText = loadLocal()?.text ?? '';
     api
       .getSafePlace()
       .then((data) => {
@@ -72,6 +73,15 @@ export function SafePlace({ onClose, onComplete }: Props) {
           setSaved(local);
           if (!text) setText(data.description);
           setEditing(false);
+        } else {
+          // Сервер уверенно ответил «пусто»: локальная копия — чужая (смена
+          // аккаунта) или устаревшая, оставлять её нельзя (аудит 2026-10, E1).
+          // Фолбэк на неё — только при ошибке сети (catch ниже).
+          localStorage.removeItem(STORAGE_KEY);
+          setSaved(null);
+          // Текст, который человек успел набрать сам, не трогаем.
+          setText((t) => (t === seededText ? '' : t));
+          setEditing(true);
         }
       })
       .catch((e) => console.error('getSafePlace failed', e));

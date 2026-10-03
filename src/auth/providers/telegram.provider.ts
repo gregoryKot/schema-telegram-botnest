@@ -3,6 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { AuthProviderHandler, ProviderIdentity } from './types';
 
+// H3 аудита 2026-10: подписанный payload виджета — воспроизводимый вход:
+// он лежит в истории браузера (`#tgAuthResult`) и в логах прокси, и до
+// истечения окна его можно предъявить ещё раз. 24 часа были запасом «на
+// всякий случай»; живому входу хватает минут (виджет → POST сразу), поэтому
+// окно — 15 минут, с запасом на расхождение часов.
+export const TELEGRAM_AUTH_MAX_AGE_SEC = 900;
+
 @Injectable()
 export class TelegramProvider implements AuthProviderHandler {
   readonly id = 'telegram';
@@ -35,7 +42,7 @@ export class TelegramProvider implements AuthProviderHandler {
     delete fields['hash'];
 
     const authDate = parseInt(fields['auth_date'] ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 86400)
+    if (Date.now() / 1000 - authDate > TELEGRAM_AUTH_MAX_AGE_SEC)
       throw new UnauthorizedException('Telegram auth data expired');
 
     // Login Widget: secret_key = SHA256(bot_token).

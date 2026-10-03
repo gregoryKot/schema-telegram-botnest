@@ -415,8 +415,10 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
 
 describe('TherapyClientDataService — виртуальный клиент (id<0) в getClientData', () => {
   it('getClientData возвращает заглушку без чтения User/YSQ, но проверяет связь', async () => {
-    const { svc, db } = makeService([relA]); // relA.id === 1 → clientId=-1 проходит assertHasClient
-    const result = await svc.getClientData(T1, -1);
+    // relVirtual.id === 3 → clientId=-3 (связь реального клиента relA под -1
+    // больше не проходит как «виртуальная» — аудит 2026-10, T4)
+    const { svc, db } = makeService([relVirtual]);
+    const result = await svc.getClientData(T1, -3);
     expect(result).toEqual({
       name: null,
       mySchemaIds: [],
@@ -482,14 +484,14 @@ describe('TherapyClientDataService — clientId<0 короткие пути', ()
   });
 
   it('requestYsq для виртуального клиента → связь проверяется, но уведомление не шлётся', async () => {
-    const { svc, db, notificationService } = makeService([relA]);
+    const { svc, db, notificationService } = makeService([relVirtual]);
     const findFirstSpy = jest.spyOn(db.therapyRelation, 'findFirst');
-    await svc.requestYsq(T1, -1);
+    await svc.requestYsq(T1, -3);
     expect(notificationService.schedule).not.toHaveBeenCalled();
     // «связь проверяется» — это реальный поход в БД за relation по -clientId=id,
     // а не голый early-return без проверки принадлежности.
     expect(findFirstSpy).toHaveBeenCalledWith({
-      where: { id: 1, therapistId: T1, status: 'active' },
+      where: { id: 3, therapistId: T1, clientId: null, status: 'active' },
     });
   });
 });
@@ -573,9 +575,20 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
   });
 
   it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {
-    const { svc, rels } = makeService([relA]); // relA.id === 1
-    await svc.updateSessionInfo(T1, -1, { nextSession: '2026-09-01' });
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.updateSessionInfo(T1, -3, { nextSession: '2026-09-01' });
     expect((rels[0] as any).nextSession).toBe('2026-09-01');
+  });
+
+  // Аудит 2026-10, T4: -id связи РЕАЛЬНОГО клиента не должен проходить как
+  // виртуальный клиент — ни проверка доступа, ни запись в чужую строку.
+  it('-relA.id (связь реального клиента) не проходит как виртуальный: отказ, строка не тронута', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
+    const before = (rels[0] as any).nextSession; // relA — общий объект, мог быть изменён раньше
+    await expect(
+      svc.updateSessionInfo(T1, -1, { nextSession: '2026-09-01' }),
+    ).rejects.toThrow('No active relation');
+    expect((rels[0] as any).nextSession).toBe(before);
   });
 });
 

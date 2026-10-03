@@ -16,6 +16,7 @@ import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { AuthService } from './auth.service';
 import { TotpService } from './totp.service';
+import { LinkSessionRequiredException } from './link-session-required.exception';
 import { EmailTokenService, EmailConsumeResult } from './email-token.service';
 import {
   createFakeTable,
@@ -75,6 +76,7 @@ function makeService() {
   const securityLog = { log: jest.fn() } as any;
   const emailSvc = {
     sendLoginLink: jest.fn().mockResolvedValue(undefined),
+    sendLinkEmailLetter: jest.fn().mockResolvedValue(undefined),
   } as any;
   const auth = new AuthService(prisma, config, securityLog, emailSvc);
   const totp = new TotpService(prisma);
@@ -98,10 +100,12 @@ function makeService() {
 // requestEmailLogin/linkEmailToAccount (выдача токена) там и остались.
 function extractTokenFromLink(auth: AuthService): string {
   const emailSvc = (auth as any).emailSvc;
-  const link: string =
-    emailSvc.sendLoginLink.mock.calls[
-      emailSvc.sendLoginLink.mock.calls.length - 1
-    ][1];
+  // Письмо входа и письмо привязки — разные методы (A3); берём последнее.
+  const calls = [
+    ...emailSvc.sendLoginLink.mock.calls,
+    ...emailSvc.sendLinkEmailLetter.mock.calls,
+  ];
+  const link: string = (calls[calls.length - 1] as string[])[1];
   return new URL(link).searchParams.get('token')!;
 }
 
@@ -110,6 +114,13 @@ function assertTokens(
 ): asserts result is Extract<EmailConsumeResult, { kind: 'tokens' }> {
   if (result.kind !== 'tokens')
     throw new Error(`expected kind=tokens, got ${result.kind}`);
+}
+
+function assertLinked(
+  result: EmailConsumeResult,
+): asserts result is Extract<EmailConsumeResult, { kind: 'linked' }> {
+  if (result.kind !== 'linked')
+    throw new Error(`expected kind=linked, got ${result.kind}`);
 }
 
 function assertChallenge(
@@ -258,7 +269,7 @@ describe('EmailTokenService — consumeEmailToken', () => {
     const { svc, auth, authProviders } = makeService();
     await auth.linkEmailToAccount(42n, 'link@example.com');
     const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw);
+    const result = await svc.consumeEmailToken(raw, undefined, undefined, 42n);
     expect(result.purpose).toBe('link_email_auth');
     expect(
       authProviders.some(
@@ -272,7 +283,7 @@ describe('EmailTokenService — consumeEmailToken', () => {
     await auth.linkEmailToAccount(77n, 'decrypt-fallback@example.com');
     const raw = extractTokenFromLink(auth);
     (decrypt as jest.Mock).mockReturnValueOnce(null);
-    const result = await svc.consumeEmailToken(raw);
+    const result = await svc.consumeEmailToken(raw, undefined, undefined, 77n);
     expect(result.purpose).toBe('link_email_auth');
     expect(
       authProviders.some(
@@ -306,7 +317,68 @@ describe('EmailTokenService — consumeEmailToken', () => {
       provider: 'email',
       providerId: 'taken@example.com',
     });
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(ConflictException);
+    await expect(
+      svc.consumeEmailToken(raw, undefined, undefined, 999999n),
+    ).rejects.toThrow(ConflictException);
+  });
+});
+
+// A3 (аудит 2026-10): письмо привязки уходит на адрес, который ввёл
+// ЗАПРОСИВШИЙ, а кликнуть может кто угодно. До фикса клик жертвы привязывал
+// её адрес к аккаунту злоумышленника И выдавал жертве сессию этого аккаунта.
+describe('EmailTokenService — привязка почты требует сессии того же аккаунта (A3)', () => {
+  const ATTACKER = 666n;
+  const VICTIM = 777n;
+
+  it('клик БЕЗ сессии → LinkSessionRequiredException, адрес не привязан, токен НЕ сожжён', async () => {
+    const { svc, auth, authProviders, emailTokens } = makeService();
+    await auth.linkEmailToAccount(ATTACKER, 'victim@example.com');
+    const raw = extractTokenFromLink(auth);
+    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
+      LinkSessionRequiredException,
+    );
+    await expect(
+      svc.consumeEmailToken(raw, undefined, undefined, null),
+    ).rejects.toThrow(LinkSessionRequiredException);
+    expect(authProviders).toHaveLength(0);
+    expect(emailTokens[0].usedAt).toBeNull();
+  });
+
+  it('клик из сессии ДРУГОГО аккаунта (жертва) → отказ, привязки нет, сессия не выдана', async () => {
+    const { svc, auth, authProviders, webSessions } = makeService();
+    await auth.linkEmailToAccount(ATTACKER, 'victim@example.com');
+    const raw = extractTokenFromLink(auth);
+    await expect(
+      svc.consumeEmailToken(raw, '203.0.113.9', 'UA', VICTIM),
+    ).rejects.toThrow(LinkSessionRequiredException);
+    expect(authProviders).toHaveLength(0);
+    expect(webSessions).toHaveLength(0);
+  });
+
+  it('клик из сессии владельца → kind:"linked", привязка есть, сессия НЕ выдаётся', async () => {
+    const { svc, auth, authProviders, webSessions, emailTokens } =
+      makeService();
+    await auth.linkEmailToAccount(ATTACKER, 'mine@example.com');
+    const raw = extractTokenFromLink(auth);
+    const result = await svc.consumeEmailToken(
+      raw,
+      undefined,
+      undefined,
+      ATTACKER,
+    );
+    assertLinked(result);
+    expect(result.userId).toBe(ATTACKER);
+    expect(result).not.toHaveProperty('tokens');
+    expect(webSessions).toHaveLength(0);
+    expect(authProviders.map((p) => String(p.userId))).toEqual(['666']);
+    expect(emailTokens[0].usedAt).not.toBeNull();
+  });
+
+  it('токен входа (login) от чужой сессии не затронут: вход по-прежнему не требует сессии', async () => {
+    const { svc, auth } = makeService();
+    await auth.requestEmailLogin('plain@example.com');
+    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
+    assertTokens(result);
   });
 });
 
@@ -332,7 +404,7 @@ describe('EmailTokenService — 2FA-гейт при login (H1)', () => {
     expect(emailTokens[0].usedAt).not.toBeNull();
   });
 
-  it('purpose=link_email_auth, у пользователя включён TOTP → всё равно kind:"tokens" (привязка почты не гейтится 2FA)', async () => {
+  it('purpose=link_email_auth, у пользователя включён TOTP → всё равно kind:"linked" (привязка почты не гейтится 2FA)', async () => {
     const { svc, auth, users } = makeService();
     users.push({
       id: 55n,
@@ -341,8 +413,8 @@ describe('EmailTokenService — 2FA-гейт при login (H1)', () => {
     });
     await auth.linkEmailToAccount(55n, 'linked-2fa@example.com');
     const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw);
-    assertTokens(result);
+    const result = await svc.consumeEmailToken(raw, undefined, undefined, 55n);
+    assertLinked(result);
     expect(result.purpose).toBe('link_email_auth');
   });
 });

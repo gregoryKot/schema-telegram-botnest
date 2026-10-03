@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, TokenPair } from './auth.service';
 import { TotpService } from './totp.service';
+import { LinkSessionRequiredException } from './link-session-required.exception';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { decrypt as decField } from '../utils/crypto';
 
@@ -16,6 +17,8 @@ import { decrypt as decField } from '../utils/crypto';
 // EmailToken, а этот сервис его читает.
 export type EmailConsumeResult =
   | { kind: 'tokens'; tokens: TokenPair; purpose: string; userId: bigint }
+  // Привязка почты: сессия НЕ выдаётся (A3) — человек уже вошёл в свой аккаунт.
+  | { kind: 'linked'; purpose: 'link_email_auth'; userId: bigint }
   | {
       kind: 'totp_challenge';
       challengeToken: string;
@@ -34,12 +37,19 @@ export class EmailTokenService {
   // Consume a login or link_email_auth token. Returns issued tokens OR a TOTP
   // challenge (2FA-гейт, аудит 2026-08, H1): почтовый ящик — фактор, который
   // TOTP обязан прикрыть, поэтому магик-линк на login при включённом TOTP не
-  // выдаёт сессию сразу, а требует код (как OAuth-вход). Привязка
-  // (link_email_auth) — подтверждение из уже своей почты, её не гейтим.
+  // выдаёт сессию сразу, а требует код (как OAuth-вход).
+  //
+  // Привязка (link_email_auth, аудит 2026-10, A3): письмо уходит на адрес,
+  // который ввёл ЗАПРОСИВШИЙ, а кликнуть может кто угодно. Поэтому ссылка
+  // работает только в браузере с живой сессией аккаунта, для которого она
+  // выдана (`currentUserId`), и сессию не выдаёт никогда: раньше жертва,
+  // кликнув по присланной злоумышленником ссылке, получала сессию АККАУНТА
+  // ЗЛОУМЫШЛЕННИКА. Проверка стоит ДО погашения: чужой клик токен не сжигает.
   async consumeEmailToken(
     rawToken: string,
     ip?: string,
     userAgent?: string,
+    currentUserId: bigint | null = null,
   ): Promise<EmailConsumeResult> {
     if (!rawToken) throw new UnauthorizedException('Missing token');
     const tokenHash = crypto
@@ -57,6 +67,8 @@ export class EmailTokenService {
     if (!['login', 'link_email_auth'].includes(row.purpose))
       throw new UnauthorizedException('Token purpose mismatch');
     if (!row.userId) throw new UnauthorizedException('No user bound to token');
+    if (row.purpose === 'link_email_auth' && currentUserId !== row.userId)
+      throw new LinkSessionRequiredException();
 
     // L3 аудита 2026-08: погашение атомарно. Проверка row.usedAt выше и update
     // были раздельны — два параллельных запроса с одним токеном проходили
@@ -84,6 +96,7 @@ export class EmailTokenService {
           'Этот email уже привязан к другому аккаунту',
         );
       }
+      return { kind: 'linked', purpose: row.purpose, userId: row.userId };
     }
 
     if (row.purpose === 'login' && (await this.totp.isEnabled(row.userId))) {

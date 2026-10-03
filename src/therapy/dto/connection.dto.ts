@@ -1,4 +1,10 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * DTO подключения клиент↔терапевт (аудит 2026-07, 2г / правило №6
@@ -8,6 +14,7 @@ import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
 export class JoinTherapyDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(32)
   code!: string;
 }
 

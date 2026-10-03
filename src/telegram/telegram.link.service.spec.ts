@@ -145,6 +145,12 @@ describe('linkConfirmText', () => {
 });
 
 describe('/start link_<КОД>', () => {
+  it('карточку закрепляют за тем, кому показали: forConfirm получает сырой telegramId (B1)', async () => {
+    const { service, ticketService } = makeDeps();
+    await service.handleStart(makeCtx(), 'link_K7M2QX94', 42);
+    expect(ticketService.forConfirm).toHaveBeenCalledWith('K7M2QX94', 42n);
+  });
+
   it('живой билет привязки — карточка сверки с кнопками', async () => {
     const { service, links } = makeDeps();
     const ctx = makeCtx();
@@ -193,8 +199,13 @@ describe('tglink:yes — кто становится хозяином данны
 
     await runAction(fakeBot, 'tglink:yes:K7M2QX94', { from: { id: 42 } });
 
-    expect(links.approve).toHaveBeenCalledWith('K7M2QX94', WEB);
-    expect(links.approve).not.toHaveBeenCalledWith('K7M2QX94', 42n);
+    expect(links.approve).toHaveBeenCalledWith('K7M2QX94', WEB, undefined, 42n);
+    expect(links.approve).not.toHaveBeenCalledWith(
+      'K7M2QX94',
+      42n,
+      undefined,
+      42n,
+    );
   });
 
   it('исход пишет сервер: сайт о нём узнать не может', async () => {
@@ -238,7 +249,7 @@ describe('tglink:no', () => {
       from: { id: 42 },
     });
 
-    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94');
+    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94', 42n);
     expect(securityLog.log).toHaveBeenCalledWith(
       'login_ticket_denied',
       expect.objectContaining({ reason: 'user_denied_link' }),

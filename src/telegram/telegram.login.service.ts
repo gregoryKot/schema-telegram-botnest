@@ -31,7 +31,11 @@ import { resolveForm } from './telegram.reply-helpers';
 import { formatUserCode, parseLoginCode } from './login-payload';
 import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
-import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
+import {
+  handleTicketDeny,
+  viewerTelegramId,
+  withConfirmingUser,
+} from './ticket-actions';
 
 export function confirmText(
   form: AddressForm,
@@ -94,9 +98,10 @@ export class TelegramLoginService implements OnModuleInit {
           { accountService: this.accountService, logger: this.logger },
           ctx,
           'tglogin approve',
-          async (code, userId) => {
+          async (code, userId, rawId) => {
             const form = await this.form(ctx.from?.id);
-            await this.ticketService.approveLogin(code, userId);
+            // rawId — кому показали карточку; userId — кому достанется сессия.
+            await this.ticketService.approveLogin(code, userId, rawId);
             await ctx
               .editMessageText(
                 t(
@@ -155,7 +160,9 @@ export class TelegramLoginService implements OnModuleInit {
   ): Promise<void> {
     const form = await this.form(rawId);
     const code = parseLoginCode(payload);
-    const found = code ? await this.ticketService.forConfirm(code) : null;
+    const found = code
+      ? await this.ticketService.forConfirm(code, viewerTelegramId(rawId))
+      : null;
     // Билет привязки, подставленный в ссылку входа, обязан выглядеть как
     // негодный код. Иначе человеку показали бы карточку ВХОДА, а нажатие
     // упало бы в approveLogin с «этот код не для входа» — соврали дважды:

@@ -87,6 +87,20 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     }
   });
 
+  // Аудит 2026-10, T8: задания офлайн-клиентов терапевта (userId < 0, FK нет)
+  // оставались сиротами после удаления терапевта.
+  it('удаляет задания терапевта виртуальным клиентам (userId < 0), не трогая задания реальных', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    await service.deleteAllUserData(uid);
+
+    const wheres = prisma._calls['userTask'].map((a: any) => a.where);
+    expect(wheres).toContainEqual({ assignedBy: uid, userId: { lt: 0n } });
+    // Условие узкое: только отрицательные userId — задачи, назначенные реальным
+    // клиентам, принадлежат им и этим запросом не сносятся.
+    expect(wheres).not.toContainEqual({ assignedBy: uid });
+  });
+
   it('удаляет саму строку User и все user-owned таблицы в одной транзакции', async () => {
     const prisma = makePrisma();
     const service = new AccountService(prisma);

@@ -108,6 +108,9 @@ export class RobokassaService {
    * Expected formula: MD5(OutSum:InvId:Password2)
    */
   validateWebhook(outSum: string, invId: string, sigReceived: string): boolean {
+    // M3 (аудит 2026-10): без Password2 подпись считалась бы от пустой строки —
+    // `md5(OutSum:InvId:)` любой желающий посчитает сам и подделает «оплачено».
+    if (!this.pass2) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass2}`);
     return safeEqualHex(expected, sigReceived);
   }
@@ -119,6 +122,8 @@ export class RobokassaService {
    */
   validateSuccess(outSum: string, invId: string, sigReceived: string): boolean {
     if (!outSum || !invId || !sigReceived) return false;
+    // M3: пустой Password1 — та же подделка подписи, что и с Password2.
+    if (!this.pass1) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass1}`);
     return safeEqualHex(expected, sigReceived);
   }

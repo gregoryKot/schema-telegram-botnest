@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { TherapyTasksService } from './therapy-tasks.service';
+import { TherapyRelationsService } from './therapy-relations.service';
 
 // Терапевтский обзор задач: по всем клиентам сразу и по одному конкретному
 // клиенту. Стрик-прогресс не пересчитывается заново — берётся из
@@ -13,6 +14,7 @@ export class TherapyTasksViewService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tasksService: TherapyTasksService,
+    private readonly relationsService: TherapyRelationsService,
   ) {}
 
   async getAllTasksForTherapist(therapistId: bigint) {
@@ -54,9 +56,12 @@ export class TherapyTasksViewService {
 
     for (const rel of relations) {
       const clientId = rel.client ? Number(rel.client.id) : -rel.id;
+      // clientAlias и virtualClientName лежат зашифрованными (PII) — без
+      // decrypt терапевт увидел бы в кабинете base64 вместо имени (T7).
+      const alias = decrypt(rel.clientAlias);
       const clientName = rel.client
-        ? (rel.clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
-        : (rel.clientAlias ?? rel.virtualClientName ?? `ID ${-clientId}`);
+        ? (alias ?? rel.client.firstName ?? `ID ${clientId}`)
+        : (alias ?? decrypt(rel.virtualClientName) ?? `ID ${-clientId}`);
       const tasks = tasksByUserId.get(String(userIdOf(rel))) ?? [];
 
       if (tasks.length > 0) {
@@ -77,12 +82,16 @@ export class TherapyTasksViewService {
   }
 
   async getTasksForClient(therapistId: bigint, clientId: number) {
+    // Одна граница доступа на весь therapy-контур (в том числе виртуальная
+    // ветка с clientId: null, T4) — своей копии проверки здесь нет. Нет связи
+    // → null, контроллер отвечает 403.
+    try {
+      await this.relationsService.assertHasClient(therapistId, clientId);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'No active relation') return null;
+      throw e;
+    }
     if (clientId < 0) {
-      // Virtual client: look up by relation ID
-      const rel = await this.prisma.therapyRelation.findFirst({
-        where: { id: -clientId, therapistId, status: 'active' },
-      });
-      if (!rel) return null;
       const tasks = await this.prisma.userTask.findMany({
         where: { userId: BigInt(clientId), assignedBy: therapistId },
         orderBy: { createdAt: 'desc' },
@@ -97,10 +106,6 @@ export class TherapyTasksViewService {
       }));
     }
     const uid = BigInt(clientId);
-    const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId, clientId: uid, status: 'active' },
-    });
-    if (!rel) return null;
     const now = new Date();
     const settings = await this.prisma.user.findUnique({
       where: { id: uid },

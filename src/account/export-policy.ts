@@ -75,7 +75,12 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
   PracticePlan: { status: 'export', schema: { strings: ['practiceText'] } },
   PracticeSession: { status: 'export' },
   UserTask: { status: 'export', schema: { strings: ['text'] } },
-  ScheduledNotification: { status: 'export' },
+  // payload — зашифрованная JSON-строка (notification-payload.crypto.ts); в
+  // файле выгрузки он должен быть читаемым объектом, не шифротекстом.
+  ScheduledNotification: {
+    status: 'export',
+    schema: { jsonArrays: ['payload'] },
+  },
   // ── YSQ (тест схем) — ответы лежат зашифрованным JSON-блобом ──────────────
   YsqProgress: { status: 'export', schema: { jsonArrays: ['answers'] } },
   YsqResult: { status: 'export', schema: { jsonArrays: ['answers'] } },

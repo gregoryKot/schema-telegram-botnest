@@ -12,6 +12,7 @@
 // отдаётся синхронно на шаге запроса привязки (email/link-to-account под
 // JwtAuthGuard и троттлингом), а письмо приходит только на введённый адрес.
 import { ConflictException } from '@nestjs/common';
+import { LinkSessionRequiredException } from './link-session-required.exception';
 
 /** Успешный переход: привязка возвращает на аккаунт, вход — на приём сессии. */
 export function emailCallbackSuccessUrl(
@@ -48,6 +49,11 @@ export function emailCallbackNextUrl(
 }
 
 export function emailCallbackErrorUrl(err: unknown, frontendBase: string) {
+  // Ссылку привязки открыли не в том браузере (A3) — она жива, нужно открыть
+  // её там, где вошёл в аккаунт.
+  if (err instanceof LinkSessionRequiredException) {
+    return `${frontendBase}/account?error=email_link_session`;
+  }
   if (err instanceof ConflictException) {
     return `${frontendBase}/account?error=email_taken`;
   }

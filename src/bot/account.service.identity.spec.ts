@@ -107,32 +107,6 @@ describe('AccountService.getUserFirstName', () => {
   });
 });
 
-describe('AccountService.setRole', () => {
-  it('повышение до THERAPIST одновременно включает therapistMode', async () => {
-    const prisma = makePrisma();
-    const service = new AccountService(prisma);
-
-    await service.setRole(3n, 'THERAPIST');
-
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 3n },
-      data: { role: 'THERAPIST', therapistMode: true },
-    });
-  });
-
-  it('понижение до CLIENT одновременно выключает therapistMode (не оставляет висеть кабинет)', async () => {
-    const prisma = makePrisma();
-    const service = new AccountService(prisma);
-
-    await service.setRole(3n, 'CLIENT');
-
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 3n },
-      data: { role: 'CLIENT', therapistMode: false },
-    });
-  });
-});
-
 describe('AccountService.updateName / getUserRole', () => {
   it('updateName пишет ровно переданное имя в firstName нужного юзера', async () => {
     const prisma = makePrisma();

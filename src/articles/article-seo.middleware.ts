@@ -3,6 +3,8 @@ import type { Request, Response } from 'express';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { ArticlesService } from './articles.service';
+import { requestHost } from '../infra/request-host';
+import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 
 const CANONICAL_HOST = 'https://schemehappens.ru';
 
@@ -120,9 +122,14 @@ export class ArticleSeoMiddleware implements NestMiddleware {
             `<script type="application/ld+json">${jsonLd}</script>`,
         );
 
-      // Alias domains get their own canonical/og:url host.
-      if (req.hostname && req.hostname !== 'schemehappens.ru') {
-        out = out.split(CANONICAL_HOST).join(`https://${req.hostname}`);
+      // Alias domains get their own canonical/og:url host. Аудит 2026-10 (I3):
+      // раньше host брался из req.hostname — при trust proxy это клиентский
+      // X-Forwarded-Host, и значение отражалось в HTML как есть (инъекция в
+      // canonical/og:url). Теперь: заголовок Host и только хост из allow-list
+      // алиасов; всё остальное остаётся каноническим.
+      const host = requestHost(req);
+      if (PRACTICE_ALIAS_HOSTS.has(host)) {
+        out = out.split(CANONICAL_HOST).join(`https://${host}`);
       }
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');

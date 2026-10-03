@@ -17,6 +17,7 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { rejectInitData } from './initdata-alert';
 import { reportAuthSuccess } from './auth-success.report';
+import { INIT_DATA_MAX_AGE_S } from './init-data-window';
 
 export async function applyTelegramInitData(
   req: Request,
@@ -40,7 +41,7 @@ export async function applyTelegramInitData(
     logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
   } else {
     try {
-      validate(initData, botToken, { expiresIn: 3600 });
+      validate(initData, botToken, { expiresIn: INIT_DATA_MAX_AGE_S });
     } catch (err) {
       rejectInitData(err, req.ip, logger, securityLog);
     }

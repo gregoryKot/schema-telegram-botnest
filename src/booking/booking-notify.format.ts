@@ -62,10 +62,12 @@ export function bookingCardText(title: string, b: BookingCard): string {
   return [
     title,
     '',
-    `👤 ${b.clientName}`,
-    `📬 ${b.clientContact}`,
+    // M1 (аудит 2026-10): имя/контакт/сообщение вводит посетитель, текст уходит
+    // админу с parse_mode HTML — без экранирования это инъекция разметки.
+    `👤 ${escapeHtml(b.clientName)}`,
+    `📬 ${escapeHtml(b.clientContact)}`,
     `🗓 ${timeWithClientTz(b)}`,
-    b.message ? `💬 ${b.message}` : null,
+    b.message ? `💬 ${escapeHtml(b.message)}` : null,
     b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
     b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
   ]

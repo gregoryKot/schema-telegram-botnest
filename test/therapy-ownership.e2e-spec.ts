@@ -267,4 +267,50 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(otherList.status).toBe(200);
     expect(otherList.body).toEqual([]);
   });
+
+  // ─── Аудит терапевт↔клиент 2026-10 ────────────────────────────────────────
+  // T2: DELETE /relation от терапевта сносил всех его клиентов и приглашения.
+  // T3: клиент мог невидимо подключиться ко второму терапевту.
+  // Эти кейсы идут последними: они не меняют данные, на которых стоят
+  // сценарии выше (T3-кейс отказывает до изменения связи).
+
+  it('T3: клиент с активной связью не может принять код ДРУГОГО терапевта (409 already_connected)', async () => {
+    const t2 = agentAs(T2);
+    const c1 = agentAs(C1);
+    const invite = await t2.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const join = await c1.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.status).toBe(409);
+    expect(join.body.reason).toBe('already_connected');
+
+    // Код остался неиспользованным, у T2 клиентов не появилось.
+    const row = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(row?.clientId).toBeNull();
+    expect(row?.status).toBe('pending');
+    expect((await t2.get('/api/therapy/clients')).body).toEqual([]);
+  });
+
+  it('T2: терапевт, вызвавший DELETE /relation, не теряет клиентов и приглашения', async () => {
+    const t1 = agentAs(T1);
+    const invite = await t1.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const res = await t1.delete('/api/therapy/relation');
+    expect(res.status).toBe(200);
+
+    const clients = await t1.get('/api/therapy/clients');
+    expect(clients.status).toBe(200);
+    expect(
+      clients.body.map((c: { telegramId: number }) => c.telegramId),
+    ).toEqual([C1_ID]);
+    const pendingInvite = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(pendingInvite?.therapistId).toBe(T1);
+    // Заметки по-прежнему доступны: связь жива.
+    expect((await t1.get(`/api/therapy/notes/${C1_ID}`)).status).toBe(200);
+  });
 });

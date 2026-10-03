@@ -86,15 +86,6 @@ export class AccountService {
     });
   }
 
-  async setRole(userId: bigint, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
-    // When promoting to THERAPIST also enable therapistMode by default
-    // (was client-side auto-enable via localStorage check)
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { role, therapistMode: role === 'THERAPIST' },
-    });
-  }
-
   async getUserRole(userId: bigint): Promise<'CLIENT' | 'THERAPIST'> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

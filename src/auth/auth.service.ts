@@ -603,8 +603,8 @@ export class AuthService {
         webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
         encryptEmail: (e) => encField(e) ?? e,
         addressForm: (id) => this.userAddressForm(id),
-        send: (email, link, form) =>
-          this.emailSvc.sendLoginLink(email, link, form),
+        send: (e, l, f) => this.emailSvc.sendLoginLink(e, l, f),
+        sendLink: (e, l, f) => this.emailSvc.sendLinkEmailLetter(e, l, f),
         onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
       },
       userId,

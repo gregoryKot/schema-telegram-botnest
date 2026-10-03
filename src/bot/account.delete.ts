@@ -61,6 +61,13 @@ export async function deleteAllUserData(
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),
     prisma.therapistCustomMode.deleteMany({ where: { therapistId: uid } }),
+    // Задания офлайн-клиентов терапевта: у них userId = -TherapyRelation.id и
+    // нет FK на User, поэтому ни реестр USER_DATA_TABLES (по userId = uid), ни
+    // каскад их не достают — без этой строки они оставались сиротами (аудит
+    // 2026-10, T8). Текст заданий — клинический, шифрованный.
+    prisma.userTask.deleteMany({
+      where: { assignedBy: uid, userId: { lt: 0n } },
+    }),
     // Пары (две ссылки).
     prisma.pair.deleteMany({
       where: { OR: [{ userId1: uid }, { userId2: uid }] },

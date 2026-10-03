@@ -6,7 +6,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { ArticlesAdminController } from './articles-admin.controller';
 import type { ArticlesService } from './articles.service';
 
-const ADMIN_KEY = 'test-admin-key-articles';
+const ADMIN_KEY = 'test-admin-key-articles-0123456789abcdef';
 
 function makeConfig(key: string | undefined = ADMIN_KEY) {
   return { get: jest.fn(() => key) } as any;

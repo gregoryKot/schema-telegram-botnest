@@ -187,3 +187,14 @@ describe('BookingForm — во время отправки', () => {
     await screen.findByText('Заявка отправлена');
   });
 });
+
+// Аудит 2026-10, E2: Вебвизор записывал нажатия клавиш в полях запасной формы
+// (имя, контакт, текст запроса). Метка та же, что у BookingPicker.
+describe('BookingForm — Вебвизор не пишет ввод', () => {
+  it('поля имени/контакта/запроса несут ym-disable-keys', () => {
+    render(<BookingForm />);
+    expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Telegram / телефон *').className).toContain('ym-disable-keys');
+    expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
+  });
+});

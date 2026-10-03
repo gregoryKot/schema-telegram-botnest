@@ -9,9 +9,11 @@
 import { Logger } from '@nestjs/common';
 
 const getMeMock = jest.fn();
+const useMock = jest.fn();
 jest.mock('telegraf', () => ({
   Telegraf: jest.fn().mockImplementation((token: string) => ({
     __token: token,
+    use: useMock,
     telegram: { getMe: getMeMock },
   })),
 }));
@@ -22,6 +24,7 @@ import {
   telegramViaProxy,
 } from './telegram.providers';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { privateChatOnly } from './private-chat-only';
 
 function makeConfig(token: string | undefined) {
   return { get: jest.fn(() => token) } as any;
@@ -42,6 +45,14 @@ describe('TELEGRAM_PROVIDERS[TELEGRAF_BOT] — useFactory', () => {
   it('регистрирует провайдер под правильным токеном и с ConfigService в inject', () => {
     expect(factoryEntry.provide).toBe(TELEGRAF_BOT);
     expect(factoryEntry.inject).toHaveLength(1);
+  });
+
+  it('первым middleware ставит privateChatOnly — группы бот не обслуживает (B1)', async () => {
+    getMeMock.mockResolvedValue({ username: 'b' });
+    useMock.mockClear();
+    await factoryEntry.useFactory(makeConfig('123:ABC'));
+    expect(useMock).toHaveBeenCalledTimes(1);
+    expect(useMock).toHaveBeenCalledWith(privateChatOnly);
   });
 
   it('BOT_TOKEN отсутствует — бросает и логирует ошибку, Telegraf не конструируется', async () => {

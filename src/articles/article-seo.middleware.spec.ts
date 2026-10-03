@@ -46,8 +46,18 @@ function makeMiddleware(article: any): ArticleSeoMiddleware {
   return mw;
 }
 
-function mockReqRes(path: string, hostname = 'schemehappens.ru') {
-  const req = { path, hostname } as any;
+function mockReqRes(
+  path: string,
+  host = 'schemehappens.ru',
+  extraHeaders: Record<string, string> = {},
+) {
+  // hostname повторяет поведение Express при trust proxy: сперва клиентский
+  // X-Forwarded-Host, потом Host.
+  const req = {
+    path,
+    hostname: extraHeaders['x-forwarded-host'] ?? host,
+    headers: { host, ...extraHeaders },
+  } as any;
   let sent: string | null = null;
   const res = {
     setHeader: jest.fn(),
@@ -127,14 +137,56 @@ describe('ArticleSeoMiddleware', () => {
     const mw = makeMiddleware(ARTICLE);
     const { req, res, getSent } = mockReqRes(
       '/articles/skhemy-yanga-spisok',
-      'kotlarewski.ru',
+      'kotlarewski.gr',
     );
     await mw.use(req, res, () => {});
     const html = getSent()!;
     expect(html).toContain(
-      'href="https://kotlarewski.ru/articles/skhemy-yanga-spisok"',
+      'href="https://kotlarewski.gr/articles/skhemy-yanga-spisok"',
     );
     expect(html).not.toContain('https://schemehappens.ru');
+  });
+
+  // Аудит 2026-10 (I3): клиентский X-Forwarded-Host (его читает req.hostname
+  // при trust proxy) отражался в canonical/og:url без экранирования.
+  it('X-Forwarded-Host с разметкой не попадает в HTML — остаётся канонический хост', async () => {
+    const evil = 'evil"><script>alert(1)</script>';
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'schemehappens.ru',
+      { 'x-forwarded-host': evil },
+    );
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).not.toContain('evil');
+    expect(html).not.toContain('alert(1)');
+    expect(html).toContain(
+      'href="https://schemehappens.ru/articles/skhemy-yanga-spisok"',
+    );
+  });
+
+  it('произвольный Host вне списка алиасов канонический хост не меняет', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'attacker.example',
+    );
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).not.toContain('attacker.example');
+    expect(html).toContain('https://schemehappens.ru/articles/');
+  });
+
+  it('X-Forwarded-Host алиаса не подменяет Host канонического сайта', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'schemehappens.ru',
+      { 'x-forwarded-host': 'kotlarewski.gr' },
+    );
+    await mw.use(req, res, () => {});
+    expect(getSent()!).toContain('https://schemehappens.ru/articles/');
   });
 
   it('escapes HTML-significant characters in the title', async () => {

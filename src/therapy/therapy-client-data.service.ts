@@ -270,7 +270,8 @@ export class TherapyClientDataService {
     const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId, status: 'active' },
+        // clientId: null — -id связи реального клиента не «виртуальный» (T4).
+        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
         data: mutation,
       });
     } else {

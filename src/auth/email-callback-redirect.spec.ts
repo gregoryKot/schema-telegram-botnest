@@ -4,6 +4,7 @@
 // неправда: ссылка жива, а адрес привязан к другому аккаунту — человек шёл
 // запрашивать письмо заново и получал то же самое.
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { LinkSessionRequiredException } from './link-session-required.exception';
 import {
   emailCallbackErrorUrl,
   emailCallbackSuccessUrl,
@@ -13,6 +14,16 @@ import {
 const BASE = 'https://schemehappens.ru';
 
 describe('emailCallbackErrorUrl', () => {
+  it('ссылка привязки открыта не в том браузере — своя пометка, не «истекла» (A3)', () => {
+    expect(
+      emailCallbackErrorUrl(new LinkSessionRequiredException(), BASE),
+    ).toBe(`${BASE}/account?error=email_link_session`);
+    // Контрольный: обычный 401 по-прежнему «ссылка истекла».
+    expect(emailCallbackErrorUrl(new UnauthorizedException('x'), BASE)).toBe(
+      `${BASE}/auth/error?reason=email_link_expired`,
+    );
+  });
+
   it('занятый адрес — на аккаунт с честной пометкой', () => {
     expect(emailCallbackErrorUrl(new ConflictException('занят'), BASE)).toBe(
       `${BASE}/account?error=email_taken`,

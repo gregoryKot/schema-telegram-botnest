@@ -2,6 +2,7 @@ import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { getCookie } from './auth-http.util';
 import { isRedirectedHost } from '../infra/canonical-host';
+import { requestHost } from '../infra/request-host';
 import { hasLoopGuardMarker, withLoopGuardMarker } from './oauth-loop-guard';
 
 // 2026-09-08: кука oauth_state должна жить на хосте КОЛБЭКА — редиректим на
@@ -28,10 +29,9 @@ export function setOAuthCookie(
   });
 }
 
-/** Хост запроса из заголовка Host (как в src/main.ts — не req.hostname). */
-export function requestHost(req: Request): string {
-  return (req.headers.host ?? '').toLowerCase();
-}
+// Живёт в infra/request-host.ts (общий с SEO-мидлваром статей); реэкспорт —
+// чтобы потребители oauth-host не менялись.
+export { requestHost };
 
 /**
  * Не на хосте колбэка → 302 туда же, true; на хосте/без Host → false. Хост

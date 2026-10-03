@@ -7,6 +7,12 @@ import { CANONICAL_HOST } from './infra/canonical-host';
 // канонический хост — вход падал; последующий редирект-фикс без сужения
 // поверхности зациклился. Решение ниже — allow-list визитки, остальное 301.
 const PRACTICE_HOST = 'kotlarewski.gr';
+/** Хосты-алиасы, которым статьи/главная переписывают canonical и og:url на
+ *  собственный хост (единый allow-list: app.module, article-seo.middleware).
+ *  kotlarewski.ru сюда не входит — он 301-ится на .gr. */
+export const PRACTICE_ALIAS_HOSTS: ReadonlySet<string> = new Set([
+  PRACTICE_HOST,
+]);
 const REDIRECT_HOSTS = new Set([
   'kotlarewski.ru',
   'www.kotlarewski.ru',
@@ -56,7 +62,9 @@ export const PRACTICE_PAGES: readonly string[] = [
 /** Префиксы страниц с параметром (`/articles/:slug`). */
 export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];
 
-/** GET-ручки API, которые зовут страницы визитки. Каждая — с причиной. */
+/** Ручки API (любой метод), которые зовут страницы визитки. Каждая — с причиной.
+ *  Запись (POST/PATCH/DELETE) вне списка получает 301: браузер повторяет его как
+ *  GET без тела, то есть алиас запись не принимает (аудит 2026-10, I1). */
 export const PRACTICE_API_PREFIXES: readonly string[] = [
   '/api/booking', // запись на консультацию: options, slots, by-token, admin/*
   '/api/subscription', // подписка: options, by-token

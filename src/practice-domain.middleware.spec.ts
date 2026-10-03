@@ -11,8 +11,13 @@ import {
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.middleware';
 
-function run(hostname: string, path: string, originalUrl = path) {
-  const req = { hostname, path, originalUrl } as never;
+function run(
+  hostname: string,
+  path: string,
+  originalUrl = path,
+  method = 'GET',
+) {
+  const req = { hostname, path, originalUrl, method } as never;
   const sent: {
     redirect?: [number, string];
     type?: string;
@@ -242,6 +247,62 @@ describe('practiceDomainMiddleware', () => {
         'https://schemehappens.ru/app/assets/index.js',
       ]);
       expect(nextCalled).toBe(false);
+    });
+  });
+
+  // Аудит 2026-10 (I1): allow-list действовал только на GET — запись
+  // (POST/PUT/PATCH/DELETE) на алиасе доходила до любой ручки, включая
+  // /api/auth/**. Сам middleware метод не различает, поэтому защиту держат
+  // два теста: вердикт для записи и РЕГИСТРАЦИЯ на всех методах в AppModule.
+  describe('запись на алиасе: allow-list действует на все методы', () => {
+    it('POST /api/auth/refresh → 301 на канонический хост', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/auth/refresh',
+        '/api/auth/refresh',
+        'POST',
+      );
+      expect(sent.redirect).toEqual([
+        301,
+        'https://schemehappens.ru/api/auth/refresh',
+      ]);
+      expect(nextCalled).toBe(false);
+    });
+
+    it('POST /api/booking (запись на консультацию визитки) → проходит', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/booking',
+        '/api/booking',
+        'POST',
+      );
+      expect(sent.redirect).toBeUndefined();
+      expect(nextCalled).toBe(true);
+    });
+
+    it.each(['DELETE', 'PATCH', 'PUT'])(
+      '%s /api/therapy/x на алиасе → 301',
+      (method) => {
+        const { sent } = run(
+          'kotlarewski.gr',
+          '/api/therapy/x',
+          '/api/therapy/x',
+          method,
+        );
+        expect(sent.redirect?.[0]).toBe(301);
+      },
+    );
+
+    // Читаем исходник, а не собираем AppModule: его импорт тянет весь граф
+    // (jose и т. п.), а проверяется одна строка регистрации.
+    it('AppModule вешает practiceDomainMiddleware на ВСЕ методы, не только GET', () => {
+      const src = readFileSync(join(__dirname, 'app.module.ts'), 'utf8');
+      const m = src.match(
+        /\.apply\(practiceDomainMiddleware\)\s*\.forRoutes\([\s\S]*?\);/,
+      );
+      expect(m).not.toBeNull();
+      expect(m![0]).toContain('RequestMethod.ALL');
+      expect(m![0]).not.toContain('RequestMethod.GET');
     });
   });
 

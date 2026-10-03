@@ -15,6 +15,7 @@ import {
   AddressForm,
   normalizeAddressForm,
 } from '../notification/address-form';
+import { linkEmailLetter } from './email-link.letter';
 import {
   loginLetter,
   recoveryLetter,
@@ -137,10 +138,17 @@ export class EmailService {
     if (!row.userId)
       throw new UnauthorizedException('Token has no user binding');
 
-    await this.prisma.emailToken.update({
-      where: { id: row.id },
+    // H4 аудита 2026-10: погашение атомарно (та же схема, что в
+    // email-token.service.ts). Раньше findUnique→проверка usedAt→update были
+    // раздельны: два параллельных запроса с одной ссылкой восстановления
+    // проходили проверку оба и выдавали ДВЕ сессии. updateMany с usedAt:null —
+    // CAS: побеждает ровно один, второй получает count=0.
+    const consumed = await this.prisma.emailToken.updateMany({
+      where: { id: row.id, usedAt: null },
       data: { usedAt: new Date() },
     });
+    if (consumed.count === 0)
+      throw new UnauthorizedException('Token already used');
 
     const email = decField(row.email) ?? row.email;
     if (expectedPurpose === 'verify_email') {
@@ -162,6 +170,16 @@ export class EmailService {
     form: AddressForm = 'ty',
   ): Promise<void> {
     const letter = loginLetter(form, link);
+    await this.send(to, letter.subject, letter.body);
+  }
+
+  // Привязка адреса к существующему аккаунту — своё письмо, не «Войти» (A3).
+  async sendLinkEmailLetter(
+    to: string,
+    link: string,
+    form: AddressForm = 'ty',
+  ): Promise<void> {
+    const letter = linkEmailLetter(form, link);
     await this.send(to, letter.subject, letter.body);
   }
 

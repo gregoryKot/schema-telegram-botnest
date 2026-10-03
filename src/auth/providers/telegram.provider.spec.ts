@@ -101,25 +101,35 @@ describe('TelegramProvider.verifyClientData', () => {
     );
   });
 
-  it('просроченный auth_date (>24ч) → UnauthorizedException("Telegram auth data expired")', () => {
+  // H3 аудита 2026-10: окно свежести — 15 минут (было 24 ч): payload виджета
+  // остаётся в истории браузера и воспроизводим до истечения окна.
+  it('auth_date старше 15 минут (901с) → UnauthorizedException("Telegram auth data expired")', () => {
     const provider = makeProvider();
     const payload = buildPayload({
-      auth_date: Math.floor(Date.now() / 1000) - 86401,
+      auth_date: Math.floor(Date.now() / 1000) - 901,
     });
     expect(() => provider.verifyClientData(payload)).toThrow(
       'Telegram auth data expired',
     );
   });
 
-  it('auth_date чуть моложе суток (86399с назад) ещё принимается', () => {
-    // Не берём ровно 86400с: authDate округляется через Math.floor, а внутри
-    // provider'а идёт секунда-две реального времени между сборкой payload'а
-    // и вызовом verifyClientData — на самой границе сравнение флапает.
-    // 86399 даёт однозначный запас, всё ещё проверяя «почти-граница», а не
-    // «заведомо свежий» auth_date.
+  it('auth_date час назад → отклоняется (раньше принимался сутки)', () => {
     const provider = makeProvider();
     const payload = buildPayload({
-      auth_date: Math.floor(Date.now() / 1000) - 86399,
+      auth_date: Math.floor(Date.now() / 1000) - 3600,
+    });
+    expect(() => provider.verifyClientData(payload)).toThrow(
+      'Telegram auth data expired',
+    );
+  });
+
+  it('auth_date чуть моложе окна (890с назад) ещё принимается', () => {
+    // Не берём ровно 900с: внутри provider'а идёт секунда-две реального
+    // времени между сборкой payload'а и вызовом — на самой границе сравнение
+    // флапает. 890 даёт однозначный запас, но проверяет «почти-границу».
+    const provider = makeProvider();
+    const payload = buildPayload({
+      auth_date: Math.floor(Date.now() / 1000) - 890,
     });
     expect(() => provider.verifyClientData(payload)).not.toThrow();
   });

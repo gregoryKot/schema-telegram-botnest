@@ -6,6 +6,8 @@ import {
   Logger,
   Post,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottle } from './persistent-throttle.decorator';
 import { TelegramService } from '../telegram/telegram.service';
 import { EmailService } from '../auth/email.service';
 import { escapeHtml } from '../utils/escape-html';
@@ -20,6 +22,11 @@ export class BookingController {
     private readonly email: EmailService,
   ) {}
 
+  // M4 (аудит 2026-10): каждая заявка = DM админу + письмо, а штатный лимит
+  // только глобальный и в памяти процесса (на двух инстансах счётчики
+  // разные). Тот же лимит и тот же общий Postgres-счётчик, что у /booking/book.
+  @Throttle({ long: { limit: 6, ttl: 3_600_000 } })
+  @PersistentThrottle()
   @Post('booking')
   @HttpCode(HttpStatus.OK)
   submitBooking(@Body() dto: BookingDto): { ok: true } {
