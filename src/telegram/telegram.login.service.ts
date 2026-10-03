@@ -30,7 +30,7 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { resolveForm } from './telegram.reply-helpers';
 import { parseLoginCode } from './login-payload';
 import { confirmKeyboard, confirmText } from './telegram.login-card';
-import { t, type AddressForm } from '../notification/address-form';
+import { t } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
 import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
 import { viewerTelegramId } from './viewer-id';

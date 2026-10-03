@@ -80,6 +80,15 @@ export async function deleteAllUserData(
     prisma.subscription.deleteMany({
       where: { telegramId: { in: subscriptionIds } },
     }),
+    // Записи на консультацию не удаляем — это финансовые и календарные записи
+    // (оплата, встреча в календаре терапевта), но связь с человеком по
+    // Telegram-id рвём: иначе после удаления аккаунта по id по-прежнему можно
+    // найти все его записи (аудит 2026-10, F3). Имя и контакт в записи остаются
+    // — это долг вне контура удаления, см. table-registry.spec (Booking).
+    prisma.booking.updateMany({
+      where: { clientTelegramId: { in: subscriptionIds } },
+      data: { clientTelegramId: null },
+    }),
     // И наконец сама строка пользователя.
     prisma.user.delete({ where: { id: uid } }),
   ]);

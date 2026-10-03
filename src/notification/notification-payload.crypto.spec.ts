@@ -5,7 +5,8 @@
 // текст» ничего бы не значила.
 process.env.ENCRYPTION_KEY = 'ab'.repeat(32);
 
-import { decryptPayload } from './notification-payload.crypto';
+import { decryptPayload, encryptPayload } from './notification-payload.crypto';
+import { reencrypt } from '../utils/crypto';
 import { NotificationService } from './notification.service';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 import { renderTemplate } from './notification.templates';
@@ -90,5 +91,14 @@ describe('NotificationService — шифрование payload', () => {
 
   it('нерасшифровываемая строка → null (шаблон вернёт «нечего слать»), не исключение', () => {
     expect(decryptPayload('это не шифротекст и не JSON')).toBeNull();
+  });
+
+  // F1: шаг ротации ключа (scripts/rotate-encryption-key.ts) гонит строковый
+  // payload через reencrypt — результат обязан читаться так же.
+  it('reencrypt (шаг ротации) даёт строку, которую decryptPayload читает как прежде', () => {
+    const stored = encryptPayload({ text: 'Напиши письмо маме' })!;
+    const rotated = reencrypt(stored);
+    expect(rotated).not.toBeNull();
+    expect(decryptPayload(rotated)).toEqual({ text: 'Напиши письмо маме' });
   });
 });

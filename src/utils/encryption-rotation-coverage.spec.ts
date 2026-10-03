@@ -31,7 +31,9 @@ const srcFiles = collectSourceFiles(join(ROOT, 'src'));
 
 // ── Обнаружение зашифрованных полей ─────────────────────────────────────────
 // (1) EncryptSchema = { strings:[...], jsonArrays:[...] } → все строки в блоке.
-// (2) инлайн `field: encrypt(` / `field: encryptJson(` (объектное свойство).
+// (2) инлайн `field: encrypt(` / `field: encryptJson(` / `field: encryptPayload(`
+//     (объектное свойство; encryptPayload — обёртка над encryptJson для
+//     ScheduledNotification.payload, аудит 2026-10 F1).
 function discoverEncryptedFields(): Map<string, string> {
   const found = new Map<string, string>(); // field → пример файла
   const rel = (f: string) => f.slice(ROOT.length + 1);
@@ -54,7 +56,8 @@ function discoverEncryptedFields(): Map<string, string> {
     // (2) инлайн encrypt/encryptJson как значение свойства объекта.
     // Требуем `{` или `,` перед именем — иначе ловится тернар
     // `cond ? val : encrypt(val)` (val — не колонка).
-    const inlineRe = /[{,]\s*(\w+)\s*:\s*(?:encrypt|encryptJson)\(/g;
+    const inlineRe =
+      /[{,]\s*(\w+)\s*:\s*(?:encrypt|encryptJson|encryptPayload)\(/g;
     let im: RegExpExecArray | null;
     while ((im = inlineRe.exec(text)) !== null) {
       if (!found.has(im[1])) found.set(im[1], rel(file));
@@ -94,6 +97,17 @@ describe('покрытие ротации ENCRYPTION_KEY (H4)', () => {
       }
     }
     expect({ missing }).toEqual({ missing: [] });
+  });
+
+  // Аудит 2026-10 (F1): payload шифруется через encryptPayload, которого
+  // авто-обнаружение не знало, — ротация пропускала бы его молча.
+  it('ScheduledNotification.payload обнаружен и ротируется', () => {
+    expect(encrypted.get('payload')).toBe(
+      'src/notification/notification.service.ts',
+    );
+    expect(rotationScript).toMatch(
+      /name:\s*'scheduledNotification',\s*fields:\s*\[\s*'payload'\s*\]/,
+    );
   });
 
   it('вложенный history ротируется отдельным блоком', () => {

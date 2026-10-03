@@ -3,6 +3,10 @@
     "status": "exempt",
     "reason": "Троттлинг-идентичность по Telegram/MAX WebAppData — HMAC пересчитывается с фейковым BOT_TOKEN и синтетическим initData в спеке; настоящей строки initData от клиента мессенджера в логах не сохранялось."
   },
+  "src/api/throttler-init-data.ts": {
+    "status": "exempt",
+    "reason": "Проверка подписи initData Telegram для бакета лимита (вынесено из throttler-identity.ts) — тот же класс: HMAC пересчитывается с фейковым BOT_TOKEN и синтетическим initData в спеке; настоящей строки initData от клиента мессенджера в логах не сохранялось."
+  },
   "src/auth/auth.service.ts": {
     "status": "exempt",
     "reason": "Верификация Telegram WebAppData (WebApp initData) — тот же класс, что throttler-identity.ts: HMAC в тесте самоподписан фейковым токеном, реальной строки initData от Telegram-клиента не записано."

@@ -28,8 +28,8 @@ import { SecurityLogService } from '../security-log.service';
 import { newUserCode, staleTicketsWhere } from './ticket-user-code';
 import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
+import type { StartTicketInput } from './ticket-start.types';
 import type {
-  StartTicketInput,
   TicketForConfirm,
   TicketIntent,
   TicketStatus,

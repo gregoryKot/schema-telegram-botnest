@@ -1,7 +1,6 @@
-// Тело Telegram- и MAX-путей TelegramAuthGuard, вынесенное в отдельный файл,
-// чтобы сам guard остался под потолком файл-храповика (scripts/
-// file-size-baseline.json, было 105 строк). Поведение телеграмного пути —
-// байт-в-байт то же, что и до выноса (покрыто telegram-auth.guard.spec.ts).
+// Тело Telegram- и MAX-путей TelegramAuthGuard, вынесенное из guard'а, чтобы тот
+// остался под потолком файл-храповика. Поведение телеграмного пути — то же,
+// что до выноса (покрыто telegram-auth.guard.spec.ts).
 import {
   Logger,
   ServiceUnavailableException,
