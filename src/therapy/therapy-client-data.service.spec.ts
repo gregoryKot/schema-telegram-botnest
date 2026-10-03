@@ -53,6 +53,7 @@ function makeDb(rels: Rel[]) {
   const gratitudeDiary: any[] = [];
   const schemaNotes: any[] = [];
   const modeNotes: any[] = [];
+  const tasks: any[] = [];
   const desc = (rows: any[], userId: bigint, key: string, take: number) =>
     rows
       .filter((r) => r.userId === userId)
@@ -98,7 +99,18 @@ function makeDb(rels: Rel[]) {
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
-    userTask: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
+    userTask: {
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = tasks.length;
+        for (let i = tasks.length - 1; i >= 0; i--)
+          if (
+            tasks[i].userId === where.userId &&
+            tasks[i].assignedBy === where.assignedBy
+          )
+            tasks.splice(i, 1);
+        return Promise.resolve({ count: before - tasks.length });
+      }),
+    },
     $transaction: jest.fn((arg: any) =>
       Array.isArray(arg) ? Promise.all(arg) : arg(db),
     ),
@@ -111,6 +123,7 @@ function makeDb(rels: Rel[]) {
     gratitudeDiary,
     schemaNotes,
     modeNotes,
+    tasks,
   };
 }
 
@@ -332,18 +345,22 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
     expect(rels).toHaveLength(0);
   });
 
-  it('removeClient виртуального клиента удаляет и его задания (userId=-id, assignedBy=терапевт)', async () => {
-    const { svc, db } = makeService([relA]);
+  it('removeClient виртуального клиента удаляет его задания, чужие и «свои» задания других остаются', async () => {
+    const { svc, tasks } = makeService([relA]); // relA.id === 1 → userId -1
+    tasks.push(
+      { id: 1, userId: -1n, assignedBy: T1 }, // задание виртуальному клиенту
+      { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
+      { id: 3, userId: -1n, assignedBy: T2 }, // не от этого терапевта
+    );
     await svc.removeClient(T1, -1);
-    expect(db.userTask.deleteMany).toHaveBeenCalledWith({
-      where: { userId: -1n, assignedBy: T1 },
-    });
+    expect(tasks.map((t) => t.id)).toEqual([2, 3]);
   });
 
   it('removeClient клиента с аккаунтом НЕ трогает задания — они у клиента', async () => {
-    const { svc, db } = makeService([relA]);
+    const { svc, tasks } = makeService([relA]);
+    tasks.push({ id: 1, userId: CLIENT_A, assignedBy: T1 });
     await svc.removeClient(T1, CID_A);
-    expect(db.userTask.deleteMany).not.toHaveBeenCalled();
+    expect(tasks.map((t) => t.id)).toEqual([1]);
   });
 });
 
