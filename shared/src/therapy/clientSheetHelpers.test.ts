@@ -3,6 +3,7 @@
 // длительности и формат «день недели, число месяц · время».
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+  isVirtualClient,
   calcTherapyDuration,
   nextSessionLabel,
   indexColor,
@@ -120,5 +121,23 @@ describe('CONCEPT_FIELDS', () => {
   it('ключи уникальны', () => {
     const keys = CONCEPT_FIELDS.map((f) => f.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('isVirtualClient', () => {
+  it('отрицательный telegramId — офлайн-клиент', () => {
+    expect(isVirtualClient({ telegramId: -3 })).toBe(true);
+  });
+
+  it('положительный telegramId — клиент из Telegram', () => {
+    expect(isVirtualClient({ telegramId: 123456 })).toBe(false);
+  });
+
+  it('name не участвует: у офлайн-клиента оно непустое', () => {
+    expect(
+      isVirtualClient({ telegramId: -3, name: 'Борис' } as {
+        telegramId: number;
+      }),
+    ).toBe(true);
   });
 });

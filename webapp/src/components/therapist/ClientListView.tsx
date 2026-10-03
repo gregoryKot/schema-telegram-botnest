@@ -2,16 +2,15 @@ import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { api } from '../../api';
 import type { TherapyClientSummary, UserTask } from '../../api';
-import { fmtDate } from '../../utils/format';
 // Не todayStr(): дни клиентов приезжают из API календарными (полночь UTC),
 // и локальная дата машины с ними не совпадает в половине зон — см. шапку
 // shared/src/utils/calendarDate.ts.
 import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { RosterSparkline } from './Sparklines';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
-import { nextSessionLabel, indexColor } from './clientSheetHelpers';
+import { indexColor, isVirtualClient } from './clientSheetHelpers';
+import { RosterRow, WELLBEING_HINT } from './RosterRow';
+import { filterRoster, sortRoster } from './rosterModel';
 import type { useAddClient } from './useAddClient';
 
 type AllTasks = { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
@@ -195,86 +194,26 @@ export function ClientListView({
             </div>
           ) : (() => {
             const today = todayCalendarDate();
-            const q = searchQuery.toLowerCase().trim();
-            let filtered = q ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q)) : clients.slice();
-            if (filterStatus === 'active') filtered = filtered.filter(c => c.lastActiveDate === today);
-            else if (filterStatus === 'wait') filtered = filtered.filter(c => c.lastActiveDate !== today && !!c.name);
-            else if (filterStatus === 'virtual') filtered = filtered.filter(c => !c.name);
-            const hasOnline = filtered.some(c => !!c.name);
+            const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus, today), today);
+            // Колонка самочувствия — только если есть хоть один клиент с Telegram:
+            // у офлайн-клиента нет ни индекса, ни спарклайна.
+            const showState = filtered.some(c => !isVirtualClient(c));
             return (
-              <div>
-                {filtered.length === 0 && (
+              <div className={showState ? 'r-roster' : 'r-roster r-roster--no-state'}>
+                {filtered.length === 0 ? (
                   <div className="text-md muted" style={{ padding: '24px 0' }}>Ничего не найдено</div>
-                )}
-                {hasOnline && (
+                ) : (
                   <>
                     <div className="r-row-head">
                       <span className="eyebrow">Клиент</span>
-                      <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
-                      <span className="eyebrow">14 дн.</span>
+                      <span className="eyebrow">Следующая встреча</span>
+                      {showState && <span className="eyebrow" title={WELLBEING_HINT}>Самочувствие</span>}
                       <span className="eyebrow">Активные схемы</span>
                     </div>
-                    {filtered.filter(c => !!c.name).map(client => (
-                      <div key={client.telegramId} className="r-row" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div className="u-ac8">
-                            <span className="text-base u-w600">{client.clientAlias ?? client.name}</span>
-                            {client.lastActiveDate === today && (
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
-                            )}
-                          </div>
-                          <div className="text-xs faint u-mt3">
-                            {client.lastActiveDate === today ? 'активен сегодня' : client.lastActiveDate ? 'был недавно' : 'не активен'}
-                            {client.streak > 0 && ` · стрик ${client.streak} дн.`}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          {client.todayIndex != null ? (
-                            <span className="num" style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
-                          ) : <span className="text-sm faint">–</span>}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <RosterSparkline values={(client.recentIndexHistory ?? []).slice().reverse()} />
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
-                          {client.schemaIds.length > 0 ? client.schemaIds.slice(0, 3).map(id => {
-                            const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                            const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
-                            return (
-                              <span key={id} className="tag-mini">
-                                <span style={{ width: 8, height: 8, borderRadius: 'var(--r-2)', background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
-                                {schema?.name ?? id}
-                              </span>
-                            );
-                          }) : <span className="text-xs faint">–</span>}
-                          {client.schemaIds.length > 3 && <span className="text-xs faint">+{client.schemaIds.length - 3}</span>}
-                        </div>
-                      </div>
+                    {filtered.map(client => (
+                      <RosterRow key={client.telegramId} client={client} today={today} showState={showState} onOpen={openClient} />
                     ))}
                   </>
-                )}
-                {filtered.filter(c => !c.name).length > 0 && (
-                  <div style={{ marginTop: hasOnline ? 32 : 0 }}>
-                    {hasOnline && <div className="eyebrow u-mb12">Оффлайн-клиенты</div>}
-                    {filtered.filter(c => !c.name).map(client => {
-                      const name = client.clientAlias ?? `ID ${client.telegramId}`;
-                      return (
-                        <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
-                          <div className="u-fill">
-                            <div className="u-ac8">
-                              <span className="text-md u-w600">{name}</span>
-                              <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
-                            </div>
-                            <div className="text-sm muted u-mt3">
-                              {client.therapyStartDate ? `с ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
-                              {client.nextSession && ` · ${nextSessionLabel(client.nextSession)}`}
-                            </div>
-                          </div>
-                          <span className="link">открыть →</span>
-                        </div>
-                      );
-                    })}
-                  </div>
                 )}
               </div>
             );

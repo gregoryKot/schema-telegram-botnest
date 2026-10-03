@@ -2,6 +2,7 @@ import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { indexColor } from './helpers';
+import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { RosterSparkline } from '../../../../shared/src/components/Sparklines';
 
 // Строка клиента в списке терапевта (аватар, активность, спарклайн индекса,
@@ -16,7 +17,7 @@ export function ClientCard({
   onOpen: (c: TherapyClientSummary) => void;
 }) {
   const isToday = c.lastActiveDate === today;
-  const isVirtual = c.telegramId < 0;
+  const isVirtual = isVirtualClient(c);
   const displayName =
     c.clientAlias ?? c.name ?? (isVirtual ? 'Оффлайн' : `ID ${c.telegramId}`);
   const initials = displayName

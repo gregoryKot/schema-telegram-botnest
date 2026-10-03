@@ -909,25 +909,34 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .spark { width: 100%; display: block; }
 
 /* ─── Roster ─────────────────────────────────────────────────────────────── */
-.r-row {
+.r-row, .r-row-head {
   display: grid;
-  grid-template-columns: 1.8fr 90px 100px 1.4fr;
-  gap: var(--space-20); padding: 16px 0;
+  grid-template-columns: 1.6fr 170px 150px 1.4fr;
+  gap: var(--space-20);
+}
+.r-roster--no-state .r-row, .r-roster--no-state .r-row-head {
+  grid-template-columns: 1.6fr 170px 1.6fr;
+}
+.r-row {
+  padding: 16px 0;
   border-bottom: 1px solid var(--line);
   align-items: center; cursor: pointer; transition: background .1s;
 }
 .r-row:hover { background: var(--surface-2); }
 .r-row-head {
-  display: grid;
-  grid-template-columns: 1.8fr 90px 100px 1.4fr;
-  gap: var(--space-20); padding: 0 0 10px;
+  padding: 0 0 10px;
   border-bottom: 1px solid var(--line);
 }
 .chev { font-size: 14px; color: var(--text-ghost); }
 @media (max-width: 600px) {
-  .r-row, .r-row-head { grid-template-columns: 1fr auto; }
-  .r-row > *:nth-child(2), .r-row > *:nth-child(3),
-  .r-row-head > *:nth-child(2), .r-row-head > *:nth-child(3) { display: none; }
+  /* На телефоне остаются имя и схемы: встреча (2-я) и самочувствие (3-я) прячутся. */
+  .r-row, .r-row-head, .r-roster--no-state .r-row, .r-roster--no-state .r-row-head {
+    grid-template-columns: 1fr auto;
+  }
+  /* !important: у ячеек inline display:flex, обычное правило его не перебьёт. */
+  .r-row > *:nth-child(2), .r-row-head > *:nth-child(2) { display: none !important; }
+  .r-roster:not(.r-roster--no-state) .r-row > *:nth-child(3),
+  .r-roster:not(.r-roster--no-state) .r-row-head > *:nth-child(3) { display: none !important; }
 }
 
 /* ─── Today aside: compact card on mobile ────────────────────────────────── */
