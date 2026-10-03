@@ -73,21 +73,21 @@ export function AddClientForm({ addClient }: Props) {
             {tr('Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.', 'Введите имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.')}
           </p>
 
-          {/* Underline field */}
-          <div style={{ borderBottom: `1.5px solid ${addName.length >= 2 ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)'}`, display: 'flex', alignItems: 'center', gap: 16, maxWidth: 480, marginBottom: 20, transition: 'border-color 0.2s' }}>
+          {/* Рамка + подпись: голая линия-подчёркивание не читалась как поле ввода */}
+          <label htmlFor="add-client-name" className="eyebrow u-mb10" style={{ display: 'block' }}>Имя клиента</label>
+          <div className="name-field" style={{ maxWidth: 480, marginBottom: 20 }}>
             <input
-              ref={addInputRef}
+              id="add-client-name" ref={addInputRef}
               value={addName}
               onChange={e => setAddName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submitAddClient()}
-              placeholder="Имя клиента"
+              placeholder="Например, Анна К."
               autoComplete="off"
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 22, fontFamily: 'var(--serif)', color: 'var(--text)', padding: '6px 0', letterSpacing: '-0.01em' }}
             />
             <button
               onClick={submitAddClient}
               disabled={!addValid || addSubmitting}
-              style={{ padding: '7px 18px', borderRadius: 'var(--r-20)', border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
+              style={{ padding: '9px 20px', borderRadius: 'var(--r-20)', border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.06)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
             >
               {addSubmitting ? '...' : 'Добавить'}
             </button>

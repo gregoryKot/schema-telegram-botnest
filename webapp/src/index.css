@@ -1449,6 +1449,22 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   transition: border-color .15s; resize: none; line-height: 1.6;
 }
 .paper-input:focus { outline: none; border-bottom-color: var(--accent); }
+/* Поле ввода с кнопкой внутри рамки (форма «Добавить клиента»). */
+.name-field {
+  display: flex; align-items: center; gap: var(--space-12);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong); border-radius: calc(var(--r-20) + 6px);
+  padding: 6px 6px 6px 18px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.name-field:hover { border-color: var(--text-faint); }
+.name-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.name-field input {
+  flex: 1; min-width: 0; background: none; border: none; outline: none;
+  font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em;
+  color: var(--text); padding: 8px 0;
+}
+.name-field input::placeholder { color: var(--text-faint); }
 .paper-area {
   width: 100%; background: transparent;
   border: 1px solid var(--line); border-radius: var(--r-10);

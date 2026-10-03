@@ -40,7 +40,7 @@ describe('AddClientForm — отказ буфера при копировани�
     });
 
     render(<Host />);
-    fireEvent.change(screen.getByPlaceholderText('Имя клиента'), { target: { value: 'Иван' } });
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Иван' } });
     fireEvent.click(screen.getByText('Создать ссылку-приглашение'));
     await act(async () => { fireEvent.click(screen.getByText('Добавить')); });
 
@@ -60,7 +60,7 @@ describe('AddClientForm — отказ буфера при копировани�
     });
 
     render(<Host />);
-    fireEvent.change(screen.getByPlaceholderText('Имя клиента'), { target: { value: 'Мария' } });
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Мария' } });
     fireEvent.click(screen.getByText('Создать ссылку-приглашение'));
     await act(async () => { fireEvent.click(screen.getByText('Добавить')); });
 
