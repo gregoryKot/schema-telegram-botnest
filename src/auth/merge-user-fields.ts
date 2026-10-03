@@ -69,7 +69,7 @@ export async function mergeUserScalarFields(
   `);
   // Promote target to THERAPIST if source had that role — merge must not
   // silently downgrade a user's access level. Also carry therapistMode flag
-  // (account.service.setRole sets them together; merge should mirror that).
+  // (therapist-request.service при одобрении заявки выставляет их вместе; merge повторяет это).
   await tx.$executeRaw(Prisma.sql`
     UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
     WHERE id = ${targetId}

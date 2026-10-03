@@ -3,6 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { api, PairsData } from '../api';
 import { useTr } from '../utils/addressForm';
 import { logErr } from '../utils/logErr';
+import { joinConfirmFailText } from './joinConfirmFailText';
 
 interface Props {
   joinKind: 'pair' | 'therapy';
@@ -25,7 +26,7 @@ export function JoinConfirmSheet({
 }: Props) {
   const tr = useTr();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failMsg, setFailMsg] = useState('');
   const isPair = joinKind === 'pair';
 
   // Заголовок и подписи кнопок нейтральны (без ты/вы) — не разводим.
@@ -46,7 +47,7 @@ export function JoinConfirmSheet({
 
   async function confirm() {
     setBusy(true);
-    setFailed(false);
+    setFailMsg('');
     try {
       if (isPair) {
         await api.joinPair(joinCode);
@@ -58,7 +59,7 @@ export function JoinConfirmSheet({
       onClose();
     } catch (e) {
       logErr('joinConfirm')(e);
-      setFailed(true);
+      setFailMsg(joinConfirmFailText(e, isPair, tr));
       setBusy(false);
     }
   }
@@ -86,7 +87,7 @@ export function JoinConfirmSheet({
         >
           {explain}
         </p>
-        {failed && (
+        {failMsg && (
           <p
             style={{
               fontSize: 14,
@@ -95,10 +96,7 @@ export function JoinConfirmSheet({
               marginBottom: 16,
             }}
           >
-            {tr(
-              'Не получилось присоединиться. Проверь ссылку и попробуй ещё раз.',
-              'Не получилось присоединиться. Проверьте ссылку и попробуйте ещё раз.',
-            )}
+            {failMsg}
           </p>
         )}
         <button

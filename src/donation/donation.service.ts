@@ -5,6 +5,7 @@ import { RobokassaService } from '../booking/robokassa.service';
 import { BookingNotifyService } from '../booking/booking-notify.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { normalizeBaseUrl } from '../utils/url';
+import { escapeHtml } from '../utils/escape-html';
 
 // Donation InvId is offset so it never collides with booking InvId (booking uses
 // booking.id directly). Both share one Robokassa shop → one Result URL, which
@@ -137,9 +138,10 @@ export class DonationService {
     if (claimed.count === 0) return { ok: true };
     const plain = decryptRecord(row, SCHEMA);
     await this.notify.alertAdmin(
-      `💛 <b>Донат ${row.amount} ₽</b> (${row.source})` +
-        (plain.email ? `\n📬 ${plain.email}` : '') +
-        (plain.comment ? `\n💬 ${plain.comment}` : ''),
+      // M1 (аудит 2026-10): email/comment/source — ввод донора, уходит админу как HTML.
+      `💛 <b>Донат ${row.amount} ₽</b> (${escapeHtml(String(row.source))})` +
+        (plain.email ? `\n📬 ${escapeHtml(plain.email)}` : '') +
+        (plain.comment ? `\n💬 ${escapeHtml(plain.comment)}` : ''),
     );
     this.logger.log(`Donation ${id} PAID`);
     return { ok: true };

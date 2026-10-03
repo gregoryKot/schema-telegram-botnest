@@ -123,3 +123,70 @@ describe('PairsService.getUserPairs — список всех пар юзера'
     expect(pairs.map((p) => p.code).sort()).toEqual(['AAA', 'BBB']);
   });
 });
+
+// M2 (аудит 2026-10): жизненный цикл приглашения — перевыпуск кода и срок 7 суток.
+describe('PairsService — срок и перевыпуск кода приглашения (M2)', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('после выхода партнёра код меняется — старая ссылка больше не работает', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const oldCode = await svc.createPairInvite(1n);
+    await svc.joinPair(2n, oldCode);
+
+    await svc.leavePair(2n, oldCode);
+
+    const view = await svc.getUserPair(1n);
+    expect(view?.status).toBe('pending');
+    expect(view?.code).not.toBe(oldCode);
+    // старая ссылка из чата не впускает третьего
+    expect(await svc.joinPair(3n, oldCode)).toBe(false);
+    // новый код — впускает
+    expect(await svc.joinPair(3n, view!.code)).toBe(true);
+  });
+
+  it('createPairInvite переиспользует свежее pending-приглашение', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const code = await svc.createPairInvite(1n);
+    db._pairs[0].createdAt = new Date(Date.now() - 6 * DAY);
+
+    expect(await svc.createPairInvite(1n)).toBe(code);
+    expect(db._pairs).toHaveLength(1);
+  });
+
+  it('createPairInvite перевыпускает код, если приглашению больше 7 суток', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const oldCode = await svc.createPairInvite(1n);
+    db._pairs[0].createdAt = new Date(Date.now() - 8 * DAY);
+
+    const fresh = await svc.createPairInvite(1n);
+
+    expect(fresh).not.toBe(oldCode);
+    expect(db._pairs).toHaveLength(1); // та же строка, не плодим pending-пары
+    expect(db._pairs[0].code).toBe(fresh);
+    // и новый срок — следующий вызов уже возвращает этот же код
+    expect(await svc.createPairInvite(1n)).toBe(fresh);
+  });
+
+  it('joinPair отклоняет приглашение старше 7 суток', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const code = await svc.createPairInvite(1n);
+    db._pairs[0].createdAt = new Date(Date.now() - 8 * DAY);
+
+    expect(await svc.joinPair(2n, code)).toBe(false);
+    expect(db._pairs[0].status).toBe('pending');
+    expect(db._pairs[0].userId2).toBeNull();
+  });
+
+  it('joinPair принимает приглашение младше 7 суток', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const code = await svc.createPairInvite(1n);
+    db._pairs[0].createdAt = new Date(Date.now() - 6 * DAY);
+
+    expect(await svc.joinPair(2n, code)).toBe(true);
+  });
+});

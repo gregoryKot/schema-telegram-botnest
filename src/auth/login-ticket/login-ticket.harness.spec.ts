@@ -26,6 +26,7 @@ export interface Row {
   approvedAt: Date | null;
   deniedAt: Date | null;
   consumedAt: Date | null;
+  shownToTelegramId: bigint | null;
 }
 
 export const MAX_USER = 900_000_000_000_001n;
@@ -57,6 +58,7 @@ export function makeDeps() {
         approvedAt: null,
         deniedAt: null,
         consumedAt: null,
+        shownToTelegramId: null,
         hostId: 'web',
         deviceLabel: '',
         intent: 'link',
@@ -140,7 +142,7 @@ export function makeDeps() {
   // Отчёт о пути входа — заглушка со счётчиком: спекам нужно проверять, какие
   // шаги воронки эмитятся, а настоящий LoginTicketReport ходит в аналитику.
   const report = { step: jest.fn() } as unknown as LoginTicketReport;
-  const tickets = new LoginTicketService(prisma, auth, report);
+  const tickets = new LoginTicketService(prisma, auth, report, securityLog);
   const links = new TicketLinkService(
     prisma,
     auth,

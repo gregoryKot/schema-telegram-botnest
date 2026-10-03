@@ -60,6 +60,12 @@ function makePrisma() {
     ),
     $executeRawUnsafe: jest.fn(() => Promise.resolve(0)),
     user: { delete: jest.fn(async () => ({})) },
+    booking: {
+      updateMany: jest.fn(async (args: any) => {
+        (calls['booking'] ??= []).push(args);
+        return { count: 0 };
+      }),
+    },
     _calls: calls,
   };
   for (const t of tables) prisma[t] = { deleteMany: deleteMany(t) };
@@ -85,6 +91,38 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
         OR: [{ therapistId: uid }, { clientId: uid }],
       });
     }
+  });
+
+  // Аудит 2026-10, T8: задания офлайн-клиентов терапевта (userId < 0, FK нет)
+  // оставались сиротами после удаления терапевта.
+  it('удаляет задания терапевта виртуальным клиентам (userId < 0), не трогая задания реальных', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    await service.deleteAllUserData(uid);
+
+    const wheres = prisma._calls['userTask'].map((a: any) => a.where);
+    expect(wheres).toContainEqual({ assignedBy: uid, userId: { lt: 0n } });
+    // Условие узкое: только отрицательные userId — задачи, назначенные реальным
+    // клиентам, принадлежат им и этим запросом не сносятся.
+    expect(wheres).not.toContainEqual({ assignedBy: uid });
+  });
+
+  // Аудит 2026-10, F3: записи на консультацию не удаляются (деньги, календарь),
+  // но привязка к Telegram-id обнуляется.
+  it('обнуляет Booking.clientTelegramId по адресу в Telegram, не удаляя записи', async () => {
+    const prisma = makePrisma();
+    prisma.authProvider.findFirst = jest.fn(async () => ({
+      providerId: '777000',
+    }));
+    const service = new AccountService(prisma);
+    await service.deleteAllUserData(uid);
+
+    const [args] = prisma._calls['booking'];
+    expect(args.data).toEqual({ clientTelegramId: null });
+    // и веб-id, и Telegram-id аккаунта (после слияния это разные числа)
+    expect(args.where.clientTelegramId.in).toEqual(
+      expect.arrayContaining([uid, 777000n]),
+    );
   });
 
   it('удаляет саму строку User и все user-owned таблицы в одной транзакции', async () => {

@@ -38,6 +38,27 @@ describe('CreatePlanDto', () => {
     ).resolves.toEqual([]);
   });
 
+  // M5 (аудит 2026-10): час UTC вне 0..23 раньше проходил и ломал sendAt.
+  it.each([-1, 24, 99, 1.5])('reminderUtcHour=%p — отказ', async (hour) => {
+    await expect(
+      errorsFor(CreatePlanDto, {
+        needId: 'play',
+        practiceText: 'прогулка',
+        reminderUtcHour: hour,
+      }),
+    ).resolves.toContain('reminderUtcHour');
+  });
+
+  it.each([0, 23])('граничный reminderUtcHour=%p проходит', async (hour) => {
+    await expect(
+      errorsFor(CreatePlanDto, {
+        needId: 'play',
+        practiceText: 'прогулка',
+        reminderUtcHour: hour,
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('пустой practiceText — отказ', async () => {
     await expect(
       errorsFor(CreatePlanDto, { needId: 'play', practiceText: '' }),

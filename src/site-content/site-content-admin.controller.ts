@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SiteContentService } from './site-content.service';
-import { assertAdminKey } from '../booking/admin-key.util';
+import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import { HeroPhotoDto, MarqueeDto } from './site-content-admin.dto';
 
 // The global express json() body limit is 256kb (main.ts) — stay well under it,
@@ -15,6 +15,7 @@ import { HeroPhotoDto, MarqueeDto } from './site-content-admin.dto';
 const MAX_PHOTO_BYTES = 220 * 1024;
 
 /** Admin endpoints for hero photo + marquee topics, guarded by ADMIN_BOOKING_KEY. */
+@AdminThrottle()
 @Controller('api/site-content/admin')
 export class SiteContentAdminController {
   private readonly adminKey: string;

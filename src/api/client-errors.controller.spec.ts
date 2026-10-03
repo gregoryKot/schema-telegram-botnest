@@ -235,4 +235,36 @@ describe('ClientErrorsController', () => {
       ]);
     });
   });
+
+  // M8 (аудит 2026-10): стек и сообщение несут location.href с живой подписью.
+  it('M8: initData/JWT из фрагмента в stack, message и componentStack не доезжают до лога', () => {
+    const leak = 'AAH-secret-initdata-signature-0123456789';
+    report({
+      message: `Navigation failed at https://schemehappens.ru/app/#tgWebAppData=${leak}`,
+      section: 'Sections',
+      source: 'miniapp',
+      stack:
+        `Error: boom\n  at load (https://schemehappens.ru/app/#tgWebAppData=${leak}&tgWebAppVersion=7)\n` +
+        `  at route (https://schemehappens.ru/#access_token=${leak})\n  raw #tgWebAppData=${leak}`,
+      componentStack: `at Screen (https://x.ru/p?token=${leak})`,
+    });
+    const serialized = JSON.stringify(errorSpy.mock.calls);
+    expect(serialized).not.toContain(leak);
+    // остальное сообщение и стек сохраняются — режется только хвост со ссылкой
+    const [, detail] = call();
+    expect(detail).toContain(
+      'Navigation failed at https://schemehappens.ru/app/',
+    );
+    expect(detail).toContain('at load (https://schemehappens.ru/app/');
+  });
+
+  it('M8: componentStack (если нет stack) тоже чистится', () => {
+    report({
+      message: 'boom',
+      section: 'Sections',
+      source: 'webapp',
+      componentStack: 'at X https://x.ru/p#access_token=SECRETJWT',
+    });
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('SECRETJWT');
+  });
 });

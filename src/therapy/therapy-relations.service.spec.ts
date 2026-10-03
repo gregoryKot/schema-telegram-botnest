@@ -487,8 +487,8 @@ describe('getRelation — статус связи для терапевта и �
   });
 });
 
-describe('disconnect — разрыв связи с любой стороны', () => {
-  it('удаляет связи, где userId — терапевт ИЛИ клиент', async () => {
+describe('disconnect — клиент разрывает свои связи', () => {
+  it('удаляет только связи, где userId — КЛИЕНТ; связи в роли терапевта остаются (T2, аудит 2026-10)', async () => {
     const relAsTherapist: FullRel = {
       id: 1,
       therapistId: T1,
@@ -516,7 +516,7 @@ describe('disconnect — разрыв связи с любой стороны', 
       unrelated,
     ]);
     await service.disconnect(T1);
-    expect(rels).toEqual([unrelated]);
+    expect(rels).toEqual([relAsTherapist, unrelated]);
   });
 });
 

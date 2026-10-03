@@ -70,6 +70,32 @@ describe('AnalyticsService.track', () => {
     expect(arg.data.meta).toEqual({ kind: 'weekly' });
   });
 
+  // D4 (аудит 2026-10): «человек X увидел кризисную карточку» — маркер
+  // суицидальных мыслей, привязанный к личности. /stats нужны только счётчики.
+  it.each(['crisis_card_shown', 'crisis_hotline_tapped'] as const)(
+    '%s пишется с userId = null, даже если вызывающий передал uid',
+    async (name) => {
+      const create = jest.fn(async () => ({ id: 1 }));
+      const service = new AnalyticsService(makePrisma(create));
+
+      await service.track(uid, name, { surface: 'note' });
+
+      const arg = create.mock.calls[0][0];
+      expect(arg.data.userId).toBeNull();
+      expect(arg.data.name).toBe(name);
+      expect(arg.data.meta).toEqual({ surface: 'note' });
+    },
+  );
+
+  it('остальные события сохраняют userId (контрольный случай для D4)', async () => {
+    const create = jest.fn(async () => ({ id: 1 }));
+    const service = new AnalyticsService(makePrisma(create));
+
+    await service.track(uid, 'share_result', { kind: 'weekly', ok: true });
+
+    expect(create.mock.calls[0][0].data.userId).toBe(uid);
+  });
+
   it('без meta пишет JsonNull, а не undefined', async () => {
     const create = jest.fn(async () => ({ id: 1 }));
     const service = new AnalyticsService(makePrisma(create));

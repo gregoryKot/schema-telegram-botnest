@@ -1,4 +1,12 @@
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { NEED_IDS } from '../../bot/bot.service';
 
 /**
@@ -15,7 +23,7 @@ export class AddPracticeDto {
   text!: string;
 }
 
-/** DTO для POST /api/plan. reminderUtcHour без явных границ в коде. */
+/** DTO для POST /api/plan. reminderUtcHour — час UTC, 0..23 (M5 аудита 2026-10). */
 export class CreatePlanDto {
   @IsIn(NEED_IDS)
   needId!: string;
@@ -26,5 +34,7 @@ export class CreatePlanDto {
 
   @IsOptional()
   @IsInt()
+  @Min(0)
+  @Max(23)
   reminderUtcHour?: number;
 }

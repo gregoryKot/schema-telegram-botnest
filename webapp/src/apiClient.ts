@@ -15,6 +15,7 @@
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 import { readJsonBody } from '../../shared/src/api/readJsonBody';
+import { readErrorBody } from '../../shared/src/api/readErrorBody';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -54,20 +55,18 @@ export async function fetchWithTimeout(input: string, init: RequestInit, ms = 15
 // HttpStatusError мини-аппа (apiClient.ts, правило №3).
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  reason?: string; // машинный код причины из тела (`already_connected`)
+  constructor(status: number, message: string, reason?: string) {
     super(message);
     this.status = status;
+    this.reason = reason;
   }
 }
 
-// Тело может прийти не-JSON (502 от прокси, обрыв) — res.json() отклоняется,
-// body остаётся {}: message не найдётся, в ход идёт сообщение по статусу.
+// Разбор тела (message + машинный reason, не-JSON тело) — shared/readErrorBody.
 async function apiError(res: Response): Promise<ApiError> {
-  const body = await res.json().catch(() => ({}) as { message?: unknown });
-  const msg = body?.message
-    ? typeof body.message === 'string' ? body.message : JSON.stringify(body.message)
-    : `API error: ${res.status}`;
-  return new ApiError(res.status, msg);
+  const { message, reason } = await readErrorBody(res);
+  return new ApiError(res.status, message, reason);
 }
 
 // Единственная точка отправки. На 401 перевыпускает сессию (через

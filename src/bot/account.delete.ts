@@ -61,6 +61,13 @@ export async function deleteAllUserData(
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),
     prisma.therapistCustomMode.deleteMany({ where: { therapistId: uid } }),
+    // Задания офлайн-клиентов терапевта: у них userId = -TherapyRelation.id и
+    // нет FK на User, поэтому ни реестр USER_DATA_TABLES (по userId = uid), ни
+    // каскад их не достают — без этой строки они оставались сиротами (аудит
+    // 2026-10, T8). Текст заданий — клинический, шифрованный.
+    prisma.userTask.deleteMany({
+      where: { assignedBy: uid, userId: { lt: 0n } },
+    }),
     // Пары (две ссылки).
     prisma.pair.deleteMany({
       where: { OR: [{ userId1: uid }, { userId2: uid }] },
@@ -72,6 +79,15 @@ export async function deleteAllUserData(
     // Регулярные подписки: снимаем списание. Списания уходят каскадом по FK.
     prisma.subscription.deleteMany({
       where: { telegramId: { in: subscriptionIds } },
+    }),
+    // Записи на консультацию не удаляем — это финансовые и календарные записи
+    // (оплата, встреча в календаре терапевта), но связь с человеком по
+    // Telegram-id рвём: иначе после удаления аккаунта по id по-прежнему можно
+    // найти все его записи (аудит 2026-10, F3). Имя и контакт в записи остаются
+    // — это долг вне контура удаления, см. table-registry.spec (Booking).
+    prisma.booking.updateMany({
+      where: { clientTelegramId: { in: subscriptionIds } },
+      data: { clientTelegramId: null },
     }),
     // И наконец сама строка пользователя.
     prisma.user.delete({ where: { id: uid } }),

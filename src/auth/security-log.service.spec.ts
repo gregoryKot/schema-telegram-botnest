@@ -61,8 +61,10 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
     'merge_initiated',
     'provider_linked',
     'provider_unlinked',
+    'data_exported',
     'therapist_request_decided',
     'rate_limited',
+    'totp_failed',
   ] as const;
 
   it.each(ALERT_EVENTS)(

@@ -10,7 +10,8 @@
 Что проверяется дополнительно (не сводится к формату одной переменной) — кросс-проверки
 в `src/infra/env-check.ts` (`CROSS_CHECKS`): если задан `RESEND_API_KEY`, обязаны быть
 заданы `ADMIN_EMAIL` и `EMAIL_FROM`; если задан `GOOGLE_CLIENT_ID` — `GOOGLE_CLIENT_SECRET`
-и `GOOGLE_REDIRECT_URI`; если задан `VK_APP_ID` — `VK_REDIRECT_URI`; `ENCRYPTION_KEY_OLD`
+и `GOOGLE_REDIRECT_URI`; если задан `VK_APP_ID` — `VK_REDIRECT_URI`; если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
+и `ROBOKASSA_PASSWORD2` (пустой пароль позволил бы подделать подпись вебхука); `ENCRYPTION_KEY_OLD`
 не должен совпадать с текущим `ENCRYPTION_KEY`; `SKIP_AUTH=true` запрещён в production;
 адрес возврата OAuth обязан вести на канонический хост (сверка — `src/auth/oauth-redirect-config.ts`).
 
@@ -33,7 +34,7 @@
 | `GOOGLE_CLIENT_ID` | опциональна | nonEmpty | OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. |
 | `GOOGLE_CLIENT_SECRET` | опциональна | nonEmpty | OAuth client secret Google — без него обмен кода на токен падает. |
 | `GOOGLE_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата Google после входа — обязан вести на канонический хост (инцидент 2026-09-16: старый хост давал ERR_TOO_MANY_REDIRECTS). |
-| `JWT_SECRET` | **обязательна** | nonEmpty | Подписывает access/refresh/merge JWT сайта — без него вход через Google/VK и merge аккаунтов не работает. |
+| `JWT_SECRET` | **обязательна** | secret32 | Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта, из него выводится PKCE-verifier VK — без него вход через Google/VK и merge аккаунтов не работает. Не короче 32 символов, не заглушка (`secret`, `changeme`, повтор одного символа); генерация: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`. |
 | `MAX_BOT_TOKEN` | опциональна | nonEmpty | Перекрывает HEALTHY_ADULT_MAX_TOKEN для проверки подписи initData мини-аппа MAX, если бот мини-аппа когда-нибудь станет отдельным от канального. |
 | `SKIP_AUTH` | опциональна | oneOf(true, false) | Dev-only обход проверки initData — хардкод-запрет в проде (src/api/init-data-paths.ts), в реестре только для формата/кросс-проверки. |
 | `VK_APP_ID` | опциональна | nonEmpty | OAuth client id входа через VK ID — без него кнопка «Войти через VK» недоступна. |
@@ -80,7 +81,7 @@
 
 | Переменная | На проде | Формат | Назначение |
 |---|---|---|---|
-| `ADMIN_BOOKING_KEY` | **обязательна** | nonEmpty | Ключ админских эндпоинтов записи/статей/контента сайта — без него они отвечают 403 всем (assertAdminKey отказывает закрыто, не открыто). |
+| `ADMIN_BOOKING_KEY` | **обязательна** | any | Ключ админских эндпоинтов записи/статей/контента сайта — без него они отвечают 403 всем (assertAdminKey отказывает закрыто, не открыто). Не короче 32 символов: более короткий ключ приравнен к незаданному. |
 | `APPLE_APP_PASSWORD` | опциональна | nonEmpty | Пароль приложения для CalDAV iCloud — вместе с APPLE_ID включает личный календарь. |
 | `APPLE_CALDAV_URL` | опциональна | url | Явный адрес коллекции календаря iCloud — без него используется автообнаружение. |
 | `APPLE_CALENDAR_NAME` | опциональна | nonEmpty | Имя календаря iCloud для выбора среди нескольких — опционально. |

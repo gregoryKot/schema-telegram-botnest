@@ -14,6 +14,7 @@ import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
 import { GoogleOneTapService } from './google-one-tap.service';
 import { EmailTokenService } from './email-token.service';
+import { CallerIdentityService } from './caller-identity';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
@@ -36,6 +37,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthFlowService,
     GoogleOneTapService,
     EmailTokenService,
+    CallerIdentityService,
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,

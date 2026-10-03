@@ -1,19 +1,18 @@
-// Загрузка существующей интро-карточки: сервер, при провале — localStorage.
-// Вынесено из useIntroSheetData.ts (правило №10, файл был у потолка).
+// Интро-карточка: сервер, при ОШИБКЕ сети — localStorage; «пусто» от сервера авторитетно, локальная копия удаляется (E1).
 export async function loadIntroSheetData<T extends Record<string, string>>(
   storageKey: string,
   loadExisting: () => Promise<T | null>,
 ): Promise<T | null> {
   try {
     const note = await loadExisting();
-    if (note) return note;
+    if (!note) localStorage.removeItem(storageKey);
+    return note;
   } catch (e) {
     console.error('loadExisting failed', e); // падаем на localStorage ниже
   }
   const stored = localStorage.getItem(storageKey);
-  if (!stored) return null;
   try {
-    return JSON.parse(stored) as T;
+    return stored ? (JSON.parse(stored) as T) : null;
   } catch {
     return null;
   }

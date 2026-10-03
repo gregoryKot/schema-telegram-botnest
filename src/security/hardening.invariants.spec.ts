@@ -91,3 +91,74 @@ describe('трипваер: hardening-middleware в main.ts', () => {
     expect(MAIN).not.toMatch(/enableCors\(\s*\{\s*origin:\s*['"]\*['"]/);
   });
 });
+
+// ── Аудит 2026-10 (I1–I6): инфраструктурная обвязка ──────────────────────
+const ROOT = join(__dirname, '../..');
+const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
+
+describe('трипваер: CSP и инлайн-скрипты (I4)', () => {
+  // CSP без 'unsafe-inline' и без хешей: инлайн-<script> в HTML просто не
+  // исполнится — тема в index.html годами «работала» только на бумаге.
+  it("scriptSrc не содержит 'unsafe-inline' и хешей", () => {
+    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    expect(m![1]).not.toMatch(/unsafe-inline|sha256-|nonce-/);
+  });
+
+  it.each(['webapp/index.html', 'schema-miniapp/index.html'])(
+    '%s: нет инлайн-<script> (кроме ld+json) — CSP их блокирует',
+    (rel) => {
+      const html = read(rel);
+      const inline = [
+        ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi),
+      ]
+        .filter((m) => !/\bsrc\s*=/.test(m[1]))
+        .filter((m) => !/application\/ld\+json/i.test(m[1]))
+        .filter((m) => m[2].trim() !== '');
+      expect(inline.map((m) => m[2].trim().slice(0, 60))).toEqual([]);
+    },
+  );
+});
+
+describe('трипваер: CORS не пускает алиас практики (I1)', () => {
+  it('продовый список origin — только канонический хост', () => {
+    const m = MAIN.match(/isProd\s*\?[\s\S]*?\[\s*((?:'[^']*',?\s*)+)\]/);
+    expect(m).not.toBeNull();
+    expect(m![1]).toContain('https://schemehappens.ru');
+    expect(m![1]).not.toContain('kotlarewski');
+  });
+});
+
+describe('трипваер: unhandledRejection (I6)', () => {
+  it('main.ts регистрирует обработчик необработанных reject-ов', () => {
+    expect(MAIN).toMatch(/registerUnhandledRejectionHandler\s*\(/);
+  });
+
+  it("обработчик слушает 'unhandledRejection' и пишет через Logger.error", () => {
+    const src = read('src/infra/unhandled-rejection.ts');
+    expect(src).toMatch(/process\.on\(\s*['"]unhandledRejection['"]/);
+    expect(src).toMatch(/logger\.error\(/);
+  });
+});
+
+describe('трипваер: секреты вне build-контекста и права CI (I5)', () => {
+  it('.dockerignore исключает .env, *.pem, *.key, но оставляет assets/ca/*.pem', () => {
+    const lines = read('.dockerignore')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'));
+    expect(lines).toContain('**/.env');
+    expect(lines).toContain('**/.env.*');
+    expect(lines).toContain('**/*.pem');
+    expect(lines).toContain('**/*.key');
+    // Отрицание обязано стоять ПОСЛЕ исключения, иначе оно ничего не отменяет.
+    expect(lines.indexOf('!assets/ca/*.pem')).toBeGreaterThan(
+      lines.indexOf('**/*.pem'),
+    );
+  });
+
+  it('ci.yml: верхнеуровневые permissions — только contents: read', () => {
+    const ci = read('.github/workflows/ci.yml');
+    expect(ci).toMatch(/^permissions:\s*\n\s+contents:\s*read\s*$/m);
+  });
+});

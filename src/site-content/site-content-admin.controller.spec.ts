@@ -5,7 +5,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SiteContentAdminController } from './site-content-admin.controller';
 import type { SiteContentService } from './site-content.service';
 
-const ADMIN_KEY = 'test-admin-key-site-content';
+const ADMIN_KEY = 'test-admin-key-site-content-0123456789';
 
 function makeConfig(key: string | undefined = ADMIN_KEY) {
   return { get: jest.fn(() => key) } as any;

@@ -22,7 +22,7 @@ describe('handleTicketDeny', () => {
 
     await handleTicketDeny(deps, ctx, 'K7M2QX94', 'user_denied', 'Отклонено');
 
-    expect(deps.tickets.deny).toHaveBeenCalledWith('K7M2QX94');
+    expect(deps.tickets.deny).toHaveBeenCalledWith('K7M2QX94', 42n);
     expect(deps.securityLog.log).toHaveBeenCalledWith('login_ticket_denied', {
       telegramId: 42,
       reason: 'user_denied',

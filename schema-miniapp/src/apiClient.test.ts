@@ -274,3 +274,28 @@ describe('веб-хост (PWA): обмен куки ДО первого зап�
     vi.useRealTimers();
   });
 });
+
+describe('ошибка POST несёт status, message и reason тела', () => {
+  it('409 { message, reason } → HttpStatusError со status и reason', async () => {
+    fetchMock().mockResolvedValue(
+      jsonRes(409, { message: 'уже есть', reason: 'already_connected' }),
+    );
+    const err = await post('/api/therapy/join', { code: 'X' }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toMatchObject({
+      status: 409,
+      message: 'уже есть',
+      reason: 'already_connected',
+    });
+  });
+
+  it('тело без message — «API error: N», reason отсутствует', async () => {
+    fetchMock().mockResolvedValue(jsonRes(500, {}));
+    const err = await post('/api/therapy/join', { code: 'X' }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toMatchObject({ status: 500, message: 'API error: 500' });
+    expect((err as { reason?: string }).reason).toBeUndefined();
+  });
+});

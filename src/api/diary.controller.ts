@@ -78,7 +78,10 @@ export class DiaryController {
 
   @Delete('schema/:id')
   async deleteSchemaDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteSchemaDiaryEntry(uid(req), parseId(id));
+    await this.diaryService.deleteSchemaDiaryEntry(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
     return { ok: true };
   }
 
@@ -118,7 +121,10 @@ export class DiaryController {
 
   @Delete('mode/:id')
   async deleteModeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteModeDiaryEntry(uid(req), parseId(id));
+    await this.diaryService.deleteModeDiaryEntry(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
     return { ok: true };
   }
 
@@ -150,7 +156,10 @@ export class DiaryController {
 
   @Delete('gratitude/:id')
   async deleteGratitudeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteGratitudeDiaryEntry(uid(req), parseId(id));
+    await this.diaryService.deleteGratitudeDiaryEntry(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
     return { ok: true };
   }
 }

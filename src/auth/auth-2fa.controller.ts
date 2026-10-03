@@ -22,6 +22,16 @@ import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
+import { PersistentThrottle } from '../api/persistent-throttle.decorator';
+
+// H1 аудита 2026-10: шестизначный код без собственного лимита подбирается за
+// сутки при штатных 200 запросов/мин. Любая ручка, проверяющая код 2FA, получает
+// 5/мин и 20/час, а счётчик — в Postgres (@PersistentThrottle, правило №5):
+// in-memory лимит обходится сменой инстанса.
+const CODE_THROTTLE = {
+  short: { limit: 5, ttl: 60_000 },
+  long: { limit: 20, ttl: 3_600_000 },
+};
 
 @Controller('api/auth')
 export class Auth2faController {
@@ -56,6 +66,8 @@ export class Auth2faController {
 
   @Post('2fa/enable')
   @UseGuards(JwtAuthGuard)
+  @Throttle(CODE_THROTTLE)
+  @PersistentThrottle()
   @HttpCode(200)
   async totpEnable(
     @Req() req: Request,
@@ -63,7 +75,12 @@ export class Auth2faController {
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/enable', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    const result = await this.totp.confirmSetup(webUser.userId, dto.code);
+    const result = await this.logTotpFailure(
+      req,
+      webUser.userId,
+      '2fa/enable',
+      () => this.totp.confirmSetup(webUser.userId, dto.code),
+    );
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_enabled',
@@ -73,6 +90,8 @@ export class Auth2faController {
 
   @Post('2fa/disable')
   @UseGuards(JwtAuthGuard)
+  @Throttle(CODE_THROTTLE)
+  @PersistentThrottle()
   @HttpCode(200)
   async totpDisable(
     @Req() req: Request,
@@ -80,7 +99,9 @@ export class Auth2faController {
   ): Promise<{ ok: true }> {
     requireCsrf(req, '2fa/disable', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    await this.totp.disable(webUser.userId, dto.code);
+    await this.logTotpFailure(req, webUser.userId, '2fa/disable', () =>
+      this.totp.disable(webUser.userId, dto.code),
+    );
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_disabled',
@@ -90,6 +111,8 @@ export class Auth2faController {
 
   @Post('2fa/recovery-codes')
   @UseGuards(JwtAuthGuard)
+  @Throttle(CODE_THROTTLE)
+  @PersistentThrottle()
   @HttpCode(200)
   async totpRegenerateRecovery(
     @Req() req: Request,
@@ -97,7 +120,9 @@ export class Auth2faController {
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/recovery-codes', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    return this.totp.regenerateRecoveryCodes(webUser.userId, dto.code);
+    return this.logTotpFailure(req, webUser.userId, '2fa/recovery-codes', () =>
+      this.totp.regenerateRecoveryCodes(webUser.userId, dto.code),
+    );
   }
 
   // ─── Recovery email ──────────────────────────────────────────────────────
@@ -150,6 +175,8 @@ export class Auth2faController {
   // Confirm a recovery magic link → issue a session for that user. They land
   // on /account and can link a new provider before the original token expires.
   @Post('recovery/confirm')
+  @Throttle(CODE_THROTTLE)
+  @PersistentThrottle()
   @HttpCode(200)
   async recoveryConfirm(
     @Req() req: Request,
@@ -177,10 +204,8 @@ export class Auth2faController {
   // Verify a TOTP code in exchange for a real access token. Called by the
   // /auth/2fa frontend page after primary login returned a challengeToken.
   @Post('2fa/challenge')
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @Throttle(CODE_THROTTLE)
+  @PersistentThrottle()
   @HttpCode(200)
   async totpChallenge(
     @Req() req: Request,
@@ -190,7 +215,10 @@ export class Auth2faController {
     requireCsrf(req, '2fa/challenge', this.securityLog);
     const { userId } = this.auth.verifyTotpChallengeToken(dto.challengeToken);
     const ok = await this.totp.verifyCode(userId, dto.code);
-    if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+    if (!ok) {
+      this.logTotpFailed(req, userId, '2fa/challenge');
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
     const tokens = await this.auth.issueTokens(
       userId,
       req.ip,
@@ -203,5 +231,28 @@ export class Auth2faController {
     // сверки `/auth/confirm`, куда клиент уводит человека сам, если вход
     // начинался в отдельном контейнере.
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+  }
+
+  // Неверный код — след в аудите (userId + ip). Бросает сервис
+  // (UnauthorizedException 'Invalid code'); прочие ошибки (setup не начат и т.п.)
+  // — не попытка подбора, их не пишем.
+  private async logTotpFailure<T>(
+    req: Request,
+    userId: bigint,
+    route: string,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await run();
+    } catch (err) {
+      if (err instanceof UnauthorizedException) {
+        this.logTotpFailed(req, userId, route);
+      }
+      throw err;
+    }
+  }
+
+  private logTotpFailed(req: Request, userId: bigint, route: string): void {
+    this.securityLog.log('totp_failed', { userId, ip: req.ip, route });
   }
 }

@@ -8,7 +8,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AdminKeyAuditInterceptor } from './booking/admin-key-audit.interceptor';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { ServerResponse } from 'http';
@@ -29,7 +30,10 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
-import { practiceDomainMiddleware } from './practice-domain.middleware';
+import {
+  practiceDomainMiddleware,
+  PRACTICE_ALIAS_HOSTS,
+} from './practice-domain.middleware';
 import { practiceIndexHtml } from './practice-index-html';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
@@ -38,7 +42,7 @@ import { SelfCheckService } from './infra/self-check/self-check.service';
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
 // kotlarewski.ru здесь не нужен: practiceDomainMiddleware 301-ит его на .gr.
-const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
+const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 
 @Module({
   imports: [
@@ -78,6 +82,8 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
   ],
   providers: [
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
+    // Отказы по ключу админки — в аудит-лог (аудит 2026-10, I2).
+    { provide: APP_INTERCEPTOR, useClass: AdminKeyAuditInterceptor },
     DbOutageMonitorService,
     SelfCheckService,
   ],
@@ -90,10 +96,14 @@ export class AppModule implements NestModule {
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
 
     // Первым: 301 kotlarewski.ru → .gr + домен-зависимые sitemap/robots
-    // практики (см. practice-domain.middleware.ts).
+    // практики (см. practice-domain.middleware.ts). Метод — ALL, не GET:
+    // правило №19 («визитка отдаёт только себя») касается и записи. До аудита
+    // 2026-10 стоял GET, и POST/PUT/PATCH/DELETE на kotlarewski.gr доходили до
+    // любой ручки, включая /api/auth/** (куки и CSRF-модель рассчитаны на один
+    // хост, алиас не должен принимать запись вне своего allow-list).
     consumer
       .apply(practiceDomainMiddleware)
-      .forRoutes({ path: '{*path}', method: RequestMethod.GET });
+      .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
     consumer
       .apply((req: Request, res: Response, next: () => void) => {

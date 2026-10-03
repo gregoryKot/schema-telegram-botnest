@@ -6,10 +6,10 @@ import { useAuth } from '../auth/authContext';
 // Handles redirect from backend after OAuth (Google, VK, Telegram widget).
 // Backend redirects to /auth/callback#access_token=...&expires_in=...
 //
-// Telegram Login Widget with data-auth-url opens a popup for auth.
-// After auth the popup lands here. We detect the popup context and
-// redirect the main page (window.opener) here with the token, then
-// close the popup — so the main page handles auth normally.
+// Попап-ветки (токен в window.opener.location) здесь больше нет: вход
+// Telegram идёт полным редиректом (backend telegram/redirect), окон
+// window.open для входа в проекте не осталось. Ветка передавала токен в
+// чужое окно без проверки источника (аудит 2026-10, E3).
 export function AuthCallback() {
   const { setAccessToken } = useAuth();
   const navigate = useNavigate();
@@ -23,17 +23,6 @@ export function AuthCallback() {
     window.history.replaceState(null, '', '/auth/callback');
 
     if (token) {
-      // If we're inside a popup (Telegram widget data-auth-url flow),
-      // hand the token to the main window and close the popup.
-      if (window.opener && window.opener !== window) {
-        try {
-          window.opener.location.href =
-            `/auth/callback#access_token=${encodeURIComponent(token)}&expires_in=${expiresIn}`;
-        } catch { /* opener is cross-origin — ignore */ }
-        window.close();
-        return;
-      }
-
       const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
       sessionStorage.removeItem('auth_return_to');
       // flushSync forces the state update to complete synchronously before

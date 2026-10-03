@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { encryptPayload, decryptPayload } from './notification-payload.crypto';
 
 export type NotificationType =
   | 'reminder'
@@ -91,7 +92,14 @@ export class NotificationService {
     payload?: object,
   ) {
     await this.prisma.scheduledNotification.create({
-      data: { userId, type, sendAt, payload: payload ?? undefined },
+      // Текст задания терапевта и подобное шифруется (аудит 2026-10, T1) —
+      // в БД свободный текст открытым не лежит.
+      data: {
+        userId,
+        type,
+        sendAt,
+        payload: encryptPayload(payload),
+      },
     });
   }
 
@@ -110,7 +118,11 @@ export class NotificationService {
       orderBy: { sendAt: 'asc' },
       take: 500, // M3: бэклог после даунтайма дренируется батчами, старейшие первыми
     });
-    return rows.map((r) => ({ ...r, userId: Number(r.userId) }));
+    return rows.map((r) => ({
+      ...r,
+      userId: Number(r.userId),
+      payload: decryptPayload(r.payload),
+    }));
   }
 
   /** Пометить уведомление как отправленное. Идемпотентно — двойной вызов не падает. */

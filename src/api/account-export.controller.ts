@@ -2,6 +2,7 @@ import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { uid } from './request-utils';
+import { PersistentThrottle } from './persistent-throttle.decorator';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DataExportService } from '../account/data-export.service';
 
@@ -21,7 +22,10 @@ export class AccountExportController {
   // Экспорт — тяжёлая операция (пара десятков findMany + расшифровка каждой
   // строки), поэтому лимит ощутимо строже обычных ручек (auth-эндпоинты
   // допускают 3-5/мин): раз в минуту, не больше 5 раз в сутки.
+  // @PersistentThrottle (правило №5, аудит 2026-10 D2): счётчик в памяти свой у
+  // каждого инстанса Amvera, и «5 в сутки» на двух инстансах превращались в 10.
   @Get('export')
+  @PersistentThrottle()
   @Throttle({
     short: { limit: 1, ttl: 60_000 },
     long: { limit: 5, ttl: 86_400_000 },

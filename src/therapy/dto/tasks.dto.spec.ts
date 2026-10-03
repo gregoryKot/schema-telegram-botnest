@@ -36,6 +36,55 @@ describe('CreateTaskDto', () => {
   });
 });
 
+// Аудит 2026-10, T6: type — закрытый список, needId/dueDate ограничены.
+describe('CreateTaskDto — type/needId/dueDate (T6)', () => {
+  const VALID = { type: 'custom', text: 'задание' };
+
+  it('все типы из форм создания обоих фронтендов проходят', async () => {
+    for (const type of [
+      'diary_streak',
+      'tracker_streak',
+      'belief_check',
+      'letter_to_self',
+      'safe_place',
+      'flashcard',
+      'schema_intro',
+      'mode_intro',
+      'custom',
+    ])
+      await expect(
+        errorsFor(CreateTaskDto, { ...VALID, type }),
+      ).resolves.toEqual([]);
+  });
+
+  it('неизвестный type — отказ', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, type: 'rm -rf' }),
+    ).resolves.toContain('type');
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, type: 'x'.repeat(10_000) }),
+    ).resolves.toContain('type');
+  });
+
+  it('dueDate — только YYYY-MM-DD', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, dueDate: '2026-10-10' }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, dueDate: '10.10.2026' }),
+    ).resolves.toContain('dueDate');
+  });
+
+  it('needId длиннее 64 — отказ', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, needId: 'a'.repeat(65) }),
+    ).resolves.toContain('needId');
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, needId: 'attachment' }),
+    ).resolves.toEqual([]);
+  });
+});
+
 describe('CompleteTaskDto', () => {
   it('done обязателен и должен быть boolean', async () => {
     await expect(errorsFor(CompleteTaskDto, {})).resolves.toContain('done');

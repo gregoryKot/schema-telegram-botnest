@@ -69,7 +69,10 @@ export class ExercisesController {
 
   @Delete('belief-checks/:id')
   deleteBeliefCheck(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteBeliefCheck(uid(req), parseId(id));
+    return this.exercisesService.deleteBeliefCheck(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
   }
 
   // ── Letters ───────────────────────────────────────────────────────────────────
@@ -87,7 +90,10 @@ export class ExercisesController {
 
   @Delete('letters/:id')
   deleteLetter(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteLetter(uid(req), parseId(id));
+    return this.exercisesService.deleteLetter(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
   }
 
   // ── Safe place ────────────────────────────────────────────────────────────────
@@ -128,6 +134,9 @@ export class ExercisesController {
 
   @Delete('flashcards/:id')
   deleteFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteFlashcard(uid(req), parseId(id));
+    return this.exercisesService.deleteFlashcard(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
   }
 }

@@ -4,7 +4,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { BookingCalendarAdminController } from './booking-calendar-admin.controller';
 
-const ADMIN_KEY = 'super-secret-key';
+const ADMIN_KEY = 'super-secret-key-0123456789-abcdefghij';
 const VALID_QUERY = { from: '2026-07-13', to: '2026-07-19' };
 const VALID_PATCH = {
   set: [

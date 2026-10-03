@@ -56,6 +56,16 @@ function makeFakePrisma(users: Record<string, Record<string, unknown>> = {}) {
         const row = tokenRows.find((r) => r.tokenHash === tokenHash);
         return Promise.resolve(row ? { ...row } : null);
       }),
+      // CAS как в Postgres: фильтр и запись — один синхронный шаг, поэтому
+      // из двух конкурентных погашений count=1 получит ровно одно.
+      updateMany: jest.fn(({ where, data }: any) => {
+        const matched = tokenRows.filter(
+          (r) =>
+            r.id === where.id && (where.usedAt !== null || r.usedAt == null),
+        );
+        for (const row of matched) Object.assign(row, data);
+        return Promise.resolve({ count: matched.length });
+      }),
       update: jest.fn(({ where: { id }, data }: any) => {
         const row = tokenRows.find((r) => r.id === id);
         if (!row) throw new Error('token not found (fake prisma)');
@@ -252,6 +262,47 @@ describe('EmailService — consumeToken', () => {
     await expect(service.consumeToken(raw, 'recovery')).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  // H4 аудита 2026-10: findUnique→update были раздельны — два параллельных
+  // запроса с одной ссылкой проходили проверку usedAt оба и выдавали две сессии.
+  it('два ПАРАЛЛЕЛЬНЫХ погашения одной ссылки → успех ровно у одного', async () => {
+    const prisma = makeFakePrisma({
+      [USER_ID.toString()]: {
+        id: USER_ID,
+        recoveryEmail: 'a@test.com',
+        recoveryEmailVerifiedAt: new Date(),
+      },
+    });
+    const service = new EmailService(prisma as never, makeConfig());
+    const capture = captureRawToken(service);
+    await service.sendRecoveryLink('a@test.com');
+    const raw = capture.raw();
+
+    const results = await Promise.allSettled([
+      service.consumeToken(raw, 'recovery'),
+      service.consumeToken(raw, 'recovery'),
+    ]);
+
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = results.find((r) => r.status === 'rejected');
+    expect(rejected?.reason).toBeInstanceOf(UnauthorizedException);
+    expect((rejected?.reason as Error).message).toBe('Token already used');
+  });
+
+  it('проигранная гонка (updateMany count=0) не привязывает email при verify_email', async () => {
+    const prisma = makeFakePrisma({ [USER_ID.toString()]: { id: USER_ID } });
+    const service = new EmailService(prisma as never, makeConfig());
+    const capture = captureRawToken(service);
+    await service.sendVerificationLink(USER_ID, 'new@test.com');
+    const raw = capture.raw();
+    prisma.emailToken.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.consumeToken(raw, 'verify_email')).rejects.toThrow(
+      'Token already used',
+    );
+    const user = prisma.userRows.get(USER_ID.toString()) as any;
+    expect(user.recoveryEmail).toBeUndefined();
   });
 
   it('wrong expectedPurpose → UnauthorizedException (recovery token used at verify_email callback)', async () => {

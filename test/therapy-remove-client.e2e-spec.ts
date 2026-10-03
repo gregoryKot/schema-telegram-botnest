@@ -107,6 +107,20 @@ describe('e2e: терапевт удаляет клиента (все сцена
     });
     expect(join.body).toEqual({ ok: true });
   }
+  // Вторая связь клиента с ДРУГИМ терапевтом. Через API её больше не создать
+  // (аудит 2026-10, T3: join отвечает 409 already_connected), но такие строки
+  // остались в базе от прежних версий — удаление/отключение обязано изолировать
+  // терапевтов друг от друга и на них. Поэтому строка пишется прямо в БД.
+  async function connectLegacySecondTherapist(t: bigint, client: bigint) {
+    await prisma.therapyRelation.create({
+      data: {
+        code: `LEGACY-${t}-${client}`,
+        therapistId: t,
+        clientId: client,
+        status: 'active',
+      },
+    });
+  }
   async function addVirtual(t: bigint, name: string) {
     const res = await act(t).post('/api/therapy/clients/virtual', { name });
     const id = BigInt(res.body.find((c: any) => c.name === name).telegramId);
@@ -130,7 +144,7 @@ describe('e2e: терапевт удаляет клиента (все сцена
       await prisma.user.create({ data: { id, role } });
 
     await connect(A, C);
-    await connect(B, C);
+    await connectLegacySecondTherapist(B, C);
     await connect(B, D);
     await addVirtual(A, 'V1');
     await addVirtual(A, 'V2');
@@ -249,7 +263,9 @@ describe('e2e: терапевт удаляет клиента (все сцена
   });
 
   describe('2. C подключается к A заново по новому коду', () => {
-    beforeAll(() => connect(A, C));
+    // C всё ещё связан с B, поэтому по API join к A теперь отдаёт 409 (аудит
+    // 2026-10, T3) — повторную связь с A пишем в БД, как и вторую связь выше.
+    beforeAll(() => connectLegacySecondTherapist(A, C));
 
     it('у A для C пусто: ни заметок, ни концептуализации, ни карт', async () => {
       expect(await relCount(A, C)).toBe(1);
@@ -362,9 +378,9 @@ describe('e2e: терапевт удаляет клиента (все сцена
   });
 
   describe('7. Клиент сам отключается (DELETE /api/therapy/relation от C)', () => {
-    // ФИКСАЦИЯ ТЕКУЩЕГО ПОВЕДЕНИЯ, не цель исправления. disconnect() удаляет ВСЕ
-    // связи, где пользователь терапевт или клиент (deleteMany OR), поэтому C
-    // рвёт сразу и A, и B. Данные терапевта по клиенту при этом остаются.
+    // disconnect() удаляет все связи, где пользователь — КЛИЕНТ (с 2026-10,
+    // аудит T2: связи в роли терапевта он больше не трогает), поэтому C рвёт
+    // сразу и A, и B. Данные терапевта по клиенту при этом остаются.
     beforeAll(async () => {
       expect(await data(A, C)).toEqual(FULL); // досеяно в сценарии 4
       expect(await data(B, C)).toEqual(FULL);
@@ -392,11 +408,12 @@ describe('e2e: терапевт удаляет клиента (все сцена
       const maps = await act(C).get('/api/therapy/my-mode-maps');
       expect(maps.body).toHaveLength(2);
     });
-    it('терапевт, вызвавший тот же DELETE /relation, теряет и виртуального клиента (данные остаются сиротами)', async () => {
+    it('терапевт, вызвавший тот же DELETE /relation, НЕ теряет виртуального клиента и его данные (аудит 2026-10, T2)', async () => {
       const vf = await addVirtual(F, 'VF');
       await seed(F, vf);
       expect((await act(F).del('/api/therapy/relation')).status).toBe(200);
-      expect(await relCount(F, vf)).toBe(0);
+      expect(await relCount(F, vf)).toBe(1);
+      expect(await clientIds(F)).toContain(ID(vf));
       expect(await data(F, vf)).toEqual(FULL);
     });
   });

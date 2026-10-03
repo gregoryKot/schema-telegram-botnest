@@ -7,7 +7,6 @@ import {
   Res,
   Query,
   Param,
-  UnauthorizedException,
   BadRequestException,
   Logger,
   UseGuards,
@@ -26,11 +25,17 @@ import {
 } from './email-callback-redirect';
 import { EmailTokenService } from './email-token.service';
 import type { LinkProviderResult } from './merge-summary.types';
+import { EmailBodyDto, InitDataBodyDto } from './dto/auth-scalar.dto';
+import { MergeConfirmDto } from './dto/merge-confirm.dto';
+import { CallerIdentityService } from './caller-identity';
+import { TotpService } from './totp.service';
+import { LinkSessionRequiredException } from './link-session-required.exception';
+import { sendBounce, shouldBounce } from './email-link-bounce';
 import {
-  EmailBodyDto,
-  TokenBodyDto,
-  InitDataBodyDto,
-} from './dto/auth-scalar.dto';
+  assertMergeCaller,
+  assertSourceTotp,
+  mergeOrThrow,
+} from './merge-confirm';
 import type { Request, Response } from 'express';
 import {
   isCrossSiteRequest,
@@ -49,6 +54,8 @@ export class AuthAccountController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
+    private readonly identity: CallerIdentityService,
+    private readonly totp: TotpService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -80,7 +87,11 @@ export class AuthAccountController {
         token,
         req.ip,
         req.headers['user-agent'],
+        await this.identity.resolve(req), // A3: чья сессия в этом браузере
       );
+      // Привязка почты сессию не выдаёт: человек уже вошёл (A3).
+      if (r.kind === 'linked')
+        return res.redirect(`${frontendBase}/account?linked=email`);
       // 2FA-гейт (H1): login при включённом TOTP → экран ввода кода, не сессия.
       if (r.kind === 'totp_challenge') {
         res.redirect(
@@ -95,6 +106,12 @@ export class AuthAccountController {
         emailCallbackNextUrl(r.purpose, frontendBase, r.tokens, ticket),
       );
     } catch (err) {
+      // Переход из письма — с чужого сайта, strict-кука не приехала: один
+      // раз перезаходим со своей страницы (см. email-link-bounce.ts).
+      if (err instanceof LinkSessionRequiredException && shouldBounce(req)) {
+        sendBounce(req, res, frontendBase);
+        return;
+      }
       this.logger.error(`Email callback: ${(err as Error).message}`);
       res.redirect(emailCallbackErrorUrl(err, frontendBase));
     }
@@ -166,7 +183,7 @@ export class AuthAccountController {
   })
   @HttpCode(200)
   async confirmMerge(
-    @Body() dto: TokenBodyDto,
+    @Body() dto: MergeConfirmDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
@@ -178,31 +195,14 @@ export class AuthAccountController {
     const { target, source, provider, providerId } =
       this.auth.verifyMergeToken(token);
 
-    // Security: caller must be the target (JWT session) OR anonymous via the
-    // OAuth callback that just minted this token (merge token = signed proof of
-    // intent). Reject only if logged in as a DIFFERENT user.
-    const webUser = req.webUser;
-    if (webUser && String(webUser.userId) !== String(target)) {
-      throw new UnauthorizedException(
-        'Merge token does not match current session',
-      );
-    }
+    // Security (аудит 2026-10, A2/A4): merge-токен — не пропуск. Вызывающий
+    // доказывает, что он target (Bearer или живая refresh-кука), а если у
+    // поглощаемого аккаунта включён TOTP — ещё и вводит его код.
+    assertMergeCaller(await this.identity.resolve(req), target);
+    await assertSourceTotp(this.totp, source, dto.code);
 
     // 1. Move data from source → target.
-    try {
-      await this.merge.merge(source, target);
-    } catch (err) {
-      const msg = (err as Error).message ?? 'merge failed';
-      // Full error → logs + admin alert (AlertLogger picks up .error).
-      this.logger.error(
-        `merge ${source} → ${target} failed: ${msg}`,
-        (err as Error).stack,
-      );
-      // Friendly message to client — no Prisma internals leaked.
-      throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробовать позже.',
-      );
-    }
+    await mergeOrThrow(this.merge, this.logger, source, target);
 
     // 2. Link the provider that triggered the merge to the target user.
     const linkRes = await this.auth.linkProviderToUser(

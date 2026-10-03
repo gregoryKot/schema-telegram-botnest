@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
+import { createTherapyInvite, joinTherapyAsClient } from './therapy-invite';
 import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 
 // Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
@@ -10,10 +10,6 @@ const decName = (v: string | null): string | null =>
   v == null ? null : (decrypt(v) ?? v);
 import { randomBytes } from 'crypto';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
-
-function randomCode(): string {
-  return randomBytes(6).toString('hex').toUpperCase();
-}
 
 // Связи терапевт↔клиент: приглашения, подключение, список клиентов,
 // alias/удаление клиента и граница доступа assertRelation (аудит 2026-07,
@@ -29,33 +25,14 @@ export class TherapyRelationsService {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
-  async createInvite(
-    therapistId: bigint,
-  ): Promise<{ code: string; url: string }> {
-    let code: string;
-    do {
-      code = randomCode();
-    } while (await this.prisma.therapyRelation.findUnique({ where: { code } }));
-    await this.prisma.therapyRelation.create({ data: { therapistId, code } });
-    return { code, url: `${MINIAPP_TGLINK}?startapp=therapy_${code}` };
+  createInvite(therapistId: bigint): Promise<{ code: string; url: string }> {
+    return createTherapyInvite(this.prisma, therapistId);
   }
 
-  async joinAsClient(clientId: bigint, code: string): Promise<boolean> {
-    const rel = await this.prisma.therapyRelation.findUnique({
-      where: { code: code.toUpperCase() },
-    });
-    if (!rel || rel.status !== 'pending' || rel.clientId !== null) return false;
-    if (rel.therapistId === clientId) return false;
-    // Prevent duplicate: if already connected to this therapist, ignore silently
-    const alreadyConnected = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: rel.therapistId, clientId, status: 'active' },
-    });
-    if (alreadyConnected) return true;
-    await this.prisma.therapyRelation.update({
-      where: { id: rel.id },
-      data: { clientId, status: 'active' },
-    });
-    return true;
+  // true — подключён, false — код не подошёл; бросает ALREADY_CONNECTED_ERROR
+  // (подробности — в therapy-invite.ts).
+  joinAsClient(clientId: bigint, code: string): Promise<boolean> {
+    return joinTherapyAsClient(this.prisma, clientId, code);
   }
 
   async getRelation(userId: bigint): Promise<TherapyRelationInfo | null> {
@@ -91,9 +68,14 @@ export class TherapyRelationsService {
     return null;
   }
 
+  // Разрывает связи, где userId — КЛИЕНТ. Раньше удалялись и связи, где он
+  // терапевт: один вызов DELETE /api/therapy/relation от терапевта сносил всех
+  // его клиентов, офлайн-клиентов и приглашения, а заметки и карты оставались
+  // сиротами (аудит 2026-10, T2). Терапевт убирает клиентов по одному через
+  // DELETE clients/:clientId (removeClient).
   async disconnect(userId: bigint): Promise<void> {
     await this.prisma.therapyRelation.deleteMany({
-      where: { OR: [{ therapistId: userId }, { clientId: userId }] },
+      where: { clientId: userId },
     });
   }
 
@@ -257,8 +239,10 @@ export class TherapyRelationsService {
   ): Promise<void> {
     if (clientId < 0) {
       // Virtual client — identified by -rel.id
+      // clientId: null — иначе -id связи РЕАЛЬНОГО клиента проходил бы как
+      // «виртуальный» (теневой бакет с чужими задачами/данными, T4).
       const rel = await this.prisma.therapyRelation.findFirst({
-        where: { id: -clientId, therapistId, status: 'active' },
+        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
       });
       if (!rel) throw new Error('No active relation');
       return;
@@ -277,7 +261,7 @@ export class TherapyRelationsService {
     const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId, status: 'active' },
+        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
         data: { clientAlias: encAlias },
       });
     } else {

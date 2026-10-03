@@ -7,6 +7,7 @@
 // при листинге — контраст зафиксирован в отчёте.
 import { TherapyTasksViewService } from './therapy-tasks-view.service';
 import { TherapyTasksService } from './therapy-tasks.service';
+import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt } from '../utils/crypto';
 import { localDate } from '../utils/tz';
 
@@ -123,7 +124,14 @@ function makeService() {
     schedule: jest.fn(() => Promise.resolve()),
   } as any;
   const tasksService = new TherapyTasksService(t.db, notificationService);
-  const service = new TherapyTasksViewService(t.db, tasksService);
+  // Настоящий TherapyRelationsService: граница доступа одна на весь контур
+  // (assertHasClient), копии проверки во view-сервисе нет (аудит 2026-10, T4).
+  const relationsService = new TherapyRelationsService(t.db, {} as any);
+  const service = new TherapyTasksViewService(
+    t.db,
+    tasksService,
+    relationsService,
+  );
   return { service, tasksService, ...t };
 }
 

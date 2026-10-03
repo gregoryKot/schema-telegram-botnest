@@ -49,21 +49,22 @@ describe('трипваер: сайты сравнения секретов ис�
   );
 });
 
+// Ключ ≥ 32 символов: короче — приравнен к незаданному (аудит 2026-10, I2).
+const KEY = 'super-secret-0123456789-abcdefghij-xyz';
+
 describe('assertAdminKey — поведение константного сравнения', () => {
   it('верный ключ проходит', () => {
-    expect(() => assertAdminKey('super-secret', 'super-secret')).not.toThrow();
+    expect(() => assertAdminKey(KEY, KEY)).not.toThrow();
   });
 
   it('неверный ключ той же длины отклоняется', () => {
-    expect(() => assertAdminKey('super-secreX', 'super-secret')).toThrow(
+    expect(() => assertAdminKey(KEY.slice(0, -1) + 'X', KEY)).toThrow(
       ForbiddenException,
     );
   });
 
   it('неверная длина отклоняется (без RangeError от timingSafeEqual)', () => {
-    expect(() => assertAdminKey('short', 'super-secret')).toThrow(
-      ForbiddenException,
-    );
+    expect(() => assertAdminKey('short', KEY)).toThrow(ForbiddenException);
   });
 
   it('пустой сконфигурированный ключ ВСЕГДА отклоняет (missing env не открывает эндпоинт)', () => {
@@ -72,8 +73,6 @@ describe('assertAdminKey — поведение константного сра�
   });
 
   it('undefined provided отклоняется, не роняет', () => {
-    expect(() => assertAdminKey(undefined, 'super-secret')).toThrow(
-      ForbiddenException,
-    );
+    expect(() => assertAdminKey(undefined, KEY)).toThrow(ForbiddenException);
   });
 });

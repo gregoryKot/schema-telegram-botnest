@@ -74,10 +74,16 @@ export class TherapyClientDataService {
       scores: computeYsqScores(decodeYsqAnswers(r.answers)),
     }));
 
+    // mySchemaIds/myModeIds в БД — зашифрованные JSON-строки (bot.service.ts,
+    // profile.service.ts читают их через decryptRecord). Без расшифровки
+    // терапевт получал шифротекст, объявленный массивом (аудит 2026-10, F2).
+    const labels = user
+      ? decryptRecord(user, { jsonArrays: ['mySchemaIds', 'myModeIds'] })
+      : null;
     return {
       name: user?.firstName ?? null,
-      mySchemaIds: (user?.mySchemaIds as string[]) ?? [],
-      myModeIds: (user?.myModeIds as string[]) ?? [],
+      mySchemaIds: (labels?.mySchemaIds as string[] | null) ?? [],
+      myModeIds: (labels?.myModeIds as string[] | null) ?? [],
       ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
       ysqActiveSchemaIds,
       ysqHistory,
@@ -270,7 +276,8 @@ export class TherapyClientDataService {
     const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId, status: 'active' },
+        // clientId: null — -id связи реального клиента не «виртуальный» (T4).
+        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
         data: mutation,
       });
     } else {

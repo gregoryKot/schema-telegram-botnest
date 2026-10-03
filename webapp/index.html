@@ -11,16 +11,10 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Apply theme BEFORE any rendering to prevent white flash -->
-    <script>
-      (function(){
-        var t = localStorage.getItem('app_theme');
-        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        var bg = t === 'dark' ? '#14141a' : '#f5f2eb';
-        document.documentElement.style.background = bg;
-        document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light';
-      })();
-    </script>
+    <!-- Apply theme BEFORE any rendering to prevent white flash.
+         Внешний файл, а не инлайн: CSP не разрешает инлайн-скрипты. Без
+         async/defer — выполняется синхронно до первого кадра. -->
+    <script src="/theme.js"></script>
 
     <!-- Address bar / status bar color (updates via JS after load) -->
     <meta name="theme-color" content="#f5f2eb" media="(prefers-color-scheme: light)" />

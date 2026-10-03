@@ -9,6 +9,7 @@ import { GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountPro
 import { Skeleton } from '../components/Skeleton';
 import { AccountLinkSection } from './account/AccountLinkSection';
 import { EmailLinkRow } from './account/EmailLinkRow';
+import { emailLinkErrorMessage } from './account/emailLinkError';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type Provider = AccountProvider;
@@ -33,13 +34,7 @@ export function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const success = searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null;
-  // Переход по ссылке из письма на занятый адрес. Раньше он уводил на экран
-  // «ссылка истекла» — неправда: ссылка жива, занят адрес, и человек шёл
-  // запрашивать письмо заново по кругу.
-  const emailTaken = searchParams.get('error') === 'email_taken'
-    ? tr('Этот адрес уже привязан к другому аккаунту. Войди по нему на странице входа — или привяжи сюда другой адрес.',
-         'Этот адрес уже привязан к другому аккаунту. Войдите по нему на странице входа — или привяжите сюда другой адрес.')
-    : null;
+  const emailTaken = emailLinkErrorMessage(searchParams.get('error'), tr);
   const [busy, setBusy] = useState(false);
 
   // Pure fetch (no setState), so it can be shared by the mount effect and the

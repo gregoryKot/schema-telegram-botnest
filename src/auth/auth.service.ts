@@ -17,8 +17,10 @@ import { encrypt as encField } from '../utils/crypto';
 import { sendMagicLink } from './magic-link';
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
-import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
-import { revokeFamilyAndAlert } from './refresh-theft';
+import { shouldSkipRotation } from './refresh-rotation';
+import { resolveReuse } from './refresh-reuse';
+import { revokeFamilyQuiet } from './refresh-logout';
+import { unlinkProviderSafely } from './unlink-provider';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -359,18 +361,7 @@ export class AuthService {
   }
 
   async unlinkProvider(userId: bigint, provider: string): Promise<void> {
-    // Don't allow unlinking the last provider — user would lose access
-    const all = await this.prisma.authProvider.findMany({
-      where: { userId },
-    });
-    if (all.length <= 1) {
-      throw new ConflictException(
-        'Cannot unlink the only authentication method',
-      );
-    }
-    await this.prisma.authProvider.deleteMany({
-      where: { userId, provider },
-    });
+    await unlinkProviderSafely(this.prisma, userId, provider);
     this.logger.log(`Unlinked ${provider} from userId ${userId}`);
   }
 
@@ -496,32 +487,22 @@ export class AuthService {
 
     if (!session) throw new UnauthorizedException('Unknown refresh token');
 
-    // Потерянный ответ vs кража — classifyReuse, refresh-rotation.ts.
+    // Потерянный ответ vs кража — refresh-reuse.ts (classifyReuse + бюджет
+    // восстановлений); не-recover исход бросает 401.
     const now = new Date();
     if (session.revokedAt || session.expiresAt < now) {
-      const successor = session.replacedByHash
-        ? await this.prisma.webSession.findUnique({
-            where: { tokenHash: session.replacedByHash },
-          })
-        : null;
-      const verdict = classifyReuse(session, successor, now, session.userId);
-      this.logger.warn(verdict.logMessage);
-      // recover — наследник цел и не тронут: второго участника нет.
-      if (verdict.outcome === 'recover')
-        return this.issueRotated(session, rawRefresh, ip, userAgent);
-      if (verdict.outcome === 'theft' && session.family) {
-        await revokeFamilyAndAlert(
-          {
-            prisma: this.prisma,
-            onAlert: (userId, family) =>
-              this.securityLog.log('refresh_token_reuse', { userId, family }),
-            onEcho: (msg) => this.logger.warn(msg),
-          },
-          session.family,
-          session.userId,
-        );
-      }
-      throw new UnauthorizedException('Refresh token already used or expired');
+      await resolveReuse(
+        {
+          prisma: this.prisma,
+          onAlert: (userId, family) =>
+            this.securityLog.log('refresh_token_reuse', { userId, family }),
+          onEcho: (msg) => this.logger.warn(msg),
+          onWarn: (msg) => this.logger.warn(msg),
+        },
+        session,
+        now,
+      );
+      return this.issueRotated(session, rawRefresh, ip, userAgent);
     }
 
     // Ротировали недавно — только access, кука прежняя (rotated:false).
@@ -555,12 +536,14 @@ export class AuthService {
 
   // ─── Logout ────────────────────────────────────────────────────────────────
 
+  // Выход закрывает всю family предъявленного токена, а не одну строку: иначе
+  // вор с наследником той же цепочки переживал «Выйти» жертвы (аудит 2026-10).
   async revokeSession(rawRefresh: string): Promise<void> {
-    const tokenHash = this.hashToken(rawRefresh);
-    await this.prisma.webSession.updateMany({
-      where: { tokenHash, revokedAt: null },
-      data: { revokedAt: new Date() },
+    const session = await this.prisma.webSession.findUnique({
+      where: { tokenHash: this.hashToken(rawRefresh) },
+      select: { family: true },
     });
+    if (session) await revokeFamilyQuiet(this.prisma, session.family);
   }
 
   async revokeAllSessions(userId: bigint): Promise<void> {
@@ -603,8 +586,8 @@ export class AuthService {
         webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
         encryptEmail: (e) => encField(e) ?? e,
         addressForm: (id) => this.userAddressForm(id),
-        send: (email, link, form) =>
-          this.emailSvc.sendLoginLink(email, link, form),
+        send: (e, l, f) => this.emailSvc.sendLoginLink(e, l, f),
+        sendLink: (e, l, f) => this.emailSvc.sendLinkEmailLetter(e, l, f),
         onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
       },
       userId,

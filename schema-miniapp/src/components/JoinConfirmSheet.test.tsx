@@ -116,6 +116,95 @@ describe('JoinConfirmSheet — согласие перед присоедине�
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('терапия: 409 already_connected — текст про действующее подключение, не общий отказ', async () => {
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('already'), {
+        status: 409,
+        reason: 'already_connected',
+      }),
+    );
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="XYZ"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    fireEvent.click(screen.getByText('Присоединиться'));
+    await waitFor(() =>
+      expect(
+        screen.getByText(/У тебя уже есть подключение к терапевту/),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByText(/Не получилось присоединиться/)).toBeNull();
+  });
+
+  it('терапия, форма «вы»: 409 already_connected звучит на «вы»', async () => {
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('already'), {
+        status: 409,
+        reason: 'already_connected',
+      }),
+    );
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: noop }}>
+        <JoinConfirmSheet
+          joinKind="therapy"
+          joinCode="XYZ"
+          onClose={noop}
+          onPairJoined={noop}
+        />
+      </AddressFormContext.Provider>,
+    );
+    fireEvent.click(screen.getByText('Присоединиться'));
+    await waitFor(() =>
+      expect(
+        screen.getByText(/У вас уже есть подключение к терапевту/),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('терапия: прочий отказ (404) — прежний общий текст', async () => {
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('nf'), { status: 404 }),
+    );
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="XYZ"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    fireEvent.click(screen.getByText('Присоединиться'));
+    await waitFor(() =>
+      expect(screen.getByText(/Не получилось присоединиться/)).toBeTruthy(),
+    );
+  });
+
+  it('пара: 409 already_connected не подменяет текст про терапевта', async () => {
+    mockApi.joinPair.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        status: 409,
+        reason: 'already_connected',
+      }),
+    );
+    render(
+      <JoinConfirmSheet
+        joinKind="pair"
+        joinCode="ABC"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    fireEvent.click(screen.getByText('Присоединиться'));
+    await waitFor(() =>
+      expect(screen.getByText(/Не получилось присоединиться/)).toBeTruthy(),
+    );
+    expect(screen.queryByText(/подключение к терапевту/)).toBeNull();
+  });
+
   it('форма «вы» звучит в объяснении объёма расшаривания (ты/вы разведены)', () => {
     render(
       <AddressFormContext.Provider value={{ form: 'vy', setForm: noop }}>

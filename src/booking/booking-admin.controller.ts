@@ -21,7 +21,7 @@ import { CalDavService } from './caldav.service';
 import { buildCalendarStatus } from './booking-admin.calendar';
 import { PricingService } from './pricing.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { assertAdminKey } from './admin-key.util';
+import { AdminThrottle, assertAdminKey } from './admin-key.util';
 import {
   CreateRuleDto,
   SetPriceDto,
@@ -34,6 +34,7 @@ import {
  * the `x-admin-key` request header (not query/body) so it never lands in
  * server access logs or browser history.
  */
+@AdminThrottle()
 @Controller('api/booking/admin')
 export class BookingAdminController {
   private readonly adminKey: string;

@@ -1,7 +1,6 @@
-// Тело Telegram- и MAX-путей TelegramAuthGuard, вынесенное в отдельный файл,
-// чтобы сам guard остался под потолком файл-храповика (scripts/
-// file-size-baseline.json, было 105 строк). Поведение телеграмного пути —
-// байт-в-байт то же, что и до выноса (покрыто telegram-auth.guard.spec.ts).
+// Тело Telegram- и MAX-путей TelegramAuthGuard, вынесенное из guard'а, чтобы тот
+// остался под потолком файл-храповика. Поведение телеграмного пути — то же,
+// что до выноса (покрыто telegram-auth.guard.spec.ts).
 import {
   Logger,
   ServiceUnavailableException,
@@ -17,6 +16,7 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { rejectInitData } from './initdata-alert';
 import { reportAuthSuccess } from './auth-success.report';
+import { INIT_DATA_MAX_AGE_S } from './init-data-window';
 
 export async function applyTelegramInitData(
   req: Request,
@@ -40,7 +40,7 @@ export async function applyTelegramInitData(
     logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
   } else {
     try {
-      validate(initData, botToken, { expiresIn: 3600 });
+      validate(initData, botToken, { expiresIn: INIT_DATA_MAX_AGE_S });
     } catch (err) {
       rejectInitData(err, req.ip, logger, securityLog);
     }

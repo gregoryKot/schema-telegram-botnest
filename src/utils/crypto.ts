@@ -5,9 +5,15 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 //   ENCRYPTION_KEY_OLD — comma-separated old keys, tried on decryption only
 // During rotation: add new key as ENCRYPTION_KEY, move previous to OLD, run
 // `npm run rotate-encryption`. After it finishes, remove ENCRYPTION_KEY_OLD.
+const HEX_KEY_RE = /^[0-9a-f]{64}$/i;
+
 function loadKeys(): { current: Buffer | null; all: Buffer[] } {
+  // Аудит 2026-10 (D3): одной проверки длины мало — `Buffer.from('zz…', 'hex')`
+  // обрывает разбор на первом не-hex символе и отдаёт КОРОТКИЙ буфер, а длина
+  // строки при этом ровно 64. Ключ «проходил» проверку и падал только на первой
+  // записи. Поэтому формат проверяется целиком: ровно 64 hex-символа.
   const parse = (hex: string): Buffer | null =>
-    hex.length === 64 ? Buffer.from(hex, 'hex') : null;
+    HEX_KEY_RE.test(hex) ? Buffer.from(hex, 'hex') : null;
   const cur = parse((process.env.ENCRYPTION_KEY ?? '').trim());
   const olds = (process.env.ENCRYPTION_KEY_OLD ?? '')
     .split(',')
@@ -20,13 +26,27 @@ function loadKeys(): { current: Buffer | null; all: Buffer[] } {
 }
 const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
 
+// Старый ключ, молча отброшенный из-за опечатки, — это нечитаемые данные после
+// ротации. В проде такой ENCRYPTION_KEY_OLD роняет бут, как и битый текущий.
+if (process.env.NODE_ENV === 'production') {
+  const bad = (process.env.ENCRYPTION_KEY_OLD ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s && !HEX_KEY_RE.test(s));
+  if (bad.length > 0)
+    throw new Error(
+      `FATAL: ENCRYPTION_KEY_OLD содержит ключи не в формате 64 hex-символа (${bad.length} шт.) — ` +
+        'такой ключ молча не использовался бы для расшифровки.',
+    );
+}
+
 // Fail loudly in production if no key is configured — silently storing
 // sensitive psychology notes in plaintext is unacceptable.
 if (process.env.NODE_ENV === 'production' && !CURRENT_KEY) {
   // Throwing at module-load time means the process crashes on boot, which
   // is what we want — better than running with broken encryption.
   throw new Error(
-    'FATAL: ENCRYPTION_KEY missing or wrong length in production. ' +
+    'FATAL: ENCRYPTION_KEY missing or malformed (need exactly 64 hex chars) in production. ' +
       "Generate one: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
   );
 }

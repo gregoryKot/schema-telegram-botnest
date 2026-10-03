@@ -125,6 +125,7 @@ function makeService(
   const securityLog = { log: jest.fn() } as any;
   const emailSvc = {
     sendLoginLink: jest.fn().mockResolvedValue(undefined),
+    sendLinkEmailLetter: jest.fn().mockResolvedValue(undefined),
   } as any;
   const svc = new AuthService(prisma, config, securityLog, emailSvc);
   return {
@@ -848,6 +849,7 @@ describe('AuthService — linkEmailToAccount', () => {
     await expect(
       svc.linkEmailToAccount(222n, 'busy@example.com'),
     ).rejects.toThrow(ConflictException);
+    expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
     expect(emailSvc.sendLoginLink).not.toHaveBeenCalled();
   });
 
@@ -862,7 +864,7 @@ describe('AuthService — linkEmailToAccount', () => {
     await expect(
       svc.linkEmailToAccount(111n, 'own@example.com'),
     ).resolves.toEqual({ ok: true });
-    expect(emailSvc.sendLoginLink).toHaveBeenCalled();
+    expect(emailSvc.sendLinkEmailLetter).toHaveBeenCalled();
   });
 
   it('несвязанная существующая запись не даёт ложный конфликт — where обязан фильтровать по email, а не брать первую строку', async () => {
@@ -876,7 +878,7 @@ describe('AuthService — linkEmailToAccount', () => {
     await expect(
       svc.linkEmailToAccount(555n, 'brandnew@example.com'),
     ).resolves.toEqual({ ok: true });
-    expect(emailSvc.sendLoginLink).toHaveBeenCalled();
+    expect(emailSvc.sendLinkEmailLetter).toHaveBeenCalled();
   });
 
   it('WEBAPP_URL с trailing slash → ссылка без двойного слэша и без мусора вместо него', async () => {
@@ -884,7 +886,7 @@ describe('AuthService — linkEmailToAccount', () => {
       WEBAPP_URL: 'https://schemehappens.ru/',
     });
     await svc.linkEmailToAccount(1n, 'link-slash@example.com');
-    const link = emailSvc.sendLoginLink.mock.calls[0][1] as string;
+    const link = emailSvc.sendLinkEmailLetter.mock.calls[0][1] as string;
     expect(link).toMatch(
       /^https:\/\/schemehappens\.ru\/api\/auth\/email\/callback\?token=/,
     );
@@ -899,7 +901,7 @@ describe('AuthService — linkEmailToAccount', () => {
 
   it('падение отправки письма логируется через logger.error (.catch реально исполняется)', async () => {
     const { svc, emailSvc } = makeService();
-    emailSvc.sendLoginLink.mockRejectedValueOnce(new Error('smtp down'));
+    emailSvc.sendLinkEmailLetter.mockRejectedValueOnce(new Error('smtp down'));
     const errorSpy = jest.spyOn((svc as any).logger, 'error');
     await svc.linkEmailToAccount(1n, 'link-logfail@example.com');
     await Promise.resolve();
@@ -909,6 +911,31 @@ describe('AuthService — linkEmailToAccount', () => {
         'linkEmailToAccount sendLoginLink failed: smtp down',
       ),
     );
+  });
+
+  // A3 (аудит 2026-10): привязка шлёт СВОЁ письмо. Раньше уходило письмо
+  // «Войти в…», и адресат, которому чужой аккаунт привязывал его адрес,
+  // кликал «войти», не понимая, что именно подтверждает.
+  it('шлёт письмо привязки, а НЕ письмо входа (A3)', async () => {
+    const { svc, emailSvc } = makeService();
+    await svc.linkEmailToAccount(1n, 'who@example.com');
+    expect(emailSvc.sendLinkEmailLetter).toHaveBeenCalledWith(
+      'who@example.com',
+      expect.stringContaining('/api/auth/email/callback?token='),
+      'ty',
+    );
+    expect(emailSvc.sendLoginLink).not.toHaveBeenCalled();
+  });
+
+  it('обычный вход по почте по-прежнему шлёт письмо входа, не привязки', async () => {
+    const { svc, emailSvc } = makeService();
+    await svc.requestEmailLogin('login@example.com');
+    expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
+      'login@example.com',
+      expect.stringContaining('/api/auth/email/callback?token='),
+      expect.anything(),
+    );
+    expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
   });
 });
 

@@ -6,6 +6,7 @@ import {
   ANALYTICS_EVENTS,
   type AnalyticsEventName,
 } from './analytics.constants';
+import { eventOwnerId } from './anonymous-events.constants';
 
 // Ретеншен AnalyticsEvent (L10, аудит 2026-08): таблица росла без ограничения.
 // Метрики /stats считаются в окнах ≤30 дней, поэтому держим 90 (щедрый буфер) и
@@ -33,14 +34,13 @@ export class AnalyticsService {
     name: AnalyticsEventName,
     meta?: Record<string, unknown>,
   ): Promise<void> {
-    // Defence in depth: DTO уже проверил name, но сервис — нижний слой,
-    // к которому могут прийти и из других мест (бот, крон). Неизвестное
-    // имя молча игнорируем, а не засоряем таблицу.
+    // Defence in depth: DTO проверил name, но сервис — нижний слой (бот, крон);
+    // неизвестное имя молча игнорируем. userId — через eventOwnerId (D4).
     if (!ANALYTICS_EVENTS.includes(name)) return;
     try {
       await this.prisma.analyticsEvent.create({
         data: {
-          userId,
+          userId: eventOwnerId(name, userId),
           name,
           meta: (meta as Prisma.InputJsonValue) ?? Prisma.JsonNull,
         },

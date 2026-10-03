@@ -58,6 +58,14 @@ export const CROSS_CHECKS: CrossCheck[] = [
     'GOOGLE_REDIRECT_URI',
   ),
   requiresToo('vkAppRequiresRedirect', 'VK_APP_ID', 'VK_REDIRECT_URI'),
+  // M3 (аудит 2026-10): логин без паролей — подпись вебхука считалась бы от
+  // пустого пароля и подделывалась бы любым желающим.
+  requiresToo(
+    'robokassaLoginRequiresPasswords',
+    'ROBOKASSA_MERCHANT_LOGIN',
+    'ROBOKASSA_PASSWORD1',
+    'ROBOKASSA_PASSWORD2',
+  ),
   {
     id: 'encryptionKeyOldDistinctFromCurrent',
     check: (env) => {

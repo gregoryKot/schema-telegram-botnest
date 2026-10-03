@@ -13,6 +13,7 @@ import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
+import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
@@ -24,6 +25,11 @@ import {
 ) {
   return Number(this);
 };
+
+// Аудит 2026-10 (I6): до создания приложения — отказ внутри bootstrap тоже
+// должен дойти до алерта. Logger статический: после NestFactory.create он
+// пишет через AlertLogger.
+registerUnhandledRejectionHandler(new Logger('UnhandledRejection'));
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -136,11 +142,11 @@ async function bootstrap() {
   const origins =
     process.env.ALLOWED_ORIGINS?.split(',') ??
     (isProd
-      ? [
-          'https://schemehappens.ru',
-          'https://kotlarewski.ru',
-          'https://kotlarewski.gr',
-        ]
+      ? // Только канонический хост. Визитка (kotlarewski.gr) ходит в API
+        // с собственного origin (VITE_API_URL пуст, fetch относительный),
+        // CORS ей не нужен; credentials-CORS для алиаса — лишняя поверхность
+        // (аудит 2026-10, I1; правило №19).
+        ['https://schemehappens.ru']
       : [
           'https://schema-miniapp.vercel.app',
           'https://diary-miniapp-sigma.vercel.app',

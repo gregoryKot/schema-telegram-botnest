@@ -14,6 +14,8 @@
 // Только типы и валидаторы форматов — сами записи в env-registry.entries.ts
 // (правило №10: файл-реестр держим отдельно от дата-файла).
 
+import { checkSecret32 } from './env-registry.secret';
+
 export type EnvValue = string | undefined;
 /** null — формат в порядке; строка — что именно не так (человеческим языком). */
 export type FormatValidator = (value: string) => string | null;
@@ -68,6 +70,12 @@ export const formats = {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : 'не похоже на email',
   nonEmpty: (value: string): string | null =>
     value.trim().length > 0 ? null : 'пустая строка',
+  /**
+   * Подписывающий секрет (JWT_SECRET): ≥ 32 символов, не заглушка. Короткий
+   * HS256-секрет подбирается офлайн по любому выданному токену. Генерация:
+   * `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+   */
+  secret32: checkSecret32,
   /** Токен Telegram-бота: `<numeric id>:<secret>`, см. BotFather. */
   botToken: (value: string): string | null =>
     /^\d+:[\w-]{30,}$/.test(value)

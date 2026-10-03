@@ -1,5 +1,4 @@
 {
-  "schema-miniapp/src/apiClient.ts": 1,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
   "schema-miniapp/src/components/therapist/useClientDetail.ts": 1,
   "schema-miniapp/src/sections/DiarySection.tsx": 1,
@@ -38,7 +37,6 @@
   "webapp/src/pages/account/TherapistRequestSection.tsx": 1,
   "webapp/src/pages/admin/MarqueeSection.tsx": 1,
   "webapp/src/pages/admin/PhotoSection.tsx": 1,
-  "webapp/src/pages/AuthCallback.tsx": 1,
   "webapp/src/pages/LandingPage.tsx": 2,
   "webapp/src/pages/LinkDevicePage.tsx": 1,
   "webapp/src/pages/MergePage.tsx": 1,

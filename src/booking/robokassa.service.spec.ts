@@ -381,3 +381,29 @@ describe('RobokassaService.chargeRecurring — подпись MIT-списани
     expect(errSpy.mock.calls[0][0]).toContain('network down');
   });
 });
+
+// M3 (аудит 2026-10): пароль не задан, а логин есть — подпись от пустой строки
+// подделывается любым желающим. Такой сервис обязан отклонять любые подписи.
+describe('RobokassaService — пустые пароли не дают подделать подпись (M3)', () => {
+  it('validateWebhook без Password2 отклоняет даже подпись, посчитанную от пустого пароля', () => {
+    const svc = makeService({ ROBOKASSA_PASSWORD2: undefined });
+    const forged = md5('100.00:42:');
+    expect(svc.validateWebhook('100.00', '42', forged)).toBe(false);
+  });
+
+  it('validateSuccess без Password1 отклоняет подпись, посчитанную от пустого пароля', () => {
+    const svc = makeService({ ROBOKASSA_PASSWORD1: undefined });
+    const forged = md5('100.00:42:');
+    expect(svc.validateSuccess('100.00', '42', forged)).toBe(false);
+  });
+
+  it('с заданными паролями поведение прежнее', () => {
+    const svc = makeService();
+    expect(svc.validateWebhook('100.00', '42', md5(`100.00:42:${PASS2}`))).toBe(
+      true,
+    );
+    expect(svc.validateSuccess('100.00', '42', md5(`100.00:42:${PASS1}`))).toBe(
+      true,
+    );
+  });
+});

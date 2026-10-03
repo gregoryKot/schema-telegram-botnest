@@ -34,6 +34,9 @@ export type SecurityEvent =
   | 'merge_subscription_conflict'
   | 'provider_linked'
   | 'provider_unlinked'
+  // Выгрузка всех данных аккаунта (152-ФЗ / GDPR, src/account/data-export.service.ts).
+  // Только след в логах: в ALERT_EVENTS не входит — законная выгрузка не повод для DM.
+  | 'data_exported'
   | 'role_changed'
   | 'therapist_request_submitted'
   | 'therapist_request_decided'
@@ -50,7 +53,17 @@ export type SecurityEvent =
   // Намеренно НЕ в ALERT_EVENTS: одиночный промах по кнопке — фоновый шум, а
   // шквал одинаковых DM = замьюченный чат = ноль алертов (урок 2026-07-29).
   // Картину даёт не отдельное событие, а счётчик в /stats.
-  | 'login_ticket_denied';
+  | 'login_ticket_denied'
+  // Карточку сверки входа нажал не тот, кому её показали (только лог, не DM).
+  | 'login_ticket_cross_user'
+  // Неверный код 2FA/recovery-код (enable/disable/recovery-codes/challenge).
+  // Только след в логах, НЕ в ALERT_EVENTS: опечатка в коде — фоновый шум, а
+  // шквал DM = замьюченный чат (урок 2026-07-29). Перебор виден по частоте
+  // строк на один userId/ip; жёсткий предел ставят @Throttle на самих ручках.
+  | 'totp_failed'
+  // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
+  // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
+  | 'admin_key_rejected';
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.

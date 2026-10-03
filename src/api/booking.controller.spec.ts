@@ -3,6 +3,7 @@
 import { BookingController } from './booking.controller';
 import type { TelegramService } from '../telegram/telegram.service';
 import type { EmailService } from '../auth/email.service';
+import { PERSISTENT_THROTTLE_KEY } from './persistent-throttle.decorator';
 
 describe('BookingController.submitBooking', () => {
   let notifyAdmin: jest.Mock;
@@ -59,5 +60,24 @@ describe('BookingController.submitBooking', () => {
     });
     expect(notifyAdmin).not.toHaveBeenCalled();
     expect(sendAdminNotification).not.toHaveBeenCalled();
+  });
+});
+
+// M4 (аудит 2026-10): лид-форма без собственного лимита давала спамить админу
+// DM и письмами. Метаданные читаем напрямую, как расставляют декораторы.
+describe('BookingController.submitBooking — троттлинг (M4)', () => {
+  it('@Throttle long: 6 заявок в час с одного адреса', () => {
+    const handler = BookingController.prototype.submitBooking;
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', handler)).toBe(6);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', handler)).toBe(3_600_000);
+  });
+
+  it('@PersistentThrottle(): счётчик общий на все инстансы (Postgres)', () => {
+    expect(
+      Reflect.getMetadata(
+        PERSISTENT_THROTTLE_KEY,
+        BookingController.prototype.submitBooking,
+      ),
+    ).toBe(true);
   });
 });

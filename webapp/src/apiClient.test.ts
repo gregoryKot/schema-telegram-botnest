@@ -8,6 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   authedFetch,
   get,
+  post,
+  ApiError,
   setTokenProvider,
   setRefreshHandler,
 } from './apiClient';
@@ -75,5 +77,21 @@ describe('authedFetch', () => {
       .mockResolvedValueOnce(jsonResponse(401, {}))
       .mockResolvedValueOnce(jsonResponse(200, { addressForm: 'vy' }));
     await expect(get('/api/settings')).resolves.toEqual({ addressForm: 'vy' });
+  });
+});
+
+describe('ошибка POST несёт status, message и reason тела', () => {
+  it('409 { message, reason } → ApiError со status и reason', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(409, { message: 'уже есть', reason: 'already_connected' }));
+    const err = await post('/api/therapy/join', { code: 'X' }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err).toMatchObject({ status: 409, message: 'уже есть', reason: 'already_connected' });
+  });
+
+  it('тело без reason — reason отсутствует, message по-прежнему из тела', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(404, { message: 'нет такого кода' }));
+    const err = await post('/api/therapy/join', { code: 'X' }).catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 404, message: 'нет такого кода' });
+    expect((err as ApiError).reason).toBeUndefined();
   });
 });

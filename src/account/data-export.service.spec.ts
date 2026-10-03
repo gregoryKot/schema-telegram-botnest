@@ -128,7 +128,11 @@ describe('DataExportService.buildExport', () => {
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
-    const svc = new DataExportService(prisma as any, analytics as any);
+    const svc = new DataExportService(
+      prisma as any,
+      analytics as any,
+      { log: jest.fn() } as any,
+    );
 
     const result = await svc.buildExport(1n);
 
@@ -145,7 +149,11 @@ describe('DataExportService.buildExport', () => {
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
-    const svc = new DataExportService(prisma as any, analytics as any);
+    const svc = new DataExportService(
+      prisma as any,
+      analytics as any,
+      { log: jest.fn() } as any,
+    );
 
     const result = await svc.buildExport(1n);
     // BigInt (userId в fixture-строках) не сериализуется нативно — в проде
@@ -170,7 +178,11 @@ describe('DataExportService.buildExport', () => {
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
-    const svc = new DataExportService(prisma as any, analytics as any);
+    const svc = new DataExportService(
+      prisma as any,
+      analytics as any,
+      { log: jest.fn() } as any,
+    );
 
     const result = await svc.buildExport(1n);
     const tables = result.withheld.map((w) => w.table);
@@ -181,6 +193,10 @@ describe('DataExportService.buildExport', () => {
         'LoginTicket',
         'WebSession',
         'Booking, Donation, ClientMeeting',
+        // D2 (аудит 2026-10): данные О человеке на стороне терапевта и связи
+        // с другими людьми — не в файле, и файл об этом говорит.
+        'TherapistNote, ClientConceptualization, ModeMap, TherapyRelation',
+        'Pair',
       ]),
     );
     // Строка про поля User собирается из реестра WITHHELD_USER_FIELDS, а не
@@ -199,7 +215,11 @@ describe('DataExportService.buildExport', () => {
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
-    const svc = new DataExportService(prisma as any, analytics as any);
+    const svc = new DataExportService(
+      prisma as any,
+      analytics as any,
+      { log: jest.fn() } as any,
+    );
 
     await svc.buildExport(1n);
 
@@ -211,5 +231,26 @@ describe('DataExportService.buildExport', () => {
         rows: expect.any(Number),
       }),
     );
+  });
+
+  // M7 (аудит 2026-10): выгрузка оставляет аудит-след в SecurityLogService.
+  it('пишет аудит-событие data_exported только с userId, без содержимого (M7)', async () => {
+    const { DataExportService, encrypt, encryptJson } = load();
+    const crypto = { encrypt, encryptJson } as CryptoModule;
+    const prisma = makeFakePrisma(crypto);
+    const analytics = { track: jest.fn(async () => undefined) };
+    const securityLog = { log: jest.fn() };
+    const svc = new DataExportService(
+      prisma as any,
+      analytics as any,
+      securityLog as any,
+    );
+
+    await svc.buildExport(1n);
+
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(securityLog.log).toHaveBeenCalledWith('data_exported', {
+      userId: 1n,
+    });
   });
 });

@@ -15,31 +15,28 @@
 // Выросло из device-link (RFC 8628). Второго механизма рядом не заводим —
 // привязка аккаунта это тот же билет с `intent: 'link'` (CLAUDE.md, «одна
 // механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { createHash, randomBytes, randomInt } from 'crypto';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
+import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth.service';
+import { SecurityLogService } from '../security-log.service';
+import { newUserCode, staleTicketsWhere } from './ticket-user-code';
+import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
+import type { StartTicketInput } from './ticket-start.types';
 import type {
   TicketForConfirm,
   TicketIntent,
   TicketStatus,
 } from './login-ticket.types';
 
-// Без похожих начертаний (0/O, 1/I/L) — код читают с экрана и сверяют глазами.
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const USER_CODE_LENGTH = 8;
 const TTL_S = 300;
 export const POLL_INTERVAL_S = 3;
-
-export interface StartTicketInput {
-  intent: TicketIntent;
-  provider: string;
-  /** Кто просит. У `intent: 'login'` хозяина нет — там null. */
-  requesterUserId: bigint | null;
-  hostId: string;
-  deviceLabel: string;
-}
 
 @Injectable()
 export class LoginTicketService {
@@ -49,18 +46,11 @@ export class LoginTicketService {
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
     private readonly report: LoginTicketReport,
+    @Optional() private readonly securityLog?: SecurityLogService,
   ) {}
 
   hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
-  }
-
-  private newUserCode(): string {
-    let out = '';
-    for (let i = 0; i < USER_CODE_LENGTH; i++) {
-      out += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
-    }
-    return out;
   }
 
   /** Шаг 1: контейнер просит билет. Длинный секрет наружу больше не выходит. */
@@ -70,23 +60,13 @@ export class LoginTicketService {
     expiresIn: number;
     interval: number;
   }> {
-    // Протухшие подчищаем всегда, а прежний билет ЭТОГО аккаунта гасим: иначе
-    // код, забытый на другом экране, остаётся годным для подтверждения.
-    // У входа (requesterUserId === null) гасить по хозяину нечего — иначе
-    // условие `{ userId: null }` снесло бы чужие билеты всех анонимов разом.
+    // Что подчистить перед выпиской — см. staleTicketsWhere.
     await this.prisma.loginTicket.deleteMany({
-      where: input.requesterUserId
-        ? {
-            OR: [
-              { userId: input.requesterUserId },
-              { expiresAt: { lt: new Date() } },
-            ],
-          }
-        : { expiresAt: { lt: new Date() } },
+      where: staleTicketsWhere(input.requesterUserId),
     });
 
     const deviceCode = randomBytes(32).toString('hex');
-    const userCode = this.newUserCode();
+    const userCode = newUserCode();
     await this.prisma.loginTicket.create({
       data: {
         deviceCodeHash: this.hash(deviceCode),
@@ -110,14 +90,18 @@ export class LoginTicketService {
     };
   }
 
-  /** Живой билет по короткому коду. Бросает, если его нет, он погашен или протух. */
-  async liveByUserCode(userCode: string) {
+  /**
+   * Живой билет по короткому коду. Бросает, если его нет, он погашен или
+   * протух — или (viaTelegramId задан) карточку показали не этому человеку.
+   */
+  async liveByUserCode(userCode: string, viaTelegramId?: bigint) {
     const row = await this.prisma.loginTicket.findUnique({
       where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
     });
     if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
       throw new BadRequestException('Код не найден или истёк');
     }
+    assertTicketViewer(this.securityLog, row, viaTelegramId);
     return row;
   }
 
@@ -126,7 +110,10 @@ export class LoginTicketService {
    * бот получает только то, что покажет человеку, и не может случайно
    * отправить в чат хеши или чужой userId.
    */
-  async forConfirm(userCode: string): Promise<TicketForConfirm | null> {
+  async forConfirm(
+    userCode: string,
+    viewerTelegramId?: bigint,
+  ): Promise<TicketForConfirm | null> {
     const row = await this.prisma.loginTicket
       .findUnique({
         where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
@@ -148,6 +135,14 @@ export class LoginTicketService {
         this.report.step('too_late', row.hostId);
       return null;
     }
+    // Карточку закрепляем за первым увидевшим; остальным код «не найден».
+    const mine = await claimTicketView(
+      this.prisma,
+      this.securityLog,
+      row,
+      viewerTelegramId,
+    );
+    if (!mine) return null;
     if (row.intent === 'login') this.report.step('bot_opened', row.hostId);
     return {
       userCode: userCode.trim().toUpperCase(),
@@ -162,8 +157,12 @@ export class LoginTicketService {
    * выдаст сессию именно этого аккаунта. Привязка идёт другим путём —
    * TicketLinkService, там нужен перенос данных.
    */
-  async approveLogin(userCode: string, approvedUserId: bigint): Promise<void> {
-    const row = await this.liveByUserCode(userCode);
+  async approveLogin(
+    userCode: string,
+    approvedUserId: bigint,
+    viaTelegramId?: bigint,
+  ): Promise<void> {
+    const row = await this.liveByUserCode(userCode, viaTelegramId);
     if (row.intent !== 'login') {
       throw new BadRequestException('Этот код не для входа');
     }
@@ -207,8 +206,8 @@ export class LoginTicketService {
    * протуханием: экран, который просто ждёт пять минут, не скажет человеку,
    * что вход отклонили — а тому, кого пытались обмануть, важно это увидеть.
    */
-  async deny(userCode: string): Promise<void> {
-    const row = await this.liveByUserCode(userCode);
+  async deny(userCode: string, viaTelegramId?: bigint): Promise<void> {
+    const row = await this.liveByUserCode(userCode, viaTelegramId);
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { deniedAt: new Date() },
