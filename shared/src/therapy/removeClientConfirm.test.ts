@@ -9,6 +9,9 @@ describe('removeClientConfirmCopy', () => {
     });
     expect(title).toBe('Удалить клиента «Иван»?');
     expect(message).toContain('удалятся насовсем');
+    expect(message).toContain(
+      'Заметки по сессиям, концептуализация и карты режимов',
+    );
     expect(message).toContain('останутся в аккаунте клиента');
     expect(message).not.toContain('Карточка');
   });
@@ -19,7 +22,9 @@ describe('removeClientConfirmCopy', () => {
       name: 'Иван',
     });
     expect(message).toContain('Карточка');
-    expect(message).toContain('задания');
+    expect(message).toContain(
+      'заметки по сессиям, концептуализация, карты режимов и задания',
+    );
     expect(message).not.toContain('останутся');
   });
 

@@ -639,6 +639,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     expect(within(dialog).getByText('Удалить клиента «Иван Петров»?')).toBeTruthy();
     // клиент с аккаунтом: честно про заметки и про то, что остаётся у клиента
     expect(within(dialog).getByText(/останутся в аккаунте клиента/)).toBeTruthy();
+    expect(within(dialog).getByText(/концептуализация и карты режимов/)).toBeTruthy();
     expect(within(dialog).queryByText(/Связь будет разорвана/)).toBeNull();
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
@@ -653,7 +654,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByLabelText('Удалить клиента'));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText(/Карточка, заметки по сессиям/)).toBeTruthy();
+    expect(within(dialog).getByText(/Карточка, заметки по сессиям, концептуализация, карты режимов/)).toBeTruthy();
     expect(within(dialog).queryByText(/останутся в аккаунте/)).toBeNull();
   });
 
