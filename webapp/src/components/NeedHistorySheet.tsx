@@ -63,7 +63,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       aside={
         <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color }}>За 7 дней</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color, marginBottom: 2 }}>{trendLabel}</div>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em', color, marginBottom: 2 }}>{trendLabel}</div>
           <div style={{ fontSize: 13, color: trendColor, marginBottom: 16 }}>
             {trendSign}{trendDiff.toFixed(1)} к предыдущей неделе
           </div>

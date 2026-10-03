@@ -37,12 +37,12 @@ export function ScheduleSection({
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 6 }}>Расписание</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 6 }}>Расписание</h2>
       <p style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 0, marginBottom: 16 }}>
         Недельные правила задают базовое расписание, календарь ниже — точечные правки по дням.
       </p>
       <CalendarWeek adminKey={adminKey} />
-      <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 24, marginBottom: 12 }}>Недельные правила</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 24, marginBottom: 12 }}>Недельные правила</h3>
       {/* Сбой ≠ пусто: «правил нет» на отказе загрузки провоцирует пересоздать расписание. */}
       {rulesFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить расписание — возможно, неверный админ-ключ или нет соединения.</p>}
       {!rulesFailed && rules.length === 0 && <p className="u-faint14">Пока нет правил. Добавьте слоты ниже.</p>}

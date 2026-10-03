@@ -63,15 +63,39 @@ describe('Celebration — закрытие', () => {
   });
 });
 
-describe('Celebration — ты/вы', () => {
-  it('форма «ты»: подсказка про закрытие на «ты»', () => {
-    renderCelebration({}, 'ty');
-    expect(screen.getByText('нажми в другом месте, чтобы закрыть')).toBeTruthy();
+describe('Celebration — диалог', () => {
+  it('размечен как диалог и закрывается явной кнопкой «Закрыть»', () => {
+    const onDone = vi.fn();
+    renderCelebration({ onDone });
+    expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('true');
+    fireEvent.click(screen.getByText('Закрыть'));
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('форма «вы»: подсказка про закрытие на «вы», без остаточного «ты»', () => {
+  it('Escape закрывает', () => {
+    const onDone = vi.fn();
+    renderCelebration({ onDone });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('клик внутри окна не закрывает его', () => {
+    const onDone = vi.fn();
+    renderCelebration({ onDone });
+    fireEvent.click(screen.getByText('5'));
+    expect(onDone).not.toHaveBeenCalled();
+  });
+});
+
+describe('Celebration — ты/вы', () => {
+  it('форма «вы»: сбой копирования подсказывает на «вы», без остаточного «ты»', async () => {
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
     renderCelebration({}, 'vy');
-    expect(screen.getByText('нажмите в другом месте, чтобы закрыть')).toBeTruthy();
-    expect(screen.queryByText('нажми в другом месте, чтобы закрыть')).toBeNull();
+    // shareCanvasImage в jsdom падает (нет canvas.toBlob) → откат на копирование
+    fireEvent.click(screen.getByText('Поделиться'));
+    expect(await screen.findByText('Не удалось скопировать — скопируйте вручную')).toBeTruthy();
+    expect(screen.queryByText('Не удалось скопировать — скопируй вручную')).toBeNull();
   });
 });

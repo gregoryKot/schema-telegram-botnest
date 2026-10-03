@@ -60,7 +60,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>
         {article ? 'Редактировать статью' : 'Новая статья'}
       </h2>
 

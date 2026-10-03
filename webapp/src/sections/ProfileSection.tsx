@@ -9,6 +9,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
+import { Dialog } from '../components/Dialog';
 import { pressable } from '../utils/a11y';
 import { MonthShareButton } from './profile/heatmapShare';
 
@@ -187,7 +188,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)' }}>
                 <div style={{
-                  fontSize: 56, fontWeight: 900, lineHeight: 1, letterSpacing: '-3px',
+                  fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums',
                   color: currentStreak > 0
                     ? (todayDone ? 'var(--accent)' : 'var(--text)')
                     : 'rgba(var(--fg-rgb),0.2)',
@@ -487,15 +488,17 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       </div>
 
       {/* ── Достижения ── */}
-      {showAchievements && achievements && (
-        <div
-          role="presentation"
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
+      {/* Список прячем, пока открыта деталь: два диалога с фокус-ловушкой на
+          одном документе дерутся за Tab (useDialogA11y) */}
+      {showAchievements && achievements && !selectedAchievement && (
+        <Dialog
+          label="Достижения"
+          maxWidth={520}
+          closeOnEscape
+          onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }}
         >
-        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <span className="u-h17">Достижения</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 className="dialog-title" style={{ margin: 0 }}>Достижения</h2>
               <span className="u-sub13">{earnedList.length} из {achievements.length}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-8)' }}>
@@ -535,8 +538,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 );
               })}
             </div>
-        </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Achievement detail overlay (share-карточка внутри) */}
@@ -549,17 +551,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {/* Best day tooltip */}
       {showBestDayInfo && (
-        <div
-          role="presentation"
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => setShowBestDayInfo(false)}
-        >
-          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 'var(--r-12)', padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
-            <div className="eyebrow u-mb16">Лучший день</div>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
-          </div>
-        </div>
+        <Dialog label="Лучший день" maxWidth={400} closeOnEscape onClose={() => setShowBestDayInfo(false)}>
+          <h2 className="dialog-title">Лучший день</h2>
+          <p className="dialog-text" style={{ marginBottom: 12 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
+          <p className="dialog-text" style={{ marginBottom: 0 }}>Становится точнее с каждой неделей.</p>
+        </Dialog>
       )}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}

@@ -4,12 +4,7 @@
 // Канон — безэмодзийная версия. Платформенное приходит пропсами:
 // tr (ты/вы), botShortUrl и trackEvent — у каждого фронтенда свои.
 import { getMilestoneText, pluralDays } from '../utils/celebrationText';
-import { useConfetti } from '../hooks/useConfetti';
-import { drawStreakCard } from '../share/cards/streakCard';
-import { shareCanvasImage } from '../share/shareImage';
-import { streakShareText } from '../share/shareTexts';
-import { SHARE_CARD_EVENT, SHARE_RESULT_EVENT } from '../share/analytics';
-import { useCopyToClipboard } from '../utils/useCopyToClipboard';
+import { useCelebration } from '../hooks/useCelebration';
 import { CopyFailedHint } from './CopyFailedHint';
 
 export interface CelebrationProps {
@@ -30,13 +25,12 @@ export function Celebration({
   botShortUrl,
   trackEvent,
 }: CelebrationProps) {
-  const canvasRef = useConfetti(onDone);
-  const { copied, failed, copy } = useCopyToClipboard();
-
-  // Веху раньше отмечал 🏆 против 🔥. Картинок больше нет, но отличать вехи
-  // надо: 7/30/100 дней — другое событие, чем «ещё один день». Отмечаем
-  // акцентом на числе, а словами это уже делает getMilestoneText.
-  const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
+  const { canvasRef, copied, failed, share, isMilestone } = useCelebration(
+    streak,
+    onDone,
+    botShortUrl,
+    trackEvent,
+  );
 
   return (
     <div
@@ -114,21 +108,7 @@ export function Celebration({
           </div>
         )}
         <button
-          onClick={async (e) => {
-            e.stopPropagation();
-            const text = streakShareText(streak, botShortUrl);
-            try {
-              // Картинка-карточка стрика; текст уходит вместе с ней
-              const card = document.createElement('canvas');
-              drawStreakCard(card, streak);
-              await shareCanvasImage(card, text, 'streak.png');
-              trackEvent(SHARE_CARD_EVENT, { kind: 'streak' });
-              trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: true });
-            } catch {
-              trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: false });
-              await copy(text);
-            }
-          }}
+          onClick={share}
           style={{
             marginTop: 16,
             padding: '10px 24px',

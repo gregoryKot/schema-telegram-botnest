@@ -410,7 +410,7 @@ export function TodaySection({
           {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
             <>
               <div className="eyebrow u-mb8">Терапевт</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{therapyRelation.partnerName}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>{therapyRelation.partnerName}</div>
               {nextSessionLabel && (
                 <>
                   <div className="eyebrow u-mb6">Следующая встреча</div>
