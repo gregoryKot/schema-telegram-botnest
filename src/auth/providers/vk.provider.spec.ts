@@ -6,6 +6,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { VkProvider } from './vk.provider';
+import { fromVkState, toVkState } from './vk-state';
 
 const CONFIG_MAP: Record<string, string> = {
   VK_APP_ID: '123456',
@@ -57,10 +58,21 @@ describe('VkProvider.buildAuthUrl', () => {
     expect(p.get('client_id')).toBe(CONFIG_MAP.VK_APP_ID);
     expect(p.get('redirect_uri')).toBe(CONFIG_MAP.VK_REDIRECT_URI);
     expect(p.get('response_type')).toBe('code');
-    expect(p.get('state')).toBe('state-1');
+    expect(p.get('state')).toBe(toVkState('state-1'));
     expect(p.get('code_challenge_method')).toBe('s256');
     expect(p.get('code_challenge')).toBeTruthy();
     expect(p.get('scope')).toBe('email phone');
+  });
+
+  // 2026-10-03: VK вырезает из state всё, кроме [A-Za-z0-9_-] — точки JWT
+  // терялись, и state не совпадал с кукой. Наружу state уходит без них.
+  it('state JWT уходит к VK без точек и раскодируется обратно без потерь', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJsaW5rIjpudWxsfQ.sig-_A1';
+    const sent = new URL(
+      new VkProvider(makeConfig()).buildAuthUrl(jwt),
+    ).searchParams.get('state')!;
+    expect(sent).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(fromVkState(sent)).toBe(jwt);
   });
 
   it('callbackOrigin() = origin VK_REDIRECT_URI (2026-09-08: кука oauth_state обязана жить на этом хосте)', () => {
@@ -117,6 +129,13 @@ describe('VkProvider — PKCE-verifier без состояния в памяти
     const verifier = verifierSent(fetchMock);
     expect(verifier).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
     expect(challengeOf(verifier!)).toBe(challenge);
+    // VK ID ждёт в обмене тот же state, что видел на authorize.
+    const [, init] = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith('/oauth2/auth'),
+    ) as [string, { body: string }];
+    expect(new URLSearchParams(init.body).get('state')).toBe(
+      toVkState('state-cross'),
+    );
   });
 
   it('у разных state — разные challenge', () => {

@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { AuthProviderHandler, ProviderIdentity } from './types';
+import { toVkState } from './vk-state';
 
 // VK ID (modern OAuth 2.1 + PKCE flow). Docs:
 //   https://id.vk.com/about/business/go/docs/en/vkid/latest/vk-id/connection/...
@@ -51,7 +52,7 @@ export class VkProvider implements AuthProviderHandler {
       response_type: 'code',
       client_id: clientId,
       redirect_uri: redirectUri,
-      state,
+      state: toVkState(state),
       code_challenge: challenge,
       code_challenge_method: 's256',
       scope: 'email phone',
@@ -96,6 +97,8 @@ export class VkProvider implements AuthProviderHandler {
       redirect_uri: redirectUri,
       client_id: clientId,
       device_id: deviceId,
+      // VK ID ждёт state и в обмене кода — тот, что видел на authorize.
+      state: toVkState(state),
     });
     const tokenRes = await fetch('https://id.vk.com/oauth2/auth', {
       method: 'POST',

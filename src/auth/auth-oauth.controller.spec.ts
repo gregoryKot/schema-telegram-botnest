@@ -19,7 +19,8 @@ import type { Request, Response } from 'express';
 import { AuthOauthController } from './auth-oauth.controller';
 import type { AuthProviderRegistry } from './providers/registry';
 import type { AuthFlowService, SignInOutcome } from './auth-flow.service';
-import type { VkProvider } from './providers/vk.provider';
+import { VkProvider } from './providers/vk.provider';
+import { toVkState } from './providers/vk-state';
 import type { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import type { ProviderIdentity } from './providers/types';
 import type {
@@ -230,7 +231,14 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', 'device-1', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).toHaveBeenCalledWith(
       'code-1',
@@ -263,7 +271,14 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', 'device-1', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).not.toHaveBeenCalled();
     expect(mocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
@@ -283,7 +298,7 @@ describe('AuthOauthController.vkCallback', () => {
 
     await controller.vkCallback(
       'code-1',
-      'state-1',
+      toVkState('state-1'),
       'device-1',
       'access_denied',
       req,
@@ -305,12 +320,54 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', '', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      '',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).not.toHaveBeenCalled();
     expect(resMocks.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/error?reason=vk_failed`,
     );
+  });
+  // Инцидент 2026-10-03: VK пропускает в state только [A-Za-z0-9_-] и молча
+  // вырезает остальное. Подписанный state — JWT с двумя точками; вернувшись
+  // без них, он не совпадал с кукой, и каждый вход через VK падал vk_failed.
+  // Тест идёт через шов: настоящий buildAuthUrl → то, что вернёт VK →
+  // настоящий колбэк.
+  it('state, прошедший через VK (точки вырезаны), совпадает с кукой oauth_state', async () => {
+    const { flow, mocks } = makeFlow();
+    mocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    const jwtLike = 'eyJhbGciOiJIUzI1NiJ9.eyJraW5kIjoib2F1dGhfc3RhdGUifQ.c2ln';
+    const real = new VkProvider({
+      getOrThrow: (k: string) =>
+        ({
+          VK_APP_ID: '1',
+          VK_REDIRECT_URI: `${WEBAPP_URL}/api/auth/vk/callback`,
+          JWT_SECRET: 's',
+        })[k],
+    } as unknown as ConfigService);
+    const sent = new URL(real.buildAuthUrl(jwtLike)).searchParams.get('state')!;
+    const vkReturns = sent.replace(/[^A-Za-z0-9_-]/g, '');
+    expect(vkReturns).toBe(sent);
+
+    const exchange = jest
+      .spyOn(real, 'exchangeCodeWithContext')
+      .mockResolvedValue({ providerId: '1' });
+    const controller = makeController(makeProviders({ vk: real }), flow);
+    const req = makeReq({
+      cookies: { oauth_state: jwtLike },
+    } as Partial<Request>);
+    const { res } = makeRes();
+
+    await controller.vkCallback('code-1', vkReturns, 'device-1', '', req, res);
+
+    expect(exchange).toHaveBeenCalledWith('code-1', 'device-1', jwtLike);
+    expect(mocks.finishOAuthRedirect).toHaveBeenCalled();
   });
 });
 
