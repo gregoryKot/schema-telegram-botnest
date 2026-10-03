@@ -6,7 +6,9 @@
 // правила «1→one»).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { PracticeDoneFooter, practiceCountLabel } from './PracticeDoneFooter';
+import { PracticeDoneFooter } from './PracticeDoneFooter';
+import { practiceCountLabel } from './practiceCountLabel';
+import { PracticeDoneFooterSite } from './PracticeDoneFooterSite';
 
 afterEach(() => cleanup());
 
@@ -64,5 +66,30 @@ describe('PracticeDoneFooter — колбэки', () => {
     render(<PracticeDoneFooter count={1} onShare={onShare} />);
     fireEvent.click(screen.getByText('Поделиться'));
     expect(onShare).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PracticeDoneFooterSite', () => {
+  it('ссылка «поделиться →» зовёт onShare, счётчик — подписью', () => {
+    const onShare = vi.fn();
+    render(<PracticeDoneFooterSite count={3} onShare={onShare} />);
+    expect(screen.getByText(/Пройдено уже 3 раза/)).toBeTruthy();
+    expect(screen.queryByText('Поделиться')).toBeNull();
+    fireEvent.click(screen.getByText('поделиться →'));
+    expect(onShare).toHaveBeenCalledTimes(1);
+  });
+
+  it('без счётчика (null) — подписи нет, ссылка есть', () => {
+    render(<PracticeDoneFooterSite count={null} onShare={vi.fn()} />);
+    expect(screen.queryByText(/Пройдено уже/)).toBeNull();
+    expect(screen.getByText('поделиться →')).toBeTruthy();
+  });
+
+  it('onShown зовётся один раз при показе', () => {
+    const onShown = vi.fn();
+    render(
+      <PracticeDoneFooterSite count={1} onShare={vi.fn()} onShown={onShown} />,
+    );
+    expect(onShown).toHaveBeenCalledTimes(1);
   });
 });

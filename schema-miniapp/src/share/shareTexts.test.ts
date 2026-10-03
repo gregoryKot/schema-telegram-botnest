@@ -97,10 +97,10 @@ describe('тексты шаринга', () => {
     expect(achievementsShareText(9, 13, 't.me/TestBot')).toContain('9 из 13');
   });
 
-  it('фраза: в кавычках-ёлочках + подпись', () => {
-    const text = phraseShareText('Я имею право на отдых', 't.me/TestBot');
+  it('фраза: в кавычках-ёлочках + ссылка на канал', () => {
+    const text = phraseShareText('Я имею право на отдых');
     expect(text).toContain('«Я имею право на отдых»');
-    expect(text).toContain('Здорового Взрослого');
+    expect(text).toContain('t.me/MyHealthyAdult');
   });
 
   it('благодарность: без текста записи в сообщении (текст на картинке)', () => {

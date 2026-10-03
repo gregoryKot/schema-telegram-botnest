@@ -51,7 +51,7 @@ export function DonatePage() {
             <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap', marginBottom: 12 }}>
               {PRESETS.map((p) => (
                 <button key={p} type="button" onClick={() => setAmount(p)} style={{
-                  flex: '1 1 60px', padding: '12px 0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)',
+                  flex: '1 1 60px', padding: '12px 0', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)',
                   background: amount === p ? 'var(--accent)' : 'transparent', color: amount === p ? '#fff' : 'var(--text-sub)',
                   border: `1.5px solid ${amount === p ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>{p} ₽</button>
@@ -63,7 +63,7 @@ export function DonatePage() {
 
             {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробовать ещё раз.</p>}
             <button onClick={submit} disabled={status === 'loading' || amount < 10} style={{
-              width: '100%', padding: '15px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit',
+              width: '100%', padding: '15px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
               cursor: 'pointer', opacity: status === 'loading' || amount < 10 ? 0.5 : 1,
             }}>

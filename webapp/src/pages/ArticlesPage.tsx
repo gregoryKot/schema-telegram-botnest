@@ -33,7 +33,7 @@ export function ArticlesListPage() {
             <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
             <button onClick={() => { void reload(); }} style={{
               padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
-              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              borderRadius: 100, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Попробовать ещё раз
             </button>
@@ -90,7 +90,7 @@ export function ArticlesListPage() {
           </p>
           <a href={PRACTICE_BOOKING_URL} style={{
             display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white',
-            borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
+            borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none',
           }}>
             Записаться →
           </a>
@@ -133,7 +133,7 @@ export function ArticlePage() {
           <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
           <button onClick={() => { void reload(); }} style={{
             padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none',
-            borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            borderRadius: 100, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
           }}>
             Попробовать ещё раз
           </button>
@@ -271,7 +271,7 @@ export function ArticlePage() {
             Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос, и я расскажу, как схема-терапия работает в вашем случае.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
-            <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+            <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
               Записаться →
             </a>
             <a href="/articles" style={{ display: 'inline-block', padding: '12px 20px', background: 'transparent', border: '1.5px solid var(--line-strong)', color: 'var(--text-sub)', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>

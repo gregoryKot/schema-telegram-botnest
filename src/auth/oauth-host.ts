@@ -77,6 +77,13 @@ export function assertOAuthStateMatches(
       'OAuth state mismatch: кука не пришла — истекла (10 минут) или вход начат в другом браузере',
     );
   }
+  // Площадка вернула наш же state, но урезанным (VK вырезал точки JWT,
+  // 2026-10-03): это поломка интеграции у всех, а не «второе окно» одного.
+  if (saved.replace(/[^A-Za-z0-9_-]/g, '') === state) {
+    throw new UnauthorizedException(
+      'OAuth state mismatch: площадка вернула state без части символов — поломка интеграции, вход не работает ни у кого',
+    );
+  }
   throw new UnauthorizedException(
     'OAuth state mismatch: кука от другого запуска входа (второе окно входа)',
   );

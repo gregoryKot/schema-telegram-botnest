@@ -1,0 +1,22 @@
+{
+  "sampleState": "eyJhbGciOiJIUzI1NiJ9.eyJzZWxmQ2hlY2siOnRydWV9.c2VsZi1jaGVjaw",
+  "vkSentState": "ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKelpXeG1RMmhsWTJzaU9uUnlkV1Y5LmMyVnNaaTFqYUdWamF3",
+  "responses": {
+    "googleAccepted": {
+      "status": 302,
+      "location": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-197873436%3A1791025510017240&access_type=online&client_id=283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.googleusercontent.com&o2v=2&redirect_uri=https%3A%2F%2Fschemehappens.ru%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=self-check&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAPROZNDedO38O7zzoRVsc8QbxyOEUP128QjDSyZhThnw6tbNdczUBt4FRp2z39cIhkrdbgjsCzj_BlDjNvMFzUwLMGMG86_pq2mS4U3mKSa9ED38R2zSEM7LYKk_0x4cU8T8H1ONy9utHYd6KnzHws_rWLK0O98T-G9c6OeLCGygmdBMiTH7r4hHInSn7NIPWuq8hWA2dDtlyNIwO6cWbt_WfTewA76KYcqcV5-WO2J-mXHx0BslKBKcsDQdk8nHJOjDzmv-zfe42KwxkHFcVJ-EH_iDS_x9X0XL3iyjkB9Di__ml2madXr59AVLaCXtrRriNrtg1jWTAUuhE_3Cfu5DUsUwK9plajuo_xRK0gpaP8ahEOdkvAid-JqnbLsgHGBBHADcSzCs4ckHR5u2PgR7mbRB_L9ix4nXjClEWdI-QyqVZHC4ycSPCznk5hBOJ5l9S_7wuCU41CsNJJe7vdb02F1uw%26flowName%3DGeneralOAuthFlow%26as%3DS-197873436%253A1791025510017240%26client_id%3D283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fschemehappens.ru&rart=ANgoxce3K3eJV6GmRp9JmYAuzfKnF8mTXKsj9pE4LMe8pu3ZAAUKwhBpJX65h35bXuKqyXgFrgmJEUJBsbGxMrGtqGRrO83jSjMHBqyn_W44r2VIdY_Y2YY"
+    },
+    "googleRedirectMismatch": {
+      "status": 302,
+      "location": "https://accounts.google.com/signin/oauth/error?authError=ChVyZWRpcmVjdF91cmlfbWlzbWF0Y2gSsAEKWW91IGNhbid0IHNpZ24gaW4gdG8gdGhpcyBhcHAgYmVjYXVzZSBpdCBkb2Vzbid0IGNvbXBseSB3aXRoIEdvb2dsZSdzIE9BdXRoIDIuMCBwb2xpY3kuCgpJZiB5b3UncmUgdGhlIGFwcCBkZXZlbG9wZXIsIHJlZ2lzdGVyIHRoZSByZWRpcmVjdCBVUkkgaW4gdGhlIEdvb2dsZSBDbG91ZCBDb25zb2xlLgogIBptaHR0cHM6Ly9kZXZlbG9wZXJzLmdvb2dsZS5jb20vaWRlbnRpdHkvcHJvdG9jb2xzL29hdXRoMi93ZWItc2VydmVyI2F1dGhvcml6YXRpb24tZXJyb3JzLXJlZGlyZWN0LXVyaS1taXNtYXRjaCCQAypCCgxyZWRpcmVjdF91cmkSMmh0dHBzOi8vc2NoZW1laGFwcGVucy5ydS9hcGkvYXV0aC9nb29nbGUvY2FsbGJhY2suMqQCCAESsAEKWW91IGNhbid0IHNpZ24gaW4gdG8gdGhpcyBhcHAgYmVjYXVzZSBpdCBkb2Vzbid0IGNvbXBseSB3aXRoIEdvb2dsZSdzIE9BdXRoIDIuMCBwb2xpY3kuCgpJZiB5b3UncmUgdGhlIGFwcCBkZXZlbG9wZXIsIHJlZ2lzdGVyIHRoZSByZWRpcmVjdCBVUkkgaW4gdGhlIEdvb2dsZSBDbG91ZCBDb25zb2xlLgogIBptaHR0cHM6Ly9kZXZlbG9wZXJzLmdvb2dsZS5jb20vaWRlbnRpdHkvcHJvdG9jb2xzL29hdXRoMi93ZWItc2VydmVyI2F1dGhvcml6YXRpb24tZXJyb3JzLXJlZGlyZWN0LXVyaS1taXNtYXRjaA&flowName=GeneralOAuthFlow&client_id=283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.googleusercontent.com&as=S1780760927%3A1791025510515730&aes=AVQXgOCb0VtFqIJQWeOE1Ony6SPa"
+    },
+    "vkAccepted": {
+      "status": 302,
+      "location": "https://id.vk.com/auth?app_id=54774325&client_id=54774325&device_id=&response_type=code&redirect_uri=https://schemehappens.ru/api/auth/vk/callback&scope=email%20phone&sdk_type=vkid&lang_id=3&scheme=&oauth_version=2&redirect_state=ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKelpXeG1RMmhsWTJzaU9uUnlkV1Y5LmMyVnNaaTFqYUdWamF3&code_challenge=w6v_3_Ebc7aJAgMNWxR36bTWMaVPPZbAI0SAsBhUOeg&code_challenge_method=sha256"
+    },
+    "vkWrongRedirect": {
+      "status": 200,
+      "location": null
+    }
+  }
+}

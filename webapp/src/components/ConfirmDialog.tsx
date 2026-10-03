@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import { Dialog } from './Dialog';
 
 // Ж4 (аудит 2026-08): единый стилизованный диалог подтверждения — раньше три
 // места (отвязка провайдера в AccountPage, удаление карты режимов в
@@ -9,8 +8,9 @@ import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 // а не третья копия одной механики (правило «одна механика — один
 // компонент») — DeleteAccountDialog переведён на него же.
 //
-// Доступность — тот же `useDialogA11y` (К4, волна B): role="dialog",
-// aria-modal, фокус-трап, возврат фокуса. Escape закрывает (если не `busy`).
+// Оболочка и вид — общий `Dialog` (role="dialog", aria-modal, фокус-трап,
+// возврат фокуса, единый editorial-вид с остальными центрированными окнами).
+// Escape и клик по фону закрывают, если не `busy`.
 export interface ConfirmDialogProps {
   title: string;
   message: React.ReactNode;
@@ -36,127 +36,31 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const dialogA11y = useDialogA11y();
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !busy) onCancel();
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [busy, onCancel]);
-
   return (
-    <div
-      role="presentation"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 300,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}
-      onClick={() => !busy && onCancel()}
+    <Dialog
+      label={title}
+      onClose={busy ? undefined : onCancel}
+      closeOnEscape
     >
-      {/* onClick/onKeyDown здесь — не интерактив, а stopPropagation (не дать
-          клику/Enter-Space внутри диалога всплыть до onCancel на бэкдропе,
-          тот же паттерн, что в NeedAdviceModal.tsx). role="dialog" не входит
-          в список «интерактивных» ролей jsx-a11y, поэтому правило ложно
-          срабатывает на паре onClick+role. */}
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-      <div
-        {...dialogA11y}
-        aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--bg)',
-          borderRadius: 'var(--r-12)',
-          padding: '28px 28px 32px',
-          width: '100%',
-          maxWidth: 420,
-          border: '1px solid rgba(var(--fg-rgb),0.08)',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 8,
-          }}
+      <h2 className="dialog-title">{title}</h2>
+      <div className="dialog-text">{message}</div>
+      {error && (
+        <div role="alert" className="dialog-error">
+          {error}
+        </div>
+      )}
+      <div className="dialog-actions">
+        <button className="btn-outline" onClick={onCancel} disabled={busy}>
+          {cancelLabel}
+        </button>
+        <button
+          className={danger ? 'btn-primary btn-primary--danger' : 'btn-primary'}
+          onClick={onConfirm}
+          disabled={busy}
         >
-          {title}
-        </div>
-        <div
-          style={{
-            fontSize: 14,
-            color: 'var(--text-sub)',
-            lineHeight: 1.6,
-            marginBottom: 24,
-          }}
-        >
-          {message}
-        </div>
-        {error && (
-          <div
-            role="alert"
-            style={{
-              fontSize: 14,
-              color: 'var(--c-rose)',
-              lineHeight: 1.5,
-              marginBottom: 16,
-            }}
-          >
-            {error}
-          </div>
-        )}
-        <div className="u-row10">
-          <button
-            onClick={onCancel}
-            disabled={busy}
-            style={{
-              flex: 1,
-              padding: '13px',
-              borderRadius: 'var(--r-14)',
-              border: '1px solid var(--line)',
-              background: 'transparent',
-              color: 'var(--text)',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={busy}
-            style={{
-              flex: 1,
-              padding: '13px',
-              borderRadius: 'var(--r-14)',
-              border: 'none',
-              background: danger ? 'var(--accent-red)' : 'var(--accent)',
-              // Не '#fff': в тёмной теме осветляются и акцент, и красный —
-              // белый на них даёт 3.20:1 / 2.78:1. Токены «текст на заливке»
-              // уже посчитаны под свою тему каждый.
-              color: danger ? 'var(--on-accent-red)' : 'var(--on-accent)',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: busy ? 'default' : 'pointer',
-              fontFamily: 'inherit',
-              opacity: busy ? 0.6 : 1,
-            }}
-          >
-            {busy ? (busyLabel ?? confirmLabel) : confirmLabel}
-          </button>
-        </div>
+          {busy ? (busyLabel ?? confirmLabel) : confirmLabel}
+        </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

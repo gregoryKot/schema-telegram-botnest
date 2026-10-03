@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { BreathingCard } from '../../components/practice/BreathingCard';
 import { QuickPracticeSheet } from '../../components/practice/QuickPracticeSheet';
-import { practiceCountLabel } from '../../../../shared/src/practices/PracticeDoneFooter';
+import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import { pressable } from '../../utils/a11y';
 

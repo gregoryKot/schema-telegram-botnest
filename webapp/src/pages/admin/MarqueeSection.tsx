@@ -56,7 +56,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>{title}</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>{title}</h2>
       {topics.map((t, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 0' }}>
           <input style={{ ...input, flex: 2 }} placeholder="Текст" value={t.label} onChange={e => update(i, { label: e.target.value })} />

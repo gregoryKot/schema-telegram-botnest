@@ -1,42 +1,29 @@
-// Тело пошагового листа (правило «одна механика — один компонент»): шаги по
-// одному, точки прогресса и done-экран в конце. Оболочка — своя у каждой
-// площадки (BottomSheet мини-аппа против BottomSheetShell + useHistorySheet
-// сайта, ровно как у ShareCardSheet), поэтому здесь только внутренность.
+// Тело пошагового листа мини-аппа (правило «одна механика — один компонент»):
+// шаги по одному, точки прогресса и done-экран в конце. Логика — useStepFlow,
+// общая с сайтом (StepFlowSiteBody — его editorial-вёрстка, инъекцией). Оболочка
+// — своя у каждой площадки (BottomSheet мини-аппа против BottomSheetShell +
+// useHistorySheet сайта), поэтому здесь только внутренность.
 // Жило в schema-miniapp/src/components/StepFlowSheet.tsx, пока практики были
 // только в мини-аппе; поведение и стили при переезде не менялись.
-import { useState, type ReactNode } from 'react';
+import { useStepFlow } from './useStepFlow';
+import type { StepFlowProps } from './stepFlowTypes';
 
-export interface FlowStep {
-  emoji: string;
-  title: string;
-  hint: string;
-}
-
-/** Пропсы пошагового листа площадки — общий тип, чтобы QuickPracticeFlow мог
- * принять сам лист инъекцией (как ShareCardSheet в MonthShareButton). */
-export interface StepFlowProps {
-  title: string;
-  subtitle: string;
-  steps: FlowStep[];
-  done: FlowStep;
-  repeatLabel?: string;
-  /** Рендерится под hint на done-экране (счётчик прохождений, «Поделиться» и т.п.) */
-  doneExtra?: ReactNode;
-  onClose: () => void;
-}
+export type { FlowStep, StepFlowProps } from './stepFlowTypes';
 
 export function StepFlowBody({
   title,
   subtitle,
   steps,
   done,
-  repeatLabel = 'Ещё круг',
+  repeatLabel,
   doneExtra,
   onClose,
 }: StepFlowProps) {
-  const [step, setStep] = useState(0);
-  const isDone = step >= steps.length;
-  const cur = isDone ? done : steps[step];
+  const [step, isDone, cur, nextLabel, onNext] = useStepFlow(
+    steps,
+    done,
+    repeatLabel,
+  );
 
   return (
     <div style={{ paddingTop: 4, textAlign: 'center' }}>
@@ -124,16 +111,8 @@ export function StepFlowBody({
         >
           Закрыть
         </button>
-        <button
-          className="btn-primary"
-          style={{ flex: 1 }}
-          onClick={() => (isDone ? setStep(0) : setStep((s) => s + 1))}
-        >
-          {isDone
-            ? repeatLabel
-            : step === steps.length - 1
-              ? 'Готово'
-              : 'Дальше'}
+        <button className="btn-primary" style={{ flex: 1 }} onClick={onNext}>
+          {nextLabel}
         </button>
       </div>
     </div>
