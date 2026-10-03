@@ -93,3 +93,11 @@ describe('StepFlowBody', () => {
     expect(screen.getByText('ДополнениеDone')).toBeTruthy();
   });
 });
+
+describe('StepFlowBody — вёрстка мини-аппа', () => {
+  it('эмодзи-иллюстрация есть, «Шаг N из M» нет', () => {
+    renderFlow();
+    expect(screen.getByText('1️⃣')).toBeTruthy();
+    expect(screen.queryByText('Шаг 1 из 2')).toBeNull();
+  });
+});

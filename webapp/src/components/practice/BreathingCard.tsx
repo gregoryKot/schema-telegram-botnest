@@ -1,15 +1,14 @@
 // «Дыши со мной» на сайте — обёртка над общей карточкой дыхания 4-4-6
-// (shared/practices/BreathingCard). Сама карточка общая: после выноса логики
-// вёрстка совпала бы с мини-апповской построчно (правило №3), различаются
-// только api, ShareCardSheet и botShortUrl — они и приходят инъекцией.
+// (shared/practices/BreathingSiteCard, правило №3): api, ShareCardSheet и
+// botShortUrl — инъекцией, вёрстка — editorial.
 import { api } from '../../api';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { botShortUrl } from '../../utils/botConfig';
-import { BreathingCard as SharedBreathingCard } from '../../../../shared/src/practices/BreathingCard';
+import { BreathingSiteCard } from '../../../../shared/src/practices/BreathingSiteCard';
 
 export function BreathingCard() {
   return (
-    <SharedBreathingCard
+    <BreathingSiteCard
       api={api}
       ShareCardSheet={ShareCardSheet}
       botShortUrl={botShortUrl}

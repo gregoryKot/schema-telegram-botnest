@@ -18,6 +18,7 @@ import {
   type QuickPracticeFlowProps,
 } from './QuickPracticeFlow';
 import { StepFlowBody } from './StepFlowBody';
+import { PracticeDoneFooter } from './PracticeDoneFooter';
 import type { QuickPracticeId } from './quickPractices';
 import type { ShareCardSheetProps } from '../share/shareCardSheetProps';
 
@@ -91,6 +92,7 @@ function renderFlow(
       onClose={vi.fn()}
       api={fakeApi}
       StepFlow={StepFlowBody}
+      Footer={PracticeDoneFooter}
       ShareCardSheet={FakeShareCardSheet}
       botShortUrl="https://t.me/test_bot"
       shareZIndex={321}
