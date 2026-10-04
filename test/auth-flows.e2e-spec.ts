@@ -283,6 +283,83 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
+  // B-14 + B-16 (аудит 2026-10): ссылка из письма — двухшаговая. GET только
+  // перенаправляет (сканер почты токен не сожжёт и сессию не украдёт), гасит
+  // POST email/consume со страницы сайта; аккаунт заводится при погашении.
+  describe('email magic-link: GET → страница → POST consume', () => {
+    const seedLoginToken = (raw: string, userId: bigint | null = null) =>
+      prisma.emailToken.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId,
+          tokenHash: hashToken(raw),
+          email: 'e2e-new@example.com',
+          purpose: 'login',
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+        },
+      });
+    const tokenRow = (raw: string): any =>
+      prisma.emailToken._rows.find((r: any) => r.tokenHash === hashToken(raw));
+
+    it('запрос ссылки для нового адреса НЕ создаёт ни User, ни AuthProvider', async () => {
+      const usersBefore = prisma.user._rows.length;
+      const providersBefore = prisma.authProvider._rows.length;
+      const res = await post('/api/auth/email/link').send({
+        email: 'e2e-squat@example.com',
+      });
+      expect(res.status).toBe(200);
+      expect(prisma.user._rows).toHaveLength(usersBefore);
+      expect(prisma.authProvider._rows).toHaveLength(providersBefore);
+      expect(prisma.emailToken._rows.some((r: any) => r.userId === null)).toBe(
+        true,
+      );
+    });
+
+    it('GET callback → 302 на страницу сайта; токен НЕ погашен, кука НЕ выдана', async () => {
+      await seedLoginToken('e2e-raw-token-1');
+      const res = await request(app.getHttpServer())
+        .get('/api/auth/email/callback?token=e2e-raw-token-1')
+        .redirects(0);
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toContain(
+        '/auth/callback?email_token=e2e-raw-token-1',
+      );
+      expect(extractSetCookie(res, 'refresh_token')).toBeUndefined();
+      expect(tokenRow('e2e-raw-token-1').usedAt ?? null).toBeNull();
+    });
+
+    it('POST consume: токены + кука, аккаунт создан при погашении; повтор → 401', async () => {
+      await seedLoginToken('e2e-raw-token-2');
+      const usersBefore = prisma.user._rows.length;
+      const res = await post('/api/auth/email/consume').send({
+        token: 'e2e-raw-token-2',
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.accessToken).toEqual(expect.any(String));
+      expect(extractSetCookie(res, 'refresh_token')).toBeDefined();
+      expect(prisma.user._rows).toHaveLength(usersBefore + 1);
+      expect(
+        prisma.authProvider._rows.some(
+          (r: any) =>
+            r.provider === 'email' && r.providerId === 'e2e-new@example.com',
+        ),
+      ).toBe(true);
+
+      const again = await post('/api/auth/email/consume').send({
+        token: 'e2e-raw-token-2',
+      });
+      expect(again.status).toBe(401);
+      expect(prisma.user._rows).toHaveLength(usersBefore + 1);
+    });
+
+    it('POST consume без токена / с не-строкой → 400 (TokenBodyDto)', async () => {
+      expect((await post('/api/auth/email/consume').send({})).status).toBe(400);
+      expect(
+        (await post('/api/auth/email/consume').send({ token: 123 })).status,
+      ).toBe(400);
+    });
+  });
+
   describe('malformed bodies → 400, not 500', () => {
     // Neither route uses a DTO (manual `@Body('x')` guards) — empty body → 400.
     it.each([['/api/auth/email/link'], ['/api/auth/merge']])(
