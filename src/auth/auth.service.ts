@@ -14,6 +14,10 @@ import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
 import { sendMagicLink } from './magic-link';
+import {
+  decryptAuthProviderRow,
+  encryptAuthProviderFields,
+} from '../utils/auth-provider-crypto';
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { shouldSkipRotation } from './refresh-rotation';
@@ -180,7 +184,7 @@ export class AuthService {
       if (displayName) {
         await this.prisma.authProvider.update({
           where: { id: existing.id },
-          data: { displayName, email },
+          data: encryptAuthProviderFields({ displayName, email }),
         });
       }
       return existing.userId;
@@ -202,10 +206,11 @@ export class AuthService {
     // API requests in parallel on first load; without this they race between the
     // findUnique above and this insert and all-but-one crash on the
     // (provider, providerId) unique constraint.
+    const pii = encryptAuthProviderFields({ displayName, email }); // D-9
     const row = await this.prisma.authProvider.upsert({
       where: { provider_providerId: { provider, providerId } },
-      update: { displayName, email },
-      create: { userId, provider, providerId, displayName, email },
+      update: pii,
+      create: { userId, provider, providerId, ...pii },
     });
 
     this.logger.log(
@@ -235,8 +240,9 @@ export class AuthService {
     }
 
     try {
+      const pii = encryptAuthProviderFields({ displayName, email });
       await this.prisma.authProvider.create({
-        data: { userId, provider, providerId, displayName, email },
+        data: { userId, provider, providerId, ...pii },
       });
     } catch (e: unknown) {
       // Race: a concurrent request inserted the same (provider, providerId)
@@ -376,7 +382,7 @@ export class AuthService {
       where: { userId },
       select: { provider: true, email: true, displayName: true },
     });
-    return rows;
+    return rows.map(decryptAuthProviderRow);
   }
 
   // ─── Token issuance ────────────────────────────────────────────────────────

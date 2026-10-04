@@ -27,11 +27,12 @@ export function emailCallbackRedirectUrl(
   ticket: string | undefined,
 ): string {
   const base = frontendBase.replace(/\/$/, '');
-  // Ни токена, ни хоть какого-то смысла идти дальше — экран ошибки входа.
-  if (!token) return `${base}/auth/error?reason=email_link_expired`;
-  const q = new URLSearchParams({ [EMAIL_CONSUME_PARAM]: token });
+  // Нет токена — явный редирект на экран ошибки входа, а не пустая страница.
+  const q = new URLSearchParams(token ? { [EMAIL_CONSUME_PARAM]: token } : {});
   // Билет входа едет дальше как есть: после погашения страница уведёт на
   // экран сверки, а не молча одобрит его (device-code phishing, 2026-08-31).
-  if (ticket) q.set('ticket', ticket);
-  return `${base}${EMAIL_CONSUME_PATH}?${q.toString()}`;
+  if (token && ticket) q.set('ticket', ticket);
+  return token
+    ? `${base}${EMAIL_CONSUME_PATH}?${q.toString()}`
+    : `${base}/auth/error?reason=email_link_expired`;
 }
