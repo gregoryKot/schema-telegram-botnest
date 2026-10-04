@@ -2,29 +2,35 @@
 # Восстановление зашифрованного бэкапа Postgres — обратная операция к
 # scripts/backup-to-b2.sh.
 #
-# Аудит тестовых практик 2026-08 («репетиция restore», см. CLAUDE.md):
-# «бэкап без проверенного restore — не бэкап». Инструкция раньше жила только
-# в хвостовом комментарии backup-to-b2.sh и была НЕВЕРНА — encrypt-сторона
-# кладёт IV как 16 СЫРЫХ БАЙТ, а старый
-# комментарий читал `head -c 32` как «32 hex-символа» и резал `tail -c +33`.
-# По задокументированной процедуре restore отдал бы мусор — воспроизведено
-# в src/infra/backup-restore.spec.ts (round-trip + негативные пробы) и в
-# nightly.yml (джоба backup-restore, репетиция на настоящем Postgres).
+# «Бэкап без проверенного restore — не бэкап» (аудит тестовых практик
+# 2026-08): этот скрипт гоняет nightly.yml (джоба backup-restore, настоящий
+# Postgres) и src/infra/backup-restore.spec.ts (round-trip и негативные пробы).
 #
-# Формат файла (см. scripts/backup-to-b2.sh):
-#   [16 сырых байт IV][ciphertext: gzip(dump.sql), зашифрован AES-256-CBC]
+# Формат файла (см. backup-to-b2.sh) — стандартный openssl:
+#   `openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt`
+#   = «Salted__» + 8 байт соли + шифртекст gzip(дамп). Ручками то же самое:
+#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_ENCRYPTION_KEY \
+#     < schemehappens-2026-10-04.sql.gz.enc | gunzip > dump.sql
 #
 # Использование:
-#   ENCRYPTION_KEY=<64-hex> bash scripts/restore-backup.sh <file.sql.gz.enc> [DATABASE_URL]
+#   BACKUP_ENCRYPTION_KEY=<ключ бэкапов> bash scripts/restore-backup.sh \
+#     <file.sql.gz.enc> [DATABASE_URL]
+#
+# Рядом с файлом лежит <file>.sha256 (скачай его из бакета вместе с бэкапом) —
+# если он есть, сумма сверяется ДО расшифровки: повреждённая при скачивании
+# копия отсекается с понятной ошибкой, а не мусором из gunzip.
 #
 # Без DATABASE_URL — только раскладывает файл в <file>.sql рядом с исходным.
-# С DATABASE_URL — дополнительно заливает восстановленный SQL в указанную БД
-# (psql, ON_ERROR_STOP=1 — первая же ошибка SQL останавливает заливку, а не
-# молча доезжает до конца с половиной данных).
+# С DATABASE_URL — дополнительно заливает SQL в указанную БД (psql,
+# ON_ERROR_STOP=1 — первая же ошибка останавливает заливку, а не доезжает до
+# конца с половиной данных). Пароль БД идёт через PG*-переменные, не аргументом.
 
 set -euo pipefail
 
-: "${ENCRYPTION_KEY:?ENCRYPTION_KEY required (тот же 64-hex ключ, которым шифровали бэкап)}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ITER=200000
+
+: "${BACKUP_ENCRYPTION_KEY:?BACKUP_ENCRYPTION_KEY required (ключ, которым шифровали бэкап; не ENCRYPTION_KEY)}"
 
 ENC_FILE="${1:?Usage: restore-backup.sh <file.sql.gz.enc> [DATABASE_URL]}"
 TARGET_URL="${2:-}"
@@ -34,10 +40,23 @@ if [ ! -f "$ENC_FILE" ]; then
   exit 1
 fi
 
+# «Salted__» + 8 байт соли = 16 байт заголовка; без шифртекста файл бессмыслен.
 FILESIZE=$(wc -c < "$ENC_FILE")
 if [ "$FILESIZE" -le 16 ]; then
-  echo "[restore] ERROR: файл короче 16 байт IV — не похоже на валидный зашифрованный бэкап ($FILESIZE байт)" >&2
+  echo "[restore] ERROR: файл короче заголовка openssl — не похоже на зашифрованный бэкап ($FILESIZE байт)" >&2
   exit 1
+fi
+
+if [ -f "$ENC_FILE.sha256" ]; then
+  EXPECTED=$(cut -d' ' -f1 < "$ENC_FILE.sha256")
+  ACTUAL=$(sha256sum "$ENC_FILE" | cut -d' ' -f1)
+  if [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "[restore] ERROR: контрольная сумма не совпала с $ENC_FILE.sha256 — файл повреждён или подменён" >&2
+    exit 1
+  fi
+  echo "[restore] контрольная сумма сошлась"
+else
+  echo "[restore] WARN: $ENC_FILE.sha256 не найден — целостность файла не проверена" >&2
 fi
 
 case "$ENC_FILE" in
@@ -45,29 +64,10 @@ case "$ENC_FILE" in
   *) OUT_SQL="$ENC_FILE.restored.sql" ;;
 esac
 
-echo "[restore] читаю IV (первые 16 сырых байт файла)..."
-# openssl -iv ждёт IV как hex-строку, а на диске (симметрично encrypt-
-# стороне) он лежит как 16 СЫРЫХ байт — переводим их в hex. Именно смешение
-# этих двух направлений и было багом старой инструкции: там `head -c 32`
-# читал 32 БАЙТА (16 IV + 16 начала шифртекста) и выдавал их ЗА hex-текст,
-# вместо того чтобы взять 16 байт и перекодировать.
-#
-# od, а не `xxd -p`: xxd не входит в coreutils и отсутствует в минимальных
-# образах Debian — восстановление бэкапа не то место, где хочется узнать про
-# недостающий бинарник. Флаг -v обязателен: без него od схлопывает
-# повторяющиеся строки в «*», и на длине больше одной строки IV молча
-# превратился бы в мусор.
-IV=$(od -An -tx1 -v -N 16 < "$ENC_FILE" | tr -d ' \n')
-if [ "${#IV}" -ne 32 ]; then
-  echo "[restore] ERROR: не удалось прочитать IV корректно (получено ${#IV} hex-символов, ожидалось 32)" >&2
-  exit 1
-fi
-
 echo "[restore] расшифровываю и распаковываю..."
-if ! tail -c +17 "$ENC_FILE" \
-  | openssl enc -d -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \
+if ! openssl enc -d -aes-256-cbc -pbkdf2 -iter "$ITER" -pass env:BACKUP_ENCRYPTION_KEY < "$ENC_FILE" \
   | gunzip > "$OUT_SQL"; then
-  echo "[restore] ERROR: расшифровка/распаковка упала — неверный ENCRYPTION_KEY или повреждённый файл" >&2
+  echo "[restore] ERROR: расшифровка/распаковка упала — неверный BACKUP_ENCRYPTION_KEY или повреждённый файл" >&2
   rm -f "$OUT_SQL"
   exit 1
 fi
@@ -81,7 +81,9 @@ fi
 echo "[restore] дамп восстановлен: $OUT_SQL"
 
 if [ -n "$TARGET_URL" ]; then
-  echo "[restore] заливаю в $TARGET_URL..."
-  psql "$TARGET_URL" -v ON_ERROR_STOP=1 -f "$OUT_SQL"
+  PG_EXPORTS=$(DATABASE_URL="$TARGET_URL" node "$HERE/../deploy/pg-url-env.cjs") || exit 1
+  eval "$PG_EXPORTS"
+  echo "[restore] заливаю в целевую БД..."
+  psql -v ON_ERROR_STOP=1 -f "$OUT_SQL"
   echo "[restore] готово — БД заполнена из $OUT_SQL"
 fi

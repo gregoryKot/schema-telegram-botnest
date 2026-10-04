@@ -71,6 +71,10 @@ RUN npm prune --production
 FROM node:22-slim
 COPY deploy/install-openssl.sh /tmp/
 RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
+# pg_dump/psql 16 и curl — для зашифрованных бэкапов в B2 (deploy/backup-scheduler.cjs
+# → scripts/backup-to-b2.sh). Только в runtime: в build-стадии они не нужны.
+COPY deploy/install-pg-client.sh /tmp/
+RUN sh /tmp/install-pg-client.sh && rm /tmp/install-pg-client.sh
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -87,6 +91,9 @@ COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
 COPY --from=build --chown=node:node /app/deploy ./deploy
+# Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-to-b2.sh,
+# restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
+COPY --from=build --chown=node:node /app/scripts/backup-to-b2.sh /app/scripts/restore-backup.sh ./scripts/
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)
 USER node

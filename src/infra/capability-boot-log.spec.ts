@@ -20,6 +20,10 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
+  B2_KEY_ID: 'k',
+  B2_APP_KEY: 'a',
+  B2_BUCKET: 'b',
+  BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
 };
 
 describe('logCapabilityReport', () => {

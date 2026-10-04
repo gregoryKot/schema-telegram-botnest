@@ -12,7 +12,9 @@
 заданы `ADMIN_EMAIL` и `EMAIL_FROM`; если задан `GOOGLE_CLIENT_ID` — `GOOGLE_CLIENT_SECRET`
 и `GOOGLE_REDIRECT_URI`; если задан `VK_APP_ID` — `VK_REDIRECT_URI`; если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
 и `ROBOKASSA_PASSWORD2` (пустой пароль позволил бы подделать подпись вебхука); `ENCRYPTION_KEY_OLD`
-не должен совпадать с текущим `ENCRYPTION_KEY`; `SKIP_AUTH=true` запрещён в production;
+не должен совпадать с текущим `ENCRYPTION_KEY`; если задан `B2_BUCKET` — обязаны быть `B2_KEY_ID`,
+`B2_APP_KEY` и `BACKUP_ENCRYPTION_KEY` (иначе бэкапы молча не запустятся), а `BACKUP_ENCRYPTION_KEY`
+не должен совпадать с `ENCRYPTION_KEY`; `SKIP_AUTH=true` запрещён в production;
 адрес возврата OAuth обязан вести на канонический хост (сверка — `src/auth/oauth-redirect-config.ts`).
 
 На старте (`src/main.ts`) и в `/stats` (блок «Настройки: переменные») видно, что не задано
@@ -103,6 +105,11 @@
 |---|---|---|---|
 | `ALLOWED_ORIGINS` | опциональна | any | CORS-список источников через запятую (нужен мини-аппу — другой origin) — без него используется дефолтный список из main.ts. |
 | `APP_URL` | опциональна | nonEmpty | Базовый адрес для ссылок в письмах/боте (donate, subscribe) — дефолт schemehappens.ru; допускается голый домен без схемы (normalizeBaseUrl). |
+| `B2_APP_KEY` | опциональна | nonEmpty | Секрет ключа приложения Backblaze B2 (ключ только на один бакет) — вместе с B2_KEY_ID, B2_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
+| `B2_BUCKET` | опциональна | nonEmpty | Имя приватного бакета B2 для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
+| `B2_KEY_ID` | опциональна | nonEmpty | Идентификатор ключа приложения Backblaze B2 — пара к B2_APP_KEY. |
+| `BACKUP_ENCRYPTION_KEY` | опциональна | secret32 | Ключ шифрования бэкапов БД (AES-256, ≥ 32 символов) — ОТДЕЛЬНЫЙ от ENCRYPTION_KEY: утечка одного не открывает другое. Хранить ещё и вне Amvera: без него бэкап не расшифровать. |
+| `BACKUP_RETENTION_DAYS` | опциональна | retentionDays | Сколько дней хранить бэкапы в B2 (по умолчанию 90, не меньше 7) — старше удаляются после каждого успешного бэкапа. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
 | `SUBSCRIPTION_ENABLED` | опциональна | oneOf(true, false) | «true» включает автосписание подписки — выключено, пока автосписание не готово. |
