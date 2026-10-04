@@ -47,10 +47,20 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 **Безопасность — аудит 2026-10** (реестр и детали:
 [security/AUDIT_FINDINGS.md](security/AUDIT_FINDINGS.md), «Фаза 4»; решения по
 хвостам — [SECURITY.md](SECURITY.md) §13):
-- **Владельцу:** после перезаписи истории git (D-1, `scripts/railway_data.sql`
-  вычищен `git filter-repo`, все ветки перепушены) нужен запрос в поддержку
-  GitHub на удаление висячих объектов — force-push их не удаляет; и
-  подтверждение, что `JWT_SECRET`/`ENCRYPTION_KEY` той эпохи ротированы.
+- **Владельцу, срочно:** дамп боевой БД `scripts/railway_data.sql` всё ещё в
+  публичной истории git (D-1). Перезапись отрепетирована 2026-10-04 на
+  зеркале: `git filter-repo` трогает 3 коммита, деревья всех 172 веток
+  остаются байт-в-байт прежними, файла не остаётся ни в одном коммите.
+  Force-push всех веток агенту запрещён — выполнить руками (5 минут):
+  `git clone --mirror <repo> m.git && cd m.git`, затем
+  `git for-each-ref --format='%(refname)' refs/pull | xargs -n1 git update-ref -d`
+  (ссылки PR на GitHub только для чтения), `git filter-repo --path
+  scripts/railway_data.sql --invert-paths --force`, проверка
+  `git log --all -- scripts/railway_data.sql` (пусто), `git remote add origin
+  <repo> && git push --force --all origin`. После: запрос в поддержку GitHub на
+  удаление висячих объектов (force-push их не удаляет), свежий клон у всех, кто
+  работает с репозиторием, и подтверждение, что `JWT_SECRET`/`ENCRYPTION_KEY`
+  той эпохи ротированы. Открытые PR dependabot переоткроются сами.
 - **Владельцу:** бэкапы в B2 заработают, когда в Amvera заданы `B2_KEY_ID`,
   `B2_APP_KEY`, `B2_BUCKET`, `BACKUP_ENCRYPTION_KEY` (отдельный от ключа
   полей; см. `docs/ENV.md`) — планировщик, ретенция 90 дней и проба
