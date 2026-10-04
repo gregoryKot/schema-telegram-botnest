@@ -54,7 +54,9 @@ describe('RULES: каждое правило даёт валидные цели'
 describe('RULES: tasks с clientId веб-клиента', () => {
   it('инвалидирует точный /tasks/client/<строка>', () => {
     const rule = RULES.find(
-      (r) => r.method === 'POST' && r.pattern.source === '^\\/api\\/therapy\\/tasks$',
+      (r) =>
+        r.method === 'POST' &&
+        r.pattern.source === '^\\/api\\/therapy\\/tasks$',
     );
     const targets = rule?.targets?.(FAKE_MATCH, {
       clientId: '1000000000000000123',

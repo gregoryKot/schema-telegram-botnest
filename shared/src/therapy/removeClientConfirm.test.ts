@@ -62,8 +62,8 @@ describe('removeClientConfirmCopy', () => {
       telegramId: '1000000000000000123',
     });
     expect(message).toContain('останутся в аккаунте клиента');
-    expect(
-      removeClientConfirmCopy({ telegramId: '-7' }).message,
-    ).toContain('Карточка');
+    expect(removeClientConfirmCopy({ telegramId: '-7' }).message).toContain(
+      'Карточка',
+    );
   });
 });
