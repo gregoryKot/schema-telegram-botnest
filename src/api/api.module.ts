@@ -17,8 +17,7 @@ import { PublicEventsController } from './public-events.controller';
 import { QuizController } from './quiz.controller';
 import { JourneyController } from './journey.controller';
 import { PracticeSessionsController } from './practice-sessions.controller';
-import { AccountExportController } from './account-export.controller';
-import { AccountDeleteController } from './account-delete.controller';
+import { AccountApiModule } from './account-api.module';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -26,7 +25,6 @@ import { TelegramModule } from '../telegram/telegram.module';
 import { TherapyModule } from '../therapy/therapy.module';
 import { AuthModule } from '../auth/auth.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
-import { DataExportService } from '../account/data-export.service';
 
 @Module({
   imports: [
@@ -36,6 +34,7 @@ import { DataExportService } from '../account/data-export.service';
     TherapyModule,
     AuthModule,
     AnalyticsModule,
+    AccountApiModule,
   ],
   controllers: [
     ApiController,
@@ -56,9 +55,7 @@ import { DataExportService } from '../account/data-export.service';
     PracticeSessionsController,
     HealthController,
     ClientErrorsController,
-    AccountExportController,
-    AccountDeleteController,
   ],
-  providers: [TelegramAuthGuard, DataExportService],
+  providers: [TelegramAuthGuard],
 })
 export class ApiModule {}
