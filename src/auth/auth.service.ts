@@ -14,10 +14,7 @@ import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
 import { sendMagicLink } from './magic-link';
-import {
-  decryptAuthProviderRow,
-  encryptAuthProviderFields,
-} from '../utils/auth-provider-crypto';
+import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { shouldSkipRotation } from './refresh-rotation';
@@ -180,11 +177,10 @@ export class AuthService {
       where: { provider_providerId: { provider, providerId } },
     });
     if (existing) {
-      // Update display name if changed
       if (displayName) {
         await this.prisma.authProvider.update({
           where: { id: existing.id },
-          data: encryptAuthProviderFields({ displayName, email }),
+          data: authPii.encryptAuthProviderFields({ displayName, email }),
         });
       }
       return existing.userId;
@@ -202,11 +198,9 @@ export class AuthService {
       create: { id: userId, firstName: displayName },
     });
 
-    // Atomic upsert (Postgres INSERT … ON CONFLICT) — the mini-app fires several
-    // API requests in parallel on first load; without this they race between the
-    // findUnique above and this insert and all-but-one crash on the
-    // (provider, providerId) unique constraint.
-    const pii = encryptAuthProviderFields({ displayName, email }); // D-9
+    // Atomic upsert (ON CONFLICT): параллельные запросы мини-аппа на первом
+    // входе иначе гонятся между findUnique и insert и падают на unique.
+    const pii = authPii.encryptAuthProviderFields({ displayName, email });
     const row = await this.prisma.authProvider.upsert({
       where: { provider_providerId: { provider, providerId } },
       update: pii,
@@ -240,7 +234,7 @@ export class AuthService {
     }
 
     try {
-      const pii = encryptAuthProviderFields({ displayName, email });
+      const pii = authPii.encryptAuthProviderFields({ displayName, email });
       await this.prisma.authProvider.create({
         data: { userId, provider, providerId, ...pii },
       });
@@ -382,7 +376,7 @@ export class AuthService {
       where: { userId },
       select: { provider: true, email: true, displayName: true },
     });
-    return rows.map(decryptAuthProviderRow);
+    return rows.map(authPii.decryptAuthProviderRow);
   }
 
   // ─── Token issuance ────────────────────────────────────────────────────────
