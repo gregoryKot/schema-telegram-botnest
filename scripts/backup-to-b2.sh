@@ -1,100 +1,220 @@
 #!/bin/bash
-# Daily encrypted Postgres backup → Backblaze B2.
+# Ежесуточный зашифрованный бэкап Postgres → Backblaze B2.
 #
-# Required env (set in Amvera secret env):
-#   DATABASE_URL              postgresql://...   (used by app)
-#   ENCRYPTION_KEY            64-char hex (same one app uses for at-rest)
-#   B2_KEY_ID                 from Backblaze: Application Keys → Add a New Application Key
-#   B2_APP_KEY                same place
-#   B2_BUCKET                 your bucket name (создай в B2 console)
+# Запускает планировщик deploy/backup-scheduler.cjs (его поднимает
+# deploy/entrypoint.mjs после миграций): раз в сутки после 03:00 UTC, на
+# каждом деплое при необходимости, под арендой CronLease 'backup-b2'. Руками:
+#   bash scripts/backup-to-b2.sh        (с теми же переменными окружения)
 #
-# Run via cron OR systemd timer. For Amvera: add a cron task in the panel
-# that hits a /api/admin/run-backup endpoint OR runs this script directly.
+# Обязательные переменные (Amvera → переменные окружения, см. docs/ENV.md):
+#   DATABASE_URL            postgresql://… (та же, что у приложения)
+#   BACKUP_ENCRYPTION_KEY   ≥ 32 символов, ОТДЕЛЬНЫЙ от ENCRYPTION_KEY: утечка
+#                           ключа бэкапов не должна открывать поля в живой БД
+#                           и наоборот. Подстановки ENCRYPTION_KEY нет и не будет.
+#                           ХРАНИТЬ ЕЩЁ И ВНЕ AMVERA (менеджер паролей): без
+#                           ключа бэкап не расшифровать — а Amvera при аварии
+#                           может не отдать и env.
+#   B2_KEY_ID, B2_APP_KEY   Backblaze → Application Keys (ключ только на этот
+#                           бакет, права: listBuckets, listFiles, writeFiles,
+#                           deleteFiles)
+#   B2_BUCKET               имя приватного бакета
+# Необязательные:
+#   BACKUP_RETENTION_DAYS   сколько дней хранить (по умолчанию 90, минимум 7)
+#   SKIP_UPLOAD=1           режим репетиции restore (nightly.yml, джоба
+#                           backup-restore, и src/infra/backup-restore.spec.ts):
+#                           B2-переменные не нужны, файл кладётся в
+#                           $BACKUP_OUT_DIR (по умолчанию — текущая директория)
+#   B2_AUTH_URL             адрес b2_authorize_account — только чтобы тест мог
+#                           подставить локальный поддельный B2
 #
-# Output: bucket://<B2_BUCKET>/schemehappens-YYYY-MM-DD.sql.gz.enc
-# Retention: keep last 30 days locally (B2 itself retains forever; rotate via
-# B2 lifecycle rule if you want — Settings → Lifecycle Settings).
+# Результат в бакете:
+#   schemehappens-YYYY-MM-DD.sql.gz.enc          зашифрованный дамп
+#   schemehappens-YYYY-MM-DD.sql.gz.enc.sha256   контрольная сумма (для restore)
+# Формат файла: стандартный `openssl enc -aes-256-cbc -pbkdf2 -iter 200000
+# -salt` («Salted__» + 8 байт соли + шифртекст gzip(дамп)). Ключ передаётся
+# через `-pass env:` и в командной строке процесса не появляется; пароль БД
+# тоже — соединение идёт через PG*-переменные (deploy/pg-url-env.cjs).
+# Незашифрованный дамп на диск не пишется: pg_dump | gzip | openssl.
 #
-# SKIP_UPLOAD=1 — режим репетиции restore (nightly.yml, джоба backup-restore
-# и src/infra/backup-restore.spec.ts): пропускает B2-креды и сам аплоад,
-# кладёт зашифрованный файл в $BACKUP_OUT_DIR (по умолчанию — текущая
-# директория) и печатает путь. Поведение без SKIP_UPLOAD не меняется ни на
-# байт.
+# Хранение: после успешной загрузки удаляются ВСЕ версии файлов
+# schemehappens-* старше BACKUP_RETENTION_DAYS (по дате в имени) — право на
+# удаление данных доезжает до бэкапов, а не копится вечно.
+#
+# Вывод: последняя строка stdout — `[backup] ok <файл>`; при сбое stderr
+# содержит `[backup] FAILED <причина>` и код выхода ≠ 0.
+# Восстановление — scripts/restore-backup.sh.
 
-set -euo pipefail
+set -Eeuo pipefail
 
 SKIP_UPLOAD="${SKIP_UPLOAD:-0}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PREFIX="schemehappens-"
+ITER=200000
 
-: "${DATABASE_URL:?DATABASE_URL required}"
-: "${ENCRYPTION_KEY:?ENCRYPTION_KEY required}"
-if [ "$SKIP_UPLOAD" != "1" ]; then
-  : "${B2_KEY_ID:?B2_KEY_ID required}"
-  : "${B2_APP_KEY:?B2_APP_KEY required}"
-  : "${B2_BUCKET:?B2_BUCKET required}"
+fail() {
+  echo "[backup] FAILED $*" >&2
+  exit 1
+}
+# Неожиданное падение любой команды — тоже строкой FAILED, чтобы планировщик
+# и /stats видели причину, а не голый код выхода.
+trap 'echo "[backup] FAILED команда на строке $LINENO завершилась с кодом $?" >&2' ERR
+
+need() { [ -n "${!1:-}" ] || fail "не задана переменная $1"; }
+
+need DATABASE_URL
+need BACKUP_ENCRYPTION_KEY
+[ "${#BACKUP_ENCRYPTION_KEY}" -ge 32 ] || fail "BACKUP_ENCRYPTION_KEY короче 32 символов"
+if [ -n "${ENCRYPTION_KEY:-}" ] && [ "$BACKUP_ENCRYPTION_KEY" = "$ENCRYPTION_KEY" ]; then
+  fail "BACKUP_ENCRYPTION_KEY совпадает с ENCRYPTION_KEY — ключ бэкапов обязан быть отдельным"
 fi
+if [ "$SKIP_UPLOAD" != "1" ]; then
+  need B2_KEY_ID
+  need B2_APP_KEY
+  need B2_BUCKET
+fi
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
+[[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ] ||
+  fail "BACKUP_RETENTION_DAYS должно быть целым числом не меньше 7"
 
 DATE=$(date -u +%Y-%m-%d)
+NAME="$PREFIX$DATE.sql.gz.enc"
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
+ENC_FILE="$TMP_DIR/$NAME"
 
-DUMP_FILE="$TMP_DIR/schemehappens-$DATE.sql"
-ENC_FILE="$DUMP_FILE.gz.enc"
+# Соединение с БД — через PG*-переменные, а не аргументом pg_dump: пароль не
+# попадает в командную строку процесса.
+PG_EXPORTS=$(node "$HERE/../deploy/pg-url-env.cjs") || fail "DATABASE_URL не разобрать"
+eval "$PG_EXPORTS"
 
-echo "[backup] dumping database..."
-pg_dump "$DATABASE_URL" \
-  --no-owner --no-privileges --format=plain \
-  > "$DUMP_FILE"
+echo "[backup] дамп → gzip → шифрование (AES-256-CBC, PBKDF2 $ITER)..."
+pg_dump --no-owner --no-privileges --format=plain |
+  gzip -c |
+  openssl enc -aes-256-cbc -pbkdf2 -iter "$ITER" -salt -pass env:BACKUP_ENCRYPTION_KEY \
+    > "$ENC_FILE"
 
-echo "[backup] compressing + encrypting (AES-256-CBC via openssl)..."
-# openssl reads ENCRYPTION_KEY (hex) as the key directly via -K. We need an
-# IV too — openssl generates a random one and prepends "Salted__" header
-# when -salt and -pbkdf2 are used with a passphrase. For pure-key mode we
-# generate IV ourselves and prepend it to the ciphertext.
-IV=$(openssl rand -hex 16)
-# hex → сырые байты. Раньше тут стоял `xxd -r -p`, но xxd не входит в
-# coreutils и отсутствует в минимальных образах Debian — бэкап падал бы с
-# «command not found» ровно там, где этого меньше всего ждёшь. sed + printf
-# '%b' обходятся тем, что есть везде. Подстановка команд переносит ТЕКСТ
-# вида \x00, а не сами байты, поэтому нулевой байт в IV не теряется —
-# проверено на IV с 00, 0a, 0d и ff.
-gzip -c "$DUMP_FILE" | openssl enc -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \
-  | (printf '%b' "$(echo -n "$IV" | sed 's/../\\x&/g')"; cat) \
-  > "$ENC_FILE"
+# Проверка «прочитается ли»: расшифровать, распаковать, убедиться, что внутри
+# не пусто. Бэкап, который не открывается, хуже его отсутствия — он успокаивает.
+PLAIN_BYTES=$(openssl enc -d -aes-256-cbc -pbkdf2 -iter "$ITER" -pass env:BACKUP_ENCRYPTION_KEY \
+  < "$ENC_FILE" | gunzip | wc -c) || fail "созданный бэкап не расшифровывается"
+[ "$PLAIN_BYTES" -gt 0 ] || fail "дамп пустой"
+
+SHA256=$(sha256sum "$ENC_FILE" | cut -d' ' -f1)
+echo "$SHA256  $NAME" > "$ENC_FILE.sha256"
 
 if [ "$SKIP_UPLOAD" = "1" ]; then
   OUT_DIR="${BACKUP_OUT_DIR:-.}"
   mkdir -p "$OUT_DIR"
-  OUT_FILE="$OUT_DIR/schemehappens-$DATE.sql.gz.enc"
-  cp "$ENC_FILE" "$OUT_FILE"
-  echo "[backup] SKIP_UPLOAD=1 — аплоад в B2 пропущен, файл сохранён локально: $OUT_FILE"
-else
-  echo "[backup] uploading to B2..."
-  # Use B2 native CLI if installed, else fall back to S3-compatible via aws cli.
-  if command -v b2 >/dev/null 2>&1; then
-    b2 account authorize "$B2_KEY_ID" "$B2_APP_KEY" >/dev/null
-    b2 file upload "$B2_BUCKET" "$ENC_FILE" "schemehappens-$DATE.sql.gz.enc"
-  elif command -v aws >/dev/null 2>&1; then
-    # B2 exposes an S3-compatible endpoint at https://s3.us-east-005.backblazeb2.com
-    : "${B2_ENDPOINT:=https://s3.us-east-005.backblazeb2.com}"
-    AWS_ACCESS_KEY_ID="$B2_KEY_ID" \
-    AWS_SECRET_ACCESS_KEY="$B2_APP_KEY" \
-    aws --endpoint-url "$B2_ENDPOINT" \
-      s3 cp "$ENC_FILE" "s3://$B2_BUCKET/schemehappens-$DATE.sql.gz.enc"
-  else
-    echo "[backup] ERROR: neither 'b2' nor 'aws' CLI is installed" >&2
-    exit 1
-  fi
+  cp "$ENC_FILE" "$ENC_FILE.sha256" "$OUT_DIR/"
+  echo "[backup] SKIP_UPLOAD=1 — аплоад в B2 пропущен, файл сохранён локально: $OUT_DIR/$NAME"
+  echo "[backup] ok $NAME"
+  exit 0
 fi
 
-echo "[backup] done — schemehappens-$DATE.sql.gz.enc"
+# ── B2: родной API через curl (в образе нет ни b2, ни aws CLI) ────────────────
+B2_AUTH_URL="${B2_AUTH_URL:-https://api.backblazeb2.com/b2api/v3/b2_authorize_account}"
+CURL_OPTS=(-sS --fail-with-body --max-time 120)
 
-# To decrypt / restore: scripts/restore-backup.sh.
-#
-# (Аудит тестовых практик 2026-08, «репетиция restore»: старая версия этого
-# комментария была НЕВЕРНА — она читала `head -c 32` как «32 hex chars»,
-# хотя выше IV префиксуется как 16 СЫРЫХ байт, а не как hex-
-# текст. По той инструкции восстановление отдавало мусор — воспроизведено и
-# зафиксировано в src/infra/backup-restore.spec.ts и nightly.yml, джоба
-# backup-restore.)
-#   ENCRYPTION_KEY=<тот же 64-hex ключ> bash scripts/restore-backup.sh \
-#     schemehappens-2026-06-01.sql.gz.enc [DATABASE_URL для сразу-залить]
+# Значение по пути из JSON со stdin: json_get apiInfo.storageApi.apiUrl
+json_get() {
+  node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{let v;try{v=JSON.parse(d);for(const k of process.argv[1].split("."))v=v==null?v:v[k]}catch{process.exit(1)}process.stdout.write(v==null?"":String(v))})' "$1"
+}
+
+# Заголовки и логин уходят curl-у через stdin (-K -), а не аргументами:
+# токен и ключ приложения не видны в командной строке процесса.
+b2_authorize() {
+  local resp
+  resp=$(printf 'user = "%s:%s"\n' "$B2_KEY_ID" "$B2_APP_KEY" |
+    curl "${CURL_OPTS[@]}" -K - "$B2_AUTH_URL") || fail "B2: авторизация не удалась (ключ или сеть): ${resp:0:200}"
+  TOKEN=$(printf '%s' "$resp" | json_get authorizationToken)
+  ACCOUNT_ID=$(printf '%s' "$resp" | json_get accountId)
+  API_URL=$(printf '%s' "$resp" | json_get apiInfo.storageApi.apiUrl)
+  [ -n "$API_URL" ] || API_URL=$(printf '%s' "$resp" | json_get apiUrl)
+  [ -n "$TOKEN" ] && [ -n "$API_URL" ] || fail "B2: в ответе авторизации нет токена или адреса API"
+  BUCKET_ID=$(printf '%s' "$resp" | json_get apiInfo.storageApi.bucketId)
+  [ -n "$BUCKET_ID" ] || BUCKET_ID=$(printf '%s' "$resp" | json_get allowed.bucketId)
+  if [ -z "$BUCKET_ID" ]; then
+    local list
+    list=$(b2_post b2_list_buckets "{\"accountId\":\"$ACCOUNT_ID\",\"bucketName\":\"$B2_BUCKET\"}") ||
+      fail "B2: не удалось найти бакет $B2_BUCKET: ${list:0:200}"
+    BUCKET_ID=$(printf '%s' "$list" | json_get buckets.0.bucketId)
+  fi
+  [ -n "$BUCKET_ID" ] || fail "B2: бакет $B2_BUCKET не найден"
+}
+
+b2_post() { # b2_post <метод> <JSON-тело>
+  printf 'header = "Authorization: %s"\n' "$TOKEN" |
+    curl "${CURL_OPTS[@]}" -K - -X POST -H 'Content-Type: application/json' -d "$2" "$API_URL/b2api/v3/$1"
+}
+
+b2_upload() { # b2_upload <файл> <имя в бакете>
+  local file=$1 name=$2 up url token sha1 resp
+  up=$(b2_post b2_get_upload_url "{\"bucketId\":\"$BUCKET_ID\"}") ||
+    fail "B2: нет адреса загрузки: ${up:0:200}"
+  url=$(printf '%s' "$up" | json_get uploadUrl)
+  token=$(printf '%s' "$up" | json_get authorizationToken)
+  sha1=$(sha1sum "$file" | cut -d' ' -f1)
+  resp=$(printf 'header = "Authorization: %s"\n' "$token" |
+    curl "${CURL_OPTS[@]}" --max-time 1800 -K - -X POST \
+      -H "X-Bz-File-Name: $name" -H 'Content-Type: b2/x-auto' -H "X-Bz-Content-Sha1: $sha1" \
+      --data-binary "@$file" "$url") || fail "B2: загрузка $name не удалась: ${resp:0:200}"
+  [ "$(printf '%s' "$resp" | json_get contentSha1)" = "$sha1" ] ||
+    fail "B2: контрольная сумма загруженного $name не совпала"
+}
+
+# Удаляет ВСЕ версии файлов бэкапов старше срока хранения (по дате в имени).
+# Явные `|| return 1` вместо set -e: внутри функции под `||` errexit молчит.
+b2_prune() {
+  local cutoff body resp parsed next_name="" next_id="" n=0 pages=0 name id first deleted=0
+  cutoff=$(date -u -d "$RETENTION_DAYS days ago" +%Y-%m-%d) || return 1
+  while [ "$pages" -lt 50 ]; do
+    pages=$((pages + 1))
+    body="{\"bucketId\":\"$BUCKET_ID\",\"prefix\":\"$PREFIX\",\"maxFileCount\":1000"
+    if [ -n "$next_name" ]; then body="$body,\"startFileName\":\"$next_name\",\"startFileId\":\"$next_id\""; fi
+    resp=$(b2_post b2_list_file_versions "$body}") || { echo "список файлов: ${resp:0:200}" >&2; return 1; }
+    parsed=$(printf '%s' "$resp" | CUTOFF="$cutoff" PREFIX="$PREFIX" node -e '
+      let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
+        const r=JSON.parse(d);
+        const re=new RegExp("^"+process.env.PREFIX+"(\\d{4}-\\d{2}-\\d{2})\\.sql\\.gz\\.enc(\\.sha256)?$");
+        const out=[(r.nextFileName||"")+"\t"+(r.nextFileId||"")];
+        for(const f of r.files||[]){const m=re.exec(f.fileName);if(m&&m[1]<process.env.CUTOFF)out.push(f.fileName+"\t"+f.fileId)}
+        console.log(out.join("\n"))})') || return 1
+    first=1
+    while IFS=$'\t' read -r name id; do
+      if [ "$first" = 1 ]; then first=0; next_name=$name; next_id=$id; continue; fi
+      b2_post b2_delete_file_version "{\"fileName\":\"$name\",\"fileId\":\"$id\"}" >/dev/null || return 1
+      deleted=$((deleted + 1))
+    done <<< "$parsed"
+    [ -n "$next_name" ] || break
+  done
+  echo "[backup] хранение: удалено версий старше $RETENTION_DAYS дн. (до $cutoff): $deleted"
+}
+
+echo "[backup] загрузка в B2 (бакет $B2_BUCKET)..."
+if command -v curl >/dev/null 2>&1; then
+  b2_authorize
+  have_api=1
+else
+  have_api=0
+fi
+
+if command -v b2 >/dev/null 2>&1; then
+  b2 account authorize "$B2_KEY_ID" "$B2_APP_KEY" >/dev/null
+  b2 file upload "$B2_BUCKET" "$ENC_FILE" "$NAME" >/dev/null
+  b2 file upload "$B2_BUCKET" "$ENC_FILE.sha256" "$NAME.sha256" >/dev/null
+elif [ "$have_api" = 1 ]; then
+  b2_upload "$ENC_FILE" "$NAME"
+  b2_upload "$ENC_FILE.sha256" "$NAME.sha256"
+else
+  fail "нет ни curl, ни b2 CLI — загрузить в B2 нечем"
+fi
+
+# Загрузка уже удалась — сбой хранения не должен делать бэкап «проваленным»
+# (иначе планировщик повторял бы его каждый час), но и молчать не должен.
+if [ "$have_api" = 1 ]; then
+  b2_prune || echo "[backup] WARN: чистка старых бэкапов не удалась — повторится в следующий прогон" >&2
+else
+  echo "[backup] WARN: без curl чистка старых бэкапов пропущена" >&2
+fi
+
+echo "[backup] ok $NAME"

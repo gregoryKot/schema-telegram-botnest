@@ -1,8 +1,8 @@
-// Проверка env при старте (щит, инциденты 2026-09-15/16 — см. заголовок
-// env-registry.ts). Чистая функция от env — тестируется без мутации
-// глобалов, вызывается из main.ts и из блока /stats (env-check.format.ts).
+// Проверка env при старте (щит, инциденты 2026-09-15/16 — см. env-registry.ts).
+// Чистая функция от env: вызывается из main.ts и блока /stats (env-check.format.ts).
 import { ENV_REGISTRY } from './env-registry.entries';
 import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
+import { BACKUP_CROSS_CHECKS } from './env-check.backup';
 import { ORIGIN_CROSS_CHECKS } from './env-check.origins';
 
 type Env = Record<string, string | undefined>;
@@ -43,9 +43,9 @@ function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
   };
 }
 
-// Кросс-проверки — то, что не выражается форматом одной переменной. Адрес
-// возврата OAuth сверяет oauth-redirect-config.ts, здесь только вызов.
+// Кросс-проверки связывают несколько переменных; адрес возврата OAuth сверяет oauth-redirect-config.ts.
 export const CROSS_CHECKS: CrossCheck[] = [
+  ...BACKUP_CROSS_CHECKS,
   ...ORIGIN_CROSS_CHECKS,
   // Инцидент 2026-09-15: пустой ADMIN_EMAIL при заданном RESEND_API_KEY —
   // письма о записях молчали.

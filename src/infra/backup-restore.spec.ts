@@ -7,6 +7,10 @@
 // (воспроизведено и запротоколировано в PR, не только тут). Живой фикс —
 // scripts/restore-backup.sh; здесь — round-trip и обязательные негативные
 // пробы (щит обязан уметь падать, не только зеленеть, правило №15).
+// Формат бэкапа (аудит D-2): стандартный `openssl enc -aes-256-cbc -pbkdf2
+// -iter 200000 -salt -pass env:BACKUP_ENCRYPTION_KEY` — ключ не в командной
+// строке, отдельный от ENCRYPTION_KEY, рядом лежит .sha256. Загрузка в B2 и
+// хранение — backup-b2-upload.spec.ts.
 // Реальный Postgres end-to-end (миграции → маркер → бэкап → restore во
 // вторую БД → сверка схемы) — nightly.yml, джоба backup-restore.
 import { spawnSync } from 'child_process';
@@ -24,6 +28,9 @@ import { join } from 'path';
 import { randomBytes } from 'crypto';
 
 const RESTORE = join(process.cwd(), 'scripts', 'restore-backup.sh');
+// Каждый прогон скрипта — три PBKDF2 по 200 000 итераций; под нагрузкой параллельного jest 5 с мало.
+jest.setTimeout(90_000);
+
 const BACKUP = join(process.cwd(), 'scripts', 'backup-to-b2.sh');
 
 function runRestore(args: string[], env: Record<string, string>) {
@@ -33,24 +40,31 @@ function runRestore(args: string[], env: Record<string, string>) {
   });
 }
 
-// Зашифрованная фикстура ТЕМ ЖЕ форматом, что кладёт backup-to-b2.sh: 16
-// сырых байт IV, затем AES-256-CBC(gzip(plain)) — той же openssl-командой,
-// что и скрипт (строка `openssl enc -aes-256-cbc -K ... -iv ...`).
+// Зашифрованная фикстура ТЕМ ЖЕ форматом, что кладёт backup-to-b2.sh:
+// «Salted__» + соль + AES-256-CBC(gzip(plain)), ключ через -pass env:.
 function encryptFixture(dir: string, plain: string, key: string): string {
   const dumpFile = join(dir, 'fixture.sql');
   writeFileSync(dumpFile, plain);
-  const iv = randomBytes(16);
   const gz = spawnSync('gzip', ['-c', dumpFile]);
   if (gz.status !== 0) throw new Error(`gzip failed: ${gz.stderr.toString()}`);
   const enc = spawnSync(
     'openssl',
-    ['enc', '-aes-256-cbc', '-K', key, '-iv', iv.toString('hex')],
-    { input: gz.stdout },
+    [
+      'enc',
+      '-aes-256-cbc',
+      '-pbkdf2',
+      '-iter',
+      '200000',
+      '-salt',
+      '-pass',
+      'env:BACKUP_ENCRYPTION_KEY',
+    ],
+    { input: gz.stdout, env: { ...process.env, BACKUP_ENCRYPTION_KEY: key } },
   );
   if (enc.status !== 0)
     throw new Error(`openssl encrypt failed: ${enc.stderr.toString()}`);
   const encFile = join(dir, 'fixture.sql.gz.enc');
-  writeFileSync(encFile, Buffer.concat([iv, enc.stdout]));
+  writeFileSync(encFile, enc.stdout);
   return encFile;
 }
 
@@ -66,7 +80,7 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
     const plaintext = 'CREATE TABLE fixture (id int); -- контрольный текст\n';
     const encFile = encryptFixture(dir, plaintext, key);
 
-    const res = runRestore([encFile], { ENCRYPTION_KEY: key });
+    const res = runRestore([encFile], { BACKUP_ENCRYPTION_KEY: key });
 
     expect(res.status).toBe(0);
     const outSql = encFile.replace(/\.sql\.gz\.enc$/, '.sql');
@@ -77,10 +91,10 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
     const key = randomBytes(32).toString('hex');
     const encFile = encryptFixture(dir, 'x'.repeat(500), key);
     const buf = readFileSync(encFile);
-    buf[19] ^= 0xff; // байт №20 — первый байт шифртекста (после 16-байтного IV)
+    buf[19] ^= 0xff; // байт №20 — внутри первого блока шифртекста (после 16-байтного «Salted__»+соль)
     writeFileSync(encFile, buf);
 
-    const res = runRestore([encFile], { ENCRYPTION_KEY: key });
+    const res = runRestore([encFile], { BACKUP_ENCRYPTION_KEY: key });
 
     expect(res.status).not.toBe(0);
     expect(existsSync(encFile.replace(/\.sql\.gz\.enc$/, '.sql'))).toBe(false);
@@ -91,25 +105,25 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
     const encFile = encryptFixture(dir, 'y'.repeat(500), key);
     const wrongKey = randomBytes(32).toString('hex');
 
-    const res = runRestore([encFile], { ENCRYPTION_KEY: wrongKey });
+    const res = runRestore([encFile], { BACKUP_ENCRYPTION_KEY: wrongKey });
 
     expect(res.status).not.toBe(0);
   });
 
-  it('без ENCRYPTION_KEY — падает сразу, не пытается расшифровать', () => {
+  it('без BACKUP_ENCRYPTION_KEY — падает сразу, не пытается расшифровать', () => {
     const res = runRestore([join(dir, 'whatever.sql.gz.enc')], {
-      ENCRYPTION_KEY: '',
+      BACKUP_ENCRYPTION_KEY: '',
     });
 
     expect(res.status).not.toBe(0);
-    expect(res.stderr).toMatch(/ENCRYPTION_KEY/);
+    expect(res.stderr).toMatch(/BACKUP_ENCRYPTION_KEY/);
   });
 
   it('файл не найден — понятная ошибка, не мусор от openssl/gunzip', () => {
     const key = randomBytes(32).toString('hex');
 
     const res = runRestore([join(dir, 'nope.sql.gz.enc')], {
-      ENCRYPTION_KEY: key,
+      BACKUP_ENCRYPTION_KEY: key,
     });
 
     expect(res.status).not.toBe(0);
@@ -138,7 +152,7 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
         ...process.env,
         PATH: `${fakeBinDir}:${process.env.PATH}`,
         DATABASE_URL: 'postgresql://fake/fake',
-        ENCRYPTION_KEY: key,
+        BACKUP_ENCRYPTION_KEY: key,
         SKIP_UPLOAD: '1',
         BACKUP_OUT_DIR: outDir,
       },
@@ -152,11 +166,199 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
     expect(encName).toBeDefined();
     const encFile = join(outDir, encName);
 
-    const restoreRes = runRestore([encFile], { ENCRYPTION_KEY: key });
+    const restoreRes = runRestore([encFile], { BACKUP_ENCRYPTION_KEY: key });
 
     expect(restoreRes.status).toBe(0);
     expect(
       readFileSync(encFile.replace(/\.sql\.gz\.enc$/, '.sql'), 'utf8'),
     ).toContain(dumpMarker);
+  });
+
+  it('контрольная сумма .sha256 сходится — restore идёт; не сходится — падает ДО расшифровки', () => {
+    const key = randomBytes(32).toString('hex');
+    const encFile = encryptFixture(dir, 'z'.repeat(300), key);
+    const sum = spawnSync('sha256sum', [encFile], {
+      encoding: 'utf8',
+    }).stdout.split(' ')[0];
+    writeFileSync(`${encFile}.sha256`, `${sum}  fixture.sql.gz.enc\n`);
+    expect(runRestore([encFile], { BACKUP_ENCRYPTION_KEY: key }).status).toBe(
+      0,
+    );
+
+    writeFileSync(
+      `${encFile}.sha256`,
+      `${'0'.repeat(64)}  fixture.sql.gz.enc\n`,
+    );
+    const bad = runRestore([encFile], { BACKUP_ENCRYPTION_KEY: key });
+    expect(bad.status).not.toBe(0);
+    expect(bad.stderr).toMatch(/контрольная сумма не совпала/);
+  });
+
+  it('старый формат (ключ ENCRYPTION_KEY, -K/-iv) не читается — подмены ключа бэкапов полем-ключом нет', () => {
+    const key = randomBytes(32).toString('hex');
+    const encFile = encryptFixture(dir, 'w'.repeat(300), key);
+    const res = runRestore([encFile], {
+      BACKUP_ENCRYPTION_KEY: '',
+      ENCRYPTION_KEY: key,
+    });
+    expect(res.status).not.toBe(0);
+  });
+});
+
+// Контракты backup-to-b2.sh, не связанные с B2: ключ, формат, утечки в argv.
+describe('scripts/backup-to-b2.sh (SKIP_UPLOAD=1)', () => {
+  let dir: string;
+  let fakeBin: string;
+  let argvLog: string;
+  const KEY = 'backup-key-' + 'k'.repeat(30);
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'backup-spec-'));
+    fakeBin = join(dir, 'fakebin');
+    argvLog = join(dir, 'argv.log');
+    mkdirSync(fakeBin);
+    // pg_dump и openssl пишут свои аргументы в лог: проверяем, что секретов
+    // в командной строке процессов нет.
+    writeFileSync(
+      join(fakeBin, 'pg_dump'),
+      `#!/bin/bash\necho "pg_dump $* PGPASSWORD=\${PGPASSWORD:-} PGHOST=\${PGHOST:-}" >> '${argvLog}'\necho 'PLAINTEXT-DUMP-MARKER'\n`,
+      { mode: 0o755 },
+    );
+    const realOpenssl = spawnSync('which', ['openssl'], {
+      encoding: 'utf8',
+    }).stdout.trim();
+    writeFileSync(
+      join(fakeBin, 'openssl'),
+      `#!/bin/bash\necho "openssl $*" >> '${argvLog}'\nexec ${realOpenssl} "$@"\n`,
+      { mode: 0o755 },
+    );
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  function backup(env: Record<string, string | undefined>) {
+    const base: Record<string, string | undefined> = {
+      ...process.env,
+      PATH: `${fakeBin}:${process.env.PATH}`,
+      DATABASE_URL:
+        'postgresql://dbuser:DB-PASSWORD@dbhost:5432/appdb?schema=public',
+      SKIP_UPLOAD: '1',
+      BACKUP_OUT_DIR: join(dir, 'out'),
+      ENCRYPTION_KEY: undefined,
+      BACKUP_ENCRYPTION_KEY: KEY,
+      ...env,
+    };
+    for (const k of Object.keys(base))
+      if (base[k] === undefined) delete base[k];
+    return spawnSync('bash', [BACKUP], {
+      env: base,
+      encoding: 'utf8',
+    });
+  }
+
+  it('успех: последняя строка stdout «[backup] ok <файл>», рядом .sha256 с верной суммой', () => {
+    const res = backup({});
+    expect(res.status).toBe(0);
+    const lines = res.stdout.trim().split('\n');
+    expect(lines[lines.length - 1]).toMatch(
+      /^\[backup\] ok schemehappens-\d{4}-\d{2}-\d{2}\.sql\.gz\.enc$/,
+    );
+    const name = lines[lines.length - 1].replace('[backup] ok ', '');
+    const sidecar = readFileSync(join(dir, 'out', `${name}.sha256`), 'utf8');
+    const actual = spawnSync('sha256sum', [join(dir, 'out', name)], {
+      encoding: 'utf8',
+    }).stdout.split(' ')[0];
+    expect(sidecar.startsWith(`${actual}  ${name}`)).toBe(true);
+  });
+
+  it('формат — openssl Salted__ (pbkdf2), шифртекст не содержит открытого дампа', () => {
+    backup({});
+    const [name] = readdirSync(join(dir, 'out')).filter((f) =>
+      f.endsWith('.enc'),
+    );
+    const bytes = readFileSync(join(dir, 'out', name));
+    expect(bytes.subarray(0, 8).toString('latin1')).toBe('Salted__');
+    expect(bytes.includes('PLAINTEXT-DUMP-MARKER')).toBe(false);
+  });
+
+  it('ни ключ бэкапа, ни пароль БД не попадают в командную строку pg_dump/openssl; пароль едет в PGPASSWORD', () => {
+    expect(backup({}).status).toBe(0);
+    const log = readFileSync(argvLog, 'utf8');
+    expect(log).not.toContain(KEY);
+    expect(log).not.toContain('postgresql://');
+    // В argv pg_dump пароля нет; он виден в логе только как значение PGPASSWORD=.
+    const pgLine = log.split('\n').find((l) => l.startsWith('pg_dump'))!;
+    expect(pgLine.split(' PGPASSWORD=')[0]).not.toContain('DB-PASSWORD');
+    expect(pgLine).toContain('PGPASSWORD=DB-PASSWORD');
+    expect(pgLine).toContain('PGHOST=dbhost');
+    expect(log).toContain('-pass env:BACKUP_ENCRYPTION_KEY');
+    expect(log).toContain('-pbkdf2');
+  });
+
+  it('DATABASE_URL и ключи не печатаются ни в stdout, ни в stderr', () => {
+    const res = backup({});
+    for (const secret of ['DB-PASSWORD', KEY, 'postgresql://']) {
+      expect(res.stdout + res.stderr).not.toContain(secret);
+    }
+  });
+
+  it('ключ бэкапа обязателен: без BACKUP_ENCRYPTION_KEY падает, ENCRYPTION_KEY не подставляется', () => {
+    const res = backup({
+      BACKUP_ENCRYPTION_KEY: undefined,
+      ENCRYPTION_KEY: 'f'.repeat(64),
+    });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(
+      /\[backup\] FAILED не задана переменная BACKUP_ENCRYPTION_KEY/,
+    );
+    expect(existsSync(join(dir, 'out'))).toBe(false);
+  });
+
+  it('ключ короче 32 символов — FAILED', () => {
+    const res = backup({ BACKUP_ENCRYPTION_KEY: 'short' });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/короче 32/);
+  });
+
+  it('ключ бэкапа совпадает с ENCRYPTION_KEY — FAILED (ключи обязаны быть разными)', () => {
+    const res = backup({ ENCRYPTION_KEY: KEY });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/обязан быть отдельным/);
+  });
+
+  it('BACKUP_RETENTION_DAYS меньше 7 или не число — FAILED до дампа', () => {
+    for (const bad of ['3', 'abc', '0']) {
+      const res = backup({ BACKUP_RETENTION_DAYS: bad });
+      expect(res.status).not.toBe(0);
+      expect(res.stderr).toMatch(/BACKUP_RETENTION_DAYS/);
+    }
+  });
+
+  it('pg_dump упал — FAILED, код ≠ 0, файла бэкапа нет (не «успех» с обрезанным дампом)', () => {
+    writeFileSync(
+      join(fakeBin, 'pg_dump'),
+      '#!/bin/bash\necho partial\nexit 1\n',
+      {
+        mode: 0o755,
+      },
+    );
+    const res = backup({});
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/\[backup\] FAILED/);
+    expect(existsSync(join(dir, 'out'))).toBe(false);
+  });
+
+  it('пустой дамп — FAILED, а не зашифрованная пустота', () => {
+    writeFileSync(join(fakeBin, 'pg_dump'), '#!/bin/bash\nexit 0\n', {
+      mode: 0o755,
+    });
+    const res = backup({});
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/дамп пустой/);
+  });
+
+  it('без SKIP_UPLOAD нужны B2_*: не заданы — FAILED с именем переменной', () => {
+    const res = backup({ SKIP_UPLOAD: '0' });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/B2_KEY_ID/);
   });
 });

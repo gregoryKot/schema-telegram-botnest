@@ -5,14 +5,13 @@
 // BOT_TOKEN/ADMIN_ID И без RESEND_API_KEY/ADMIN_EMAIL КАЖДЫЙ алерт (события
 // безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
 // следа — это и есть позвоночник всех рантайм-наблюдателей щита.
-// Чистая функция от env — используется загрузочной сводкой
-// (capability-boot-log.ts) и блоком «Настройки» в /stats
-// (src/bot/capability-metrics.format.ts).
 //
-// Гейт scripts/check-capability-registry.mjs сверяет силовую ветку
-// «if (!config) return» — файл либо в `files` ниже, либо в
-// capability-registry-baseline.json (REGISTERED_FILES там зеркалит `files`).
+// Чистая функция от env — для загрузочной сводки (capability-boot-log.ts) и
+// блока «Настройки» в /stats (src/bot/capability-metrics.format.ts). Гейт
+// scripts/check-capability-registry.mjs: файл с веткой «if (!config) return»
+// — либо в `files` ниже, либо в capability-registry-baseline.json.
 import { buildOauthRedirectCapability } from '../auth/oauth-redirect-config';
+import { buildBackupCapability } from './backup-capability';
 
 export interface CapabilityStatus {
   /** Слаг для тестов/сверки. */
@@ -148,6 +147,7 @@ export function buildCapabilityReport(
     },
     // Инцидент 2026-09-16: сама запись — в src/auth/oauth-redirect-config.ts.
     buildOauthRedirectCapability(env),
+    buildBackupCapability(env),
   ];
 }
 
