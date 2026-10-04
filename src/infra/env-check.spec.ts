@@ -132,6 +132,48 @@ describe('checkEnv', () => {
       );
     });
 
+    // Аудит D-2: бэкапы в B2 включаются только полным набором.
+    it('B2_BUCKET без остальных трёх переменных бэкапа — проблема с их именами', () => {
+      const issue = checkEnv({
+        ...ALL_VALID,
+        B2_BUCKET: 'bkt',
+      }).crossCheckIssues.find((i) => i.id === 'b2BucketRequiresBackupSetup');
+      expect(issue?.problem).toContain('B2_KEY_ID');
+      expect(issue?.problem).toContain('B2_APP_KEY');
+      expect(issue?.problem).toContain('BACKUP_ENCRYPTION_KEY');
+    });
+
+    it('полный набор переменных бэкапа — без проблемы (контроль)', () => {
+      const ids = checkEnv({
+        ...ALL_VALID,
+        B2_BUCKET: 'bkt',
+        B2_KEY_ID: 'k',
+        B2_APP_KEY: 'a',
+        BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
+      }).crossCheckIssues.map((i) => i.id);
+      expect(ids).not.toContain('b2BucketRequiresBackupSetup');
+      expect(ids).not.toContain('backupKeyDistinctFromEncryptionKey');
+    });
+
+    it('BACKUP_ENCRYPTION_KEY совпадает с ENCRYPTION_KEY — проблема', () => {
+      const key = 'c'.repeat(64);
+      const ids = checkEnv({
+        ...ALL_VALID,
+        ENCRYPTION_KEY: key,
+        BACKUP_ENCRYPTION_KEY: key,
+      }).crossCheckIssues.map((i) => i.id);
+      expect(ids).toContain('backupKeyDistinctFromEncryptionKey');
+    });
+
+    it('BACKUP_RETENTION_DAYS: 3 — неверный формат, 90 — верный', () => {
+      const bad = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: '3' });
+      expect(bad.invalid.map((i) => i.name)).toContain('BACKUP_RETENTION_DAYS');
+      const ok = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: '90' });
+      expect(ok.invalid.map((i) => i.name)).not.toContain(
+        'BACKUP_RETENTION_DAYS',
+      );
+    });
+
     it('ENCRYPTION_KEY_OLD содержит текущий ENCRYPTION_KEY — проблема', () => {
       const key = 'b'.repeat(64);
       const result = checkEnv({

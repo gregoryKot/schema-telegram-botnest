@@ -16,6 +16,10 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
+  B2_KEY_ID: 'k',
+  B2_APP_KEY: 'a',
+  B2_BUCKET: 'b',
+  BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
 };
 
 describe('buildCapabilityReport', () => {
@@ -95,5 +99,24 @@ describe('buildCapabilityReport', () => {
     const cap = report.find((c) => c.id === 'oauthRedirectSane')!;
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
+  });
+  // Аудит D-2: бэкапы в B2 включает только полный набор переменных.
+  it('b2Backups: нет переменных — off, причина называет их, не критично', () => {
+    const cap = buildCapabilityReport({}).find((c) => c.id === 'b2Backups')!;
+    expect(cap.on).toBe(false);
+    expect(cap.critical).toBe(false);
+    expect(cap.offReason).toContain('B2_KEY_ID');
+    expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
+  });
+
+  it('b2Backups: не хватает одной переменной — off и называет именно её', () => {
+    const cap = buildCapabilityReport({
+      B2_KEY_ID: 'k',
+      B2_APP_KEY: 'a',
+      B2_BUCKET: 'b',
+    }).find((c) => c.id === 'b2Backups')!;
+    expect(cap.on).toBe(false);
+    expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
+    expect(cap.offReason).not.toContain('B2_BUCKET');
   });
 });

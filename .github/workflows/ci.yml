@@ -354,6 +354,14 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Аренда прогона бэкапа в B2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
+      # квотирование :'переменных' проверяет только живая база. psql есть в образе
+      # ubuntu-latest; на случай его отсутствия ставим клиент 16 явно.
+      - name: e2e аренда бэкапа (psql) на реальном Postgres
+        run: |
+          command -v psql >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
+          npx jest --config ./test/jest-e2e.json --runInBand test/backup-lease.e2e-spec.ts
       # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
       # advisory-lock через $queryRaw, а Prisma 7 не читает колонку типа `void`.
       # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
