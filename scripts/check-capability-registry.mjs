@@ -37,6 +37,7 @@ export const REGISTERED_FILES = new Set([
   'src/auth/email.service.ts',
   'src/booking/meeting.service.ts',
   'src/prisma/encryption-wave2.service.ts',
+  'src/prisma/encryption-wave3.service.ts',
   'src/utils/encrypt-migration.ts',
   'src/channel/targets/threads-token.service.ts',
   'src/api/throttler-identity.ts',

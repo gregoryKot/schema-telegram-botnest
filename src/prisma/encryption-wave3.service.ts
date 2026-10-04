@@ -17,6 +17,12 @@ import { encryptIfPlain } from '../utils/encrypt-if-plain';
 const FLAG_KEY = 'encryption_wave3_done';
 const BATCH = 500;
 
+interface Stats {
+  encrypted: number;
+  /** Строки, ушедшие из-под условного обновления (их переписало приложение). */
+  raced: number;
+}
+
 @Injectable()
 export class EncryptionWave3Service implements OnApplicationBootstrap {
   private readonly logger = new Logger(EncryptionWave3Service.name);
@@ -41,12 +47,19 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
     });
     if (done) return 0;
 
-    const [providers, bookings, meetings] = [
-      await this.authProviders(),
-      await this.bookings(),
-      await this.clientMeetings(),
-    ];
-    const total = providers + bookings + meetings;
+    const stats: Stats = { encrypted: 0, raced: 0 };
+    await this.authProviders(stats);
+    await this.bookings(stats);
+    await this.clientMeetings(stats);
+
+    // Строку перезаписало приложение между чтением и записью — волна её не
+    // тронула; флаг не ставим, следующий старт дойдёт до неё.
+    if (stats.raced > 0) {
+      this.logger.warn(
+        `encryption wave3: ${stats.raced} row(s) changed mid-run, retry on next start`,
+      );
+      return stats.encrypted;
+    }
 
     const now = new Date().toISOString();
     await this.prisma.bookingSetting.upsert({
@@ -55,14 +68,12 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
       create: { key: FLAG_KEY, value: now },
     });
     this.logger.log(
-      `encryption wave3: done, ${total} rows encrypted ` +
-        `(authProvider ${providers}, booking ${bookings}, clientMeeting ${meetings})`,
+      `encryption wave3: done, ${stats.encrypted} rows encrypted`,
     );
-    return total;
+    return stats.encrypted;
   }
 
-  private async authProviders(): Promise<number> {
-    let total = 0;
+  private async authProviders(stats: Stats): Promise<void> {
     let after = 0;
     for (;;) {
       const rows = await this.prisma.authProvider.findMany({
@@ -74,7 +85,7 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
         take: BATCH,
         select: { id: true, email: true, displayName: true },
       });
-      if (rows.length === 0) return total;
+      if (rows.length === 0) return;
       for (const r of rows) {
         const email = encryptIfPlain(r.email);
         const displayName = encryptIfPlain(r.displayName);
@@ -83,14 +94,13 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
           where: { id: r.id, email: r.email, displayName: r.displayName },
           data: { email, displayName },
         });
-        total += res.count;
+        this.count(stats, res.count);
       }
       after = rows[rows.length - 1].id;
     }
   }
 
-  private async bookings(): Promise<number> {
-    let total = 0;
+  private async bookings(stats: Stats): Promise<void> {
     let after = 0;
     for (;;) {
       const rows = await this.prisma.booking.findMany({
@@ -99,7 +109,7 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
         take: BATCH,
         select: { id: true, meetingUrl: true },
       });
-      if (rows.length === 0) return total;
+      if (rows.length === 0) return;
       for (const r of rows) {
         const meetingUrl = encryptIfPlain(r.meetingUrl);
         if (meetingUrl === r.meetingUrl) continue;
@@ -107,7 +117,7 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
           where: { id: r.id, meetingUrl: r.meetingUrl },
           data: { meetingUrl },
         });
-        total += res.count;
+        this.count(stats, res.count);
       }
       after = rows[rows.length - 1].id;
     }
@@ -115,8 +125,7 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
 
   // Ключ ClientMeeting — строка (sha256 контакта): таблица маленькая (по строке
   // на клиента), читается целиком.
-  private async clientMeetings(): Promise<number> {
-    let total = 0;
+  private async clientMeetings(stats: Stats): Promise<void> {
     for (const r of await this.prisma.clientMeeting.findMany({
       select: { clientKey: true, meetingUrl: true },
     })) {
@@ -126,8 +135,12 @@ export class EncryptionWave3Service implements OnApplicationBootstrap {
         where: { clientKey: r.clientKey, meetingUrl: r.meetingUrl },
         data: { meetingUrl },
       });
-      total += res.count;
+      this.count(stats, res.count);
     }
-    return total;
+  }
+
+  private count(stats: Stats, updated: number): void {
+    if (updated > 0) stats.encrypted += updated;
+    else stats.raced++;
   }
 }

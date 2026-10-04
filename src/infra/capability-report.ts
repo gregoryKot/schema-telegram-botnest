@@ -102,6 +102,7 @@ export function buildCapabilityReport(
         'здесь это только dev/CI).',
       files: [
         'src/prisma/encryption-wave2.service.ts',
+        'src/prisma/encryption-wave3.service.ts',
         'src/utils/encrypt-migration.ts',
       ],
       critical: false,
