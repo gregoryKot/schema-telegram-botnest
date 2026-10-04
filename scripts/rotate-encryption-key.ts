@@ -17,6 +17,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { reencrypt } from '../src/utils/crypto';
+import { TARGETS } from './rotate-encryption-targets';
 
 const prisma = new PrismaClient();
 
@@ -26,130 +27,10 @@ type Row = Record<string, unknown>;
 interface Delegate {
   findMany(args: { select: Record<string, true> }): Promise<Row[]>;
   update(args: {
-    where: { id: number | string };
+    where: Record<string, number | string>;
     data: Record<string, string>;
   }): Promise<unknown>;
 }
-
-// (table prismaName, fields to rotate)
-// ПОЛНОТА этого списка проверяется тестом
-// src/utils/encryption-rotation-coverage.spec.ts — он падает, если в src/
-// появилось зашифрованное поле, которого тут нет (иначе ротация оставит его
-// под старым ключом → потеря данных при удалении ENCRYPTION_KEY_OLD).
-const TARGETS: Array<{ name: string; fields: string[] }> = [
-  { name: 'note', fields: ['text', 'tags'] },
-  {
-    name: 'userSchemaNote',
-    fields: [
-      'triggers',
-      'feelings',
-      'thoughts',
-      'origins',
-      'reality',
-      'healthyView',
-      'behavior',
-    ],
-  },
-  {
-    name: 'userModeNote',
-    fields: [
-      'triggers',
-      'feelings',
-      'thoughts',
-      'needs',
-      'behavior',
-      'modeFunction',
-      'needsMet',
-      'alias',
-      'fear',
-    ],
-  },
-  {
-    name: 'userBeliefCheck',
-    fields: ['belief', 'evidenceFor', 'evidenceAgainst', 'reframe'],
-  },
-  { name: 'userPhraseCheck', fields: ['phrase', 'rewrite'] },
-  { name: 'userLetter', fields: ['text'] },
-  { name: 'userSafePlace', fields: ['description'] },
-  { name: 'userFlashcard', fields: ['reflection', 'action'] },
-  { name: 'userPractice', fields: ['text'] },
-  { name: 'practicePlan', fields: ['practiceText'] },
-  {
-    name: 'schemaDiaryEntry',
-    fields: [
-      'trigger',
-      'emotions',
-      'thoughts',
-      'bodyFeelings',
-      'actualBehavior',
-      'schemaOrigin',
-      'healthyView',
-      'realProblems',
-      'excessiveReactions',
-      'healthyBehavior',
-      'schemaIds',
-    ],
-  },
-  {
-    name: 'modeDiaryEntry',
-    fields: [
-      'modeId',
-      'situation',
-      'thoughts',
-      'feelings',
-      'bodyFeelings',
-      'actions',
-      'actualNeed',
-      'childhoodMemories',
-      'healthyResponse',
-    ],
-  },
-  { name: 'gratitudeDiaryEntry', fields: ['items'] },
-  // DiaryDraft.data — черновик дневника (тот же клинический текст, что запись),
-  // шифруется encryptJson в api.controller. Присваивание `const data = …`, а не
-  // свойство объекта, поэтому авто-сверка его не видит (см. spec).
-  { name: 'diaryDraft', fields: ['data'] },
-  { name: 'userTask', fields: ['text'] },
-  { name: 'therapistNote', fields: ['text'] },
-  {
-    name: 'clientConceptualization',
-    // history — вложенный JSON-массив снапшотов, ротируется отдельным блоком
-    // ниже (общий цикл трогает только строковые колонки).
-    fields: [
-      'earlyExperience',
-      'unmetNeeds',
-      'triggers',
-      'copingStyles',
-      'goals',
-      'currentProblems',
-      'modeTransitions',
-      'schemaIds',
-      'modeIds',
-      'modeMapNodes',
-      'modeMapEdges',
-    ],
-  },
-  // ── Достроено аудитом 2026-07-20 (H4): целые модели, которые ротация
-  //    пропускала → при удалении ENCRYPTION_KEY_OLD их данные превращались бы
-  //    в мусор. Все перечисленные поля хранятся как зашифрованные строки
-  //    (encrypt / encryptJson), поэтому общий строковый цикл их покрывает.
-  { name: 'booking', fields: ['clientName', 'clientContact', 'message'] },
-  { name: 'donation', fields: ['email', 'comment'] },
-  { name: 'subscription', fields: ['email'] },
-  { name: 'modeMap', fields: ['title', 'nodes', 'edges'] },
-  { name: 'therapistCustomMode', fields: ['name'] },
-  {
-    name: 'therapistRequest',
-    fields: ['fullName', 'qualification', 'contacts', 'message'],
-  },
-  { name: 'therapyRelation', fields: ['virtualClientName', 'clientAlias'] },
-  // ScheduledNotification.payload — целиком зашифрованная JSON-строка
-  // (notification-payload.crypto.ts, аудит 2026-10, T1). Без этой строки после
-  // удаления ENCRYPTION_KEY_OLD неотправленные уведомления не расшифровались бы,
-  // а decryptPayload молча вернул бы null → «нечего слать». Старые строки с
-  // объектом в payload общий цикл пропускает (typeof !== 'string').
-  { name: 'scheduledNotification', fields: ['payload'] },
-];
 
 async function rotate() {
   if (!process.env.ENCRYPTION_KEY) {
@@ -159,7 +40,7 @@ async function rotate() {
   const startedAt = Date.now();
   let grand = 0;
 
-  for (const { name, fields } of TARGETS) {
+  for (const { name, fields, pk = 'id' } of TARGETS) {
     const repo = (prisma as unknown as Record<string, Delegate | undefined>)[
       name
     ];
@@ -167,7 +48,7 @@ async function rotate() {
       console.warn(`! Skipping ${name} — no Prisma model`);
       continue;
     }
-    const select: Record<string, true> = { id: true };
+    const select: Record<string, true> = { [pk]: true };
     for (const f of fields) select[f] = true;
     const rows = await repo.findMany({ select });
     let touched = 0;
@@ -184,7 +65,7 @@ async function rotate() {
       }
       if (Object.keys(patch).length > 0) {
         await repo.update({
-          where: { id: row.id as number | string },
+          where: { [pk]: row[pk] as number | string },
           data: patch,
         });
         touched++;

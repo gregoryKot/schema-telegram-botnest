@@ -171,7 +171,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'POST /api/auth/recovery/request', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/recovery/confirm', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/email/callback', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link-to-account', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/merge', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/link/:param', reason: REASON.AUTH_LOGIN },
