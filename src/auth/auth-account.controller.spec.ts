@@ -257,29 +257,104 @@ describe('AuthAccountController.emailLoginLink', () => {
   });
 });
 
-describe('AuthAccountController.emailLoginCallback', () => {
-  it('purpose="login" → cookie выставлена, редирект на /auth/callback с access_token', async () => {
+// B-14 (аудит 2026-10): GET по ссылке из письма больше НЕ гасит токен и не
+// ставит куку — почтовые сканеры и превью ссылок открывают ссылки раньше
+// человека. Гасит POST email/consume со страницы сайта.
+describe('AuthAccountController.emailLoginCallback (GET) — только редирект', () => {
+  function makeGetRes() {
+    return {
+      ...makeRes(),
+      set: jest.fn().mockReturnThis(),
+    } as unknown as Response & {
+      cookie: jest.Mock;
+      redirect: jest.Mock;
+      set: jest.Mock;
+    };
+  }
+
+  it('302 на страницу-погашение с токеном; токен НЕ гасится, кука НЕ ставится', () => {
     const { controller, emailTokens } = makeController();
-    emailTokens.consumeEmailToken.mockResolvedValue({
-      kind: 'tokens',
-      tokens: FAKE_TOKENS,
-      purpose: 'login',
-      userId: 1n,
-    });
+    const res = makeGetRes();
+    controller.emailLoginCallback('tok-1', undefined, res);
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      `${WEBAPP_URL}/auth/callback?email_token=tok-1`,
+    );
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+    // Ответ не кэшируется и не утекает токен в Referer.
+    expect(res.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'no-referrer',
+      }),
+    );
+  });
+
+  it('билет входа едет следом — сверку на странице решает человек, не сервер', () => {
+    const { controller, emailTokens } = makeController();
+    const res = makeGetRes();
+    controller.emailLoginCallback('tok-1', 'K7M2QX94', res);
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      `${WEBAPP_URL}/auth/callback?email_token=tok-1&ticket=K7M2QX94`,
+    );
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+  });
+
+  it('нет токена или токен не строка (?token=a&token=b) → экран ошибки входа', () => {
+    const { controller } = makeController();
+    const res = makeGetRes();
+    controller.emailLoginCallback(undefined, undefined, res);
+    controller.emailLoginCallback(['a', 'b'], undefined, res);
+    expect(res.redirect).toHaveBeenNthCalledWith(
+      1,
+      302,
+      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
+    );
+    expect(res.redirect).toHaveBeenNthCalledWith(
+      2,
+      302,
+      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
+    );
+  });
+});
+
+describe('AuthAccountController.emailConsume (POST)', () => {
+  it('без CSRF-заголовка → UnauthorizedException, токен не гасится', async () => {
+    const { controller, emailTokens } = makeController();
+    await expect(
+      controller.emailConsume(
+        { token: 'tok-1' },
+        makeReq({ csrf: false }),
+        makeRes(),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+  });
+
+  it('login → кука выставлена, в теле accessToken/expiresIn (без редиректа)', async () => {
+    const { controller } = makeController();
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    const body = await controller.emailConsume(
+      { token: 'tok-1' },
+      makeReq(),
+      res,
+    );
     expect(res.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       FAKE_TOKENS.refreshToken,
       expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
     );
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
+    expect(body).toEqual({
+      accessToken: FAKE_TOKENS.accessToken,
+      expiresIn: FAKE_TOKENS.expiresIn,
+    });
+    expect(res.redirect).not.toHaveBeenCalled();
   });
 
   // A3: привязка почты сессию НЕ выдаёт — человек уже вошёл в свой аккаунт.
-  it('kind="linked" → редирект на /account?linked=email, cookie НЕ ставится', async () => {
+  it('linked → { linked: true }, кука НЕ ставится', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockResolvedValue({
       kind: 'linked',
@@ -287,11 +362,10 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).resolves.toEqual({ linked: true });
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/account?linked=email`,
-    );
   });
 
   it('сервису уходит userId сессии из refresh-куки браузера', async () => {
@@ -299,7 +373,7 @@ describe('AuthAccountController.emailLoginCallback', () => {
       sessions: { [hashToken('raw-refresh')]: liveSession(7n) },
     });
     const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'raw-refresh' } });
-    await controller.emailLoginCallback('tok-1', '', req, makeRes());
+    await controller.emailConsume({ token: 'tok-1' }, req, makeRes());
     expect(emailTokens.consumeEmailToken).toHaveBeenCalledWith(
       'tok-1',
       '198.51.100.1',
@@ -310,71 +384,25 @@ describe('AuthAccountController.emailLoginCallback', () => {
 
   it('нет сессии в браузере → сервису уходит null (не undefined, не 0n)', async () => {
     const { controller, emailTokens } = makeController();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), makeRes());
+    await controller.emailConsume({ token: 'tok-1' }, makeReq(), makeRes());
     expect(emailTokens.consumeEmailToken.mock.calls[0][3]).toBeNull();
   });
 
-  describe('ссылка привязки открыта не в том браузере (A3)', () => {
-    const crossSite = { 'sec-fetch-site': 'cross-site' };
-
-    it('переход из письма (cross-site) → один отскок со своей страницы (meta-refresh), без редиректа на ошибку', async () => {
-      const { controller, emailTokens } = makeController();
-      emailTokens.consumeEmailToken.mockRejectedValue(
-        new LinkSessionRequiredException(),
-      );
-      const res = Object.assign(makeRes(), {
-        status: jest.fn().mockReturnThis(),
-        set: jest.fn().mockReturnThis(),
-        type: jest.fn().mockReturnThis(),
-        send: jest.fn().mockReturnThis(),
-      });
-      const req = makeReq({
-        headers: crossSite,
-        query: { token: 'tok-1', ticket: '' },
-      });
-      await controller.emailLoginCallback('tok-1', '', req, res);
-      expect(res.redirect).not.toHaveBeenCalled();
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining('http-equiv="refresh"'),
-      );
-      expect(res.send).toHaveBeenCalledWith(
-        expect.stringContaining('token=tok-1&amp;b=1'),
-      );
-    });
-
-    it('после отскока (b=1) сессии всё ещё нет → понятная ошибка, без цикла', async () => {
-      const { controller, emailTokens } = makeController();
-      emailTokens.consumeEmailToken.mockRejectedValue(
-        new LinkSessionRequiredException(),
-      );
-      const res = makeRes();
-      const req = makeReq({
-        headers: crossSite,
-        query: { token: 'tok-1', b: '1' },
-      });
-      await controller.emailLoginCallback('tok-1', '', req, res);
-      expect(res.redirect).toHaveBeenCalledWith(
-        `${WEBAPP_URL}/account?error=email_link_session`,
-      );
-      expect(res.cookie).not.toHaveBeenCalled();
-    });
-
-    it('same-site запрос без сессии → сразу ошибка, без отскока', async () => {
-      const { controller, emailTokens } = makeController();
-      emailTokens.consumeEmailToken.mockRejectedValue(
-        new LinkSessionRequiredException(),
-      );
-      const res = makeRes();
-      await controller.emailLoginCallback('tok-1', '', makeReq(), res);
-      expect(res.redirect).toHaveBeenCalledWith(
-        `${WEBAPP_URL}/account?error=email_link_session`,
-      );
-    });
+  it('ссылка привязки открыта не в том браузере (A3) → ошибка пробрасывается (страница покажет подсказку), кука не ставится', async () => {
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockRejectedValue(
+      new LinkSessionRequiredException(),
+    );
+    const res = makeRes();
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).rejects.toThrow(LinkSessionRequiredException);
+    expect(res.cookie).not.toHaveBeenCalled();
   });
 
   // H1 (аудит 2026-08): login при включённом TOTP не выдаёт сессию сразу —
   // клиент уходит на экран ввода 2FA-кода с одноразовым challengeToken.
-  it('kind="totp_challenge" → редирект на /auth/2fa с challengeToken, cookie НЕ выставлена', async () => {
+  it('totp_challenge → { challengeToken }, кука НЕ выставлена', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockResolvedValue({
       kind: 'totp_challenge',
@@ -383,24 +411,20 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).resolves.toEqual({ challengeToken: 'ch-tok' });
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
-    );
   });
 
-  it('просроченный/невалидный токен → редирект на /auth/error, без cookie', async () => {
+  it('просроченный/невалидный токен → ошибка пробрасывается, без cookie', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
-      controller.emailLoginCallback('bad-tok', '', makeReq(), res),
-    ).resolves.toBeUndefined();
+      controller.emailConsume({ token: 'bad-tok' }, makeReq(), res),
+    ).rejects.toThrow('expired');
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
-    );
   });
 });
 
@@ -807,33 +831,5 @@ describe('AuthAccountController — билет входа в email-флоу', ()
       makeReq(),
     );
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
-  });
-
-  it('переход по ссылке с билетом уводит на сверку, а НЕ одобряет молча', async () => {
-    // Фикс device-code phishing (разбор 2026-08-31): код в письме мог
-    // подставить кто угодно, поэтому билет подтверждает человек на
-    // /auth/confirm, а не сервер в callback.
-    const { controller } = makeController();
-    const res = makeRes();
-    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
-    const url = (res.redirect as jest.Mock).mock.calls[0][0];
-    expect(url).toContain('/auth/confirm?code=K7M2QX94');
-    // Сессия для браузера всё равно выдана — вход по ссылке состоялся.
-    expect(url).toContain(`access_token=${FAKE_TOKENS.accessToken}`);
-    expect(url).not.toContain('/auth/callback');
-  });
-
-  it('без билета — обычный приём сессии на /auth/callback', async () => {
-    const { controller } = makeController();
-    const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
-    expect(res.cookie).toHaveBeenCalledWith(
-      REFRESH_COOKIE,
-      FAKE_TOKENS.refreshToken,
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
   });
 });
