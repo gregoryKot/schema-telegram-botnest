@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { BookingPicker } from '../../components/BookingPicker';
+import { lazy, Suspense, useState } from 'react';
 import { linkBtn } from '../../components/booking/linkButtonStyle';
 import { OPERATOR_EMAIL } from '../../legal/operator';
 import { trackGoalOnce } from '../../lib/metrika';
 import { BookingForm } from './BookingForm';
 import { TgLink } from './nav';
+
+// Лениво: пикер слотов (и его экраны оплаты/результата) не нужен, пока
+// посетитель не открыл расписание — в главный чанк сайта он не попадает.
+const BookingPicker = lazy(() => import('../../components/BookingPicker').then((m) => ({ default: m.BookingPicker })));
 
 function NoSlotsNote({ onWrite }: { onWrite: () => void }) {
   return (
@@ -25,7 +28,11 @@ export function BookingEntry() {
 
   if (mode === 'slots') {
     const toWrite = () => setMode('write');
-    return <BookingPicker onWriteInstead={toWrite} fallback={<NoSlotsNote onWrite={toWrite} />} />;
+    return (
+      <Suspense fallback={<p style={{ color: 'var(--text-faint)', fontSize: 15, padding: '24px 0' }}>Загружаю свободное время…</p>}>
+        <BookingPicker onWriteInstead={toWrite} fallback={<NoSlotsNote onWrite={toWrite} />} />
+      </Suspense>
+    );
   }
 
   return (
