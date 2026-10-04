@@ -2,15 +2,13 @@
 // чистым модулем: здесь сетевая логика JWKS, её тестировать проще без Nest.
 //
 // Инцидент 2026-08-04: с хостинга перестал резолвиться googleapis.com — вход
-// через Google падал с «Google id_token JWT verification failed: fetch failed».
-// Обмен кода на токен при этом проходил (у него уже был fallback на
-// accounts.google.com), а вот JWKS живёт ТОЛЬКО на googleapis.com — запасного
-// адреса у него нет, и подпись проверить было нечем.
+// через Google падал с «fetch failed». Обмен кода проходил (fallback на
+// accounts.google.com), а JWKS живёт ТОЛЬКО на googleapis.com.
 //
-// Что делаем, когда JWKS недостижим: проверяем claims офлайн (iss/aud/exp) и
-// принимаем токен. Безопасность держится на канале: id_token приходит не от
-// браузера, а нашим же POST'ом на токен-эндпоинт Google по TLS с client_secret,
-// так что происхождение токена уже доказано — подпись здесь второй рубеж.
+// Когда JWKS недостижим: проверяем claims офлайн (iss/aud/exp) и принимаем
+// токен. Безопасность держится на канале: id_token приходит нашим же POST'ом на
+// токен-эндпоинт Google по TLS с client_secret — подпись здесь второй рубеж.
+// Токен от браузера (One Tap) так принимать нельзя: см. google-one-tap-nonce.ts.
 // Документация Google говорит то же самое: токен, полученный напрямую от
 // Google по HTTPS, разрешено принимать без проверки подписи. Ослабление
 // включается ТОЛЬКО на сетевом сбое: подделанная подпись, чужой aud и
@@ -32,6 +30,8 @@ export interface GoogleIdTokenClaims {
   email?: string;
   name?: string;
   emailVerified: boolean;
+  /** Claim `nonce` (One Tap: привязка токена к браузеру). */
+  nonce?: string;
   /** Подпись проверить не удалось — JWKS недостижим, claims проверены офлайн. */
   offline: boolean;
 }
@@ -77,6 +77,7 @@ function toClaims(payload: JWTPayload, offline: boolean): GoogleIdTokenClaims {
     email: typeof email === 'string' ? email : undefined,
     name: typeof name === 'string' ? name : undefined,
     emailVerified: payload['email_verified'] === true,
+    nonce: typeof payload['nonce'] === 'string' ? payload['nonce'] : undefined,
     offline,
   };
 }
