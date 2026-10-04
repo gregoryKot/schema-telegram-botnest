@@ -18,7 +18,9 @@ beforeEach(() => {
   consumeReply = json(200, { accessToken: 'AT', expiresIn: 900 });
   // AuthProvider при старте сам дёргает refresh — отвечаем 401; consume — по сценарию.
   fetchMock = vi.fn((url: string) =>
-    Promise.resolve(String(url).endsWith('/email/consume') ? consumeReply : json(401, {})),
+    Promise.resolve(
+      String(url).endsWith('/email/consume') ? consumeReply : json(401, {}),
+    ),
   );
   vi.stubGlobal('fetch', fetchMock);
   sessionStorage.clear();
@@ -55,7 +57,7 @@ const consumeCalls = () =>
 describe('AuthCallback ← ссылка из письма (?email_token)', () => {
   it('показывает «Входим…», гасит токен одним POST, стирает его из адреса, ведёт на /today', async () => {
     renderPage('?email_token=raw-1');
-    expect(screen.getByText('Входим…')).toBeTruthy();
+    expect(await screen.findByText('Входим…')).toBeTruthy();
     await screen.findByText('at:/today');
     expect(consumeCalls()).toHaveLength(1);
     expect(JSON.parse(consumeCalls()[0][1].body)).toEqual({ token: 'raw-1' });
@@ -64,7 +66,9 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
 
   it('с билетом входа → экран сверки /auth/confirm, а не молчаливое одобрение', async () => {
     renderPage('?email_token=raw-1&ticket=K7M2QX94');
-    await screen.findByText(/at:\/auth\/confirm\?code=K7M2QX94#access_token=AT/);
+    await screen.findByText(
+      /at:\/auth\/confirm\?code=K7M2QX94#access_token=AT/,
+    );
   });
 
   it('аккаунт с 2FA → /auth/2fa?token=…', async () => {
@@ -93,7 +97,9 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
 
   it('контрольный: без ?email_token POST не уходит (это обычный OAuth-колбэк)', async () => {
     renderPage('');
-    await waitFor(() => expect(screen.getByText(/at:\/login\?error=no_token/)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText(/at:\/login\?error=no_token/)).toBeTruthy(),
+    );
     expect(consumeCalls()).toHaveLength(0);
   });
 });
