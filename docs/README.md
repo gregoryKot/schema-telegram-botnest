@@ -52,10 +52,11 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 - **Владельцу:** `scripts/backup-to-b2.sh` никто не запускает (D-2) — нет
   крона/`@Cron`, нет `B2_*` в реестре env; нужен планировщик, отдельный ключ
   бэкапа, retention, проба самопроверки «последний бэкап < 36 ч».
-- Веб-номера `userId` (≥ 1e18) округляются `Number()`/`BigInt.toJSON` в
-  `therapy-relations.service.ts`, `mode-maps.service.ts`, `pairs.service.ts`,
-  `therapy-tasks-view.service.ts` — терапия и пары для Google/VK/MAX-клиентов
-  не работают (X-1). Фикс — строковые id до обоих фронтов, отдельный PR.
+- Ссылка «написать в Telegram» (`tg://user?id=${partnerId}` в
+  `shared/src/utils/therapistContact.ts`, `TodaySection.tsx`, `PartnerCard.tsx`)
+  собирается из id связи, а у веб-партнёра (Google/VK/MAX/почта) это не
+  Telegram-id — ссылка ведёт в никуда. Доказано чтением: id веб-аккаунта лежит
+  в [1e18, 9e18). Нужно решение: прятать ссылку, если у партнёра нет Telegram.
 - TOTP не спрашивается при входе через initData и при одобрении привязки в
   мессенджере (B-12); удаление аккаунта и экспорт без повторной аутентификации
   (B-13) — решения владельца.

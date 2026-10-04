@@ -86,7 +86,7 @@ describe('T4 — getTasksForClient: -id связи реального клиен
       [realRel],
       [task(-7n, 'чужое теневое задание')],
     );
-    expect(await service.getTasksForClient(T1, -7)).toBeNull();
+    expect(await service.getTasksForClient(T1, -7n)).toBeNull();
   });
 
   it('настоящий виртуальный клиент по-прежнему получает свои задания', async () => {
@@ -98,7 +98,7 @@ describe('T4 — getTasksForClient: -id связи реального клиен
       virtualClientName: encrypt('Офлайн'),
     };
     const service = makeService([virtual], [task(-8n, 'своё задание')]);
-    const res = await service.getTasksForClient(T1, -8);
+    const res = await service.getTasksForClient(T1, -8n);
     expect(res?.map((t) => t.text)).toEqual(['своё задание']);
   });
 });
@@ -131,7 +131,7 @@ describe('T7 — getAllTasksForTherapist расшифровывает имена
     const names = Object.fromEntries(
       res.map((r) => [r.clientId, r.clientName]),
     );
-    expect(names[Number(CLIENT)]).toBe('Аня (алиас)');
+    expect(names[String(CLIENT)]).toBe('Аня (алиас)');
     expect(names[-2]).toBe('Офлайн Борис');
     expect(JSON.stringify(res.map((r) => r.clientName))).not.toContain('ENC(');
   });

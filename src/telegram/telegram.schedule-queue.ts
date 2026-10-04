@@ -32,9 +32,9 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
   if (due.length === 0) return;
   logger.log(`Processing ${due.length} due notifications`);
 
-  const sendSettings = await accountService.getSendSettingsFor(
-    [...new Set(due.map((n) => n.userId))].map((id) => BigInt(id)),
-  );
+  const sendSettings = await accountService.getSendSettingsFor([
+    ...new Set(due.map((n) => n.userId)),
+  ]);
   const noAddress: string[] = [];
 
   for (const notif of due) {

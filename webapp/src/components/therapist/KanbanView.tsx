@@ -1,13 +1,13 @@
-import type { UserTask } from '../../api';
+import type { UserTask, UserId } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 
 interface Props {
-  allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
+  allTasks: { clientId: UserId; clientName: string; tasks: UserTask[] }[] | null;
   loading: boolean;
   loadFailed: boolean;
   onRetry: () => void;
-  onOpenClient: (clientId: number) => void;
+  onOpenClient: (clientId: UserId) => void;
 }
 
 export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClient }: Props) {

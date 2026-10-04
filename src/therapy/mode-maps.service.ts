@@ -24,10 +24,10 @@ export class ModeMapsService {
 
   // ─── Mode Maps ───────────────────────────────────────────────────────────────
 
-  async listModeMaps(therapistId: bigint, clientId: number) {
+  async listModeMaps(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const rows = await this.prisma.modeMap.findMany({
-      where: { therapistId, clientId: BigInt(clientId) },
+      where: { therapistId, clientId },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
@@ -53,14 +53,14 @@ export class ModeMapsService {
     // не только на листинге), догоняем активность связи здесь же.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((row as { clientId: bigint }).clientId),
+      (row as { clientId: bigint }).clientId,
     );
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
   async createModeMap(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     title: string,
     kind?: string,
   ) {
@@ -71,7 +71,7 @@ export class ModeMapsService {
     const row = await this.prisma.modeMap.create({
       data: {
         therapistId,
-        clientId: BigInt(clientId),
+        clientId,
         kind: k,
         ...encryptRecord({ title }, MODE_MAP_SCHEMA),
       },
@@ -97,7 +97,7 @@ export class ModeMapsService {
     // связи, симметрично для записи.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((existing as { clientId: bigint }).clientId),
+      (existing as { clientId: bigint }).clientId,
     );
     const fields: Record<string, unknown> = {};
     if (body.title !== undefined) fields.title = body.title;
@@ -120,7 +120,7 @@ export class ModeMapsService {
     // связи, симметрично для удаления.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((existing as { clientId: bigint }).clientId),
+      (existing as { clientId: bigint }).clientId,
     );
     await this.prisma.modeMap.delete({ where: { id: mapId } });
   }

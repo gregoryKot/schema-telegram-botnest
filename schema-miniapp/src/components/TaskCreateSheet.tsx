@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { api } from '../api';
+import { api, type UserId } from '../api';
 import { ALL_MODES } from '../schemaTherapyData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
@@ -22,7 +22,7 @@ import { TaskTypeSelector } from './taskCreate/TaskTypeSelector';
 export type { TaskType };
 
 interface Props {
-  clientId?: number;
+  clientId?: UserId;
   clientName?: string;
   defaultType?: TaskType;
   onCreated: () => void;

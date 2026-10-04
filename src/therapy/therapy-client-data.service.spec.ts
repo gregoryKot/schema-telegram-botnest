@@ -163,7 +163,7 @@ const T1 = 100n; // терапевт-владелец связи с CLIENT_A
 const T2 = 200n; // чужой терапевт — не должен видеть данные CLIENT_A
 const CLIENT_A = 555n;
 const CLIENT_B = 777n;
-const CID_A = Number(CLIENT_A);
+const CID_A = CLIENT_A;
 const relA: Rel = {
   id: 1,
   therapistId: T1,
@@ -363,13 +363,13 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
 
   it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {
     const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
-    await svc.removeClient(T1, -3);
+    await svc.removeClient(T1, -3n);
     expect(rels).toHaveLength(0);
   });
 
   it('removeClient с отрицательным id связи с РЕАЛЬНЫМ клиентом — no-op (иначе заметки остались бы сиротами)', async () => {
     const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
-    await svc.removeClient(T1, -1);
+    await svc.removeClient(T1, -1n);
     expect(rels).toHaveLength(1);
   });
 
@@ -380,7 +380,7 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
       { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
       { id: 3, userId: -3n, assignedBy: T2 }, // не от этого терапевта
     );
-    await svc.removeClient(T1, -3);
+    await svc.removeClient(T1, -3n);
     expect(tasks.map((t) => t.id)).toEqual([2, 3]);
   });
 
@@ -401,7 +401,7 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
       { id: 1, therapistId: T1, clientId: -3n },
       { id: 2, therapistId: T1, clientId: -2n },
     );
-    await svc.removeClient(T1, -3);
+    await svc.removeClient(T1, -3n);
     expect(modeMaps.map((m) => m.id)).toEqual([2]);
   });
 
@@ -576,7 +576,7 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
 
   it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {
     const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
-    await svc.updateSessionInfo(T1, -3, { nextSession: '2026-09-01' });
+    await svc.updateSessionInfo(T1, -3n, { nextSession: '2026-09-01' });
     expect((rels[0] as any).nextSession).toBe('2026-09-01');
   });
 
@@ -586,7 +586,7 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
     const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
     const before = (rels[0] as any).nextSession; // relA — общий объект, мог быть изменён раньше
     await expect(
-      svc.updateSessionInfo(T1, -1, { nextSession: '2026-09-01' }),
+      svc.updateSessionInfo(T1, -1n, { nextSession: '2026-09-01' }),
     ).rejects.toThrow('No active relation');
     expect((rels[0] as any).nextSession).toBe(before);
   });

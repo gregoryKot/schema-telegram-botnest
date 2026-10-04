@@ -222,7 +222,7 @@ describe('TherapyConnectionController.getClients / removeClient', () => {
   it('removeClient: терапевт → делегирует removeClient(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.removeClient(makeReq(3n), '9');
-    expect(clientData.removeClient).toHaveBeenCalledWith(3n, 9);
+    expect(clientData.removeClient).toHaveBeenCalledWith(3n, 9n);
     expect(res).toEqual({ ok: true });
   });
 });
@@ -261,7 +261,7 @@ describe('TherapyConnectionController.renameClient', () => {
     const res = await controller.renameClient(makeReq(3n), '5', {
       alias: 'Клиент А',
     });
-    expect(relations.renameClient).toHaveBeenCalledWith(3n, 5, 'Клиент А');
+    expect(relations.renameClient).toHaveBeenCalledWith(3n, 5n, 'Клиент А');
     expect(res).toEqual({ ok: true });
   });
 });

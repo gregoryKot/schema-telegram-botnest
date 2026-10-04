@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../api';
 import type { TherapyClientSummary } from '../../api';
-
+import { sameId } from '../../../../shared/src/utils/sameId';
 // Редактирование данных сессий (дата старта, следующая встреча, дни недели)
 // и имени-алиаса клиента. Вынесено из useClientDetail.ts (правило №10);
 // публичная форма возврата хука-фасада не изменилась.
@@ -57,7 +57,7 @@ export function useSessionAliasEditing({
       setSelectedClient(updated);
       setClients((prev) =>
         prev.map((c) =>
-          c.telegramId === selectedClient.telegramId ? updated : c,
+          sameId(c.telegramId, selectedClient.telegramId) ? updated : c,
         ),
       );
       setRenamingAlias(false);
@@ -84,7 +84,7 @@ export function useSessionAliasEditing({
       setSelectedClient(updated);
       setClients((prev) =>
         prev.map((c) =>
-          c.telegramId === selectedClient.telegramId ? updated : c,
+          sameId(c.telegramId, selectedClient.telegramId) ? updated : c,
         ),
       );
     } catch {

@@ -93,7 +93,13 @@ describe('processQueue / runProcessQueue', () => {
 
   it('тихие часы у получателя — уведомление откладывается (defer), не отправляется', async () => {
     const due = [
-      { id: 1, userId: 1, type: 'reminder', payload: null, sendAt: new Date() },
+      {
+        id: 1,
+        userId: 1n,
+        type: 'reminder',
+        payload: null,
+        sendAt: new Date(),
+      },
     ];
     const sendSettings = new Map([
       ['1', { tz: 'Europe/Moscow', start: 22, end: 8, form: 'ty', chatId: 1n }],
@@ -113,7 +119,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 2,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'итог дня' },
         sendAt: new Date(),
@@ -138,7 +144,7 @@ describe('processQueue / runProcessQueue', () => {
 
   it('нет шаблона для типа (no text в payload) — помечает отправленным, не шлёт', async () => {
     const due = [
-      { id: 3, userId: 1, type: 'summary', payload: null, sendAt: new Date() },
+      { id: 3, userId: 1n, type: 'summary', payload: null, sendAt: new Date() },
     ];
     const { service, bot, notificationService } = makeService({ due });
     await service.processQueue();
@@ -154,7 +160,13 @@ describe('processQueue / runProcessQueue', () => {
         throw new Error('template crashed');
       });
     const due = [
-      { id: 99, userId: 1, type: 'summary', payload: null, sendAt: new Date() },
+      {
+        id: 99,
+        userId: 1n,
+        type: 'summary',
+        payload: null,
+        sendAt: new Date(),
+      },
     ];
     const { service, bot, notificationService } = makeService({ due });
     await expect(service.processQueue()).resolves.toBeUndefined();
@@ -169,7 +181,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 4,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -190,7 +202,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 5,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -217,7 +229,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 6,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -249,14 +261,14 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 7,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'первое' },
         sendAt: new Date(),
       },
       {
         id: 8,
-        userId: 2,
+        userId: 2n,
         type: 'summary',
         payload: { text: 'второе' },
         sendAt: new Date(),
@@ -289,7 +301,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 9,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'x' },
         sendAt: new Date(),
@@ -314,7 +326,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 10,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'x' },
         sendAt: new Date(),
@@ -414,7 +426,7 @@ describe('кому писать некуда', () => {
   it('адрес спрашивается ОДИН раз на тик, а не на каждое уведомление', async () => {
     const due = [1, 2, 3].map((id) => ({
       id,
-      userId: 1,
+      userId: 1n,
       type: 'summary',
       payload: { text: 'итог' },
       sendAt: new Date(),
@@ -434,7 +446,7 @@ describe('разные причины «писать больше нельзя»
   const due = (id: number) => [
     {
       id,
-      userId: 1,
+      userId: 1n,
       type: 'summary',
       payload: { text: 'итог' },
       sendAt: new Date(),

@@ -1,6 +1,7 @@
 import { BottomSheet } from '../BottomSheet';
 import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { SCHEMA_DOMAINS, ALL_SCHEMAS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
@@ -14,7 +15,6 @@ interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
 }
-
 export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   const {
     concept,
@@ -80,7 +80,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           )}
         </div>
         <ConceptHistoryPanel detail={detail} />
-        {selectedClient.telegramId > 0 && (
+        {!isVirtualId(selectedClient.telegramId) && (
           <div className="u-mb12">
             <button
               onClick={handleRequestYsq}

@@ -5,7 +5,7 @@ import {
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
-import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
+import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
 import { api } from '../api';
 import { NODE_TYPES } from './modeMapRegistry';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
@@ -33,7 +33,7 @@ import {
 import { DownloadMenu } from './modeMap/DownloadMenu';
 
 export interface CanvasProps {
-  clientId: number; mapId: number; kind: ModeMapKind;
+  clientId: UserId; mapId: number; kind: ModeMapKind;
   nodes: FlowNode[]; edges: FlowEdge[];
   setNodes: ReturnType<typeof useNodesState<FlowNode>>[1];
   setEdges: ReturnType<typeof useEdgesState<FlowEdge>>[1];

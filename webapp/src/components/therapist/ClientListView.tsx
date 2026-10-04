@@ -1,7 +1,8 @@
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { api } from '../../api';
-import type { TherapyClientSummary, UserTask } from '../../api';
+import type { TherapyClientSummary, UserTask, UserId } from '../../api';
+import { sameId } from '../../../../shared/src/utils/sameId';
 // Не todayStr(): дни клиентов приезжают из API календарными (полночь UTC),
 // и локальная дата машины с ними не совпадает в половине зон — см. шапку
 // shared/src/utils/calendarDate.ts.
@@ -12,8 +13,7 @@ import { indexColor, isVirtualClient } from './clientSheetHelpers';
 import { RosterRow, WELLBEING_HINT } from './RosterRow';
 import { filterRoster, sortRoster } from './rosterModel';
 import type { useAddClient } from './useAddClient';
-
-type AllTasks = { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
+type AllTasks = { clientId: UserId; clientName: string; tasks: UserTask[] }[] | null;
 
 interface Props {
   animKey: number;
@@ -172,7 +172,7 @@ export function ClientListView({
             loadFailed={allTasksFailed}
             onRetry={loadAllTasks}
             onOpenClient={(clientId) => {
-              const client = clients.find(c => c.telegramId === clientId);
+              const client = clients.find(c => sameId(c.telegramId, clientId));
               if (client) openClient(client);
             }}
           />

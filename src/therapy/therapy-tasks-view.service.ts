@@ -27,7 +27,7 @@ export class TherapyTasksViewService {
     // -rel.id (см. getTasksForClient). Общий helper — для запроса ниже
     // и для группировки результата по конкретной связи.
     const userIdOf = (rel: (typeof relations)[number]) =>
-      rel.client ? rel.client.id : BigInt(-rel.id);
+      rel.client ? rel.client.id : -BigInt(rel.id);
 
     // Один запрос по всем userId вместо findMany в цикле — было N+1 (D2).
     // Группировка по точному userId (не userId: { lt: 0 }, который матчил
@@ -49,13 +49,13 @@ export class TherapyTasksViewService {
     }
 
     const results: Array<{
-      clientId: number;
+      clientId: bigint;
       clientName: string;
       tasks: Record<string, unknown>[];
     }> = [];
 
     for (const rel of relations) {
-      const clientId = rel.client ? Number(rel.client.id) : -rel.id;
+      const clientId = userIdOf(rel);
       // clientAlias и virtualClientName лежат зашифрованными (PII) — без
       // decrypt терапевт увидел бы в кабинете base64 вместо имени (T7).
       const alias = decrypt(rel.clientAlias);
@@ -81,7 +81,7 @@ export class TherapyTasksViewService {
     return results;
   }
 
-  async getTasksForClient(therapistId: bigint, clientId: number) {
+  async getTasksForClient(therapistId: bigint, clientId: bigint) {
     // Одна граница доступа на весь therapy-контур (в том числе виртуальная
     // ветка с clientId: null, T4) — своей копии проверки здесь нет. Нет связи
     // → null, контроллер отвечает 403.
@@ -91,21 +91,21 @@ export class TherapyTasksViewService {
       if (e instanceof Error && e.message === 'No active relation') return null;
       throw e;
     }
-    if (clientId < 0) {
+    if (clientId < 0n) {
       const tasks = await this.prisma.userTask.findMany({
-        where: { userId: BigInt(clientId), assignedBy: therapistId },
+        where: { userId: clientId, assignedBy: therapistId },
         orderBy: { createdAt: 'desc' },
       });
       return tasks.map((task) => ({
         ...task,
         text: decrypt(task.text) ?? task.text,
         userId: clientId,
-        assignedBy: Number(therapistId),
+        assignedBy: therapistId,
         doneToday: undefined,
         progress: undefined,
       }));
     }
-    const uid = BigInt(clientId);
+    const uid = clientId;
     const now = new Date();
     const settings = await this.prisma.user.findUnique({
       where: { id: uid },
@@ -160,8 +160,8 @@ export class TherapyTasksViewService {
         return {
           ...task,
           text: decrypt(task.text) ?? task.text,
-          userId: Number(uid),
-          assignedBy: task.assignedBy ? Number(task.assignedBy) : null,
+          userId: uid,
+          assignedBy: task.assignedBy ?? null,
           doneToday,
           progress,
         };

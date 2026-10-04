@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api } from '../api';
+import { api, type UserId } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
@@ -12,7 +12,7 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
-interface Props { clientId?: number; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
+interface Props { clientId?: UserId; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
 
 const STREAK_OPTIONS = [3, 7, 14, 30];
 

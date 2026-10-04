@@ -55,7 +55,7 @@ export function verifiedJwtSubject(
 }
 
 export interface TrackerRequest {
-  telegramUserId?: number;
+  webUser?: { userId: bigint };
   ip?: string;
   headers?: Record<string, string | string[] | undefined>;
 }
@@ -70,9 +70,9 @@ export function resolveTracker(
   req: TrackerRequest,
   secrets: TrackerSecrets,
 ): string {
-  // Ставится TelegramAuthGuard'ом, который идёт ПОСЛЕ этого гарда, — значит
-  // на первом проходе поля нет. Оставлено на случай повторной проверки.
-  if (req.telegramUserId) return `uid:${req.telegramUserId}`;
+  // Ставится TelegramAuthGuard'ом ПОСЛЕ этого гарда — на первом проходе поля нет.
+  // Точный bigint, не Number: веб-id > 2^53 округлялись и делили бакет (X-1).
+  if (req.webUser) return `uid:${req.webUser.userId.toString()}`;
 
   const header = (name: string): string | undefined => {
     const value = req.headers?.[name];

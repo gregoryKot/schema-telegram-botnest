@@ -1,10 +1,10 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
+import { idBucket } from '../../../../shared/src/utils/sameId';
 import { fmtDate } from '../../utils/format';
 import { indexColor } from './helpers';
 import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { RosterSparkline } from '../../../../shared/src/components/Sparklines';
-
 // Строка клиента в списке терапевта (аватар, активность, спарклайн индекса,
 // индекс дня). Вынесено из ClientListView.tsx (правило №10).
 export function ClientCard({
@@ -34,8 +34,7 @@ export function ClientCard({
     'var(--accent-orange)',
     'var(--accent-yellow)',
   ];
-  const avatarColor =
-    avatarColors[Math.abs(c.telegramId) % avatarColors.length];
+  const avatarColor = avatarColors[idBucket(c.telegramId, avatarColors.length)];
   return (
     <div
       {...pressable(() => onOpen(c))}

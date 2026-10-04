@@ -398,16 +398,25 @@ plaintext в очереди уведомлений. Нумерация: букв
 
 ### Сквозное
 
-#### X-1 · Веб-номера `userId` (≥ 1e18) не помещаются в `Number` ⚠️ Открыто
-- **Severity:** Medium (доступность, не утечка). `WEB_USER_ID_MIN = 1e18 >
-  2^53`; глобальный `BigInt.prototype.toJSON → Number` и `Number(clientId)` в
-  `therapy-relations.service.ts`, `mode-maps.service.ts`, `pairs.service.ts`,
-  `therapy-tasks-view.service.ts` округляют id клиента, вошедшего через
-  Google/VK/MAX/почту. Психолог видит округлённый id, следующий запрос с ним
-  не проходит `assertRelation` → терапия и пары для веб-клиентов не работают.
-  Столкновение с чужим id практически невероятно (шаг 128 на диапазон 8e18),
-  поэтому не утечка. Фикс — id как строки от БД до фронтов (оба фронта,
-  правило №3), отдельный PR.
+#### X-1 · Веб-номера `userId` (≥ 1e18) не помещаются в `Number` ✅ Закрыто
+- **Было:** `WEB_USER_ID_MIN = 1e18 > 2^53`; глобальный `BigInt.prototype.toJSON →
+  Number` и `Number(clientId)` в therapy/pairs округляли id клиента, вошедшего
+  через Google/VK/MAX/почту. Психолог видел округлённый id, следующий запрос с
+  ним не проходил `assertRelation` — терапия и пары для веб-клиентов не
+  работали. Тот же класс: `parseId` (≤ 16 цифр), `DueNotification.userId`
+  (адрес уведомления искался по округлённому id), бакет троттлера
+  (`uid:${Number}` склеивал соседние веб-аккаунты).
+- **Стало:** id идут точными от БД до фронтов. `src/utils/bigint-json.ts` —
+  число, если влезает в ±2^53, иначе десятичная строка; `parseUserId`/
+  `parseClientId` (`src/api/parse-user-id.ts`) отдают bigint; весь
+  therapy/pairs-контур и `DueNotification` — bigint; `clientId` в теле
+  `POST /api/therapy/tasks` — строка (`ClientIdField`). Фронтенды: тип
+  `UserId = number | string` (`shared/src/userId.ts`), сравнения через
+  `sameId`, id маршрута `/cabinet/:clientId` не приводится к числу.
+- **Держит:** `test/therapy-web-client.e2e-spec.ts` (HTTP через настоящий
+  AppModule, на фейковой Prisma и на живом Postgres, джоба `migrations`):
+  invite → join → список клиентов с точной строкой → заметки/client-data/
+  задачи → пары; соседний id (`Number` их склеивает) получает 403.
 
 #### X-2 · Зависимости ✅ Закрыто
 - `npm audit --omit=dev`: fast-uri, multer (через `@nestjs/platform-express`

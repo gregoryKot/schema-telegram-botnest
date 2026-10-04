@@ -19,10 +19,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export async function removeTherapistClient(
   prisma: PrismaService,
   therapistId: bigint,
-  clientId: number,
+  cid: bigint,
 ): Promise<void> {
-  const cid = BigInt(clientId);
-  const virtual = clientId < 0;
+  const virtual = cid < 0n;
   await prisma.$transaction([
     prisma.therapistNote.deleteMany({ where: { therapistId, clientId: cid } }),
     prisma.clientConceptualization.deleteMany({
@@ -38,7 +37,7 @@ export async function removeTherapistClient(
       : []),
     prisma.therapyRelation.deleteMany({
       where: virtual
-        ? { id: -clientId, therapistId, clientId: null }
+        ? { id: Number(-cid), therapistId, clientId: null }
         : { therapistId, clientId: cid },
     }),
   ]);

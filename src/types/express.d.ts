@@ -9,6 +9,7 @@ declare global {
   namespace Express {
     interface Request {
       webUser?: { userId: bigint };
+      /** Только совместимость: для веб-id (> 2^53) округлён. Не для поиска — `uid(req)`. */
       telegramUserId?: number;
       telegramFirstName?: string;
     }

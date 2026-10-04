@@ -116,8 +116,8 @@ export class TherapyTasksService {
         return {
           ...task,
           text: decrypt(task.text) ?? task.text,
-          userId: Number(uid),
-          assignedBy: task.assignedBy ? Number(task.assignedBy) : null,
+          userId: uid,
+          assignedBy: task.assignedBy ?? null,
           doneToday,
           progress,
         };

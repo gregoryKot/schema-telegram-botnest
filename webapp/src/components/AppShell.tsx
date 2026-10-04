@@ -16,7 +16,6 @@ import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
-
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
@@ -31,6 +30,7 @@ const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ defaul
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 
 import type { StreakData } from '../api';
+import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
@@ -64,7 +64,7 @@ export function AppShell() {
   const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
 
   const therapistMode = location.pathname.startsWith('/cabinet');
-  const openClientId = clientIdParam ? parseInt(clientIdParam, 10) : null;
+  const openClientId = parseRouteUserId(clientIdParam);
 
   // Remember last path per mode so the toggle returns user to where they were
   useEffect(() => {

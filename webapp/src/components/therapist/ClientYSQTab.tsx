@@ -1,7 +1,7 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
-
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
 interface Props {
   clientData: ClientData | null;
   selectedClient: TherapyClientSummary;
@@ -20,7 +20,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
       <div className="page-inner-wide u-pt40">
         <div style={{ padding: '80px 0', textAlign: 'center' }}>
           <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
-          {selectedClient.telegramId < 0 ? (
+          {isVirtualId(selectedClient.telegramId) ? (
             <div className="u-faint13">Клиент без Telegram – YSQ недоступен</div>
           ) : (
             <>
@@ -79,7 +79,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           <button onClick={handleExport} style={{ padding: '8px 16px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}
           </button>
-          {selectedClient.telegramId >= 0 && (
+          {!isVirtualId(selectedClient.telegramId) && (
             <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 'var(--r-6)', border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               {ysqRequested ? '✓ Запрос отправлен' : 'Запросить повтор'}
             </button>

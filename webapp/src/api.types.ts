@@ -1,10 +1,10 @@
-// Типы API webapp (зеркало бэкенда, ранее инлайном в api.ts).
-// Вынесено из api.ts (правило №10).
+// Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10).
 // Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
 // только ре-экспорт. ConceptSnapshot ещё и импортируется: на него ссылается
 // локальный ClientConceptualization (в webapp он с mode-map, потому локальный).
-import type { ConceptSnapshot } from '../../shared/src/apiTypes';
+import type { ConceptSnapshot, UserId } from '../../shared/src/apiTypes';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -77,7 +77,7 @@ export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysL
 export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
 export interface TherapistCustomMode {
   id: number;
-  therapistId: number;
+  therapistId: UserId;
   name: string;
   emoji: string;
   nodeType: string;
@@ -139,8 +139,8 @@ export interface ModeMapFull extends ModeMapMeta {
 
 export interface ClientConceptualization {
   id: number;
-  therapistId: number;
-  clientId: number;
+  therapistId: UserId;
+  clientId: UserId;
   schemaIds: string[];
   modeIds: string[];
   earlyExperience: string | null;

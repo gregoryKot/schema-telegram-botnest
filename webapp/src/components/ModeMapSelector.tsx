@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind } from '../api';
+import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import { ConfirmDialog } from './ConfirmDialog';
 
 interface Props {
-  clientId: number;
+  clientId: UserId;
 }
 
 const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {

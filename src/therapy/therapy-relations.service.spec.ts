@@ -51,14 +51,12 @@ const activeRel: Rel = {
 describe('assertRelation — граница доступа терапевта', () => {
   it('терапевт с активной связью проходит', async () => {
     const { service } = makeService([activeRel]);
-    await expect(
-      service.assertHasClient(T1, Number(CLIENT)),
-    ).resolves.toBeUndefined();
+    await expect(service.assertHasClient(T1, CLIENT)).resolves.toBeUndefined();
   });
 
   it('ЧУЖОЙ терапевт к тому же клиенту — отказ', async () => {
     const { service } = makeService([activeRel]);
-    await expect(service.assertHasClient(T2, Number(CLIENT))).rejects.toThrow(
+    await expect(service.assertHasClient(T2, CLIENT)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -67,7 +65,7 @@ describe('assertRelation — граница доступа терапевта', 
     const { service } = makeService([
       { ...activeRel, status: 'pending', clientId: null },
     ]);
-    await expect(service.assertHasClient(T1, Number(CLIENT))).rejects.toThrow(
+    await expect(service.assertHasClient(T1, CLIENT)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -81,8 +79,8 @@ describe('assertRelation — граница доступа терапевта', 
       code: 'BBB222',
     };
     const { service } = makeService([virtualRel]);
-    await expect(service.assertHasClient(T1, -42)).resolves.toBeUndefined();
-    await expect(service.assertHasClient(T2, -42)).rejects.toThrow(
+    await expect(service.assertHasClient(T1, -42n)).resolves.toBeUndefined();
+    await expect(service.assertHasClient(T2, -42n)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -375,7 +373,7 @@ describe('getRelation — статус связи для терапевта и �
       role: 'therapist',
       status: 'active',
       partnerName: 'Аня',
-      partnerId: Number(CLIENT),
+      partnerId: CLIENT,
       code: 'AAA111',
       nextSession: null,
     });
@@ -423,7 +421,7 @@ describe('getRelation — статус связи для терапевта и �
       role: 'client',
       status: 'active',
       partnerName: 'Терапевт Т',
-      partnerId: Number(T1),
+      partnerId: T1,
       code: 'AAA111',
       nextSession: '2026-08-01',
     });
@@ -558,8 +556,39 @@ describe('getClients — список клиентов терапевта', () =
     );
     const list = await service.getClients(T1);
     expect(list).toHaveLength(1);
-    expect(list[0].telegramId).toBe(Number(CLIENT));
+    expect(list[0].telegramId).toBe(CLIENT);
     expect(list[0].name).toBe('Аня');
+  });
+
+  // Аудит 2026-10, X-1: веб-клиент (Google/VK/MAX/почта) живёт в [1e18, 9e18),
+  // выше 2^53. Number(id) округлял его, и следующий запрос терапевта с этим
+  // id не проходил assertRelation. id обязан пройти от БД до ответа точным bigint.
+  it('веб-клиент с id > 2^53: getClients и getRelation отдают точный bigint, assertHasClient проходит', async () => {
+    const WEB = 1000000000000000123n;
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: WEB,
+          status: 'active',
+          code: 'WEB111',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: WEB, firstName: 'Вера' }],
+    );
+    const [client] = await service.getClients(T1);
+    expect(client.telegramId).toBe(WEB);
+    expect(typeof client.telegramId).toBe('bigint');
+    // Именно с таким id фронт придёт обратно; округлённый — чужая строка.
+    await expect(
+      service.assertHasClient(T1, client.telegramId),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertHasClient(T1, BigInt(Number(WEB))),
+    ).rejects.toThrow('No active relation');
+    expect((await service.getRelation(T1))?.partnerId).toBe(WEB);
   });
 
   // Мутационное усиление: связь со статусом pending (приглашение ещё не
@@ -625,7 +654,7 @@ describe('getClients — список клиентов терапевта', () =
     const findManySpy = jest.spyOn(prisma.therapyRelation, 'findMany');
     const conceptsSpy = jest.spyOn(prisma.clientConceptualization, 'findMany');
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(Number(CLIENT));
+    expect(client.telegramId).toBe(CLIENT);
     expect(client.name).toBe('Аня');
     expect(client.streak).toBe(3);
     expect(client.lastActiveDate).toBe(today);
@@ -839,7 +868,7 @@ describe('getClients — список клиентов терапевта', () =
       },
     ]);
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(-7);
+    expect(client.telegramId).toBe(-7n);
     expect(client.name).toBe('Оффлайн Иван');
     expect(client.clientAlias).toBe('Псевдоним');
     expect(client.streak).toBe(0);
@@ -875,7 +904,7 @@ describe('getClients — список клиентов терапевта', () =
       [{ therapistId: T1, clientId: -7n, schemaIds: ['abandonment'] }],
     );
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(-7);
+    expect(client.telegramId).toBe(-7n);
     expect(client.schemaIds).toEqual(['abandonment']);
   });
 
@@ -931,8 +960,9 @@ describe('getClients — список клиентов терапевта', () =
     );
     const list = await service.getClients(T1);
     expect(list).toHaveLength(2);
-    const ids = list.map((c) => c.telegramId).sort((a, b) => a - b);
-    expect(ids).toEqual([-2, Number(CLIENT)].sort((a, b) => a - b));
+    expect(new Set(list.map((c) => c.telegramId))).toEqual(
+      new Set([-2n, CLIENT]),
+    );
   });
 });
 
@@ -945,7 +975,7 @@ describe('addVirtualClient — офлайн-клиент без Telegram', () =>
     expect(rels[0].status).toBe('active');
     expect(list).toHaveLength(1);
     expect(list[0].name).toBe('Оффлайн Пётр');
-    expect(list[0].telegramId).toBe(-rels[0].id);
+    expect(list[0].telegramId).toBe(-BigInt(rels[0].id));
   });
 
   // Мутационное усиление (L206, MethodExpression toUpperCase→toLowerCase):
@@ -1010,7 +1040,7 @@ describe('addClientManually — подключение по Telegram ID без �
     expect(rels[0].status).toBe('active');
     expect(rels[0].clientId).toBe(CLIENT);
     expect(list).toHaveLength(1);
-    expect(list[0].telegramId).toBe(Number(CLIENT));
+    expect(list[0].telegramId).toBe(CLIENT);
     expect(list[0].name).toBe('Аня');
     expect(userSpy).toHaveBeenCalledWith({
       where: { id: CLIENT },
@@ -1079,7 +1109,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'BBB222',
     };
     const { service } = makeFullService([own, foreign]);
-    await service.renameClient(T1, Number(CLIENT), 'Псевдоним');
+    await service.renameClient(T1, CLIENT, 'Псевдоним');
     expect(own.clientAlias).toBe('Псевдоним');
     expect(foreign.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
@@ -1105,7 +1135,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       virtualClientName: 'Пётр',
     };
     const { service } = makeFullService([virtual, foreignVirtual]);
-    await service.renameClient(T1, -5, 'Новый псевдоним');
+    await service.renameClient(T1, -5n, 'Новый псевдоним');
     expect(virtual.clientAlias).toBe('Новый псевдоним');
     expect(foreignVirtual.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
@@ -1120,7 +1150,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       clientAlias: 'Было',
     };
     const { service } = makeFullService([rel]);
-    await service.renameClient(T1, Number(CLIENT), '   ');
+    await service.renameClient(T1, CLIENT, '   ');
     expect(rel.clientAlias).toBeNull();
   });
 
@@ -1137,7 +1167,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'AAA111',
     };
     const { service } = makeFullService([rel]);
-    await service.renameClient(T1, Number(CLIENT), '  Псевдоним  ');
+    await service.renameClient(T1, CLIENT, '  Псевдоним  ');
     expect(rel.clientAlias).toBe('Псевдоним');
   });
 
@@ -1154,8 +1184,8 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'AAA111',
     };
     const { service } = makeFullService([rel]);
-    await expect(service.assertHasClient(T1, 0)).resolves.toBeUndefined();
-    await service.renameClient(T1, 0, 'Нулевой клиент');
+    await expect(service.assertHasClient(T1, 0n)).resolves.toBeUndefined();
+    await service.renameClient(T1, 0n, 'Нулевой клиент');
     expect(rel.clientAlias).toBe('Нулевой клиент');
   });
 });

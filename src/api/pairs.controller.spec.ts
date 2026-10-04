@@ -92,7 +92,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 42 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 42n },
           ]),
       },
       botService: {
@@ -110,7 +110,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 42 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 42n },
           ]),
       },
       botService: { getRatings: jest.fn().mockResolvedValue(allNeedsRated(7)) },
@@ -119,18 +119,21 @@ describe('PairsController.getPair', () => {
     expect(res.partners[0].partnerTodayDone).toBe(true);
     expect(res.partners[0].partnerIndex).toBe(7);
     expect(res.partners[0].partnerName).toBe('Партнёр');
-    expect(res.partners[0].partnerTelegramId).toBe(42);
+    expect(res.partners[0].partnerTelegramId).toBe(42n);
   });
 
   it('запрашивает данные ИМЕННО partnerId, а не userId текущего юзера', async () => {
     const { controller, botService, accountService, analyticsService } =
       makeController({
         pairsService: {
-          getUserPairs: jest
-            .fn()
-            .mockResolvedValue([
-              { code: 'AB', status: 'active', isCreator: true, partnerId: 555 },
-            ]),
+          getUserPairs: jest.fn().mockResolvedValue([
+            {
+              code: 'AB',
+              status: 'active',
+              isCreator: true,
+              partnerId: 555n,
+            },
+          ]),
         },
       });
     await controller.getPair(makeReq(1n));
@@ -146,7 +149,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 1 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 1n },
           ]),
       },
       analyticsService: {

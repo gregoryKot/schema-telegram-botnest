@@ -46,9 +46,9 @@ export class PairsController {
       activePairs.map(async (pair) => {
         const [partnerRatings, partnerName, partnerHistory] = await Promise.all(
           [
-            this.botService.getRatings(BigInt(pair.partnerId!)),
-            this.accountService.getUserFirstName(BigInt(pair.partnerId!)),
-            this.analyticsService.getHistoryRatings(BigInt(pair.partnerId!), 7),
+            this.botService.getRatings(pair.partnerId!),
+            this.accountService.getUserFirstName(pair.partnerId!),
+            this.analyticsService.getHistoryRatings(pair.partnerId!, 7),
           ],
         );
         const partnerRaw =

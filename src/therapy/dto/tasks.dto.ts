@@ -10,10 +10,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { ClientIdField } from './client-id.decorator';
 
-// Типы заданий из форм создания обоих фронтендов (TaskCreateSheet) плюс
-// schema_diary/mode_diary, которые понимает стрик-прогресс на бэке; 'custom' —
-// «своё задание» (аудит 2026-10, T6: тип был любой строкой).
+// Типы заданий из форм обоих фронтендов (TaskCreateSheet) плюс schema_diary/
+// mode_diary для стрик-прогресса; 'custom' — «своё задание» (T6: был любой строкой).
 const TASK_TYPES = [
   'diary_streak',
   'tracker_streak',
@@ -61,8 +61,8 @@ export class CreateTaskDto {
   dueDate?: string;
 
   @IsOptional()
-  @IsInt()
-  clientId?: number;
+  @ClientIdField()
+  clientId?: string;
 }
 
 export class CompleteTaskDto {

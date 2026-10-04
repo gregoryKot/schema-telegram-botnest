@@ -84,3 +84,35 @@ describe('ветвящиеся методы', () => {
     expect(calls[0].path).toBe('/api/pair/invite');
   });
 });
+
+// Аудит 2026-10, X-1: веб-id (> 2^53) приходит с сервера СТРОКОЙ и обязан
+// доехать до URL/тела без округления. Number('1000000000000000123') дал бы
+// 1000000000000000100 — запрос ушёл бы в чужую (несуществующую) связь.
+describe('веб-id клиента (строка > 2^53) доезжает до URL и тела точно', () => {
+  const WEB = '1000000000000000123';
+
+  it('therapy-методы с :clientId в пути', async () => {
+    await api.getTherapistNotes(WEB);
+    await api.getTherapyClientData(WEB);
+    await api.getTherapyTasksForClient(WEB);
+    await api.removeClient(WEB);
+    await api.renameClient(WEB, 'А');
+    await api.requestYsq(WEB);
+    await api.updateSessionInfo(WEB, {});
+    await api.getClientSchemaNotes(WEB);
+    await api.getClientModeNotes(WEB);
+    for (const c of calls) expect(c.path).toContain(WEB);
+    expect(calls).toHaveLength(9);
+  });
+
+  it('createTherapistNote: id в пути', async () => {
+    await api.createTherapistNote(WEB, '2026-10-01', 'текст');
+    expect(calls[0].path).toBe(`/api/therapy/notes/${WEB}`);
+  });
+
+  it('createTask: clientId-строка уходит в теле как строка', async () => {
+    await api.createTask({ type: 'custom', text: 'x', clientId: WEB });
+    expect((calls[0].body as { clientId: unknown }).clientId).toBe(WEB);
+    expect(JSON.stringify(calls[0].body)).toContain(`"${WEB}"`);
+  });
+});

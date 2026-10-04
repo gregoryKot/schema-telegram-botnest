@@ -104,7 +104,11 @@ describe('TherapyTasksController.createTask', () => {
       account: makeAccount('CLIENT'),
     });
     await expect(
-      controller.createTask(makeReq(7n), { type: 'x', text: 'y', clientId: 5 }),
+      controller.createTask(makeReq(7n), {
+        type: 'x',
+        text: 'y',
+        clientId: '5',
+      }),
     ).rejects.toThrow(ForbiddenException);
     expect(tasks.createTask).not.toHaveBeenCalled();
   });
@@ -115,7 +119,11 @@ describe('TherapyTasksController.createTask', () => {
       new Error('No active relation'),
     );
     await expect(
-      controller.createTask(makeReq(7n), { type: 'x', text: 'y', clientId: 5 }),
+      controller.createTask(makeReq(7n), {
+        type: 'x',
+        text: 'y',
+        clientId: '5',
+      }),
     ).rejects.toThrow('No therapy relation with this client');
     expect(tasks.createTask).not.toHaveBeenCalled();
   });
@@ -125,12 +133,12 @@ describe('TherapyTasksController.createTask', () => {
     const body = {
       type: 'reading',
       text: 'почитать главу',
-      clientId: 5,
+      clientId: '5',
       needId: 'safety',
       dueDate: '2026-08-01',
     };
     const res = await controller.createTask(makeReq(7n), body);
-    expect(relations.assertHasClient).toHaveBeenCalledWith(7n, 5);
+    expect(relations.assertHasClient).toHaveBeenCalledWith(7n, 5n);
     expect(tasks.createTask).toHaveBeenCalledWith(5n, body, 7n);
     expect(tasks.scheduleTaskNotification).toHaveBeenCalledWith(5n, {
       text: 'почитать главу',
@@ -145,10 +153,35 @@ describe('TherapyTasksController.createTask', () => {
     await controller.createTask(makeReq(7n), {
       type: 'reading',
       text: 'y',
-      clientId: -3,
+      clientId: '-3',
     });
     expect(tasks.createTask).toHaveBeenCalledWith(-3n, expect.any(Object), 7n);
     expect(tasks.scheduleTaskNotification).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-10, X-1: веб-id > 2^53 обязан дойти до сервиса ТОЧНЫМ bigint, а не
+// округлённым числом (Number('1000000000000000123') !== 1000000000000000123).
+describe('TherapyTasksController — веб-клиент с id > 2^53', () => {
+  const WEB = 1000000000000000123n;
+
+  it('createTask: clientId-строка → точный bigint в assertHasClient и createTask', async () => {
+    const { controller, tasks, relations } = makeController();
+    await controller.createTask(makeReq(7n), {
+      type: 'reading',
+      text: 'y',
+      clientId: '1000000000000000123',
+    });
+    expect(relations.assertHasClient).toHaveBeenCalledWith(7n, WEB);
+    expect(tasks.createTask).toHaveBeenCalledWith(WEB, expect.any(Object), 7n);
+    const [, passed] = relations.assertHasClient.mock.calls[0];
+    expect(typeof passed).toBe('bigint');
+  });
+
+  it('getTasksForClient: :clientId парсится в точный bigint', async () => {
+    const { controller, tasksView } = makeController();
+    await controller.getTasksForClient(makeReq(7n), '1000000000000000123');
+    expect(tasksView.getTasksForClient).toHaveBeenCalledWith(7n, WEB);
   });
 });
 
@@ -203,7 +236,7 @@ describe('TherapyTasksController.getTasksForClient', () => {
   it('терапевт → делегирует getTasksForClient(therapistId, clientId)', async () => {
     const { controller, tasksView } = makeController();
     const res = await controller.getTasksForClient(makeReq(7n), '5');
-    expect(tasksView.getTasksForClient).toHaveBeenCalledWith(7n, 5);
+    expect(tasksView.getTasksForClient).toHaveBeenCalledWith(7n, 5n);
     expect(res).toEqual([{ id: 3 }]);
   });
 });

@@ -76,7 +76,7 @@ describe('TherapyController.requestYsq', () => {
   it('терапевт → делегирует requestYsq(therapistId, clientId) и возвращает { ok: true }', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.requestYsq(makeReq(7n), '5');
-    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, 5);
+    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, 5n);
     expect(res).toEqual({ ok: true });
   });
 
@@ -107,7 +107,7 @@ describe('TherapyController.requestYsq', () => {
   it('отрицательный clientId (виртуальный офлайн-клиент) разрешён', async () => {
     const { controller, clientData } = makeController();
     await controller.requestYsq(makeReq(7n), '-3');
-    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, -3);
+    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, -3n);
   });
 });
 
@@ -122,7 +122,7 @@ describe('TherapyController.getClientDiary', () => {
   it('терапевт → делегирует и возвращает результат сервиса', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientDiary(makeReq(9n), '5');
-    expect(clientData.getClientDiaryEntries).toHaveBeenCalledWith(9n, 5);
+    expect(clientData.getClientDiaryEntries).toHaveBeenCalledWith(9n, 5n);
     expect(res).toEqual([{ id: 1 }]);
   });
 });
@@ -131,7 +131,7 @@ describe('TherapyController.getClientSchemaNotes', () => {
   it('терапевт → делегирует getClientSchemaNotes(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientSchemaNotes(makeReq(9n), '11');
-    expect(clientData.getClientSchemaNotes).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientSchemaNotes).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual([{ id: 2 }]);
   });
 });
@@ -140,7 +140,7 @@ describe('TherapyController.getClientModeNotes', () => {
   it('терапевт → делегирует getClientModeNotes(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientModeNotes(makeReq(9n), '11');
-    expect(clientData.getClientModeNotes).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientModeNotes).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual([{ id: 3 }]);
   });
 });
@@ -149,7 +149,7 @@ describe('TherapyController.getClientHistory', () => {
   it('терапевт → делегирует getClientHistory(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientHistory(makeReq(9n), '11');
-    expect(clientData.getClientHistory).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientHistory).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual({ ratings: [] });
   });
 });
@@ -158,7 +158,7 @@ describe('TherapyController.getClientData', () => {
   it('терапевт → делегирует getClientData(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientData(makeReq(9n), '11');
-    expect(clientData.getClientData).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientData).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual({ ysq: null });
   });
 

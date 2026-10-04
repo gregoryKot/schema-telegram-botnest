@@ -124,6 +124,13 @@ describe('CONCEPT_FIELDS', () => {
   });
 });
 
+describe('isVirtualClient: id строкой (веб-аккаунт > 2^53)', () => {
+  it('веб-клиент — не виртуальный, строковый отрицательный — виртуальный', () => {
+    expect(isVirtualClient({ telegramId: '1000000000000000123' })).toBe(false);
+    expect(isVirtualClient({ telegramId: '-3' })).toBe(true);
+  });
+});
+
 describe('isVirtualClient', () => {
   it('отрицательный telegramId — офлайн-клиент', () => {
     expect(isVirtualClient({ telegramId: -3 })).toBe(true);

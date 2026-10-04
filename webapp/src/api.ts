@@ -1,6 +1,5 @@
 // Shared API client for the web app (Authorization: Bearer <token> вместо x-telegram-init-data).
-// Единственная фронтовая копия типов — в shared (правило №3); методы, которые
-// их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
+// Типы — единственная копия в shared (правило №3); методы переехали в shared-фабрику, здесь ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
@@ -72,6 +71,7 @@ import type {
   PhraseIssue,
   SiteContent,
   UserTask,
+  UserId,
   TherapistCustomMode,
   ModeMapKind,
   ModeMapMeta,
@@ -83,6 +83,7 @@ import type {
   PhraseCheckEntry,
 } from './api.types';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -144,14 +145,13 @@ export const api = {
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
-  getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
-  getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
+  getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
+  getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
+  getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
   // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
-  // Случайная фраза Здорового Взрослого для карточки шаринга («Фраза для
-  // себя», PhraseShareCard.tsx) — паритет с мини-аппом, правило №16.
+  // Случайная фраза Здорового Взрослого для карточки шаринга (PhraseShareCard.tsx) — паритет, правило №16.
   getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
   getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
   createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
@@ -168,7 +168,7 @@ export const api = {
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
-  getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
+  getClientDiary:       (clientId: UserId) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
   getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
@@ -232,9 +232,9 @@ export const api = {
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
   deleteCustomMode:  (id: number)                    => del(`/api/therapy/custom-modes/${id}`),
   // Mode Maps
-  listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
+  listModeMaps:   (clientId: UserId) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
-  createModeMap:  (clientId: number, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
+  createModeMap:  (clientId: UserId, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
   updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps

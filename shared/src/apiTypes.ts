@@ -1,10 +1,10 @@
 // Общие DTO/типы ответов API — единый источник для обоих фронтендов
-// (webapp ↔ schema-miniapp, правило №3 CLAUDE.md). Оба фронта ре-экспортируют
-// их из своих api-модулей, поэтому импорты потребителей не меняются.
-//
-// Здесь ТОЛЬКО типы, совпадающие в обоих фронтендах. Расходящиеся намеренно
-// остаются локальными: напр. ClientConceptualization в webapp несёт
-// modeMapNodes/modeMapEdges (фича mode-map есть только на сайте).
+// (webapp ↔ schema-miniapp, правило №3 CLAUDE.md); оба ре-экспортируют их из
+// своих api-модулей. Здесь ТОЛЬКО типы, совпадающие в обоих фронтендах;
+// расходящиеся остаются локальными (ClientConceptualization в webapp несёт
+// modeMapNodes/modeMapEdges — mode-map есть только на сайте).
+import type { UserId } from './userId';
+export type { UserId };
 
 export interface UserSettings {
   notifyEnabled: boolean;
@@ -48,7 +48,7 @@ export interface PartnerInfo {
   partnerIndex: number | null;
   partnerTodayDone: boolean;
   partnerName: string | null;
-  partnerTelegramId: number | null;
+  partnerTelegramId: UserId | null;
   partnerWeekAvgs: (number | null)[];
 }
 
@@ -68,8 +68,8 @@ export interface PracticePlan {
 
 export interface UserTask {
   id: number;
-  userId: number;
-  assignedBy: number | null;
+  userId: UserId;
+  assignedBy: UserId | null;
   type: string;
   text: string;
   targetDays: number | null;
@@ -86,15 +86,15 @@ export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
   status: string;
   partnerName: string | null;
-  partnerId: number | null;
+  partnerId: UserId | null;
   code: string;
   nextSession: string | null;
 }
 
 export interface TherapistNote {
   id: number;
-  therapistId: number;
-  clientId: number;
+  therapistId: UserId;
+  clientId: UserId;
   date: string;
   text: string;
   createdAt: string;

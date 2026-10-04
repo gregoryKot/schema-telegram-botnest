@@ -54,4 +54,16 @@ describe('removeClientConfirmCopy', () => {
       expect(message).not.toMatch(/разорван|данные сохранятся/);
     }
   });
+
+  // Аудит 2026-10, X-1: id веб-клиента приходит строкой (> 2^53) — это
+  // клиент с аккаунтом, не виртуальный.
+  it('веб-клиент (id строкой > 2^53) — клиент с аккаунтом, не виртуальный', () => {
+    const { message } = removeClientConfirmCopy({
+      telegramId: '1000000000000000123',
+    });
+    expect(message).toContain('останутся в аккаунте клиента');
+    expect(
+      removeClientConfirmCopy({ telegramId: '-7' }).message,
+    ).toContain('Карточка');
+  });
 });

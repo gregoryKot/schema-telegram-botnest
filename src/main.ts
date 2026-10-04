@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
+import { installBigIntJson } from './utils/bigint-json';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
 import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
@@ -19,12 +20,9 @@ import {
   GenericExceptionFilter,
 } from './prisma/prisma-exception.filter';
 
-// BigInt → number in JSON responses (Telegram user IDs fit safely in Number)
-(BigInt.prototype as unknown as { toJSON: () => number }).toJSON = function (
-  this: bigint,
-) {
-  return Number(this);
-};
+// BigInt в JSON: безопасное целое — числом, веб-id (≥ 1e18) — строкой
+// (src/utils/bigint-json.ts, аудит 2026-10 X-1).
+installBigIntJson();
 
 // Аудит 2026-10 (I6): до создания приложения — отказ внутри bootstrap тоже
 // должен дойти до алерта. Logger статический: после NestFactory.create он
