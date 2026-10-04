@@ -74,7 +74,7 @@ export const QUIET_EXEMPT_TYPES: NotificationType[] = [
 
 export interface DueNotification {
   id: number;
-  userId: number;
+  userId: bigint;
   type: string;
   payload: unknown;
   sendAt: Date;
@@ -120,7 +120,6 @@ export class NotificationService {
     });
     return rows.map((r) => ({
       ...r,
-      userId: Number(r.userId),
       payload: decryptPayload(r.payload),
     }));
   }

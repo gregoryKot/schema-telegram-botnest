@@ -1,4 +1,4 @@
-import { api } from '../../api';
+import { api, type UserId } from '../../api';
 import type {
   UserTask,
   TherapistNote,
@@ -50,7 +50,7 @@ export interface ClientDetailFetchResult {
  * явный флаг loadError, который вызывающая сторона может показать терапевту.
  */
 export async function fetchClientDetail(
-  clientId: number,
+  clientId: UserId,
 ): Promise<ClientDetailFetchResult> {
   const results = await Promise.allSettled([
     api.getTherapyTasksForClient(clientId),

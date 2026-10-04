@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { TherapyClientSummary } from '../api';
+import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 
 const DAY_NAMES_RU = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -41,7 +41,7 @@ function sessionTime(c: TherapyClientSummary): string {
 
 interface Props {
   displayName: string | null;
-  onOpenClient: (id: number) => void;
+  onOpenClient: (id: UserId) => void;
 }
 
 export function TherapistTodaySection({ displayName, onOpenClient }: Props) {

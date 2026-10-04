@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
-import type { TherapyClientSummary } from '../api';
+import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
@@ -14,7 +14,7 @@ interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
   therapistMode?: boolean;
   onToggleMode?: () => void;
-  onOpenClient?: (id: number) => void;
+  onOpenClient?: (id: UserId) => void;
   onNewDiaryEntry?: () => void;
 }
 

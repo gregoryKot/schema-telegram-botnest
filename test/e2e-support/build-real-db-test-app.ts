@@ -12,13 +12,12 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
+import { installBigIntJson } from '../../src/utils/bigint-json';
 import { makeFakeBot } from './fake-bot';
 
-// BigInt → number в JSON-ответах — то же зеркало src/main.ts, что и в
-// build-test-app.ts (ответы с userId падают на JSON.stringify без этого).
-(BigInt.prototype as any).toJSON = function () {
-  return Number(this);
-};
+// BigInt в JSON-ответах — тот же установщик, что в src/main.ts и
+// build-test-app.ts.
+installBigIntJson();
 
 export interface RealDbTestApp {
   app: INestApplication;

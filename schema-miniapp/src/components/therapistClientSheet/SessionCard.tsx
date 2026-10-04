@@ -1,9 +1,9 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
 import { ClientDetail } from './types';
-
 interface SessionCardProps {
   selectedClient: TherapyClientSummary;
   today: string;
@@ -145,29 +145,29 @@ export function SessionCard({
           )}
         </div>
         {/* Activity badge */}
-        {selectedClient.telegramId > 0 && selectedClient.lastActiveDate && (
-          <span
-            style={{
-              fontSize: 11,
-              color:
-                selectedClient.lastActiveDate === today
-                  ? '#06d6a0'
-                  : 'rgba(var(--fg-rgb),0.3)',
-              background:
-                selectedClient.lastActiveDate === today
-                  ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.05)',
-              padding: '3px 8px',
-              borderRadius: 'var(--r-20)',
-            }}
-          >
-            {selectedClient.lastActiveDate === today
-              ? '● сегодня'
-              : fmtDate(selectedClient.lastActiveDate)}
-          </span>
-        )}
+        {!isVirtualId(selectedClient.telegramId) &&
+          selectedClient.lastActiveDate && (
+            <span
+              style={{
+                fontSize: 11,
+                color:
+                  selectedClient.lastActiveDate === today
+                    ? '#06d6a0'
+                    : 'rgba(var(--fg-rgb),0.3)',
+                background:
+                  selectedClient.lastActiveDate === today
+                    ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
+                    : 'rgba(var(--fg-rgb),0.05)',
+                padding: '3px 8px',
+                borderRadius: 'var(--r-20)',
+              }}
+            >
+              {selectedClient.lastActiveDate === today
+                ? '● сегодня'
+                : fmtDate(selectedClient.lastActiveDate)}
+            </span>
+          )}
       </div>
-
       {/* Row 2: Meeting days + next session */}
       <div
         style={{

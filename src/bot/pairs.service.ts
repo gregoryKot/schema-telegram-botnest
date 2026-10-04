@@ -24,7 +24,7 @@ export class PairsService {
     code: string;
     status: string;
     isCreator: boolean;
-    partnerId: number | null;
+    partnerId: bigint | null;
   } | null> {
     const uid = userId;
     const pair = await this.prisma.pair.findFirst({
@@ -33,11 +33,7 @@ export class PairsService {
     });
     if (!pair) return null;
     const isCreator = pair.userId1 === uid;
-    const partnerId = isCreator
-      ? pair.userId2
-        ? Number(pair.userId2)
-        : null
-      : Number(pair.userId1);
+    const partnerId = isCreator ? (pair.userId2 ?? null) : pair.userId1;
     return { code: pair.code, status: pair.status, isCreator, partnerId };
   }
 
@@ -45,7 +41,7 @@ export class PairsService {
     Array<{
       code: string;
       status: string;
-      partnerId: number | null;
+      partnerId: bigint | null;
       isCreator: boolean;
     }>
   > {
@@ -56,11 +52,7 @@ export class PairsService {
     });
     return pairs.map((pair) => {
       const isCreator = pair.userId1 === uid;
-      const partnerId = isCreator
-        ? pair.userId2
-          ? Number(pair.userId2)
-          : null
-        : Number(pair.userId1);
+      const partnerId = isCreator ? (pair.userId2 ?? null) : pair.userId1;
       return { code: pair.code, status: pair.status, isCreator, partnerId };
     });
   }

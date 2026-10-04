@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyNotesService } from './therapy-notes.service';
 import { TherapyClientDataService } from './therapy-client-data.service';
@@ -25,9 +26,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
-// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
+// id Int-колонок (заметка, задача, карта) — обычное число.
 const parseId = (raw: string): number =>
   parseIdShared(raw, { allowNegative: true });
 
@@ -48,8 +47,9 @@ export class TherapyNotesController {
   async getNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const cid = parseClientId(clientId);
     try {
-      return await this.notesService.getNotes(uid(req), parseId(clientId));
+      return await this.notesService.getNotes(uid(req), cid);
     } catch (e: unknown) {
       if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
@@ -72,7 +72,7 @@ export class TherapyNotesController {
     try {
       return await this.notesService.createNote(
         uid(req),
-        parseId(clientId),
+        parseClientId(clientId),
         note,
       );
     } catch (e: unknown) {
@@ -102,7 +102,7 @@ export class TherapyNotesController {
     try {
       return await this.notesService.getConceptualization(
         uid(req),
-        parseId(clientId),
+        parseClientId(clientId),
       );
     } catch (e: unknown) {
       if (e instanceof Error && e.message === 'No active relation')
@@ -122,7 +122,7 @@ export class TherapyNotesController {
     try {
       await this.clientDataService.updateSessionInfo(
         uid(req),
-        parseId(clientId),
+        parseClientId(clientId),
         body,
       );
     } catch (e: unknown) {
@@ -144,7 +144,7 @@ export class TherapyNotesController {
     try {
       return await this.notesService.saveConceptualization(
         uid(req),
-        parseId(clientId),
+        parseClientId(clientId),
         body,
       );
     } catch (e: unknown) {

@@ -61,13 +61,13 @@ const activeRel: Rel = {
 describe('TherapyNotesService — заметки о сессиях (session notes)', () => {
   it('сохранённая заметка читается назад с исходным текстом (createNote → getNotes)', async () => {
     const { service } = makeService([activeRel]);
-    const created = await service.createNote(T1, Number(CLIENT), {
+    const created = await service.createNote(T1, CLIENT, {
       date: '2026-01-05',
       text: 'клиент рассказал про триггер',
     });
     expect(created.text).toBe('клиент рассказал про триггер');
 
-    const notes = await service.getNotes(T1, Number(CLIENT));
+    const notes = await service.getNotes(T1, CLIENT);
     expect(notes).toHaveLength(1);
     expect(notes[0].text).toBe('клиент рассказал про триггер');
     expect(notes[0].date).toBe('2026-01-05');
@@ -75,11 +75,11 @@ describe('TherapyNotesService — заметки о сессиях (session note
 
   it('чужой терапевт не может читать заметки клиента', async () => {
     const { service } = makeService([activeRel]);
-    await service.createNote(T1, Number(CLIENT), {
+    await service.createNote(T1, CLIENT, {
       date: '2026-01-05',
       text: 'секрет',
     });
-    await expect(service.getNotes(T2, Number(CLIENT))).rejects.toThrow(
+    await expect(service.getNotes(T2, CLIENT)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -87,14 +87,14 @@ describe('TherapyNotesService — заметки о сессиях (session note
   it('чужой терапевт не может создать заметку клиенту', async () => {
     const { service, notes } = makeService([activeRel]);
     await expect(
-      service.createNote(T2, Number(CLIENT), { date: '2026-01-05', text: 'x' }),
+      service.createNote(T2, CLIENT, { date: '2026-01-05', text: 'x' }),
     ).rejects.toThrow('No active relation');
     expect(notes).toHaveLength(0);
   });
 
   it('удаление заметки скопировано по id+therapistId — чужой id не удаляет запись владельца', async () => {
     const { service, notes } = makeService([activeRel]);
-    const created = await service.createNote(T1, Number(CLIENT), {
+    const created = await service.createNote(T1, CLIENT, {
       date: '2026-01-05',
       text: 'заметка',
     });
@@ -109,6 +109,6 @@ describe('TherapyNotesService — заметки о сессиях (session note
 
   it('getNotes на пустой истории — пустой массив, без падения', async () => {
     const { service } = makeService([activeRel]);
-    await expect(service.getNotes(T1, Number(CLIENT))).resolves.toEqual([]);
+    await expect(service.getNotes(T1, CLIENT)).resolves.toEqual([]);
   });
 });

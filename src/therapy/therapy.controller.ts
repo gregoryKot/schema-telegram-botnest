@@ -8,7 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { uid } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
@@ -18,12 +19,6 @@ interface AuthRequest extends Request {
   userRole?: string;
   webUser: { userId: bigint };
 }
-
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
-// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
-const parseId = (raw: string): number =>
-  parseIdShared(raw, { allowNegative: true });
 
 // Остаток после распила therapy.controller.ts (642 → доменные контроллеры,
 // см. therapy-connection/therapy-tasks/therapy-notes/mode-maps.controller.ts):
@@ -62,7 +57,7 @@ export class TherapyController {
     @Param('clientId') clientId: string,
   ) {
     await this.asTherapist(req, (tid) =>
-      this.clientDataService.requestYsq(tid, parseId(clientId)),
+      this.clientDataService.requestYsq(tid, parseClientId(clientId)),
     );
     return { ok: true };
   }
@@ -70,7 +65,10 @@ export class TherapyController {
   @Get('client/:clientId/diary')
   getClientDiary(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     return this.asTherapist(req, (tid) =>
-      this.clientDataService.getClientDiaryEntries(tid, parseId(clientId)),
+      this.clientDataService.getClientDiaryEntries(
+        tid,
+        parseClientId(clientId),
+      ),
     );
   }
 
@@ -80,7 +78,7 @@ export class TherapyController {
     @Param('clientId') clientId: string,
   ) {
     return this.asTherapist(req, (tid) =>
-      this.clientDataService.getClientSchemaNotes(tid, parseId(clientId)),
+      this.clientDataService.getClientSchemaNotes(tid, parseClientId(clientId)),
     );
   }
 
@@ -90,7 +88,7 @@ export class TherapyController {
     @Param('clientId') clientId: string,
   ) {
     return this.asTherapist(req, (tid) =>
-      this.clientDataService.getClientModeNotes(tid, parseId(clientId)),
+      this.clientDataService.getClientModeNotes(tid, parseClientId(clientId)),
     );
   }
 
@@ -100,14 +98,14 @@ export class TherapyController {
     @Param('clientId') clientId: string,
   ) {
     return this.asTherapist(req, (tid) =>
-      this.clientDataService.getClientHistory(tid, parseId(clientId)),
+      this.clientDataService.getClientHistory(tid, parseClientId(clientId)),
     );
   }
 
   @Get('client-data/:clientId')
   getClientData(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     return this.asTherapist(req, (tid) =>
-      this.clientDataService.getClientData(tid, parseId(clientId)),
+      this.clientDataService.getClientData(tid, parseClientId(clientId)),
     );
   }
 }

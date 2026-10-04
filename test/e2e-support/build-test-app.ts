@@ -22,18 +22,17 @@ import {
   GenericExceptionFilter,
   PrismaExceptionFilter,
 } from '../../src/prisma/prisma-exception.filter';
+import { installBigIntJson } from '../../src/utils/bigint-json';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
-// BigInt → number в JSON-ответах — та же строка, что в src/main.ts. Без неё
-// любой ответ с полем-BigInt (userId в некоторых эндпоинтах) падает на
-// JSON.stringify (TypeError: Do not know how to serialize a BigInt).
-(BigInt.prototype as any).toJSON = function () {
-  return Number(this);
-};
+// BigInt в JSON-ответах — тот же установщик, что в src/main.ts (число для
+// безопасного целого, строка для веб-id ≥ 2^53). Без него любой ответ с
+// полем-BigInt падает на JSON.stringify.
+installBigIntJson();
 
 export interface TestApp {
   app: INestApplication;

@@ -124,7 +124,7 @@ describe('ModeMapsController.listModeMaps', () => {
   it('терапевт → делегирует listModeMaps(therapistId, clientId)', async () => {
     const { controller, modeMaps } = makeController();
     const res = await controller.listModeMaps(makeReq(3n), '5');
-    expect(modeMaps.listModeMaps).toHaveBeenCalledWith(3n, 5);
+    expect(modeMaps.listModeMaps).toHaveBeenCalledWith(3n, 5n);
     expect(res).toEqual([{ id: 1, title: 'Карта' }]);
   });
 
@@ -176,7 +176,7 @@ describe('ModeMapsController.createModeMap', () => {
     await controller.createModeMap(makeReq(3n), '5', {});
     expect(modeMaps.createModeMap).toHaveBeenCalledWith(
       3n,
-      5,
+      5n,
       'Карта режимов',
       undefined,
     );

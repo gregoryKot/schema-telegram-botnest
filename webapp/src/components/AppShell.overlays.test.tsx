@@ -500,13 +500,22 @@ describe('AppShell — карточка клиента в кабинете: rout
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-openClient'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: 42 });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '42' });
     });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-toList'));
     await waitFor(() => {
       expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientId: null });
     });
+  });
+
+  // Аудит 2026-10, X-1: id веб-клиента (> 2^53) из адреса остаётся строкой —
+  // parseInt округлил бы его, и кабинет открыл бы «соседнего» клиента.
+  it('адрес /cabinet/<веб-id> отдаёт в карточку точную строку', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/cabinet/1000000000000000123');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '1000000000000000123' });
   });
 
   it('onClientsChange реально долетает до сайдбара — новый клиент виден в списке', async () => {

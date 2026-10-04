@@ -30,7 +30,7 @@ export async function getRelationInfo(
       role: 'therapist',
       status: 'active',
       partnerName: asTherapist.client?.firstName ?? null,
-      partnerId: asTherapist.clientId ? Number(asTherapist.clientId) : null,
+      partnerId: asTherapist.clientId ?? null,
       code: asTherapist.code,
       nextSession: null,
     };
@@ -44,7 +44,7 @@ export async function getRelationInfo(
     role: 'client',
     status: 'active',
     partnerName: asClient.therapist?.firstName ?? null,
-    partnerId: asClient.therapist ? Number(asClient.therapist.id) : null,
+    partnerId: asClient.therapist?.id ?? null,
     code: asClient.code,
     nextSession: asClient.nextSession ?? null,
   };

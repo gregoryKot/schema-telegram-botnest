@@ -14,7 +14,8 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
-import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { uid } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
@@ -35,12 +36,6 @@ interface AuthRequest extends Request {
   userRole?: string;
   webUser: { userId: bigint };
 }
-
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
-// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
-const parseId = (raw: string): number =>
-  parseIdShared(raw, { allowNegative: true });
 
 // Подключение клиент↔терапевт: инвайт-коды, join/disconnect, список
 // клиентов (add/virtual/rename/remove) и заявка на роль терапевта.
@@ -109,7 +104,10 @@ export class TherapyConnectionController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.clientDataService.removeClient(uid(req), parseId(clientId));
+    await this.clientDataService.removeClient(
+      uid(req),
+      parseClientId(clientId),
+    );
     return { ok: true };
   }
 
@@ -151,7 +149,7 @@ export class TherapyConnectionController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     await this.relationsService.renameClient(
       uid(req),
-      parseId(clientId),
+      parseClientId(clientId),
       body.alias,
     );
     return { ok: true };

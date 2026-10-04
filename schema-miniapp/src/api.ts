@@ -17,7 +17,7 @@ import type { UiPrefsPatch } from './utils/uiPrefsSync';
 // Типы вынесены в ./apiTypes и ре-экспортируются здесь — импорты потребителей не меняются.
 export * from './apiTypes';
 import type { ClientConceptualization } from './apiTypes';
-import type { UserSettings } from './apiTypes';
+import type { UserSettings, UserId } from './apiTypes';
 
 // Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
 export const reportClientError = createClientErrorReporter(BASE, 'miniapp');
@@ -55,12 +55,12 @@ export const api = {
   // Случайная фраза Здорового Взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   // ─── Case Conceptualization ──────────────────────────────────────────────────
-  getConceptualization: (clientId: number) =>
+  getConceptualization: (clientId: UserId) =>
     get<ClientConceptualization | null>(
       `/api/therapy/conceptualization/${clientId}`,
     ),
   saveConceptualization: (
-    clientId: number,
+    clientId: UserId,
     body: {
       schemaIds?: string[];
       modeIds?: string[];

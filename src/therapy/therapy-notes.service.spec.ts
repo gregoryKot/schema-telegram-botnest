@@ -44,12 +44,12 @@ const activeRel: Rel = {
 describe('saveConceptualization — history-версионирование', () => {
   it('первое сохранение — history пустой; второе кладёт снапшот прежнего состояния', async () => {
     const { service, concept } = makeService([activeRel]);
-    await service.saveConceptualization(T1, Number(CLIENT), {
+    await service.saveConceptualization(T1, CLIENT, {
       goals: 'v1',
     });
     expect(concept.row.history).toEqual([]);
 
-    await service.saveConceptualization(T1, Number(CLIENT), {
+    await service.saveConceptualization(T1, CLIENT, {
       goals: 'v2',
     });
     expect(concept.row.history).toHaveLength(1);
@@ -68,7 +68,7 @@ describe('saveConceptualization — history-версионирование', () 
       goals: 'current',
       history: full,
     });
-    await service.saveConceptualization(T1, Number(CLIENT), { goals: 'new' });
+    await service.saveConceptualization(T1, CLIENT, { goals: 'new' });
     expect(concept.row.history).toHaveLength(20);
     expect(concept.row.history[0].goals).toBe('current'); // свежий снапшот вытеснил самый старый
     expect(concept.row.history.at(-1).goals).toBe('old18');
@@ -77,7 +77,7 @@ describe('saveConceptualization — history-версионирование', () 
   it('чужой терапевт не может писать конспектуализацию', async () => {
     const { service } = makeService([activeRel]);
     await expect(
-      service.saveConceptualization(T2, Number(CLIENT), { goals: 'x' }),
+      service.saveConceptualization(T2, CLIENT, { goals: 'x' }),
     ).rejects.toThrow('No active relation');
   });
 });

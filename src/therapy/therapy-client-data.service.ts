@@ -5,6 +5,7 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { removeTherapistClient } from './remove-client';
+import { activeRelationWhere } from './relation-where';
 import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
@@ -24,9 +25,9 @@ export class TherapyClientDataService {
     private readonly relationsService: TherapyRelationsService,
   ) {}
 
-  async getClientData(therapistId: bigint, clientId: number) {
+  async getClientData(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0) {
+    if (clientId < 0n) {
       return {
         name: null,
         mySchemaIds: [],
@@ -35,7 +36,7 @@ export class TherapyClientDataService {
         ysqActiveSchemaIds: [],
       };
     }
-    const uid = BigInt(clientId);
+    const uid = clientId;
     const [user, ysq, rawHistory] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: uid },
@@ -92,16 +93,13 @@ export class TherapyClientDataService {
 
   async getClientHistory(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
   ): Promise<
     { date: string; index: number | null; ratings: Record<string, number> }[]
   > {
-    if (clientId < 0) return [];
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const history = await this.analyticsService.getHistoryRatings(
-      BigInt(clientId),
-      14,
-    );
+    const history = await this.analyticsService.getHistoryRatings(clientId, 14);
     return history.map((h) => {
       const ratings = h.ratings as Record<string, number>;
       const vals = Object.values(ratings);
@@ -115,7 +113,7 @@ export class TherapyClientDataService {
 
   async getClientDiaryEntries(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
   ): Promise<
     {
       type: 'schema' | 'mode' | 'gratitude';
@@ -125,12 +123,12 @@ export class TherapyClientDataService {
       excerpt: string;
     }[]
   > {
-    if (clientId < 0) return [];
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     // L1 (аудит 2026-08): дневник чтит therapistShareCards, как соседи-заметки
     // (getClientSchemaNotes/ModeNotes); свободный клин. текст не течёт при opt-out.
     if (!(await this.cardsShared(clientId))) return [];
-    const uid = BigInt(clientId);
+    const uid = clientId;
     const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
       this.prisma.schemaDiaryEntry.findMany({
         where: { userId: uid },
@@ -211,43 +209,43 @@ export class TherapyClientDataService {
   // Клиент может закрыть карточки от терапевта (therapistShareCards=false) —
   // тогда отдаём пусто. Инвариант privacy: аудит 2026-07 нашёл маршрут-дубль,
   // где эта проверка терялась (см. therapy-client-data.service.spec.ts).
-  private async cardsShared(clientId: number): Promise<boolean> {
+  private async cardsShared(clientId: bigint): Promise<boolean> {
     const client = await this.prisma.user.findUnique({
-      where: { id: BigInt(clientId) },
+      where: { id: clientId },
       select: { therapistShareCards: true },
     });
     return client?.therapistShareCards !== false;
   }
 
-  async getClientSchemaNotes(therapistId: bigint, clientId: number) {
-    if (clientId < 0) return [];
+  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     if (!(await this.cardsShared(clientId))) return [];
     const rows = await this.prisma.userSchemaNote.findMany({
-      where: { userId: BigInt(clientId) },
+      where: { userId: clientId },
     });
     return rows.map((r) => decryptRecord(r, SCHEMA_NOTE_SCHEMA));
   }
 
-  async getClientModeNotes(therapistId: bigint, clientId: number) {
-    if (clientId < 0) return [];
+  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     if (!(await this.cardsShared(clientId))) return [];
     const rows = await this.prisma.userModeNote.findMany({
-      where: { userId: BigInt(clientId) },
+      where: { userId: clientId },
     });
     return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
   }
 
-  async requestYsq(therapistId: bigint, clientId: number): Promise<void> {
+  async requestYsq(therapistId: bigint, clientId: bigint): Promise<void> {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0) return; // Virtual client — no Telegram account, cannot send notification
+    if (clientId < 0n) return; // Virtual client — no Telegram account, cannot send notification
     const therapist = await this.prisma.user.findUnique({
       where: { id: therapistId },
       select: { firstName: true },
     });
     await this.notificationService.schedule(
-      BigInt(clientId),
+      clientId,
       'ysq_requested',
       new Date(),
       {
@@ -259,7 +257,7 @@ export class TherapyClientDataService {
   // ─── Session Info ────────────────────────────────────────────────────────────
   async updateSessionInfo(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: {
       therapyStartDate?: string | null;
       nextSession?: string | null;
@@ -274,22 +272,14 @@ export class TherapyClientDataService {
     if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
     if (Object.keys(data).length === 0) return;
     const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
-    if (clientId < 0) {
-      await this.prisma.therapyRelation.updateMany({
-        // clientId: null — -id связи реального клиента не «виртуальный» (T4).
-        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
-        data: mutation,
-      });
-    } else {
-      await this.prisma.therapyRelation.updateMany({
-        where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: mutation,
-      });
-    }
+    await this.prisma.therapyRelation.updateMany({
+      where: activeRelationWhere(therapistId, clientId),
+      data: mutation,
+    });
   }
 
   // ─── Remove client from list ─────────────────────────────────────────────────
-  async removeClient(therapistId: bigint, clientId: number): Promise<void> {
+  async removeClient(therapistId: bigint, clientId: bigint): Promise<void> {
     await removeTherapistClient(this.prisma, therapistId, clientId);
   }
 }

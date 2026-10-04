@@ -1,5 +1,5 @@
-// Unified therapist contact helper.
-// App.tsx writes to localStorage on init; all components read from here.
+// Unified therapist contact: App.tsx writes to localStorage on init, components read from here.
+import type { UserId } from '../userId';
 
 const AUTHOR_TG = 'https://t.me/kotlarewski';
 const AUTHOR_BOOKING = 'https://kotlarewski.gr/#booking';
@@ -65,7 +65,7 @@ export function contactCta(
 /** Call from App.tsx after profile + relation are loaded. */
 export function cacheTherapistContact(opts: {
   role: 'CLIENT' | 'THERAPIST';
-  partnerId: number | null;
+  partnerId: UserId | null;
   partnerName: string | null;
   myId: number | null;
   myName: string | null;

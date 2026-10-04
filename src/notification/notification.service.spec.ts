@@ -90,7 +90,7 @@ describe('NotificationService', () => {
       ...over,
     });
 
-    it('returns only due rows: sendAt in the past, not sent, not cancelled — with numeric userId', async () => {
+    it('returns only due rows: sendAt in the past, not sent, not cancelled — userId остаётся bigint', async () => {
       const due = base({ id: 1, userId: BigInt(42) });
       const future = base({ id: 2, sendAt: new Date(now + 100_000) }); // not due yet
       const alreadySent = base({ id: 3, sentAt: new Date(now - 500) });
@@ -101,7 +101,7 @@ describe('NotificationService', () => {
       const svc = new NotificationService(prisma);
       const result = await svc.getDue();
 
-      expect(result).toEqual([{ ...due, userId: 42 }]);
+      expect(result).toEqual([{ ...due, userId: 42n }]);
     });
 
     it('orders due rows by sendAt ascending', async () => {

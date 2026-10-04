@@ -132,17 +132,17 @@ describe('T4 — виртуальная ветка требует clientId: null
 
   it('assertHasClient(-realRel.id) отвергается, настоящий виртуальный проходит', async () => {
     const { service } = make([realRel, virtualRel]);
-    await expect(service.assertHasClient(T1, -7)).rejects.toThrow(
+    await expect(service.assertHasClient(T1, -7n)).rejects.toThrow(
       'No active relation',
     );
-    await expect(service.assertHasClient(T1, -8)).resolves.toBeUndefined();
+    await expect(service.assertHasClient(T1, -8n)).resolves.toBeUndefined();
   });
 
   it('renameClient(-realRel.id) не переименовывает реального клиента', async () => {
     const { service, rels } = make([{ ...realRel }, virtualRel]);
-    await service.renameClient(T1, -7, 'теневой алиас');
+    await service.renameClient(T1, -7n, 'теневой алиас');
     expect((rels[0] as any).clientAlias).toBeUndefined();
-    await service.renameClient(T1, -8, 'виртуальный');
+    await service.renameClient(T1, -8n, 'виртуальный');
     expect((rels[1] as any).clientAlias).toBe('виртуальный');
   });
 });

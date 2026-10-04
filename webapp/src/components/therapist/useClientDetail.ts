@@ -1,22 +1,22 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../../api';
+import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData, UserId } from '../../api';
+import { sameId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useTr } from '../../utils/addressForm';
-
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
-  onOpenClient?: (id: number) => void;
+  onOpenClient?: (id: UserId) => void;
   switchView: (v: 'list' | 'client') => void;
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
 }
 
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
   const tr = useTr();
-  const openClientIdRef = useRef<number | null>(null);
+  const openClientIdRef = useRef<UserId | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
   // Нужно autoSave: setTimeout(autoSave, 700) в patchConcept захватывает
@@ -144,7 +144,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       api.getClientDiary(clientId).catch(() => { failed.push('дневник'); return []; }),
     ]); if (failed.length) reportClientError({ message: `client detail partial load fail: ${failed.join(', ')}`, section: 'therapist.clientDetail' });
 
-    if (openClientIdRef.current !== clientId) return;
+    if (!sameId(openClientIdRef.current, clientId)) return;
 
     setTabLoading(false);
     setClientTasks(tasks);
@@ -175,7 +175,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setDeleteError('');
     try {
       await api.removeClient(selectedClient.telegramId);
-      setClients(prev => prev.filter(c => c.telegramId !== selectedClient.telegramId));
+      setClients(prev => prev.filter(c => !sameId(c.telegramId, selectedClient.telegramId)));
       switchView('list');
     } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
   }
@@ -253,7 +253,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       await api.renameClient(selectedClient.telegramId, aliasInput);
       const updated = { ...selectedClient, clientAlias: aliasInput.trim() || null };
       setSelectedClient(updated);
-      setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
+      setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
       setRenamingAlias(false);
     } catch { setAliasError('Не удалось сохранить имя'); } finally { setAliasSaving(false); }
   }
@@ -265,7 +265,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       await api.updateSessionInfo(selectedClient.telegramId, patch);
       const updated = { ...selectedClient, ...patch }; if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
-      setSelectedClient(updated); setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
+      setSelectedClient(updated); setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
       return true;
     } catch { setSessionInfoError('Не удалось сохранить дату'); return false; } finally { setSessionInfoSaving(false); }
   }

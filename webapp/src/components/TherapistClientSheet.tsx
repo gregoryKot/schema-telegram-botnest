@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
-import type { TherapyClientSummary, UserTask } from '../api';
+import type { TherapyClientSummary, UserTask, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
@@ -14,12 +14,12 @@ import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
 import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
-
+import { sameId } from '../../../shared/src/utils/sameId';
 interface Props {
   view: 'list' | 'client';
-  openClientId?: number | null;
+  openClientId?: UserId | null;
   onViewChange: (v: 'list' | 'client') => void;
-  onOpenClient?: (id: number) => void;
+  onOpenClient?: (id: UserId) => void;
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
@@ -35,7 +35,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
-  const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
+  const [allTasks, setAllTasks] = useState<{ clientId: UserId; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
   // Сбой ≠ пусто: канбан «Задания» не должен показать терапевту пустую доску
   // на отказе запроса (см. ClientListView.loadAllTasks).
@@ -57,7 +57,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       setClients(cl);
       setLoadFailed(false);
       if (openClientIdProp) {
-        const c = cl.find(x => x.telegramId === openClientIdProp);
+        const c = cl.find(x => sameId(x.telegramId, openClientIdProp));
         if (c) detail.openClient(c);
       }
     }).catch(() => {
@@ -75,8 +75,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── React to URL-driven client navigation ────────────────────────────────────
   useEffect(() => {
     if (!openClientIdProp || loading) return;
-    if (detail.selectedClient?.telegramId === openClientIdProp) return;
-    const c = clients.find(x => x.telegramId === openClientIdProp);
+    if (sameId(detail.selectedClient?.telegramId, openClientIdProp)) return;
+    const c = clients.find(x => sameId(x.telegramId, openClientIdProp));
     if (c) detail.openClient(c);
   }, [openClientIdProp, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 

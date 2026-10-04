@@ -44,9 +44,9 @@ describe('PairsService — join/leave симметричны для обеих �
     const creatorView = await svc.getUserPair(1n);
     const joinerView = await svc.getUserPair(2n);
 
-    expect(creatorView?.partnerId).toBe(2);
+    expect(creatorView?.partnerId).toBe(2n);
     expect(creatorView?.isCreator).toBe(true);
-    expect(joinerView?.partnerId).toBe(1);
+    expect(joinerView?.partnerId).toBe(1n);
     expect(joinerView?.isCreator).toBe(false);
     expect(creatorView?.status).toBe('active');
     expect(joinerView?.status).toBe('active');

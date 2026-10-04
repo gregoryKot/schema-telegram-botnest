@@ -83,7 +83,7 @@ describe('TherapyNotesController.getNotes', () => {
   it('терапевт → делегирует getNotes(therapistId, clientId)', async () => {
     const { controller, notes } = makeController();
     const res = await controller.getNotes(makeReq(3n), '5');
-    expect(notes.getNotes).toHaveBeenCalledWith(3n, 5);
+    expect(notes.getNotes).toHaveBeenCalledWith(3n, 5n);
     expect(res).toEqual([{ id: 1, text: 'заметка' }]);
   });
 
@@ -142,7 +142,7 @@ describe('TherapyNotesController.createNote', () => {
   it('валидное тело → делегирует createNote(therapistId, clientId, {date, text})', async () => {
     const { controller, notes } = makeController();
     const res = await controller.createNote(makeReq(3n), '5', VALID_BODY);
-    expect(notes.createNote).toHaveBeenCalledWith(3n, 5, {
+    expect(notes.createNote).toHaveBeenCalledWith(3n, 5n, {
       date: '2026-07-01',
       text: 'текст заметки',
     });
@@ -210,7 +210,7 @@ describe('TherapyNotesController.getConceptualization', () => {
   it('терапевт → делегирует getConceptualization(therapistId, clientId)', async () => {
     const { controller, notes } = makeController();
     const res = await controller.getConceptualization(makeReq(3n), '5');
-    expect(notes.getConceptualization).toHaveBeenCalledWith(3n, 5);
+    expect(notes.getConceptualization).toHaveBeenCalledWith(3n, 5n);
     expect(res).toEqual({ schemaIds: [] });
   });
 
@@ -250,7 +250,7 @@ describe('TherapyNotesController.updateSessionInfo', () => {
     const { controller, clientData } = makeController();
     const body = { therapyStartDate: '2026-01-01', meetingDays: [1, 3] };
     const res = await controller.updateSessionInfo(makeReq(3n), '5', body);
-    expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5, body);
+    expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5n, body);
     expect(res).toEqual({ ok: true });
   });
 
@@ -290,7 +290,7 @@ describe('TherapyNotesController.saveConceptualization', () => {
     const { controller, notes } = makeController();
     const body = { schemaIds: ['abandonment'] };
     const res = await controller.saveConceptualization(makeReq(3n), '5', body);
-    expect(notes.saveConceptualization).toHaveBeenCalledWith(3n, 5, body);
+    expect(notes.saveConceptualization).toHaveBeenCalledWith(3n, 5n, body);
     expect(res).toEqual({ ok: true });
   });
 

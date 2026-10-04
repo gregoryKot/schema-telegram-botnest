@@ -96,16 +96,16 @@ const relB: Rel = {
 describe('ModeMapsService — listModeMaps/createModeMap требуют активную связь', () => {
   it('listModeMaps: чужой терапевт без связи с клиентом — отказ', async () => {
     const { service } = makeService([relA]);
-    await expect(service.listModeMaps(T2, Number(CLIENT_A))).rejects.toThrow(
+    await expect(service.listModeMaps(T2, CLIENT_A)).rejects.toThrow(
       'No active relation',
     );
   });
 
   it('createModeMap: без активной связи — отказ, карта не создаётся', async () => {
     const { service, maps } = makeService([relA]);
-    await expect(
-      service.createModeMap(T2, Number(CLIENT_A), 'Карта'),
-    ).rejects.toThrow('No active relation');
+    await expect(service.createModeMap(T2, CLIENT_A, 'Карта')).rejects.toThrow(
+      'No active relation',
+    );
     expect(maps).toHaveLength(0);
   });
 
@@ -113,7 +113,7 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
     const { service, maps } = makeService([relA]);
     const map = await service.createModeMap(
       T1,
-      Number(CLIENT_A),
+      CLIENT_A,
       'Карта Ани',
       'couple',
     );
@@ -126,7 +126,7 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
 
   it('createModeMap: неизвестный kind подменяется на "problem"', async () => {
     const { service } = makeService([relA]);
-    const map = await service.createModeMap(T1, Number(CLIENT_A), 'X', 'bogus');
+    const map = await service.createModeMap(T1, CLIENT_A, 'X', 'bogus');
     expect(map.kind).toBe('problem');
   });
 
@@ -156,8 +156,8 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
         updatedAt: new Date(),
       },
     );
-    const listA = await service.listModeMaps(T1, Number(CLIENT_A));
-    const listB = await service.listModeMaps(T1, Number(CLIENT_B));
+    const listA = await service.listModeMaps(T1, CLIENT_A);
+    const listB = await service.listModeMaps(T1, CLIENT_B);
     expect(listA.map((m: any) => m.title)).toEqual(['A']);
     expect(listB.map((m: any) => m.title)).toEqual(['B']);
   });

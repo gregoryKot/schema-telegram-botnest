@@ -12,7 +12,7 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import { MobileAppBanner } from '../MobileAppBanner';
 import { ScreenSkeleton } from '../Skeleton';
 import type { Need } from '../../types';
-import type { TherapyClientSummary } from '../../api';
+import type { TherapyClientSummary, UserId } from '../../api';
 import type { Section } from './navigation';
 import type { useOverlays } from './useOverlays';
 
@@ -34,7 +34,7 @@ interface Props {
   yesterdayRatings: Record<string, number>;
   displayName: string | null;
   navigate: NavigateFunction;
-  openClientId: number | null;
+  openClientId: UserId | null;
   switchTherapistMode: (on: boolean, persist?: boolean) => void;
   therapistBackHandlerRef: MutableRefObject<() => void>;
   setTherapistClients: (clients: TherapyClientSummary[]) => void;

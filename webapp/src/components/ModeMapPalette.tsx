@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
-import type { ModeMapNode, TherapistCustomMode } from '../api';
+import type { ModeMapNode, TherapistCustomMode, UserId } from '../api';
 import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
@@ -23,7 +23,7 @@ function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' 
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
 
-interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: number }
+interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: UserId }
 
 export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   const tr = useTr();

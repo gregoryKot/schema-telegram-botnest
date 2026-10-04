@@ -1,8 +1,8 @@
 // DTO/типы ответов API мини-аппа. Общие с webapp типы — в shared/src/apiTypes
-// (правило №3): единый источник, оба фронта ре-экспортируют. Ре-экспортируются
-// из api.ts — импорты потребителей не меняются.
-import type { ConceptSnapshot } from '../../shared/src/apiTypes';
+// (правило №3): единый источник; ре-экспортируются из api.ts.
+import type { ConceptSnapshot, UserId } from '../../shared/src/apiTypes';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -24,8 +24,8 @@ export type { TherapyClientSummary } from '../../shared/src/types';
 // В мини-аппе БЕЗ mode-map (фича только в webapp) — поэтому остаётся локальным.
 export interface ClientConceptualization {
   id: number;
-  therapistId: number;
-  clientId: number;
+  therapistId: UserId;
+  clientId: UserId;
   schemaIds: string[];
   modeIds: string[];
   earlyExperience: string | null;

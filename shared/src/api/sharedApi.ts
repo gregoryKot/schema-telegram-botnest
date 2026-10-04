@@ -1,10 +1,9 @@
 // Общие методы API обоих фронтендов (webapp ↔ schema-miniapp, правило №3).
-// До 2026-08 один и тот же список эндпоинтов жил копией в двух api.ts —
-// новый метод дописывали в оба, и фиксы доезжали до одного (класс дрейфа №3).
-// Теперь метод описывается ОДИН раз здесь; фронт отличается только транспортом
-// (webapp — JWT Bearer, мини-апп — initData) и платформенными методами,
-// которые остаются в его api.ts (booking/статьи/админка — сайт; exercises,
-// saveRating с outbox-датой, conceptualization со своим типом — оба локально).
+// До 2026-08 список эндпоинтов жил копией в двух api.ts — новый метод
+// дописывали в оба, и фиксы доезжали до одного. Теперь метод описан ОДИН раз
+// здесь; фронт отличается только транспортом (webapp — JWT Bearer, мини-апп —
+// initData) и платформенными методами в своём api.ts (booking/статьи/админка —
+// сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
 import type {
   Need,
   UserProfile,
@@ -16,6 +15,7 @@ import type {
   TherapyClientSummary,
 } from '../types';
 import type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -173,10 +173,10 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', {
       name,
     }),
-  removeClient: (clientId: number) => t.del(`/api/therapy/clients/${clientId}`),
-  renameClient: (clientId: number, alias: string) =>
+  removeClient: (id: UserId) => t.del(`/api/therapy/clients/${id}`),
+  renameClient: (clientId: UserId, alias: string) =>
     t.post(`/api/therapy/rename-client/${clientId}`, { alias }),
-  requestYsq: (clientId: number) =>
+  requestYsq: (clientId: UserId) =>
     t.post(`/api/therapy/request-ysq/${clientId}`, {}),
   becomeTherapist: (code: string) =>
     t.postJson<{ ok: boolean }>('/api/therapy/become-therapist', { code }),
@@ -199,29 +199,29 @@ export const buildSharedApi = (t: ApiTransport) => ({
     targetDays?: number;
     needId?: string;
     dueDate?: string;
-    clientId?: number;
+    clientId?: UserId;
   }) => t.postJson<UserTask>('/api/therapy/tasks', body),
   getTasks: () => t.get<UserTask[]>('/api/therapy/tasks'),
   getTaskHistory: () => t.get<UserTask[]>('/api/therapy/tasks/history'),
   completeTask: (id: number, done: boolean) =>
     t.post(`/api/therapy/tasks/${id}/complete`, { done }),
-  getTherapyTasksForClient: (clientId: number) =>
+  getTherapyTasksForClient: (clientId: UserId) =>
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
-  getTherapistNotes: (clientId: number) =>
+  getTherapistNotes: (clientId: UserId) =>
     t.get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
-  createTherapistNote: (clientId: number, date: string, text: string) =>
+  createTherapistNote: (clientId: UserId, date: string, text: string) =>
     t.postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote: (noteId: number) =>
     t.del(`/api/therapy/notes/${noteId}`),
   updateSessionInfo: (
-    clientId: number,
+    clientId: UserId,
     body: {
       therapyStartDate?: string | null;
       nextSession?: string | null;
       meetingDays?: number[];
     },
   ) => t.post(`/api/therapy/session-info/${clientId}`, body),
-  getTherapyClientData: (clientId: number) =>
+  getTherapyClientData: (clientId: UserId) =>
     t.get<ClientData>(`/api/therapy/client-data/${clientId}`),
   getSchemaNotes: () => t.get<UserSchemaNote[]>('/api/schema-notes'),
   saveSchemaNote: (body: SaveSchemaNoteBody) =>
@@ -230,8 +230,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
   saveModeNote: (body: SaveModeNoteBody) => t.post('/api/mode-notes', body),
   // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
   // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
-  getClientSchemaNotes: (clientId: number) =>
+  getClientSchemaNotes: (clientId: UserId) =>
     t.get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),
-  getClientModeNotes: (clientId: number) =>
+  getClientModeNotes: (clientId: UserId) =>
     t.get<UserModeNote[]>(`/api/therapy/client/${clientId}/mode-notes`),
 });

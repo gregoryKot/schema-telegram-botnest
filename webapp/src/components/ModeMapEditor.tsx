@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
+import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
@@ -21,7 +21,7 @@ import { useIsMobile } from './useIsMobile';
 
 interface Props {
   mapId: number;
-  clientId: number;
+  clientId: UserId;
   kind: ModeMapKind;
   initialNodes: ModeMapNode[];
   initialEdges: ModeMapEdge[];

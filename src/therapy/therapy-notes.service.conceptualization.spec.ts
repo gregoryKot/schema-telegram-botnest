@@ -42,21 +42,19 @@ const activeRel: Rel = {
 describe('TherapyNotesService.getConceptualization', () => {
   it('возвращает null, когда концептуализации ещё нет', async () => {
     const { service } = makeService([activeRel]);
-    await expect(
-      service.getConceptualization(T1, Number(CLIENT)),
-    ).resolves.toBeNull();
+    await expect(service.getConceptualization(T1, CLIENT)).resolves.toBeNull();
   });
 
   it('чужой терапевт не может прочитать концептуализацию', async () => {
     const { service } = makeService([activeRel]);
-    await expect(
-      service.getConceptualization(T2, Number(CLIENT)),
-    ).rejects.toThrow('No active relation');
+    await expect(service.getConceptualization(T2, CLIENT)).rejects.toThrow(
+      'No active relation',
+    );
   });
 
   it('сохранённая концептуализация читается назад теми же значениями массивов и текста (read-after-write)', async () => {
     const { service } = makeService([activeRel]);
-    await service.saveConceptualization(T1, Number(CLIENT), {
+    await service.saveConceptualization(T1, CLIENT, {
       schemaIds: ['defectiveness', 'abandonment'],
       modeIds: ['vulnerable_child'],
       modeMapNodes: [{ id: 'n1', label: 'Уязвимый ребёнок' }],
@@ -64,7 +62,7 @@ describe('TherapyNotesService.getConceptualization', () => {
       goals: 'снизить избегание',
     });
 
-    const loaded = await service.getConceptualization(T1, Number(CLIENT));
+    const loaded = await service.getConceptualization(T1, CLIENT);
     expect(loaded).not.toBeNull();
     expect(loaded!.schemaIds).toEqual(['defectiveness', 'abandonment']);
     expect(loaded!.modeIds).toEqual(['vulnerable_child']);
@@ -78,13 +76,13 @@ describe('TherapyNotesService.getConceptualization', () => {
 
   it('history возвращается расшифрованным по каждому снапшоту', async () => {
     const { service } = makeService([activeRel]);
-    await service.saveConceptualization(T1, Number(CLIENT), {
+    await service.saveConceptualization(T1, CLIENT, {
       schemaIds: ['defectiveness'],
       goals: 'v1',
     });
-    await service.saveConceptualization(T1, Number(CLIENT), { goals: 'v2' });
+    await service.saveConceptualization(T1, CLIENT, { goals: 'v2' });
 
-    const loaded = await service.getConceptualization(T1, Number(CLIENT));
+    const loaded = await service.getConceptualization(T1, CLIENT);
     expect(loaded!.history).toHaveLength(1);
     expect(loaded!.history[0].goals).toBe('v1');
     expect(loaded!.history[0].schemaIds).toEqual(['defectiveness']);

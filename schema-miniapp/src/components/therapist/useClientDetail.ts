@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { api, reportClientError } from '../../api';
+import { api, reportClientError, type UserId } from '../../api';
+import { sameId } from '../../../../shared/src/utils/sameId';
 import type {
   TherapyClientSummary,
   UserTask,
@@ -17,7 +18,6 @@ import {
 import { useConceptEditing } from './useConceptEditing';
 import { useSessionAliasEditing } from './useSessionAliasEditing';
 import { buildConceptExport } from './conceptExport';
-
 interface Params {
   switchView: (v: 'list' | 'client') => void;
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -28,7 +28,7 @@ interface Params {
 // useConceptEditing.ts (концептуализация), useSessionAliasEditing.ts
 // (сессии/алиас), conceptExport.ts (текст экспорта).
 export function useClientDetail({ switchView, setClients }: Params) {
-  const openClientIdRef = useRef<number | null>(null);
+  const openClientIdRef = useRef<UserId | null>(null);
 
   // Selected client + all its data
   const [selectedClient, setSelectedClient] =
@@ -109,7 +109,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     const fetched = await fetchClientDetail(clientId);
 
     // Discard stale results if user switched to a different client
-    if (openClientIdRef.current !== clientId) return;
+    if (!sameId(openClientIdRef.current, clientId)) return;
 
     setClientTasks(fetched.tasks);
     setNotes(fetched.notes);
@@ -131,7 +131,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     try {
       await api.removeClient(selectedClient.telegramId);
       setClients((prev) =>
-        prev.filter((c) => c.telegramId !== selectedClient.telegramId),
+        prev.filter((c) => !sameId(c.telegramId, selectedClient.telegramId)),
       );
       switchView('list');
     } catch {

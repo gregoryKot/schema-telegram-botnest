@@ -224,7 +224,7 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     });
     const result = await service.getAllTasksForTherapist(T1);
     expect(result).toHaveLength(1);
-    expect(result[0].clientId).toBe(-42);
+    expect(result[0].clientId).toBe(-42n);
     expect(result[0].clientName).toBe('Оффлайн клиент');
   });
 
@@ -281,8 +281,8 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     const result = await service.getAllTasksForTherapist(T1);
 
     expect(result).toHaveLength(2);
-    const first = result.find((r) => r.clientId === -5)!;
-    const second = result.find((r) => r.clientId === -7)!;
+    const first = result.find((r) => r.clientId === -5n)!;
+    const second = result.find((r) => r.clientId === -7n)!;
     expect(first.tasks).toHaveLength(1);
     expect(first.tasks[0].text).toBe('задача первого');
     expect(second.tasks).toHaveLength(1);
@@ -306,7 +306,7 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       completedAt: null,
       createdAt: new Date(),
     });
-    const result = await service.getTasksForClient(T2, Number(CLIENT_A));
+    const result = await service.getTasksForClient(T2, CLIENT_A);
     expect(result).toBeNull();
   });
 
@@ -338,7 +338,7 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       completedAt: null,
       createdAt: new Date(),
     });
-    const [task] = (await service.getTasksForClient(T1, Number(CLIENT_A)))!;
+    const [task] = (await service.getTasksForClient(T1, CLIENT_A))!;
     expect(task.text).toBe('трекер каждый день');
     expect(task.doneToday).toBe(true);
     expect(task.progress).toBe(1); // одна отметка сегодня => прогресс 1 из 3
@@ -367,10 +367,10 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       createdAt: new Date(),
     });
 
-    const foreignAttempt = await service.getTasksForClient(T2, -42);
+    const foreignAttempt = await service.getTasksForClient(T2, -42n);
     expect(foreignAttempt).toBeNull();
 
-    const [task] = (await service.getTasksForClient(T1, -42))!;
+    const [task] = (await service.getTasksForClient(T1, -42n))!;
     expect(task.text).toBe('офлайн задача');
     expect(task.doneToday).toBeUndefined();
     expect(task.progress).toBeUndefined();

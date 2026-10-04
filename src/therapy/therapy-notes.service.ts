@@ -89,10 +89,10 @@ export class TherapyNotesService {
 
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
-  async getNotes(therapistId: bigint, clientId: number) {
+  async getNotes(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const tid = therapistId;
-    const cid = BigInt(clientId);
+    const cid = clientId;
     const rows = await this.prisma.therapistNote.findMany({
       where: { therapistId: tid, clientId: cid },
       orderBy: { createdAt: 'desc' },
@@ -103,14 +103,14 @@ export class TherapyNotesService {
 
   async createNote(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: { date: string; text: string },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const note = await this.prisma.therapistNote.create({
       data: {
         therapistId,
-        clientId: BigInt(clientId),
+        clientId,
         date: body.date,
         text: encrypt(body.text) ?? body.text,
       },
@@ -126,10 +126,10 @@ export class TherapyNotesService {
 
   // ─── Case Conceptualization ──────────────────────────────────────────────────
 
-  async getConceptualization(therapistId: bigint, clientId: number) {
+  async getConceptualization(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const tid = therapistId;
-    const cid = BigInt(clientId);
+    const cid = clientId;
     const row = await this.prisma.clientConceptualization.findUnique({
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
     });
@@ -142,7 +142,7 @@ export class TherapyNotesService {
 
   async saveConceptualization(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: {
       schemaIds?: string[];
       modeIds?: string[];
@@ -159,7 +159,7 @@ export class TherapyNotesService {
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const tid = therapistId;
-    const cid = BigInt(clientId);
+    const cid = clientId;
     const enc = encryptConceptFields(body);
     const now = new Date().toISOString();
 

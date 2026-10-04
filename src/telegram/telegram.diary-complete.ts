@@ -133,7 +133,7 @@ export async function maybeNotifyPairPartners(
   const pairs = await deps.pairsService.getUserPairs(userId);
   for (const pair of pairs) {
     if (pair.status !== 'active' || pair.partnerId === null) continue;
-    const partnerId = BigInt(pair.partnerId);
+    const partnerId = pair.partnerId;
 
     const settings = await deps.botService.getUserSettings(partnerId);
     if (!settings || settings.notifyEnabled === false) continue;

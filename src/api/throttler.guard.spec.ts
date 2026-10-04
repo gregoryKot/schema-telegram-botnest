@@ -90,8 +90,23 @@ describe('UserThrottlerGuard.getTracker', () => {
 
   it('верифицированный userId (после auth-гарда) — чистый uid-бакет', async () => {
     await expect(
-      guard.track({ telegramUserId: 42, ip: '1.2.3.4' }),
+      guard.track({ webUser: { userId: 42n }, ip: '1.2.3.4' }),
     ).resolves.toBe('uid:42');
+  });
+
+  // Аудит 2026-10, X-1: через Number() два соседних веб-id (> 2^53) падали в один
+  // бакет. Ключ строится из точного bigint.
+  it('веб-id > 2^53 — точный ключ, соседние аккаунты не делят бакет', async () => {
+    const a = await guard.track({
+      webUser: { userId: 1000000000000000123n },
+      ip: '1.2.3.4',
+    });
+    const b = await guard.track({
+      webUser: { userId: 1000000000000000124n },
+      ip: '1.2.3.4',
+    });
+    expect(a).toBe('uid:1000000000000000123');
+    expect(b).toBe('uid:1000000000000000124');
   });
 
   it('честно подписанный JWT — свой бакет, без привязки к адресу', async () => {

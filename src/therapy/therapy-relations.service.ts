@@ -10,6 +10,7 @@ import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 const decName = (v: string | null): string | null =>
   v == null ? null : (decrypt(v) ?? v);
 import { randomBytes } from 'crypto';
+import { activeRelationWhere } from './relation-where';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
 
 // Связи терапевт↔клиент: приглашения, подключение, список клиентов,
@@ -85,10 +86,9 @@ export class TherapyRelationsService {
     const realClients = relations
       .filter((rel) => rel.client !== null)
       .map((rel) => {
-        const clientBigId = rel.client!.id;
-        const clientId = Number(clientBigId);
+        const clientId = rel.client!.id;
         const { streak, daysSince, history } = overviews.get(
-          String(clientBigId),
+          String(clientId),
         ) ?? {
           streak: 0,
           daysSince: -1,
@@ -136,7 +136,7 @@ export class TherapyRelationsService {
     const virtualClients: TherapyClientSummary[] = relations
       .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
-        telegramId: -rel.id,
+        telegramId: -BigInt(rel.id),
         name: decName(rel.virtualClientName) as string,
         clientAlias: decName(rel.clientAlias),
         streak: 0,
@@ -201,46 +201,29 @@ export class TherapyRelationsService {
 
   // Public wrapper for other therapy services/controller — same semantics as
   // the private helper used by all therapist-only data accessors.
-  async assertHasClient(therapistId: bigint, clientId: number): Promise<void> {
+  async assertHasClient(therapistId: bigint, clientId: bigint): Promise<void> {
     return this.assertRelation(therapistId, clientId);
   }
 
   private async assertRelation(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
   ): Promise<void> {
-    if (clientId < 0) {
-      // Virtual client — identified by -rel.id
-      // clientId: null — иначе -id связи РЕАЛЬНОГО клиента проходил бы как
-      // «виртуальный» (теневой бакет с чужими задачами/данными, T4).
-      const rel = await this.prisma.therapyRelation.findFirst({
-        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
-      });
-      if (!rel) throw new Error('No active relation');
-      return;
-    }
     const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId, clientId: BigInt(clientId), status: 'active' },
+      where: activeRelationWhere(therapistId, clientId),
     });
     if (!rel) throw new Error('No active relation');
   }
 
   async renameClient(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     alias: string,
   ): Promise<void> {
     const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
-    if (clientId < 0) {
-      await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId, clientId: null, status: 'active' },
-        data: { clientAlias: encAlias },
-      });
-    } else {
-      await this.prisma.therapyRelation.updateMany({
-        where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: { clientAlias: encAlias },
-      });
-    }
+    await this.prisma.therapyRelation.updateMany({
+      where: activeRelationWhere(therapistId, clientId),
+      data: { clientAlias: encAlias },
+    });
   }
 }
