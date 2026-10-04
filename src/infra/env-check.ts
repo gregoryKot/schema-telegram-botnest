@@ -3,6 +3,7 @@
 // глобалов, вызывается из main.ts и из блока /stats (env-check.format.ts).
 import { ENV_REGISTRY } from './env-registry.entries';
 import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
+import { BACKUP_CROSS_CHECKS } from './env-check.backup';
 
 type Env = Record<string, string | undefined>;
 
@@ -42,11 +43,10 @@ function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
   };
 }
 
-// Кросс-проверки, которые не выражаются одним форматом одной переменной —
-// связывают несколько переменных сразу. Сверку адреса возврата OAuth с
-// каноническим хостом НЕ дублируем — она уже в oauth-redirect-config.ts,
-// здесь только вызов.
+// Кросс-проверки связывают несколько переменных сразу. Сверка адреса возврата
+// OAuth с каноническим хостом — в oauth-redirect-config.ts, здесь только вызов.
 export const CROSS_CHECKS: CrossCheck[] = [
+  ...BACKUP_CROSS_CHECKS,
   // Инцидент 2026-09-15: пустой ADMIN_EMAIL при заданном RESEND_API_KEY —
   // письма о записях молчали.
   requiresToo('resendRequiresAdminEmail', 'RESEND_API_KEY', 'ADMIN_EMAIL'),

@@ -1,12 +1,10 @@
 // Точка входа контейнера (Dockerfile CMD). Node-супервизор старта.
 //
-// Ключевое отличие от прежней версии: публичный порт 3000 с ПЕРВОЙ секунды
-// держит front (deploy/front-server.mjs), а приложение слушает внутренний
-// APP_PORT. Поэтому пока идёт старт (recover → migrate → буст Nest) или пока
-// приложение крашлупит, клиент видит нашу страницу техработ, а не generic-503
-// самой Amvera. Как только приложение поднимает APP_PORT — front прозрачно
-// проксирует на него; упало — снова страница техработ. Никакого окна, где порт
-// 3000 пустой (кроме пересборки образа — это уровень платформы).
+// Публичный порт 3000 с ПЕРВОЙ секунды держит front (deploy/front-server.mjs),
+// приложение слушает внутренний APP_PORT. Пока идёт старт (recover → migrate →
+// буст Nest) или приложение крашлупит, клиент видит нашу страницу техработ, а
+// не generic-503 Amvera; поднялось — front прозрачно проксирует; упало — снова
+// техработы. Окна с пустым портом нет (кроме пересборки образа — платформа).
 //
 // Логика:
 //   1. front поднимается сразу (владеет портом 3000 всю жизнь контейнера);
@@ -15,12 +13,13 @@
 //      стартуем (не гоним крашлуп по битой схеме);
 //   4. node dist/main на APP_PORT — с ограниченным числом перезапусков
 //      (транзиентный краш восстанавливается сам); исчерпали лимит → техработы.
+//   5. после миграций — планировщик бэкапов в B2 (backup-scheduler.cjs).
 //
-// Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT и пробрасывает их
-// текущему дочернему процессу приложения (bot.stop, prisma disconnect), затем
-// закрывает front и выходит.
+// Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT, пробрасывает их
+// приложению (bot.stop, prisma disconnect), затем закрывает front и выходит.
 import { spawn } from 'node:child_process';
 import { startFront } from './front-server.mjs';
+import backupScheduler from './backup-scheduler.cjs';
 import { parseDbTarget, waitForDb } from './wait-for-db.mjs';
 
 const PORT =
@@ -52,11 +51,12 @@ const front = startFront({ port: PORT, appPort: APP_PORT });
 let current = null;
 let shuttingDown = false;
 let cleanExit = false;
+let backup = null; // планировщик бэкапов в B2 (deploy/backup-scheduler.cjs)
 
 function finish() {
-  // Front держит event loop живым (слушает порт). Явно закрываем и выходим,
-  // только когда это осмысленно (чистый выход приложения или сигнал). При
-  // техработах — НЕ выходим: front должен продолжать отдавать страницу.
+  // Front держит event loop живым. Выходим только при чистом выходе приложения
+  // или сигнале; при техработах — НЕ выходим: front отдаёт страницу.
+  backup?.stop();
   front.close(() => process.exit(0));
   // Страховка, если close висит на удерживаемых соединениях.
   setTimeout(() => process.exit(0), 3000).unref();
@@ -94,12 +94,10 @@ function run(cmdStr, extraEnv) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
-  // Ждём готовности БД перед recover/migrate: при рестарте контейнера
-  // Postgres-под Amvera (CNPG) поднимается медленнее приложения, и migrate
-  // deploy падал с P1001 (БД недоступна) → entrypoint навсегда парковался на
-  // техработах, хотя схема цела (инцидент 2026-07-20). Ждём именно TCP-порт:
-  // P1001 — это и есть отказ connect. Пока ждём, front и так отдаёт техработы,
-  // так что ожидание ничего не ухудшает — только даёт БД время встать.
+  // Ждём готовности БД перед recover/migrate: Postgres-под Amvera (CNPG) при
+  // рестарте поднимается медленнее приложения, и migrate deploy падал с P1001 →
+  // entrypoint навсегда парковался на техработах (инцидент 2026-07-20). Ждём
+  // TCP-порт — P1001 это и есть отказ connect; front пока отдаёт техработы.
   const dbTarget = parseDbTarget(process.env.DATABASE_URL);
   if (dbTarget) {
     const reachable = await waitForDb({
@@ -119,10 +117,9 @@ async function main() {
   await run(RECOVER_CMD);
   if (shuttingDown) return;
 
-  // migrate deploy с ретраями: доступность TCP ещё не гарантирует, что Postgres
-  // готов обслуживать запросы (короткое окно инициализации). Персистентную
-  // ошибку миграции (битый SQL/P3009) ретраи не «вылечат» — просто отложат
-  // техработы на backoff; это приемлемо и не роняет прод в крашлуп.
+  // migrate deploy с ретраями: открытый TCP не гарантирует, что Postgres готов
+  // (окно инициализации). Битый SQL/P3009 ретраи не вылечат — лишь отложат
+  // техработы на backoff, в крашлуп это не роняет.
   let migrateOk = false;
   for (let attempt = 1; attempt <= MIGRATE_MAX_ATTEMPTS; attempt++) {
     const migrate = await run(MIGRATE_CMD);
@@ -141,6 +138,9 @@ async function main() {
     console.error('[entrypoint] migrate deploy не прошёл — держу страницу техработ');
     return; // front уже отдаёт техработы; приложение не стартуем
   }
+
+  // Бэкапам нужна таблица CronLease — стартуем только после успешных миграций.
+  backup = backupScheduler.startBackupScheduler();
 
   let fails = 0;
   for (;;) {
