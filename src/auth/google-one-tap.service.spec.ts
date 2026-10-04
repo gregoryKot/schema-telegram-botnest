@@ -48,8 +48,17 @@ describe('GoogleOneTapService.login', () => {
         rotated: true,
       },
     });
-    const res = makeRes() as unknown as { cookie: jest.Mock; clearCookie: jest.Mock };
-    const out = await svc.login('h.p.s', 'cookie-1', res as never, '1.2.3.4', 'UA');
+    const res = makeRes() as unknown as {
+      cookie: jest.Mock;
+      clearCookie: jest.Mock;
+    };
+    const out = await svc.login(
+      'h.p.s',
+      'cookie-1',
+      res as never,
+      '1.2.3.4',
+      'UA',
+    );
 
     // Кука nonce едет в верификатор (B-16), после проверки она гасится.
     expect(verifyIdToken).toHaveBeenCalledWith('h.p.s', {

@@ -14,3 +14,19 @@ export async function requireAffected(
   if (res.count === 0) throw new NotFoundException(`${what} not found`);
   return res;
 }
+
+interface OwnedDeleteDelegate {
+  deleteMany(args: {
+    where: { id: number; userId: bigint };
+  }): PromiseLike<{ count: number }>;
+}
+
+/** deleteMany по (id, userId) с 404, если строки нет или она чужая. */
+export function deleteOwned(
+  delegate: OwnedDeleteDelegate,
+  id: number,
+  userId: bigint,
+  what = 'Entry',
+): Promise<{ count: number }> {
+  return requireAffected(delegate.deleteMany({ where: { id, userId } }), what);
+}

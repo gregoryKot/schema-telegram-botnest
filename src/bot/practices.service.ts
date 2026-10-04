@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt } from '../utils/crypto';
-import { requireAffected } from '../utils/require-affected';
-
+import { deleteOwned, requireAffected } from '../utils/require-affected';
 // Практики (пользовательские заметки-упражнения на потребность) и планы
 // (запланированная практика на дату + чек-ин выполнения).
 @Injectable()
@@ -26,9 +25,7 @@ export class PracticesService {
   }
 
   async deletePractice(userId: bigint, id: number) {
-    await requireAffected(
-      this.prisma.userPractice.deleteMany({ where: { id, userId } }),
-    );
+    await deleteOwned(this.prisma.userPractice, id, userId);
   }
 
   // ─── Plans ────────────────────────────────────────────────────────────────

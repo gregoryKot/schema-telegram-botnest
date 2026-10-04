@@ -23,12 +23,6 @@ import { VkProvider } from './providers/vk.provider';
 import { toVkState } from './providers/vk-state';
 import type { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import type { ProviderIdentity } from './providers/types';
-import type {
-  GoogleOneTapService,
-  OneTapLoginResult,
-} from './google-one-tap.service';
-import type { SecurityLogService } from './security-log.service';
-import type { GoogleOneTapDto } from './dto/google-one-tap.dto';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
 
@@ -98,31 +92,12 @@ function makeRes(): { res: Response; mocks: ResMocks } {
   return { res: mocks as unknown as Response, mocks };
 }
 
-interface OneTapMocks {
-  login: jest.Mock;
-}
-
-function makeOneTap(): { oneTap: GoogleOneTapService; mocks: OneTapMocks } {
-  const mocks: OneTapMocks = { login: jest.fn() };
-  return { oneTap: mocks as unknown as GoogleOneTapService, mocks };
-}
-
-function makeSecurityLog(): {
-  securityLog: SecurityLogService;
-  log: jest.Mock;
-} {
-  const log = jest.fn();
-  return { securityLog: { log } as unknown as SecurityLogService, log };
-}
-
 function makeController(
   providers: AuthProviderRegistry,
   flow: AuthFlowService,
   config: ConfigService = makeConfig(),
-  oneTap: GoogleOneTapService = makeOneTap().oneTap,
-  securityLog: SecurityLogService = makeSecurityLog().securityLog,
 ): AuthOauthController {
-  return new AuthOauthController(config, providers, flow, oneTap, securityLog);
+  return new AuthOauthController(config, providers, flow);
 }
 
 interface VkProviderMocks {
@@ -549,89 +524,5 @@ describe('AuthOauthController — колбэки не пробрасывают �
     await expect(
       controller.vkCallback('', '', '', '', req, res),
     ).resolves.not.toThrow();
-  });
-});
-
-// Google One Tap: анонимный POST-роут (у человека сессии ещё нет), но защищён
-// CSRF-заголовком — иначе сторонний сайт мог бы дёрнуть его с чужой всплывашкой.
-// Контроллер — тонкий делегат: requireCsrf, затем GoogleOneTapService.login с
-// credential/res/ip/ua. requireCsrf — реальный (hasCsrfHeader из auth-http.util).
-describe('AuthOauthController.googleOneTap', () => {
-  const BODY: GoogleOneTapDto = { credential: 'header.payload.sig' };
-
-  it('нет CSRF-заголовка → UnauthorizedException, oneTap.login не вызывается', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq(); // headers: {} — ни x-requested-with, ни JSON-контента
-    const { res } = makeRes();
-
-    await expect(
-      controller.googleOneTap(BODY, req, res),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(mocks.login).not.toHaveBeenCalled();
-  });
-
-  it('есть x-requested-with → login(credential, res, ip, ua) и его результат возвращается', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const result: OneTapLoginResult = {
-      accessToken: 'access-1',
-      expiresIn: 900,
-    };
-    mocks.login.mockResolvedValue(result);
-
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq({
-      headers: { 'x-requested-with': 'one-tap', 'user-agent': 'UA/1.0' },
-    } as Partial<Request>);
-    const { res } = makeRes();
-
-    await expect(controller.googleOneTap(BODY, req, res)).resolves.toBe(result);
-    expect(mocks.login).toHaveBeenCalledWith(
-      'header.payload.sig',
-      res,
-      '1.2.3.4',
-      'UA/1.0',
-    );
-  });
-
-  it('application/json-контент тоже проходит CSRF-проверку (fallback hasCsrfHeader)', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const result: OneTapLoginResult = {
-      twofa: true,
-      challengeToken: 'challenge-1',
-    };
-    mocks.login.mockResolvedValue(result);
-
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq({
-      headers: { 'content-type': 'application/json' },
-    } as Partial<Request>);
-    const { res } = makeRes();
-
-    await expect(controller.googleOneTap(BODY, req, res)).resolves.toBe(result);
-    expect(mocks.login).toHaveBeenCalledWith(
-      'header.payload.sig',
-      res,
-      '1.2.3.4',
-      undefined,
-    );
   });
 });
