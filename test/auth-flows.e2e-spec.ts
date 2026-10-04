@@ -360,6 +360,21 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
+  describe('Google One Tap nonce (B-16)', () => {
+    it('GET nonce → кука gsi_nonce (httpOnly) + хеш секрета в теле, без кэша', async () => {
+      const res = await request(app.getHttpServer()).get(
+        '/api/auth/google/one-tap/nonce',
+      );
+      expect(res.status).toBe(200);
+      const cookie = extractSetCookie(res, 'gsi_nonce')!;
+      expect(cookie).toMatch(/HttpOnly/i);
+      expect(cookie).toMatch(/Path=\/api\/auth/);
+      const secret = extractCookieValue(res, 'gsi_nonce')!;
+      expect(res.body.nonce).toBe(hashToken(secret));
+      expect(res.headers['cache-control']).toContain('no-store');
+    });
+  });
+
   describe('malformed bodies → 400, not 500', () => {
     // Neither route uses a DTO (manual `@Body('x')` guards) — empty body → 400.
     it.each([['/api/auth/email/link'], ['/api/auth/merge']])(

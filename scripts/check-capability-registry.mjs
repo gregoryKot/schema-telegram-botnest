@@ -29,9 +29,8 @@ const VERBOSE = process.argv.includes('--verbose');
 
 // Зеркало `files` из src/infra/capability-report.ts — файлы, чьи молчаливые
 // ветки уже видны в /stats + при старте (capability-boot-log.ts). Гейты тут
-// однофайловые (gate-sandbox копирует ровно один .mjs), поэтому список
-// хардкожен по образцу ALLOWED_CHANNELS, а не импортируется. Экспорт ради
-// структурной проверки в capability-registry.spec.ts.
+// однофайловые (gate-sandbox копирует один .mjs) — список хардкожен, а не
+// импортируется. Экспорт ради структурной проверки в capability-registry.spec.ts.
 export const REGISTERED_FILES = new Set([
   'src/utils/admin-alert.ts',
   'src/auth/email.service.ts',

@@ -23,6 +23,12 @@ vi.mock('../api', () => ({
   },
 }));
 import { api } from '../api';
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 // jsdom не реализует IntersectionObserver (useReveal, useLandingGoals) —

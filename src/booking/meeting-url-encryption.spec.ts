@@ -10,10 +10,9 @@
 import type { ConfigService } from '@nestjs/config';
 
 const ZOOM = 'https://us02web.zoom.us/j/123456789?pwd=SECRETPWD';
-const JITSI = 'https://meet.jit.si/schemehappens-abcdef123456';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-let crypto: typeof import('../utils/crypto');
+let cryptoMod: typeof import('../utils/crypto');
 let MeetingService: typeof import('./meeting.service').MeetingService;
 let BookingNotifyService: typeof import('./booking-notify.service').BookingNotifyService;
 let queries: typeof import('./booking.queries');
@@ -24,7 +23,7 @@ beforeAll(() => {
   process.env.ENCRYPTION_KEY = 'cd'.repeat(32);
   process.env.NODE_ENV = 'test';
   jest.resetModules();
-  crypto = require('../utils/crypto');
+  cryptoMod = require('../utils/crypto');
   MeetingService = require('./meeting.service').MeetingService;
   BookingNotifyService =
     require('./booking-notify.service').BookingNotifyService;
@@ -90,7 +89,7 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
     expect(url).toMatch(/^https:\/\/meet\.jit\.si\//);
     const stored = [...store.values()][0].meetingUrl as string;
     expect(stored).not.toContain('meet.jit.si');
-    expect(crypto.decrypt(stored)).toBe(url);
+    expect(cryptoMod.decrypt(stored)).toBe(url);
   });
 
   it('повторная сессия: ссылка читается из зашифрованной строки и совпадает', async () => {
@@ -130,12 +129,12 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ join_url: ZOOM, id: 123456789 }),
-      }) as unknown as typeof fetch;
+      });
 
     expect(await zoomOn.service.createMeeting(TARGET)).toBe(ZOOM);
     const stored = zoomOn.store.get(key)!.meetingUrl as string;
     expect(stored).not.toContain('pwd=');
-    expect(crypto.decrypt(stored)).toBe(ZOOM);
+    expect(cryptoMod.decrypt(stored)).toBe(ZOOM);
   });
 });
 
@@ -148,10 +147,10 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       startsAt: new Date('2026-07-13T17:00:00Z'),
       durationMin: 50,
       cancelToken: 'tok',
-      clientName: crypto.encrypt('Мария'),
-      clientContact: crypto.encrypt('@maria'),
+      clientName: cryptoMod.encrypt('Мария'),
+      clientContact: cryptoMod.encrypt('@maria'),
       message: null,
-      meetingUrl: crypto.encrypt(ZOOM),
+      meetingUrl: cryptoMod.encrypt(ZOOM),
       ...overrides,
     };
   }
@@ -201,7 +200,7 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       ]
     )[0].data.meetingUrl;
     expect(saved).not.toContain('pwd=');
-    expect(crypto.decrypt(saved)).toBe(ZOOM);
+    expect(cryptoMod.decrypt(saved)).toBe(ZOOM);
     expect(calDav.pushEvent.mock.calls[0]).toEqual([
       expect.objectContaining({ location: ZOOM }),
     ]);
@@ -229,7 +228,7 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       'https://schemehappens.ru',
     );
     expect(text).toContain('SECRETPWD');
-    expect(text).not.toContain(row.meetingUrl as string);
+    expect(text).not.toContain(row.meetingUrl);
   });
 
   it('админский список и getBookingById расшифровывают meetingUrl', async () => {

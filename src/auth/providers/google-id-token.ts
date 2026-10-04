@@ -30,8 +30,7 @@ export interface GoogleIdTokenClaims {
   email?: string;
   name?: string;
   emailVerified: boolean;
-  /** Claim `nonce` (One Tap: привязка токена к браузеру). */
-  nonce?: string;
+  nonce?: string; // One Tap: привязка токена к браузеру
   /** Подпись проверить не удалось — JWKS недостижим, claims проверены офлайн. */
   offline: boolean;
 }

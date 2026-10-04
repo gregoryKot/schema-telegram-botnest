@@ -107,7 +107,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
   ];
 
   it.each(DELETE_ENDPOINTS)(
-    '$label: B не может удалить чужую запись, A может удалить свою',
+    '$label: B получает 404 на чужую запись, A может удалить свою',
     async ({ create, list, del }) => {
       const a = agentAs(USER_A);
       const b = agentAs(USER_B);
@@ -117,7 +117,8 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
       const id = created.body.id as number;
 
       const bDelete = await del(b, id);
-      expect(bDelete.status).toBeLessThan(300); // filtered WHERE — no-op, not 403
+      // C-8: filtered WHERE затронул 0 строк → 404 (раньше — молчаливые 200)
+      expect(bDelete.status).toBe(404);
       const stillThere = await a.get(list);
       expect(stillThere.body.some((r: { id: number }) => r.id === id)).toBe(
         true,
@@ -146,7 +147,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     const bCheckin = await b.post(`/api/plan/${planId}/checkin`, {
       done: true,
     });
-    expect(bCheckin.status).toBeLessThan(300); // updateMany WHERE userId — no-op
+    expect(bCheckin.status).toBe(404); // C-8: updateMany WHERE userId затронул 0 строк
 
     const bHistory = await b.get('/api/plans/history?days=30');
     expect(bHistory.status).toBe(200);
@@ -162,7 +163,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     const aHistory = await a.get('/api/plans/history?days=30');
     expect(aHistory.status).toBe(200);
     const row = aHistory.body.find((p: { id: number }) => p.id === planId);
-    expect(row?.done).toBe(true); // B's no-op checkin never touched it
+    expect(row?.done).toBe(true); // отвергнутый checkin B план не тронул
   });
 
   // ─── YSQ progress/result DELETE (self-only — no id param, always caller) ──

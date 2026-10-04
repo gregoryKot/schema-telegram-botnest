@@ -97,7 +97,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
   addPractice: (needId: string, text: string) =>
     t.post('/api/practices', { needId, text }),
   deletePractice: (id: number) => t.del(`/api/practices/${id}`),
-  deleteAllUserData: () => t.del('/api/user'),
+  deleteAllUserData: (code?: string) => t.del('/api/user', code && { code }), // code — 2FA
   getPendingPlans: () => t.get<PracticePlan[]>('/api/plan/pending'),
   getPlanHistory: (days = 30) =>
     t.get<PracticePlan[]>(`/api/plans/history?days=${days}`),

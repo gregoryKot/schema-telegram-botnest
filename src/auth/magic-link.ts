@@ -24,17 +24,11 @@ export interface MagicLinkDeps {
 }
 
 /**
- * Общий хвост email-логина и привязки email. Письмо уходит fire-and-forget —
- * ответ мгновенный даже при медленной доставке.
- *
- * `userId` null — адрес ещё никому не принадлежит: ни User, ни AuthProvider до
- * подтверждения не создаём (аудит 2026-10, B-16: любой адрес заводил строки
- * без проверки владения — захват чужого адреса и неограниченный рост таблиц).
- * Аккаунт появится в EmailTokenService.consumeEmailToken.
- *
- * `ticket` — билет входа. Письмо часто открывают на ДРУГОМ устройстве, и
- * сессия доставалась ему, а исходный экран оставался с надписью «письмо
- * отправлено» навсегда (разбор 2026-08-28).
+ * Общий хвост email-логина и привязки email; письмо уходит fire-and-forget.
+ * `userId` null — адрес новый: User/AuthProvider до подтверждения не создаём
+ * (B-16 аудита 2026-10), аккаунт появится в EmailTokenService.consumeEmailToken.
+ * `ticket` — билет входа: письмо часто открывают на ДРУГОМ устройстве, и сессия
+ * доставалась ему, а исходный экран висел «письмо отправлено» (2026-08-28).
  */
 export async function sendMagicLink(
   deps: MagicLinkDeps,
@@ -48,7 +42,7 @@ export async function sendMagicLink(
   await deps.prisma.emailToken.create({
     data: {
       id: crypto.randomUUID(),
-      userId, // null — адрес новый: аккаунт заводится при погашении (B-16)
+      userId,
       tokenHash,
       email: deps.encryptEmail(lower),
       purpose,
@@ -58,7 +52,6 @@ export async function sendMagicLink(
   const base = deps.webappUrl.replace(/\/$/, '');
   const tail = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
   const link = `${base}/api/auth/email/callback?token=${raw}${tail}`;
-  // Нового аккаунта ещё нет — форма по умолчанию («ты»).
   const form = userId === null ? 'ty' : await deps.addressForm(userId);
   const send = purpose === 'link_email_auth' ? deps.sendLink : deps.send;
   void send(lower, link, form).catch((err: Error) => {

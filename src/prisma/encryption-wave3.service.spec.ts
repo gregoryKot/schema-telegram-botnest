@@ -18,11 +18,10 @@ beforeAll(() => {
   process.env.ENCRYPTION_KEY = 'ab'.repeat(32);
   jest.resetModules();
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  ServiceCtor = (
-    require('./encryption-wave3.service') as {
-      EncryptionWave3Service: Ctor;
-    }
-  ).EncryptionWave3Service;
+  const svcMod = require('./encryption-wave3.service') as {
+    EncryptionWave3Service: Ctor;
+  };
+  ServiceCtor = svcMod.EncryptionWave3Service;
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const c = require('../utils/crypto') as typeof import('../utils/crypto');
   decryptFn = c.decrypt;
@@ -70,7 +69,7 @@ function makeDb(
     clientMeeting: table(seed.clientMeeting ?? [], 'clientKey', opts.updated),
     bookingSetting: {
       findUnique: jest.fn(() =>
-        Promise.resolve(opts.flag ? ({ key: 'x' } as Row) : null),
+        Promise.resolve(opts.flag ? { key: 'x' } : null),
       ),
       upsert: jest.fn((args: Row) => Promise.resolve(args)),
     },
@@ -167,7 +166,7 @@ describe('EncryptionWave3Service — дошифровка plaintext (D-9)', () =
     expect(db.authProvider.findMany.mock.calls.length).toBeGreaterThanOrEqual(
       3,
     );
-    expect(decryptFn(rows[1199].email as string)).toBe('user1199@example.com');
+    expect(decryptFn(rows[1199].email)).toBe('user1199@example.com');
   });
 
   it('строка изменилась между чтением и записью → не затираем, флаг не ставим', async () => {

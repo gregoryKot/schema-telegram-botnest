@@ -5,6 +5,8 @@ import { BottomSheet } from '../BottomSheet';
 // LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
 // eager) тянуло бы за собой и код теста YSQ.
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
+import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
+import { useTr } from '../../utils/addressForm';
 import {
   privacyStorageText,
   PRIVACY_NO_SHARE_TEXT,
@@ -205,6 +207,7 @@ export function DeleteOverlay({
   onBackdropClose: () => void;
   onCancel: () => void;
 }) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onBackdropClose} zIndex={300}>
       <div className="u-pt4">
@@ -266,49 +269,20 @@ export function DeleteOverlay({
             </button>
           </div>
         ) : (
-          <div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--accent-red)',
-                textAlign: 'center',
-                marginBottom: 16,
-                fontWeight: 500,
-              }}
-            >
-              Точно? Восстановить невозможно.
-            </div>
-            <button
-              disabled={deleting}
-              onClick={async () => {
-                setDeleting(true);
-                try {
-                  await api.deleteAllUserData();
-                  const theme = localStorage.getItem('app_theme');
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  if (theme) localStorage.setItem('app_theme', theme);
-                  window.location.reload();
-                } catch {
-                  setDeleting(false);
-                  setDeleteConfirm(false);
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '14px 0',
-                borderRadius: 'var(--r-14)',
-                border: 'none',
-                background: 'var(--accent-red)',
-                color: 'var(--on-accent-red)',
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: deleting ? 'default' : 'pointer',
-              }}
-            >
-              {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-            </button>
-          </div>
+          <DeleteAccountConfirm
+            tr={tr}
+            deleting={deleting}
+            setDeleting={setDeleting}
+            deleteAllUserData={api.deleteAllUserData}
+            onFailed={() => setDeleteConfirm(false)}
+            onDeleted={() => {
+              const theme = localStorage.getItem('app_theme');
+              localStorage.clear();
+              sessionStorage.clear();
+              if (theme) localStorage.setItem('app_theme', theme);
+              window.location.reload();
+            }}
+          />
         )}
       </div>
     </BottomSheet>

@@ -31,9 +31,8 @@ function loadCrypto(env: {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     mod = require('./crypto') as CryptoModule;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    isolatedLogger = (
-      require('@nestjs/common') as typeof import('@nestjs/common')
-    ).Logger;
+    const nest = require('@nestjs/common') as typeof import('@nestjs/common');
+    isolatedLogger = nest.Logger;
   });
   return mod!;
 }
