@@ -90,13 +90,13 @@ describe('e2e smoke: удаление записей упражнений (owner
       const id = created.body.id as number;
       expect(typeof id).toBe('number');
 
-      // Чужое удаление: отказ либо «ничего не удалилось» — важно, что запись
-      // осталась у владельца. Сервис фильтрует deleteMany по (id, userId),
-      // поэтому статус может быть и 200 с нулём затронутых строк; проверяем
-      // не статус, а факт.
-      await request(server())
+      // Чужое удаление: 404 (C-8, аудит 2026-10) — раньше сервис отвечал 200 с
+      // нулём затронутых строк, и по ответу нельзя было отличить удаление от
+      // попытки тронуть чужое. Запись при этом осталась у владельца.
+      const stranger = await request(server())
         .delete(`${c.path}/${id}`)
         .set('Authorization', `Bearer ${tokenB()}`);
+      expect(stranger.status).toBe(404);
 
       const afterStranger = await request(server())
         .get(c.path)

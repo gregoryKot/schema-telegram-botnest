@@ -16,6 +16,7 @@ import { MergeService } from '../merge.service';
 import { SecurityLogService } from '../security-log.service';
 import { LoginTicketService } from './login-ticket.service';
 import type { LinkPreview } from './login-ticket.types';
+import * as authPii from '../../utils/auth-provider-crypto';
 
 @Injectable()
 export class TicketLinkService {
@@ -43,15 +44,16 @@ export class TicketLinkService {
           where: { userId: row.userId, provider: row.provider },
         })
       : null;
-    // Этот поток тоже зовёт merge.merge() ниже, значит и здесь второй фактор
-    // переносимого аккаунта пропадает — предпросмотр обязан это показать.
+    // Этот поток тоже зовёт merge.merge(): 2FA переносимого аккаунта пропадает.
     const { counts, twoFactorLost } =
       sameAccount || !row.userId
         ? { counts: {}, twoFactorLost: false }
         : await this.merge.summarize(row.userId, targetUserId);
     return {
       provider: row.provider,
-      displayName: source?.displayName ?? null,
+      displayName: source
+        ? authPii.decryptAuthProviderRow(source).displayName
+        : null,
       sameAccount,
       summary: counts,
       twoFactorLost,
@@ -88,10 +90,8 @@ export class TicketLinkService {
       where: { userId: sourceUserId, provider: row.provider },
     });
 
-    // Хозяина строки меняем ДО merge. Иначе merge снесёт её вместе с
-    // исчезающим аккаунтом (SECURITY_SENSITIVE_TABLES), и приложение,
-    // вернувшись за сессией, увидит «код не найден» — при том, что данные уже
-    // переехали.
+    // Хозяина строки меняем ДО merge: иначе merge снесёт её вместе с
+    // исчезающим аккаунтом (SECURITY_SENSITIVE_TABLES) — «код не найден».
     await this.prisma.loginTicket.update({
       where: { id: row.id },
       data: { userId: targetUserId, ...approved },

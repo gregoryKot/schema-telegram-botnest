@@ -4,7 +4,7 @@
 // админке». Сборка сетки — buildAdminCalendar (admin-calendar.spec.ts), тут
 // проверяется только слой загрузки/расшифровки/метаданных.
 import { encryptRecord } from '../utils/crypto';
-import { SCHEMA } from './booking.service';
+import { BOOKING_SCHEMA } from './booking.schema';
 import { AdminCalendarService } from './admin-calendar.service';
 import { calDavHealth } from './caldav-health';
 
@@ -54,7 +54,7 @@ describe('AdminCalendarService.getCalendar — расшифровка броне
         clientContact: '+7 900 000-00-00',
         message: 'позвоните вечером',
       },
-      SCHEMA,
+      BOOKING_SCHEMA,
     );
     const { service } = makeService({ bookings: [row] });
     const cal = await service.getCalendar(FROM, TO);

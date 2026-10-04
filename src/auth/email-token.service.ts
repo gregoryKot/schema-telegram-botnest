@@ -11,10 +11,8 @@ import { LinkSessionRequiredException } from './link-session-required.exception'
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { decrypt as decField } from '../utils/crypto';
 
-// Погашение magic-link токена вынесено из AuthService отдельным сервисом
-// (файл-храповик правила №10 + сюда же сел 2FA-гейт). Выдача токена
-// (requestEmailLogin/linkEmailToAccount) осталась в AuthService — она пишет
-// EmailToken, а этот сервис его читает.
+// Погашение magic-link токена (правило №10: вынесено из AuthService; выдача
+// токена осталась там).
 export type EmailConsumeResult =
   | { kind: 'tokens'; tokens: TokenPair; purpose: string; userId: bigint }
   // Привязка почты: сессия НЕ выдаётся (A3) — человек уже вошёл в свой аккаунт.
@@ -34,17 +32,12 @@ export class EmailTokenService {
     private readonly totp: TotpService,
   ) {}
 
-  // Consume a login or link_email_auth token. Returns issued tokens OR a TOTP
-  // challenge (2FA-гейт, аудит 2026-08, H1): почтовый ящик — фактор, который
-  // TOTP обязан прикрыть, поэтому магик-линк на login при включённом TOTP не
-  // выдаёт сессию сразу, а требует код (как OAuth-вход).
-  //
-  // Привязка (link_email_auth, аудит 2026-10, A3): письмо уходит на адрес,
-  // который ввёл ЗАПРОСИВШИЙ, а кликнуть может кто угодно. Поэтому ссылка
-  // работает только в браузере с живой сессией аккаунта, для которого она
-  // выдана (`currentUserId`), и сессию не выдаёт никогда: раньше жертва,
-  // кликнув по присланной злоумышленником ссылке, получала сессию АККАУНТА
-  // ЗЛОУМЫШЛЕННИКА. Проверка стоит ДО погашения: чужой клик токен не сжигает.
+  // Погашает login/link_email_auth. Tokens либо TOTP-challenge (H1 аудита
+  // 2026-08: ящик — фактор, который TOTP обязан прикрыть).
+  // Привязка (A3): работает только в браузере с живой сессией аккаунта, для
+  // которого выдана (`currentUserId`), сессию не выдаёт; проверка ДО погашения.
+  // Вход (B-16): у токена нового адреса userId=null — User и AuthProvider
+  // заводятся ЗДЕСЬ, после доказательства владения ящиком, а не при запросе.
   async consumeEmailToken(
     rawToken: string,
     ip?: string,
@@ -66,14 +59,13 @@ export class EmailTokenService {
       throw new UnauthorizedException('Token expired');
     if (!['login', 'link_email_auth'].includes(row.purpose))
       throw new UnauthorizedException('Token purpose mismatch');
-    if (!row.userId) throw new UnauthorizedException('No user bound to token');
+    if (!row.userId && row.purpose !== 'login')
+      throw new UnauthorizedException('No user bound to token');
     if (row.purpose === 'link_email_auth' && currentUserId !== row.userId)
       throw new LinkSessionRequiredException();
 
-    // L3 аудита 2026-08: погашение атомарно. Проверка row.usedAt выше и update
-    // были раздельны — два параллельных запроса с одним токеном проходили
-    // проверку оба и выдавали ДВЕ сессии. updateMany с фильтром usedAt:null —
-    // CAS: побеждает ровно один, второй получает count=0 и «уже использован».
+    // L3 аудита 2026-08: погашение атомарно (CAS по usedAt:null) — два
+    // параллельных запроса с одним токеном не выдают ДВЕ сессии.
     const consumed = await this.prisma.emailToken.updateMany({
       where: { id: row.id, usedAt: null },
       data: { usedAt: new Date() },
@@ -82,8 +74,7 @@ export class EmailTokenService {
       throw new UnauthorizedException('Token already used');
 
     const rowEmail = decField(row.email) ?? row.email;
-    if (row.purpose === 'link_email_auth') {
-      // Link email as auth provider to the existing (already-authed) user.
+    if (row.purpose === 'link_email_auth' && row.userId) {
       const result = await this.auth.linkProviderToUser(
         row.userId,
         'email',
@@ -92,16 +83,24 @@ export class EmailTokenService {
         rowEmail,
       );
       if (!result.ok) {
-        throw new ConflictException(
-          'Этот email уже привязан к другому аккаунту',
-        );
+        throw new ConflictException({
+          message: 'Этот email уже привязан к другому аккаунту',
+          reason: 'email_taken',
+        });
       }
       return { kind: 'linked', purpose: row.purpose, userId: row.userId };
     }
 
-    if (row.purpose === 'login' && (await this.totp.isEnabled(row.userId))) {
+    const userId =
+      row.userId ??
+      (await this.auth.findOrCreateUserByProvider(
+        'email',
+        rowEmail,
+        rowEmail.split('@')[0],
+      ));
+    if (await this.totp.isEnabled(userId)) {
       const challengeToken = this.auth.buildTotpChallengeToken(
-        row.userId,
+        userId,
         ip,
         userAgent,
       );
@@ -109,11 +108,11 @@ export class EmailTokenService {
         kind: 'totp_challenge',
         challengeToken,
         purpose: row.purpose,
-        userId: row.userId,
+        userId,
       };
     }
 
-    const tokens = await this.auth.issueTokens(row.userId, ip, userAgent);
-    return { kind: 'tokens', tokens, purpose: row.purpose, userId: row.userId };
+    const tokens = await this.auth.issueTokens(userId, ip, userAgent);
+    return { kind: 'tokens', tokens, purpose: row.purpose, userId };
   }
 }

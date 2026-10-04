@@ -7,6 +7,7 @@ import type {
   HostInsets,
   HostUser,
 } from './types';
+import { hasMaxInitDataShape } from './maxLaunchShape';
 
 type MaxWebApp = {
   initData?: string;
@@ -62,9 +63,8 @@ export function maxWebApp(): MaxWebApp | undefined {
 // хаптики), и его отсутствие честно отражается в capabilities.
 //
 // Читаем ОДИН раз и запоминаем: приложение потом работает с историей
-// (useHostBackButton), и полагаться на неизменность адреса нельзя. Лениво, а
-// не при загрузке модуля, — иначе значение зависело бы от порядка импортов и
-// его нельзя было бы проверить тестом.
+// (useHostBackButton), и адрес не постоянен. Лениво, а не при загрузке
+// модуля: иначе значение зависело бы от порядка импортов.
 let cached: Record<string, string> | null = null;
 
 function launchParams(): Record<string, string> {
@@ -103,9 +103,9 @@ function launchInitData(): string {
   return maxWebApp()?.initData || launchParams()['WebAppData'] || '';
 }
 
-/** Признак «нас открыл MAX» — виден до загрузки моста и без него. */
+/** Признак «нас открыл MAX» — виден до загрузки моста; нужна форма initData, не голый ключ. */
 export function hasMaxLaunchParams(): boolean {
-  return !!launchParams()['WebAppData'];
+  return hasMaxInitDataShape(launchParams()['WebAppData']);
 }
 
 /** Диплинк max.ru открываем внутри мессенджера, остальные ссылки — во внешнем браузере. */

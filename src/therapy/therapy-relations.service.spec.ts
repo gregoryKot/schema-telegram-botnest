@@ -196,6 +196,7 @@ interface FullRel {
 interface FakeUser {
   id: bigint;
   firstName: string | null;
+  role?: 'CLIENT' | 'THERAPIST';
 }
 
 interface FakeConcept {
@@ -361,7 +362,10 @@ describe('getRelation — статус связи для терапевта и �
           createdAt: new Date(),
         },
       ],
-      [{ id: CLIENT, firstName: 'Аня' }],
+      [
+        { id: CLIENT, firstName: 'Аня' },
+        { id: T1, firstName: 'Т', role: 'THERAPIST' },
+      ],
     );
     // Мутационное усиление: локальный фейк Prisma игнорирует select (всегда
     // отдаёт всё поле), поэтому ObjectLiteral/BooleanLiteral-мутанты внутри
@@ -384,17 +388,20 @@ describe('getRelation — статус связи для терапевта и �
   });
 
   it('роль терапевта: виртуальный клиент (clientId=null) — партнёр без имени/id', async () => {
-    const { service } = makeFullService([
-      {
-        id: 1,
-        therapistId: T1,
-        clientId: null,
-        status: 'active',
-        code: 'VVV111',
-        virtualClientName: 'Оффлайн-клиент',
-        createdAt: new Date(),
-      },
-    ]);
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          code: 'VVV111',
+          virtualClientName: 'Оффлайн-клиент',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Т', role: 'THERAPIST' }],
+    );
     const info = await service.getRelation(T1);
     expect(info?.partnerName).toBeNull();
     expect(info?.partnerId).toBeNull();
@@ -425,9 +432,10 @@ describe('getRelation — статус связи для терапевта и �
       code: 'AAA111',
       nextSession: '2026-08-01',
     });
-    // Первый вызов — проверка роли терапевта (не находит, CLIENT терапевтом
-    // не выступает), второй — роль клиента; сверяем именно его аргументы.
-    expect(spy).toHaveBeenNthCalledWith(2, {
+    // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
+    // вовсе (A-3), единственный findFirst — клиентская сторона.
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith({
       where: { clientId: CLIENT, status: 'active' },
       include: { therapist: { select: { id: true, firstName: true } } },
     });
@@ -465,6 +473,86 @@ describe('getRelation — статус связи для терапевта и �
     const info = await service.getRelation(CLIENT);
     expect(info?.partnerName).toBe('Мой терапевт');
     expect(info?.code).toBe('AAA111');
+  });
+
+  // A-3 (аудит 2026-10): терапевт вышел из роли (role = CLIENT), а его строки
+  // со стороны терапевта остались. «Мой терапевт» не должен показывать бывшего
+  // клиента как «терапевта», а «Отключиться» — быть пустым действием.
+  it('вышедший из роли терапевта (CLIENT) со старыми строками терапевта: клиентской связи нет → null', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'OLD111',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: CLIENT, firstName: 'Его бывший клиент' },
+      ],
+    );
+    await expect(service.getRelation(T1)).resolves.toBeNull();
+  });
+
+  it('вышедший из роли терапевта, но подключённый к новому терапевту как клиент: видит ИМЕННО его', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'OLD111',
+          createdAt: new Date(),
+        },
+        {
+          id: 2,
+          therapistId: T2,
+          clientId: T1,
+          status: 'active',
+          code: 'NEW222',
+          nextSession: '2026-11-01',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: T2, firstName: 'Новый терапевт', role: 'THERAPIST' },
+        { id: CLIENT, firstName: 'Его бывший клиент' },
+      ],
+    );
+    expect(await service.getRelation(T1)).toEqual({
+      role: 'client',
+      status: 'active',
+      partnerName: 'Новый терапевт',
+      partnerId: T2,
+      code: 'NEW222',
+      nextSession: '2026-11-01',
+    });
+  });
+
+  it('действующий терапевт (THERAPIST) по-прежнему видит сторону терапевта', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Т', role: 'THERAPIST' },
+        { id: CLIENT, firstName: 'Аня' },
+      ],
+    );
+    expect((await service.getRelation(T1))?.role).toBe('therapist');
   });
 
   it('роль клиента: терапевт не резолвится (FK-запись без пользователя) — партнёр пуст, nextSession null по умолчанию', async () => {
@@ -576,7 +664,10 @@ describe('getClients — список клиентов терапевта', () =
           createdAt: new Date(),
         },
       ],
-      [{ id: WEB, firstName: 'Вера' }],
+      [
+        { id: T1, firstName: 'Терапевт', role: 'THERAPIST' },
+        { id: WEB, firstName: 'Вера' },
+      ],
     );
     const [client] = await service.getClients(T1);
     expect(client.telegramId).toBe(WEB);

@@ -13,6 +13,7 @@ import {
 } from './merge-subscriptions';
 import { SecurityLogService } from './security-log.service';
 import { twoFactorWillBeLost } from './merge-two-factor';
+import { remapAssignerRefs } from './merge-assigner-refs';
 import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
@@ -294,12 +295,9 @@ export class MergeService {
         WHERE "therapistId" = ${sourceId}
       `);
 
-      // Step D: clean up orphaned virtual-client conceptualizations.
-      // Virtual clients are identified by negative clientId (-TherapyRelation.id).
-      // If the corresponding TherapyRelation was deleted (e.g. by a previous buggy
-      // merge), the conceptualization row becomes a "ghost" and can pollute a
-      // newly created virtual client that happens to get the same relation id.
-      // Delete any such orphans for the target therapist.
+      // Step D: orphaned virtual-client conceptualizations (negative clientId =
+      // -TherapyRelation.id, relation already gone after a buggy merge) would
+      // pollute a new virtual client with the same id — delete them.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" cc
         WHERE cc."therapistId" = ${targetId}
@@ -312,16 +310,15 @@ export class MergeService {
           )
       `);
 
-      // 5. Propagate recoveryEmail, disclaimerAccepted, role, onboarding-flags
-      //    and addressForm from source → target. Must happen before DELETE so
-      //    we can still read source fields. Вынесено в merge-user-fields.ts
-      //    (правило №10 — этот файл уже на потолке baseline).
+      // 5. Скалярные поля User source → target (до DELETE source); вынесено в
+      //    merge-user-fields.ts (правило №10).
       await mergeUserScalarFields(tx, sourceId, targetId);
 
       // 5b. Подписка привязана к telegramId, а не userId — цикл по
-      //     USER_OWNED_TABLES её не видит, и до этого шага она оставалась на
-      //     удаляемом аккаунте: списания шли, а человек их не видел.
+      //     USER_OWNED_TABLES её не видит и она осталась бы на удаляемом аккаунте.
       state.subs = await reassignSubscriptions(tx, sourceId, targetId);
+
+      await remapAssignerRefs(tx, sourceId, targetId); // 5c (D-6)
 
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(

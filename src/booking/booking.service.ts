@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
-import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { encryptRecord, decryptRecord } from '../utils/crypto';
 import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
+import { BOOKING_SCHEMA } from './booking.schema';
 import { isValidTimeZone } from './client-timezone';
 import {
   listBookings,
@@ -34,7 +35,6 @@ export interface CreateBookingDto {
   clientName: string;
   clientContact: string;
   message?: string;
-  clientTelegramId?: bigint;
   /** Client ticked "returning visit" — require an existing personal meeting. */
   returning?: boolean;
   /** Client ticked the public-offer consent checkbox. Required to take payment. */
@@ -44,11 +44,6 @@ export interface CreateBookingDto {
   /** IANA-пояс посетителя из Intl. Невалидный — игнорируется (не 400). */
   clientTimeZone?: string;
 }
-
-// Экспортирован: admin-calendar.service.ts расшифровывает тем же EncryptSchema — не копией.
-export const SCHEMA: EncryptSchema = {
-  strings: ['clientName', 'clientContact', 'message'],
-};
 
 const HOLD_MINUTES = 15;
 
@@ -127,7 +122,6 @@ export class BookingService {
         clientName: dto.clientName,
         clientContact: dto.clientContact,
         message: dto.message ?? null,
-        clientTelegramId: dto.clientTelegramId ?? null,
         status: isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
         heldUntil,
         cancelToken,
@@ -138,7 +132,7 @@ export class BookingService {
             ? dto.clientTimeZone
             : null,
       },
-      SCHEMA,
+      BOOKING_SCHEMA,
     );
 
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
@@ -159,7 +153,7 @@ export class BookingService {
         robokassa: this.robokassa,
         pricing: this.pricing,
         siteUrl: this.siteUrl,
-        schema: SCHEMA,
+        schema: BOOKING_SCHEMA,
       },
       booking,
       {
@@ -212,7 +206,7 @@ export class BookingService {
       );
     }
 
-    await this.notify.onConfirmed(decryptRecord(booking, SCHEMA));
+    await this.notify.onConfirmed(decryptRecord(booking, BOOKING_SCHEMA));
     this.logger.log(`Booking ${id} CONFIRMED`);
     return { ok: true };
   }
@@ -246,7 +240,7 @@ export class BookingService {
     });
 
     await this.notify.onCancelled(
-      decryptRecord(booking, SCHEMA),
+      decryptRecord(booking, BOOKING_SCHEMA),
       booking.calDavUid,
     );
     this.logger.log(`Booking ${booking.id} CANCELLED`);
@@ -255,11 +249,11 @@ export class BookingService {
 
   /** Список броней для админки — см. listBookings. */
   async list(filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') {
-    return listBookings(this.prisma, SCHEMA, filter);
+    return listBookings(this.prisma, BOOKING_SCHEMA, filter);
   }
 
   async getById(id: number) {
-    return getBookingById(this.prisma, SCHEMA, id);
+    return getBookingById(this.prisma, BOOKING_SCHEMA, id);
   }
 
   /** Публичная проекция брони по cancel-токену (без PII). */
@@ -290,7 +284,7 @@ export class BookingService {
     });
     this.logger.log(`Expired ${expiring.length} HELD booking(s)`);
     await this.notify.notifyExpired(
-      expiring.map((b) => decryptRecord(b, SCHEMA)),
+      expiring.map((b) => decryptRecord(b, BOOKING_SCHEMA)),
     );
   }
 }

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { loadMetrika } from '../lib/metrika';
+import { useState } from 'react';
 import { isPracticeHost } from '../utils/domainChrome';
 
 const CONSENT_KEY = 'cookie_consent';
@@ -18,7 +17,7 @@ function CompactBody({ onDismiss }: { onDismiss: () => void }) {
   return (
     <>
       <p className="u-fill" style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.45 }}>
-        Сайт обезличенно считает посещения в Яндекс.Метрике.{' '}
+        Публичные страницы обезличенно считают посещения в Яндекс.Метрике.{' '}
         <PrivacyLink />
       </p>
       {/* flex: 0 0 auto — в строке кнопка не должна растягиваться */}
@@ -42,7 +41,7 @@ function CardBody({ onDismiss }: { onDismiss: () => void }) {
             Немного о куки
           </div>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-            Часть нужна для входа — без них сайт не работает. Ещё сайт собирает обезличенную статистику посещений в Яндекс.Метрике: сколько людей заходит и какие страницы читают.{' '}
+            Часть нужна для входа — без них сайт не работает. Ещё на публичных страницах (главная, статьи, тесты) считаются обезличенные посещения в Яндекс.Метрике: сколько людей заходит и какие страницы читают. В приложении и кабинете счётчика нет.{' '}
             <PrivacyLink />
           </p>
         </div>
@@ -66,11 +65,9 @@ export function CookieBanner() {
     () => !localStorage.getItem(CONSENT_KEY),
   );
 
-  useEffect(() => {
-    // Метрика грузится безусловно — владелец решил не ждать согласия.
-    // Баннер ниже теперь просто уведомление, а не переключатель аналитики.
-    loadMetrika();
-  }, []);
+  // Метрику баннер НЕ грузит: её включает MetrikaTracker через шлюз
+  // (lib/metrikaGate) — только на публичных страницах и без сессии. Согласия
+  // счётчик не ждёт (решение владельца), баннер — просто уведомление.
 
   if (!visible) return null;
 

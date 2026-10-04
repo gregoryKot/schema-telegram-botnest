@@ -10,6 +10,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingCancelControl } from './BookingCancelControl';
 
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const cancelBooking = vi.fn();
 const reportClientError = vi.fn();
 vi.mock('../../api', () => ({

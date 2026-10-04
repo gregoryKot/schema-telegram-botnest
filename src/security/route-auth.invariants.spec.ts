@@ -66,7 +66,11 @@ describe('трипваер: каждый контроллер защищён (gu
     // публичные по дизайну фичи «мини-тесты без регистрации» (лид-магнит);
     // 11 → 12 (2026-07-30): +auth-max.controller — вход из мини-аппа MAX,
     // обоснование в PUBLIC_BY_DESIGN выше, ревью безопасности — в PR фичи.
-    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(12);
+    // 12 → 13 (2026-10): +auth-one-tap.controller — One Tap и его nonce
+    // переехали из auth-oauth.controller (тот был «guarded» из-за соседних
+    // роутов с OptionalJwtGuard; сами one-tap-роуты всегда были анонимными,
+    // allowlist лишь стал это называть вслух). Новой публичной поверхности нет.
+    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(13);
     // 4 → 5: +booking-calendar-admin.controller.ts — контракт «Календарь
     // слотов в админке», тот же x-admin-key, обоснование в ADMIN_KEY_GATED.
     expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(5);

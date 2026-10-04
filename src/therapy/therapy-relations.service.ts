@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
 import { createTherapyInvite, joinTherapyAsClient } from './therapy-invite';
+import { getRelationInfo } from './therapy-relation-info';
 import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 
 // Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
@@ -36,37 +37,8 @@ export class TherapyRelationsService {
     return joinTherapyAsClient(this.prisma, clientId, code);
   }
 
-  async getRelation(userId: bigint): Promise<TherapyRelationInfo | null> {
-    const uid = userId;
-    const asTherapist = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: uid, status: 'active' },
-      include: { client: { select: { firstName: true } } },
-    });
-    if (asTherapist) {
-      return {
-        role: 'therapist',
-        status: 'active',
-        partnerName: asTherapist.client?.firstName ?? null,
-        partnerId: asTherapist.clientId ?? null,
-        code: asTherapist.code,
-        nextSession: null,
-      };
-    }
-    const asClient = await this.prisma.therapyRelation.findFirst({
-      where: { clientId: uid, status: 'active' },
-      include: { therapist: { select: { id: true, firstName: true } } },
-    });
-    if (asClient) {
-      return {
-        role: 'client',
-        status: 'active',
-        partnerName: asClient.therapist?.firstName ?? null,
-        partnerId: asClient.therapist?.id ?? null,
-        code: asClient.code,
-        nextSession: asClient.nextSession ?? null,
-      };
-    }
-    return null;
+  getRelation(userId: bigint): Promise<TherapyRelationInfo | null> {
+    return getRelationInfo(this.prisma, userId);
   }
 
   // Разрывает связи, где userId — КЛИЕНТ. Раньше удалялись и связи, где он

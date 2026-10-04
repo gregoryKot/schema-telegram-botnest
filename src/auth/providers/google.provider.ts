@@ -3,12 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { verifyGoogleIdToken } from './google-id-token';
 import { buildGoogleAuthUrl } from './google-auth-url';
 import { AuthProviderHandler, ProviderIdentity } from './types';
+import { assertOneTapNonce } from '../google-one-tap-nonce';
 
-// Token endpoint + его легаси-алиасы на других доменах. С хостинга (Amvera)
-// oauth2.googleapis.com может быть недостижим на сетевом уровне («fetch
-// failed»), при этом www.googleapis.com доступен — JWKS исторически ходил
-// именно туда. Пробуем по очереди; HTTP-ответ с ошибкой от Google — финален,
-// fallback только при сетевых сбоях.
+// Token endpoint + легаси-алиасы: с Amvera oauth2.googleapis.com бывает
+// недостижим, www.googleapis.com — доступен. Пробуем по очереди; HTTP-ответ с
+// ошибкой — финален, fallback только при сетевых сбоях.
 const GOOGLE_TOKEN_URIS = [
   'https://oauth2.googleapis.com/token',
   'https://www.googleapis.com/oauth2/v4/token',
@@ -100,12 +99,13 @@ export class GoogleProvider implements AuthProviderHandler {
     throw new UnauthorizedException('Google token exchange failed');
   }
 
-  // Проверка id_token (подпись по JWKS + issuer/audience) живёт в
-  // google-id-token.ts — там же ветка на случай недостижимого JWKS. Публичный:
-  // тем же путём проверяется id_token, пришедший от Google One Tap напрямую в
-  // браузер (POST /api/auth/google/one-tap) — те же издатель/получатель/срок и
-  // тот же отказ на подделке, что и у обмена кода.
-  async verifyIdToken(idToken: string): Promise<ProviderIdentity> {
+  // Проверка id_token — в google-id-token.ts. Публичный: так же проверяется
+  // токен One Tap; `oneTap` — его прислал браузер: нужен nonce из куки, офлайн-
+  // путь запрещён (google-one-tap-nonce.ts).
+  async verifyIdToken(
+    idToken: string,
+    oneTap?: { nonceCookie: string | undefined },
+  ): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
 
     let claims: Awaited<ReturnType<typeof verifyGoogleIdToken>>;
@@ -119,8 +119,8 @@ export class GoogleProvider implements AuthProviderHandler {
       throw new UnauthorizedException('Google ID token invalid');
     }
 
+    if (oneTap) assertOneTapNonce(claims, oneTap.nonceCookie);
     if (claims.offline) {
-      // Видно в логах: вход прошёл, но ключи Google с хоста не скачались.
       this.logger.warn(
         'Google JWKS недостижим — id_token принят по claims (получен от Google по TLS)',
       );

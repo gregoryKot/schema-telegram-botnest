@@ -44,11 +44,11 @@ export const PUBLIC_BY_DESIGN: Record<string, string> = {
     'анонимная аналитика мини-тестов и лендинга: только quiz_started/' +
     'quiz_completed/practice_link_click, meta режется по реестрам ' +
     '(тесты, места клика), userId = null, троттлинг по IP',
-  // 11 → 12 (2026-07-30): +auth-max.controller — точка входа MAX мини-аппа
-  // (POST max/webapp меняет подписанный MAX-initData на сессию), по смыслу
-  // не отличим от POST telegram/webapp — тот публичен тем же способом
-  // (живёт в auth-account.controller.ts, guarded-классификация которого
-  // берётся от СОСЕДНИХ роутов, а не от самого telegram/webapp).
+  // +auth-max (2026-07-30): вход из мини-аппа MAX, тот же способ, что POST telegram/webapp.
+  // +auth-one-tap (2026-10): One Tap и его nonce — анонимные по смыслу входа.
+  'auth/auth-one-tap.controller.ts':
+    'вход через Google One Tap: id_token проверяется верификатором Google ' +
+    'и привязан к браузеру nonce-кукой, CSRF-заголовок, троттлинг по IP',
   'auth/auth-max.controller.ts':
     'вход из мини-аппа MAX: подписанный initData → сессия, ' +
     'подпись проверяется в MaxProvider/verifyMaxInitData, троттлинг по IP',

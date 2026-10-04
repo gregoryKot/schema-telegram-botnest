@@ -22,10 +22,14 @@ import { join } from 'path';
 import { collectSourceFiles } from '../security/collect-source-files';
 
 const ROOT = join(__dirname, '..', '..');
-const rotationScript = readFileSync(
-  join(ROOT, 'scripts', 'rotate-encryption-key.ts'),
-  'utf8',
-);
+// Список колонок вынесен из самого скрипта в rotate-encryption-targets.ts
+// (правило №10) — полнота проверяется по обоим файлам вместе.
+const rotationScript = [
+  'rotate-encryption-key.ts',
+  'rotate-encryption-targets.ts',
+]
+  .map((f) => readFileSync(join(ROOT, 'scripts', f), 'utf8'))
+  .join('\n');
 
 const srcFiles = collectSourceFiles(join(ROOT, 'src'));
 
@@ -107,6 +111,21 @@ describe('покрытие ротации ENCRYPTION_KEY (H4)', () => {
     );
     expect(rotationScript).toMatch(
       /name:\s*'scheduledNotification',\s*fields:\s*\[\s*'payload'\s*\]/,
+    );
+  });
+
+  // D-9 (аудит 2026-10): PII из OAuth-профиля и Zoom-ссылки с `?pwd=`.
+  // ClientMeeting живёт под строковым ключом clientKey — без pk ротация
+  // упала бы на `where: { id }`.
+  it('AuthProvider.email/displayName, Booking.meetingUrl и ClientMeeting.meetingUrl ротируются', () => {
+    expect(rotationScript).toMatch(
+      /name:\s*'authProvider',\s*fields:\s*\[\s*'email',\s*'displayName'\s*\]/,
+    );
+    expect(rotationScript).toMatch(
+      /name:\s*'clientMeeting',\s*fields:\s*\[\s*'meetingUrl'\s*\],\s*pk:\s*'clientKey'/,
+    );
+    expect(rotationScript).toMatch(
+      /name:\s*'booking',[\s\S]*?fields:\s*\[[^\]]*'meetingUrl'/,
     );
   });
 

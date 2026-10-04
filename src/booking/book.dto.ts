@@ -45,10 +45,6 @@ export class BookDto {
   @MaxLength(2000)
   message?: string;
 
-  @IsOptional()
-  @IsInt()
-  clientTelegramId?: number;
-
   // Атрибуция лида: страница + referrer (собирает фронт, leadSource()).
   @IsOptional()
   @IsString()

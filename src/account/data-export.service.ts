@@ -8,12 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { decryptRecord } from '../utils/crypto';
+import { decryptAuthProviderRow } from '../utils/auth-provider-crypto';
 import {
   EXPORT_POLICY,
   USER_EXPORT_SELECT,
   WITHHELD_USER_FIELDS,
   assertSyncedWithEncryptionPolicy,
 } from './export-policy';
+import { exportClientSide } from './data-export.client-side';
 
 export interface DataExportResult {
   exportedAt: string;
@@ -43,17 +45,6 @@ const WITHHELD_OUT_OF_CONTOUR = {
     'контакту недостоверно: указавший чужой адрес получил бы чужую запись со ' +
     'свободным текстом. Доступны только ручным запросом администратору',
 };
-// Аудит 2026-10 (D2): модели терапевтической стороны хранят данные О человеке
-// (клиент), но принадлежат другому человеку (терапевт) или связывают двоих —
-// у них нет userId, поэтому в EXPORT_POLICY их нет. Раньше файл молчал об этом
-// и выглядел полным; теперь человек видит, чего в нём нет и почему.
-const WITHHELD_THERAPY_SIDE = {
-  table: 'TherapistNote, ClientConceptualization, ModeMap, TherapyRelation',
-  reason:
-    'записи психолога о клиенте (заметки, концептуализация, карты режимов, ' +
-    'связь с психологом) — рабочие материалы специалиста; решение об их выдаче ' +
-    'принимает владелец проекта по отдельному запросу',
-};
 const WITHHELD_PAIR = {
   table: 'Pair',
   reason:
@@ -76,22 +67,24 @@ export class DataExportService {
     // дневника лежит нерасшифрованная строка, похожая на данные.
     assertSyncedWithEncryptionPolicy();
     const account = await this.loadAccount(userId);
-    const providers = await this.prisma.authProvider.findMany({
-      where: { userId },
-      select: {
-        provider: true,
-        providerId: true,
-        email: true,
-        displayName: true,
-        createdAt: true,
-      },
-    });
+    // email/displayName в БД зашифрованы (D-9, аудит 2026-10).
+    const providers = (
+      await this.prisma.authProvider.findMany({
+        where: { userId },
+        select: {
+          provider: true,
+          providerId: true,
+          email: true,
+          displayName: true,
+          createdAt: true,
+        },
+      })
+    ).map(decryptAuthProviderRow);
 
     const data: Record<string, unknown[]> = {};
     const withheld: { table: string; reason: string }[] = [
       WITHHELD_USER_SECRETS,
       WITHHELD_OUT_OF_CONTOUR,
-      WITHHELD_THERAPY_SIDE,
       WITHHELD_PAIR,
     ];
 
@@ -114,6 +107,11 @@ export class DataExportService {
       const schema = decision.schema;
       data[model] = schema ? rows.map((r) => decryptRecord(r, schema)) : rows;
     }
+
+    // A-10: данные обо мне на стороне терапевта (ключ clientId, не userId).
+    const clientSide = await exportClientSide(this.prisma, userId);
+    Object.assign(data, clientSide.data);
+    withheld.push(...clientSide.withheld);
 
     let rows = providers.length;
     for (const tableRows of Object.values(data)) rows += tableRows.length;

@@ -25,6 +25,16 @@ describe('BookDto — рантайм-валидация платёжного э�
     await expect(errorsFor(VALID)).resolves.toEqual([]);
   });
 
+  // C-9 (аудит 2026-10): анонимное тело не несёт Telegram-id. ValidationPipe
+  // с whitelist молча срезает поле (не 400) — фронт, который ещё шлёт его,
+  // не ломается, но значение до сервиса не доходит.
+  it('clientTelegramId срезается whitelist-ом и ошибкой не считается', async () => {
+    const dto = plainToInstance(BookDto, { ...VALID, clientTelegramId: 42 });
+    const errs = await validate(dto, { whitelist: true });
+    expect(errs).toEqual([]);
+    expect(dto).not.toHaveProperty('clientTelegramId');
+  });
+
   it('мусор вместо даты — отказ', async () => {
     await expect(
       errorsFor({ ...VALID, startsAt: 'not-a-date' }),

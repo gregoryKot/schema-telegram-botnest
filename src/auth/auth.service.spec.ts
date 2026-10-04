@@ -760,18 +760,17 @@ describe('AuthService — requestEmailLogin', () => {
     await expect(svc.requestEmailLogin(email)).resolves.toEqual({ ok: true });
   });
 
-  it('валидный email → создаёт пользователя, emailToken и шлёт письмо со ссылкой', async () => {
+  // B-16 (аудит 2026-10): запрос ссылки заводил User+AuthProvider для ЛЮБОГО
+  // адреса до подтверждения — захват чужого адреса и неограниченный рост таблиц.
+  it('новый адрес → НИ User, НИ AuthProvider не создаются; emailToken с userId=null и письмо со ссылкой', async () => {
     const { svc, users, emailTokens, emailSvc, authProviders } = makeService();
     const result = await svc.requestEmailLogin('User@Example.com');
     expect(result).toEqual({ ok: true });
-    expect(users).toHaveLength(1);
+    expect(users).toHaveLength(0);
+    expect(authProviders).toHaveLength(0);
     expect(emailTokens).toHaveLength(1);
     expect(emailTokens[0].purpose).toBe('login');
-    // Провайдер обязан называться именно 'email' (не пустой строкой) —
-    // от этого зависит и findOrCreateUserByProvider, и последующие лукапы.
-    expect(authProviders[0].provider).toBe('email');
-    // displayName = локальная часть до '@', не первый символ строки.
-    expect(authProviders[0].displayName).toBe('user');
+    expect(emailTokens[0].userId).toBeNull();
     expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
       'user@example.com',
       expect.stringContaining('/api/auth/email/callback?token='),
@@ -795,11 +794,25 @@ describe('AuthService — requestEmailLogin', () => {
     );
   });
 
-  it('повторный запрос для того же email переиспользует существующего пользователя', async () => {
-    const { svc, users } = makeService();
+  it('повторные запросы для нового адреса по-прежнему ничего не создают (счётчик строк не растёт)', async () => {
+    const { svc, users, authProviders } = makeService();
     await svc.requestEmailLogin('same@example.com');
     await svc.requestEmailLogin('same@example.com');
-    expect(users).toHaveLength(1); // findOrCreateUserByProvider не плодит второго User
+    expect(users).toHaveLength(0);
+    expect(authProviders).toHaveLength(0);
+  });
+
+  it('известный адрес → токен сразу привязан к его аккаунту, нового пользователя нет', async () => {
+    const { svc, users, authProviders, emailTokens } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 333n,
+      provider: 'email',
+      providerId: 'known@example.com',
+    });
+    await svc.requestEmailLogin('Known@Example.com');
+    expect(users).toHaveLength(0);
+    expect(emailTokens[0].userId).toBe(333n);
   });
 
   it('падение отправки письма не роняет запрос (fire-and-forget) — ok:true всё равно возвращается', async () => {
@@ -838,8 +851,11 @@ describe('AuthService — linkEmailToAccount', () => {
     );
   });
 
-  it('email уже привязан к ДРУГОМУ userId → ConflictException, письмо не шлётся', async () => {
-    const { svc, authProviders, emailSvc } = makeService();
+  // B-16: 409 «уже привязан» по ответу различал занятый адрес от свободного —
+  // перебор адресов = перечисление аккаунтов. Теперь ответ одинаковый.
+  it('email уже привязан к ДРУГОМУ userId → тот же {ok:true}, письмо не шлётся, след в логе без адреса', async () => {
+    const { svc, authProviders, emailSvc, securityLog, emailTokens } =
+      makeService();
     authProviders.push({
       id: 1,
       userId: 111n,
@@ -848,9 +864,13 @@ describe('AuthService — linkEmailToAccount', () => {
     });
     await expect(
       svc.linkEmailToAccount(222n, 'busy@example.com'),
-    ).rejects.toThrow(ConflictException);
+    ).resolves.toEqual({ ok: true });
     expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
     expect(emailSvc.sendLoginLink).not.toHaveBeenCalled();
+    expect(emailTokens).toHaveLength(0);
+    expect(securityLog.log).toHaveBeenCalledWith('email_link_conflict', {
+      userId: 222n,
+    });
   });
 
   it('email уже привязан к ТОМУ ЖЕ userId → не конфликт, письмо шлётся снова', async () => {

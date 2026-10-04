@@ -8,11 +8,11 @@ import { Policy, enc, plain, ID, TOKEN } from './encryption-policy';
 export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   AvailabilityRule: { timezone: ID },
   Booking: {
-    clientName: enc('src/booking/booking.service.ts'),
-    clientContact: enc('src/booking/booking.service.ts'),
-    message: enc('src/booking/booking.service.ts'),
+    clientName: enc('src/booking/booking.schema.ts'),
+    clientContact: enc('src/booking/booking.schema.ts'),
+    message: enc('src/booking/booking.schema.ts'),
     cancelToken: TOKEN,
-    meetingUrl: plain('ссылка на Zoom/Телемост, задаётся терапевтом'),
+    meetingUrl: enc('src/booking/booking.schema.ts'),
     calDavUid: ID,
     source: plain(
       'страница + referrer при брони — структурная атрибуция лида, не PII',
@@ -23,7 +23,7 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   ClientMeeting: {
     clientKey: plain('sha256 от контакта — уже псевдонимизирован'),
-    meetingUrl: plain('переиспользуемая ссылка на встречу'),
+    meetingUrl: enc('src/booking/meeting.service.ts'),
     zoomMeetingId: ID,
   },
   BookingSetting: {

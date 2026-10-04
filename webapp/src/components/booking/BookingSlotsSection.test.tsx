@@ -11,6 +11,12 @@ vi.mock('../../lib/metrika', () => ({
   trackGoalOnce: vi.fn(),
 }));
 import { trackGoalOnce } from '../../lib/metrika';
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const mockTrackGoalOnce = trackGoalOnce as unknown as ReturnType<typeof vi.fn>;
 
 const slots: BookingSlot[] = [
