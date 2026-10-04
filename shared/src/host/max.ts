@@ -1,7 +1,12 @@
 // Адаптер MAX: мессенджер грузит Bridge через CDN-скрипт и создаёт
 // window.WebApp сразу, без отдельной инициализации — в отличие от Telegram,
 // готовности ждать не нужно.
-import type { HostBridge, HostCapabilities, HostInsets, HostUser } from './types';
+import type {
+  HostBridge,
+  HostCapabilities,
+  HostInsets,
+  HostUser,
+} from './types';
 import { hasMaxInitDataShape } from './maxLaunchShape';
 
 type MaxWebApp = {
@@ -58,9 +63,8 @@ export function maxWebApp(): MaxWebApp | undefined {
 // хаптики), и его отсутствие честно отражается в capabilities.
 //
 // Читаем ОДИН раз и запоминаем: приложение потом работает с историей
-// (useHostBackButton), и полагаться на неизменность адреса нельзя. Лениво, а
-// не при загрузке модуля, — иначе значение зависело бы от порядка импортов и
-// его нельзя было бы проверить тестом.
+// (useHostBackButton), и адрес не постоянен. Лениво, а не при загрузке
+// модуля: иначе значение зависело бы от порядка импортов.
 let cached: Record<string, string> | null = null;
 
 function launchParams(): Record<string, string> {
