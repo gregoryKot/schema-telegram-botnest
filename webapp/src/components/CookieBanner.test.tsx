@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
-// Баннер куки — теперь просто уведомление, метрика грузится безусловно
-// (владелец решил не ждать согласия). Проверяем: на чистом localStorage
-// баннер показан, а метрика уже грузится без всякого клика; кнопка
-// «Понятно» скрывает баннер и пишет cookie_consent='all'; при любом уже
-// сохранённом решении ('all' или 'necessary') баннера нет, метрика всё
-// равно подключена; init — без webvisor (тесты этого файла гоняются на
-// не-визитке — jsdom-хост localhost; условие «только визитка» и его
-// переключение по пути /admin проверены отдельно в lib/metrika.test.ts).
+// Баннер куки — просто уведомление: согласия счётчик не ждёт (решение
+// владельца), но и сам его больше НЕ грузит — Метрику включает
+// MetrikaTracker через шлюз (lib/metrikaGate, решение D-4: только публичные
+// страницы и только без сессии; проверено в MetrikaTracker.test.tsx и
+// lib/metrika.test.ts). Здесь: на чистом localStorage баннер показан;
+// «Понятно» скрывает его и пишет cookie_consent='all'; при любом сохранённом
+// решении баннера нет; текст про Метрику не обещает лишнего.
 // На визитке практики (kotlarewski.*) вместо высокой карточки — компактная
 // строка: карточка на телефоне закрывала главную кнопку первого экрана, а
 // фраза про вход там лишняя (входа на визитке нет). Продуктовый хост
@@ -43,9 +42,9 @@ describe('CookieBanner — первый визит', () => {
     expect(screen.getByRole('dialog', { name: 'Уведомление об использовании куки' })).toBeTruthy();
   });
 
-  it('метрика грузится сразу, без клика по баннеру', () => {
+  it('баннер сам Метрику не грузит (это делает MetrikaTracker через шлюз)', () => {
     render(<CookieBanner />);
-    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
+    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeNull();
   });
 
   it('«Понятно» скрывает баннер и сохраняет решение', () => {
@@ -56,29 +55,25 @@ describe('CookieBanner — первый визит', () => {
     expect(localStorage.getItem('cookie_consent')).toBe('all');
   });
 
-  it('метрика инициализируется БЕЗ webvisor — клинический текст SPA не уходит в Яндекс (H2)', () => {
+  it('текст честно ограничивает счётчик публичными страницами', () => {
     render(<CookieBanner />);
-
-    const ym = (window as unknown as { ym?: { a?: unknown[][] } }).ym;
-    const initCall = ym?.a?.find((c) => c[1] === 'init');
-    expect(initCall).toBeTruthy();
-    expect((initCall![2] as { webvisor?: boolean }).webvisor).toBe(false);
+    const text = screen.getByRole('dialog').textContent ?? '';
+    expect(text).toContain('на публичных страницах');
+    expect(text).toContain('В приложении и кабинете счётчика нет');
   });
 });
 
 describe('CookieBanner — повторный визит (решение уже сохранено)', () => {
-  it('consent=necessary — баннер не показывается, метрика всё равно грузится', () => {
+  it('consent=necessary — баннер не показывается', () => {
     localStorage.setItem('cookie_consent', 'necessary');
     render(<CookieBanner />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
   });
 
-  it('consent=all — баннера нет, метрика подключается', () => {
+  it('consent=all — баннера нет', () => {
     localStorage.setItem('cookie_consent', 'all');
     render(<CookieBanner />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
   });
 });
 
@@ -91,7 +86,7 @@ describe('CookieBanner — визитка практики (kotlarewski.gr): к�
   it('показывает короткий текст про Метрику и ссылку «Подробнее» на /privacy#cookies', () => {
     render(<CookieBanner />);
     const dialog = screen.getByRole('dialog', { name: 'Уведомление об использовании куки' });
-    expect(dialog.textContent).toContain('Сайт обезличенно считает посещения в Яндекс.Метрике.');
+    expect(dialog.textContent).toContain('Публичные страницы обезличенно считают посещения в Яндекс.Метрике.');
     const link = screen.getByRole('link', { name: 'Подробнее' }) as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/privacy#cookies');
   });
@@ -108,11 +103,6 @@ describe('CookieBanner — визитка практики (kotlarewski.gr): к�
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(localStorage.getItem('cookie_consent')).toBe('all');
-  });
-
-  it('метрика грузится и в компактном варианте — без клика', () => {
-    render(<CookieBanner />);
-    expect(document.querySelector('script[src*="mc.yandex.ru"]')).toBeTruthy();
   });
 
   it('при сохранённом решении баннера нет и на визитке', () => {

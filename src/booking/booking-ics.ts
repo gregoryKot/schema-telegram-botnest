@@ -2,6 +2,7 @@ import { GoneException, NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildVcalendar } from './caldav-event.util';
+import { decrypt } from '../utils/crypto';
 
 // .ics для клиента (PR B) — отдельная сборка от CalDAV-события владельца
 // (booking-notify.service.ts::onConfirmed), потому что владельческое событие
@@ -11,7 +12,6 @@ import { buildVcalendar } from './caldav-event.util';
 // содержимое — разное по назначению, не по случайности.
 
 const ALARM_MINUTES_BEFORE = 60;
-
 /**
  * Собирает .ics для клиента по self-cancel токену (та же capability, что у
  * ссылки управления записью — просмотр + отмена).
@@ -28,14 +28,14 @@ export async function buildBookingIcsText(
   if (b.status === BookingStatus.CANCELLED) {
     throw new GoneException('Booking cancelled');
   }
-
+  const meetingUrl = decrypt(b.meetingUrl); // в БД зашифрована (D-9)
   const manageUrl = `${siteUrl}/booking/manage?token=${token}`;
   const summary =
     b.type === 'INTRO_15'
       ? 'Знакомство с Григорием Котляревским'
       : 'Встреча с Григорием Котляревским';
   const description = [
-    b.meetingUrl ? `Ссылка на встречу: ${b.meetingUrl}` : null,
+    meetingUrl ? `Ссылка на встречу: ${meetingUrl}` : null,
     `Посмотреть или отменить запись: ${manageUrl}`,
   ]
     .filter(Boolean)
@@ -48,7 +48,7 @@ export async function buildBookingIcsText(
       durationMin: b.durationMin,
       summary,
       description,
-      location: b.meetingUrl ?? undefined,
+      location: meetingUrl ?? undefined,
       url: manageUrl,
       alarmMinutesBefore: ALARM_MINUTES_BEFORE,
     },

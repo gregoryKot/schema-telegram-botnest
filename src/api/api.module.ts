@@ -18,6 +18,7 @@ import { QuizController } from './quiz.controller';
 import { JourneyController } from './journey.controller';
 import { PracticeSessionsController } from './practice-sessions.controller';
 import { AccountExportController } from './account-export.controller';
+import { AccountDeleteController } from './account-delete.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -56,6 +57,7 @@ import { DataExportService } from '../account/data-export.service';
     HealthController,
     ClientErrorsController,
     AccountExportController,
+    AccountDeleteController,
   ],
   providers: [TelegramAuthGuard, DataExportService],
 })

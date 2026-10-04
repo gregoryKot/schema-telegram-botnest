@@ -7,11 +7,16 @@
 // загружает свежую копию модуля через jest.isolateModules с нужным env.
 
 type CryptoModule = typeof import('./crypto');
+type NestLogger = typeof import('@nestjs/common').Logger;
 
 const KEY_A = 'aa'.repeat(32); // 64 hex-символа = 32 байта
 const KEY_B = 'bb'.repeat(32);
 
 const ORIGINAL_ENV = { ...process.env };
+
+// Logger из ТОГО ЖЕ изолированного реестра, что и свежая копия crypto.ts: у
+// другого реестра другой класс, и спай на нём ничего бы не увидел.
+let isolatedLogger: NestLogger;
 
 function loadCrypto(env: {
   key?: string;
@@ -25,6 +30,10 @@ function loadCrypto(env: {
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     mod = require('./crypto') as CryptoModule;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    isolatedLogger = (
+      require('@nestjs/common') as typeof import('@nestjs/common')
+    ).Logger;
   });
   return mod!;
 }
@@ -72,9 +81,11 @@ describe('encrypt/decrypt roundtrip', () => {
     expect(decrypt('')).toBe('');
   });
 
-  it('легаси-плейнтекст (не base64-блоб) возвращается как есть без warn', () => {
+  it('легаси-плейнтекст (не base64-блоб) возвращается как есть без error-лога', () => {
     const { decrypt } = loadCrypto({ key: KEY_A });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     expect(decrypt('обычная старая заметка')).toBe('обычная старая заметка');
     expect(warn).not.toHaveBeenCalled();
   });
@@ -156,7 +167,9 @@ describe('ALL_KEYS: полное отсутствие ключей (ни current
     // расшифровки, впустую перебрал бы "ключ" null и с шумом сообщил бы о порче данных,
     // хотя на самом деле шифрование просто не настроено вовсе.
     const { decrypt } = loadCrypto({}); // ни ENCRYPTION_KEY, ни ENCRYPTION_KEY_OLD
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     const blobShaped = Buffer.alloc(30, 1).toString('base64'); // валиден по форме (>=29 байт)
     expect(decrypt(blobShaped)).toBe(blobShaped);
     expect(warn).not.toHaveBeenCalled();
@@ -215,7 +228,9 @@ describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
     const oldMod = loadCrypto({ key: KEY_A });
     const blob = oldMod.encrypt('чувствительный текст под старым ключом')!;
 
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     const rotated = loadCrypto({ key: KEY_B, old: KEY_A });
     expect(rotated.decrypt(blob)).toBe(
       'чувствительный текст под старым ключом',
@@ -249,9 +264,11 @@ describe('GCM-аутентификация и алерт о порче (ауди
     return buf.toString('base64');
   }
 
-  it('подделанный блоб не расшифровывается и триггерит console.warn', () => {
+  it('подделанный блоб не расшифровывается и пишет error-лог (AlertLogger → DM владельцу)', () => {
     const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     const tampered = tamper(encrypt('секрет')!);
 
     // возвращается как есть (легаси-фолбэк), но никогда — расшифрованный текст
@@ -264,18 +281,54 @@ describe('GCM-аутентификация и алерт о порче (ауди
     );
   });
 
-  it('блоб от неизвестного ключа (неполная ротация) тоже даёт warn', () => {
+  // D-8 (аудит 2026-10): алерт обязан быть уровня error (AlertLogger шлёт в DM
+  // только error), и в нём нет ни шифротекста, ни расшифрованного значения.
+  it('лог порчи — именно error и без содержимого поля', () => {
+    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const err = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const tampered = tamper(encrypt('СЕКРЕТНЫЙ-ТЕКСТ')!);
+    decrypt(tampered);
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+    const logged = String(err.mock.calls[0][0]);
+    expect(logged).not.toContain(tampered);
+    expect(logged).not.toContain('СЕКРЕТНЫЙ');
+  });
+
+  // Легаси plaintext (имя/e-mail из OAuth до шифрования) при мягком декоде
+  // base64 может дать ≥29 байт и провалить GCM, но это не порча: без этой
+  // проверки каждая такая строка будила бы владельца ложной тревогой.
+  it('длинный легаси-plaintext (не строгий base64) не поднимает тревогу', () => {
+    const { decrypt } = loadCrypto({ key: KEY_A });
+    const err = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const legacy = 'ivan.petrov.very.long.address@example-organisation.com';
+    expect(decrypt(legacy)).toBe(legacy);
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  it('блоб от неизвестного ключа (неполная ротация) тоже даёт error-лог', () => {
     const foreign = loadCrypto({ key: KEY_A }).encrypt('чужой ключ')!;
     const { decrypt } = loadCrypto({ key: KEY_B });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
 
     expect(decrypt(foreign)).toBe(foreign);
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('warn троттлится: не чаще раза в минуту', () => {
+  it('error-лог троттлится: не чаще раза в минуту', () => {
     const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     const t0 = 1_700_000_000_000;
     const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
 
@@ -290,9 +343,11 @@ describe('GCM-аутентификация и алерт о порче (ауди
     expect(String(warn.mock.calls[1][0])).toMatch(/decrypt/i);
   });
 
-  it('троттлинг: ровно 60000мс с прошлого warn — это уже НЕ "слишком рано", warn обязан сработать снова (граница < vs <=)', () => {
+  it('троттлинг: ровно 60000мс с прошлого лога — это уже НЕ "слишком рано", error-лог обязан сработать снова (граница < vs <=)', () => {
     const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
     const t0 = 1_700_000_000_000;
     const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
     const bad = tamper(encrypt('секрет')!);

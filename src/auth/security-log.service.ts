@@ -63,7 +63,15 @@ export type SecurityEvent =
   | 'totp_failed'
   // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
   // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
-  | 'admin_key_rejected';
+  | 'admin_key_rejected'
+  // Аккаунт удалён целиком (DELETE /api/user, после второго фактора, если он
+  // включён). Только лог, НЕ в ALERT_EVENTS: законное удаление — не повод для DM.
+  | 'account_deleted'
+  // Адрес для привязки почты уже принадлежит другому аккаунту. Наружу ответ тот
+  // же, что и для свободного адреса (иначе перебор адресов — перечисление
+  // аккаунтов, B-16 аудита 2026-10); след остаётся только здесь. В логе —
+  // userId запросившего, без самого адреса (персональные данные).
+  | 'email_link_conflict';
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.

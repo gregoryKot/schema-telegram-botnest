@@ -65,13 +65,13 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthLoginConfirmController,
     Auth2faController,
   ],
-  // MaxProvider экспортируется отдельно от реестра: его напрямую использует
-  // TelegramAuthGuard (api/init-data-paths.ts) вне этого модуля.
+  // MaxProvider — отдельно от реестра: его использует TelegramAuthGuard (api/).
   exports: [
     AuthService,
     JwtAuthGuard,
     SecurityLogService,
     EmailService,
+    TotpService, // второй фактор перед удалением аккаунта (api/)
     MaxProvider,
     // Карточку сверки при входе через бота показывает TelegramModule.
     LoginTicketService,

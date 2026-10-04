@@ -52,3 +52,24 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/Аналитические cookie/)).toBeTruthy();
   });
 });
+
+// D-4 / D-11 (аудит 2026-10): политика называет всех получателей данных и
+// честно описывает, где работает счётчик. Список — privacy/processors.ts.
+describe('PrivacyPage — получатели данных', () => {
+  it('называет Telegram, Google, Resend, iCloud, Zoom и Яндекс Метрику с назначением', () => {
+    render(<PrivacyPage />);
+    for (const name of ['Telegram (Telegram', 'Google LLC', 'Resend', 'Apple iCloud', 'Zoom', 'Яндекс Метрика (ООО']) {
+      expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
+    expect(screen.getByText(/календарь Оператора/)).toBeTruthy();
+    expect(screen.getByText(/создание ссылки на видеовстречу/)).toBeTruthy();
+  });
+
+  it('про Метрику: только публичные страницы, в приложении и кабинете счётчик не работает', () => {
+    render(<PrivacyPage />);
+    expect(screen.getAllByText(/В приложении и личном кабинете счётчик не работает/).length).toBeGreaterThan(0);
+    // Старое обещание «тепловые карты» снято — карта кликов выключена.
+    expect(screen.getByText(/Тепловые карты кликов и отслеживание переходов по ссылкам отключены/)).toBeTruthy();
+  });
+});

@@ -3,7 +3,6 @@ import {
   Logger,
   UnauthorizedException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -115,8 +114,6 @@ export class AuthService {
     return { id: user.id, firstName: user.first_name ?? '' };
   }
 
-  // ─── Find or create user ───────────────────────────────────────────────────
-
   // ─── Email magic-link login ───────────────────────────────────────────────
 
   async requestEmailLogin(
@@ -126,20 +123,22 @@ export class AuthService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    // Find or create user — always succeeds so we don't leak existence
-    const userId = await this.findOrCreateUserByProvider(
-      'email',
+    // B-16: до подтверждения адреса ничего не создаём — аккаунт появится при
+    // погашении ссылки. Известный адрес — токен сразу на его аккаунт.
+    const known = await this.prisma.authProvider.findUnique({
+      where: { provider_providerId: { provider: 'email', providerId: lower } },
+    });
+    await this.sendMagicLink(
+      known?.userId ?? null,
       lower,
-      lower.split('@')[0],
+      'login',
+      'sendLoginLink',
+      ticket,
     );
-
-    // userId только что найден/создан выше — форма обращения уже выбрана.
-    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink', ticket);
     return { ok: true };
   }
 
-  // Send a magic link that links email as auth provider (not a new login).
-  // The token has purpose='link_email_auth' so the callback knows what to do.
+  // Magic link привязки почты (purpose='link_email_auth'), не новый вход.
   async linkEmailToAccount(
     targetUserId: bigint,
     email: string,
@@ -147,12 +146,13 @@ export class AuthService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    // Check if already linked to another user
     const taken = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider: 'email', providerId: lower } },
     });
     if (taken && BigInt(taken.userId) !== targetUserId) {
-      throw new ConflictException('Этот email уже привязан к другому аккаунту');
+      // B-16: ответ как у свободного адреса, письма нет (иначе 409 — перебор).
+      this.securityLog.log('email_link_conflict', { userId: targetUserId });
+      return { ok: true };
     }
 
     await this.sendMagicLink(
@@ -574,7 +574,7 @@ export class AuthService {
   }
   // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
   private sendMagicLink(
-    userId: bigint,
+    userId: bigint | null,
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,

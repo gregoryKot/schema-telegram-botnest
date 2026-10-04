@@ -19,18 +19,18 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
-import {
-  emailCallbackErrorUrl,
-  emailCallbackNextUrl,
-} from './email-callback-redirect';
+import { emailCallbackRedirectUrl } from './email-callback-redirect';
+import { emailConsumeBody, type EmailConsumeBody } from './email-consume-body';
 import { EmailTokenService } from './email-token.service';
 import type { LinkProviderResult } from './merge-summary.types';
-import { EmailBodyDto, InitDataBodyDto } from './dto/auth-scalar.dto';
+import {
+  EmailBodyDto,
+  InitDataBodyDto,
+  TokenBodyDto,
+} from './dto/auth-scalar.dto';
 import { MergeConfirmDto } from './dto/merge-confirm.dto';
 import { CallerIdentityService } from './caller-identity';
 import { TotpService } from './totp.service';
-import { LinkSessionRequiredException } from './link-session-required.exception';
-import { sendBounce, shouldBounce } from './email-link-bounce';
 import {
   assertMergeCaller,
   assertSourceTotp,
@@ -74,47 +74,51 @@ export class AuthAccountController {
     return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
+  // Ссылка из письма (B-14): только 302 на страницу сайта, токен не гасится —
+  // его гасит POST email/consume. См. email-callback-redirect.ts.
   @Get('email/callback')
-  async emailLoginCallback(
-    @Query('token') token: string,
-    @Query('ticket') ticket: string,
-    @Req() req: Request,
+  emailLoginCallback(
+    @Query('token') token: unknown,
+    @Query('ticket') ticket: unknown,
     @Res() res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      const r = await this.emailTokens.consumeEmailToken(
-        token,
+  ): void {
+    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+    res.redirect(
+      302,
+      emailCallbackRedirectUrl(
+        this.config.getOrThrow<string>('WEBAPP_URL'),
+        typeof token === 'string' ? token : undefined,
+        typeof ticket === 'string' ? ticket : undefined,
+      ),
+    );
+  }
+
+  // Погашение токена со страницы сайта. Анонимный роут (человек входит), но с
+  // CSRF-заголовком и троттлингом; токен — 256 бит, лимит против шума.
+  @Post('email/consume')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 40, ttl: 3_600_000 },
+  })
+  @HttpCode(200)
+  async emailConsume(
+    @Body() dto: TokenBodyDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<EmailConsumeBody> {
+    requireCsrf(req, 'email/consume', this.securityLog);
+    const r = await this.emailTokens
+      .consumeEmailToken(
+        dto.token,
         req.ip,
         req.headers['user-agent'],
         await this.identity.resolve(req), // A3: чья сессия в этом браузере
-      );
-      // Привязка почты сессию не выдаёт: человек уже вошёл (A3).
-      if (r.kind === 'linked')
-        return res.redirect(`${frontendBase}/account?linked=email`);
-      // 2FA-гейт (H1): login при включённом TOTP → экран ввода кода, не сессия.
-      if (r.kind === 'totp_challenge') {
-        res.redirect(
-          `${frontendBase}/auth/2fa?token=${encodeURIComponent(r.challengeToken)}`,
-        );
-        return;
-      }
-      setRefreshCookie(res, r.tokens.refreshToken, 30 * 24 * 3600, false);
-      // Билет НЕ одобряем молча (device-code phishing): с билетом уводим на
-      // экран сверки, где вошедший человек подтвердит код сам.
-      res.redirect(
-        emailCallbackNextUrl(r.purpose, frontendBase, r.tokens, ticket),
-      );
-    } catch (err) {
-      // Переход из письма — с чужого сайта, strict-кука не приехала: один
-      // раз перезаходим со своей страницы (см. email-link-bounce.ts).
-      if (err instanceof LinkSessionRequiredException && shouldBounce(req)) {
-        sendBounce(req, res, frontendBase);
-        return;
-      }
-      this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(emailCallbackErrorUrl(err, frontendBase));
-    }
+      )
+      .catch((err: Error) => {
+        this.logger.warn(`Email consume: ${err.message}`);
+        throw err;
+      });
+    return emailConsumeBody(r, res);
   }
 
   // ─── Link email to existing account ──────────────────────────────────────

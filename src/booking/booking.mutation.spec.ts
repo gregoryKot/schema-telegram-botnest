@@ -147,7 +147,9 @@ describe('BookingService.book — денормализованные ?? null п�
     expect(created.message).toBeNull();
   });
 
-  it('clientTelegramId передан → сохраняется как есть, не обнуляется', async () => {
+  // C-9: анонимная форма не пишет Telegram-id (колонка осталась ради старых
+  // строк и обнуления при удалении аккаунта — account.delete.ts).
+  it('Telegram-id в создаваемую бронь не пишется, даже если его подсунули', async () => {
     const { service, tx } = makeService();
     await service.book({
       ...BASE_DTO,
@@ -155,9 +157,9 @@ describe('BookingService.book — денормализованные ?? null п�
       startsAt: INSIDE_WINDOW,
       durationMin: 15,
       type: SessionType.INTRO_15,
-    });
+    } as typeof BASE_DTO);
     const created = tx.booking.create.mock.calls[0][0].data;
-    expect(created.clientTelegramId).toBe(999n);
+    expect(created).not.toHaveProperty('clientTelegramId');
   });
 
   it('source длиннее 200 символов обрезается до 200 (MethodExpression .slice)', async () => {

@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { Logger } from '@nestjs/common';
 
 // Multi-key support for online key rotation:
 //   ENCRYPTION_KEY     — current key, used for ALL new encryption
@@ -98,25 +99,21 @@ export function decrypt(value: string | null | undefined): string | null {
       /* wrong key, try next */
     }
   }
-  // Ни один ключ не подошёл, хотя blob похож на наш формат (валидный base64
-  // ≥29 байт). Это либо legacy plaintext, случайно похожий на base64, либо
-  // ПОБИТЫЙ/ПОДДЕЛАННЫЙ шифротекст (провал GCM-аутентификации) — молчать
-  // нельзя (аудит 2026-07, S-3). Троттлинг: не чаще раза в минуту, чтобы
-  // массовое чтение легаси-строк не заливало логи.
-  warnDecryptFailure();
+  // Ни один ключ не подошёл. Если blob ПОХОЖ на наш шифротекст (строгий base64
+  // — другого вида он быть не может) — это порча/подделка (провал GCM) или
+  // недокатившаяся ротация: молчать нельзя (аудит 2026-07, S-3), алерт уровня
+  // error (D-8, аудит 2026-10 — AlertLogger шлёт DM владельцу). Обычный текст
+  // с пробелами/кириллицей/«@» base64 не является — это легаси plaintext, он
+  // читается тихо, иначе каждая старая строка была бы ложной тревогой.
+  if (looksLikeCiphertext(value)) logDecryptFailure();
   return value; // legacy plaintext (или мусор) — возвращаем как есть
 }
 
-// Strict base64 charset + minimum length check for "this looks like our
-// ciphertext wire format" (iv 12 + tag 16 + ≥1 byte of data = ≥29 bytes).
-// Deliberately stricter than the passthrough check inside decrypt() above
-// (which uses the lenient Buffer.from(..., 'base64') decode and only checks
-// length) — this is used by callers that need to distinguish "real plaintext"
-// from "ciphertext whose key is no longer configured" BEFORE re-encrypting,
-// see encrypt-migration.ts. Does not verify the GCM tag, so it can't tell
-// ciphertext from a plaintext string that *happens* to be valid base64 of
-// the right length — callers must treat a positive match plus a failed
-// decrypt() as "unknown, do not touch", not as "definitely ciphertext".
+// «Похоже на наш шифротекст»: строгий base64 + длина ≥29 байт (iv 12 + tag 16 +
+// ≥1 байт данных). Строже проверки внутри decrypt() (она мягкая, по длине).
+// GCM-тэг не проверяется: отличить шифротекст от plaintext, случайно
+// похожего на base64, нельзя — вызывающий трактует «похоже + decrypt не
+// сработал» как «неизвестно, не трогать» (см. encrypt-migration.ts).
 const STRICT_BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
 export function looksLikeCiphertext(value: string | null | undefined): boolean {
@@ -130,13 +127,16 @@ export function looksLikeCiphertext(value: string | null | undefined): boolean {
   }
 }
 
-let lastDecryptWarnAt = 0;
-function warnDecryptFailure(): void {
+// Троттлинг: не чаще раза в минуту — массовое чтение порченых строк не должно
+// заливать логи. В сообщении нет ни шифротекста, ни расшифрованного текста.
+const logger = new Logger('Crypto');
+let lastDecryptLogAt = 0;
+function logDecryptFailure(): void {
   const now = Date.now();
-  if (now - lastDecryptWarnAt < 60_000) return;
-  lastDecryptWarnAt = now;
-  // console, не Logger: utils-модуль без DI; AlertLogger перехватывает stdout уровня error/warn.
-  console.warn(
+  if (now - lastDecryptLogAt < 60_000) return;
+  lastDecryptLogAt = now;
+  // Logger, не console: так сообщение проходит через AlertLogger (error → DM).
+  logger.error(
     '[crypto] decrypt: blob в формате шифротекста не расшифровался ни одним ключом — ' +
       'возможна порча данных или неполная ротация ENCRYPTION_KEY',
   );

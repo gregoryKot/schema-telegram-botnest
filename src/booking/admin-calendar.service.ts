@@ -6,7 +6,7 @@ import { CalDavService } from './caldav.service';
 import { calDavHealth } from './caldav-health';
 import { SlotOverrideService } from './slot-override.service';
 import { decryptRecord } from '../utils/crypto';
-import { SCHEMA } from './booking.service';
+import { BOOKING_SCHEMA } from './booking.schema';
 import { localMidnightUTC } from '../utils/tz';
 import { addDaysToDateString } from './rule-expand';
 import { buildAdminCalendar, AdminCalendarDay } from './admin-calendar';
@@ -69,7 +69,7 @@ export class AdminCalendarService {
     const snap = calDavHealth.snapshot();
 
     const bookings = bookingRows.map((b) => {
-      const decrypted = decryptRecord(b, SCHEMA);
+      const decrypted = decryptRecord(b, BOOKING_SCHEMA);
       return {
         id: b.id,
         startsAt: b.startsAt,

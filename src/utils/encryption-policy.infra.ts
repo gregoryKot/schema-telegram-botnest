@@ -5,14 +5,17 @@
 // исключение из храповика (правило №15).
 import { Policy, enc, plain, ID, TOKEN } from './encryption-policy';
 
+const BOOKING_SCHEMA_FILE = 'src/booking/booking.schema.ts';
+
 export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   AvailabilityRule: { timezone: ID },
   Booking: {
-    clientName: enc('src/booking/booking.service.ts'),
-    clientContact: enc('src/booking/booking.service.ts'),
-    message: enc('src/booking/booking.service.ts'),
+    clientName: enc(BOOKING_SCHEMA_FILE),
+    clientContact: enc(BOOKING_SCHEMA_FILE),
+    message: enc(BOOKING_SCHEMA_FILE),
     cancelToken: TOKEN,
-    meetingUrl: plain('ссылка на Zoom/Телемост, задаётся терапевтом'),
+    // D-9 (аудит 2026-10): Zoom-ссылка несёт `?pwd=` — по ней входят в комнату.
+    meetingUrl: enc(BOOKING_SCHEMA_FILE),
     calDavUid: ID,
     source: plain(
       'страница + referrer при брони — структурная атрибуция лида, не PII',
@@ -23,7 +26,8 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   ClientMeeting: {
     clientKey: plain('sha256 от контакта — уже псевдонимизирован'),
-    meetingUrl: plain('переиспользуемая ссылка на встречу'),
+    // Переиспользуемая ссылка клиента (с `?pwd=`), зашифрована как Booking.meetingUrl.
+    meetingUrl: enc('src/booking/meeting.service.ts'),
     zoomMeetingId: ID,
   },
   BookingSetting: {

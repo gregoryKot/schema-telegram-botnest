@@ -214,18 +214,36 @@ describe('App — страница ошибки входа (/auth/error)', () =>
 });
 
 describe('App — Яндекс.Метрика SPA-трекинг', () => {
-  it('шлёт hit БЕЗ фрагмента — токен из #access_token не утекает в Метрику (L6)', async () => {
+  afterEach(() => {
+    delete (window as unknown as { ym?: unknown }).ym;
+  });
+
+  it('на публичной странице шлёт hit БЕЗ секретов из query и фрагмента (L6)', async () => {
     const ym = vi.fn();
     (window as unknown as { ym: typeof ym }).ym = ym;
-    stubLocation({ pathname: '/auth/callback', href: 'http://localhost/auth/callback#access_token=SECRET_JWT&expires_in=900' });
+    stubLocation({
+      pathname: '/articles/some-slug',
+      search: '?code=SECRET_CODE&utm_source=ad',
+      href: 'http://localhost/articles/some-slug?code=SECRET_CODE&utm_source=ad#access_token=SECRET_JWT',
+    });
     const App = await loadApp();
     render(<App />);
     await waitFor(() => expect(ym).toHaveBeenCalled());
     expect(ym.mock.calls[0][1]).toBe('hit');
     const urlArg = String(ym.mock.calls[0][2]);
-    expect(urlArg).toBe('http://localhost/auth/callback'); // фрагмент срезан
-    expect(urlArg).not.toContain('SECRET_JWT');
-    delete (window as unknown as { ym?: typeof ym }).ym;
+    expect(urlArg).toBe('http://localhost/articles/some-slug?utm_source=ad'); // метка есть, секретов нет
+    expect(urlArg).not.toContain('SECRET');
+  });
+
+  it('на /auth/callback (не публичный маршрут) в Метрику не уходит ничего — D-4', async () => {
+    const ym = vi.fn();
+    (window as unknown as { ym: typeof ym }).ym = ym;
+    stubLocation({ pathname: '/auth/callback', href: 'http://localhost/auth/callback#access_token=SECRET_JWT&expires_in=900' });
+    const App = await loadApp();
+    render(<App />);
+    // Дать приложению отработать проверку сессии, затем убедиться, что хитов нет.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(ym).not.toHaveBeenCalled();
   });
 });
 

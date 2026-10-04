@@ -1,12 +1,8 @@
 // Адаптер MAX: мессенджер грузит Bridge через CDN-скрипт и создаёт
 // window.WebApp сразу, без отдельной инициализации — в отличие от Telegram,
 // готовности ждать не нужно.
-import type {
-  HostBridge,
-  HostCapabilities,
-  HostInsets,
-  HostUser,
-} from './types';
+import type { HostBridge, HostCapabilities, HostInsets, HostUser } from './types';
+import { hasMaxInitDataShape } from './maxLaunchShape';
 
 type MaxWebApp = {
   initData?: string;
@@ -103,9 +99,9 @@ function launchInitData(): string {
   return maxWebApp()?.initData || launchParams()['WebAppData'] || '';
 }
 
-/** Признак «нас открыл MAX» — виден до загрузки моста и без него. */
+/** Признак «нас открыл MAX» — виден до загрузки моста; нужна форма initData, не голый ключ. */
 export function hasMaxLaunchParams(): boolean {
-  return !!launchParams()['WebAppData'];
+  return hasMaxInitDataShape(launchParams()['WebAppData']);
 }
 
 /** Диплинк max.ru открываем внутри мессенджера, остальные ссылки — во внешнем браузере. */
