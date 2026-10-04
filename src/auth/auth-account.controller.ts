@@ -107,17 +107,12 @@ export class AuthAccountController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<EmailConsumeBody> {
     requireCsrf(req, 'email/consume', this.securityLog);
-    const r = await this.emailTokens
-      .consumeEmailToken(
-        dto.token,
-        req.ip,
-        req.headers['user-agent'],
-        await this.identity.resolve(req), // A3: чья сессия в этом браузере
-      )
-      .catch((err: Error) => {
-        this.logger.warn(`Email consume: ${err.message}`);
-        throw err;
-      });
+    const r = await this.emailTokens.consumeEmailToken(
+      dto.token,
+      req.ip,
+      req.headers['user-agent'],
+      await this.identity.resolve(req), // A3: чья сессия в этом браузере
+    );
     return emailConsumeBody(r, res);
   }
 

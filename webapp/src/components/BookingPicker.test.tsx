@@ -210,6 +210,18 @@ describe('BookingPicker — сабмит записи', () => {
     );
   });
 
+  // C-9 (аудит 2026-10): бэкенд больше не принимает clientTelegramId (whitelist
+  // ValidationPipe вернул бы 400). Фронт его и не шлёт — тест держит это.
+  it('в теле записи нет clientTelegramId — личный идентификатор не уходит с формы', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+
+    const body = mockApi.bookSlot.mock.calls[0][0] as Record<string, unknown>;
+    expect(Object.keys(body)).not.toContain('clientTelegramId');
+  });
+
   it('успешная бесплатная запись (INTRO_15) без paymentUrl показывает «Заявка принята»', async () => {
     mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
     await fillAndSelectSlot();
