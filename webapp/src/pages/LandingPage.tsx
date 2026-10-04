@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
-import { BookingPicker } from '../components/BookingPicker';
 import { Btn } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
@@ -10,11 +9,11 @@ import {
 } from './landing/constants';
 import { isPracticeHost } from '../utils/domainChrome';
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
-import { TgLink, SectionNav, MobileMenu } from './landing/nav';
+import { SectionNav, MobileMenu } from './landing/nav';
 import { HeroSection } from './landing/HeroSection';
 import { AuthorAvatar } from './landing/AuthorAvatar';
 import { MarqueeStrip } from './landing/MarqueeStrip';
-import { BookingForm } from './landing/BookingForm';
+import { BookingEntry } from './landing/BookingEntry';
 import { FaqList } from './landing/cards';
 import { LandingStyles } from './landing/LandingStyles';
 import { trackGoalOnce } from '../lib/metrika';
@@ -299,12 +298,8 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Выберите удобное время – забронирую его сразу, пришлю подтверждение и ссылку на встречу. Понадобится тихое место, где вас не прервут: всю встречу нужно сидеть и говорить вслух.</p>
-          <BookingPicker fallback={<BookingForm />} />
-          <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
-            <TgLink label="@kotlarewski" />
-          </div>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Напишите пару слов о себе и как с вами связаться – отвечу в течение дня, и мы договоримся о времени. Если удобнее выбрать время самим, расписание откроется ниже.</p>
+          <BookingEntry />
         </section>
       </section>
 
