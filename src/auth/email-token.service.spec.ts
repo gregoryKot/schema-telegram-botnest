@@ -235,9 +235,10 @@ describe('EmailTokenService — consumeEmailToken', () => {
     );
   });
 
-  it('токен без userId → UnauthorizedException', async () => {
+  it('привязка (link_email_auth) без userId в токене → UnauthorizedException', async () => {
     const { svc, auth, emailTokens } = makeService();
     await auth.requestEmailLogin('nouser@example.com');
+    emailTokens[0].purpose = 'link_email_auth';
     emailTokens[0].userId = null;
     const raw = extractTokenFromLink(auth);
     await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
@@ -245,24 +246,70 @@ describe('EmailTokenService — consumeEmailToken', () => {
     );
   });
 
-  it('purpose=login → возвращает токены, помечает использованным, НЕ заходит в ветку link_email_auth (linkProviderToUser не вызывается)', async () => {
-    const { svc, auth, prisma, emailTokens } = makeService();
-    await auth.requestEmailLogin('login@example.com');
-    // requestEmailLogin уже дёрнул authProvider.findUnique один раз внутри
-    // findOrCreateUserByProvider — фиксируем счётчик ДО consumeEmailToken.
-    const callsBefore = (prisma.authProvider.findUnique as jest.Mock).mock.calls
-      .length;
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw);
+  // B-16 (аудит 2026-10): до погашения ссылки в БД нет ни User, ни AuthProvider
+  // — они заводятся здесь, когда человек доказал владение ящиком.
+  it('login нового адреса (userId=null) → аккаунт создаётся ПРИ погашении, токены выданы на него', async () => {
+    const { svc, auth, users, authProviders, emailTokens } = makeService();
+    await auth.requestEmailLogin('Newbie@Example.com');
+    expect(users).toHaveLength(0);
+    expect(authProviders).toHaveLength(0);
+
+    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
     assertTokens(result);
     expect(result.purpose).toBe('login');
-    expect(result.tokens.accessToken).toBeDefined();
+    expect(users).toHaveLength(1);
+    expect(authProviders).toHaveLength(1);
+    expect(authProviders[0]).toMatchObject({
+      provider: 'email',
+      providerId: 'newbie@example.com',
+      displayName: 'newbie',
+    });
+    expect(result.userId).toBe(users[0].id);
     expect(emailTokens[0].usedAt).not.toBeNull();
-    // purpose='login' не должен заходить в ветку link_email_auth —
-    // linkProviderToUser (и его findUnique) не вызывается лишний раз.
-    expect(
-      (prisma.authProvider.findUnique as jest.Mock).mock.calls.length,
-    ).toBe(callsBefore);
+  });
+
+  it('повторное погашение того же токена не плодит аккаунтов', async () => {
+    const { svc, auth, users, authProviders } = makeService();
+    await auth.requestEmailLogin('once@example.com');
+    const raw = extractTokenFromLink(auth);
+    await svc.consumeEmailToken(raw);
+    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(users).toHaveLength(1);
+    expect(authProviders).toHaveLength(1);
+  });
+
+  it('два письма на один новый адрес → при погашении обоих получается ОДИН аккаунт', async () => {
+    const { svc, auth, users, authProviders } = makeService();
+    await auth.requestEmailLogin('twice@example.com');
+    const first = extractTokenFromLink(auth);
+    await auth.requestEmailLogin('twice@example.com');
+    const second = extractTokenFromLink(auth);
+    const r1 = await svc.consumeEmailToken(first);
+    const r2 = await svc.consumeEmailToken(second);
+    assertTokens(r1);
+    assertTokens(r2);
+    expect(r1.userId).toBe(r2.userId);
+    expect(users).toHaveLength(1);
+    expect(authProviders).toHaveLength(1);
+  });
+
+  it('login известного адреса → токены на существующий аккаунт, новых строк нет', async () => {
+    const { svc, auth, users, authProviders } = makeService();
+    users.push({ id: 77n });
+    authProviders.push({
+      id: 1,
+      userId: 77n,
+      provider: 'email',
+      providerId: 'known@example.com',
+    });
+    await auth.requestEmailLogin('known@example.com');
+    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
+    assertTokens(result);
+    expect(result.userId).toBe(77n);
+    expect(users).toHaveLength(1);
+    expect(authProviders).toHaveLength(1);
   });
 
   it('purpose=link_email_auth → привязывает email к целевому userId', async () => {
@@ -384,15 +431,24 @@ describe('EmailTokenService — привязка почты требует се�
 
 describe('EmailTokenService — 2FA-гейт при login (H1)', () => {
   it('purpose=login, у пользователя включён TOTP → kind:"totp_challenge", challengeToken расшифровывается на тот же userId', async () => {
-    const { svc, auth, users, emailTokens } = makeService();
-    await auth.requestEmailLogin('twofa@example.com');
-    const userId = emailTokens[0].userId as bigint;
+    const { svc, auth, users, authProviders, emailTokens } = makeService();
+    // Аккаунт с этим адресом уже есть (у нового адреса 2FA быть не может).
     // isEnabled (totp.service.ts) смотрит только totpEnabledAt — totpSecret
     // добавлен для реалистичности состояния «2FA включена».
-    Object.assign(users[0], {
+    users.push({
+      id: 88n,
       totpEnabledAt: FIXED_DATE,
       totpSecret: 'enc-secret',
     });
+    authProviders.push({
+      id: 1,
+      userId: 88n,
+      provider: 'email',
+      providerId: 'twofa@example.com',
+    });
+    await auth.requestEmailLogin('twofa@example.com');
+    const userId = emailTokens[0].userId as bigint;
+    expect(userId).toBe(88n);
     const raw = extractTokenFromLink(auth);
     const result = await svc.consumeEmailToken(raw);
     assertChallenge(result);
