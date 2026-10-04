@@ -43,6 +43,10 @@
     "status": "leader",
     "reason": "Часовая самопроверка прода шлёт DM владельцу при сбоях — на двух инстансах дубль DM и двойная нагрузка на живые проверки (getMe, CalDAV discovery, запись в ThrottleHit)."
   },
+  "src/infra/session-retention.service.ts::cleanup": {
+    "status": "exempt",
+    "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
+  },
   "src/subscription/subscription.service.ts::chargeDue": {
     "status": "exempt",
     "reason": "Сериализация построчная и более сильная: атомарный захват UPDATE Subscription SET nextChargeAt … WHERE nextChargeAt <= now() (src/subscription/subscription.charges.ts)."

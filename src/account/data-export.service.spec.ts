@@ -78,15 +78,46 @@ function makeFakePrisma(crypto: CryptoModule) {
       completedAt: new Date('2026-01-02'),
     },
   ];
+  // email/displayName в БД зашифрованы (D-9); для старых строк — открытый текст.
   const providers = [
     {
       provider: 'telegram',
       providerId: '555',
       email: null,
-      displayName: 'Аня',
+      displayName: crypto.encrypt('Аня')!,
       createdAt: new Date('2026-01-01'),
     },
+    {
+      provider: 'google',
+      providerId: 'sub-1',
+      email: 'anya@example.com', // legacy plaintext, ещё не дошифрован
+      displayName: null,
+      createdAt: new Date('2026-01-02'),
+    },
   ];
+  const modeMaps = [
+    {
+      id: 7,
+      therapistId: 99n,
+      title: crypto.encrypt('Карта: работа')!,
+      kind: 'problem',
+      nodes: crypto.encryptJson([{ id: 'n1', label: 'Критик' }]),
+      edges: crypto.encryptJson([]),
+      createdAt: new Date('2026-02-01'),
+      updatedAt: new Date('2026-02-02'),
+    },
+  ];
+
+  const modeMapFindMany = jest.fn(async () => modeMaps);
+  const therapyRelationFindMany = jest.fn(async () => [
+    {
+      id: 3,
+      therapistId: 99n,
+      status: 'active',
+      nextSession: '2026-10-10',
+      createdAt: new Date('2026-02-01'),
+    },
+  ]);
 
   const base: Record<string, unknown> = {
     user: {
@@ -103,6 +134,8 @@ function makeFakePrisma(crypto: CryptoModule) {
       ),
     },
     authProvider: { findMany: jest.fn(async () => providers) },
+    modeMap: { findMany: modeMapFindMany },
+    therapyRelation: { findMany: therapyRelationFindMany },
     note: { findMany: jest.fn(async () => notes) },
     ysqResult: { findMany: jest.fn(async () => ysqResults) },
     // Секреты входа — если сервис их хоть раз спросит, тест обязан упасть.
@@ -110,6 +143,9 @@ function makeFakePrisma(crypto: CryptoModule) {
     loginTicket: throwingDelegate('LoginTicket'),
     webSession: throwingDelegate('WebSession'),
   };
+
+  // Достаём спаи наружу через служебное свойство — тесты A-10 проверяют where.
+  base.__spies = { modeMapFindMany, therapyRelationFindMany };
 
   // Proxy: любая другая userId-модель из EXPORT_POLICY (Rating, дневники и
   // т.п.), для которой явной fixture нет, — пустой список. Так сервис не
@@ -195,7 +231,9 @@ describe('DataExportService.buildExport', () => {
         'Booking, Donation, ClientMeeting',
         // D2 (аудит 2026-10): данные О человеке на стороне терапевта и связи
         // с другими людьми — не в файле, и файл об этом говорит.
-        'TherapistNote, ClientConceptualization, ModeMap, TherapyRelation',
+        // ModeMap и TherapyRelation теперь ВЫДАЮТСЯ (A-10) — в withheld остались
+        // только рабочие материалы психолога.
+        'TherapistNote, ClientConceptualization',
         'Pair',
       ]),
     );
@@ -208,6 +246,76 @@ describe('DataExportService.buildExport', () => {
     expect(userLine).toContain('totpRecoveryCodes');
     for (const w of result.withheld)
       expect(w.reason.length).toBeGreaterThan(20);
+  });
+
+  // D-9 (аудит 2026-10): AuthProvider.email/displayName зашифрованы в БД, а
+  // человек обязан получить в файле читаемые значения (и от старых строк
+  // с открытым текстом — тоже).
+  it('расшифровывает email и имя способов входа (и терпит legacy-plaintext)', async () => {
+    const { DataExportService, encrypt, encryptJson } = load();
+    const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
+    const svc = new DataExportService(
+      prisma as any,
+      { track: jest.fn(async () => undefined) } as any,
+      { log: jest.fn() } as any,
+    );
+
+    const result = await svc.buildExport(1n);
+
+    expect(result.providers[0]).toMatchObject({ displayName: 'Аня' });
+    expect(result.providers[1]).toMatchObject({ email: 'anya@example.com' });
+  });
+
+  // A-10 (аудит 2026-10): данные обо мне на стороне терапевта, которые человек
+  // и так видит в приложении, — в файле; личные пометки терапевта — нет.
+  it('отдаёт карты режимов клиента расшифрованными и запрашивает их по clientId', async () => {
+    const { DataExportService, encrypt, encryptJson } = load();
+    const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
+    const svc = new DataExportService(
+      prisma as any,
+      { track: jest.fn(async () => undefined) } as any,
+      { log: jest.fn() } as any,
+    );
+
+    const result = await svc.buildExport(1n);
+
+    expect(result.data.ModeMap[0]).toMatchObject({
+      id: 7,
+      title: 'Карта: работа',
+      nodes: [{ id: 'n1', label: 'Критик' }],
+    });
+    const spies = (prisma as any).__spies;
+    expect(spies.modeMapFindMany.mock.calls[0][0].where).toEqual({
+      clientId: 1n,
+    });
+    expect(spies.therapyRelationFindMany.mock.calls[0][0].where).toEqual({
+      clientId: 1n,
+    });
+  });
+
+  it('связь с терапевтом: кто/статус/ближайшая встреча — да; пометка терапевта и код приглашения — нет', async () => {
+    const { DataExportService, encrypt, encryptJson } = load();
+    const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
+    const svc = new DataExportService(
+      prisma as any,
+      { track: jest.fn(async () => undefined) } as any,
+      { log: jest.fn() } as any,
+    );
+
+    const result = await svc.buildExport(1n);
+
+    expect(result.data.TherapyRelation[0]).toMatchObject({
+      therapistId: 99n,
+      status: 'active',
+      nextSession: '2026-10-10',
+    });
+    // Запрос явным select: личная пометка терапевта (clientAlias) и код
+    // приглашения не запрашиваются вовсе — утечка невозможна по построению.
+    const select = (prisma as any).__spies.therapyRelationFindMany.mock
+      .calls[0][0].select;
+    expect(select).not.toHaveProperty('clientAlias');
+    expect(select).not.toHaveProperty('virtualClientName');
+    expect(select).not.toHaveProperty('code');
   });
 
   it('зовёт аналитику с числом таблиц и строк (правило №8), не бросает при её ошибке', async () => {

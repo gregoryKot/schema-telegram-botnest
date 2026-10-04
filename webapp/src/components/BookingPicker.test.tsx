@@ -25,6 +25,12 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 // ожиданиями); часовой-поясный блок ниже подменяет его на Бангкок.
 vi.mock('./booking/useClientTimeZone', () => ({ useClientTimeZone: vi.fn() }));
 import { useClientTimeZone } from './booking/useClientTimeZone';
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const mockUseClientTimeZone = useClientTimeZone as unknown as ReturnType<typeof vi.fn>;
 
 const timeLabelFmt = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' });
@@ -36,7 +42,9 @@ const SLOTS = [SLOT_A, SLOT_B];
 const OPTIONS = [{ type: 'SESSION_50' as const, label: 'Сессия 50 мин', durationMin: 50, price: 3000, note: 'Полная сессия' }];
 
 function resetLocation() {
-  window.history.pushState({}, '', '/booking');
+  // Виджет записи живёт на главной (публичная страница для Метрики, D-4);
+  // маршрута /booking у сайта нет.
+  window.history.pushState({}, '', '/');
 }
 
 beforeEach(() => {
@@ -208,6 +216,18 @@ describe('BookingPicker — сабмит записи', () => {
         clientTimeZone: 'Europe/Moscow',
       }),
     );
+  });
+
+  // C-9 (аудит 2026-10): бэкенд больше не принимает clientTelegramId (whitelist
+  // ValidationPipe вернул бы 400). Фронт его и не шлёт — тест держит это.
+  it('в теле записи нет clientTelegramId — личный идентификатор не уходит с формы', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await fillAndSelectSlot();
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+
+    const body = mockApi.bookSlot.mock.calls[0][0] as Record<string, unknown>;
+    expect(Object.keys(body)).not.toContain('clientTelegramId');
   });
 
   it('успешная бесплатная запись (INTRO_15) без paymentUrl показывает «Заявка принята»', async () => {

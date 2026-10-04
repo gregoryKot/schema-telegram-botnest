@@ -8,16 +8,14 @@ import { AlertBudget } from '../utils/alert-throttle';
 //
 // The DM is budgeted HERE, in the delivery channel, not at each call site —
 // call sites forget (see incident below). The structured `logger.log` line
-// stays ALWAYS unthrottled: logs are cheap and go nowhere near a human's
-// muted chat, DMs are the scarce channel that suffers from flooding.
+// stays ALWAYS unthrottled: logs are cheap, DMs are the scarce channel.
 //
-// Инцидент 2026-07-29 (suspicious_initdata) научил, что шквал одинаковых DM
-// = замьюченный чат = ноль алертов. Урок применили точечно (initdata-alert.ts,
-// auth-failure.report.ts), но `csrf_blocked` (auth-http.util.ts) и
-// `refresh_token_reuse` (auth.service.ts) слали DM БЕЗ единого троттлинга —
-// регрессия домена cookie/SameSite после деплоя ломает CSRF для каждой
-// авторизованной записи каждого пользователя разом, то есть DM на каждый
-// запрос, админ мьютит чат, и алертинг молчит ровно во время аварии.
+// Инцидент 2026-07-29 (suspicious_initdata): шквал одинаковых DM = замьюченный
+// чат = ноль алертов. Урок применили точечно (initdata-alert.ts,
+// auth-failure.report.ts), но `csrf_blocked` и `refresh_token_reuse` слали DM
+// БЕЗ троттлинга — регрессия домена cookie/SameSite после деплоя ломает CSRF
+// у каждой записи каждого пользователя разом, админ мьютит чат, и алертинг
+// молчит ровно во время аварии.
 //
 // Один слот на событие (как AlertThrottle) не годится: `merge_confirmed`,
 // `role_changed`, `therapist_request_submitted` — редкие, и КАЖДЫЙ важен
@@ -63,7 +61,9 @@ export type SecurityEvent =
   | 'totp_failed'
   // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
   // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
-  | 'admin_key_rejected';
+  | 'admin_key_rejected'
+  | 'account_deleted' // DELETE /api/user (после 2FA, если включена); только лог
+  | 'email_link_conflict'; // адрес занят: ответ как у свободного (B-16), только лог
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.

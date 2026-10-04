@@ -6,7 +6,8 @@ import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
-import { decryptRecord, EncryptSchema } from '../utils/crypto';
+import { decryptRecord, encrypt } from '../utils/crypto';
+import { BOOKING_SCHEMA } from './booking.schema';
 import { sessionLabel } from './caldav-event.util';
 import {
   bookingCardText,
@@ -15,10 +16,6 @@ import {
 } from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
-
-const SCHEMA: EncryptSchema = {
-  strings: ['clientName', 'clientContact', 'message'],
-};
 
 interface PlainBooking {
   id: number;
@@ -62,7 +59,8 @@ export class BookingNotifyService {
       b.meetingUrl = await this.meeting.createMeeting(b);
       await this.prisma.booking.update({
         where: { id: b.id },
-        data: { meetingUrl: b.meetingUrl },
+        // В БД ссылка лежит зашифрованной (`?pwd=` пускает в комнату клиента).
+        data: { meetingUrl: encrypt(b.meetingUrl) },
       });
     }
     const uid = await this.calDav.pushEvent({
@@ -152,7 +150,7 @@ export class BookingNotifyService {
       },
     });
     for (const row of due) {
-      const b = decryptRecord(row, SCHEMA) as unknown as PlainBooking;
+      const b = decryptRecord(row, BOOKING_SCHEMA) as unknown as PlainBooking;
       await this.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
       await this.prisma.booking.update({
         where: { id: b.id },

@@ -309,3 +309,37 @@ describe('DataSection — закрытие модалки фоном сбрас�
     expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
   });
 });
+
+// B-13 (аудит 2026-10): при включённом 2FA сервер отвечает 403 totp_required —
+// экран просит код и повторяет удаление уже с ним (оба фронтенда, правило №3).
+describe('DataSection — удаление аккаунта: второй фактор', () => {
+  const totpRequired = () =>
+    Object.assign(new Error('Нужен код'), { status: 403, reason: 'totp_required' });
+
+  it('403 totp_required → поле кода (ты/вы), повтор с кодом, затем перезагрузка', async () => {
+    mockApi.deleteAllUserData
+      .mockRejectedValueOnce(totpRequired())
+      .mockResolvedValueOnce(undefined);
+
+    renderWithForm('vy');
+    confirmAccountDeletion();
+
+    const input = await screen.findByLabelText(/У вас включена двухфакторная/);
+    expect(screen.queryByText(/У тебя/)).toBeNull();
+    expect(reloadSpy).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '123456' } });
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+
+    await waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
+    expect(mockApi.deleteAllUserData).toHaveBeenLastCalledWith('123456');
+  });
+
+  it('форма «ты»: подпись поля без «вы»', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(totpRequired());
+    renderWithForm('ty');
+    confirmAccountDeletion();
+    await screen.findByLabelText(/У тебя включена двухфакторная/);
+    expect(screen.queryByText(/У вас/)).toBeNull();
+  });
+});

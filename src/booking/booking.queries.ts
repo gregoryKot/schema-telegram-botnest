@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { decryptRecord, EncryptSchema } from '../utils/crypto';
+import { decrypt, decryptRecord, EncryptSchema } from '../utils/crypto';
 
 // Чтение броней: список для админки, одна по id и публичная проекция по
 // cancel-токену. Вынесено из booking.service.ts (правило №10) — сервис
@@ -69,6 +69,6 @@ export async function getPublicBookingByToken(
       b.startsAt.getTime() + b.durationMin * 60_000,
     ).toISOString(),
     durationMin: b.durationMin,
-    meetingUrl: b.meetingUrl,
+    meetingUrl: decrypt(b.meetingUrl),
   };
 }

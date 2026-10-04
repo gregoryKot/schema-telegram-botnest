@@ -1,5 +1,5 @@
 // Тексты для ?error= после перехода по ссылке привязки почты из письма
-// (бэкенд: src/auth/email-callback-redirect.ts). Нет сообщения — null.
+// (коды: webapp/src/pages/authCallback/consumeEmailToken.ts). Нет сообщения — null.
 export function emailLinkErrorMessage(
   code: string | null,
   tr: (ty: string, vy: string) => string,

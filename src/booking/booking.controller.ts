@@ -86,9 +86,6 @@ export class BookingController {
       clientName: dto.clientName?.trim(),
       clientContact: dto.clientContact?.trim(),
       message: dto.message?.trim(),
-      clientTelegramId: dto.clientTelegramId
-        ? BigInt(dto.clientTelegramId)
-        : undefined,
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,
       source: dto.source?.trim() || undefined,

@@ -326,7 +326,7 @@ describe('AccountPage — привязка email', () => {
     fireEvent.change(input, { target: { value: 'me@example.com' } });
     fireEvent.click(screen.getByText('Отправить'));
 
-    await screen.findByText(/Письмо отправлено на/);
+    await screen.findByText(/письмо придёт в течение минуты/);
     expect(screen.getByText('me@example.com')).toBeTruthy();
 
     const linkCall = fetchMock.mock.calls.find(([url]: [string]) =>
@@ -358,7 +358,7 @@ describe('AccountPage — привязка email', () => {
     fireEvent.click(screen.getByText('Отправить'));
 
     await screen.findByText(/Email уже занят/);
-    expect(screen.queryByText(/Письмо отправлено на/)).toBeNull();
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
   });
 });
 

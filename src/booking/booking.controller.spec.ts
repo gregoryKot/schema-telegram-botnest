@@ -171,14 +171,20 @@ describe('BookingController.bookSlot', () => {
     expect(booking.book.mock.calls[0][0].source).toBeUndefined();
   });
 
-  it('clientTelegramId переводится в BigInt', async () => {
+  // C-9 (аудит 2026-10): эндпоинт анонимный — Telegram-id из тела нельзя
+  // принимать: можно привязать чужую бронь к чужому человеку (и подтянуть её
+  // при его удалении аккаунта). Поле не входит в DTO и не доходит до сервиса,
+  // даже если контроллеру передали его напрямую.
+  it('clientTelegramId из тела не доходит до сервиса', async () => {
     const { controller, booking } = makeController();
     booking.book.mockResolvedValue({ id: 1 });
     await controller.bookSlot({
       ...BASE_DTO,
       clientTelegramId: 123456,
-    });
-    expect(booking.book.mock.calls[0][0].clientTelegramId).toBe(123456n);
+    } as typeof BASE_DTO);
+    expect(booking.book.mock.calls[0][0]).not.toHaveProperty(
+      'clientTelegramId',
+    );
   });
 
   it('возвращает результат BookingService.book как есть', async () => {

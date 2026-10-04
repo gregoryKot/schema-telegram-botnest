@@ -35,9 +35,29 @@ describe('загрузчик моста MAX', () => {
   });
 
   it('параметр не первый во фрагменте — тоже подключается', () => {
-    expect(runLoader('#WebAppPlatform=ios&WebAppData=hash%3Dabc')).toHaveLength(
-      1,
-    );
+    expect(
+      runLoader('#WebAppPlatform=ios&WebAppData=auth_date%3D1%26hash%3Dabc'),
+    ).toHaveLength(1);
+  });
+
+  // E-5 (аудит 2026-10): голый ключ — не запуск MAX. Ссылка вида
+  // `…/app/#WebAppData=x` подгружала бы мост в любом браузере.
+  describe('форма значения WebAppData (E-5)', () => {
+    it.each([
+      ['голое значение', '#WebAppData=x'],
+      ['пустое значение', '#WebAppData='],
+      ['только hash', '#WebAppData=hash%3Dabc'],
+      ['только auth_date', '#WebAppData=auth_date%3D1'],
+      ['hash без значения', '#WebAppData=auth_date%3D1%26hash%3D'],
+      ['ключ — не hash, а xhash', '#WebAppData=auth_date%3D1%26xhash%3Dabc'],
+      ['битое кодирование', '#WebAppData=%E0%A4%A'],
+    ])('%s — мост НЕ подключается', (_name, hash) => {
+      expect(runLoader(hash)).toEqual([]);
+    });
+
+    it('hash и auth_date в любом порядке — подключается', () => {
+      expect(runLoader('#WebAppData=hash%3Dabc%26auth_date%3D1')).toHaveLength(1);
+    });
   });
 
   // Ядро регресса: телеграмный запуск.

@@ -85,4 +85,40 @@ describe('rejectInitData', () => {
     }
     expect(securityLog.log).toHaveBeenCalledTimes(1);
   });
+
+  // E-5 (аудит 2026-10): ссылка-ловушка `…/app/#WebAppData=x` раньше слала
+  // подделку на каждый клик. Клиент теперь отсеивает голый ключ, а сервер
+  // держит окно 10 минут на IP — шквал с одного адреса не будит владельца.
+  describe('окно дедупликации по IP (10 минут)', () => {
+    afterEach(() => jest.useRealTimers());
+
+    it('разные IP — каждый получает свой алерт', () => {
+      for (const ip of ['7.0.0.1', '7.0.0.2', '7.0.0.3']) {
+        expect(() => call(new SignatureInvalidError(), ip)).toThrow();
+      }
+      expect(securityLog.log).toHaveBeenCalledTimes(3);
+    });
+
+    it('тот же IP после окна — снова алерт, и в нём число проглоченных', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-04T10:00:00Z'));
+      for (let i = 0; i < 5; i++) {
+        expect(() => call(new SignatureInvalidError(), '8.8.8.8')).toThrow();
+      }
+      expect(securityLog.log).toHaveBeenCalledTimes(1);
+
+      // Внутри окна — тишина.
+      jest.setSystemTime(new Date('2026-10-04T10:09:59Z'));
+      expect(() => call(new SignatureInvalidError(), '8.8.8.8')).toThrow();
+      expect(securityLog.log).toHaveBeenCalledTimes(1);
+
+      // Окно закрылось — алерт с suppressed (4 + 1 из окна).
+      jest.setSystemTime(new Date('2026-10-04T10:10:01Z'));
+      expect(() => call(new SignatureInvalidError(), '8.8.8.8')).toThrow();
+      expect(securityLog.log).toHaveBeenCalledTimes(2);
+      expect(securityLog.log).toHaveBeenLastCalledWith(
+        'suspicious_initdata',
+        expect.objectContaining({ ip: '8.8.8.8', suppressed: 5 }),
+      );
+    });
+  });
 });

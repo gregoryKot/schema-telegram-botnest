@@ -85,7 +85,7 @@ describe('EmailLinkRow — отправка письма', () => {
     });
     fireEvent.click(screen.getByText('Отправить'));
 
-    await screen.findByText(/Письмо отправлено на/);
+    await screen.findByText(/письмо придёт в течение минуты/);
     expect(screen.getByText('me@example.com')).toBeTruthy();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/api/auth/email/link-to-account');
@@ -97,6 +97,20 @@ describe('EmailLinkRow — отправка письма', () => {
     );
   });
 
+  // B-16 (аудит 2026-10): сервер отвечает одинаково для свободного и занятого
+  // адреса, поэтому экран не обещает «письмо отправлено» и не говорит «занят».
+  it('после отправки — нейтральный текст: не «отправлено» и не «уже привязан»', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+    await screen.findByText(/Если адрес свободен, письмо придёт в течение минуты/);
+    expect(screen.queryByText(/Письмо отправлено/)).toBeNull();
+    expect(screen.queryByText(/уже привязан/)).toBeNull();
+  });
+
   it('«Ввести другой email» возвращает форму', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByText('Привязать'));
@@ -104,12 +118,12 @@ describe('EmailLinkRow — отправка письма', () => {
       target: { value: 'me@example.com' },
     });
     fireEvent.click(screen.getByText('Отправить'));
-    await screen.findByText(/Письмо отправлено на/);
+    await screen.findByText(/письмо придёт в течение минуты/);
 
     fireEvent.click(screen.getByText('Ввести другой email'));
 
     expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
-    expect(screen.queryByText(/Письмо отправлено на/)).toBeNull();
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
   });
 
   it('отказ сервера виден текстом и не выдаётся за отправку', async () => {
@@ -124,7 +138,7 @@ describe('EmailLinkRow — отправка письма', () => {
     fireEvent.click(screen.getByText('Отправить'));
 
     await screen.findByText('Email уже занят');
-    expect(screen.queryByText(/Письмо отправлено на/)).toBeNull();
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
   });
 
   it('форма «вы» — подсказка после отправки во «вы»', async () => {

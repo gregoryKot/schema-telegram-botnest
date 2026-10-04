@@ -1,5 +1,5 @@
 // Мелкие эндпоинты api.controller.ts: link-token, typed UI-флаги, черновики
-// дневника (диревики), профиль, disclaimer, удаление аккаунта. Прямой
+// дневника (диревики), профиль, disclaimer. Прямой
 // потребитель PrismaService — фейкуем таблицы user/diaryDraft (см.
 // test-support/fake-prisma.spec-helper.ts), остальное — фейковые сервисы.
 // Приоритет: userId ВСЕГДА из req.webUser (не из body — попытка подсунуть
@@ -263,7 +263,7 @@ describe('ApiController drafts', () => {
   });
 });
 
-describe('ApiController profile / name / init / disclaimer / deleteUser', () => {
+describe('ApiController profile / name / init / disclaimer', () => {
   it('getProfile делегирует с userId из req', async () => {
     const { controller, profileService } = makeController();
     await controller.getProfile(makeReq(6n));
@@ -316,11 +316,5 @@ describe('ApiController profile / name / init / disclaimer / deleteUser', () => 
 
     await controller.acceptDisclaimer(makeReq(3n));
     expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n);
-  });
-
-  it('deleteUser удаляет данные ИМЕННО текущего userId (не константу/чужой id)', async () => {
-    const { controller, accountService } = makeController();
-    await controller.deleteUser(makeReq(11n));
-    expect(accountService.deleteAllUserData).toHaveBeenCalledWith(11n);
   });
 });

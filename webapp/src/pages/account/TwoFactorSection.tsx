@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
+import { TwoFactorScopeNote } from './TwoFactorScopeNote';
 
 // Секция двухфакторной аутентификации (TOTP). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -11,11 +12,9 @@ export function TwoFactorSection({
   onChanged: () => void;
 }) {
   const [setupOpen, setSetupOpen] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null); const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [disableMode, setDisableMode] = useState(false); const tr = useTr();
 
@@ -94,6 +93,7 @@ export function TwoFactorSection({
   return (
     <div style={{ marginTop: 32 }}>
       <div className="eyebrow u-mb12">Двухфакторная аутентификация</div>
+      <TwoFactorScopeNote />
 
       {!totp.enabled && !setupOpen && (
         <div className="text-sm muted" style={{ lineHeight: 1.6, marginBottom: 14 }}>

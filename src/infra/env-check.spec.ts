@@ -231,5 +231,35 @@ describe('checkEnv', () => {
       expect(issue?.problem).toContain('GOOGLE_REDIRECT_URI');
       expect(issue?.problem).toContain('www.schemehappens.ru');
     });
+
+    // F-2 (аудит 2026-10): остаток CORS-origin визитки в ALLOWED_ORIGINS.
+    describe('allowedOriginsNoAliasHosts', () => {
+      const issue = (origins: string | undefined) =>
+        checkEnv({
+          ...ALL_VALID,
+          ALLOWED_ORIGINS: origins,
+        }).crossCheckIssues.find((i) => i.id === 'allowedOriginsNoAliasHosts');
+
+      it('kotlarewski.* в списке — предупреждение с названием origin', () => {
+        const found = issue('https://schemehappens.ru, https://kotlarewski.gr');
+        expect(found?.problem).toContain('https://kotlarewski.gr');
+        expect(found?.problem).not.toContain('schemehappens.ru');
+      });
+
+      it('любой TLD визитки и регистр ловятся', () => {
+        expect(issue('https://www.Kotlarewski.ru')).toBeDefined();
+      });
+
+      it('контрольный: только канонический хост и мини-апп — без проблем', () => {
+        expect(
+          issue('https://schemehappens.ru,https://web.telegram.org'),
+        ).toBeUndefined();
+      });
+
+      it('пустой/незаданный список — без проблем', () => {
+        expect(issue(undefined)).toBeUndefined();
+        expect(issue('')).toBeUndefined();
+      });
+    });
   });
 });

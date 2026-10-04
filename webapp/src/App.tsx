@@ -1,20 +1,7 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
-import { telemetryUrl } from './utils/telemetryUrl';
 import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
-import { trackHit, analyticsUrl } from './lib/metrika';
-
-function MetrikaTracker() {
-  const loc = useLocation();
-  useEffect(() => {
-    // L6 (аудит 2026-08): голая location.href уносила во фрагменте живой JWT
-    // (/auth/callback#access_token=…) в Метрику. analyticsUrl режет секреты
-    // из query как telemetryUrl, но сохраняет utm/yclid — иначе реклама
-    // Директа не атрибутируется (defer:true — автохита нет, только этот).
-    trackHit(analyticsUrl(window.location.href), { referer: telemetryUrl(document.referrer) });
-  }, [loc.pathname, loc.search]);
-  return null;
-}
+import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/authContext';
 import { setTokenProvider, setRefreshHandler } from './api';

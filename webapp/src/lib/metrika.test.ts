@@ -16,12 +16,16 @@ import {
   analyticsUrl,
   shouldRecordSession,
 } from './metrika';
+import { setMetrikaSessionPossible } from './metrikaGate';
 
 function ymQueue(): unknown[][] {
   return (window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [];
 }
 
 beforeEach(() => {
+  // Обычный анонимный посетитель публичной страницы (jsdom: pathname '/').
+  setMetrikaSessionPossible(false);
+  window.history.replaceState(null, '', '/');
   delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
   delete (window as unknown as { ym?: unknown }).ym;
   document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
@@ -169,5 +173,59 @@ describe('analyticsUrl', () => {
   it('похожее, но другое имя параметра (utm_sourcex, myclid) не проходит', () => {
     const url = analyticsUrl('https://kotlarewski.gr/?utm_sourcex=yandex&myclid=123');
     expect(url).toBe('https://kotlarewski.gr/');
+  });
+});
+
+// D-4 (аудит 2026-10): счётчик только на публичных страницах и только без
+// сессии. Клинические экраны (/diary, /today, /cabinet) он не видит вовсе.
+describe('шлюз Метрики (D-4)', () => {
+  const scriptLoaded = () => !!document.querySelector('script[src*="mc.yandex.ru"]');
+
+  it('анонимно на «/» — тег грузится', () => {
+    loadMetrika();
+    expect(scriptLoaded()).toBe(true);
+  });
+
+  it('на /diary без входа — не грузится и хит/цель не уходят', () => {
+    window.history.replaceState(null, '', '/diary');
+    loadMetrika();
+    trackHit('/diary');
+    trackGoal('x');
+    expect(scriptLoaded()).toBe(false);
+    expect(ymQueue()).toEqual([]);
+  });
+
+  it('на «/» при живой сессии — не грузится', () => {
+    setMetrikaSessionPossible(true);
+    loadMetrika();
+    trackHit('/');
+    expect(scriptLoaded()).toBe(false);
+    expect(ymQueue()).toEqual([]);
+  });
+
+  it('по умолчанию (шлюзу ничего не сообщили) — молчит', async () => {
+    // Свежий экземпляр модуля: состояние по умолчанию «сессия возможна».
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const fresh = await import('./metrika');
+    fresh.loadMetrika();
+    expect(scriptLoaded()).toBe(false);
+  });
+
+  it('init без карты кликов и отслеживания ссылок, webvisor — по-прежнему по хосту', () => {
+    loadMetrika();
+    const init = ymQueue().find((c) => c[1] === 'init')![2] as Record<string, unknown>;
+    expect(init.clickmap).toBe(false);
+    expect(init.trackLinks).toBe(false);
+    expect(init.webvisor).toBe(false);
+  });
+
+  it('после входа счётчик перестаёт принимать хиты, уже загруженный тег не получает новых', () => {
+    trackHit('/');
+    const before = ymQueue().length;
+    setMetrikaSessionPossible(true);
+    trackHit('/today');
+    trackGoal('y');
+    expect(ymQueue().length).toBe(before);
   });
 });

@@ -147,7 +147,7 @@ function countBodyParams(): number {
 // src/api/dto/booking.dto.ts), booking/booking-admin.controller.ts:172
 // (interface CreateRuleDto в availability.service.ts → class CreateRuleDto в
 // booking-admin.dto.ts). Планка ниже ужата с 9 до 6.
-// Строка auth-account.controller.ts:242 — тот же нарушитель, что и раньше
+// Строка auth-account.controller.ts:242 (был 243) — тот же нарушитель, что и раньше
 // (inline Record<string, unknown> в telegram-widget merge); фикс device-code
 // phishing 2026-08-31 убрал из контроллера инъекцию LoginTicketService, но
 // номер строки после prettier совпал с прежним.
@@ -155,7 +155,7 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'api/tracker.controller.ts:194':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
-  'auth/auth-account.controller.ts:243':
+  'auth/auth-account.controller.ts:242':
     'inline-тип Record<string, unknown> (telegram widget merge) — ' +
     'комментарий в коде: whitelist сломает hash-верификацию Telegram',
   'auth/auth-telegram.controller.ts:45':

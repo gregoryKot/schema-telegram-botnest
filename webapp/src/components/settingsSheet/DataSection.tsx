@@ -6,6 +6,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
 import { SHead, SRow, InfoModal } from './ui';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
+import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
 
 // Раздел «Данные» (конфиденциальность + полное удаление аккаунта) — вынесен
 // из SettingsSheet.tsx (правило №10). Состояние обеих модалок полностью
@@ -97,16 +98,9 @@ export function DataSection() {
               <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'color-mix(in srgb, var(--accent-red) 12%, transparent)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
             </div>
           ) : (
-            <div>
-              <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
-              <button disabled={deleting} onClick={async () => {
-                setDeleting(true); setDeleteError(false);
-                try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
-                catch { setDeleting(false); setDeleteConfirm(false); setDeleteError(true); }
-              }} style={{ width: '100%', padding: '13px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'var(--accent-red)', color: 'var(--on-accent-red)', fontSize: 15, fontWeight: 600, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit' }}>
-                {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-              </button>
-            </div>
+            <DeleteAccountConfirm tr={tr} deleting={deleting} setDeleting={setDeleting} deleteAllUserData={api.deleteAllUserData}
+              onFailed={() => { setDeleteConfirm(false); setDeleteError(true); }}
+              onDeleted={() => { const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }} />
           )}
         </InfoModal>
       )}

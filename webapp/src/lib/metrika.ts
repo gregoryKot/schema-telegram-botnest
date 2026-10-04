@@ -4,6 +4,7 @@
 // которого терялся самый первый hit (см. комментарий у ym() ниже).
 import { telemetryUrl } from '../utils/telemetryUrl';
 import { isPracticeHost } from '../utils/domainChrome';
+import { metrikaAllowed } from './metrikaGate';
 
 export const YM_ID = 109568051;
 
@@ -28,15 +29,12 @@ declare global {
  * (разные origin), не SPA-навигация, так что кабинет никогда не окажется под
  * уже запущенной записью визитки.
  *
- * Внутри самой визитки один экран всё же не для чужих глаз — админка
- * (`/admin`, там правится контент сайта, PhotoSection/ArticlesSection и
- * т.д.). Эта функция решает по СТАРТОВОМУ пути (init вызывается один раз на
- * загрузке страницы — при заходе сразу на `/admin` запись не включаем).
- * SPA-переход НА `/admin` после старта на другой странице этим не поймать
- * (тот же аргумент «рекордер уже запущен») — там защита второго слоя,
- * класс `ym-hide-content` на корне `AdminPage` (метка Яндекса: не писать
- * содержимое). Поля формы записи в `BookingPicker` — `ym-disable-keys`
- * (не писать ввод), хотя это и не клинический текст.
+ * Внутри визитки один экран не для чужих глаз — админка (`/admin`). Функция
+ * решает по СТАРТОВОМУ пути (init один раз на загрузке): при заходе сразу на
+ * `/admin` запись не включаем. SPA-переход НА `/admin` этим не поймать
+ * («рекордер уже запущен») — там второй слой, класс `ym-hide-content` на
+ * корне `AdminPage`. Поля формы записи в `BookingPicker` — `ym-disable-keys`
+ * (не писать ввод).
  */
 export function shouldRecordSession(
   hostname: string = typeof window === 'undefined' ? '' : window.location.hostname,
@@ -48,10 +46,11 @@ export function shouldRecordSession(
 
 /**
  * Вставляет тег Яндекс.Метрики и инициализирует счётчик. Идемпотентна —
- * повторный вызов ничего не делает (флаг __ym_loaded).
+ * повторный вызов ничего не делает (флаг __ym_loaded). Не делает ничего и
+ * вне публичных страниц или при живой сессии (metrikaGate, решение D-4).
  */
 export function loadMetrika(): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !metrikaAllowed()) return;
   const w = window as unknown as { __ym_loaded?: boolean; ym?: YmFn };
   if (w.__ym_loaded) return;
   w.__ym_loaded = true;
@@ -67,9 +66,9 @@ export function loadMetrika(): void {
   document.head.appendChild(s);
   w.ym(YM_ID, 'init', {
     webvisor: shouldRecordSession(), // см. shouldRecordSession выше — только визитка, не кабинет
-    clickmap: true,
+    clickmap: false, // карта кликов пишет, куда и по чему жали, — не нужна
     accurateTrackBounce: true,
-    trackLinks: true,
+    trackLinks: false, // клики по исходящим ссылкам — тоже лишние
     defer: true,
   });
 }
@@ -82,7 +81,7 @@ export function loadMetrika(): void {
  * window.ym?.(), когда window.ym ещё не существовал, и терялся молча.
  */
 function ym(...args: unknown[]): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !metrikaAllowed()) return;
   loadMetrika();
   window.ym!(...args);
 }

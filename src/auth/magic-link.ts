@@ -24,16 +24,15 @@ export interface MagicLinkDeps {
 }
 
 /**
- * Общий хвост email-логина и привязки email. Письмо уходит fire-and-forget —
- * ответ мгновенный даже при медленной доставке.
- *
- * `ticket` — билет входа. Письмо часто открывают на ДРУГОМ устройстве, и
- * сессия доставалась ему, а исходный экран оставался с надписью «письмо
- * отправлено» навсегда (разбор 2026-08-28).
+ * Общий хвост email-логина и привязки email; письмо уходит fire-and-forget.
+ * `userId` null — адрес новый: User/AuthProvider до подтверждения не создаём
+ * (B-16 аудита 2026-10), аккаунт появится в EmailTokenService.consumeEmailToken.
+ * `ticket` — билет входа: письмо часто открывают на ДРУГОМ устройстве, и сессия
+ * доставалась ему, а исходный экран висел «письмо отправлено» (2026-08-28).
  */
 export async function sendMagicLink(
   deps: MagicLinkDeps,
-  userId: bigint,
+  userId: bigint | null,
   lower: string,
   purpose: 'login' | 'link_email_auth',
   ticket?: string,
@@ -53,7 +52,7 @@ export async function sendMagicLink(
   const base = deps.webappUrl.replace(/\/$/, '');
   const tail = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
   const link = `${base}/api/auth/email/callback?token=${raw}${tail}`;
-  const form = await deps.addressForm(userId);
+  const form = userId === null ? 'ty' : await deps.addressForm(userId);
   const send = purpose === 'link_email_auth' ? deps.sendLink : deps.send;
   void send(lower, link, form).catch((err: Error) => {
     deps.onSendError(err.message);
