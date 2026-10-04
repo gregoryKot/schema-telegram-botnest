@@ -38,7 +38,7 @@ export function BookingEntry() {
   return (
     <>
       <BookingForm />
-      <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '10px 16px', flexWrap: 'wrap' }}>
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '10px 16px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или сразу в мессенджер:</span>
         <TgLink label="@kotlarewski" />
         <a href={`mailto:${OPERATOR_EMAIL}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', textDecoration: 'none' }}>{OPERATOR_EMAIL}</a>
