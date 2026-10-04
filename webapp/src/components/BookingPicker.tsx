@@ -6,6 +6,7 @@ import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
+import { WriteInsteadNote } from './booking/WriteInsteadNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
@@ -17,19 +18,16 @@ const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', 
 const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
 
 const field: React.CSSProperties = {
-  width: '100%', padding: '14px 16px', fontSize: 15,
-  background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-  borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none',
-  fontFamily: 'inherit', boxSizing: 'border-box',
+  width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
+  borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
 };
 const labelSt: React.CSSProperties = {
-  display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
-  textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
+  display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
 };
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
-/** Slot-based booking widget. Falls back to `fallback` when no slots are open. */
-export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами. */
+export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.ReactNode; onWriteInstead?: () => void }) {
   const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -191,6 +189,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         day={day} onDayChange={setDay}
         slot={slot} onSlotChange={setSlot}
       />
+      {!slot && onWriteInstead && <WriteInsteadNote onClick={() => { trackGoal('booking_write_instead'); onWriteInstead(); }} />}
 
       {slot && (
         <>

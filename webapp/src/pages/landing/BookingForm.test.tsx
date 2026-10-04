@@ -31,7 +31,7 @@ function fillValid() {
   fireEvent.change(screen.getByLabelText('Имя *'), {
     target: { value: 'Ира' },
   });
-  fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+  fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
     target: { value: '@ira' },
   });
   fireEvent.click(screen.getByRole('checkbox'));
@@ -52,13 +52,13 @@ describe('BookingForm — валидация', () => {
   it('кнопка отправки недоступна, пока не заполнены имя, контакт и согласие', () => {
     render(<BookingForm />);
     const button = screen.getByRole('button', {
-      name: /Записаться на знакомство/,
+      name: /Написать/,
     });
     expect(button).toHaveProperty('disabled', true);
 
     fillValid();
     expect(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     ).toHaveProperty('disabled', false);
   });
 
@@ -67,11 +67,11 @@ describe('BookingForm — валидация', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: 'Ира' },
     });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+    fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
       target: { value: '@ira' },
     });
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
     expect(mockApi.submitBooking).not.toHaveBeenCalled();
   });
@@ -84,12 +84,12 @@ describe('BookingForm — успешная отправка', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: '  Ира  ' },
     });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+    fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
       target: { value: '  @ira  ' },
     });
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await screen.findByText('Заявка отправлена');
@@ -109,7 +109,7 @@ describe('BookingForm — успешная отправка', () => {
       },
     );
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await waitFor(() =>
@@ -129,7 +129,7 @@ describe('BookingForm — отказ сети виден пользовател�
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await screen.findByText(/Что-то не отправилось/);
@@ -142,32 +142,33 @@ describe('BookingForm — отказ сети виден пользовател�
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
     await screen.findByText(/Что-то не отправилось/);
 
     expect(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     ).toHaveProperty('disabled', false);
   });
 });
 
-// Продуктовая цель лендинга: эта форма — резервная запись только на
-// бесплатное знакомство 15 минут (см. lib/metrika trackBookingSubmit).
+// Продуктовая цель лендинга: эта форма — основной путь заявки («напишите мне»).
+// booking_submit — итог по всем заявкам, lead_submit — только простая форма
+// (слоты считаются отдельно: booking_intro / booking_session).
 describe('BookingForm — цель Метрики', () => {
-  it('успешная отправка шлёт booking_submit и booking_intro', async () => {
+  it('успешная отправка шлёт booking_submit и lead_submit', async () => {
     mockApi.submitBooking.mockResolvedValue({ ok: true });
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await screen.findByText('Заявка отправлена');
     const goals = ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [])
       .filter((c) => c[1] === 'reachGoal')
       .map((c) => c[2]);
-    expect(goals).toEqual(['booking_submit', 'booking_intro']);
+    expect(goals).toEqual(['booking_submit', 'lead_submit']);
   });
 });
 
@@ -182,7 +183,7 @@ describe('BookingForm — во время отправки', () => {
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     expect(screen.getByRole('button', { name: 'Отправляю…' })).toHaveProperty(
@@ -200,7 +201,7 @@ describe('BookingForm — Вебвизор не пишет ввод', () => {
   it('поля имени/контакта/запроса несут ym-disable-keys', () => {
     render(<BookingForm />);
     expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
-    expect(screen.getByLabelText('Telegram / телефон *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Как с вами связаться *').className).toContain('ym-disable-keys');
     expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
   });
 });

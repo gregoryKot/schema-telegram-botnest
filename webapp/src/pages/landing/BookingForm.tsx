@@ -3,9 +3,9 @@ import { api } from '../../api';
 import { Btn } from '../../components/landing-kit';
 import { leadSource } from '../../utils/leadSource';
 import { TG_URL } from './constants';
-import { trackBookingSubmit } from '../../lib/metrika';
+import { trackGoal } from '../../lib/metrika';
 
-// ─── Booking form (fallback when slot picker unavailable) ────────────────────
+// ─── Простая заявка «напишите мне» — основной путь записи на визитке ─────────
 export function BookingForm() {
   const [name, setName]       = useState('');
   const [contact, setContact] = useState('');
@@ -20,7 +20,7 @@ export function BookingForm() {
     try {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource() });
       setStatus('done');
-      trackBookingSubmit('INTRO_15');
+      trackGoal('booking_submit'); trackGoal('lead_submit'); // booking_submit — все заявки; lead_submit — только простая форма (слоты: booking_intro/session)
     } catch { setStatus('error'); }
   };
 
@@ -47,7 +47,7 @@ export function BookingForm() {
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
         <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
-        <div><label htmlFor="booking-contact" style={labelSt}>Telegram / телефон *</label><input id="booking-contact" className="ym-disable-keys" style={field} placeholder="@username или телефон" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
+        <div><label htmlFor="booking-contact" style={labelSt}>Как с вами связаться *</label><input id="booking-contact" className="ym-disable-keys" style={field} placeholder="Telegram, телефон или почта" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
       </div>
       <div>
         <label htmlFor="booking-message" style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
@@ -61,7 +61,7 @@ export function BookingForm() {
       </label>
       {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Что-то не отправилось. Напишите мне напрямую в Telegram – отвечу лично: <a href={TG_URL} style={{ color: 'inherit' }}>@kotlarewski</a></p>}
       <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
-        {status === 'loading' ? 'Отправляю…' : 'Записаться на знакомство →'}
+        {status === 'loading' ? 'Отправляю…' : 'Написать →'}
       </Btn>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут – бесплатно. Никаких обязательств.</p>
     </form>
