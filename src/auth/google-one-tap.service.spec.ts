@@ -48,10 +48,16 @@ describe('GoogleOneTapService.login', () => {
         rotated: true,
       },
     });
-    const res = makeRes() as unknown as { cookie: jest.Mock };
-    const out = await svc.login('h.p.s', res as never, '1.2.3.4', 'UA');
+    const res = makeRes() as unknown as { cookie: jest.Mock; clearCookie: jest.Mock };
+    const out = await svc.login('h.p.s', 'cookie-1', res as never, '1.2.3.4', 'UA');
 
-    expect(verifyIdToken).toHaveBeenCalledWith('h.p.s');
+    // Кука nonce едет в верификатор (B-16), после проверки она гасится.
+    expect(verifyIdToken).toHaveBeenCalledWith('h.p.s', {
+      nonceCookie: 'cookie-1',
+    });
+    expect(
+      (res as unknown as { clearCookie: jest.Mock }).clearCookie,
+    ).toHaveBeenCalledWith('gsi_nonce', { path: '/api/auth' });
     // ВХОД, не привязка: linkUserId всегда null.
     expect(signInOrLinkOrMerge).toHaveBeenCalledWith('google', IDENTITY, {
       linkUserId: null,
@@ -73,7 +79,7 @@ describe('GoogleOneTapService.login', () => {
       challengeToken: 'ct',
     });
     const res = makeRes() as unknown as { cookie: jest.Mock };
-    const out = await svc.login('h.p.s', res as never);
+    const out = await svc.login('h.p.s', 'cookie-1', res as never);
 
     // Сессии ещё нет — куку не ставим, пока не введён код 2FA.
     expect(res.cookie).not.toHaveBeenCalled();
@@ -87,7 +93,7 @@ describe('GoogleOneTapService.login', () => {
     );
     const res = makeRes() as unknown as { cookie: jest.Mock };
 
-    await expect(svc.login('h.p.s', res as never)).rejects.toThrow(
+    await expect(svc.login('h.p.s', 'cookie-1', res as never)).rejects.toThrow(
       'Google ID token invalid',
     );
     // До выдачи сессии дело не дошло.

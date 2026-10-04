@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt } from '../utils/crypto';
+import { requireAffected } from '../utils/require-affected';
 
 // Практики (пользовательские заметки-упражнения на потребность) и планы
 // (запланированная практика на дату + чек-ин выполнения).
@@ -25,9 +26,9 @@ export class PracticesService {
   }
 
   async deletePractice(userId: bigint, id: number) {
-    await this.prisma.userPractice.deleteMany({
-      where: { id, userId },
-    });
+    await requireAffected(
+      this.prisma.userPractice.deleteMany({ where: { id, userId } }),
+    );
   }
 
   // ─── Plans ────────────────────────────────────────────────────────────────
@@ -52,10 +53,12 @@ export class PracticesService {
   }
 
   async checkinPlan(userId: bigint, id: number, done: boolean) {
-    await this.prisma.practicePlan.updateMany({
-      where: { id, userId },
-      data: { done, checkedAt: new Date() },
-    });
+    await requireAffected(
+      this.prisma.practicePlan.updateMany({
+        where: { id, userId },
+        data: { done, checkedAt: new Date() },
+      }),
+    );
   }
 
   async getPendingPlans(userId: bigint, date: string) {

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { requireAffected } from '../utils/require-affected';
 
 export interface EmotionEntry {
   id: string;
@@ -94,7 +95,9 @@ export class DiaryService {
   }
 
   deleteSchemaDiaryEntry(userId: bigint, id: number) {
-    return this.prisma.schemaDiaryEntry.deleteMany({ where: { id, userId } });
+    return requireAffected(
+      this.prisma.schemaDiaryEntry.deleteMany({ where: { id, userId } }),
+    );
   }
 
   // ─── Mode Diary ───────────────────────────────────────────────────────────
@@ -163,7 +166,9 @@ export class DiaryService {
   }
 
   deleteModeDiaryEntry(userId: bigint, id: number) {
-    return this.prisma.modeDiaryEntry.deleteMany({ where: { id, userId } });
+    return requireAffected(
+      this.prisma.modeDiaryEntry.deleteMany({ where: { id, userId } }),
+    );
   }
 
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
@@ -195,8 +200,8 @@ export class DiaryService {
   }
 
   deleteGratitudeDiaryEntry(userId: bigint, id: number) {
-    return this.prisma.gratitudeDiaryEntry.deleteMany({
-      where: { id, userId },
-    });
+    return requireAffected(
+      this.prisma.gratitudeDiaryEntry.deleteMany({ where: { id, userId } }),
+    );
   }
 }

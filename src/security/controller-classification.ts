@@ -49,6 +49,13 @@ export const PUBLIC_BY_DESIGN: Record<string, string> = {
   // не отличим от POST telegram/webapp — тот публичен тем же способом
   // (живёт в auth-account.controller.ts, guarded-классификация которого
   // берётся от СОСЕДНИХ роутов, а не от самого telegram/webapp).
+  // 12 → 13 (2026-10): +auth-one-tap — вход через Google One Tap (id_token из
+  // браузера → сессия) и выдача nonce; анонимные по смыслу входа, как OAuth-
+  // роуты. Защита: проверка подписи/aud id_token + nonce-кука (B-16), CSRF-
+  // заголовок, троттлинг по IP.
+  'auth/auth-one-tap.controller.ts':
+    'вход через Google One Tap: id_token проверяется верификатором Google ' +
+    'и привязан к браузеру nonce-кукой, CSRF-заголовок, троттлинг по IP',
   'auth/auth-max.controller.ts':
     'вход из мини-аппа MAX: подписанный initData → сессия, ' +
     'подпись проверяется в MaxProvider/verifyMaxInitData, троттлинг по IP',

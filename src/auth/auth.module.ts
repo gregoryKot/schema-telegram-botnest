@@ -12,6 +12,7 @@ import { LoginTicketReport } from './login-ticket/login-ticket.report';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
+import { AuthOneTapController } from './auth-one-tap.controller';
 import { GoogleOneTapService } from './google-one-tap.service';
 import { EmailTokenService } from './email-token.service';
 import { CallerIdentityService } from './caller-identity';
@@ -58,6 +59,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
   controllers: [
     AuthController,
     AuthOauthController,
+    AuthOneTapController,
     AuthTelegramController,
     AuthAccountController,
     AuthMaxController,
@@ -73,10 +75,8 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     EmailService,
     TotpService, // второй фактор перед удалением аккаунта (api/)
     MaxProvider,
-    // Карточку сверки при входе через бота показывает TelegramModule.
-    LoginTicketService,
-    // Он же подтверждает объединение аккаунтов (telegram.link.service).
-    TicketLinkService,
+    LoginTicketService, // карточка сверки в боте (TelegramModule)
+    TicketLinkService, // подтверждение объединения (telegram.link.service)
   ],
 })
 export class AuthModule {}
