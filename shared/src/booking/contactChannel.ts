@@ -3,7 +3,7 @@
 // Бэкенд держит копию списка в src/booking/contact-channel.ts (rootDir
 // бэкенда не пускает в shared/); сверка — contact-channel.sync.spec.ts.
 
-export const CONTACT_CHANNELS = ['telegram', 'whatsapp', 'email'] as const;
+export const CONTACT_CHANNELS = ['telegram', 'whatsapp', 'max', 'email'] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
 export function isContactChannel(v: unknown): v is ContactChannel {
@@ -15,12 +15,14 @@ export function isContactChannel(v: unknown): v is ContactChannel {
 const LABELS: Record<ContactChannel, string> = {
   telegram: 'Telegram',
   whatsapp: 'WhatsApp',
+  max: 'MAX',
   email: 'Почта',
 };
 
 const PLACEHOLDERS: Record<ContactChannel, string> = {
   telegram: '@username или номер телефона',
   whatsapp: 'Номер с кодом страны',
+  max: 'Номер телефона',
   email: 'Адрес почты',
 };
 

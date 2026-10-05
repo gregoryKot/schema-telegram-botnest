@@ -43,7 +43,7 @@ describe('BookingDto — рантайм-валидация публичного 
   });
 
   it('channel: telegram/whatsapp/email проходят, неизвестный — отказ', async () => {
-    for (const channel of ['telegram', 'whatsapp', 'email']) {
+    for (const channel of ['telegram', 'whatsapp', 'max', 'email']) {
       await expect(errorsFor({ ...VALID, channel })).resolves.toEqual([]);
     }
     await expect(errorsFor({ ...VALID, channel: 'sms' })).resolves.toContain(

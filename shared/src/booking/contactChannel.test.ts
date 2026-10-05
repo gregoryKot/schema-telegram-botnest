@@ -9,18 +9,20 @@ import {
 
 describe('contactChannel', () => {
   it('три канала в порядке показа', () => {
-    expect([...CONTACT_CHANNELS]).toEqual(['telegram', 'whatsapp', 'email']);
+    expect([...CONTACT_CHANNELS]).toEqual(['telegram', 'whatsapp', 'max', 'email']);
   });
 
   it('подписи', () => {
     expect(contactChannelLabel('telegram')).toBe('Telegram');
     expect(contactChannelLabel('whatsapp')).toBe('WhatsApp');
+    expect(contactChannelLabel('max')).toBe('MAX');
     expect(contactChannelLabel('email')).toBe('Почта');
   });
 
   it('подсказки в поле ввода', () => {
     expect(contactPlaceholder('telegram')).toBe('@username или номер телефона');
     expect(contactPlaceholder('whatsapp')).toBe('Номер с кодом страны');
+    expect(contactPlaceholder('max')).toBe('Номер телефона');
     expect(contactPlaceholder('email')).toBe('Адрес почты');
   });
 
@@ -46,6 +48,7 @@ describe('contactChannel', () => {
     });
     it('номер в WhatsApp и почте — без подсказки', () => {
       expect(telegramNumberHint('whatsapp', '+79990001122')).toBeNull();
+      expect(telegramNumberHint('max', '+79990001122')).toBeNull();
       expect(telegramNumberHint('email', '79990001122')).toBeNull();
     });
     it('короткий ввод — без подсказки', () => {
