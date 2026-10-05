@@ -9,7 +9,12 @@ import {
 
 describe('contactChannel', () => {
   it('три канала в порядке показа', () => {
-    expect([...CONTACT_CHANNELS]).toEqual(['telegram', 'whatsapp', 'max', 'email']);
+    expect([...CONTACT_CHANNELS]).toEqual([
+      'telegram',
+      'whatsapp',
+      'max',
+      'email',
+    ]);
   });
 
   it('подписи', () => {

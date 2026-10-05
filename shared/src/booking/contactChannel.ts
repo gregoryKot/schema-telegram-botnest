@@ -3,7 +3,12 @@
 // Бэкенд держит копию списка в src/booking/contact-channel.ts (rootDir
 // бэкенда не пускает в shared/); сверка — contact-channel.sync.spec.ts.
 
-export const CONTACT_CHANNELS = ['telegram', 'whatsapp', 'max', 'email'] as const;
+export const CONTACT_CHANNELS = [
+  'telegram',
+  'whatsapp',
+  'max',
+  'email',
+] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
 export function isContactChannel(v: unknown): v is ContactChannel {

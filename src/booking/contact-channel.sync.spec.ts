@@ -18,7 +18,10 @@ describe('contact-channel: копия совпадает со shared', () => {
   it('список каналов', () => {
     const m = shared.match(/CONTACT_CHANNELS = \[([^\]]+)\] as const/);
     expect(m).not.toBeNull();
-    const ids = m![1].split(',').map((x) => x.trim().replace(/'/g, ''));
+    const ids = m![1]
+      .split(',')
+      .map((x) => x.trim().replace(/'/g, ''))
+      .filter(Boolean);
     expect(ids).toEqual([...CONTACT_CHANNELS]);
   });
 
