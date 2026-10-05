@@ -2,14 +2,15 @@ import { escapeHtml } from '../utils/escape-html';
 import { SessionType } from '@prisma/client';
 import { sessionLabel } from './caldav-event.util';
 import { clientTimeLine } from './client-timezone';
+import { contactPrefix } from './contact-channel';
 
-// Чистые форматтеры уведомлений админу о бронировании — вынесены из
-// booking-notify.service.ts (правило №10), проверяются без сервиса и его зависимостей.
+// Чистые форматтеры уведомлений админу о бронировании (правило №10).
 
 /** Карточка брони — общие поля для всех уведомлений админу. */
 export interface BookingCard {
   clientName: string;
   clientContact: string;
+  clientChannel?: string | null;
   startsAt: Date;
   message: string | null;
   meetingUrl?: string | null;
@@ -22,6 +23,7 @@ export interface BookingCard {
 export interface LostLead {
   clientName: string;
   clientContact: string;
+  clientChannel?: string | null;
   startsAt: Date;
   durationMin: number;
   type: SessionType;
@@ -62,10 +64,9 @@ export function bookingCardText(title: string, b: BookingCard): string {
   return [
     title,
     '',
-    // M1 (аудит 2026-10): имя/контакт/сообщение вводит посетитель, текст уходит
-    // админу с parse_mode HTML — без экранирования это инъекция разметки.
+    // M1 (аудит 2026-10): ввод посетителя + parse_mode HTML = экранировать.
     `👤 ${escapeHtml(b.clientName)}`,
-    `📬 ${escapeHtml(b.clientContact)}`,
+    `📬 ${contactPrefix(b.clientChannel)}${escapeHtml(b.clientContact)}`,
     `🗓 ${timeWithClientTz(b)}`,
     b.message ? `💬 ${escapeHtml(b.message)}` : null,
     b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
@@ -75,15 +76,14 @@ export function bookingCardText(title: string, b: BookingCard): string {
     .join('\n');
 }
 
-// Текст «заявка потеряна» (инцидент 2026-09-13: контакт терялся при сбое
-// сервера) — всё нужное, чтобы связаться с человеком руками.
+// «Заявка потеряна» (инцидент 2026-09-13) — всё, чтобы связаться руками.
 export function lostLeadAlertText(lead: LostLead, reason: string): string {
   return [
     '🚨 <b>Заявка на запись НЕ сохранилась — сбой сервера</b>',
     'Человек ввёл данные, но бронь не создалась. Свяжитесь с ним вручную.',
     '',
     `👤 ${escapeHtml(lead.clientName)}`,
-    `📬 ${escapeHtml(lead.clientContact)}`,
+    `📬 ${contactPrefix(lead.clientChannel)}${escapeHtml(lead.clientContact)}`,
     `🗓 ${formatTime(lead.startsAt)} · ${sessionLabel(lead.type)}, ${lead.durationMin} мин`,
     lead.message ? `💬 ${escapeHtml(lead.message)}` : null,
     '',

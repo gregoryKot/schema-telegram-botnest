@@ -31,7 +31,7 @@ function fillValid() {
   fireEvent.change(screen.getByLabelText('Имя *'), {
     target: { value: 'Ира' },
   });
-  fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
+  fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
     target: { value: '@ira' },
   });
   fireEvent.click(screen.getByRole('checkbox'));
@@ -67,7 +67,7 @@ describe('BookingForm — валидация', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: 'Ира' },
     });
-    fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
       target: { value: '@ira' },
     });
     fireEvent.click(
@@ -84,7 +84,7 @@ describe('BookingForm — успешная отправка', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: '  Ира  ' },
     });
-    fireEvent.change(screen.getByLabelText('Как с вами связаться *'), {
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
       target: { value: '  @ira  ' },
     });
     fireEvent.click(screen.getByRole('checkbox'));
@@ -172,6 +172,35 @@ describe('BookingForm — цель Метрики', () => {
   });
 });
 
+// Владелец за границей и не звонит на российские номера: посетитель выбирает
+// мессенджер, канал уходит на бэк и в цель Метрики.
+describe('BookingForm — выбор канала связи', () => {
+  it('по умолчанию Telegram', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+    await screen.findByText('Заявка отправлена');
+    expect(mockApi.submitBooking).toHaveBeenCalledWith(expect.objectContaining({ channel: 'telegram' }));
+  });
+
+  it('выбор WhatsApp уходит в теле заявки и в lead_submit', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+
+    await screen.findByText('Заявка отправлена');
+    expect(mockApi.submitBooking).toHaveBeenCalledWith(
+      expect.objectContaining({ contact: '@ira', channel: 'whatsapp' }),
+    );
+    const lead = ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [])
+      .find((c) => c[1] === 'reachGoal' && c[2] === 'lead_submit');
+    expect(lead?.[3]).toEqual({ channel: 'whatsapp' });
+  });
+});
+
 describe('BookingForm — во время отправки', () => {
   it('кнопка показывает «Отправляю…» и недоступна', async () => {
     let resolveFn: (v: { ok: true }) => void = () => {};
@@ -201,7 +230,7 @@ describe('BookingForm — Вебвизор не пишет ввод', () => {
   it('поля имени/контакта/запроса несут ym-disable-keys', () => {
     render(<BookingForm />);
     expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
-    expect(screen.getByLabelText('Как с вами связаться *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Где вам удобнее отвечать *').className).toContain('ym-disable-keys');
     expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
   });
 });

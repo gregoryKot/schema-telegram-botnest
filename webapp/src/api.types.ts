@@ -36,7 +36,7 @@ export type NewAvailabilityRule = {
 };
 export interface AdminBooking {
   id: number; startsAt: string; durationMin: number; type: string; status: string;
-  clientName: string; clientContact: string; message: string | null;
+  clientName: string; clientContact: string; clientChannel?: string | null; message: string | null;
   cancelToken: string; meetingUrl: string | null;
 }
 /** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */

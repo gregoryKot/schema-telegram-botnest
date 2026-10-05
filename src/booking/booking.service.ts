@@ -21,6 +21,7 @@ import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { isValidTimeZone } from './client-timezone';
+import type { ContactChannel } from './contact-channel';
 import {
   listBookings,
   getBookingById,
@@ -34,6 +35,7 @@ export interface CreateBookingDto {
   type: SessionType;
   clientName: string;
   clientContact: string;
+  clientChannel?: ContactChannel;
   message?: string;
   /** Client ticked "returning visit" — require an existing personal meeting. */
   returning?: boolean;
@@ -121,6 +123,7 @@ export class BookingService {
         type: dto.type,
         clientName: dto.clientName,
         clientContact: dto.clientContact,
+        clientChannel: dto.clientChannel ?? null,
         message: dto.message ?? null,
         status: isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
         heldUntil,
@@ -173,10 +176,8 @@ export class BookingService {
   async confirm(id: number, paidAmount?: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
-    // P-4 (аудит 2026-07): расхождение суммы БЛОКИРУЕТ авто-подтверждение,
-    // а не только алертит. Бронь остаётся HELD — админ разбирается вручную
-    // (подпись Robokassa уже привязывает сумму, так что сюда попадёт только
-    // рассинхрон нашего прайса между выпиской счёта и оплатой).
+    // P-4 (аудит 2026-07): расхождение суммы БЛОКИРУЕТ авто-подтверждение:
+    // бронь остаётся HELD, админ разбирается вручную (рассинхрон прайса).
     if (paidAmount != null) {
       const expected = await this.pricing.getPrice(booking.type);
       if (Math.round(paidAmount) !== expected) {
@@ -264,9 +265,8 @@ export class BookingService {
   /** Expire HELD bookings whose hold window has passed. Runs every minute. */
   @Cron('* * * * *')
   async expireHolds() {
-    // Без аренды второй инстанс тоже находит те же HELD-брони и рассылает
-    // notifyExpired по ним ещё раз — админ получает дублирующие DM про одну
-    // и ту же истёкшую бронь.
+    // Без аренды второй инстанс рассылает notifyExpired по тем же броням —
+    // админ получает дубли DM про одну истёкшую бронь.
     if (
       !(await this.cronLeader.claimRun(
         'bookingExpireHolds',

@@ -1,13 +1,9 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { CONTACT_CHANNELS } from '../../booking/contact-channel';
 
 /**
- * DTO для POST /api/booking — публичный, без аутентификации (правило №6).
- * Все поля @IsOptional НАМЕРЕННО: контроллер сохраняет поведение «пустое
- * имя/контакт → молчаливый {ok:true}», реальная проверка обязательности —
- * на фронте. DTO закрывает другое: не-строка (число/объект/массив) раньше
- * роняла обработчик необработанным TypeError на `.trim()` — теперь чистый
- * 400 от ValidationPipe. Лимиты длины щедрые, контроллер сам режет строки
- * до 100/500/200 символов при формировании уведомлений.
+ * POST /api/booking — публичный (правило №6). Поля @IsOptional НАМЕРЕННО:
+ * пустое имя/контакт → молчаливый {ok:true}, обязательность проверяет фронт.
  */
 export class BookingDto {
   @IsOptional()
@@ -21,12 +17,15 @@ export class BookingDto {
   contact?: string;
 
   @IsOptional()
+  @IsIn(CONTACT_CHANNELS)
+  channel?: (typeof CONTACT_CHANNELS)[number];
+
+  @IsOptional()
   @IsString()
   @MaxLength(5000)
   message?: string;
 
-  // Откуда пришла заявка: страница + referrer, собирает фронт. Только для
-  // уведомления админу (атрибуция лидов), в БД не пишется.
+  // Откуда заявка (страница + referrer): только в уведомление, в БД не пишется.
   @IsOptional()
   @IsString()
   @MaxLength(1000)

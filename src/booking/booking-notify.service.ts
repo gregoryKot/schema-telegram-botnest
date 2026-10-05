@@ -24,12 +24,12 @@ interface PlainBooking {
   type: SessionType;
   clientName: string;
   clientContact: string;
+  clientChannel?: string | null;
   message: string | null;
   meetingUrl: string | null;
   cancelToken: string;
   /** Атрибуция лида (страница + referrer), хранится открыто. */
   source?: string | null;
-  /** IANA-пояс посетителя. */
   clientTimeZone?: string | null;
 }
 

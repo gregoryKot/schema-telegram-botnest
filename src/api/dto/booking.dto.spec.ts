@@ -41,4 +41,13 @@ describe('BookingDto — рантайм-валидация публичного 
   it('мусорное поле срезается whitelist — валидное тело всё равно проходит', async () => {
     await expect(errorsFor({ ...VALID, admin: true })).resolves.toEqual([]);
   });
+
+  it('channel: telegram/whatsapp/email проходят, неизвестный — отказ', async () => {
+    for (const channel of ['telegram', 'whatsapp', 'email']) {
+      await expect(errorsFor({ ...VALID, channel })).resolves.toEqual([]);
+    }
+    await expect(errorsFor({ ...VALID, channel: 'sms' })).resolves.toContain(
+      'channel',
+    );
+  });
 });
