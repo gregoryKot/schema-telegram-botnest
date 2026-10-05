@@ -777,6 +777,7 @@ model Booking {
   // PII — stored encrypted
   clientName      String
   clientContact   String        // phone or telegram @handle
+  clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
   message         String?
   clientTelegramId BigInt?      // if client came from Telegram
   cancelToken     String        @unique  // random UUID for self-cancel link

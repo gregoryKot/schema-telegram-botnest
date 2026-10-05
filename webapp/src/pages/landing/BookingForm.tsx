@@ -4,11 +4,14 @@ import { Btn } from '../../components/landing-kit';
 import { leadSource } from '../../utils/leadSource';
 import { TG_URL } from './constants';
 import { trackGoal } from '../../lib/metrika';
+import { ContactChannelField } from '../../components/booking/ContactChannelField';
+import type { ContactChannel } from '../../../../shared/src/booking/contactChannel';
 
 // ─── Простая заявка «напишите мне» — основной путь записи на визитке ─────────
 export function BookingForm() {
   const [name, setName]       = useState('');
   const [contact, setContact] = useState('');
+  const [channel, setChannel] = useState<ContactChannel>('telegram');
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [status, setStatus]   = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -18,22 +21,17 @@ export function BookingForm() {
     if (!name.trim() || !contact.trim() || !consent) return;
     setStatus('loading');
     try {
-      await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource() });
+      await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource(), channel });
       setStatus('done');
-      trackGoal('booking_submit'); trackGoal('lead_submit'); // booking_submit — все заявки; lead_submit — только простая форма (слоты: booking_intro/session)
+      trackGoal('booking_submit'); trackGoal('lead_submit', { channel }); // booking_submit — все заявки; lead_submit — только простая форма (слоты: booking_intro/session)
     } catch { setStatus('error'); }
   };
 
   const field: React.CSSProperties = {
-    width: '100%', padding: '14px 16px', fontSize: 15,
-    background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-    borderRadius: 12, color: 'var(--text)', outline: 'none',
-    fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
+    width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
+    borderRadius: 12, color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
   };
-  const labelSt: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
-    textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
-  };
+  const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 };
 
   if (status === 'done') return (
     <div style={{ textAlign: 'center', padding: '56px 0' }}>
@@ -47,7 +45,7 @@ export function BookingForm() {
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
         <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
-        <div><label htmlFor="booking-contact" style={labelSt}>Как с вами связаться *</label><input id="booking-contact" className="ym-disable-keys" style={field} placeholder="Telegram, телефон или почта" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
+        <ContactChannelField id="booking-contact" channel={channel} onChannelChange={setChannel} value={contact} onChange={setContact} labelStyle={labelSt} fieldStyle={field} />
       </div>
       <div>
         <label htmlFor="booking-message" style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>

@@ -79,7 +79,7 @@ async function fillAndSelectSlot() {
   await renderLoaded();
   fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
   fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-  fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+  fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
   tickConfirmNotice();
   fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
 }
@@ -169,8 +169,8 @@ describe('BookingPicker — выбор слота и обязательные п
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
-    const contactInput = screen.getByLabelText('Telegram / телефон *');
-    await screen.findByText('Оставьте Telegram или телефон — пришлю подтверждение');
+    const contactInput = screen.getByLabelText('Где вам удобнее отвечать *');
+    await screen.findByText('Укажите, где вам ответить — пришлю подтверждение');
     expect(contactInput).toBe(document.activeElement);
   });
 
@@ -178,7 +178,7 @@ describe('BookingPicker — выбор слота и обязательные п
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
     tickConfirmNotice();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -192,7 +192,7 @@ describe('BookingPicker — выбор слота и обязательные п
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
-    expect(screen.getByLabelText('Telegram / телефон *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Где вам удобнее отвечать *').className).toContain('ym-disable-keys');
     expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
   });
 });
@@ -215,6 +215,23 @@ describe('BookingPicker — сабмит записи', () => {
         website: '',
         clientTimeZone: 'Europe/Moscow',
       }),
+    );
+  });
+
+  it('канал связи: по умолчанию Telegram, выбор WhatsApp уходит в clientChannel', async () => {
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    await renderLoaded();
+    fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
+    fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '+79990001122' } });
+    tickConfirmNotice();
+    fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
+    await act(async () => {});
+
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(
+      expect.objectContaining({ clientContact: '+79990001122', clientChannel: 'whatsapp' }),
     );
   });
 
@@ -263,7 +280,7 @@ describe('BookingPicker — сабмит записи', () => {
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
     fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -411,7 +428,7 @@ describe('BookingPicker — цели Метрики', () => {
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
     fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на|Оплатить/ }));
     await act(async () => {});
@@ -434,7 +451,7 @@ describe('BookingPicker — цели Метрики', () => {
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.focus(screen.getByLabelText('Имя *'));
-    fireEvent.focus(screen.getByLabelText('Telegram / телефон *'));
+    fireEvent.focus(screen.getByLabelText('Где вам удобнее отвечать *'));
     expect(goalHits('booking_form_focus').length).toBe(1);
   });
 
@@ -533,7 +550,7 @@ describe('BookingPicker — часовой пояс посетителя', () =>
     render(<BookingPicker />);
     fireEvent.click(await screen.findByText('16:00'));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
     tickConfirmNotice();
     fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
@@ -601,7 +618,7 @@ describe('BookingPicker — галочка «понятно про подтве�
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), { target: { value: '@anya' } });
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), { target: { value: '@anya' } });
     fireEvent.click(screen.getByRole('checkbox', { name: /оферты/ }));
   }
 

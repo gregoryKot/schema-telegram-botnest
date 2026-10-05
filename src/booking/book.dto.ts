@@ -2,6 +2,7 @@ import { SessionType } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsISO8601,
   IsOptional,
@@ -11,13 +12,9 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { CONTACT_CHANNELS, type ContactChannel } from './contact-channel';
 
-/**
- * Тело POST /api/booking/book — первый DTO с рантайм-валидацией
- * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Публичный анонимный
- * эндпоинт с деньгами — приоритетный кандидат: до этого тело
- * проверялось только compile-time интерфейсом.
- */
+/** Тело POST /api/booking/book — публичный эндпоинт с деньгами, рантайм-валидация (аудит 2026-07, правило №6). */
 export class BookDto {
   @IsISO8601()
   startsAt!: string;
@@ -41,6 +38,10 @@ export class BookDto {
   clientContact!: string;
 
   @IsOptional()
+  @IsIn(CONTACT_CHANNELS)
+  clientChannel?: ContactChannel;
+
+  @IsOptional()
   @IsString()
   @MaxLength(2000)
   message?: string;
@@ -56,9 +57,8 @@ export class BookDto {
   returning?: boolean;
 
   // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — из Intl на фронте.
-  // Валидность проверяется сервисом через Intl; невалидное значение
-  // игнорируется, а не отклоняет запрос (правило №14: чужой ввод не должен
-  // ронять заявку с деньгами из-за странного значения пояса).
+  // Валидность проверяет сервис; невалидное значение игнорируется, а не
+  // отклоняет запрос (правило №14: странный пояс не должен ронять заявку).
   @IsOptional()
   @IsString()
   @MaxLength(64)

@@ -3,7 +3,7 @@
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
-import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
+import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
@@ -169,7 +169,7 @@ export const api = {
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
   getClientDiary:       (clientId: UserId) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
-  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string; channel?: ContactChannel }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
   getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
   getSlots:             (from?: string, to?: string) => {
@@ -179,7 +179,7 @@ export const api = {
     const qs = q.toString();
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
-  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string }) =>
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string; clientChannel?: ContactChannel }) =>
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
   getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),

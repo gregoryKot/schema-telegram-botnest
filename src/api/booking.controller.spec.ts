@@ -54,6 +54,29 @@ describe('BookingController.submitBooking', () => {
     expect(notifyAdmin.mock.calls[0][0]).not.toContain('Откуда');
   });
 
+  it('канал whatsapp: в DM и письме подпись «WhatsApp:» и номер', () => {
+    controller.submitBooking({
+      name: 'Имя',
+      contact: '+79990001122',
+      channel: 'whatsapp',
+    });
+    expect(notifyAdmin.mock.calls[0][0]).toContain(
+      '<b>WhatsApp:</b> +79990001122',
+    );
+    expect(sendAdminNotification.mock.calls[0][1]).toContain(
+      'WhatsApp: +79990001122',
+    );
+    expect(notifyAdmin.mock.calls[0][0]).not.toContain('Контакт:');
+  });
+
+  it('без канала по-прежнему «Контакт:»', () => {
+    controller.submitBooking({ name: 'Имя', contact: '+79990001122' });
+    expect(notifyAdmin.mock.calls[0][0]).toContain('<b>Контакт:</b>');
+    expect(sendAdminNotification.mock.calls[0][1]).toContain(
+      'Контакт: +79990001122',
+    );
+  });
+
   it('без имени/контакта — молча ok, уведомления не шлются', () => {
     expect(controller.submitBooking({ name: ' ', contact: '' })).toEqual({
       ok: true,

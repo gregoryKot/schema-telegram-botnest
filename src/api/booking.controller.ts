@@ -12,6 +12,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { EmailService } from '../auth/email.service';
 import { escapeHtml } from '../utils/escape-html';
 import { BookingDto } from './dto/booking.dto';
+import { contactLabelOr } from '../booking/contact-channel';
 
 @Controller('api')
 export class BookingController {
@@ -22,15 +23,14 @@ export class BookingController {
     private readonly email: EmailService,
   ) {}
 
-  // M4 (аудит 2026-10): каждая заявка = DM админу + письмо, а штатный лимит
-  // только глобальный и в памяти процесса (на двух инстансах счётчики
-  // разные). Тот же лимит и тот же общий Postgres-счётчик, что у /booking/book.
+  // M4 (аудит 2026-10): заявка = DM админу + письмо, штатный лимит в памяти
+  // не держит два инстанса — тот же Postgres-счётчик, что у /booking/book.
   @Throttle({ long: { limit: 6, ttl: 3_600_000 } })
   @PersistentThrottle()
   @Post('booking')
   @HttpCode(HttpStatus.OK)
   submitBooking(@Body() dto: BookingDto): { ok: true } {
-    const { name, contact, message, source } = dto;
+    const { name, contact, message, source, channel } = dto;
 
     if (!name?.trim() || !contact?.trim()) {
       return { ok: true }; // silent — validation on frontend
@@ -40,12 +40,13 @@ export class BookingController {
     const c = escapeHtml(contact.slice(0, 100).trim());
     const m = message?.trim() ? escapeHtml(message.slice(0, 500).trim()) : null;
     const src = source?.trim() ? source.trim().slice(0, 200) : null;
+    const label = contactLabelOr(channel, 'Контакт');
 
     const tgText = [
       '📩 <b>Новая заявка с сайта</b>',
       '',
       `👤 <b>Имя:</b> ${n}`,
-      `📬 <b>Контакт:</b> ${c}`,
+      `📬 <b>${label}:</b> ${c}`,
       m ? `💬 <b>Запрос:</b>\n${m}` : null,
       src ? `🔗 <b>Откуда:</b> ${escapeHtml(src)}` : null,
     ]
@@ -56,7 +57,7 @@ export class BookingController {
       'Новая заявка с сайта',
       '',
       `Имя: ${name.trim()}`,
-      `Контакт: ${contact.trim()}`,
+      `${label}: ${contact.trim()}`,
       m ? `Запрос:\n${message!.trim()}` : null,
       src ? `Откуда: ${src}` : null,
     ]
@@ -65,8 +66,7 @@ export class BookingController {
 
     this.logger.log('New booking received');
 
-    // Both channels are fire-and-forget — response is instant regardless of
-    // Telegram/Resend availability. Email is the fallback if Telegram fails.
+    // Оба канала fire-and-forget; почта — запасной путь, если Telegram упал.
     void this.telegram.notifyAdmin(tgText);
     void this.email.sendAdminNotification('📩 Новая заявка с сайта', emailText);
 

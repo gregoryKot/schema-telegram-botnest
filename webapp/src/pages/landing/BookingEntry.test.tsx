@@ -97,7 +97,7 @@ describe('BookingEntry — расписание по ссылке', () => {
     await screen.findByText(/Открытого времени сейчас нет/);
     fireEvent.click(screen.getByRole('button', { name: 'Написать →' }));
 
-    expect(screen.getByLabelText('Как с вами связаться *')).toBeTruthy();
+    expect(screen.getByLabelText('Где вам удобнее отвечать *')).toBeTruthy();
     expect(screen.queryByText(/Открытого времени сейчас нет/)).toBeNull();
   });
 });

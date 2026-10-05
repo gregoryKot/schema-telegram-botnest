@@ -22,8 +22,7 @@ import { buildBookingIcsText } from './booking-ics';
 import { SessionType } from '@prisma/client';
 import { BookDto } from './book.dto';
 
-// D1 (аудит 2026-08): жёсткий потолок окна /slots — квартал с запасом. Больше
-// календарю бронирования не нужно, а без потолка перебор по суткам вешал API.
+// D1 (аудит 2026-08): потолок окна /slots — квартал; без него перебор по суткам вешал API.
 const MAX_SLOTS_RANGE_MS = 92 * 24 * 60 * 60 * 1000;
 
 /** Public booking endpoints: browse slots, book one, self-cancel. */
@@ -85,6 +84,7 @@ export class BookingController {
       type: dto.type ?? SessionType.INTRO_15,
       clientName: dto.clientName?.trim(),
       clientContact: dto.clientContact?.trim(),
+      clientChannel: dto.clientChannel,
       message: dto.message?.trim(),
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,

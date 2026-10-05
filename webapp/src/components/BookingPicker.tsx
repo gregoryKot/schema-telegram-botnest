@@ -10,6 +10,8 @@ import { WriteInsteadNote } from './booking/WriteInsteadNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
+import { ContactChannelField } from './booking/ContactChannelField';
+import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
@@ -35,6 +37,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
   const [slot, setSlot] = useState<BookingSlot | null>(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
+  const [channel, setChannel] = useState<ContactChannel>('telegram');
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [confirmNotice, setConfirmNotice] = useState(false); // переживает переключение формата: ответ на тот же текст
@@ -123,7 +126,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz,
+        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz, clientChannel: channel,
       });
       setCancelToken(res.cancelToken);
       trackBookingSubmit(sessionType);
@@ -207,17 +210,12 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
               />
               {invalidField === 'name' && <p id="bp-name-hint" style={hintSt}>{FIELD_HINTS.name}</p>}
             </div>
-            <div>
-              <label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label>
-              <input
-                id="bp-contact" ref={contactRef} className="ym-disable-keys" style={field} placeholder="@username или телефон"
-                value={contact} onChange={(e) => { setContact(e.target.value); if (invalidField === 'contact') setInvalidField(null); }}
-                onFocus={onFieldFocus} required maxLength={100}
-                aria-invalid={invalidField === 'contact' || undefined}
-                aria-describedby={invalidField === 'contact' ? 'bp-contact-hint' : undefined}
-              />
-              {invalidField === 'contact' && <p id="bp-contact-hint" style={hintSt}>{FIELD_HINTS.contact}</p>}
-            </div>
+            <ContactChannelField
+              id="bp-contact" channel={channel} onChannelChange={setChannel} inputRef={contactRef} onFocus={onFieldFocus}
+              value={contact} onChange={(v) => { setContact(v); if (invalidField === 'contact') setInvalidField(null); }}
+              invalid={invalidField === 'contact'} hint={invalidField === 'contact' ? FIELD_HINTS.contact : null}
+              labelStyle={labelSt} fieldStyle={field}
+            />
           </div>
           {sessionType === 'INTRO_15' && (
             <IntroConfirmNotice

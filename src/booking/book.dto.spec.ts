@@ -80,4 +80,13 @@ describe('BookDto — рантайм-валидация платёжного э�
       errorsFor({ ...VALID, source: 'x'.repeat(201) }),
     ).resolves.toContain('source');
   });
+
+  it('clientChannel: whatsapp проходит, неизвестный канал — отказ', async () => {
+    await expect(
+      errorsFor({ ...VALID, clientChannel: 'whatsapp' }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ ...VALID, clientChannel: 'sms' }),
+    ).resolves.toContain('clientChannel');
+  });
 });

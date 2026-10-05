@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { BookingSlot } from '../../api';
 import { trackGoalOnce } from '../../lib/metrika';
 import { TimeZonePicker } from './TimeZonePicker';
+import { Chip } from './Chip';
 import {
   groupByLocalDay, localDayLabel, localTimeLabel, timeZoneCaption, mskHintLabel,
 } from '../../../../shared/src/booking/clientTimeZone';
@@ -10,18 +11,6 @@ const labelSt: React.CSSProperties = {
   display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
   textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
 };
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      padding: '9px 16px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-      borderRadius: 100, whiteSpace: 'nowrap', transition: 'all .15s',
-      background: active ? 'var(--accent)' : 'transparent',
-      color: active ? '#fff' : 'var(--text-sub)',
-      border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
-    }}>{children}</button>
-  );
-}
 
 interface Props {
   slots: BookingSlot[];

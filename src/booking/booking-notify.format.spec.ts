@@ -2,7 +2,7 @@
 // clientTimeZone: без пояса/с московским поясом карточка выглядит как
 // раньше (только МСК), с непустым не-московским поясом строка времени несёт
 // и время клиента.
-import { bookingCardText } from './booking-notify.format';
+import { bookingCardText, lostLeadAlertText } from './booking-notify.format';
 
 // 30 сент. 12:00 UTC = 15:00 МСК = 19:00 в Бангкоке.
 const startsAt = new Date('2026-09-30T12:00:00Z');
@@ -83,5 +83,46 @@ describe('bookingCardText — экранирование пользовател�
     expect(text).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
     // заголовок — наша разметка, остаётся как есть
     expect(text).toContain('<b>Заголовок</b>');
+  });
+});
+
+describe('bookingCardText / lostLeadAlertText — канал связи', () => {
+  const base = {
+    clientName: 'Иван',
+    clientContact: '+79990001122',
+    startsAt,
+    message: null,
+  };
+
+  it('известный канал — подпись перед контактом', () => {
+    expect(
+      bookingCardText('З', { ...base, clientChannel: 'whatsapp' }),
+    ).toContain('📬 WhatsApp: +79990001122');
+    expect(bookingCardText('З', { ...base, clientChannel: 'email' })).toContain(
+      '📬 Почта: +79990001122',
+    );
+  });
+
+  it('нет канала или неизвестное значение — как раньше, без подписи', () => {
+    expect(bookingCardText('З', base)).toContain('📬 +79990001122');
+    expect(bookingCardText('З', { ...base, clientChannel: null })).toContain(
+      '📬 +79990001122',
+    );
+    expect(bookingCardText('З', { ...base, clientChannel: 'sms' })).toContain(
+      '📬 +79990001122',
+    );
+  });
+
+  it('потерянная заявка тоже несёт канал', () => {
+    const text = lostLeadAlertText(
+      {
+        ...base,
+        clientChannel: 'telegram',
+        durationMin: 15,
+        type: 'INTRO_15',
+      },
+      'сбой',
+    );
+    expect(text).toContain('📬 Telegram: +79990001122');
   });
 });
