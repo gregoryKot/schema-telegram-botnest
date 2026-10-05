@@ -1,6 +1,11 @@
 // Копия shared/src/booking/contactChannel.ts, а НЕ импорт: rootDir бэкенда —
 // ./src (см. client-timezone.ts). Сверка — contact-channel.sync.spec.ts.
-export const CONTACT_CHANNELS = ['telegram', 'whatsapp', 'email'] as const;
+export const CONTACT_CHANNELS = [
+  'telegram',
+  'whatsapp',
+  'max',
+  'email',
+] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
 export function isContactChannel(v: unknown): v is ContactChannel {
@@ -12,6 +17,7 @@ export function isContactChannel(v: unknown): v is ContactChannel {
 const LABELS: Record<ContactChannel, string> = {
   telegram: 'Telegram',
   whatsapp: 'WhatsApp',
+  max: 'MAX',
   email: 'Почта',
 };
 
