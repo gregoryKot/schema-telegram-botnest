@@ -24,7 +24,7 @@ export function ClientBookingLink() {
         {copied === 'ok' && <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Скопировано ✓</span>}
         {copied === 'fail' && <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>Не скопировалось – ссылку можно выделить и скопировать руками</span>}
       </div>
-      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '8px 0 0' }}>Открывает расписание сразу, по умолчанию выбрана сессия. Для знакомства: {CLIENT_BOOKING_URL}?type=intro</p>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '8px 0 0' }}>Открывает расписание сразу, только сессия 50 минут — для знакомых клиентов.</p>
     </section>
   );
 }
