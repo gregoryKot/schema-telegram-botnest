@@ -28,16 +28,15 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
-// bundle every visitor downloads just for the public site.
+// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
 import { BookingPaidPage } from './pages/BookingPaidPage';
+const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 import { SubscribePage } from './pages/SubscribePage';
 
 // Apply saved theme before first render
-const savedTheme = localStorage.getItem('app_theme');
-if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
 // ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
@@ -85,6 +84,7 @@ const personalRoutes = [
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
+  { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
   { path: '/booking/paid',   element: <BookingPaidPage /> },
   // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
   // что у /booking/paid: путь переименовывать нельзя, туда редиректит
