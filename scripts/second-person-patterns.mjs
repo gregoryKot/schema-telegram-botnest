@@ -184,14 +184,14 @@ export const EXCLUDE = [
   // конкретного userId и его формы; HEALTHY_ADULT.md прямо фиксирует «ты»
   // для всего канала.
   /^src\/bot\/healthy-adult\.data\.ts$/,
-  // До входа выбирать нечего — гость ещё не сделал выбор формы, а
-  // BookingPaidPage вообще не про пользователя приложения (клиент разовой
-  // платной записи, попадает по ссылке из Robokassa, аккаунта не заводит).
+  // До входа выбирать нечего — гость ещё не сделал выбор формы; BookingPaidPage
+  // и BookingLinkPage (/book) вообще не про пользователя приложения: клиент разовой
+  // записи по ссылке из Robokassa / из мессенджера, аккаунта не заводит.
   // ПРОВЕРЕНО и намеренно НЕ добавлен: LinkDevicePage.tsx — он требует
   // authenticated (иначе редиректит на /login) и показывает контент только
   // вошедшему пользователю с известной формой — это реальный долг, не зона.
   /webapp\/src\/pages\/LoginPage\.tsx$/,
-  /webapp\/src\/pages\/BookingPaidPage\.tsx$/,
+  /webapp\/src\/pages\/(BookingPaidPage|BookingLinkPage)\.tsx$/,
   // Юридические документы — исключение прямо названо в docs/VOICE.md,
   // формальный регистр там уместен и не варьируется по форме.
   /webapp\/src\/pages\/(PrivacyPage|OfferPage)\.tsx$/,

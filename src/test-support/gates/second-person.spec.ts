@@ -443,6 +443,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // До входа — гость/разовый клиент, форма ещё не выбрана.
       'webapp/src/pages/LoginPage.tsx',
       'webapp/src/pages/BookingPaidPage.tsx',
+      'webapp/src/pages/BookingLinkPage.tsx',
       // Юридические документы.
       'webapp/src/pages/PrivacyPage.tsx',
       'webapp/src/pages/OfferPage.tsx',

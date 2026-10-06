@@ -39,6 +39,7 @@ Disallow: /privacy
 Disallow: /offer
 Disallow: /app
 Disallow: /api
+Disallow: /book
 
 Sitemap: https://${PRACTICE_HOST}/sitemap.xml
 `;
@@ -50,14 +51,13 @@ export const PRACTICE_PAGES: readonly string[] = [
   '/articles',
   '/reviews',
   '/admin',
-  '/booking-admin',
-  '/articles-admin',
+  '/booking-admin', '/articles-admin',
+  '/book', // ссылка для клиентов: расписание сразу (BookingLinkPage), не для поиска
   '/booking/paid',
   '/booking/manage',
   '/subscribe',
   '/donate',
-  '/privacy',
-  '/offer',
+  '/privacy', '/offer',
 ];
 /** Префиксы страниц с параметром (`/articles/:slug`). */
 export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];

@@ -7,6 +7,7 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
 import { WriteInsteadNote } from './booking/WriteInsteadNote';
+import { SlotsLoadingNote } from './booking/SlotsLoadingNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
@@ -28,8 +29,9 @@ const labelSt: React.CSSProperties = {
 };
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
-/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами. */
-export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.ReactNode; onWriteInstead?: () => void }) {
+export type BookingType = 'INTRO_15' | 'SESSION_50';
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `defaultType` — формат, выбранный при открытии (страница /book ставит сессию). */
+export function BookingPicker({ fallback, onWriteInstead, defaultType = 'INTRO_15' }: { fallback?: React.ReactNode; onWriteInstead?: () => void; defaultType?: BookingType }) {
   const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -56,7 +58,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
   const [options, setOptions] = useState<SessionOption[]>([]);
-  const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
+  const [sessionType, setSessionType] = useState<BookingType>(defaultType);
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
   const formFocused = useRef(false);
   const [invalidField, setInvalidField] = useState<InvalidField | null>(null);
@@ -92,7 +94,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
   }, [status]);
 
   if (slots === null && !loadFailed) {
-    return <p style={{ color: 'var(--text-faint)', fontSize: 15, padding: '24px 0' }}>Загружаю свободное время…</p>;
+    return <SlotsLoadingNote />;
   }
   // No availability configured (or load failed): keep the request channel open.
   if (loadFailed || slots!.length === 0) {
@@ -166,7 +168,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
             {options.map((o) => {
               const active = o.type === sessionType;
               return (
-                <button key={o.type} type="button" onClick={() => {
+                <button key={o.type} type="button" aria-pressed={active} onClick={() => {
                   setSessionType(o.type);
                   if (o.type === 'INTRO_15') { setReturning(false); if (status === 'not_found') setStatus('idle'); } // знакомство — всегда первая встреча
                   trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });

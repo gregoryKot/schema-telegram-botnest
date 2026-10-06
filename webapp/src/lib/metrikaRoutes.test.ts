@@ -22,7 +22,7 @@ const sample = (path: string) => path.replace(/:[A-Za-z]+/g, 'x');
 
 describe('isPublicMetrikaRoute', () => {
   it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/tests', '/tests/mode-quiz',
-    '/subscribe', '/donate', '/privacy', '/offer', '/booking/paid', '/booking/manage', '/articles/'])(
+    '/subscribe', '/donate', '/privacy', '/offer', '/book', '/booking/paid', '/booking/manage', '/articles/'])(
     '%s — публичный', (p) => expect(isPublicMetrikaRoute(p)).toBe(true));
 
   it.each(['/today', '/diary', '/cabinet', '/cabinet/42', '/account', '/account/merge', '/login',
