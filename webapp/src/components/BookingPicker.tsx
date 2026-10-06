@@ -30,8 +30,8 @@ const labelSt: React.CSSProperties = {
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
 export type BookingType = 'INTRO_15' | 'SESSION_50';
-/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `defaultType` — формат, выбранный при открытии (страница /book ставит сессию). */
-export function BookingPicker({ fallback, onWriteInstead, defaultType = 'INTRO_15' }: { fallback?: React.ReactNode; onWriteInstead?: () => void; defaultType?: BookingType }) {
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя (страница /book: только сессия). */
+export function BookingPicker({ fallback, onWriteInstead, lockedType }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType }) {
   const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -58,7 +58,7 @@ export function BookingPicker({ fallback, onWriteInstead, defaultType = 'INTRO_1
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
   const [options, setOptions] = useState<SessionOption[]>([]);
-  const [sessionType, setSessionType] = useState<BookingType>(defaultType);
+  const [sessionType, setSessionType] = useState<BookingType>(lockedType ?? 'INTRO_15');
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
   const formFocused = useRef(false);
   const [invalidField, setInvalidField] = useState<InvalidField | null>(null);
@@ -161,7 +161,7 @@ export function BookingPicker({ fallback, onWriteInstead, defaultType = 'INTRO_1
     // молча (без наших trackGoal/подсказок) — обработчик submit сам решает,
     // что показать и куда поставить фокус.
     <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-      {options.length > 1 && (
+      {options.length > 1 && !lockedType && (
         <div>
           <div style={labelSt}>Формат встречи</div>
           <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>

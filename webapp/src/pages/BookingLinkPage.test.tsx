@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 // /book — постоянная ссылка для клиентов практики: расписание открыто сразу
-// (без формы «напишите мне» и кнопки «Открыть расписание»), формат задаётся
-// ?type=, цель booking_link_open уходит один раз, страница закрыта от поиска.
+// (без формы «напишите мне» и кнопки «Открыть расписание»), формат один —
+// сессия 50 минут без переключателя, цель booking_link_open уходит один раз,
+// страница закрыта от поиска.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { BookingLinkPage } from './BookingLinkPage';
 
 vi.mock('../api', () => ({
@@ -35,7 +36,6 @@ const goals = () =>
     .map((c) => c[2]);
 
 const setUrl = (search: string) => window.history.pushState({}, '', `/book${search}`);
-const pressed = (name: RegExp) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,28 +78,30 @@ describe('BookingLinkPage — расписание сразу', () => {
   });
 });
 
-describe('BookingLinkPage — пресет формата из ?type=', () => {
-  it('без параметра выбрана «Сессия»', async () => {
+describe('BookingLinkPage — только сессия 50 минут', () => {
+  it('переключателя форматов нет, даже когда бэкенд отдаёт два формата', async () => {
     render(<BookingLinkPage />);
     await screen.findByText('Выберите день');
-    expect(pressed(/Сессия/)).toBe('true');
-    expect(pressed(/Знакомство/)).toBe('false');
+    expect(screen.queryByText('Формат встречи')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Знакомство/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Сессия/ })).toBeNull();
   });
 
-  it('?type=session → «Сессия», переключатель остаётся', async () => {
-    setUrl('?type=session');
+  it('бронь идёт как платная сессия: кнопка «Оплатить … и записаться», без галочки знакомства', async () => {
     render(<BookingLinkPage />);
     await screen.findByText('Выберите день');
-    expect(pressed(/Сессия/)).toBe('true');
-    expect(screen.getByRole('button', { name: /Знакомство/ })).toBeTruthy();
+    fireEvent.click(screen.getByText('12:00'));
+    expect(screen.getByRole('button', { name: /Оплатить .* и записаться/ })).toBeTruthy();
+    expect(screen.queryByRole('checkbox', { name: /Напишу вам/ })).toBeNull();
+    expect(screen.getByRole('checkbox', { name: /повторная встреча/i })).toBeTruthy();
   });
 
-  it('?type=intro → «Знакомство»', async () => {
+  it('?type=intro больше не переключает на знакомство', async () => {
     setUrl('?type=intro');
     render(<BookingLinkPage />);
     await screen.findByText('Выберите день');
-    expect(pressed(/Знакомство/)).toBe('true');
-    expect(pressed(/Сессия/)).toBe('false');
+    fireEvent.click(screen.getByText('12:00'));
+    expect(screen.getByRole('button', { name: /Оплатить/ })).toBeTruthy();
   });
 });
 
