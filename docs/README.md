@@ -18,6 +18,7 @@
 | [SECURITY.md](SECURITY.md) | Security-плейбук: модель угроз, инварианты auth/authz, ротация ключей, реагирование на инциденты. **Читать перед правкой auth/api/therapy-кода.** |
 | [ARTICLES.md](ARTICLES.md) | Клинические и этические требования к статьям сайта. **Читать перед правкой любой статьи.** |
 | [CONVERSION_REVIEW_KOTLAREWSKI_2026-09.md](CONVERSION_REVIEW_KOTLAREWSKI_2026-09.md) | Почему с визитки не записываются (2026-09-30): что видит посетитель, данные о выборе психолога и ценах, что исправлено и что решить владельцу. |
+| [RESEARCH_SYNTHESIS_KOTLAREWSKI_2026-10.md](RESEARCH_SYNTHESIS_KOTLAREWSKI_2026-10.md) | Синтез сигналов о посетителях визитки (2026-10-07): темы, сегменты, что неизвестно и что измерить первым. Прямых интервью нет — вторичный синтез по PR, инцидентам и разбору конверсии. |
 | [BOOKING_SETUP.md](BOOKING_SETUP.md) | Настройка записи на консультации: env-переменные Zoom, CalDAV, Robokassa. |
 | [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md) | Активный план по тестам (v2, 2026-07-20). Продолжение закрытого `archive/TEST_COVERAGE_PLAN.md`. |
 | [PWA_PLAN.md](PWA_PLAN.md) | План устанавливаемой PWA на базе webapp + web-push. Статус: не начат. |
