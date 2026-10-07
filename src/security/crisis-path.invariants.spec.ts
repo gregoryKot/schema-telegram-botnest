@@ -45,7 +45,11 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   'webapp/src/pages/admin/HealthyAdultSection.tsx': 'админская секция контента',
   // Лендинг и запись на приём — контактная форма/бронирование, не дневник.
   'webapp/src/pages/landing/BookingForm.tsx': 'лид-форма записи с лендинга',
-  'webapp/src/components/BookingPicker.tsx': 'выбор слота записи на приём',
+  // BookingPicker распилен (правило №10): <textarea> «Запрос» уехал в
+  // RequestField, сам пикер остался без свободного текста — запись переехала
+  // за полем, а не добавилась (тот же случай, что SettingsSheet ниже).
+  'webapp/src/components/booking/RequestField.tsx':
+    'поле «Запрос» записи на приём — контактная форма, не дневник',
   // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
   // рефлексия/переживание.
   'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
