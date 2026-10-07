@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // /book — постоянная ссылка для клиентов практики: расписание открыто сразу
 // (без формы «напишите мне» и кнопки «Открыть расписание»), формат один —
-// сессия 50 минут без переключателя, цель booking_link_open уходит один раз,
-// страница закрыта от поиска.
+// сессия 50 минут без переключателя, после выбора времени только имя, контакт
+// и оферта, цель booking_link_open уходит один раз, страница закрыта от поиска.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { BookingLinkPage } from './BookingLinkPage';
@@ -93,7 +93,17 @@ describe('BookingLinkPage — только сессия 50 минут', () => {
     fireEvent.click(screen.getByText('12:00'));
     expect(screen.getByRole('button', { name: /Оплатить .* и записаться/ })).toBeTruthy();
     expect(screen.queryByRole('checkbox', { name: /Напишу вам/ })).toBeNull();
-    expect(screen.getByRole('checkbox', { name: /повторная встреча/i })).toBeTruthy();
+  });
+
+  it('форма короткая: имя, контакт, оферта — без «Запроса» и «повторной встречи»', async () => {
+    render(<BookingLinkPage />);
+    await screen.findByText('Выберите день');
+    fireEvent.click(screen.getByText('12:00'));
+    expect(screen.getByLabelText('Имя *')).toBeTruthy();
+    expect(screen.getByLabelText('Где вам удобнее отвечать *')).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /оферты/ })).toBeTruthy();
+    expect(screen.queryByLabelText(/Запрос/)).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: /повторная встреча/i })).toBeNull();
   });
 
   it('?type=intro больше не переключает на знакомство', async () => {
