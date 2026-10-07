@@ -10,6 +10,7 @@ import { WriteInsteadNote } from './booking/WriteInsteadNote';
 import { SlotsLoadingNote } from './booking/SlotsLoadingNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
+import { RequestField } from './booking/RequestField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { ContactChannelField } from './booking/ContactChannelField';
 import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
@@ -30,8 +31,8 @@ const labelSt: React.CSSProperties = {
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
 export type BookingType = 'INTRO_15' | 'SESSION_50';
-/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя (страница /book: только сессия). */
-export function BookingPicker({ fallback, onWriteInstead, lockedType }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType }) {
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя; `compact` — без «Запроса» и «повторной встречи» (страница /book: знакомый клиент, только имя, контакт, оферта). */
+export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = false }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType; compact?: boolean }) {
   const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -228,13 +229,10 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType }: { fallba
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
-          {sessionType === 'SESSION_50' && (
+          {sessionType === 'SESSION_50' && !compact && (
             <ReturningVisitField returning={returning} onChange={(v) => { setReturning(v); if (status === 'not_found') setStatus('idle'); }} />
           )}
-          <div>
-            <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-            <textarea id="bp-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
-          </div>
+          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} />}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input
               type="checkbox" ref={consentRef} checked={consent}
