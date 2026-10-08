@@ -10,9 +10,13 @@ import { SiteContentService } from './site-content.service';
 import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import { HeroPhotoDto, MarqueeDto } from './site-content-admin.dto';
 
-// The global express json() body limit is 256kb (main.ts) — stay well under it,
-// the frontend compresses the photo client-side before upload.
-const MAX_PHOTO_BYTES = 220 * 1024;
+// Самое длинное законное тело запроса по проекту — именно оно задаёт потолок
+// парсера (BODY_LIMIT, src/infra/body-limit.ts). Фронт жмёт фотографию в
+// браузере до 200 КБ (webapp/src/pages/admin/PhotoSection.tsx), здесь — запас
+// на случай другого кодировщика. Что это число вместе с обёрткой JSON
+// по-прежнему пролезает в лимит, проверяет site-content-admin.controller.spec.ts
+// (правило №4: два места, обязанные совпадать, держит тест-сверка).
+export const MAX_PHOTO_BYTES = 220 * 1024;
 
 // SVG тоже `image/*`, а внутри него может лежать <script>. Ручка за админ-ключом,
 // фото уходит в <img src>, где такой скрипт инертен, — это defense-in-depth
