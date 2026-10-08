@@ -230,19 +230,24 @@ describe('SecurityLogService — DM-бюджет по имени события'
   // такую подмену не ловит, если сам искомый текст не задет.
   it('первый DM в свежем окне: точный текст — заголовок + поля через \\n, без хвоста подавления', async () => {
     const service = new SecurityLogService(() => 0);
-    service.log('csrf_blocked', { endpoint: 'refresh', method: 'POST' });
+    // Поля — из белого списка (security-log-redact.ts): тест про СКЛЕЙКУ
+    // текста, и незарегистрированный ключ подменил бы значение на
+    // `[redacted]`, проверяя вычистку вместо формата.
+    service.log('csrf_blocked', { endpoint: 'refresh', ip: '203.0.113.7' });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nmethod: POST');
+    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nip: 203.0.113.7');
   });
 
   it('значение длиннее 80 символов обрезается в DM (защита от раздутого/injection-подобного значения)', async () => {
     const service = new SecurityLogService(() => 0);
     const longValue = 'x'.repeat(200);
-    service.log('csrf_blocked', { payload: longValue });
+    // `detail` — то самое разрешённое поле со свободным текстом, которое в
+    // проде и может оказаться длинным (конфликт подписок при merge).
+    service.log('csrf_blocked', { detail: longValue });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe(`🔐 csrf_blocked\npayload: ${'x'.repeat(80)}`);
+    expect(text).toBe(`🔐 csrf_blocked\ndetail: ${'x'.repeat(80)}`);
   });
 
   it('разные имена событий не делят один бюджет', async () => {

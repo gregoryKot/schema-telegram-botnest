@@ -90,6 +90,33 @@ describe('SiteContentAdminController.setHeroPhoto — серверная вал�
     expect(content.setHeroPhoto).toHaveBeenCalledWith(dataUri);
     expect(res).toEqual({ ok: true });
   });
+
+  // png покрыт тестом выше; jpeg — то, что реально отдаёт фронт (compressImage)
+  it.each([
+    ['jpeg', 'data:image/jpeg;base64,AAAA'],
+    ['webp', 'data:image/webp;base64,AAAA'],
+  ])('растровый %s доезжает до сервиса как есть', async (_name, dataUri) => {
+    const { controller, content } = makeController();
+    const res = await controller.setHeroPhoto({ dataUri }, ADMIN_KEY);
+    expect(content.setHeroPhoto).toHaveBeenCalledWith(dataUri);
+    expect(res).toEqual({ ok: true });
+  });
+
+  // L1: SVG — тоже image/*, но может нести <script>; пропускаем только растр
+  it.each([
+    ['svg в base64', 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='],
+    ['svg без кодирования', 'data:image/svg+xml,<svg onload="alert(1)"></svg>'],
+    // контроль: сверяется имя типа целиком, а не подстрока `png`
+    ['тип pngx, не png', 'data:image/pngx;base64,AAAA'],
+    // контроль: allow-list, а не deny-list. GIF безобиден, просто его нет в списке
+    ['gif (не в списке разрешённых)', 'data:image/gif;base64,AAAA'],
+  ])('отказ: %s — сервис не вызывается', async (_name, dataUri) => {
+    const { controller, content } = makeController();
+    await expect(
+      controller.setHeroPhoto({ dataUri }, ADMIN_KEY),
+    ).rejects.toThrow(BadRequestException);
+    expect(content.setHeroPhoto).not.toHaveBeenCalled();
+  });
 });
 
 describe('SiteContentAdminController.setMarquee — серверная валидация', () => {
