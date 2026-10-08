@@ -141,3 +141,9 @@ test/**/*.js.map
 playwright.config.js
 playwright.config.d.ts
 playwright.config.js.map
+
+# Кэш ts-jest: джоба backend задаёт JEST_CACHE_DIR=.jest-cache, и jest кладёт
+# его относительно rootDir (src/.jest-cache). В CI это ephemeral, а локально
+# тот же прогон оставляет тысячи файлов под `git status` — ровно то, что
+# однажды уедет в коммит целиком.
+.jest-cache/
