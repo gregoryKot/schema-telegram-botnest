@@ -194,7 +194,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             <div style={{ fontSize: 13, fontWeight: 600, color: '#60a5fa', marginBottom: 18 }}>
               Три вдоха прямо сейчас
             </div>
-            {['Вдох через нос – 4 секунды', 'Задержи – 2 секунды', 'Медленный выдох – 6 секунд'].map((t, i) => (
+            {['Вдох через нос — 4 секунды', 'Задержка — 2 секунды', 'Медленный выдох — 6 секунд'].map((t, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-14)', marginBottom: i < 2 ? 12 : 0 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%', flexShrink: 0,

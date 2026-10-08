@@ -127,8 +127,8 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       eyebrowColor={ACCENT}
       title={<>Записать<br /><span className="it">момент</span></>}
       lede={tr(
-        'Поймал триггер – приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
-        'Поймали триггер – приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
+        'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
+        'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
       )}
       aside={
         <div className="aside-card" style={{ borderColor: ACCENT + '40', background: ACCENT + '08', position: 'sticky', top: 40 }}>

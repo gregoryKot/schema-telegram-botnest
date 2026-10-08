@@ -62,7 +62,7 @@ export function NoteSheet({ date, onClose }: Props) {
       eyebrow="Дневник"
       eyebrowColor="var(--accent)"
       title={<>Заметка<br /><span className="it">к дню</span></>}
-      lede={tr('Фиксируй момент – что происходило, что чувствовал.', 'Фиксируйте момент – что происходило, что чувствовали.')}
+      lede={tr('Запиши момент — что происходило и какие были чувства.', 'Запишите момент — что происходило и какие были чувства.')}
       aside={
         <div className="aside-card" style={{
           borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',

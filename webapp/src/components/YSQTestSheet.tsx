@@ -131,7 +131,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginBottom: 20 }}>
             {[
-              ['116 утверждений', 'Оцени каждое от 1 до 6'],
+              ['116 утверждений', tr('Оцени каждое от 1 до 6', 'Оцените каждое от 1 до 6')],
               ['~10 минут', 'Можно прервать — прогресс сохраняется'],
               ['20 схем', 'Результат с описанием и советом для каждой'],
             ].map(([title, desc]) => (
@@ -166,7 +166,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           </div>
 
           <div style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20, textAlign: 'center' }}>
-            Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
+            Ответы привязаны к аккаунту и не передаются третьим лицам.
           </div>
 
           {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
