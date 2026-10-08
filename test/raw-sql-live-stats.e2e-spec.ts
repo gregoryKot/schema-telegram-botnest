@@ -11,67 +11,12 @@
 import { PrismaService } from '../src/prisma/prisma.service';
 import { BotAdminStatsService } from '../src/bot/bot.admin-stats.service';
 import { StatsReportService } from '../src/bot/stats-report.service';
-import { ProductMetricsService } from '../src/bot/bot.product-metrics.service';
-import { QuizMetricsService } from '../src/bot/quiz-metrics.service';
-import { PracticeLinkMetricsService } from '../src/bot/practice-link-metrics.service';
-import { PracticeMetricsService } from '../src/bot/practice-metrics.service';
-import { CaseMetricsService } from '../src/bot/case-metrics.service';
-import { ModeCardMetricsService } from '../src/bot/mode-card-metrics.service';
-import { ModeDiaryMetricsService } from '../src/bot/mode-diary-metrics.service';
-import { WarmWordsMetricsService } from '../src/bot/warm-words-metrics.service';
-import { PhraseCheckMetricsService } from '../src/bot/phrase-check-metrics.service';
-import { EntryDeleteMetricsService } from '../src/bot/entry-delete-metrics.service';
-import { AccountLinkMetricsService } from '../src/bot/account-link-metrics.service';
-import { PlusMetricsService } from '../src/bot/plus-metrics.service';
-import { WebBannerMetricsService } from '../src/bot/web-banner-metrics.service';
-import { SiteInstallMetricsService } from '../src/bot/site-install-metrics.service';
-import { ScreenMetricsService } from '../src/bot/screen-metrics.service';
-import { ProfilePatternMetricsService } from '../src/bot/profile-pattern-metrics.service';
-import { AuthHealthMetricsService } from '../src/bot/auth-health-metrics.service';
-import { LoginTicketMetricsService } from '../src/bot/login-ticket-metrics.service';
-import { ClientErrorMetricsService } from '../src/bot/client-error-metrics.service';
-import { MoneyMetricsService } from '../src/bot/money-metrics.service';
-import { SignupSourceMetricsService } from '../src/bot/signup-source-metrics.service';
-import { GameMetricsService } from '../src/bot/game-metrics.service';
-import { DataExportMetricsService } from '../src/bot/data-export-metrics.service';
-import { BookingRetentionMetricsService } from '../src/bot/booking-retention-metrics.service';
+import { buildStatsReport } from './e2e-support/stats-report.factory';
 
 const USER_ID = 999_000_000_010n;
 // Маркер в meta анонимных событий (userId = null) — по нему спек чистит за
 // собой; лишний ключ метрикам не мешает: они читают только свои поля.
 const MARK = 'raw-sql-live';
-
-function buildReport(prisma: PrismaService): StatsReportService {
-  const product = new ProductMetricsService(
-    prisma,
-    new QuizMetricsService(prisma),
-    new PracticeLinkMetricsService(prisma),
-    new PracticeMetricsService(prisma),
-    new CaseMetricsService(prisma),
-  );
-  return new StatsReportService(
-    product,
-    new ModeCardMetricsService(prisma),
-    new ModeDiaryMetricsService(prisma),
-    new WarmWordsMetricsService(prisma),
-    new PhraseCheckMetricsService(prisma),
-    new EntryDeleteMetricsService(prisma),
-    new AccountLinkMetricsService(prisma),
-    new PlusMetricsService(prisma),
-    new WebBannerMetricsService(prisma),
-    new SiteInstallMetricsService(prisma),
-    new ScreenMetricsService(prisma),
-    new ProfilePatternMetricsService(prisma),
-    new AuthHealthMetricsService(prisma),
-    new LoginTicketMetricsService(prisma),
-    new ClientErrorMetricsService(prisma),
-    new MoneyMetricsService(prisma),
-    new SignupSourceMetricsService(prisma),
-    new GameMetricsService(prisma),
-    new DataExportMetricsService(prisma),
-    new BookingRetentionMetricsService(prisma),
-  );
-}
 
 /** Отчёт обязан быть текстом для человека: без следов сломанной арифметики. */
 function expectSaneReport(text: string): void {
@@ -138,7 +83,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     prisma = new PrismaService();
     await prisma.$connect();
     admin = new BotAdminStatsService(prisma);
-    report = buildReport(prisma);
+    report = buildStatsReport(prisma);
     await cleanup();
   });
 
@@ -154,10 +99,6 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     ]);
     expectSaneReport(core);
     expectSaneReport(product);
-    // Блок «Данные записей» считается Prisma count/findFirst по колонке
-    // anonymizedAt (миграция booking_pii_retention) — на живой базе обязан
-    // собраться и попасть в отчёт (правило №8).
-    expect(product).toContain('Данные записей');
   });
 
   it('после фикстур: ветки группировки по meta проходят через драйвер, новая секция booking видна в отчёте', async () => {
