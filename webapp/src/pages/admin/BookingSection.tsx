@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../../api';
-import { contactChannelLabel, isContactChannel } from '../../../../shared/src/booking/contactChannel';
+import { bookingContactLine } from './bookingContactLine';
 import type { AvailabilityRule, AdminBooking, SessionOption, AdminBookingStatus } from '../../api';
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { card, btn, btnGhost, input } from './shared';
@@ -216,7 +216,7 @@ function BookingsManager({ adminKey }: { adminKey: string }) {
             {b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => api.cancelBooking(b.cancelToken).then(load)}>Отменить</button>}
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>
-            {b.clientName} · {isContactChannel(b.clientChannel) ? `${contactChannelLabel(b.clientChannel)} ` : ''}{b.clientContact}{b.message ? ` · «${b.message}»` : ''}
+            {bookingContactLine(b)}
           </div>
         </div>
       ))}
