@@ -178,7 +178,15 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <EvidenceStep
             accent="var(--accent-red)"
             title="Доказательства ЗА"
-            hint={<>«{belief}» — что подтверждает эту мысль? Будь честен.</>}
+            hint={
+              <>
+                «{belief}» — что подтверждает эту мысль?{' '}
+                {tr(
+                  'Записывай честно, даже неприятное.',
+                  'Записывайте честно, даже неприятное.',
+                )}
+              </>
+            }
             items={forList}
             setItems={setForList}
             input={forInput}

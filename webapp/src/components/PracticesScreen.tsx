@@ -1,3 +1,4 @@
+import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
@@ -93,8 +94,8 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             </div>
             <h1 className="hub-title u-mb8">Мои<br /><span className="it">практики</span></h1>
             <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
-              Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {buildPracticesIntro(tr)}
+              {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>

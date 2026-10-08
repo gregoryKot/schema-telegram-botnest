@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { hitboxStyle } from '../utils/hitbox';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { useNeedData } from '../needData';
@@ -127,11 +128,14 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
           <div className="prompt-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65 }}>
             {tip}
+            {/* Зона 44×44 вокруг видимых 16×16; inline-flex и marginLeft −8 (= 6 зазор − 14 растяжки) оставляют «?» в строке текста. */}
             <button
               onClick={() => setShowDisclaimer(true)}
               aria-label="Пояснение"
-              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--text-faint)', fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none', marginLeft: 6, verticalAlign: 'middle' }}
-            >?</button>
+              style={{ ...hitboxStyle(16, 16, 44).outer, display: 'inline-flex', marginLeft: -8, verticalAlign: 'middle' }}
+            >
+              <span style={{ ...hitboxStyle(16, 16, 44).inner, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--text-faint)', fontSize: 10, fontWeight: 700 }}>?</span>
+            </button>
           </p>
         </div>
       </div>

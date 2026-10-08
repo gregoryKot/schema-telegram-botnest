@@ -36,6 +36,10 @@ export function MobileLayout({
     >
       {topbar}
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 20px' }}>
+        <div className="u-sub12-lh15 u-mb10">
+          Пять базовых эмоциональных потребностей — из схема-терапии. Через 3–5
+          дней оценки показывают, что питает, а что истощает.
+        </div>
         <div
           style={{
             display: 'flex',
@@ -116,12 +120,7 @@ export function MobileLayout({
             marginBottom: 20,
           }}
         >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 10, color: 'var(--text-faint)' }}
-          >
-            вопрос дня
-          </div>
+          <div className="eyebrow u-faint u-mb10">вопрос дня</div>
           <p
             style={{
               fontFamily: 'var(--serif)',
@@ -148,12 +147,7 @@ export function MobileLayout({
             borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
           }}
         >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 12, color: 'var(--text-faint)' }}
-          >
-            что считается
-          </div>
+          <div className="eyebrow u-faint u-mb12">что считается</div>
           <ul
             style={{
               listStyle: 'none',

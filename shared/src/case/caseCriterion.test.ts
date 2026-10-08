@@ -23,7 +23,7 @@ const PART_TERM = /част/i;
 describe('buildCriterionIntro', () => {
   it('шапка дословно и без термина «часть»', () => {
     const intro = buildCriterionIntro(tyTr);
-    expect(intro.title).toBe('Последний шаг — два вопроса');
+    expect(intro.title).toBe('Последние два вопроса');
     expect(intro.sub).toBe(
       'Они помогают отличить обычную досаду от реакции, которая включается сама.',
     );

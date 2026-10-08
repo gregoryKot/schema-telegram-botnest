@@ -26,6 +26,7 @@ scripts/tiny-fonts-baseline.json          merge=ratchet-min
 scripts/scale-drift-baseline.json         merge=ratchet-min
 scripts/bundle-size-baseline.json         merge=ratchet-min
 scripts/render-poison-baseline.json       merge=ratchet-min
+scripts/tap-targets-baseline.json         merge=ratchet-min
 # Планки планов запросов: страницы и потолки времени — чем меньше, тем лучше,
 # поэтому та же семантика min (scripts/check-query-plans.mjs).
 scripts/query-plan-baseline.json          merge=ratchet-min

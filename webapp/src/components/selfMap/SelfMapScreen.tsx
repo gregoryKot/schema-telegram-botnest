@@ -1,3 +1,4 @@
+import { buildSelfMapIntro } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { useMemo } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { SelfMapLane } from './SelfMapLane';
@@ -56,10 +57,7 @@ export function SelfMapScreen({
       eyebrow="Карта себя"
       eyebrowColor="var(--accent-indigo)"
       title="Карта себя"
-      lede={tr(
-        'Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-        'Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-      )}
+      lede={buildSelfMapIntro(tr)}
     >
       {lanes.map((lane) => (
         <SelfMapLane

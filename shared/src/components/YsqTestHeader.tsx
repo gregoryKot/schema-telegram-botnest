@@ -1,6 +1,7 @@
 // Шапка полноэкранной фазы теста на схемы (назад / счётчик / закрыть /
 // прогресс-бар) — одна копия для обоих фронтендов (правило №3).
 import { TOTAL_PAGES } from '../hooks/useYsqTest';
+import { hitboxStyle } from '../utils/hitbox';
 
 export function YsqTestHeader({
   page,
@@ -24,22 +25,27 @@ export function YsqTestHeader({
           disabled={page === 0}
           aria-label="Назад"
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            border: 'none',
-            background: page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)',
-            color: 'var(--text-sub)',
-            fontSize: 16,
+            ...hitboxStyle(36, 36, 44).outer,
             cursor: page === 0 ? 'default' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: page === 0 ? 0 : 1,
-            transition: 'opacity 0.15s',
           }}
         >
-          ←
+          <span
+            style={{
+              ...hitboxStyle(36, 36, 44).inner,
+              borderRadius: 12,
+              background:
+                page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)',
+              color: 'var(--text-sub)',
+              fontSize: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: page === 0 ? 0 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            ←
+          </span>
         </button>
         <span
           style={{
@@ -53,21 +59,22 @@ export function YsqTestHeader({
         <button
           onClick={onClose}
           aria-label="Закрыть"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            border: 'none',
-            background: 'rgba(var(--fg-rgb),0.08)',
-            color: 'var(--text-sub)',
-            fontSize: 17,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={hitboxStyle(36, 36, 44).outer}
         >
-          ✕
+          <span
+            style={{
+              ...hitboxStyle(36, 36, 44).inner,
+              borderRadius: 12,
+              background: 'rgba(var(--fg-rgb),0.08)',
+              color: 'var(--text-sub)',
+              fontSize: 17,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ✕
+          </span>
         </button>
       </div>
       <div

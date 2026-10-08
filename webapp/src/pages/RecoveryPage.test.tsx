@@ -149,6 +149,6 @@ describe('RecoveryPage — подтверждение по токену (?token=
     await screen.findByText('Ссылка истекла');
 
     fireEvent.click(screen.getByRole('button', { name: 'Запросить новую ссылку' }));
-    await screen.findByText('Потерял доступ?');
+    await screen.findByText('Нет доступа к аккаунту?');
   });
 });

@@ -234,7 +234,7 @@ export function LoginPage() {
 
           <p style={{ marginTop: 18 }}>
             <a href="/auth/recovery" style={{ color: 'var(--text-faint)', fontSize: 12, textDecoration: 'underline' }}>
-              Потерял доступ ко всем способам входа?
+              Нет доступа ни к одному способу входа?
             </a>
           </p>
         </div>

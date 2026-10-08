@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { hitboxStyle } from '../utils/hitbox';
 import { Need, DayHistory, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
@@ -266,23 +267,30 @@ export function NeedHistorySheet({
                   setShowDisclaimer(true);
                 }
               }}
+              // Зона 44×44 вокруг видимых 16×16; inline-flex и marginLeft −8
+              // (= 6 зазор − 14 растяжки) оставляют «?» в строке текста.
               style={{
+                ...hitboxStyle(16, 16, 44).outer,
                 display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                background: 'rgba(var(--fg-rgb),0.1)',
-                color: 'var(--text-sub)',
-                fontSize: 10,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginLeft: 6,
+                marginLeft: -8,
                 verticalAlign: 'middle',
               }}
             >
-              ?
+              <span
+                style={{
+                  ...hitboxStyle(16, 16, 44).inner,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: 'rgba(var(--fg-rgb),0.1)',
+                  color: 'var(--text-sub)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+              >
+                ?
+              </span>
             </span>
           </div>
         </div>

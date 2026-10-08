@@ -49,6 +49,13 @@ export function DesktopLayout({
         >
           <div>
             <div
+              className="u-sub12-lh15 u-mb10"
+              style={{ maxWidth: 520 }}
+            >
+              Пять базовых эмоциональных потребностей — из схема-терапии. Через
+              3–5 дней оценки показывают, что питает, а что истощает.
+            </div>
+            <div
               className="eyebrow"
               style={{
                 marginBottom: 12,
@@ -138,12 +145,7 @@ export function DesktopLayout({
             overflowY: 'auto',
           }}
         >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 16, color: 'var(--text-faint)' }}
-          >
-            вопрос дня
-          </div>
+          <div className="eyebrow u-faint u-mb16">вопрос дня</div>
           <p
             style={{
               fontFamily: 'var(--serif)',
@@ -214,12 +216,7 @@ export function DesktopLayout({
             overflowY: 'auto',
           }}
         >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 16, color: 'var(--text-faint)' }}
-          >
-            что считается
-          </div>
+          <div className="eyebrow u-faint u-mb16">что считается</div>
           <ul
             style={{
               listStyle: 'none',

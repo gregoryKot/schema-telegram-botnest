@@ -51,7 +51,7 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
       eyebrow={needLabel}
       eyebrowColor={color}
       title={phase === 'pick'
-        ? <>Что сделаешь<br /><span className="it">завтра?</span></>
+        ? <>{tr('Что сделаешь', 'Что сделаете')}<br /><span className="it">завтра?</span></>
         : <>Запланировать<br /><span className="it">{selectedText.length > 30 ? selectedText.slice(0, 30) + '…' : selectedText}</span></>
       }
       lede={phase === 'pick' ? 'Один маленький конкретный шаг – уже много.' : undefined}

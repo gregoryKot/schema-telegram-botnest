@@ -125,7 +125,9 @@ describe('PatternsHero — обращение ты/вы', () => {
       <PatternsHero {...baseProps} hasSchemas={false} summary={null} />,
       'ty',
     );
-    expect(screen.getByText(/включаются у тебя чаще всего/)).toBeTruthy();
+    expect(
+      screen.getByText(/увидишь, какие из 20 схем звучат громче всего/),
+    ).toBeTruthy();
   });
 
   it('форма «вы» — без остаточных «ты»-форм', () => {
@@ -133,7 +135,9 @@ describe('PatternsHero — обращение ты/вы', () => {
       <PatternsHero {...baseProps} hasSchemas={false} summary={null} />,
       'vy',
     );
-    expect(screen.getByText(/включаются у вас чаще всего/)).toBeTruthy();
+    expect(
+      screen.getByText(/увидите, какие из 20 схем звучат громче всего/),
+    ).toBeTruthy();
     expect(hasTyForms(container.textContent ?? '')).toBe(false);
   });
 });

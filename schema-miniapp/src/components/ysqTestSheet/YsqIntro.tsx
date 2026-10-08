@@ -1,6 +1,7 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
 import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import { YsqAnswerScalePreview } from './YsqAnswerScalePreview';
+import { YsqIntroFacts } from './YsqIntroFacts';
 
 interface Props {
   hasProgress: boolean;
@@ -42,45 +43,7 @@ export function YsqIntro({
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-8)',
-          marginBottom: 20,
-        }}
-      >
-        {[
-          ['116 утверждений', 'Оцени каждое от 1 до 6'],
-          ['~10 минут', 'Можно прервать — прогресс сохраняется'],
-          ['20 схем', 'Результат с описанием и советом для каждой'],
-        ].map(([title, desc]) => (
-          <div
-            key={title}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-14)',
-              background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 'var(--r-14)',
-              padding: '12px 16px',
-            }}
-          >
-            <div>
-              <div className="u-h14">{title}</div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  marginTop: 1,
-                }}
-              >
-                {desc}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <YsqIntroFacts />
 
       <YsqAnswerScalePreview />
 
@@ -93,7 +56,7 @@ export function YsqIntro({
           textAlign: 'center',
         }}
       >
-        Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
+        Ответы привязаны к аккаунту и не передаются третьим лицам.
       </div>
 
       {/* Прогресс мог остаться на другом устройстве — без баннера «Начать
