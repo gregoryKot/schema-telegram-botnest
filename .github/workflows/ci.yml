@@ -373,6 +373,14 @@ jobs:
       # не эмулирует $executeRaw, поэтому тоже только тут.
       - name: e2e .ics для клиента на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
+      # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
+      # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
+      # в шифрованную колонку и обратное чтение через драйвер и decryptRecord —
+      # свойство Prisma, Postgres и crypto.ts, мок updateMany его не проверит;
+      # плюс граница окна считается СУБД, а колонка anonymizedAt приезжает новой
+      # миграцией (booking_pii_retention).
+      - name: e2e обезличивание броней по сроку на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт

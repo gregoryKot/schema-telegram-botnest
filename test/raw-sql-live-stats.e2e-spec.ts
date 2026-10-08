@@ -34,6 +34,7 @@ import { MoneyMetricsService } from '../src/bot/money-metrics.service';
 import { SignupSourceMetricsService } from '../src/bot/signup-source-metrics.service';
 import { GameMetricsService } from '../src/bot/game-metrics.service';
 import { DataExportMetricsService } from '../src/bot/data-export-metrics.service';
+import { BookingRetentionMetricsService } from '../src/bot/booking-retention-metrics.service';
 
 const USER_ID = 999_000_000_010n;
 // Маркер в meta анонимных событий (userId = null) — по нему спек чистит за
@@ -68,6 +69,7 @@ function buildReport(prisma: PrismaService): StatsReportService {
     new SignupSourceMetricsService(prisma),
     new GameMetricsService(prisma),
     new DataExportMetricsService(prisma),
+    new BookingRetentionMetricsService(prisma),
   );
 }
 
@@ -152,6 +154,10 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     ]);
     expectSaneReport(core);
     expectSaneReport(product);
+    // Блок «Данные записей» считается Prisma count/findFirst по колонке
+    // anonymizedAt (миграция booking_pii_retention) — на живой базе обязан
+    // собраться и попасть в отчёт (правило №8).
+    expect(product).toContain('Данные записей');
   });
 
   it('после фикстур: ветки группировки по meta проходят через драйвер, новая секция booking видна в отчёте', async () => {

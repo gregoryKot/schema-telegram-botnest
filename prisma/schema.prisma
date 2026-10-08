@@ -794,6 +794,12 @@ model Booking {
   // Legal: when the client accepted the public offer (consent checkbox) — proof
   // of the basis on which payment is taken. Not encrypted (a timestamp only).
   acceptedOfferAt  DateTime?
+  // Обезличивание по сроку (решение владельца 2026-10-08, находка L3 аудита
+  // 2026-07-20): через 12 месяцев после даты сессии имя, контакт и текст
+  // запроса затираются кроном (booking-retention.service.ts), а факт записи —
+  // дата, тип, согласие с офертой — остаётся. Непустое значение = строка уже
+  // обезличена, повторно крон её не берёт.
+  anonymizedAt    DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?
