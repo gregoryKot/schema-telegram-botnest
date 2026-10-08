@@ -209,7 +209,8 @@ describe('check-tap-targets.mjs', () => {
     });
 
     it('спеки/тесты и каталоги вне SCAN_DIRS не сканируются', () => {
-      const bad = 'export const x = <button style={{ width: 20, height: 20 }} onClick={go} />;\n';
+      const bad =
+        'export const x = <button style={{ width: 20, height: 20 }} onClick={go} />;\n';
       const res = runGate(GATE, {
         [BASELINE]: JSON.stringify({}),
         'webapp/src/foo.test.tsx': bad,
@@ -223,7 +224,8 @@ describe('check-tap-targets.mjs', () => {
   });
 
   describe('храповик', () => {
-    const SMALL = 'export const x = <button style={{ width: 20, height: 20 }} onClick={go} />;\n';
+    const SMALL =
+      'export const x = <button style={{ width: 20, height: 20 }} onClick={go} />;\n';
 
     it('рост сверх бейслайна — exit 1 с "было → стало"', () => {
       const res = runGate(GATE, {
@@ -246,7 +248,8 @@ describe('check-tap-targets.mjs', () => {
     it('файл в бейслайне, где тап-цели закончились, — не протухший, а улучшение', () => {
       const res = runGate(GATE, {
         [BASELINE]: JSON.stringify({ 'shared/src/known.tsx': 2 }),
-        'shared/src/known.tsx': 'export const x = <button style={{ width: 44, height: 44 }} />;\n',
+        'shared/src/known.tsx':
+          'export const x = <button style={{ width: 44, height: 44 }} />;\n',
       });
       expect(res.status).toBe(0);
       expect(res.stdout).toContain('0 < 2 — стало лучше');
@@ -259,7 +262,9 @@ describe('check-tap-targets.mjs', () => {
       });
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('webapp/src/gone.tsx: запись протухла');
-      expect(res.stderr).toContain('node scripts/check-tap-targets.mjs --update');
+      expect(res.stderr).toContain(
+        'node scripts/check-tap-targets.mjs --update',
+      );
     });
 
     it('точный бейслайн без роста — exit 0', () => {
@@ -268,7 +273,9 @@ describe('check-tap-targets.mjs', () => {
         'webapp/src/known.tsx': SMALL,
       });
       expect(res.status).toBe(0);
-      expect(res.stdout).toContain('✓ Храповик мелких тап-целей: 1 (без роста)');
+      expect(res.stdout).toContain(
+        '✓ Храповик мелких тап-целей: 1 (без роста)',
+      );
     });
 
     it('--verbose печатает файл:строка и размеры', () => {
@@ -286,7 +293,9 @@ describe('check-tap-targets.mjs', () => {
     });
 
     it('нет бейслайна — понятная ошибка, exit 1', () => {
-      const res = runGate(GATE, { 'webapp/src/clean.tsx': 'export const x = 1;\n' });
+      const res = runGate(GATE, {
+        'webapp/src/clean.tsx': 'export const x = 1;\n',
+      });
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('Нет бейслайна');
     });
@@ -303,9 +312,40 @@ describe('check-tap-targets.mjs', () => {
       );
       expect(res.status).toBe(0);
       const written = JSON.parse(readFileSync(join(res.tmp, BASELINE), 'utf8'));
-      expect(Object.keys(written)).toEqual(['webapp/src/a.tsx', 'webapp/src/z.tsx']);
+      expect(Object.keys(written)).toEqual([
+        'webapp/src/a.tsx',
+        'webapp/src/z.tsx',
+      ]);
       expect(written).toEqual({ 'webapp/src/a.tsx': 2, 'webapp/src/z.tsx': 1 });
       cleanupTmp(res.tmp);
     });
+  });
+});
+
+// Правило №10: гейт раздроблен на движок check-tap-targets.mjs + модуль правил
+// tap-targets-rules.mjs. check-unwatched-code.mjs требует, чтобы у каждого
+// исполняемого файла в scripts/ был тест, упоминающий его по имени (не в
+// комментарии) — движок упомянут через runGate() выше, эта проверка закрывает
+// вторую половину дробления и пинит порог прямо в правилах.
+describe('дробление движок + модуль правил', () => {
+  const REAL_SCRIPTS_DIR = join(__dirname, '..', '..', '..', 'scripts');
+
+  it('check-tap-targets.mjs импортирует tap-targets-rules.mjs', () => {
+    const engineSrc = readFileSync(
+      join(REAL_SCRIPTS_DIR, 'check-tap-targets.mjs'),
+      'utf8',
+    );
+    expect(engineSrc).toContain("from './tap-targets-rules.mjs'");
+  });
+
+  it('порог в tap-targets-rules.mjs — 44px', () => {
+    const rulesSrc = readFileSync(
+      join(REAL_SCRIPTS_DIR, 'tap-targets-rules.mjs'),
+      'utf8',
+    );
+    // Значение порога — не деталь реализации: правило CLAUDE.md называет
+    // именно 44×44, и молчаливое понижение планки сделало бы гейт зелёным
+    // на том, что он обязан ловить.
+    expect(rulesSrc).toMatch(/export const MIN_TARGET_PX = 44;/);
   });
 });

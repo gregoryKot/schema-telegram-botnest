@@ -11,6 +11,7 @@ import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { Dialog } from '../components/Dialog';
 import { pressable } from '../utils/a11y';
+import { hitboxStyle } from '../utils/hitbox';
 import { MonthShareButton } from './profile/heatmapShare';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
@@ -385,7 +386,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
                     </div>
-                    <span role="button" tabIndex={0} onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 11, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
+                    {/* marginLeft −11 = прежние 2 − 13 растяжки зоны до 44×44 */}
+                    <button type="button" aria-label="Что такое лучший день" onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} style={{ ...hitboxStyle(18, 18, 44).outer, marginLeft: -11 }}>
+                      <span style={{ ...hitboxStyle(18, 18, 44).inner, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 11, fontWeight: 600 }}>?</span>
+                    </button>
                   </div>
                 )}
                 {insights?.worstDayOfWeek && (

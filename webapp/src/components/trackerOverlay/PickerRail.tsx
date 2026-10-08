@@ -24,7 +24,11 @@ export function PickerRail({
               key={i}
               onClick={() => onChange(i)}
               style={{
+                // minHeight 44: на 375px пропорция даёт ≈27×32 — ниже нормы.
+                // По ширине 44 на 11 кнопок не влезает, добираем высотой;
+                // aspectRatio остаётся для десктопа (там ячейки ≈44×52).
                 aspectRatio: '1 / 1.2',
+                minHeight: 44,
                 border: 'none',
                 borderRadius: 'var(--r-8)',
                 padding: 0,

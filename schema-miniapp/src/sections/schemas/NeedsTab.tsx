@@ -19,6 +19,11 @@ export function NeedsTab({
 
   return (
     <>
+      <div className="u-sub13-lh16 u-mb12">
+        В схема-терапии у каждого пять базовых эмоциональных потребностей. Если
+        в детстве какая-то оставалась без ответа, складывается схема. Колесо
+        детства показывает, где было тепло, а где пусто.
+      </div>
       {!hasChildhood && (
         <div
           {...pressable(() => onOpenChildhoodWheel?.())}
@@ -60,7 +65,6 @@ export function NeedsTab({
           </span>
         </div>
       )}
-
       <div className="u-col8">
         {NEED_IDS.map(({ id, color }) => {
           const d = NEED_DATA[id];

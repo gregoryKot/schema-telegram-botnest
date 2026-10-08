@@ -93,8 +93,8 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             </div>
             <h1 className="hub-title u-mb8">Мои<br /><span className="it">практики</span></h1>
             <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
-              Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {tr('Практика — маленькое действие, которое наполняет одну из пяти базовых потребностей схема-терапии. Всё, что добавишь здесь, появится в выборе, когда будешь планировать шаг на завтра.', 'Практика — маленькое действие, которое наполняет одну из пяти базовых потребностей схема-терапии. Всё, что добавите здесь, появится в выборе, когда будете планировать шаг на завтра.')}
+              {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>

@@ -38,7 +38,9 @@ export function YsqIntroFacts() {
               style={{
                 fontSize: 13,
                 color: 'var(--text-sub)',
-                marginTop: 1,
+                // Шкала интервалов (scale-drift): 1px вне шкалы, ближайший
+                // токен — --space-2. Разница невидима, вид тот же.
+                marginTop: 'var(--space-2)',
               }}
             >
               {desc}

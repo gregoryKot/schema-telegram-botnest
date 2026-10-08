@@ -1,5 +1,6 @@
 import { COLORS } from '../../types';
 import { pressable } from '../../utils/a11y';
+import { hitboxStyle } from '../../utils/hitbox';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { AnchorCard } from './AnchorCard';
 import { Slider } from './Slider';
@@ -86,29 +87,30 @@ export function NeedFillRow({
               setOpenExampleId(openExampleId === id ? null : id);
               setOpenExampleIdx(null);
             }}
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              border: 'none',
-              cursor: 'pointer',
-              background:
-                openExampleId === id
-                  ? 'color-mix(in srgb, var(--accent) 30%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.08)',
-              color:
-                openExampleId === id
-                  ? 'var(--accent)'
-                  : 'rgba(var(--fg-rgb),0.35)',
-              fontSize: 12,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s',
-            }}
+            style={hitboxStyle(24, 24, 44).outer}
           >
-            ?
+            <span
+              style={{
+                ...hitboxStyle(24, 24, 44).inner,
+                borderRadius: '50%',
+                background:
+                  openExampleId === id
+                    ? 'color-mix(in srgb, var(--accent) 30%, transparent)'
+                    : 'rgba(var(--fg-rgb),0.08)',
+                color:
+                  openExampleId === id
+                    ? 'var(--accent)'
+                    : 'rgba(var(--fg-rgb),0.35)',
+                fontSize: 12,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s',
+              }}
+            >
+              ?
+            </span>
           </button>
           <div
             style={{

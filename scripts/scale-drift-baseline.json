@@ -81,7 +81,6 @@
   "schema-miniapp/src/components/WeekTopCard.tsx": 1,
   "schema-miniapp/src/components/ysqTestSheet/YsqActiveSchemaCard.tsx": 1,
   "schema-miniapp/src/components/ysqTestSheet/YsqAnswerScalePreview.tsx": 1,
-  "schema-miniapp/src/components/ysqTestSheet/YsqIntro.tsx": 1,
   "schema-miniapp/src/sections/HelpSection.tsx": 1,
   "schema-miniapp/src/sections/helpSection/AllTasksSheet.tsx": 2,
   "schema-miniapp/src/sections/helpSection/NextSessionBanner.tsx": 1,
