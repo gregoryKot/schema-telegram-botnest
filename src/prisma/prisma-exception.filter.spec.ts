@@ -313,4 +313,144 @@ describe('GenericExceptionFilter', () => {
     expect(() => filter.catch('raw string throw', host)).not.toThrow();
     expect(res.status).toHaveBeenCalledWith(500);
   });
+
+  // Аудит 2026-07-20 (L2). Ошибки express-слоя (http-errors) приходят сюда не
+  // как HttpException: Nest переводит в свои исключения только SyntaxError и
+  // URIError. Раньше тело сверх лимита отдавалось клиенту 500-кой и уходило
+  // админу в DM как авария сервера — а меняя путь запроса, этим выжигался общий
+  // бюджет алертов (ключ троттлинга AlertLogger нормализует только цифры).
+  describe('L2: клиентские ошибки express-слоя (http-errors)', () => {
+    /** Как их строит body-parser: expose=true + числовой status. */
+    function httpError(status: number, message: string, name: string) {
+      const err = new Error(message);
+      err.name = name;
+      Object.assign(err, { status, statusCode: status, expose: true });
+      return err;
+    }
+
+    function run(exception: unknown, url = '/api/notes') {
+      const filter = new GenericExceptionFilter();
+      const logger = (
+        filter as unknown as {
+          logger: {
+            error: (...a: unknown[]) => void;
+            warn: (...a: unknown[]) => void;
+          };
+        }
+      ).logger;
+      const errorSpy = jest
+        .spyOn(logger, 'error')
+        .mockImplementation(() => undefined);
+      const warnSpy = jest
+        .spyOn(logger, 'warn')
+        .mockImplementation(() => undefined);
+      const { host, res, json } = makeHost(url);
+      filter.catch(exception, host);
+      return { res, json, errorSpy, warnSpy };
+    }
+
+    it('тело сверх лимита → 413, а не 500', () => {
+      const { res, json } = run(
+        httpError(413, 'request entity too large', 'PayloadTooLargeError'),
+      );
+      expect(res.status).toHaveBeenCalledWith(413);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 413,
+        error: 'Client Error',
+        message: 'Слишком большой запрос',
+      });
+    });
+
+    it('неизвестная кодировка → 415', () => {
+      const { res, json } = run(
+        httpError(
+          415,
+          'unsupported charset "ISO-8859-1"',
+          'UnsupportedMediaTypeError',
+        ),
+      );
+      expect(res.status).toHaveBeenCalledWith(415);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 415,
+        error: 'Client Error',
+        message: 'Неподдерживаемый формат данных',
+      });
+    });
+
+    it('клиентская ошибка НЕ уходит в канал алертов: warn, не error', () => {
+      const { errorSpy, warnSpy } = run(
+        httpError(413, 'request entity too large', 'PayloadTooLargeError'),
+      );
+      // AlertLogger переопределяет только error() — уровень и решает, увидит
+      // ли владелец DM на каждое слишком длинное письмо пользователя.
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('PayloadTooLargeError'),
+      );
+    });
+
+    it('сообщение ошибки и секреты пути не утекают ни клиенту, ни в alert-строку', () => {
+      const { json, warnSpy } = run(
+        httpError(
+          413,
+          'request entity too large: limit 262144',
+          'PayloadTooLargeError',
+        ),
+        '/api/booking/by-token/Zk3Qp9xLmN2vB7tYhR4sWc8UaE1dGj?code=AUTHCODE',
+      );
+      const body = JSON.stringify(json.mock.calls[0][0]);
+      expect(body).not.toContain('262144');
+      expect(body).not.toContain('entity');
+      const logged = warnSpy.mock.calls[0][0] as string;
+      expect(logged).not.toContain('AUTHCODE');
+      expect(logged).not.toContain('Zk3Qp9xLmN2vB7tYhR4sWc8UaE1dGj');
+      expect(logged).toContain('<token>');
+    });
+
+    it('4xx без известного текста → нейтральное сообщение', () => {
+      const { res, json } = run(
+        httpError(400, 'request aborted', 'BadRequestError'),
+      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 400,
+        error: 'Client Error',
+        message: 'Некорректный запрос',
+      });
+    });
+
+    // КОНТРОЛЬНЫЕ ОБРАЗЦЫ (правило №15 п.2): послабление не должно быть шире,
+    // чем нужно. Признак — `expose === true`, его ставит только http-errors.
+    it('контроль: ошибка исходящего HTTP-клиента со статусом 404 остаётся аварией (500 + alert)', () => {
+      // У AxiosError есть числовой `.status`, но нет `expose`. Чужой 404 от
+      // Telegram/Resend — наша авария, и она обязана разбудить владельца.
+      const axiosLike = new Error('Request failed with status code 404');
+      axiosLike.name = 'AxiosError';
+      Object.assign(axiosLike, { status: 404, statusCode: 404 });
+
+      const { res, errorSpy, warnSpy } = run(axiosLike);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(errorSpy).toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('контроль: http-errors с 5xx (expose=false) остаётся аварией', () => {
+      const err = new Error('boom');
+      err.name = 'InternalServerError';
+      Object.assign(err, { status: 500, statusCode: 500, expose: false });
+
+      const { res, errorSpy } = run(err);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('контроль: expose=true без числового статуса остаётся аварией', () => {
+      const err = new Error('weird');
+      Object.assign(err, { expose: true });
+
+      const { res, errorSpy } = run(err);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
 });

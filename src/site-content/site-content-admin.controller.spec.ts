@@ -2,8 +2,12 @@
 // фото сам, но бэк — последний рубеж (правило: рантайм-валидация, не только
 // DTO-типы), и то, что мусорные topics/переразмеренное фото не долетают до БД.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { SiteContentAdminController } from './site-content-admin.controller';
+import {
+  SiteContentAdminController,
+  MAX_PHOTO_BYTES,
+} from './site-content-admin.controller';
 import type { SiteContentService } from './site-content.service';
+import { BODY_LIMIT_BYTES } from '../infra/body-limit';
 
 const ADMIN_KEY = 'test-admin-key-site-content-0123456789';
 
@@ -119,5 +123,20 @@ describe('SiteContentAdminController.setMarquee — серверная вали�
       validTopics.topics,
     );
     expect(res).toEqual({ ok: true });
+  });
+});
+
+// Правило №4: два места, обязанные совпадать, держит тест-сверка. Потолок фото
+// (MAX_PHOTO_BYTES) и потолок парсера (BODY_LIMIT_BYTES) живут в разных файлах,
+// а связаны жёстко: фото — самое длинное законное тело, от него и посчитан
+// лимит (src/infra/body-limit.ts). Поднять одно, забыв другое, значит получить
+// 413 на каждой загрузке фотографии — и узнать об этом от владельца, а не от CI.
+describe('MAX_PHOTO_BYTES пролезает в лимит парсера', () => {
+  it('data-URI предельного размера вместе с обёрткой JSON меньше BODY_LIMIT_BYTES', () => {
+    const dataUri = `data:image/jpeg;base64,${'A'.repeat(MAX_PHOTO_BYTES - 23)}`;
+    expect(dataUri.length).toBe(MAX_PHOTO_BYTES);
+
+    const wireBytes = Buffer.byteLength(JSON.stringify({ dataUri }));
+    expect(wireBytes).toBeLessThan(BODY_LIMIT_BYTES);
   });
 });
