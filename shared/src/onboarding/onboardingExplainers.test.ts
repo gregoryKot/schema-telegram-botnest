@@ -30,8 +30,12 @@ describe('объяснения первых экранов', () => {
   it('обе формы обращения расходятся и согласованы', () => {
     expect(buildSelfMapIntro(ty)).toMatch(/из твоих разборов/);
     expect(buildSelfMapIntro(vy)).toMatch(/из ваших разборов/);
-    expect(buildPracticesIntro(ty)).toMatch(/добавишь здесь.*будешь планировать/);
-    expect(buildPracticesIntro(vy)).toMatch(/добавите здесь.*будете планировать/);
+    expect(buildPracticesIntro(ty)).toMatch(
+      /добавишь здесь.*будешь планировать/,
+    );
+    expect(buildPracticesIntro(vy)).toMatch(
+      /добавите здесь.*будете планировать/,
+    );
   });
 
   it('в «ты»-ветке нет мужского рода (правило «Род читателя»)', () => {
