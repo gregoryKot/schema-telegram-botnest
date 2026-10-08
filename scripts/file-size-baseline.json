@@ -981,7 +981,7 @@
   "src/auth/refresh-reuse.ts": 53,
   "src/auth/refresh-rotation.ts": 165,
   "src/auth/refresh-theft.ts": 64,
-  "src/auth/security-log.service.ts": 164,
+  "src/auth/security-log.service.ts": 144,
   "src/auth/telegram-domain-watchdog.service.ts": 122,
   "src/auth/telegram-identity.ts": 118,
   "src/auth/telegram-oauth-url.ts": 15,
