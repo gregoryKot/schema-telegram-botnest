@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { BookingCancelControl } from '../components/booking/BookingCancelControl';
 import { BookingSaveBlock } from '../components/booking/BookingSaveBlock';
+import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
 
 type Booking = { status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null };
 
@@ -124,22 +125,13 @@ export function BookingPaidPage() {
   );
 }
 
-// ── styles (match the site's tokens) ─────────────────────────────────────────
-const page: React.CSSProperties = {
-  // #root is a flex row — fill it (flex:1 + width:100%), else the column shrinks
-  // to content width and pins left on desktop.
-  flex: 1, width: '100%', boxSizing: 'border-box',
-  background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px',
-};
+// ── styles (page/h1/sub/backLink — в bookingPageStyles.ts) ─────────────────────────────────────────
 const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'center' };
 const icon: React.CSSProperties = {
   width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', fontSize: 28,
 };
-const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,34px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
-const sub: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 24px' };
 const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '16px 18px', margin: '0 0 18px' };
 const primaryBtn: React.CSSProperties = {
   display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px',
@@ -148,4 +140,3 @@ const primaryBtn: React.CSSProperties = {
 };
 const ghostBtn: React.CSSProperties = { ...primaryBtn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' };
 const hint: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '14px 0 22px' };
-const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };

@@ -5,6 +5,7 @@ import type { AvailabilityRule, AdminBooking, SessionOption, AdminBookingStatus 
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { card, btn, btnGhost, input } from './shared';
 import { ScheduleSection } from './ScheduleSection';
+import { ClientBookingLink } from './ClientBookingLink';
 
 const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
@@ -16,6 +17,7 @@ export function BookingSection({ adminKey }: { adminKey: string }) {
   return (
     <>
       <IntegrationStatus adminKey={adminKey} />
+      <ClientBookingLink />
       <PricesManager adminKey={adminKey} />
       <SubPricesManager adminKey={adminKey} />
       <ScheduleSection rules={rules} rulesFailed={failed} onChange={reload} adminKey={adminKey} />

@@ -14,6 +14,7 @@ import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
+import { BODY_LIMIT } from './infra/body-limit';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import {
   PrismaExceptionFilter,
@@ -32,6 +33,12 @@ registerUnhandledRejectionHandler(new Logger('UnhandledRejection'));
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: new AlertLogger(),
+    // Штатный парсер Nest выключен намеренно (аудит 2026-07-20, L2): свой
+    // стоит ниже с лимитом BODY_LIMIT. Без этого флага потолок держался на
+    // совпадении деталей чужой реализации — порядка `use`/`listen` и имён
+    // слоёв, по которым Nest решает «парсер уже стоит». Разбор — в
+    // src/infra/body-limit.ts.
+    bodyParser: false,
   });
 
   // M5 (аудит 2026-08): за Express стоит один reverse-proxy Amvera. Без этого
@@ -127,11 +134,10 @@ async function bootstrap() {
   // whitelist срезает недекорированные поля; для body без DTO-класса
   // (легаси inline-интерфейсы) пайп прозрачен — миграция инкрементальная.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // Cap request bodies. Largest legitimate payload is a YSQ progress update
-  // (~116 ints + page) — well under 100 KB. Cap at 256 KB to leave room for
-  // big text fields (letters, schema notes) while killing DoS via huge JSON.
-  app.use(json({ limit: '256kb' }));
-  app.use(urlencoded({ limit: '256kb', extended: true }));
+  // Единственный парсер тела в приложении (штатный отключён выше). Откуда
+  // взято 256 КБ и чем это замерено — src/infra/body-limit.ts.
+  app.use(json({ limit: BODY_LIMIT }));
+  app.use(urlencoded({ limit: BODY_LIMIT, extended: true }));
 
   // CORS only needed for the Telegram mini-app (different origin).
   // The web app is served from the same domain → no CORS needed for it.

@@ -7,6 +7,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+import { BODY_LIMIT, BODY_LIMIT_BYTES } from '../infra/body-limit';
+
 const MAIN = readFileSync(join(__dirname, '../main.ts'), 'utf8');
 
 describe('трипваер: hardening-middleware в main.ts', () => {
@@ -63,11 +65,21 @@ describe('трипваер: hardening-middleware в main.ts', () => {
   });
 
   it('cap тела запроса (анти-DoS через огромный JSON)', () => {
-    expect(MAIN).toMatch(/json\(\s*\{\s*limit:/);
-    // лимит разумный (кб/мб, не десятки мб)
-    const m = MAIN.match(/json\(\s*\{\s*limit:\s*['"]([^'"]+)['"]/);
-    expect(m).not.toBeNull();
-    expect(m![1]).toMatch(/kb$/i);
+    // Значение переехало в src/infra/body-limit.ts (аудит 2026-07-20, L2),
+    // поэтому проверяем не литерал в тексте, а оба парсера и сам потолок.
+    expect(MAIN).toMatch(/json\(\s*\{\s*limit:\s*BODY_LIMIT\s*\}/);
+    expect(MAIN).toMatch(/urlencoded\(\s*\{\s*limit:\s*BODY_LIMIT/);
+    expect(BODY_LIMIT).toMatch(/kb$/i);
+    // Разумный потолок: килобайты, не десятки мегабайт.
+    expect(BODY_LIMIT_BYTES).toBeLessThanOrEqual(1024 * 1024);
+  });
+
+  it('штатный парсер Nest отключён явно (иначе потолок молча падает до 100 КБ)', () => {
+    // Несущая деталь, а не стилистика: пока `bodyParser: false` стоит, наш
+    // парсер единственный. Без него потолок держался бы на совпадении порядка
+    // `use`/`listen` и имён слоёв Nest — разбор в src/infra/body-limit.ts,
+    // замер границы в test/body-limit.e2e-spec.ts.
+    expect(MAIN).toMatch(/bodyParser:\s*false/);
   });
 
   it('cookie-parser подключён', () => {

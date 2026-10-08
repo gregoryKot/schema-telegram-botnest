@@ -9,7 +9,9 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import { AppModule } from '../../src/app.module';
+import { BODY_LIMIT } from '../../src/infra/body-limit';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
 import { installBigIntJson } from '../../src/utils/bigint-json';
@@ -32,7 +34,7 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
     .useValue(makeFakeBot())
     .compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication({ bodyParser: false });
   // cookieParser — то же зеркало src/main.ts, что и в build-test-app.ts. Без
   // него `req.cookies` пуст, и ЛЮБОЙ сценарий с refresh-кукой на живой базе
   // молча отвечал бы 401: не потому что сессия плоха, а потому что куку никто
@@ -40,6 +42,13 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
   // 2026-08-28).
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Парсеры тела — то же зеркало src/main.ts (аудит 2026-07-20, L2). До этого
+  // прогон на живой базе парсеры не ставил вообще и жил со штатным потолком
+  // Nest в 100 КБ: тело на 150 КБ проходило в фейковом прогоне и падало в
+  // настоящем. Ровно тот класс расхождения фейка с реальностью, ради которого
+  // второй прогон и заведён.
+  app.use(json({ limit: BODY_LIMIT }));
+  app.use(urlencoded({ limit: BODY_LIMIT, extended: true }));
   await app.init();
   return { app, prisma: app.get(PrismaService) };
 }

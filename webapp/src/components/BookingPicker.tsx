@@ -7,8 +7,10 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
 import { WriteInsteadNote } from './booking/WriteInsteadNote';
+import { SlotsLoadingNote } from './booking/SlotsLoadingNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
+import { RequestField } from './booking/RequestField';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { ContactChannelField } from './booking/ContactChannelField';
 import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
@@ -28,8 +30,9 @@ const labelSt: React.CSSProperties = {
 };
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
-/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами. */
-export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.ReactNode; onWriteInstead?: () => void }) {
+export type BookingType = 'INTRO_15' | 'SESSION_50';
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя; `compact` — без «Запроса» и «повторной встречи» (страница /book: знакомый клиент, только имя, контакт, оферта). */
+export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = false }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType; compact?: boolean }) {
   const [tz, setTz] = useClientTimeZone();
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -56,7 +59,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
   const [options, setOptions] = useState<SessionOption[]>([]);
-  const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
+  const [sessionType, setSessionType] = useState<BookingType>(lockedType ?? 'INTRO_15');
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
   const formFocused = useRef(false);
   const [invalidField, setInvalidField] = useState<InvalidField | null>(null);
@@ -92,7 +95,7 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
   }, [status]);
 
   if (slots === null && !loadFailed) {
-    return <p style={{ color: 'var(--text-faint)', fontSize: 15, padding: '24px 0' }}>Загружаю свободное время…</p>;
+    return <SlotsLoadingNote />;
   }
   // No availability configured (or load failed): keep the request channel open.
   if (loadFailed || slots!.length === 0) {
@@ -159,14 +162,14 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
     // молча (без наших trackGoal/подсказок) — обработчик submit сам решает,
     // что показать и куда поставить фокус.
     <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-      {options.length > 1 && (
+      {options.length > 1 && !lockedType && (
         <div>
           <div style={labelSt}>Формат встречи</div>
           <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
             {options.map((o) => {
               const active = o.type === sessionType;
               return (
-                <button key={o.type} type="button" onClick={() => {
+                <button key={o.type} type="button" aria-pressed={active} onClick={() => {
                   setSessionType(o.type);
                   if (o.type === 'INTRO_15') { setReturning(false); if (status === 'not_found') setStatus('idle'); } // знакомство — всегда первая встреча
                   trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
@@ -226,13 +229,10 @@ export function BookingPicker({ fallback, onWriteInstead }: { fallback?: React.R
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
-          {sessionType === 'SESSION_50' && (
+          {sessionType === 'SESSION_50' && !compact && (
             <ReturningVisitField returning={returning} onChange={(v) => { setReturning(v); if (status === 'not_found') setStatus('idle'); }} />
           )}
-          <div>
-            <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-            <textarea id="bp-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
-          </div>
+          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} />}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input
               type="checkbox" ref={consentRef} checked={consent}

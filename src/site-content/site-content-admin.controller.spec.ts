@@ -2,8 +2,12 @@
 // фото сам, но бэк — последний рубеж (правило: рантайм-валидация, не только
 // DTO-типы), и то, что мусорные topics/переразмеренное фото не долетают до БД.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { SiteContentAdminController } from './site-content-admin.controller';
+import {
+  SiteContentAdminController,
+  MAX_PHOTO_BYTES,
+} from './site-content-admin.controller';
 import type { SiteContentService } from './site-content.service';
+import { BODY_LIMIT_BYTES } from '../infra/body-limit';
 
 const ADMIN_KEY = 'test-admin-key-site-content-0123456789';
 
@@ -86,6 +90,33 @@ describe('SiteContentAdminController.setHeroPhoto — серверная вал�
     expect(content.setHeroPhoto).toHaveBeenCalledWith(dataUri);
     expect(res).toEqual({ ok: true });
   });
+
+  // png покрыт тестом выше; jpeg — то, что реально отдаёт фронт (compressImage)
+  it.each([
+    ['jpeg', 'data:image/jpeg;base64,AAAA'],
+    ['webp', 'data:image/webp;base64,AAAA'],
+  ])('растровый %s доезжает до сервиса как есть', async (_name, dataUri) => {
+    const { controller, content } = makeController();
+    const res = await controller.setHeroPhoto({ dataUri }, ADMIN_KEY);
+    expect(content.setHeroPhoto).toHaveBeenCalledWith(dataUri);
+    expect(res).toEqual({ ok: true });
+  });
+
+  // L1: SVG — тоже image/*, но может нести <script>; пропускаем только растр
+  it.each([
+    ['svg в base64', 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='],
+    ['svg без кодирования', 'data:image/svg+xml,<svg onload="alert(1)"></svg>'],
+    // контроль: сверяется имя типа целиком, а не подстрока `png`
+    ['тип pngx, не png', 'data:image/pngx;base64,AAAA'],
+    // контроль: allow-list, а не deny-list. GIF безобиден, просто его нет в списке
+    ['gif (не в списке разрешённых)', 'data:image/gif;base64,AAAA'],
+  ])('отказ: %s — сервис не вызывается', async (_name, dataUri) => {
+    const { controller, content } = makeController();
+    await expect(
+      controller.setHeroPhoto({ dataUri }, ADMIN_KEY),
+    ).rejects.toThrow(BadRequestException);
+    expect(content.setHeroPhoto).not.toHaveBeenCalled();
+  });
 });
 
 describe('SiteContentAdminController.setMarquee — серверная валидация', () => {
@@ -119,5 +150,20 @@ describe('SiteContentAdminController.setMarquee — серверная вали�
       validTopics.topics,
     );
     expect(res).toEqual({ ok: true });
+  });
+});
+
+// Правило №4: два места, обязанные совпадать, держит тест-сверка. Потолок фото
+// (MAX_PHOTO_BYTES) и потолок парсера (BODY_LIMIT_BYTES) живут в разных файлах,
+// а связаны жёстко: фото — самое длинное законное тело, от него и посчитан
+// лимит (src/infra/body-limit.ts). Поднять одно, забыв другое, значит получить
+// 413 на каждой загрузке фотографии — и узнать об этом от владельца, а не от CI.
+describe('MAX_PHOTO_BYTES пролезает в лимит парсера', () => {
+  it('data-URI предельного размера вместе с обёрткой JSON меньше BODY_LIMIT_BYTES', () => {
+    const dataUri = `data:image/jpeg;base64,${'A'.repeat(MAX_PHOTO_BYTES - 23)}`;
+    expect(dataUri.length).toBe(MAX_PHOTO_BYTES);
+
+    const wireBytes = Buffer.byteLength(JSON.stringify({ dataUri }));
+    expect(wireBytes).toBeLessThan(BODY_LIMIT_BYTES);
   });
 });

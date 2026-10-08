@@ -181,7 +181,7 @@
   "webapp/src/pages/landing/ContentSections.tsx": 3,
   "webapp/src/pages/landing/nav.tsx": 1,
   "webapp/src/pages/landing/ProductKit.tsx": 1,
-  "webapp/src/pages/LandingPage.tsx": 4,
+  "webapp/src/pages/LandingPage.tsx": 3,
   "webapp/src/pages/LinkDevicePage.tsx": 5,
   "webapp/src/pages/LoginPage.tsx": 1,
   "webapp/src/pages/MergePage.tsx": 5,

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { linkBtn } from '../../components/booking/linkButtonStyle';
+import { SlotsLoadingNote } from '../../components/booking/SlotsLoadingNote';
 import { OPERATOR_EMAIL } from '../../legal/operator';
 import { trackGoalOnce } from '../../lib/metrika';
 import { BookingForm } from './BookingForm';
@@ -29,7 +30,7 @@ export function BookingEntry() {
   if (mode === 'slots') {
     const toWrite = () => setMode('write');
     return (
-      <Suspense fallback={<p style={{ color: 'var(--text-faint)', fontSize: 15, padding: '24px 0' }}>Загружаю свободное время…</p>}>
+      <Suspense fallback={<SlotsLoadingNote />}>
         <BookingPicker onWriteInstead={toWrite} fallback={<NoSlotsNote onWrite={toWrite} />} />
       </Suspense>
     );

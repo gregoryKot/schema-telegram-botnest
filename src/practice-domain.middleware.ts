@@ -29,9 +29,8 @@ const PRACTICE_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
 </urlset>
 `;
 
-// Практике не нужны в индексе служебные и продуктовые маршруты — только
-// главная (брендовые запросы). Статьи и приложение канонично живут на
-// schemehappens.ru.
+// Практике в индексе нужна только главная (брендовые запросы): статьи и
+// приложение канонично живут на schemehappens.ru, /book — ссылка для клиентов.
 const PRACTICE_ROBOTS = `User-agent: *
 Allow: /$
 Disallow: /articles
@@ -39,12 +38,12 @@ Disallow: /privacy
 Disallow: /offer
 Disallow: /app
 Disallow: /api
+Disallow: /book
 
 Sitemap: https://${PRACTICE_HOST}/sitemap.xml
 `;
 
-/** Страницы SPA, которые визитка рендерит сама — зеркало `personalRoutes`
- *  в webapp/src/App.tsx (тест-сверка в practice-domain.middleware.spec.ts). */
+/** Страницы SPA визитки — зеркало `personalRoutes` в webapp/src/App.tsx (тест-сверка в спеке). */
 export const PRACTICE_PAGES: readonly string[] = [
   '/',
   '/articles',
@@ -52,6 +51,7 @@ export const PRACTICE_PAGES: readonly string[] = [
   '/admin',
   '/booking-admin',
   '/articles-admin',
+  '/book', // ссылка для клиентов: расписание сразу (BookingLinkPage), не для поиска
   '/booking/paid',
   '/booking/manage',
   '/subscribe',
@@ -62,9 +62,9 @@ export const PRACTICE_PAGES: readonly string[] = [
 /** Префиксы страниц с параметром (`/articles/:slug`). */
 export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];
 
-/** Ручки API (любой метод), которые зовут страницы визитки. Каждая — с причиной.
- *  Запись (POST/PATCH/DELETE) вне списка получает 301: браузер повторяет его как
- *  GET без тела, то есть алиас запись не принимает (аудит 2026-10, I1). */
+/** Ручки API (любой метод), которые зовут страницы визитки, каждая с причиной. Запись
+ *  (POST/PATCH/DELETE) вне списка получает 301: браузер повторяет его как GET без
+ *  тела, то есть алиас запись не принимает (аудит 2026-10, I1). */
 export const PRACTICE_API_PREFIXES: readonly string[] = [
   '/api/booking', // запись на консультацию: options, slots, by-token, admin/*
   '/api/subscription', // подписка: options, by-token

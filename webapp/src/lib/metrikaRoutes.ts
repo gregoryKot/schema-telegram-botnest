@@ -19,8 +19,8 @@ export const METRIKA_PUBLIC_PATHS: ReadonlySet<string> = new Set([
   '/donate',
   '/privacy',
   '/offer',
-  '/booking/paid',
-  '/booking/manage',
+  '/book', // ссылка для клиентов: цель booking_link_open и цели пикера
+  '/booking/paid', '/booking/manage',
 ]);
 
 /** Разделы с хвостом: `/articles/:slug`, `/tests/:quizId`. */
