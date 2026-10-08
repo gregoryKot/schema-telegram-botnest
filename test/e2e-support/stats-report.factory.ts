@@ -34,6 +34,7 @@ import { MoneyMetricsService } from '../../src/bot/money-metrics.service';
 import { SignupSourceMetricsService } from '../../src/bot/signup-source-metrics.service';
 import { GameMetricsService } from '../../src/bot/game-metrics.service';
 import { DataExportMetricsService } from '../../src/bot/data-export-metrics.service';
+import { BookingRetentionMetricsService } from '../../src/bot/booking-retention-metrics.service';
 
 /** Продуктовый блок /stats (второе сообщение команды). */
 export function buildStatsReport(prisma: PrismaService): StatsReportService {
@@ -64,5 +65,6 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new SignupSourceMetricsService(prisma),
     new GameMetricsService(prisma),
     new DataExportMetricsService(prisma),
+    new BookingRetentionMetricsService(prisma),
   );
 }

@@ -125,6 +125,29 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     );
   });
 
+  // Находка L3 аудита 2026-07-20, пункт «ещё модели мимо реестров»: у билета
+  // входа человек стоит в двух колонках помимо userId — shownToTelegramId
+  // (сырой адрес в Telegram, кому бот показал карточку сверки) и
+  // approvedUserId (кто подтвердил). Реестр USER_DATA_TABLES чистит LoginTicket
+  // только по userId, и эти две оси оставались.
+  it('чистит билеты входа и по shownToTelegramId, и по approvedUserId', async () => {
+    const prisma = makePrisma();
+    prisma.authProvider.findFirst = jest.fn(async () => ({
+      providerId: '777000',
+    }));
+    const service = new AccountService(prisma);
+    await service.deleteAllUserData(uid);
+
+    const wheres = prisma._calls['loginTicket'].map((a: any) => a.where);
+    // Первый вызов — из реестра, по userId; второй — по двум вторичным осям.
+    expect(wheres).toContainEqual({ userId: uid });
+    const secondary = wheres.find((w: any) => Array.isArray(w.OR));
+    expect(secondary.OR).toEqual([
+      { shownToTelegramId: { in: expect.arrayContaining([uid, 777000n]) } },
+      { approvedUserId: uid },
+    ]);
+  });
+
   it('удаляет саму строку User и все user-owned таблицы в одной транзакции', async () => {
     const prisma = makePrisma();
     const service = new AccountService(prisma);
