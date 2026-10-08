@@ -141,3 +141,8 @@ test/**/*.js.map
 playwright.config.js
 playwright.config.d.ts
 playwright.config.js.map
+
+# Отчёт замера планов запросов (test/perf/run-plans.ts → scripts/check-query-plans.mjs).
+# Артефакт джобы `perf`, снимается на синтетике: в репозитории ему делать
+# нечего, планки живут в scripts/query-plan-baseline.json.
+/.perf
