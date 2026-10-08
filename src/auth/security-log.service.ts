@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { AlertBudget } from '../utils/alert-throttle';
+import { redactSecurityLogData } from './security-log-redact';
 
 // Lightweight audit channel: posts security-relevant events to the admin
 // Telegram chat (with e-mail fallback), plus structured server logs. Use
@@ -103,7 +104,7 @@ export class SecurityLogService {
   constructor(@Optional() private readonly now: () => number = Date.now) {}
 
   log(event: SecurityEvent, data: Record<string, unknown>): void {
-    const line = `[${event}] ${JSON.stringify(this.redact(data))}`;
+    const line = `[${event}] ${JSON.stringify(redactSecurityLogData(data))}`;
     // Структурный лог — ВСЕГДА без троттлинга: логи дёшевы, а бюджет ниже
     // защищает только скудный канал (DM админу).
     this.logger.log(line);
@@ -123,33 +124,12 @@ export class SecurityLogService {
     }
   }
 
-  // Strip obvious secrets before logging.
-  private redact(data: Record<string, unknown>): Record<string, unknown> {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(data)) {
-      const lower = k.toLowerCase();
-      if (
-        lower.includes('token') ||
-        lower.includes('password') ||
-        lower.includes('secret') ||
-        lower === 'initdata'
-      ) {
-        out[k] = '[redacted]';
-      } else if (typeof v === 'bigint') {
-        out[k] = v.toString();
-      } else {
-        out[k] = v;
-      }
-    }
-    return out;
-  }
-
   private async alertAdmin(
     event: SecurityEvent,
     data: Record<string, unknown>,
     suppressed: number,
   ): Promise<void> {
-    const redacted = this.redact(data);
+    const redacted = redactSecurityLogData(data);
     const text =
       `🔐 ${event}\n` +
       Object.entries(redacted)
