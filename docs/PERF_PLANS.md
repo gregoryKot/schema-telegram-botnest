@@ -194,6 +194,13 @@ node scripts/check-query-plans.mjs            # --verbose — все запро�
 node scripts/check-query-plans.mjs --update   # зафиксировать снижение страниц
 ```
 
+Postgres в Docker (в том числе service-контейнер GitHub Actions) получает по
+умолчанию **64 МБ `/dev/shm`**, а параллельный `VACUUM` просит оттуда ~41 МБ —
+поэтому вакуум в сидере идёт по одной таблице, а не по четыре сразу: иначе
+`could not resize shared memory segment … No space left on device` (SQLSTATE
+53100). Так упала первая же джоба `perf`. Самому замеру этой памяти нужен
+мизер — замерено: пик 1 МБ из 64, так что поднимать `/dev/shm` в CI не нужно.
+
 Отчёт остаётся в `.perf/plans.json` (в git не попадает) и выкладывается
 артефактом джобы `perf` — по красному PR видно, какой запрос и каким индексом
 читался, не переснимая EXPLAIN руками.
