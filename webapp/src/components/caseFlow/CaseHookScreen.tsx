@@ -1,3 +1,4 @@
+import { CASE_HOOK_LEDE } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { ExScreen } from '../exercises/ExScreen';
 import { TertiaryLink } from './caseLinks';
 import { CaseSupportBlock } from './CaseSupportFoot';
@@ -24,7 +25,7 @@ export function CaseHookScreen({
       eyebrow="Разбор случая"
       eyebrowColor="var(--accent-indigo)"
       title="Что сегодня зацепило?"
-      lede="Крупное необязательно — хватит мелочи: сообщение, взгляд, тишина в ответ. Пять коротких шагов — в конце видно, какое знакомое состояние включилось, и запись останется в дневнике."
+      lede={CASE_HOOK_LEDE}
     >
       <button
         type="button"

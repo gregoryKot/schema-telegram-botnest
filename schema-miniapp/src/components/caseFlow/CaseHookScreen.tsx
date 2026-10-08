@@ -1,3 +1,4 @@
+import { CASE_HOOK_LEDE } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { PrimaryAction } from '../diary/diaryFlowUi';
 import { TertiaryLink } from './caseFlowUi';
 
@@ -25,9 +26,7 @@ export function CaseHookScreen({
           marginBottom: 24,
         }}
       >
-        {
-          'Крупное необязательно — хватит мелочи: сообщение, взгляд, тишина в ответ. Пять коротких шагов — в конце видно, какое знакомое состояние включилось, и запись останется в дневнике.'
-        }
+        {CASE_HOOK_LEDE}
       </div>
 
       <PrimaryAction label="Разобрать свой случай" onClick={onStart} />

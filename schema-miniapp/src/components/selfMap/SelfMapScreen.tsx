@@ -1,3 +1,4 @@
+import { buildSelfMapIntro } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { useMemo } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { SheetHeader, PrimaryAction } from '../diary/diaryFlowUi';
@@ -60,10 +61,7 @@ export function SelfMapScreen({
       <SheetHeader title="Карта себя" onBack={onClose} />
 
       <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
-        {tr(
-          'Карта собирается из твоих разборов и показывает, какие части включаются в трудные моменты: кто выходит на сцену, кто прячется за кулисами. Приём из схема-терапии. Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-          'Карта собирается из ваших разборов и показывает, какие части включаются в трудные моменты: кто выходит на сцену, кто прячется за кулисами. Приём из схема-терапии. Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-        )}
+        {buildSelfMapIntro(tr)}
       </div>
 
       {lanes.map((lane) => (

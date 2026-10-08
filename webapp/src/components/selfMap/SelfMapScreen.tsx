@@ -1,3 +1,4 @@
+import { buildSelfMapIntro } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { useMemo } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { SelfMapLane } from './SelfMapLane';
@@ -56,10 +57,7 @@ export function SelfMapScreen({
       eyebrow="Карта себя"
       eyebrowColor="var(--accent-indigo)"
       title="Карта себя"
-      lede={tr(
-        'Карта собирается из твоих разборов и показывает, какие части включаются в трудные моменты: кто выходит на сцену, кто прячется за кулисами. Приём из схема-терапии. Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-        'Карта собирается из ваших разборов и показывает, какие части включаются в трудные моменты: кто выходит на сцену, кто прячется за кулисами. Приём из схема-терапии. Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-      )}
+      lede={buildSelfMapIntro(tr)}
     >
       {lanes.map((lane) => (
         <SelfMapLane
