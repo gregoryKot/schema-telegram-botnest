@@ -15,6 +15,10 @@
     "status": "leader",
     "reason": "Напоминание о записи пользователю — на двух инстансах уйдёт два одинаковых сообщения."
   },
+  "src/booking/booking-retention.service.ts::anonymizeOld": {
+    "status": "exempt",
+    "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни поста."
+  },
   "src/booking/booking.service.ts::expireHolds": {
     "status": "leader",
     "reason": "Снятие истёкших холдов записи — гонка на двух инстансах может снять чужой свежий холд."

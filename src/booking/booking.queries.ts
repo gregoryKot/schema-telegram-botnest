@@ -1,7 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { decrypt, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { decrypt, EncryptSchema } from '../utils/crypto';
+import { decryptBookingForAdmin } from './booking-admin-view';
 
 // Чтение броней: список для админки, одна по id и публичная проекция по
 // cancel-токену. Вынесено из booking.service.ts (правило №10) — сервис
@@ -36,7 +37,7 @@ export async function listBookings(
     orderBy: { startsAt: filter === 'upcoming' ? 'asc' : 'desc' },
     take: 200,
   });
-  return rows.map((r) => decryptRecord(r, schema));
+  return rows.map((r) => decryptBookingForAdmin(r, schema));
 }
 
 export async function getBookingById(
@@ -46,7 +47,7 @@ export async function getBookingById(
 ) {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new NotFoundException('Booking not found');
-  return decryptRecord(booking, schema);
+  return decryptBookingForAdmin(booking, schema);
 }
 
 /**
