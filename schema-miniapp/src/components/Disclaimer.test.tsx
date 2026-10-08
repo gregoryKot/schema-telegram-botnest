@@ -142,15 +142,35 @@ describe('Disclaimer — точки-навигация и финал', () => {
     expect(screen.getByText('Начать')).toBeTruthy();
   });
 
-  it('canOfferHomeScreenNow=true — финальная кнопка «Пропустить и начать», зовёт onAccept', () => {
+  it('canOfferHomeScreenNow=true, согласие уже дано — финальная кнопка «Пропустить и начать» зовёт onAccept', () => {
+    vi.mocked(canOfferHomeScreenNow).mockReturnValue(true);
+    const onAccept = vi.fn();
+    render(
+      <Disclaimer onAccept={onAccept} onConsent={() => {}} consentGiven />,
+    );
+    expect(screen.getByText('step-home-screen')).toBeTruthy();
+    fireEvent.click(screen.getByText('Пропустить и начать'));
+    expect(onAccept).toHaveBeenCalled();
+  });
+
+  // Аудит онбординга 2026-10: точки переключали шаг напрямую, а гейт согласий
+  // стоял только на «Далее →» шага not_therapy. Тап по последней точке
+  // открывал home_screen, и финальная кнопка писала согласие на сервер без
+  // единой галочки. Этот же тест раньше ЗАКРЕПЛЯЛ обход (ожидал onAccept).
+  it('без галочек точками до финала не добраться и onAccept не зовётся', () => {
     vi.mocked(canOfferHomeScreenNow).mockReturnValue(true);
     const onAccept = vi.fn();
     render(<Disclaimer onAccept={onAccept} onConsent={() => {}} />);
     const dots = document.querySelectorAll('[role="button"][tabindex="0"]');
-    fireEvent.click(dots[dots.length - 1]); // home_screen — последний шаг
-    expect(screen.getByText('Пропустить и начать')).toBeTruthy();
-    fireEvent.click(screen.getByText('Пропустить и начать'));
-    expect(onAccept).toHaveBeenCalled();
+    // Прощёлкиваем точки ПО ПОРЯДКУ и остаёмся на последней: порядок важен —
+    // обход снизу вверх заканчивался на шаге 0, и тест проходил даже с
+    // выключенным гейтом (проверено мутантом `canJumpTo → true`).
+    for (let i = 0; i < dots.length; i++) fireEvent.click(dots[i]);
+    // Дальше шага согласий точки не пускают: это самый дальний доступный шаг.
+    expect(screen.getByText('step-not-therapy')).toBeTruthy();
+    expect(screen.queryByText('step-home-screen')).toBeNull();
+    expect(screen.queryByText('Пропустить и начать')).toBeNull();
+    expect(onAccept).not.toHaveBeenCalled();
   });
 
   it('«Назад» с шага 2 возвращает на шаг 1', () => {

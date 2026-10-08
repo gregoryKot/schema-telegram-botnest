@@ -1,0 +1,16 @@
+{
+  "schema-miniapp/src/components/disclaimer/DisclaimerCheckbox.tsx": 1,
+  "schema-miniapp/src/components/planSheet/PracticeOptionRow.tsx": 1,
+  "schema-miniapp/src/components/settingsSheet/TherapistPrivacyToggles.tsx": 2,
+  "schema-miniapp/src/components/therapistClientSheet/ClientListView.tsx": 2,
+  "schema-miniapp/src/sections/profile/InsightsCard.tsx": 1,
+  "webapp/src/components/modeMap/ModeMapEdgeEditor.tsx": 2,
+  "webapp/src/components/modeMap/ToolbarControls.tsx": 1,
+  "webapp/src/components/ModeMapNodeEditor.tsx": 2,
+  "webapp/src/components/ModeMapViewer.tsx": 1,
+  "webapp/src/components/PlanSheet.tsx": 1,
+  "webapp/src/components/settingsSheet/ui.tsx": 1,
+  "webapp/src/pages/landing/HeroSection.tsx": 1,
+  "webapp/src/pages/landing/nav.tsx": 1,
+  "webapp/src/share/SharePillButton.tsx": 1
+}
