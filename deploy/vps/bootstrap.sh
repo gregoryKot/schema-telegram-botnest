@@ -16,15 +16,18 @@
 # Лог Actions публичный: печатаем только статусы, секретов (пароль БД) в выводе нет.
 set -Eeuo pipefail
 
-BASE=/opt/schemehappens
+# Корни переопределяются только в тесте (src/infra/vps-bootstrap.spec.ts): на
+# сервере обе переменные не заданы, и пути такие, как были.
+BASE="${SCHEMEHAPPENS_DIR:-/opt/schemehappens}"
+ETC="${BOOTSTRAP_ETC:-/etc}"
 export DEBIAN_FRONTEND=noninteractive
 
 log() { echo "[bootstrap] $*"; }
 die() { echo "[bootstrap] ОШИБКА: $*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "нужен root"
-# shellcheck disable=SC1091
-[ -r /etc/os-release ] && . /etc/os-release
+# shellcheck disable=SC1090,SC1091
+[ -r "$ETC/os-release" ] && . "$ETC/os-release"
 [ "${ID:-}" = "ubuntu" ] || die "рассчитано на Ubuntu 24.04, а тут «${ID:-?}»"
 
 # ── 1. Пакеты и Docker ───────────────────────────────────────────────────────
@@ -34,12 +37,12 @@ apt-get install -y -qq ca-certificates curl gnupg openssl ufw unattended-upgrade
 
 if ! docker compose version > /dev/null 2>&1; then
   log "Docker: официальный репозиторий"
-  install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL --retry 3 https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+  install -m 0755 -d "$ETC/apt/keyrings"
+  curl -fsSL --retry 3 https://download.docker.com/linux/ubuntu/gpg -o "$ETC/apt/keyrings/docker.asc" \
     || die "download.docker.com недоступен с этого сервера (провайдер блокирует?); поставьте Docker с compose-плагином 2.30+ вручную и повторите"
-  chmod a+r /etc/apt/keyrings/docker.asc
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
-    > /etc/apt/sources.list.d/docker.list
+  chmod a+r "$ETC/apt/keyrings/docker.asc"
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=$ETC/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+    > "$ETC/apt/sources.list.d/docker.list"
   apt-get update -qq
   apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null
 fi
@@ -48,9 +51,9 @@ systemctl enable --now docker > /dev/null 2>&1 || true
 # Зеркало Docker Hub: из РФ прямые запросы к registry-1.docker.io бывают
 # нестабильны. Зеркало подстраховывает (при его отказе Docker идёт в сам Hub).
 # Файл не трогаем, если он уже есть: там могут быть настройки владельца.
-if [ ! -f /etc/docker/daemon.json ]; then
+if [ ! -f "$ETC/docker/daemon.json" ]; then
   log "Docker: зеркало Docker Hub (mirror.gcr.io)"
-  echo '{ "registry-mirrors": ["https://mirror.gcr.io"] }' > /etc/docker/daemon.json
+  echo '{ "registry-mirrors": ["https://mirror.gcr.io"] }' > "$ETC/docker/daemon.json"
   systemctl restart docker
 fi
 
@@ -76,7 +79,7 @@ ufw status | head -n1
 
 # ── 3. Автоматические обновления безопасности ────────────────────────────────
 log "unattended-upgrades"
-cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+cat > "$ETC/apt/apt.conf.d/20auto-upgrades" <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
