@@ -6,7 +6,8 @@
 # приложения здесь нет (они будут в приватном репозитории отдельным PR).
 #
 # Порядок переезда — docs/MIGRATION_VPS.md. Секреты те же, что у деплоя; не
-# заданы — джоба зелёная с notice.
+# заданы — джоба зелёная с notice. Исключение — необязательный DEPLOY_USER:
+# он нужен только op=grant-root (провайдеры, где root по ssh закрыт).
 name: Операции над VPS
 
 on:
@@ -18,6 +19,7 @@ on:
         required: true
         options:
           - status
+          - grant-root
           - bootstrap
           - transfer-open
           - transfer-check
@@ -46,6 +48,7 @@ jobs:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       OP: ${{ inputs.op }}
     steps:
       - name: Проверка секретов
@@ -61,20 +64,40 @@ jobs:
       - uses: actions/checkout@v7
         if: steps.gate.outputs.configured == 'true'
 
+      # grant-root идёт отдельным шагом ниже: до него root по ssh закрыт, а
+      # шаги «Настройка ssh» и «Копирование» рассчитаны на root.
       - name: Настройка ssh
-        if: steps.gate.outputs.configured == 'true'
+        if: steps.gate.outputs.configured == 'true' && inputs.op != 'grant-root'
         run: bash deploy/vps/ssh-setup.sh
 
       # Скрипты синхронизируем перед каждой операцией: ops.sh на сервере должен
       # быть той версии, что в main.
       - name: Копирование deploy/vps на сервер
-        if: steps.gate.outputs.configured == 'true'
+        if: steps.gate.outputs.configured == 'true' && inputs.op != 'grant-root'
         run: |
           ssh vps 'mkdir -p /opt/schemehappens'
           scp -q deploy/vps/* vps:/opt/schemehappens/
 
+      # Разово: ключ деплоя из ~/.ssh/authorized_keys пользователя ВМ → root.
+      # Скрипт идёт через stdin: в /opt под этим пользователем писать нельзя.
+      # Проверка под root смотрит на uid, а не на код возврата `true`:
+      # заглушка cloud-init `command="echo Please login as ..."` отвечает на
+      # любую команду нулём.
+      - name: Выдача root-доступа
+        if: steps.gate.outputs.configured == 'true' && inputs.op == 'grant-root'
+        run: |
+          if [ -z "$DEPLOY_USER" ]; then
+            echo "::error::grant-root: не задан секрет DEPLOY_USER (имя пользователя ВМ, под которым пускает провайдер)"
+            exit 1
+          fi
+          SSH_USER="$DEPLOY_USER" bash deploy/vps/ssh-setup.sh
+          ssh vps 'bash -s' < deploy/vps/grant-root.sh
+          SSH_USER=root bash deploy/vps/ssh-setup.sh
+          [ "$(ssh vps 'id -u')" = "0" ] || { echo "::error::ssh под root не работает: ключ не принят или sshd не пускает root"; exit 1; }
+          echo "root по ключу доступен"
+
       - name: Операция
-        if: steps.gate.outputs.configured == 'true'
+        if: steps.gate.outputs.configured == 'true' && inputs.op != 'grant-root'
         run: |
           case "$OP" in
             bootstrap) ssh vps 'bash /opt/schemehappens/bootstrap.sh' ;;

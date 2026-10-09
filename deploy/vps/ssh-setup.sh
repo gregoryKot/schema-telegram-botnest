@@ -3,12 +3,21 @@
 # deploy-vps.yml и vps.yml; значения секретов приходят в переменных окружения,
 # в вывод не попадают (адрес сервера GitHub дополнительно маскирует сам).
 #   DEPLOY_HOST          адрес сервера
-#   DEPLOY_SSH_KEY       приватный ключ пользователя root на сервере
+#   DEPLOY_SSH_KEY       приватный ключ, которым пускают на сервер
+#   SSH_USER             (необязательно, по умолчанию root) под кем заходить.
+#                        Остальное в deploy/vps рассчитано на root; другое имя
+#                        нужно только op=grant-root у провайдеров, где root по
+#                        ssh закрыт (deploy/vps/grant-root.sh).
 #   DEPLOY_KNOWN_HOSTS   (необязательно) строки known_hosts сервера. Нет — отпечаток
 #                        берётся ssh-keyscan'ом при каждом запуске, то есть
 #                        подмену сервера в сети между раннером и VPS он не поймает.
 set -Eeuo pipefail
 : "${DEPLOY_HOST:?}" "${DEPLOY_SSH_KEY:?}"
+
+SSH_USER="${SSH_USER:-root}"
+# Имя идёт в ssh-конфиг строкой: перевод строки или пробел в нём дописал бы туда
+# чужую директиву (ProxyCommand). Формат — NAME_REGEX из useradd.
+[[ "$SSH_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || { echo "::error::SSH_USER не похож на имя пользователя Linux (a-z, 0-9, _ и -, до 32 знаков)"; exit 1; }
 
 umask 077
 mkdir -p ~/.ssh
@@ -25,7 +34,7 @@ fi
 cat > ~/.ssh/config <<CONF
 Host vps
   HostName ${DEPLOY_HOST}
-  User root
+  User ${SSH_USER}
   IdentityFile ~/.ssh/id_deploy
   IdentitiesOnly yes
   UserKnownHostsFile ~/.ssh/known_hosts
