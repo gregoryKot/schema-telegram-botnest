@@ -30,7 +30,9 @@ b2_authorize() {
   ACCOUNT_ID=$(printf '%s' "$resp" | json_get accountId)
   API_URL=$(printf '%s' "$resp" | json_get apiInfo.storageApi.apiUrl)
   [ -n "$API_URL" ] || API_URL=$(printf '%s' "$resp" | json_get apiUrl)
-  [ -n "$TOKEN" ] && [ -n "$API_URL" ] || fail "B2: в ответе авторизации нет токена или адреса API"
+  if [ -z "$TOKEN" ] || [ -z "$API_URL" ]; then
+    fail "B2: в ответе авторизации нет токена или адреса API"
+  fi
   DOWNLOAD_URL=$(printf '%s' "$resp" | json_get apiInfo.storageApi.downloadUrl)
   [ -n "$DOWNLOAD_URL" ] || DOWNLOAD_URL=$(printf '%s' "$resp" | json_get downloadUrl)
   BUCKET_ID=$(printf '%s' "$resp" | json_get apiInfo.storageApi.bucketId)

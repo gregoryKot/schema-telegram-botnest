@@ -75,8 +75,9 @@ if [ "$SKIP_UPLOAD" != "1" ]; then
   need B2_BUCKET
 fi
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
-[[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ] ||
+if ! { [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ]; }; then
   fail "BACKUP_RETENTION_DAYS должно быть целым числом не меньше 7"
+fi
 
 DATE=$(date -u +%Y-%m-%d)
 NAME="$PREFIX$DATE.sql.gz.enc"

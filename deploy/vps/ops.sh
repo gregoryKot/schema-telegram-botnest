@@ -265,7 +265,9 @@ cmd_restore_b2() {
   print_counts
   local migs
   migs=$(q 'SELECT count(*) FROM _prisma_migrations')
-  [[ "$migs" =~ ^[0-9]+$ ]] && [ "$migs" -gt 0 ] || die "после заливки в _prisma_migrations нет строк: бэкап не похож на базу приложения"
+  if ! { [[ "$migs" =~ ^[0-9]+$ ]] && [ "$migs" -gt 0 ]; }; then
+    die "после заливки в _prisma_migrations нет строк: бэкап не похож на базу приложения"
+  fi
   log "восстановлено, HOLD_APP остаётся. Дальше: op=transfer-check, затем op=release-hold (или внешняя база для Amvera: op=external-db-check)"
 }
 
