@@ -1,0 +1,25 @@
+# Входная точка VPS: TLS (Let's Encrypt, автоматически) и reverse proxy на
+# приложение. Все хосты, которые обслуживает приложение, перечислены ОДИН раз,
+# в заголовке блока ниже. Сверка с кодом — src/infra/vps-caddyfile.spec.ts.
+#
+# Редиректы между хостами (www → apex, legacy → канонический, kotlarewski.ru →
+# kotlarewski.gr, визитка отдаёт только себя) делает само приложение:
+# src/infra/canonical-host.ts и src/practice-domain.middleware.ts. Caddy их не
+# дублирует: две реализации редиректа рано или поздно разойдутся (инцидент
+# 2026-09-16 про петлю редиректов). Приложение доверяет ровно одному прокси
+# (`trust proxy` 1), Caddy передаёт X-Forwarded-For/Proto/Host.
+#
+# Сертификат Caddy выпускает для хоста, чей DNS уже указывает на этот сервер.
+# Хост без A-записи не мешает остальным: для него выпуск просто повторяется.
+# Журнал запросов не включён: адреса и пути посетителей хранить незачем.
+schemehappens.ru, www.schemehappens.ru,
+schemalab.ru, www.schemalab.ru,
+kotlarewski.gr, www.kotlarewski.gr,
+kotlarewski.ru, www.kotlarewski.ru {
+	encode zstd gzip
+	# Перезапуск приложения (миграции, деплой) занимает секунды: ждём, а не отдаём 502.
+	reverse_proxy app:3000 {
+		lb_try_duration 20s
+		lb_try_interval 1s
+	}
+}

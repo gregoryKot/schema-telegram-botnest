@@ -274,6 +274,21 @@ jobs:
       # тест, упоминающий его по имени (loadRegexList/loadStringList/
       # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
       - run: node scripts/check-gate-exemptions.mjs
+      # Переезд на VPS (docs/MIGRATION_VPS.md): скрипты и compose-файлы
+      # исполняются на сервере, до которого CI не дотягивается, поэтому
+      # хотя бы разбираем их здесь. shellcheck стоит на ubuntu-latest;
+      # `compose config` не требует демона, фиктивные значения — только чтобы
+      # разобрать интерполяцию, секретов в них нет.
+      - name: VPS-скрипты (shellcheck) и compose-файлы (config)
+        run: |
+          shellcheck deploy/transfer-db.sh deploy/vps/*.sh
+          cd deploy/vps
+          # shellcheck disable=SC2016  # `$` в значении — как у настоящего PROD_ENV
+          printf 'FOO=a$b\n' > .env
+          echo 'POSTGRES_PASSWORD=ci' > db.env
+          export APP_IMAGE=registry.invalid/app:ci
+          docker compose --env-file db.env -f docker-compose.yml config --quiet
+          docker compose --env-file db.env -f docker-compose.yml -f docker-compose.transfer.yml config --quiet
 
   # Щит, волна 6: `docker build` реально собирает прод-образ. До этой джобы
   # ни одна не гоняла настоящую сборку — check-deploy-paths.mjs (джоба
@@ -419,6 +434,14 @@ jobs:
           test/therapy-remove-client.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
+      # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
+      # pg_dump и psql --single-transaction между двумя базами, отказ на
+      # непустом приёмнике и «процесс не завершается» на старом хостинге. Мок
+      # не заменит ни клиент, ни живую базу (правило №18).
+      - name: e2e перенос БД на VPS на реальном Postgres
+        run: |
+          command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
+          npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
       # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
       # уникальных констрейнтов и транзакционных апдейтов, которые

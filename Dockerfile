@@ -90,6 +90,9 @@ COPY --from=build --chown=node:node /app/assets ./assets
 COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
+# Каталог едет целиком: в нём и deploy/transfer-db.sh (разовый перенос БД на VPS,
+# запускается через RECOVER_CMD, docs/MIGRATION_VPS.md), и deploy/vps/ (серверу он
+# в образе не нужен, но лишним не мешает).
 COPY --from=build --chown=node:node /app/deploy ./deploy
 # Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-to-b2.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).

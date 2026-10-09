@@ -1,0 +1,110 @@
+# Деплой на VPS (переезд с Amvera, docs/MIGRATION_VPS.md): сборка образа →
+# ghcr.io → ssh на сервер → docker compose → ожидание здоровья → автооткат.
+#
+# ЛОГИ ЭТОГО РЕПОЗИТОРИЯ ПУБЛИЧНЫ. В выводе нет env, логов приложения и
+# персональных данных: всё, что работает с секретами и сервером, печатает только
+# статусы и числа (deploy/vps/ops.sh). `set -x` не использовать, .env не печатать.
+#
+# Пока не заданы секреты DEPLOY_HOST, DEPLOY_SSH_KEY и PROD_ENV, джоба зелёная
+# и ничего не делает: мерж в main не должен краснеть до настройки сервера.
+# Деплой идёт только с main (workflow_dispatch с другой ветки отсекается if'ом):
+# с чужой ветки на боевой сервер код не едет.
+name: Деплой на VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Идущий деплой не отменяем: обрыв посреди `compose up` хуже, чем очередь.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+    steps:
+      - name: Проверка секретов
+        id: gate
+        env:
+          HAS_PROD_ENV: ${{ secrets.PROD_ENV != '' }}
+        run: |
+          missing=""
+          [ -n "$DEPLOY_HOST" ] || missing="$missing DEPLOY_HOST"
+          [ -n "$DEPLOY_SSH_KEY" ] || missing="$missing DEPLOY_SSH_KEY"
+          [ "$HAS_PROD_ENV" = "true" ] || missing="$missing PROD_ENV"
+          if [ -n "$missing" ]; then
+            echo "::notice::VPS не настроен (нет секретов:$missing), деплой пропущен"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.configured == 'true'
+
+      - name: Имя образа
+        id: image
+        if: steps.gate.outputs.configured == 'true'
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+        if: steps.gate.outputs.configured == 'true'
+
+      - name: Вход в ghcr (сборка)
+        if: steps.gate.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Сборка и публикация образа
+        if: steps.gate.outputs.configured == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Настройка ssh
+        if: steps.gate.outputs.configured == 'true'
+        run: bash deploy/vps/ssh-setup.sh
+
+      - name: Копирование deploy/vps на сервер
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          ssh vps 'mkdir -p /opt/schemehappens'
+          scp -q deploy/vps/* vps:/opt/schemehappens/
+
+      - name: Запись .env из PROD_ENV
+        if: steps.gate.outputs.configured == 'true'
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV }}
+        run: printf '%s\n' "$PROD_ENV" | ssh vps 'bash /opt/schemehappens/ops.sh write-env'
+
+      # Токен ghcr едет на stdin; на сервере он живёт во временном каталоге
+      # настроек docker и стирается сразу после pull. Здоровье ждёт ops.sh
+      # (до 5 минут), при провале сам откатывается на release.prev и
+      # возвращает ненулевой код: джоба красная.
+      - name: Деплой, ожидание здоровья, автооткат
+        if: steps.gate.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          # shellcheck disable=SC2029  # IMAGE/sha/actor подставляем на клиенте намеренно; ops.sh перепроверяет формат
+          printf '%s\n' "$GH_TOKEN" | ssh vps "bash /opt/schemehappens/ops.sh deploy '$IMAGE' '$GITHUB_SHA' '$GITHUB_ACTOR'"
