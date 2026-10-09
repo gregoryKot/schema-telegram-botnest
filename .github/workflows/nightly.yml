@@ -270,7 +270,8 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09).
+        image: mirror.gcr.io/library/postgres:16
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: ci
