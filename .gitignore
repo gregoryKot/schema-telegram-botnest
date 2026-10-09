@@ -142,6 +142,11 @@ playwright.config.js
 playwright.config.d.ts
 playwright.config.js.map
 
+# Отчёт замера планов запросов (test/perf/run-plans.ts → scripts/check-query-plans.mjs).
+# Артефакт джобы `perf`, снимается на синтетике: в репозитории ему делать
+# нечего, планки живут в scripts/query-plan-baseline.json.
+/.perf
+
 # Кэш ts-jest: джоба backend задаёт JEST_CACHE_DIR=.jest-cache, и jest кладёт
 # его относительно rootDir (src/.jest-cache). В CI это ephemeral, а локально
 # тот же прогон оставляет тысячи файлов под `git status` — ровно то, что

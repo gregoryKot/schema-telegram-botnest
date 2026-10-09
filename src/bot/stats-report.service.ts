@@ -18,6 +18,7 @@ import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
+import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
 import { formatEnvCheckReport } from './env-check.format';
@@ -52,6 +53,7 @@ export class StatsReportService {
     private readonly signupSource: SignupSourceMetricsService,
     private readonly game: GameMetricsService,
     private readonly dataExport: DataExportMetricsService,
+    private readonly bookingRetention: BookingRetentionMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
@@ -77,6 +79,7 @@ export class StatsReportService {
       this.signupSource,
       this.game,
       this.dataExport,
+      this.bookingRetention,
     ];
     const parts = await Promise.all(blocks.map((b) => b.render()));
     parts.push(renderCalendarHealthBlock());

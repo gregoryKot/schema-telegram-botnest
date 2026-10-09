@@ -1,7 +1,9 @@
+import { DAY_INDEX_DEFINITION } from '../../../shared/src/onboarding/onboardingExplainers';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 
 const PARAGRAPHS = [
+  DAY_INDEX_DEFINITION,
   'Индекс не ставит цели: нет задачи достичь 10 или не опускаться ниже 7.',
   'Потребности не работают как светофор. Они меняются — в зависимости от того, что происходит, кто рядом, насколько получилось выспаться.',
   'День на 5–6, прожитый осознанно, ценнее дня на 9, прожитого на автопилоте. Дневник нужен не чтобы улучшить показатели — а чтобы лучше видеть себя.',

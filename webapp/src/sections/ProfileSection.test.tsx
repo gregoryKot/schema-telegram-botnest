@@ -143,6 +143,15 @@ describe('ProfileSection — реальные данные пользовате�
     expect(screen.getByText('Первый шаг')).toBeTruthy();
   });
 
+  it('«?» у «лучшего дня» — настоящая кнопка с именем, нажатие открывает пояснение', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    const help = screen.getByRole('button', { name: 'Что такое лучший день' });
+    expect(help.tagName).toBe('BUTTON');
+    fireEvent.click(help);
+    expect(screen.getByText('Становится точнее с каждой неделей.')).toBeTruthy();
+  });
+
   it('клик по карточке достижений открывает модалку со всеми достижениями', async () => {
     fillMocks();
     await act(async () => { renderSection(); });

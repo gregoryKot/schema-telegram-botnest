@@ -48,7 +48,11 @@ export function ModeStep({
                 fontSize: 11,
                 color: 'var(--text-faint)',
                 cursor: 'pointer',
-                padding: 0,
+                // Зона нажатия 44 по высоте; шрифт и цвет прежние.
+                display: 'inline-flex',
+                alignItems: 'center',
+                minHeight: 44,
+                padding: '0 4px',
               }}
             >
               История

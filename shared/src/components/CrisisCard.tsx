@@ -56,7 +56,12 @@ export function CrisisCardView({
             onClick={onHotlineTap}
             aria-label={`Позвонить на телефон доверия ${hotline.display}`}
             style={{
-              display: 'inline-block',
+              // Зона нажатия ≥ 44 по высоте: телефон доверия — самая важная
+              // цель нажатия в продукте (в палец не промахнуться в кризисе).
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 44,
+              padding: '12px 0',
               fontSize: hotline.audienceNote ? 14 : 17,
               fontWeight: 700,
               color: 'var(--accent)',

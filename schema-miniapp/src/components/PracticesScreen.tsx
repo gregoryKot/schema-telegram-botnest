@@ -1,3 +1,4 @@
+import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
 import { useState } from 'react';
 import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
@@ -130,7 +131,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         <div
           style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55 }}
         >
-          Практики — конкретные действия, которые наполняют потребность.
+          {buildPracticesIntro(tr)}
           {onOpenTracker && (
             <>
               {' '}

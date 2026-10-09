@@ -4,6 +4,7 @@ import { BookingCalendarAdminController } from './booking-calendar-admin.control
 import { PaymentController } from './payment.controller';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
+import { BookingRetentionService } from './booking-retention.service';
 import { SlotService } from './slot.service';
 import { AvailabilityService } from './availability.service';
 import { SlotOverrideService } from './slot-override.service';
@@ -32,6 +33,7 @@ export const BOOKING_CONTROLLERS = [
 export const BOOKING_PROVIDERS = [
   BookingService,
   BookingNotifyService,
+  BookingRetentionService,
   SlotService,
   AvailabilityService,
   SlotOverrideService,

@@ -1,0 +1,17 @@
+{
+  "scenarios": {
+    "history-30d": {
+      "blocks": 98,
+      "msCeiling": 500
+    },
+    "stats-report": {
+      "blocks": 112310,
+      "msCeiling": 10000
+    },
+    "therapist-clients": {
+      "blocks": 2980,
+      "msCeiling": 1500
+    }
+  },
+  "seqScanAllowed": {}
+}

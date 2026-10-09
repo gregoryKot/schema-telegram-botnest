@@ -59,11 +59,11 @@ function RecoveryRequest() {
   return (
     <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
       <div className="eyebrow u-mb14">Восстановление доступа</div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, marginBottom: 14 }}>Потерял доступ?</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, marginBottom: 14 }}>Нет доступа к аккаунту?</h1>
       <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 24 }}>
         {tr(
-          'Если у тебя был привязан и подтверждён recovery-email — введи его, мы пришлём ссылку для входа.',
-          'Если у вас был привязан и подтверждён recovery-email — введите его, мы пришлём ссылку для входа.',
+          'Если запасная почта для восстановления уже указана — введи её, мы пришлём ссылку для входа.',
+          'Если запасная почта для восстановления уже указана — введите её, мы пришлём ссылку для входа.',
         )}{' '}
         Иначе доступ к аккаунту восстановить нельзя.
       </div>

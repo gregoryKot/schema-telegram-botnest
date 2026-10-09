@@ -42,7 +42,7 @@ export function TrackerDoneSummary({
               marginBottom: 4,
             }}
           >
-            Индекс дня
+            Индекс дня · среднее из пяти оценок
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
             {avg.toFixed(1)}

@@ -374,6 +374,14 @@ jobs:
       # не эмулирует $executeRaw, поэтому тоже только тут.
       - name: e2e .ics для клиента на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
+      # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
+      # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
+      # в шифрованную колонку и обратное чтение через драйвер и decryptRecord —
+      # свойство Prisma, Postgres и crypto.ts, мок updateMany его не проверит;
+      # плюс граница окна считается СУБД, а колонка anonymizedAt приезжает новой
+      # миграцией (booking_pii_retention).
+      - name: e2e обезличивание броней по сроку на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт
@@ -426,6 +434,68 @@ jobs:
           test/payment-webhooks.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
+
+  # Производительность — единственная зона, которую аудиты проверяли чтением
+  # схемы, а не замером (docs/archive/PROJECT_AUDIT_ADDENDUM.md §3, находка D-4:
+  # «первый кандидат в узкое место»; docs/security/AUDIT_2026-08-12.md, M2/M3/
+  # H3/H4). Ни одного плана запроса никто не снимал. Разовый замер закрыл бы
+  # вопрос один раз, а следующая просадка снова была бы невидимой — правило без
+  # механизма не работает. Джоба сеет синтетику горизонта роста, прогоняет
+  # горячие пути РЕАЛЬНЫМИ сервисами, снимает EXPLAIN (ANALYZE, BUFFERS) с того
+  # SQL, который ушёл в базу через драйвер, и роняет PR на Seq Scan по большой
+  # таблице с большим отбросом строк, на повторный полный проход и на кратный
+  # рост числа страниц. Подробности и сам замер — docs/PERF_PLANS.md.
+  #
+  # Своя база, а не джоба `migrations`: там спеки /stats проверяют ПУСТОЕ
+  # состояние отчёта (правило №8), а здесь в базе миллионы строк синтетики —
+  # вместе они не живут.
+  perf:
+    runs-on: ubuntu-latest
+    # Сидер ~1 минута, замер ~1 минута; потолок — страховка от зависшего шага
+    # (правило №24: шаг, который висит, а не падает, — тоже поломка).
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npx prisma generate
+      # Синтетика «горизонт роста» (не ×10 от сегодняшних десятков юзеров: на
+      # двух тысячах строк Postgres законно выбирает Seq Scan, и гейт краснел бы
+      # на ПРАВИЛЬНЫХ планах). Данные детерминированы — иначе планка по
+      # страницам шумела бы от прогона к прогону.
+      - name: синтетика горизонта роста + ANALYZE
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts
+      - name: EXPLAIN (ANALYZE, BUFFERS) по горячим путям
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/run-plans.ts
+      - run: node scripts/check-query-plans.mjs
+      # Отчёт с планами — артефактом: по красной джобе должно быть видно, какой
+      # именно запрос и какой план, не переспрашивая CI.
+      - name: отчёт замера артефактом
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: query-plans
+          path: .perf/plans.json
+          if-no-files-found: warn
 
   webapp:
     runs-on: ubuntu-latest
@@ -504,6 +574,12 @@ jobs:
       # ошибки в консоли). Абсолютный, без бейслайна: #520 вычистил класс
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
+      # Храповик мелких тап-целей (дизайн-аудит 2026-08, К3): правило «цель
+      # ≥ 44×44» из CLAUDE.md чинили в #397 без гейта, и класс вернулся.
+      # Считает квадратные интерактивные элементы с inline width И height
+      # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
+      # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
+      - run: node scripts/check-tap-targets.mjs
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно

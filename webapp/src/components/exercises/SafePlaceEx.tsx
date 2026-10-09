@@ -210,7 +210,7 @@ export function SafePlaceEx({
             className={'paper-input ' + (overview.trim() ? 'is-filled' : '')}
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
-            placeholder="Например: небольшая полянка в лесу, где играл в детстве…"
+            placeholder="Например: небольшая полянка в лесу, где было спокойно в детстве…"
           />
         </div>
       </div>

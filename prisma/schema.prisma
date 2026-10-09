@@ -16,10 +16,19 @@ model Rating {
 
   @@unique([userId, date, needId])
   @@index([userId, date])
-  // Индекс по голому date (аудит M2): /stats фильтрует Rating по date без
-  // userId (COUNT DISTINCT userId за день, ретеншен-GROUP BY), и userId-ведущий
-  // индекс выше для этого не годится — был seq-scan самой растущей таблицы.
-  @@index([date])
+  // Индекс под фильтр по date без userId (/stats: COUNT DISTINCT userId за
+  // день, ретеншен-GROUP BY) — userId-ведущий индекс выше для этого не годится.
+  //
+  // Был `@@index([date])` (аудит M2, 2026-08). Замер планов на синтетике
+  // горизонта роста (docs/PERF_PLANS.md) показал, что одной колонки мало:
+  // индекс находил строки, а `userId` всё равно читался из таблицы —
+  // `COUNT(DISTINCT "userId") WHERE date = $1` трогал 9402 страницы за 70 мс.
+  // Со второй колонкой тот же запрос идёт Index Only Scan: 33 страницы, 2 мс
+  // (×285 по страницам). Индексов по-прежнему два, не три: `[date, userId]`
+  // обслуживает всё, что обслуживал `[date]` (date — ведущая колонка), так что
+  // второй индекс заменён, а не добавлен — лишняя запись на каждый INSERT
+  // в самую растущую таблицу нам не нужна.
+  @@index([date, userId])
 }
 
 model YsqProgress {
@@ -794,6 +803,12 @@ model Booking {
   // Legal: when the client accepted the public offer (consent checkbox) — proof
   // of the basis on which payment is taken. Not encrypted (a timestamp only).
   acceptedOfferAt  DateTime?
+  // Обезличивание по сроку (решение владельца 2026-10-08, находка L3 аудита
+  // 2026-07-20): через 12 месяцев после даты сессии имя, контакт и текст
+  // запроса затираются кроном (booking-retention.service.ts), а факт записи —
+  // дата, тип, согласие с офертой — остаётся. Непустое значение = строка уже
+  // обезличена, повторно крон её не берёт.
+  anonymizedAt    DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?

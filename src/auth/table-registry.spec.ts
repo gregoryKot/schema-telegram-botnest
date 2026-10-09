@@ -136,8 +136,12 @@ const OTHER_MODELS: Record<string, string> = {
   // формулировкой запрещено (правило №15).
   Donation:
     'ДОЛГ: email плательщика вне контура удаления аккаунта — пожертвование анонимно, связи с User нет, удаление только по запросу вручную',
+  // Решение владельца 2026-10-08 (находка L3 аудита 2026-07-20): не удаление
+  // по аккаунту, а ретенция по сроку. Привязки к аккаунту у брони нет вовсе —
+  // clientTelegramId с C-9 не записывается, форма записи публичная, — поэтому
+  // «удалять вместе с аккаунтом» нечем, а ретенция покрывает ВСЕ брони.
   Booking:
-    'ДОЛГ: имя, контакт и свободный текст запроса вне контура удаления аккаунта — запись публичная, без авторизации, удаление по запросу вручную; связь с Telegram-id (clientTelegramId) при удалении аккаунта обнуляется (account.delete.ts)',
+    'ретенция по сроку (решение 2026-10-08): имя, контакт и текст запроса затирает крон через 12 месяцев после сессии (booking-retention.service.ts), факт записи — дата, тип, согласие с офертой — остаётся; легаси clientTelegramId при удалении аккаунта обнуляется (account.delete.ts)',
   ClientMeeting:
     'ДОЛГ: clientKey = sha256(контакта) вне контура удаления аккаунта — встреча заводится от записи, связи с User нет',
   AvailabilityRule:
@@ -188,5 +192,105 @@ describe('Классификация моделей: ни одна не оста
       )
       .map(([m]) => m);
     expect(vague).toEqual([]);
+  });
+});
+
+// ─── Вторичные ссылки на человека: BigInt-колонка мимо `userId` ─────────────
+//
+// В этой схеме `BigInt` означает ровно одно: идентификатор человека (ключи
+// остальных моделей — `Int @default(autoincrement())`). А проверки выше
+// смотрят только на `userId` и на пару `therapistId`/`clientId` — колонка, где
+// человек стоит под ДРУГИМ именем, для них не существует. Так жил
+// `Subscription.telegramId` (аудит 2026-09), и так же жили две оси билета
+// входа (находка L3 аудита 2026-07-20): `shownToTelegramId` не чистил никто, а
+// `approvedUserId` переназначался при слиянии, но не удалялся вместе с
+// аккаунтом.
+//
+// Поэтому гейт требует КЛАССИФИКАЦИИ, а не ищет признак (правило №17): гейт,
+// ищущий признак, молчит о том, чего не знает. Каждая BigInt-колонка мимо
+// `userId` обязана стоять здесь с объяснением, кто её обрабатывает при
+// удалении и при слиянии. Новая такая колонка роняет тест.
+const PERSON_REF_COLUMNS: Record<string, string> = {
+  'Booking.clientTelegramId':
+    'удаление — обнуляется в account.delete.ts; слияние не нужно: с C-9 колонка не записывается вообще, живых значений не появляется',
+  'LoginTicket.approvedUserId':
+    'удаление — deleteMany по этой оси в account.delete.ts (L3); слияние — remapAssignerRefs переназначает на target',
+  'LoginTicket.shownToTelegramId':
+    'удаление — deleteMany по этой оси в account.delete.ts (L3); слияние не нужно: билет живёт 5 минут, переносить нечего',
+  'Pair.userId1':
+    'удаление — pair.deleteMany по OR двух колонок; слияние — отдельные UPDATE в merge.service (у Pair нет колонки userId)',
+  'Pair.userId2':
+    'удаление — pair.deleteMany по OR двух колонок; слияние — отдельные UPDATE в merge.service (у Pair нет колонки userId)',
+  'Subscription.telegramId':
+    'удаление — subscription.deleteMany по адресу в Telegram (не по userId: после слияния они расходятся); слияние — merge-subscriptions.ts',
+  'TherapistRequest.reviewedBy':
+    'ДОЛГ: кто рассмотрел заявку — это владелец проекта (ADMIN_ID), и при удалении ЕГО аккаунта id останется в чужих строках. Заявителя удаление достаёт по userId, рассматривающего — нет',
+  'UserTask.assignedBy':
+    'ДОЛГ: удаление достаёт только задания офлайн-клиентов (userId < 0, аудит 2026-10 T8) — у задания живого клиента id ушедшего психолога остаётся; слияние — remapAssignerRefs',
+};
+
+describe('Вторичные ссылки на человека (BigInt мимо колонки userId)', () => {
+  // `userId` покрыт проверками выше, `therapistId`/`clientId` — трипвайером
+  // therapist-side моделей, `User.id` — сам субъект данных.
+  const COVERED_ELSEWHERE = new Set(['userId', 'therapistId', 'clientId']);
+  const bigIntColumns: string[] = [];
+  const modelRe = /model\s+(\w+)\s+\{([\s\S]*?)\n\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = modelRe.exec(schema)) !== null) {
+    const [, model, body] = m;
+    for (const line of body.split('\n')) {
+      // `(\s|$)`, а не `\s`: строка уже отрезана от перевода строки, и у
+      // колонки без атрибутов (`userId2        BigInt?`) справа ничего нет —
+      // с одним `\s` парсер пропускал ровно те колонки, за которыми пришёл.
+      const field = /^\s*(\w+)\s+BigInt\??(\s|$)/.exec(line);
+      if (!field) continue;
+      const column = field[1];
+      if (COVERED_ELSEWHERE.has(column)) continue;
+      if (model === 'User' && column === 'id') continue;
+      bigIntColumns.push(`${model}.${column}`);
+    }
+  }
+
+  it('sanity: парсер находит вторичные ссылки', () => {
+    expect(bigIntColumns).toEqual(
+      expect.arrayContaining(['Subscription.telegramId', 'Pair.userId1']),
+    );
+  });
+
+  it('каждая вторичная ссылка классифицирована', () => {
+    const unclassified = bigIntColumns.filter(
+      (c) => !(c in PERSON_REF_COLUMNS),
+    );
+    expect({
+      unclassified,
+      подсказка:
+        'BigInt в этой схеме = идентификатор человека. Колонку мимо userId ' +
+        'реестры удаления и слияния не видят — классифицируй её в ' +
+        'PERSON_REF_COLUMNS: кто обрабатывает при удалении и при слиянии',
+    }).toEqual({ unclassified: [], подсказка: expect.any(String) });
+  });
+
+  it('нет протухших записей (колонка удалена или переименована)', () => {
+    const known = new Set(bigIntColumns);
+    const stale = Object.keys(PERSON_REF_COLUMNS).filter((c) => !known.has(c));
+    expect(stale).toEqual([]);
+  });
+
+  it('у каждой записи внятная причина', () => {
+    const vague = Object.entries(PERSON_REF_COLUMNS)
+      .filter(
+        ([, why]) => why.trim().length < 20 || /^(legacy|потом)/i.test(why),
+      )
+      .map(([c]) => c);
+    expect(vague).toEqual([]);
+  });
+
+  // Трипвайер на сами оси билета входа: причина выше обещает deleteMany в
+  // транзакции удаления — проверяем, что он там действительно есть, иначе
+  // запись в реестре стала бы обещанием без исполнения.
+  it('оси билета входа действительно чистятся в account.delete.ts', () => {
+    const src = readFileSync(join(ROOT, 'src/bot/account.delete.ts'), 'utf8');
+    expect(src.includes('shownToTelegramId')).toBe(true);
+    expect(src.includes('approvedUserId')).toBe(true);
   });
 });

@@ -75,7 +75,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       eyebrow={`Дневник благодарности · ${dateLabel}`}
       eyebrowColor="var(--c-moss)"
       title={<>Три вещи,<br /><span className="it">за которые сегодня – спасибо</span></>}
-      lede="Даже самое маленькое. Особенно – самое маленькое. Запоминается то, что назвал."
+      lede="Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки."
       aside={
         <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--c-moss) 25%, transparent)', background: 'color-mix(in srgb, var(--c-moss) 3%, transparent)', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Почему это работает</div>

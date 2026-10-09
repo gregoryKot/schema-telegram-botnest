@@ -7,6 +7,7 @@ import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api, reportClientError } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { hitboxStyle } from '../utils/hitbox';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
 import { CompletionScreen } from './trackerOverlay/CompletionScreen';
@@ -171,28 +172,32 @@ export function TrackerOverlay({
 
   const steps = (
     <div className="u-ac6">
-      {needs.map((n, i) => (
-        <button
-          key={n.id}
-          onClick={() => setIdx(i)}
-          aria-label={n.chartLabel}
-          style={{
-            width: i === idx ? 22 : 6,
-            height: 6,
-            borderRadius: 3,
-            border: 'none',
-            padding: 0,
-            background:
-              i === idx
-                ? (COLORS[n.id] ?? 'var(--accent)')
-                : (effectiveRatings[n.id] ?? 0) > 0
-                  ? 'rgba(var(--fg-rgb),0.3)'
-                  : 'rgba(var(--fg-rgb),0.12)',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        />
-      ))}
+      {needs.map((n, i) => {
+        // Зона 24 (не 44): шаг точек 12px, шире соседей перекроют друг друга.
+        const dotW = i === idx ? 22 : 6;
+        return (
+          <button
+            key={n.id}
+            onClick={() => setIdx(i)}
+            aria-label={n.chartLabel}
+            style={hitboxStyle(dotW, 6, 24).outer}
+          >
+            <div
+              style={{
+                ...hitboxStyle(dotW, 6, 24).inner,
+                borderRadius: 3,
+                background:
+                  i === idx
+                    ? (COLORS[n.id] ?? 'var(--accent)')
+                    : (effectiveRatings[n.id] ?? 0) > 0
+                      ? 'rgba(var(--fg-rgb),0.3)'
+                      : 'rgba(var(--fg-rgb),0.12)',
+                transition: 'all 0.2s',
+              }}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -242,30 +247,30 @@ export function TrackerOverlay({
           <button
             onClick={onOpenNote}
             aria-label="Заметка"
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 'var(--r-6)',
-              display: 'grid',
-              placeItems: 'center',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-            }}
+            style={hitboxStyle(30, 30, 44).outer}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <span
+              style={{
+                ...hitboxStyle(30, 30, 44).inner,
+                borderRadius: 'var(--r-6)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--text-faint)',
+              }}
             >
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+              </svg>
+            </span>
           </button>
         )}
         {onOpenHistory && (
@@ -275,30 +280,30 @@ export function TrackerOverlay({
               goBack();
             }}
             aria-label="История"
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 'var(--r-6)',
-              display: 'grid',
-              placeItems: 'center',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-            }}
+            style={hitboxStyle(30, 30, 44).outer}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <span
+              style={{
+                ...hitboxStyle(30, 30, 44).inner,
+                borderRadius: 'var(--r-6)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--text-faint)',
+              }}
             >
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </span>
           </button>
         )}
       </div>
