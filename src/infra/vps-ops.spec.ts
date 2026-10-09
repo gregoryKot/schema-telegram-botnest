@@ -34,6 +34,25 @@ case "$*" in
     fi ;;
   *" port db 5432"*) [ "\${FAKE_PORT_OPEN:-0}" = "1" ] || exit 1; echo "0.0.0.0:5432" ;;
   "images "*) ;;
+  # docker run вне compose — проверка внешнего подключения (external-db-check).
+  "run --rm --network host"*)
+    printf '%s' "$DATABASE_URL" > "$FAKE_URL_FILE"
+    printf '%s' "\${FAKE_CHECK_OUT:-}"
+    exit "\${FAKE_CHECK_EXIT:-0}" ;;
+  *" exec -T db psql"*information_schema*) echo "\${FAKE_TABLES:-0}" ;;
+  *" exec -T db psql"*"count(*) FROM _prisma_migrations"*) echo "\${FAKE_MIGS:-0}" ;;
+  *" exec -T db psql"*'FROM "User"'*) echo "\${FAKE_USERS:-0}" ;;
+  # compose run — контейнер восстановления. FAKE_RUN_EXEC=1: выполнить его
+  # скрипт (-c) по-настоящему в $FAKE_RUN_CWD с поддельными scripts/*.sh.
+  *" run --rm --no-deps"*)
+    if [ -n "\${FAKE_RUN_EXEC:-}" ]; then
+      script=""; prev=""
+      for a in "$@"; do [ "$prev" = "-c" ] && script=$a; prev=$a; done
+      cd "$FAKE_RUN_CWD" && DATABASE_URL="postgresql://postgres:RUNSECRETPW@db:5432/schemehappens" bash -c "$script"
+      exit $?
+    fi
+    printf '%s\n' "\${FAKE_RUN_OUT:-}"
+    exit "\${FAKE_RUN_EXIT:-0}" ;;
 esac
 exit 0
 `;
@@ -51,7 +70,7 @@ describe('deploy/vps/ops.sh', () => {
     mkdirSync(bin);
     mkdirSync(base);
     writeFileSync(join(bin, 'docker'), FAKE_DOCKER, { mode: 0o755 });
-    for (const f of ['ops.sh', 'dc.sh']) {
+    for (const f of ['ops.sh', 'dc.sh', 'external-db-check.sh']) {
       copyFileSync(join(process.cwd(), 'deploy', 'vps', f), join(base, f));
     }
     writeFileSync(join(base, 'db.env'), 'POSTGRES_PASSWORD=pw\n');
@@ -71,6 +90,7 @@ describe('deploy/vps/ops.sh', () => {
         PATH: `${bin}:${process.env.PATH}`,
         SCHEMEHAPPENS_DIR: base(),
         FAKE_LOG: log,
+        FAKE_URL_FILE: join(dir, 'db-url'),
         FAKE_HEALTHY: NEW,
         OPS_HEALTH_LIMIT: '2',
         OPS_HEALTH_POLL: '1',
@@ -257,6 +277,216 @@ describe('deploy/vps/ops.sh', () => {
     expect(ops(['transfer-close']).status).toBe(0);
     expect(existsSync(join(base(), 'TRANSFER_OPEN'))).toBe(false);
     expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true); // приложение отпускает только release-hold
+  });
+
+  describe('restore-b2 (план Б: восстановление из бэкапа B2)', () => {
+    const HOLD = () => writeFileSync(join(base(), 'HOLD_APP'), '');
+    const runCalls = () =>
+      dockerLog()
+        .split('\ndocker ')
+        .filter((l) => /\brun --rm --no-deps\b/.test(l));
+    const READY = {
+      FAKE_RUN_OUT:
+        '[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 123 байт, дата 2026-10-09',
+      FAKE_MIGS: '250',
+      FAKE_USERS: '7',
+    };
+
+    it('без HOLD_APP отказывается и ничего не запускает', () => {
+      seedRelease(NEW);
+
+      const res = ops(['restore-b2'], READY);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('нужен HOLD_APP');
+      expect(dockerLog()).toBe('');
+    });
+
+    it('без релиза: понятная ошибка «сначала деплой», контейнер не запускается', () => {
+      HOLD();
+
+      const res = ops(['restore-b2'], READY);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('сначала деплой');
+      expect(runCalls()).toHaveLength(0);
+    });
+
+    it('в базе уже есть таблицы → отказ, заливка не начата, схему не трогали', () => {
+      seedRelease(NEW);
+      HOLD();
+
+      const res = ops(['restore-b2'], { ...READY, FAKE_TABLES: '12' });
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toMatch(/ОТКАЗ: в базе уже есть таблицы \(всего 12\)/);
+      expect(runCalls()).toHaveLength(0);
+      expect(dockerLog()).not.toContain('DROP SCHEMA');
+    });
+
+    it('счастливый путь: db поднята, контейнер с --entrypoint, числа и имя файла в выводе, HOLD_APP остаётся', () => {
+      seedRelease(NEW);
+      HOLD();
+
+      const res = ops(['restore-b2'], READY);
+
+      expect(res.status).toBe(0);
+      expect(dockerLog()).toMatch(/up -d db\n/);
+      const calls = runCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatch(
+        /run --rm --no-deps -T --entrypoint bash app -c /,
+      );
+      expect(calls[0]).toContain('scripts/fetch-latest-b2.sh');
+      expect(calls[0]).toContain('scripts/restore-backup.sh');
+      expect(res.stdout).toContain('schemehappens-2026-10-09.sql.gz.enc');
+      expect(res.stdout).toContain('строк в _prisma_migrations: 250');
+      expect(res.stdout).toContain('строк в "User": 7');
+      expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true);
+      expect(dockerLog()).not.toContain('DROP SCHEMA');
+      // приложение не поднимали
+      expect(dockerLog()).not.toMatch(/up -d .* app/);
+    });
+
+    it('контейнер упал → неполная заливка сброшена, код 1, HOLD_APP на месте', () => {
+      seedRelease(NEW);
+      HOLD();
+
+      const res = ops(['restore-b2'], { ...READY, FAKE_RUN_EXIT: '1' });
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('восстановление из B2 не удалось');
+      expect(dockerLog()).toContain('DROP SCHEMA public CASCADE');
+      expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true);
+    });
+
+    it('после «успеха» в _prisma_migrations пусто → код 1 (бэкап не от этого приложения)', () => {
+      seedRelease(NEW);
+      HOLD();
+
+      const res = ops(['restore-b2'], { ...READY, FAKE_MIGS: '0' });
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('в _prisma_migrations нет строк');
+    });
+
+    describe('скрипт внутри контейнера (выполняется по-настоящему)', () => {
+      let app: string;
+      beforeEach(() => {
+        app = join(dir, 'app');
+        mkdirSync(join(app, 'scripts'), { recursive: true });
+        writeFileSync(
+          join(app, 'scripts', 'fetch-latest-b2.sh'),
+          '#!/bin/bash\nmkdir -p "$1"; : > "$1/schemehappens-2026-10-09.sql.gz.enc"\n' +
+            'echo "[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 5 байт, дата 2026-10-09"\n',
+        );
+        writeFileSync(
+          join(app, 'scripts', 'restore-backup.sh'),
+          [
+            '#!/bin/bash',
+            'echo "CREATE TABLE"; echo "[restore] контрольная сумма сошлась"',
+            'if [ -n "${RESTORE_FAIL:-}" ]; then',
+            '  echo "psql:x.sql:5: ERROR:  invalid input syntax for type integer" >&2',
+            '  echo "CONTEXT:  COPY User, line 1: \\"СТРОКА-ИЗ-ТАБЛИЦЫ\\"" >&2',
+            '  echo "DETAIL:  Key (email)=(СТРОКА-ИЗ-ТАБЛИЦЫ) already exists." >&2',
+            '  exit 1',
+            'fi',
+            'echo "[restore] готово — БД заполнена из $1"',
+          ].join('\n'),
+        );
+        seedRelease(NEW);
+        HOLD();
+      });
+      const exec = (env: Record<string, string> = {}) =>
+        ops(['restore-b2'], {
+          ...READY,
+          FAKE_RUN_EXEC: '1',
+          FAKE_RUN_CWD: app,
+          ...env,
+        });
+
+      it('успех: имя восстановленного файла печатается, шум заливки — нет, адрес базы — нет', () => {
+        const res = exec();
+
+        expect(res.status).toBe(0);
+        expect(res.stdout).toContain(
+          'восстановлен файл: schemehappens-2026-10-09.sql.gz.enc',
+        );
+        expect(res.stdout).toContain('[restore] готово');
+        expect(res.stdout).not.toContain('CREATE TABLE');
+        expect(res.stdout + res.stderr).not.toContain('RUNSECRETPW');
+      });
+
+      it('ошибка заливки: наружу только строки ERROR, без CONTEXT/DETAIL со значениями из таблиц', () => {
+        const res = exec({ RESTORE_FAIL: '1' });
+
+        expect(res.status).toBe(1);
+        expect(res.stderr).toContain('ERROR:  invalid input syntax');
+        expect(res.stdout + res.stderr).not.toContain('СТРОКА-ИЗ-ТАБЛИЦЫ');
+        expect(res.stdout + res.stderr).not.toContain('RUNSECRETPW');
+        expect(dockerLog()).toContain('DROP SCHEMA public CASCADE');
+      });
+    });
+  });
+
+  describe('external-db-check', () => {
+    const PW = 'pwSECRET0123456789abcdef';
+    const IP = '203.0.113.7';
+    const URL = `postgresql://postgres:${PW}@${IP}:5432/schemehappens?sslmode=require&uselibpqcompat=true&sslaccept=accept_invalid_certs`;
+    beforeEach(() => {
+      writeFileSync(join(base(), 'db.env'), `POSTGRES_PASSWORD=${PW}\n`);
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'TRANSFER_OPEN'), '');
+    });
+    const check = (env: Record<string, string> = {}) =>
+      ops(['external-db-check'], { OPS_PUBLIC_IP: IP, ...env });
+
+    it('собирает строку для Amvera (публичный IP, пароль из db.env, три параметра TLS), а наружу её не отдаёт', () => {
+      const res = check({
+        FAKE_CHECK_OUT: '[db-check] 1/3 prisma migrate status: ok\n',
+      });
+
+      expect(res.status).toBe(0);
+      expect(readFileSync(join(dir, 'db-url'), 'utf8')).toBe(URL);
+      const all = res.stdout + res.stderr + dockerLog();
+      expect(all).not.toContain(PW);
+      expect(all).not.toContain('postgresql://');
+      expect(res.stdout).toContain('[db-check] 1/3');
+      expect(dockerLog()).toMatch(
+        new RegExp(
+          `docker run --rm --network host -e DATABASE_URL -v \\S+/external-db-check.sh:/tmp/external-db-check.sh:ro --entrypoint bash ghcr.io/owner/repo:${NEW} /tmp/external-db-check.sh`,
+        ),
+      );
+    });
+
+    it('проверка не прошла → код 1', () => {
+      const res = check({ FAKE_CHECK_EXIT: '1' });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('проверка внешнего подключения не прошла');
+    });
+
+    it('порт закрыт (нет TRANSFER_OPEN) → отказ без запуска контейнера', () => {
+      rmSync(join(base(), 'TRANSFER_OPEN'));
+      const res = check();
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('сначала op=transfer-open');
+      expect(dockerLog()).not.toContain('docker run');
+    });
+
+    it('без релиза → «сначала деплой»', () => {
+      rmSync(join(base(), 'release'));
+      const res = check();
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('сначала деплой');
+    });
+
+    it('пароль с символами, ломающими URL → отказ, а не битая строка', () => {
+      writeFileSync(join(base(), 'db.env'), 'POSTGRES_PASSWORD=p@ss/word\n');
+      const res = check();
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('кодировать в URL');
+      expect(res.stdout + res.stderr).not.toContain('p@ss');
+    });
   });
 
   it('transfer-close падает, если порт 5432 всё ещё опубликован', () => {

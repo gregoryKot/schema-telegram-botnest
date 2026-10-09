@@ -96,7 +96,9 @@ COPY --from=build --chown=node:node /app/BUILD_INFO ./
 COPY --from=build --chown=node:node /app/deploy ./deploy
 # Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-to-b2.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
-COPY --from=build --chown=node:node /app/scripts/backup-to-b2.sh /app/scripts/restore-backup.sh ./scripts/
+# fetch-latest-b2.sh скачивает свежий бэкап из B2 (op=restore-b2, docs/MIGRATION_VPS.md);
+# b2-api.sh — общий вход в B2, его подключают backup-to-b2.sh и fetch-latest-b2.sh.
+COPY --from=build --chown=node:node /app/scripts/backup-to-b2.sh /app/scripts/restore-backup.sh /app/scripts/fetch-latest-b2.sh /app/scripts/b2-api.sh ./scripts/
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)
 USER node
