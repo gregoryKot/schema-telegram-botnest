@@ -209,12 +209,106 @@ cmd_transfer_close() {
   log "порт 5432 снаружи закрыт"
 }
 
-cmd_transfer_check() {
-  q() { dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$1" 2> /dev/null || echo "нет данных (таблицы нет?)"; }
+# Запрос к базе в db-контейнере; при сбое печатает заглушку, а не падает.
+q() { dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$1" 2> /dev/null || echo "нет данных (таблицы нет?)"; }
+
+print_counts() {
   log "строк в _prisma_migrations: $(q 'SELECT count(*) FROM _prisma_migrations')"
   log "строк в \"User\": $(q 'SELECT count(*) FROM "User"')"
+}
+
+cmd_transfer_check() {
+  print_counts
   log "последние миграции:"
   q 'SELECT migration_name FROM _prisma_migrations ORDER BY started_at DESC LIMIT 3'
+}
+
+# Скрипт для контейнера app: скачать свежий бэкап из B2 и залить в базу. Ошибки
+# psql фильтруются до строк с ERROR/FATAL (CONTEXT/DETAIL несут значения из
+# таблиц, а логи Actions публичны); весь остальной вывод заливки уходит в файл.
+# shellcheck disable=SC2016  # переменные раскрывает bash внутри контейнера, не здесь
+RESTORE_B2_INNER='set -Eeuo pipefail
+d=$(mktemp -d)
+bash scripts/fetch-latest-b2.sh "$d"
+f=$(ls "$d"/*.sql.gz.enc)
+if ! bash scripts/restore-backup.sh "$f" "$DATABASE_URL" > "$d/out" 2> "$d/err"; then
+  grep -hE "ERROR|FATAL" "$d/err" | cut -c1-200 | head -5 >&2 || true
+  echo "[restore-b2] заливка не прошла" >&2
+  exit 1
+fi
+grep -hE "^\[restore\] (контрольная|готово)" "$d/out" || true
+echo "[restore-b2] восстановлен файл: $(basename "$f")"'
+
+# План Б (docs/MIGRATION_VPS.md): основная база недоступна, поднимаем из
+# ночного бэкапа в B2. Только в пустую базу и только пока приложение держит
+# HOLD_APP; после успеха флаг остаётся (приложение поднимает release-hold).
+cmd_restore_b2() {
+  lock
+  require_ready
+  [ -e HOLD_APP ] || die "нужен HOLD_APP (op=transfer-open или свежий bootstrap): восстанавливать можно только при остановленном приложении"
+  { [ -s image ] && [ -s release ]; } || die "релиза нет: сначала деплой (push в main или deploy-vps.yml), контейнеру восстановления нужен образ приложения"
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  local tables
+  tables=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')") \
+    || die "не прочитать список таблиц в базе"
+  [ "$tables" = "0" ] || die "ОТКАЗ: в базе уже есть таблицы (всего $tables), заливку не начинаю, ничего не изменено"
+  log "база пуста, качаю свежий бэкап из B2 и заливаю"
+  # -T: у ssh из Actions нет tty; --entrypoint обходит CMD образа (entrypoint.mjs
+  # поднял бы приложение); --no-deps: db уже поднята и проверена.
+  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_B2_INNER"; then
+    # Приёмник до заливки был пуст (проверено выше): убираем только свой огрызок.
+    dc exec -T db psql -U postgres -d schemehappens -X -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public' > /dev/null 2>&1 \
+      || log "не удалось сбросить неполную заливку: очистите базу вручную перед повтором"
+    die "восстановление из B2 не удалось, неполная заливка сброшена; причина в строках выше"
+  fi
+  print_counts
+  local migs
+  migs=$(q 'SELECT count(*) FROM _prisma_migrations')
+  if ! { [[ "$migs" =~ ^[0-9]+$ ]] && [ "$migs" -gt 0 ]; }; then
+    die "после заливки в _prisma_migrations нет строк: бэкап не похож на базу приложения"
+  fi
+  log "восстановлено, HOLD_APP остаётся. Дальше: op=transfer-check, затем op=release-hold (или внешняя база для Amvera: op=external-db-check)"
+}
+
+# Строка подключения для приложения на Amvera: те же параметры, что в
+# docs/MIGRATION_VPS.md. sslmode=require + uselibpqcompat=true: node-pg иначе
+# проверяет сертификат как verify-full и падает на самоподписанном; sslaccept —
+# то же для Rust-движка Prisma (migrate deploy).
+EXTERNAL_DB_QUERY='sslmode=require&uselibpqcompat=true&sslaccept=accept_invalid_certs'
+
+public_ip() {
+  local ip="${OPS_PUBLIC_IP:-}"
+  # OPS_PUBLIC_IP — только для теста (src/infra/vps-ops.spec.ts).
+  [ -n "$ip" ] || ip=$(curl -fsS --max-time 10 https://api.ipify.org 2> /dev/null || true)
+  [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] \
+    || ip=$(ip -4 -o addr show scope global 2> /dev/null | awk '{ sub(/\/.*/, "", $4); print $4; exit }')
+  [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+  printf '%s' "$ip"
+}
+
+# Проверяет ровно ту строку, которую владелец поставит в Amvera, но изнутри
+# контейнера приложения на хосте сервера (--network host): дорога до порта
+# 5432 та же, что у внешнего клиента, кроме сети провайдера. Пароль и URL не
+# печатаются (см. external-db-check.sh).
+cmd_external_db_check() {
+  require_ready
+  { [ -s image ] && [ -s release ]; } || die "релиза нет: сначала деплой, проверке нужен образ приложения"
+  [ -e TRANSFER_OPEN ] || die "порт 5432 закрыт: сначала op=transfer-open"
+  [ -f external-db-check.sh ] || die "нет external-db-check.sh рядом с ops.sh"
+  local ip pw
+  ip=$(public_ip) || die "не определить публичный IP сервера"
+  pw=$(grep -m1 '^POSTGRES_PASSWORD=' db.env | cut -d= -f2-)
+  [[ "$pw" =~ ^[A-Za-z0-9._~-]+$ ]] || die "пароль в db.env пуст или с символами, которые надо кодировать в URL"
+  log "проверяю подключение к $ip:5432 так, как будет подключаться Amvera"
+  # URL с паролем живёт только в окружении этого процесса: в аргументы docker
+  # (а значит, в ps и логи) он не попадает, `-e DATABASE_URL` берёт его отсюда.
+  DATABASE_URL="postgresql://postgres:${pw}@${ip}:5432/schemehappens?${EXTERNAL_DB_QUERY}" \
+    docker run --rm --network host -e DATABASE_URL \
+    -v "$BASE/external-db-check.sh:/tmp/external-db-check.sh:ro" \
+    --entrypoint bash "$(cat image):$(cat release)" /tmp/external-db-check.sh \
+    || die "проверка внешнего подключения не прошла, причина в строках выше"
+  log "внешнее подключение работает"
 }
 
 cmd_release_hold() {
@@ -238,6 +332,8 @@ case "${1:-}" in
   transfer-open) cmd_transfer_open ;;
   transfer-close) cmd_transfer_close ;;
   transfer-check) cmd_transfer_check ;;
+  restore-b2) cmd_restore_b2 ;;
+  external-db-check) cmd_external_db_check ;;
   release-hold) cmd_release_hold ;;
   *) die "неизвестная операция" ;;
 esac

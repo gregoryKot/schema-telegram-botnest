@@ -16,7 +16,8 @@
 #                           может не отдать и env.
 #   B2_KEY_ID, B2_APP_KEY   Backblaze → Application Keys (ключ только на этот
 #                           бакет, права: listBuckets, listFiles, writeFiles,
-#                           deleteFiles)
+#                           deleteFiles; для скачивания при аварии
+#                           scripts/fetch-latest-b2.sh нужно ещё readFiles)
 #   B2_BUCKET               имя приватного бакета
 # Необязательные:
 #   BACKUP_RETENTION_DAYS   сколько дней хранить (по умолчанию 90, минимум 7)
@@ -42,7 +43,8 @@
 #
 # Вывод: последняя строка stdout — `[backup] ok <файл>`; при сбое stderr
 # содержит `[backup] FAILED <причина>` и код выхода ≠ 0.
-# Восстановление — scripts/restore-backup.sh.
+# Восстановление — scripts/restore-backup.sh; свежий файл из бакета скачивает
+# scripts/fetch-latest-b2.sh (общая часть работы с B2 — scripts/b2-api.sh).
 
 set -Eeuo pipefail
 
@@ -73,8 +75,9 @@ if [ "$SKIP_UPLOAD" != "1" ]; then
   need B2_BUCKET
 fi
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
-[[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ] ||
+if ! { [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ]; }; then
   fail "BACKUP_RETENTION_DAYS должно быть целым числом не меньше 7"
+fi
 
 DATE=$(date -u +%Y-%m-%d)
 NAME="$PREFIX$DATE.sql.gz.enc"
@@ -112,40 +115,9 @@ if [ "$SKIP_UPLOAD" = "1" ]; then
 fi
 
 # ── B2: родной API через curl (в образе нет ни b2, ни aws CLI) ────────────────
-B2_AUTH_URL="${B2_AUTH_URL:-https://api.backblazeb2.com/b2api/v3/b2_authorize_account}"
-CURL_OPTS=(-sS --fail-with-body --max-time 120)
-
-# Значение по пути из JSON со stdin: json_get apiInfo.storageApi.apiUrl
-json_get() {
-  node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{let v;try{v=JSON.parse(d);for(const k of process.argv[1].split("."))v=v==null?v:v[k]}catch{process.exit(1)}process.stdout.write(v==null?"":String(v))})' "$1"
-}
-
-# Заголовки и логин уходят curl-у через stdin (-K -), а не аргументами:
-# токен и ключ приложения не видны в командной строке процесса.
-b2_authorize() {
-  local resp
-  resp=$(printf 'user = "%s:%s"\n' "$B2_KEY_ID" "$B2_APP_KEY" |
-    curl "${CURL_OPTS[@]}" -K - "$B2_AUTH_URL") || fail "B2: авторизация не удалась (ключ или сеть): ${resp:0:200}"
-  TOKEN=$(printf '%s' "$resp" | json_get authorizationToken)
-  ACCOUNT_ID=$(printf '%s' "$resp" | json_get accountId)
-  API_URL=$(printf '%s' "$resp" | json_get apiInfo.storageApi.apiUrl)
-  [ -n "$API_URL" ] || API_URL=$(printf '%s' "$resp" | json_get apiUrl)
-  [ -n "$TOKEN" ] && [ -n "$API_URL" ] || fail "B2: в ответе авторизации нет токена или адреса API"
-  BUCKET_ID=$(printf '%s' "$resp" | json_get apiInfo.storageApi.bucketId)
-  [ -n "$BUCKET_ID" ] || BUCKET_ID=$(printf '%s' "$resp" | json_get allowed.bucketId)
-  if [ -z "$BUCKET_ID" ]; then
-    local list
-    list=$(b2_post b2_list_buckets "{\"accountId\":\"$ACCOUNT_ID\",\"bucketName\":\"$B2_BUCKET\"}") ||
-      fail "B2: не удалось найти бакет $B2_BUCKET: ${list:0:200}"
-    BUCKET_ID=$(printf '%s' "$list" | json_get buckets.0.bucketId)
-  fi
-  [ -n "$BUCKET_ID" ] || fail "B2: бакет $B2_BUCKET не найден"
-}
-
-b2_post() { # b2_post <метод> <JSON-тело>
-  printf 'header = "Authorization: %s"\n' "$TOKEN" |
-    curl "${CURL_OPTS[@]}" -K - -X POST -H 'Content-Type: application/json' -d "$2" "$API_URL/b2api/v3/$1"
-}
+# Авторизация, json_get и b2_post — общие с fetch-latest-b2.sh (scripts/b2-api.sh).
+# shellcheck source=scripts/b2-api.sh
+source "$HERE/b2-api.sh"
 
 b2_upload() { # b2_upload <файл> <имя в бакете>
   local file=$1 name=$2 up url token sha1 resp
@@ -165,7 +137,7 @@ b2_upload() { # b2_upload <файл> <имя в бакете>
 # Удаляет ВСЕ версии файлов бэкапов старше срока хранения (по дате в имени).
 # Явные `|| return 1` вместо set -e: внутри функции под `||` errexit молчит.
 b2_prune() {
-  local cutoff body resp parsed next_name="" next_id="" n=0 pages=0 name id first deleted=0
+  local cutoff body resp parsed next_name="" next_id="" pages=0 name id first deleted=0
   cutoff=$(date -u -d "$RETENTION_DAYS days ago" +%Y-%m-%d) || return 1
   while [ "$pages" -lt 50 ]; do
     pages=$((pages + 1))

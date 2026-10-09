@@ -23,6 +23,8 @@ on:
           - bootstrap
           - transfer-open
           - transfer-check
+          - restore-b2
+          - external-db-check
           - transfer-close
           - release-hold
           - restart-app
@@ -99,7 +101,7 @@ jobs:
         run: |
           case "$OP" in
             bootstrap) ssh vps 'bash /opt/schemehappens/bootstrap.sh' ;;
-            status|transfer-open|transfer-check|transfer-close|release-hold|restart-app|restart-caddy|rollback)
+            status|transfer-open|transfer-check|restore-b2|external-db-check|transfer-close|release-hold|restart-app|restart-caddy|rollback)
               # shellcheck disable=SC2029  # OP уже сверен со списком выше
               ssh vps "bash /opt/schemehappens/ops.sh $OP" ;;
             *) echo "::error::неизвестная операция"; exit 1 ;;

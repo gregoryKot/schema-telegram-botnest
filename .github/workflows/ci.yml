@@ -281,7 +281,7 @@ jobs:
       # разобрать интерполяцию, секретов в них нет.
       - name: VPS-скрипты (shellcheck) и compose-файлы (config)
         run: |
-          shellcheck deploy/transfer-db.sh deploy/vps/*.sh
+          shellcheck deploy/transfer-db.sh deploy/vps/*.sh scripts/*.sh
           cd deploy/vps
           # shellcheck disable=SC2016  # `$` в значении — как у настоящего PROD_ENV
           printf 'FOO=a$b\n' > .env
@@ -449,6 +449,13 @@ jobs:
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
+      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-to-b2.sh →
+      # (поддельный) B2 → fetch-latest-b2.sh → restore-backup.sh на живом
+      # Postgres: восстановленная база обязана совпасть с источником.
+      - name: e2e восстановление из бэкапа B2 на реальном Postgres
+        run: |
+          command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
+          npx jest --config ./test/jest-e2e.json --runInBand test/restore-b2.e2e-spec.ts
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
       # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
       # уникальных констрейнтов и транзакционных апдейтов, которые
