@@ -63,6 +63,7 @@ describe('deploy/vps/ssh-setup.sh', () => {
     delete base.DEPLOY_HOST;
     delete base.DEPLOY_SSH_KEY;
     delete base.DEPLOY_KNOWN_HOSTS;
+    delete base.SSH_USER;
     return spawnSync('bash', [SCRIPT], {
       env: {
         ...base,
@@ -139,6 +140,53 @@ describe('deploy/vps/ssh-setup.sh', () => {
     expect(line('BatchMode')).toBe('yes');
     // ssh читает этот конфиг по ключу `vps`: второго блока Host быть не должно
     expect(conf.match(/^Host /gm)).toHaveLength(1);
+  });
+
+  describe('SSH_USER (под кем заходить)', () => {
+    const userLine = () =>
+      readFileSync(ssh('config'), 'utf8').match(/^\s+User (.*)$/m)?.[1];
+
+    it('не задан или пуст: User root', () => {
+      full({ DEPLOY_KNOWN_HOSTS: SECRET_KNOWN_HOSTS });
+      expect(userLine()).toBe('root');
+
+      full({ DEPLOY_KNOWN_HOSTS: SECRET_KNOWN_HOSTS, SSH_USER: '' });
+      expect(userLine()).toBe('root');
+    });
+
+    it.each(['ubuntu', 'cloud-user', '_svc', 'user01', 'a'.repeat(32)])(
+      'SSH_USER=%s попадает в User, блок Host остаётся один',
+      (name) => {
+        const res = full({
+          DEPLOY_KNOWN_HOSTS: SECRET_KNOWN_HOSTS,
+          SSH_USER: name,
+        });
+
+        expect(res.status).toBe(0);
+        expect(userLine()).toBe(name);
+        expect(
+          readFileSync(ssh('config'), 'utf8').match(/^Host /gm),
+        ).toHaveLength(1);
+      },
+    );
+
+    it.each([
+      ['с пробелом', 'bad user'],
+      ['перевод строки с чужой директивой', 'root\nProxyCommand evil'],
+      ['заглавные', 'Ubuntu'],
+      ['с цифры', '1user'],
+      ['с дефиса', '-oProxyCommand=evil'],
+      ['с точкой и слэшем', '../root'],
+      ['длиннее 32 знаков', 'a'.repeat(33)],
+      ['с ;', 'root;id'],
+    ])('имя %s — ошибка Actions, код 1, ~/.ssh не создан', (_why, name) => {
+      const res = full({ SSH_USER: name });
+
+      expect(res.status).toBe(1);
+      expect(res.stdout).toMatch(/::error::SSH_USER не похож на имя/);
+      expect(existsSync(join(home, '.ssh'))).toBe(false);
+      expect(calls()).toBe('');
+    });
   });
 
   it('ключ и known_hosts не попадают ни в stdout, ни в stderr (оба режима)', () => {
