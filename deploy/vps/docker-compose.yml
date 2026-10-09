@@ -1,0 +1,80 @@
+# Прод на VPS: Postgres + приложение + Caddy (TLS). Каталог на сервере —
+# /opt/schemehappens, сюда его кладёт .github/workflows/deploy-vps.yml.
+# Запускать только через dc.sh: он подставляет APP_IMAGE, POSTGRES_PASSWORD и
+# нужные override-файлы (docker-compose.transfer.yml на время переноса БД).
+# Ранбук переезда — docs/MIGRATION_VPS.md.
+
+name: schemehappens
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD не задан (db.env создаёт bootstrap.sh)}
+      POSTGRES_DB: schemehappens
+    # TLS нужен на время переноса БД, когда порт открыт наружу
+    # (docker-compose.transfer.yml). Сертификат самоподписанный, его делает
+    # bootstrap.sh; ключ принадлежит uid 999 (postgres в образе) с правами 600.
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/tls/server.crt
+      - -c
+      - ssl_key_file=/tls/server.key
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - /opt/schemehappens/pg-tls:/tls:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d schemehappens']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  app:
+    image: ${APP_IMAGE:?APP_IMAGE не задан (его подставляет dc.sh из файлов image и release)}
+    restart: unless-stopped
+    # raw: значения берутся как есть, как у `docker run --env-file` — без
+    # раскрытия `$` и без снятия кавычек. Иначе пароль с `$` или `#` в PROD_ENV
+    # молча искажался бы. Нужен Compose 2.30+ (bootstrap.sh это проверяет).
+    env_file:
+      - path: .env
+        format: raw
+    environment:
+      # Адрес базы здесь, а не в PROD_ENV: там лежит прежний адрес Amvera, и
+      # молча брать его нельзя. environment сильнее env_file.
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/schemehappens
+    depends_on:
+      db:
+        condition: service_healthy
+    # Наружу не публикуется: снаружи его видит только Caddy по сети compose.
+    expose:
+      - '3000'
+    logging: *logging
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logging
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

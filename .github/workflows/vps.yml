@@ -1,0 +1,83 @@
+# Операции над VPS по кнопке (Actions → «Операции над VPS» → Run workflow).
+# Только фиксированный набор: произвольного шелла нет, `op` разбирается через
+# case с закрытым списком, а сами операции — deploy/vps/ops.sh на сервере.
+#
+# ЛОГИ ПУБЛИЧНЫ: операции печатают статусы, числа, sha и имена миграций; логов
+# приложения здесь нет (они будут в приватном репозитории отдельным PR).
+#
+# Порядок переезда — docs/MIGRATION_VPS.md. Секреты те же, что у деплоя; не
+# заданы — джоба зелёная с notice.
+name: Операции над VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      op:
+        description: Операция
+        type: choice
+        required: true
+        options:
+          - status
+          - bootstrap
+          - transfer-open
+          - transfer-check
+          - transfer-close
+          - release-hold
+          - restart-app
+          - restart-caddy
+          - rollback
+
+concurrency:
+  group: vps-ops
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  op:
+    # Запуск с чужой ветки отсекаем: bootstrap исполняет скрипт из репозитория под root.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      OP: ${{ inputs.op }}
+    steps:
+      - name: Проверка секретов
+        id: gate
+        run: |
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::notice::VPS не настроен (нет DEPLOY_HOST или DEPLOY_SSH_KEY), операция пропущена"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.configured == 'true'
+
+      - name: Настройка ssh
+        if: steps.gate.outputs.configured == 'true'
+        run: bash deploy/vps/ssh-setup.sh
+
+      # Скрипты синхронизируем перед каждой операцией: ops.sh на сервере должен
+      # быть той версии, что в main.
+      - name: Копирование deploy/vps на сервер
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          ssh vps 'mkdir -p /opt/schemehappens'
+          scp -q deploy/vps/* vps:/opt/schemehappens/
+
+      - name: Операция
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          case "$OP" in
+            bootstrap) ssh vps 'bash /opt/schemehappens/bootstrap.sh' ;;
+            status|transfer-open|transfer-check|transfer-close|release-hold|restart-app|restart-caddy|rollback)
+              # shellcheck disable=SC2029  # OP уже сверен со списком выше
+              ssh vps "bash /opt/schemehappens/ops.sh $OP" ;;
+            *) echo "::error::неизвестная операция"; exit 1 ;;
+          esac

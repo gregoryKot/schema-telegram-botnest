@@ -1,0 +1,13 @@
+# Override на ВРЕМЯ переноса БД со старого хостинга (deploy/transfer-db.sh):
+# открывает порт Postgres наружу. dc.sh подключает файл, пока на сервере есть
+# флаг /opt/schemehappens/TRANSFER_OPEN (ставят op=transfer-open и снимают
+# op=transfer-close в vps.yml).
+#
+# ВНИМАНИЕ: порты, опубликованные Docker'ом, обходят ufw (Docker пишет свои
+# правила iptables раньше). Закрыт порт или нет, решает только этот файл, а не
+# ufw: после переноса сразу transfer-close. Пока порт открыт, защита — пароль
+# (hex, 48 символов) и TLS (клиент скрипта требует sslmode=require).
+services:
+  db:
+    ports:
+      - '5432:5432'
