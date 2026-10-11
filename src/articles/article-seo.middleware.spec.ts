@@ -33,8 +33,12 @@ const BASE_HTML = `<!doctype html>
   </body>
 </html>`;
 
-function makeMiddleware(article: any): ArticleSeoMiddleware {
+function makeMiddleware(
+  article: any,
+  list: jest.Mock = jest.fn().mockResolvedValue(article ? [article] : []),
+): ArticleSeoMiddleware {
   const service = {
+    list,
     findBySlug: jest.fn(async (slug: string) => {
       if (article && article.slug === slug) return article;
       throw new Error('not found');
@@ -123,14 +127,44 @@ describe('ArticleSeoMiddleware', () => {
     expect(res.setHeader).not.toHaveBeenCalled();
   });
 
-  it('falls through for the /articles list route (not a single article)', async () => {
-    const mw = makeMiddleware(ARTICLE);
+  it('injects the article list for /articles', async () => {
+    const list = jest.fn().mockResolvedValue([ARTICLE]);
+    const mw = makeMiddleware(ARTICLE, list);
+    const { req, res, getSent } = mockReqRes('/articles/');
+    const next = jest.fn();
+    await mw.use(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(list).toHaveBeenCalledTimes(1);
+    const html = getSent()!;
+    expect(html).toContain('<h1>Статьи о схема-терапии</h1>');
+    expect(html).toContain('href="/articles/skhemy-yanga-spisok"');
+    expect(html).toContain(
+      '<link rel="canonical" href="https://schemehappens.ru/articles" />',
+    );
+    expect(html).toContain('property="og:type" content="website"');
+    expect(html).not.toContain('application/ld+json');
+  });
+
+  it('/articles: ошибка БД → SPA как есть (next(), без send)', async () => {
+    const list = jest.fn().mockRejectedValue(new Error('db down'));
+    const mw = makeMiddleware(ARTICLE, list);
     const { req, res } = mockReqRes('/articles');
     const next = jest.fn();
     await mw.use(req, res, next);
     expect(next).toHaveBeenCalledWith();
-    // Список статей — не одиночная статья: инжекция не запускается вовсе.
     expect(res.send).not.toHaveBeenCalled();
+  });
+
+  it('dateModified в JSON-LD берёт updatedAt, если он позже date', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      updatedAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain('"datePublished":"2025-05-10T00:00:00.000Z"');
+    expect(html).toContain('"dateModified":"2026-09-01T00:00:00.000Z"');
   });
 
   it('rewrites canonical host for alias domains', async () => {
@@ -236,6 +270,7 @@ describe('ArticleSeoMiddleware — чтение index.html с диска (html()
     fs.existsSync.mockReturnValue(false);
     const service = {
       findBySlug: jest.fn(),
+      list: jest.fn(),
     } as unknown as ArticlesService;
     const mw = new ArticleSeoMiddleware(service);
     const { req, res } = mockReqRes('/articles/skhemy-yanga-spisok');

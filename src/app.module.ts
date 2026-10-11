@@ -29,7 +29,7 @@ import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
-import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
+import { configureArticleSeo } from './articles/article-seo.routes';
 import {
   practiceDomainMiddleware,
   PRACTICE_ALIAS_HOSTS,
@@ -115,10 +115,7 @@ export class AppModule implements NestModule {
       })
       .forRoutes({ path: '/', method: RequestMethod.GET });
 
-    // Server-side SEO for article pages: inject real title/description/OG +
-    // article text so crawlers (esp. Yandex) index them instead of an empty SPA.
-    consumer
-      .apply(ArticleSeoMiddleware)
-      .forRoutes({ path: 'articles/*path', method: RequestMethod.GET });
+    // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.
+    configureArticleSeo(consumer);
   }
 }

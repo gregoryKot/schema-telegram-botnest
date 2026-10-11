@@ -8,8 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ARTICLE_SEED } from './articles.seed';
 import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
 
-// Bump this when the built-in article content changes (e.g. new diagrams) so a
-// running instance refreshes the seeded articles on next start.
+// Bump when built-in article content changes: instances refresh seeds on start.
 const SEED_VERSION = '16';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
 
@@ -89,6 +88,7 @@ export class ArticlesService implements OnModuleInit {
         title: true,
         description: true,
         date: true,
+        updatedAt: true,
         readMin: true,
         heroImage: true,
         diagramKey: true,
