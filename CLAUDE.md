@@ -108,7 +108,7 @@ D1/D7/D30, а не ощущениями.
 
 Общий фронт-код события (трекинг-хук, share-хелпер) — сразу в `shared/`
 (правило №3/№11): образцы — `shared/src/analytics/useCrisisCardTracking`,
-`shared/src/share/shareCardWithTracking`.
+`shared/src/share/useShareCard.ts`.
 
 Механизм принуждения (ревью): «новое событие видно в `/stats`? понятно без
 словаря? есть тест на форматтер, включая пустую БД?». Нет — фича не готова.
@@ -281,7 +281,9 @@ PR. За 300 коммитов `scripts/file-size-baseline.json` менялся 4
   `npm install` перегенерирует.
 - **Открыл PR — доводи его до мержа, не копи очередь.** Пять PR от одного
   `main` означают, что первый мерж делает конфликтными остальные четыре.
-  Помогает `enable_pr_auto_merge` (GitHub сериализует очередь сам) и
+  Помогает `enable_pr_auto_merge` — после того как владелец включит
+  `allow_auto_merge` в настройках репозитория (сегодня выключен, вызов откажет)
+  и ruleset с required checks на `main` (без них очередь не сериализуется) — и
   `update_pull_request_branch` перед мержем.
 - **Параллельные миграции текстово не конфликтуют, но применяются по времени** —
   вторая обязана быть корректной поверх первой, а не поверх того `main`, от
@@ -347,7 +349,8 @@ PR. За 300 коммитов `scripts/file-size-baseline.json` менялся 4
   есть сборка, деплой и живой клиент мессенджера — на каждом участке нужен
   свой сигнал.
 - **Отставший деплой виден без рук.** `/health` отдаёт время сборки
-  (`builtAt`), а смок прода (`prod-smoke.yml`, каждые 15 минут) сравнивает
+  (`builtAt`), а смок прода (`prod-smoke.yml`, крон `*/15`; фактический шаг
+  schedule-прогонов GitHub — 3–7 часов, см. AUDIT_2026-10) сравнивает
   его с последним коммитом `main` через `scripts/check-deploy-lag.mjs` и
   краснеет, когда хостинг не пересобрал (2026-09-16: два мержа сутки не
   доехали до пользователей).
@@ -531,7 +534,8 @@ Postgres и Prisma, а не нашего кода, и доказывается �
   для запросов с типизированными колонками.
 - **Резерв для денег и заявок.** Падение создания брони теперь уходит админу
   лидом (имя, контакт, слот) сразу в Telegram **и** на почту
-  (`alertAdminCritical`, `booking.create.ts`) — по образцу донатов. Клиент
+  (`BookingNotifyService.notifyAdminBoth` в `src/booking/booking-notify.service.ts`,
+  зовётся из `booking.create.ts`) — по образцу донатов. Клиент
   видит честный текст «заявка не сохранилась», а не «время заняли, обновите
   страницу» (`BookingErrorNote.tsx`), и сбой уходит наверх секцией `booking`.
 
@@ -929,7 +933,7 @@ GitHub, ссылка со строки. Это не замена правилу 
 - **Фронтенды** (React): хук `useTr()` один раз в теле компонента → `const tr = useTr();`,
   затем `tr('ты-вариант', 'вы-вариант')`. Ещё есть `useAddressForm(): 'ty'|'vy'`,
   `useSetAddressForm()`, и чистый `pickForm(form, ty, vy)` для не-React мест.
-  Инфраструктура — `schema-miniapp/src/utils/addressForm.tsx` и `webapp/src/utils/addressForm.tsx`.
+  Инфраструктура — `addressForm.ts` + `AddressFormProvider.tsx` в `schema-miniapp/src/utils/` и `webapp/src/utils/`.
 - **Контент-файлы** (`needData.ts`, `aboutData.ts` и подобные `*Data.ts` с текстом):
   паттерн «билдер от формы» — `export const buildX = (tr) => (…)` где каждая различающаяся
   строка обёрнута в `tr('ты','вы')`, плюс хук-обёртка `useX() = getX(useAddressForm())`.
@@ -1424,7 +1428,13 @@ transparent)`. Проценты из hex — `hex/255`: `08`→3%, `10`→6%, `1
 ### Ротация ENCRYPTION_KEY
 1. Сгенерить новый ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 2. В Amvera env: `ENCRYPTION_KEY_OLD = <старый>`, `ENCRYPTION_KEY = <новый>`. Restart.
-3. Запустить `npm run rotate-encryption` (через Amvera exec/SSH).
+3. Запустить ротацию. **Сегодня команда `npm run rotate-encryption` не исполняется**
+   (ts-node не грузит глобальные типы Node, `new PrismaClient()` без driver-adapter;
+   в прод-образе ни ts-node, ни скрипта), после починки адаптера падает на седьмой
+   модели из 27 (`userSafePlace`/`diaryDraft` без верного `pk`) и не трогает 6 из 96
+   зашифрованных полей — воспроизведено на живом Postgres, см.
+   `docs/AUDIT_2026-10_FINDINGS.md`, «Данные и целостность». До починки ротация
+   ключа невозможна.
 4. Убрать `ENCRYPTION_KEY_OLD`. Restart.
 
 `decrypt()` поддерживает несколько ключей одновременно — старые читаются как fallback, новые записываются всегда current ключом.
@@ -1526,8 +1536,9 @@ cd webapp && node_modules/.bin/vite build
 ## БД
 
 - Схема: `prisma/schema.prisma`. После изменений — `prisma migrate dev --name <название>`.
-- На Amvera миграции применяются автоматически через `start:prod`
-  (`prisma migrate deploy && exec node dist/main`).
+- В проде миграции применяет контейнер сам: CMD в `Dockerfile` —
+  `node deploy/entrypoint.mjs`, он зовёт `migrate deploy` до старта приложения
+  (`start:prod` из package.json контейнер не запускает).
 - **Дампы и бэкапы БД никогда не кладутся в репозиторий** — он публичный.
   Бэкапы — только через `scripts/backup-to-b2.sh` во внешнее хранилище.
 
@@ -1571,12 +1582,12 @@ cd webapp && node_modules/.bin/vite build
 
 **1. Удаление при удалении аккаунта И перенос при merge**
 Добавить имя модели в **оба** реестра:
-- `USER_DATA_TABLES` в начале `src/bot/bot.service.ts` — `deleteAllUserData` очистит её;
+- `USER_DATA_TABLES` в `src/bot/user-data-tables.ts` — `deleteAllUserData` очистит её;
 - `USER_OWNED_TABLES` в `src/auth/merge.service.ts` (+ правило в `UNIQUE_RULES`,
   если у модели есть unique-констрейнт с userId) — иначе при merge аккаунтов
   данные останутся на старом userId и потеряются для пользователя.
 TypeScript проверит имена (`_VerifyTables`), а spec-сверка со schema.prisma
-(план: этап 1.1 docs/archive/REMEDIATION_PLAN.md) упадёт, если модель забыта в одном из списков.
+(`src/auth/table-registry.spec.ts`) упадёт, если модель забыта в одном из списков.
 
 **2. Шифрование**
 Объявить `EncryptSchema` рядом с методами модели:
