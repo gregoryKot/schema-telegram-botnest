@@ -377,7 +377,7 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
-      # Аренда прогона бэкапа в B2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql есть в образе
       # ubuntu-latest; на случай его отсутствия ставим клиент 16 явно.
@@ -449,13 +449,13 @@ jobs:
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
-      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-to-b2.sh →
-      # (поддельный) B2 → fetch-latest-b2.sh → restore-backup.sh на живом
+      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-upload.sh →
+      # (поддельный) S3 → backup-fetch-latest.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.
-      - name: e2e восстановление из бэкапа B2 на реальном Postgres
+      - name: e2e восстановление из бэкапа (S3) на реальном Postgres
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
-          npx jest --config ./test/jest-e2e.json --runInBand test/restore-b2.e2e-spec.ts
+          npx jest --config ./test/jest-e2e.json --runInBand test/restore-backup.e2e-spec.ts
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
       # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
       # уникальных констрейнтов и транзакционных апдейтов, которые

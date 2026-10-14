@@ -1,6 +1,6 @@
 #!/bin/sh
-# Клиент Postgres 16 (pg_dump/psql) + curl для зашифрованных бэкапов в B2
-# (scripts/backup-to-b2.sh, deploy/backup-scheduler.cjs). Ставится только в
+# Клиент Postgres 16 (pg_dump/psql) + curl для зашифрованных бэкапов в R2
+# (scripts/backup-upload.sh, deploy/backup-scheduler.cjs). Ставится только в
 # runtime-стадии образа.
 #
 # Версия обязана быть 16: pg_dump отказывается снимать дамп с сервера новее
@@ -77,7 +77,7 @@ if [ -z "$installed" ]; then
 fi
 
 # Проверяем, а не верим коду возврата: нужна именно 16-я версия обоих клиентов
-# и работающий curl (им бэкап ходит в B2).
+# и работающий curl (им бэкап ходит в R2).
 pg_dump --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: pg_dump не $PG_MAJOR-й версии" >&2; exit 1; }
 psql --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: psql не $PG_MAJOR-й версии" >&2; exit 1; }
 curl --version >/dev/null || exit 1
