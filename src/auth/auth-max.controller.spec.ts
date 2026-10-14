@@ -107,7 +107,11 @@ describe('AuthMaxController.maxWebApp', () => {
       makeReq({ 'content-type': 'application/json' }),
       res,
     );
-    expect(res.cookie).toHaveBeenCalled();
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true }),
+    );
   });
 
   it('пустой initData → BadRequestException, подпись не проверяется', async () => {
