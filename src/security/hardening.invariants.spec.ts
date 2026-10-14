@@ -10,39 +10,29 @@ import { join } from 'path';
 import { BODY_LIMIT, BODY_LIMIT_BYTES } from '../infra/body-limit';
 
 const MAIN = readFileSync(join(__dirname, '../main.ts'), 'utf8');
+// Опции helmet (CSP) живут в отдельном модуле: main.ts только подключает их.
+const HELMET_CFG = readFileSync(join(__dirname, 'helmet-config.ts'), 'utf8');
 
 describe('трипваер: hardening-middleware в main.ts', () => {
   it('helmet подключён', () => {
     expect(MAIN).toMatch(/helmet\s*\(/);
     expect(MAIN).toMatch(/app\.use\(\s*[\s\S]*helmet/);
+    // main.ts подключает настоящий конфиг, а не какой-то свой.
+    expect(MAIN).toMatch(/helmet\(\s*helmetOptions\(\)\s*\)/);
   });
 
   it('CSP: defaultSrc self, objectSrc none, upgradeInsecureRequests', () => {
-    expect(MAIN).toMatch(/contentSecurityPolicy/);
-    expect(MAIN).toMatch(/defaultSrc:\s*\[\s*["']'self'["']/);
-    expect(MAIN).toMatch(/objectSrc:\s*\[\s*["']'none'["']/);
-    expect(MAIN).toMatch(/upgradeInsecureRequests/);
+    expect(HELMET_CFG).toMatch(/contentSecurityPolicy/);
+    expect(HELMET_CFG).toMatch(/defaultSrc:\s*\[\s*["']'self'["']/);
+    expect(HELMET_CFG).toMatch(/objectSrc:\s*\[\s*["']'none'["']/);
+    expect(HELMET_CFG).toMatch(/upgradeInsecureRequests/);
     // scriptSrc не должен быть открыт для 'unsafe-inline' по defaultSrc —
     // объявлен явным allowlist'ом.
-    expect(MAIN).toMatch(/scriptSrc:/);
-  });
-
-  // Клик-джекинг: X-Frame-Options выключен осознанно (он не умеет несколько
-  // источников, а мини-приложение живёт в iframe мессенджера). Значит защита
-  // держится на frame-ancestors — и он обязан быть списком, а не «кому угодно».
-  it('CSP frame-ancestors: явный список источников, без «всем можно»', () => {
-    const m = MAIN.match(/frameAncestors:\s*\[([^\]]*)\]/);
-    expect(m).not.toBeNull();
-    const value = m![1].replace(/\s/g, '');
-    expect(value).toContain("'self'");
-    expect(value).not.toContain("'*'");
-    expect(value).not.toContain('"*"');
-    // Голая схема https: пустила бы любой сайт — источники только поимённо.
-    expect(value).not.toMatch(/['"]https:['"]/);
+    expect(HELMET_CFG).toMatch(/scriptSrc:/);
   });
 
   it("CSP scriptSrc не содержит 'unsafe-eval'", () => {
-    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    const m = HELMET_CFG.match(/scriptSrc:\s*\[([^\]]*)\]/);
     expect(m).not.toBeNull();
     expect(m![1]).not.toMatch(/unsafe-eval/);
   });
@@ -53,7 +43,7 @@ describe('трипваер: hardening-middleware в main.ts', () => {
   // И наоборот: 'unsafe-inline' сюда добавлять нельзя — загрузчик вынесен в
   // отдельный файл /max-bridge.js именно поэтому.
   it('CSP scriptSrc: мост MAX разрешён поимённо, инлайн — по-прежнему нет', () => {
-    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    const m = HELMET_CFG.match(/scriptSrc:\s*\[([^\]]*)\]/);
     expect(m).not.toBeNull();
     const value = m![1].replace(/\s/g, '');
     expect(value).toContain('https://st.max.ru');
@@ -112,7 +102,7 @@ describe('трипваер: CSP и инлайн-скрипты (I4)', () => {
   // CSP без 'unsafe-inline' и без хешей: инлайн-<script> в HTML просто не
   // исполнится — тема в index.html годами «работала» только на бумаге.
   it("scriptSrc не содержит 'unsafe-inline' и хешей", () => {
-    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    const m = HELMET_CFG.match(/scriptSrc:\s*\[([^\]]*)\]/);
     expect(m).not.toBeNull();
     expect(m![1]).not.toMatch(/unsafe-inline|sha256-|nonce-/);
   });

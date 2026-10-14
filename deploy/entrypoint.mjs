@@ -21,6 +21,7 @@ import { spawn } from 'node:child_process';
 import { startFront } from './front-server.mjs';
 import backupScheduler from './backup-scheduler.cjs';
 import { parseDbTarget, waitForDb } from './wait-for-db.mjs';
+import { classifyAppExit, crashMessage } from './app-exit.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -147,16 +148,15 @@ async function main() {
     const startedAt = Date.now();
     // Приложение слушает внутренний APP_PORT — front проксирует на него.
     const app = await run(APP_CMD, { PORT: String(APP_PORT) });
-    if (shuttingDown || app.signal) return; // graceful shutdown / убит сигналом
-    if (app.code === 0) {
+    const exit = classifyAppExit(app, shuttingDown);
+    if (exit === 'stop') return; // graceful shutdown по нашему SIGTERM/SIGINT
+    if (exit === 'clean') {
       cleanExit = true; // чистый выход приложения → выходим и мы
       return;
     }
     const ranMs = Date.now() - startedAt;
     fails = ranMs > HEALTHY_UPTIME_MS ? 1 : fails + 1;
-    console.error(
-      `[entrypoint] приложение упало (code=${app.code}, ranMs=${ranMs}, fails=${fails}/${MAX_FAILS})`,
-    );
+    console.error(crashMessage(app, ranMs, fails, MAX_FAILS));
     if (fails >= MAX_FAILS) {
       console.error('[entrypoint] лимит перезапусков исчерпан — держу страницу техработ');
       return; // front остаётся на техработах

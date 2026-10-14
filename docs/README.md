@@ -91,12 +91,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `deploy/vps/ops.sh:62-71` стирает `release.prev` до проверки здоровья,
   `RECOVER_CMD` из `PROD_ENV` отброшен — `ops.sh:142`) и не `.env`
   (`cmd_write_env` без `.env.prev`); `pgdata` — единственная копия базы при
-  пробе `probe-backup-freshness.ts:157` «выключено, ok»; смерть приложения по
-  сигналу (SIGABRT, OOM-киллер хоста, SIGSEGV нативных модулей) — вечные
-  техработы без перезапуска и без строки `[entrypoint]` в логе
-  (`deploy/entrypoint.mjs:150`: `if (shuttingDown || app.signal) return`), смок
-  видит через `grep`, DM нет. Автооткат воспроизведён на живом Postgres, смерть
-  по сигналу — настоящим entrypoint с `kill -9`, `kill -ABRT` и heap-OOM Node.
+  пробе `probe-backup-freshness.ts:157` «выключено, ok». Автооткат
+  воспроизведён на живом Postgres. Смерть приложения по сигналу закрыта
+  (entrypoint перезапускает и пишет строку), остаток того же класса: после
+  лимита перезапусков прод стоит на техработах с зелёным HEALTHCHECK
+  (`Dockerfile:107-108` смотрит `r.ok`, а не `"status":"ok"`), смок видит это
+  через `grep`, DM нет, счётчика рестартов в `/health` нет.
   [Секция «Прод и деплой»](AUDIT_2026-10_FINDINGS.md#прод-и-деплой).
 - **Nightly `mutation-golden-auth` красный с 10-04, issue #614 без владельца**
   (10-12 заведена #642 с той же причиной). `security-log.service.ts` 95.74% →
@@ -112,13 +112,33 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `Set-Cookie refresh_token`, следующий `refresh` жертвы отдаёт JWT атакующего;
   контроль на `telegram/widget` отбит 401. `csrf.invariants.spec.ts` пинит
   читателей куки, не установщиков. [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
-- **CSP `frame-ancestors` без `web.telegram.org`** (`src/main.ts:113`): мини-апп в
-  Telegram Web K/A не отрисовывается, сервер отвечает 200, отказ живёт только
-  в консоли браузера. Воспроизведено в Chromium с настоящим helmet: родитель
-  `max.ru` грузит `/app/`, `web.telegram.org` — «Refused to frame». Код спорит
-  сам с собой: `main.ts:109-112` «Telegram сюда не нужен» против
-  `auth-account.controller.ts:164` «кука для Telegram Web в iframe».
-  [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
+- **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
+  `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
+  проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
+  отрисовку `/app/` в iframe с родителем `web.telegram.org` настоящий браузер в
+  CI не проверяет (нужен nightly-прогон в `e2e-browser/`: страница-обёртка с
+  iframe на `/app/`, хосты родителей разрешаются в тестовый сервер через
+  `--host-resolver-rules`, контрольный чужой хост обязан блокироваться;
+  образец сценария — воспроизведение аудита 2026-10-11, находка security#8).
+  Платформа запуска (`tgWebAppPlatform` = weba/webk/ios/…) нигде не пишется в
+  аналитику, поэтому тихую поломку одной платформы по `/stats` не увидеть.
+  Шов тоже покрыт не целиком: `frame-ancestors.invariants.spec.ts` собирает
+  `express` + `helmet(helmetOptions())`, а то, что `main.ts` ставит ровно этот
+  helmet один раз и без перекрытия CSP на маршруте, держит только регэксп в
+  `hardening.invariants.spec.ts` (второй `app.use(helmet(...))` не поймают);
+  закрывается общим `configureApp(app)` для `main.ts` и e2e-сборщиков (см.
+  «Зеркала e2e-бутстрапа расходятся с `main.ts`» в `AUDIT_2026-10_FINDINGS.md`).
+- **Сессия Telegram Web, скорее всего, не получает кросс-сайтовую куку.**
+  `isCrossSiteRequest` (`src/auth/auth-http.util.ts:53-58`) читает
+  `Sec-Fetch-Site`, а он сравнивает только того, кто начал запрос, с целью и не
+  смотрит на предков iframe: `fetch` со страницы `schemehappens.ru/app/` внутри
+  `web.telegram.org` приходит как `same-origin`, функция возвращает `false`, и
+  refresh-кука выдаётся `Strict` — браузер не пришлёт её из кросс-сайтового
+  iframe. К тому же без `Partitioned` (CHIPS) её режет блокировка сторонних кук.
+  Не доказано: нужна проверка в настоящем браузере (iframe с родителем на другом
+  хосте, логин через `telegram/webapp`, потом `refresh`). Сверка в
+  `csrf.invariants.spec.ts` закрепляет соответствие «точка входа — встраиватель»,
+  но не то, что кука реально выдаётся с `SameSite=None`.
 - **Публичный оракул «этот контакт — клиент?»**: `booking.service.ts:99-105` при
   `returning: true` отвечает 400 `CLIENT_NOT_FOUND` или 200 `HELD` по наличию
   контакта в `ClientMeeting`, заодно занимая слот на 15 минут и шля админу
@@ -161,13 +181,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   Воспроизведено в vitest: «не хочу больше жить» уходит в `submitBooking`, в DOM
   нет 8-800-100-49-94. Паттерн «не вижу смысла жить» детектором не ловится.
   [Секция «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки).
-- **Слияние аккаунтов теряет «мои схемы» и «мои режимы».**
-  `merge-user-fields.ts:81-87` читает `mySchemaIds`/`myModeIds` без
-  `decryptRecord`, правило `union` (`merge-user-rules.ts:144-151`) видит два
-  не-массива и отдаёт `undefined`. Воспроизведено на живом Postgres: после
-  `merge(TG, WEB)` карточки переехали, `WEB.mySchemaIds = []`. Юнит зелёный на
-  plaintext-массивах, которых в колонке не бывает. Запись INCIDENTS 2026-08-30
-  «что держит: гейт реестров моделей» протухла. [Секция «Данные и целостность»](AUDIT_2026-10_FINDINGS.md#данные-и-целостность).
 - **Ротация `ENCRYPTION_KEY` не исполняется ни одним путём из ранбука.**
   `npm run rotate-encryption` падает на компиляции (ts-node не грузит
   глобальные типы Node), с `--files` — на `new PrismaClient()` без адаптера; в
@@ -570,6 +583,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md), п. 3.4. Не путать со
   следующей строкой: там у того же `maintenance-startup.spec.ts` другой дефект
   (не хватает бюджета ожидания). Файл один — чинить обе разом.
+- `src/infra/vps-ops.spec.ts`, тесты «повторный деплой того же sha не затирает
+  release.prev самим собой» и «HOLD_APP: поднимаются только db и caddy…», мигают
+  на загруженной машине: из трёх одиночных прогонов `npx jest
+  src/infra/vps-ops.spec.ts` один дал 2 красных (`deploy(NEW).status` = 1 вместо
+  0), два других и прогон на чистом `origin/main` — 29 из 29. Спек гоняет
+  настоящий `deploy/vps/ops.sh` с подставным docker; причина не разобрана
+  (подозрение — таймаут ожидания «здоровья» в `ops.sh` при занятых ядрах).
+  Найдено попутно при починке смерти приложения по сигналу, к ней не относится.
 - `src/security/install-openssl.spec.ts:99` — «первая попытка упала —
   переключается на зеркало» падает детерминированно (не флак: sandbox
   полностью подставной, `apt-get`/`sleep`/`openssl` — стабы, сети нет).

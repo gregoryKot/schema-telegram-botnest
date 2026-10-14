@@ -15,6 +15,7 @@ import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
 import { BODY_LIMIT } from './infra/body-limit';
+import { helmetOptions } from './security/helmet-config';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import {
   PrismaExceptionFilter,
@@ -67,63 +68,7 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.use(
-    helmet({
-      // Allow cross-origin loading of static assets (og:image, fonts, etc.)
-      // so Telegram/VK/WhatsApp preview crawlers and tools like metatags.io can fetch them.
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          // st.max.ru — мост мини-приложения MAX (их документация требует
-          // грузить его с этого CDN). Без него мост молча не загрузится, а
-          // приложение внутри MAX решит, что открыто в обычном браузере.
-          scriptSrc: [
-            "'self'",
-            'https://telegram.org',
-            'https://mc.yandex.ru',
-            'https://st.max.ru',
-            // Google Identity Services (One Tap) грузит свой клиент отсюда.
-            'https://accounts.google.com',
-          ],
-          connectSrc: [
-            "'self'",
-            'https://mc.yandex.ru',
-            'https://oauth.telegram.org',
-            // One Tap ходит на accounts.google.com за конфигом/статусом сессии.
-            'https://accounts.google.com',
-          ],
-          imgSrc: [
-            "'self'",
-            'data:',
-            'https://mc.yandex.ru',
-            'https://t.me',
-            'https://cdn.jsdelivr.net',
-          ],
-          // oauth.telegram.org — iframe кнопки Telegram Login Widget;
-          // accounts.google.com — iframe всплывашки Google One Tap.
-          frameSrc: [
-            'https://oauth.telegram.org',
-            'https://accounts.google.com',
-          ],
-          // Кто имеет право встроить нас в свой iframe. MAX открывает
-          // мини-приложение именно так, поэтому одного 'self' мало: без его
-          // домена вебвью показывает «refused to connect». Telegram сюда не
-          // нужен — там нативный вебвью, а не встраивание.
-          frameAncestors: ["'self'", 'https://max.ru', 'https://*.max.ru'],
-          objectSrc: ["'none'"],
-          // Upgrade any accidental HTTP sub-resource requests to HTTPS
-          upgradeInsecureRequests: [],
-        },
-      },
-      crossOriginEmbedderPolicy: false,
-      // X-Frame-Options умеет только «никому» или «своему домену» — вписать
-      // туда мессенджер нельзя, а SAMEORIGIN перебивал бы список выше в тех
-      // браузерах, где живут оба заголовка. Защита от клик-джекинга целиком
-      // переезжает в CSP frame-ancestors, который умеет перечислять источники.
-      frameguard: false,
-    }),
-  );
+  app.use(helmet(helmetOptions()));
   // Order matters: more-specific filter LAST (Nest applies them in reverse).
   // GenericExceptionFilter is the catch-all; PrismaExceptionFilter catches first.
   app.useGlobalFilters(
