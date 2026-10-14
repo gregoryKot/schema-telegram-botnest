@@ -1034,7 +1034,7 @@
   "src/booking/contact-channel.ts": 36,
   "src/booking/meeting-key.ts": 18,
   "src/booking/meeting.service.ts": 193,
-  "src/booking/payment.controller.ts": 192,
+  "src/booking/payment.controller.ts": 170,
   "src/booking/pricing.service.ts": 45,
   "src/booking/robokassa.service.ts": 215,
   "src/booking/rule-expand.ts": 60,

@@ -91,6 +91,10 @@
     "status": "exempt",
     "reason": "Ответы Zoom S2S OAuth (access_token) и Create Meeting (join_url/id) в спеке — авторская форма по документации Zoom API, не захваченный с прода вызов; боевых Zoom-учётных данных для записи нет."
   },
+  "src/booking/payment.booking-webhook.ts": {
+    "status": "exempt",
+    "reason": "Формат ResultURL не разбирает: превращает исключения BookingService.confirm в ответ OK/FAIL<InvId> для Robokassa. Подпись и поля тела разбирают payment.controller.ts и robokassa.service.ts (последний заведён ниже); имя файла попало под шаблон webhook."
+  },
   "src/booking/robokassa.service.ts": {
     "status": "exempt",
     "reason": "Подпись Robokassa (md5 outSum:invId:pass) проверена по официальной документации площадки, но ни один настоящий ResultURL-вебхук с прода в фикстуру не сохранён — payment-webhooks.e2e-spec.ts строит подпись сам тем же алгоритмом, что и код."
