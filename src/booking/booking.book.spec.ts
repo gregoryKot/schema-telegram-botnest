@@ -724,6 +724,12 @@ describe('BookingService.expireHolds', () => {
     ]);
     prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
     await service.expireHolds();
+    // CAS всё равно попробован — по этой строке, с предикатом статуса.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 11, status: BookingStatus.HELD }),
+      }),
+    );
     expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 
