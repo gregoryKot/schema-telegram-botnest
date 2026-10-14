@@ -105,13 +105,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`merge_subscription_conflict`, `empty_signature` не в спеке).
   `src/auth/security-log-redact.ts` (#625) не в `mutate` ни одного
   stryker-конфига. [Секция «Наблюдатели и CI»](AUDIT_2026-10_FINDINGS.md#наблюдатели-и-ci).
-- **Login-CSRF: три ручки входа ставят refresh-куку без `requireCsrf`** —
-  `auth-account.controller.ts:143-173` (`telegram/webapp`), `auth-max.controller.ts:36-76`,
-  `auth-ticket.controller.ts:126-159`; глобальный `urlencoded` в `main.ts:140`
-  пускает HTML-форму. Воспроизведено supertest'ом: форма с чужого сайта →
-  `Set-Cookie refresh_token`, следующий `refresh` жертвы отдаёт JWT атакующего;
-  контроль на `telegram/widget` отбит 401. `csrf.invariants.spec.ts` пинит
-  читателей куки, не установщиков. [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
+- **`test/refresh-rotation.e2e-spec.ts` на живом Postgres мигает** — в связке
+  `login-ticket` → `refresh-rotation` → `app-auth` с `E2E_REAL_DB=1` падает 1-2
+  теста группы «потерянный ответ против кражи» (2026-10-14: 3 прогона из 3 на чистом
+  `main`, каждый раз другие; поодиночке зелёный). Корень не разбирали: подозрение на
+  зависимость от секундной гранулярности iat/времени между шагами. В CI порядок
+  другой — как ведёт себя там, не проверено.
 - **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
   `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
   проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но

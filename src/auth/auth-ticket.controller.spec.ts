@@ -142,6 +142,27 @@ describe('POST ticket/approve', () => {
 });
 
 describe('POST ticket/poll', () => {
+  // Login-CSRF (security#6): атакующий сам выписал и одобрил билет, форма с
+  // его deviceCode отдала бы жертве куку его сессии.
+  it('без CSRF-заголовка не опрашивает билет, не ставит куку и пишет в аудит', async () => {
+    const { ctl, tickets, securityLog } = makeCtl();
+    const res = makeRes();
+
+    await expect(
+      ctl.poll(
+        { deviceCode: 'd'.repeat(64) },
+        makeReq({ headers: {} } as Partial<Request>),
+        res,
+      ),
+    ).rejects.toThrow();
+    expect(tickets.poll).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'csrf_blocked',
+      expect.objectContaining({ endpoint: 'ticket/poll' }),
+    );
+  });
+
   it('пока не подтвердили — статус без токена и без куки', async () => {
     const { ctl } = makeCtl();
     const res = makeRes();
