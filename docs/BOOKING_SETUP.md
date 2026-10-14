@@ -83,7 +83,7 @@ ROBOKASSA_IS_TEST=true   # на время тестов; убрать/false дл
 ```
 В кабинете Robokassa указать ResultURL → `https://schemehappens.ru/api/payment/result`
 (канонический хост, метод POST). Работает и `https://kotlarewski.gr/api/payment/result`:
-`/api/payment` входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.middleware.ts`),
+`/api/payment` входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.surface.ts`),
 визитка не редиректит вебхук, и оба адреса подтверждают бронь одинаково
 (`test/payment-webhook-practice-host.e2e-spec.ts`). Предпочтителен канонический:
 меньше хостов в цепочке. Один ResultURL обслуживает брони, донаты и подписки.

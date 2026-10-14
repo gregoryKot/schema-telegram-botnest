@@ -314,9 +314,9 @@ Docker HEALTHCHECK в это окно проходит (страница отв�
 **Проверить до того, как случится авария** — что вебхук доходит.
 ResultURL в кабинете может стоять и на `https://schemehappens.ru/api/payment/result`
 (предпочтительно), и на `https://kotlarewski.gr/api/payment/result`: `/api/payment`
-входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.middleware.ts`), визитка
+входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.surface.ts`), визитка
 пропускает POST формой без редиректа (`test/payment-webhook-practice-host.e2e-spec.ts`).
-До 2026-10 это было не так: алиас отвечал на вебхук 301 без тела. Вопрос
+С #605 (2026-10-03) до #651 алиас отвечал на вебхук 301 без тела. Вопрос
 владельцу — ниже.
 
 ---
