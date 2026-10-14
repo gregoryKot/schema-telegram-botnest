@@ -81,7 +81,12 @@ ROBOKASSA_PASSWORD1=...
 ROBOKASSA_PASSWORD2=...
 ROBOKASSA_IS_TEST=true   # на время тестов; убрать/false для боевого режима
 ```
-В кабинете Robokassa указать ResultURL → `https://kotlarewski.gr/api/payment/result`.
+В кабинете Robokassa указать ResultURL → `https://schemehappens.ru/api/payment/result`
+(канонический хост, метод POST). Работает и `https://kotlarewski.gr/api/payment/result`:
+`/api/payment` входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.middleware.ts`),
+визитка не редиректит вебхук, и оба адреса подтверждают бронь одинаково
+(`test/payment-webhook-practice-host.e2e-spec.ts`). Предпочтителен канонический:
+меньше хостов в цепочке. Один ResultURL обслуживает брони, донаты и подписки.
 Без переменных платная сессия подтверждается сразу (dev-режим), деньги не списываются.
 
 ---
