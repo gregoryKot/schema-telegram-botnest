@@ -49,7 +49,8 @@ export function makeFakeBot(): FakeBot {
       actions.push({ matcher, handler });
     }),
     on: jest.fn(),
-    launch: jest.fn().mockResolvedValue(undefined),
+    // Как настоящий Telegraf: launch() резолвится только при остановке поллинга.
+    launch: jest.fn(() => new Promise<void>(() => undefined)),
     stop: jest.fn().mockResolvedValue(undefined),
     telegram,
   };

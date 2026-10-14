@@ -25,9 +25,15 @@ const TOKEN = 'ghp_SECRET_TOKEN_VALUE';
 
 // Поддельный docker: всё пишет в $FAKE_LOG; `exec` (проба здоровья) отвечает
 // «ок» только если текущий release входит в $FAKE_HEALTHY; `port` — по $FAKE_PORT_OPEN.
+// `login --password-stdin` дочитывает stdin, как настоящий docker: ops.sh
+// подаёт токен через `printf | docker login` под `set -o pipefail`, и заглушка,
+// которая stdin не читает, иногда закрывала трубу раньше, чем printf успевал
+// записать, — printf получал SIGPIPE, ops.sh честно падал «вход в ghcr не
+// удался», а тест видел пустой stdout (7 из 180 параллельных прогонов).
 const FAKE_DOCKER = `#!/bin/bash
 echo "docker $*" >> "$FAKE_LOG"
 case "$*" in
+  "login "*) cat > /dev/null ;;
   *" exec -T app node"*)
     if [[ " $FAKE_HEALTHY " == *" $(cat release 2>/dev/null) "* ]]; then
       echo '{"status":"ok","db":"up"}'

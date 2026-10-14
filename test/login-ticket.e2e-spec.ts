@@ -24,6 +24,7 @@ import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 import { TicketLinkService } from '../src/auth/login-ticket/ticket-link.service';
+import { BotService } from '../src/bot/bot.service';
 
 // Перенос данных проверяется только там, где merge реально исполняется.
 const REAL_DB = process.env.E2E_REAL_DB === '1';
@@ -414,7 +415,9 @@ describeOnRealDb('перенос данных при подтверждении 
 
     // Скаляры доехали вместе с таблицами — через настоящий SQL, а не только
     // в юнит-тесте применителя.
-    const merged = await prisma.user.findUnique({ where: { id: TO } });
+    // «Мои схемы» в колонке — шифротекст (FIELD_POLICY.User), поэтому
+    // список читается тем же путём, что и продукт, а не сырой строкой.
+    const merged = await app.get(BotService).getUserSettings(TO);
     expect(merged?.mySchemaIds).toEqual(['abandonment']);
     expect(merged?.notifyLocalHour).toBe(8);
 

@@ -1,7 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { json, urlencoded } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -14,7 +13,7 @@ import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
-import { BODY_LIMIT } from './infra/body-limit';
+import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import {
@@ -79,10 +78,10 @@ async function bootstrap() {
   // whitelist срезает недекорированные поля; для body без DTO-класса
   // (легаси inline-интерфейсы) пайп прозрачен — миграция инкрементальная.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // Единственный парсер тела в приложении (штатный отключён выше). Откуда
-  // взято 256 КБ и чем это замерено — src/infra/body-limit.ts.
-  app.use(json({ limit: BODY_LIMIT }));
-  app.use(urlencoded({ limit: BODY_LIMIT, extended: true }));
+  // Единственные парсеры тела (штатный отключён выше): потолок 256 КБ — в
+  // src/infra/body-limit.ts, форма разбирается только там, где её шлёт
+  // внешняя система, — в src/infra/body-parsers.ts (login-CSRF, security#6).
+  installBodyParsers(app);
 
   // CORS only needed for the Telegram mini-app (different origin).
   // The web app is served from the same domain → no CORS needed for it.
