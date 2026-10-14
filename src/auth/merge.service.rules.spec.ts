@@ -92,6 +92,9 @@ function makeMergePrisma(
         $executeRaw: execSpy,
         $queryRaw: querySpy,
         user: { findUnique: userFindUnique, update: userUpdate },
+        // Карточки нужны merge-user-lists.ts (источник правды для «моих схем»).
+        userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+        userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
       });
     }),
     $executeRaw: execSpy,
