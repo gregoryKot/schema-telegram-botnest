@@ -176,12 +176,14 @@ describe('AccountService — режим/роль терапевта', () => {
     });
   });
 
-  it('resignTherapist: CLIENT + therapistMode=false + удаление заявки, всё в одной транзакции', async () => {
+  it('resignTherapist: CLIENT + therapistMode=false + удаление заявки + завершение связей, всё в одной транзакции', async () => {
     const userUpdate = jest.fn(() => Promise.resolve({}));
     const reqDeleteMany = jest.fn(() => Promise.resolve({ count: 1 }));
+    const relUpdateMany = jest.fn(() => Promise.resolve({ count: 3 }));
     const tx = {
       user: { update: userUpdate },
       therapistRequest: { deleteMany: reqDeleteMany },
+      therapyRelation: { updateMany: relUpdateMany },
     };
     const transaction = jest.fn((fn: (t: typeof tx) => unknown) => fn(tx));
     const prisma = { $transaction: transaction } as never;
@@ -196,6 +198,28 @@ describe('AccountService — режим/роль терапевта', () => {
     });
     // Заявка удаляется, иначе status 'approved' заблокирует повторную подачу.
     expect(reqDeleteMany).toHaveBeenCalledWith({ where: { userId: uid } });
+    // backend#33: связи терапевта (активные и неиспользованные приглашения)
+    // завершаются в той же транзакции, а не удаляются.
+    expect(relUpdateMany).toHaveBeenCalledWith({
+      where: { therapistId: uid, status: { in: ['pending', 'active'] } },
+      data: { status: 'ended' },
+    });
+  });
+
+  it('resignTherapist: сбой завершения связей откатывает транзакцию — ошибка уходит наружу', async () => {
+    const tx = {
+      user: { update: jest.fn(() => Promise.resolve({})) },
+      therapistRequest: { deleteMany: jest.fn(() => Promise.resolve({})) },
+      therapyRelation: {
+        updateMany: jest.fn(() => Promise.reject(new Error('db down'))),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
+    } as never;
+    await expect(
+      new AccountService(prisma).resignTherapist(uid),
+    ).rejects.toThrow('db down');
   });
 });
 
