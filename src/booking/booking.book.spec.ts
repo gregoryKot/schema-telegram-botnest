@@ -365,7 +365,19 @@ function makeSimpleService(
         Object.assign(state.row, data);
         return state.row;
       }),
-      updateMany: jest.fn(async () => ({ count: rows.length })),
+      // CAS как в Postgres: WHERE на токен и СТАТУС (значение или {in}) решает,
+      // обновится ли строка; count — сколько реально обновлено.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = state.row;
+        const statuses = where.status?.in ?? [where.status];
+        if (
+          !row ||
+          (where.status !== undefined && !statuses.includes(row.status))
+        )
+          return { count: 0 };
+        Object.assign(row, data);
+        return { count: 1 };
+      }),
       findMany: jest.fn(async () => rows),
     },
   };
@@ -473,6 +485,73 @@ describe('BookingService.cancel', () => {
     expect(notify.onCancelled).toHaveBeenCalledWith(
       expect.objectContaining({ clientName: 'Мария', clientContact: '@maria' }),
       'cal-42',
+    );
+  });
+
+  // Аудит 2026-10-11, r2-1#1: find→update без предиката статуса — N параллельных
+  // отмен давали N× DM+письмо+DELETE, а отмена поверх подтверждения брала
+  // calDavUid из снимка до CAS (null) и не снимала событие из календаря.
+  it('CAS отмены: updateMany по токену с предикатом status in [HELD, CONFIRMED]', async () => {
+    const { service, prisma } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    await service.cancel('tok');
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        cancelToken: 'tok',
+        status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
+      },
+      data: { status: BookingStatus.CANCELLED, heldUntil: null },
+    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('проиграл CAS (параллельная отмена уже перевела в CANCELLED) → {ok:true} БЕЗ onCancelled', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    // Снимок до CAS ещё HELD, а к моменту updateMany строку забрал соседний вызов.
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      return ++reads === 1 ? row : { ...row, status: BookingStatus.CANCELLED };
+    });
+    await expect(service.cancel('tok')).resolves.toEqual({ ok: true });
+    expect(notify.onCancelled).not.toHaveBeenCalled();
+  });
+
+  it('проиграл CAS, а в базе уже COMPLETED → BadRequest, а не молчаливый ok', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      return ++reads === 1 ? row : { ...row, status: BookingStatus.COMPLETED };
+    });
+    await expect(service.cancel('tok')).rejects.toThrow(BadRequestException);
+    expect(notify.onCancelled).not.toHaveBeenCalled();
+  });
+
+  it('onCancelled получает calDavUid СВЕЖЕЙ строки (выигравший confirm успел записать событие), а не снимка до CAS', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking({ calDavUid: null }),
+    });
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      // первое чтение (проверки) — calDavUid ещё нет; после CAS — confirm дописал
+      return ++reads === 1 ? row : { ...row, calDavUid: 'booking-5@cal' };
+    });
+    await service.cancel('tok');
+    expect(notify.onCancelled).toHaveBeenCalledWith(
+      expect.anything(),
+      'booking-5@cal',
     );
   });
 });
@@ -594,28 +673,58 @@ describe('BookingService.expireHolds', () => {
     expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 
-  it('есть истёкшие HELD — переводит их в CANCELLED по точным id, уведомляет расшифрованным списком', async () => {
+  // Аудит 2026-10-11, r2-1#0: updateMany по `id in (…)` без статуса перекрашивал
+  // в CANCELLED бронь, подтверждённую вебхуком между findMany и updateMany.
+  it('есть истёкшие HELD — CAS на каждую строку (id + status HELD + heldUntil), уведомляет расшифрованным списком', async () => {
     const expiring = [
       { id: 11, status: BookingStatus.HELD, clientName: 'А' },
       { id: 12, status: BookingStatus.HELD, clientName: 'Б' },
     ];
     const { service, prisma, notify } = makeSimpleService({});
     prisma.booking.findMany = jest.fn(async () => expiring);
-    prisma.booking.updateMany = jest.fn(async () => ({ count: 2 }));
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 1 }));
     await service.expireHolds();
-    expect(prisma.booking.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: { in: [11, 12] } },
-        data: expect.objectContaining({
-          status: BookingStatus.CANCELLED,
-          heldUntil: null,
-        }),
-      }),
-    );
+    for (const id of [11, 12]) {
+      expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+        where: {
+          id,
+          status: BookingStatus.HELD,
+          heldUntil: { lte: expect.any(Date) },
+        },
+        data: { status: BookingStatus.CANCELLED, heldUntil: null },
+      });
+    }
+    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(2);
     expect(notify.notifyExpired).toHaveBeenCalledWith([
       expect.objectContaining({ id: 11, clientName: 'А' }),
       expect.objectContaining({ id: 12, clientName: 'Б' }),
     ]);
+  });
+
+  it('строку уже перевёл вебхук (CAS count=0) — «истекла без оплаты» по ней НЕ уходит, остальные уходят', async () => {
+    const expiring = [
+      { id: 11, status: BookingStatus.HELD, clientName: 'А' },
+      { id: 12, status: BookingStatus.HELD, clientName: 'Б' },
+    ];
+    const { service, prisma, notify } = makeSimpleService({});
+    prisma.booking.findMany = jest.fn(async () => expiring);
+    prisma.booking.updateMany = jest.fn(async ({ where }: any) => ({
+      count: where.id === 11 ? 0 : 1, // 11 успел подтвердиться
+    }));
+    await service.expireHolds();
+    expect(notify.notifyExpired).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 12 }),
+    ]);
+  });
+
+  it('все строки снимка уже переведены другими — notifyExpired не вызывается', async () => {
+    const { service, prisma, notify } = makeSimpleService({});
+    prisma.booking.findMany = jest.fn(async () => [
+      { id: 11, status: BookingStatus.HELD },
+    ]);
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    await service.expireHolds();
+    expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 
   it('тик уже забрал другой инстанс — findMany не вызывается, брони не трогаем', async () => {
