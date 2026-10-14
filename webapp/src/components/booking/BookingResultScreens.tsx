@@ -3,11 +3,12 @@ import type { BookingSlot, SessionOption } from '../../api';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../../shared/src/booking/clientTimeZone';
 import { BookingCancelControl } from './BookingCancelControl';
 import { BookingSaveBlock } from './BookingSaveBlock';
+import { BookingCrisisNote } from './BookingCrisisNote';
 
 /** Терминальные экраны BookingPicker (ожидание оплаты / провал / готово) — вынесены отдельно (правило №10). */
-export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
+export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl, message }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string;
-  chosen: SessionOption | undefined; payUrl: string | null;
+  chosen: SessionOption | undefined; payUrl: string | null; message: string;
 }) {
   return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -21,9 +22,8 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
       </p>
-      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none' }}>
-        Перейти к оплате →
-      </a>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none' }}>Перейти к оплате →</a>
+      <BookingCrisisNote text={message} />
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
         Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
       </p>
@@ -43,9 +43,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled, message }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void;
+  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string;
 }) {
   return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -69,9 +69,8 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
           <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, wordBreak: 'break-all', textDecoration: 'none' }}>{meetingUrl}</a>
         </div>
       )}
-      {!cancelled && !meetingUrl && (
-        <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>
-      )}
+      {!cancelled && !meetingUrl && <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>}
+      {!cancelled && <BookingCrisisNote text={message} />}
       {!cancelled && cancelToken && slot && (
         <BookingSaveBlock
           cancelToken={cancelToken} startsAt={slot.startsAt} durationMin={slot.durationMin}

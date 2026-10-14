@@ -30,6 +30,14 @@ describe('PublicEventDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it('кризисная карточка записи (crisis_card_shown / crisis_hotline_tapped) проходит DTO', async () => {
+    for (const name of ['crisis_card_shown', 'crisis_hotline_tapped']) {
+      await expect(
+        errorsFor({ name, meta: { surface: 'booking' } }),
+      ).resolves.toEqual([]);
+    }
+  });
+
   it('события игры проходят — она вообще не авторизует пользователя', async () => {
     await expect(
       errorsFor({ name: 'game_open', meta: { src: 'site' } }),
@@ -148,6 +156,41 @@ describe('PublicEventsController', () => {
       ).resolves.toEqual({ ok: true });
     }
     expect(track).not.toHaveBeenCalled();
+  });
+
+  // Инцидент-класс frontends#5 (аудит 2026-10): форма записи на визитке не
+  // показывала карточку телефона доверия, а событие показа ушло бы на
+  // POST /api/event с 401 — посетитель не вошёл. Анонимный путь принимает
+  // события карточки, но только с поверхности формы записи.
+  it.each(['crisis_card_shown', 'crisis_hotline_tapped'] as const)(
+    '%s с surface=booking пишется анонимно (userId = null)',
+    async (name) => {
+      await controller.track({ name, meta: { surface: 'booking' } });
+      expect(track).toHaveBeenCalledWith(null, name, { surface: 'booking' });
+    },
+  );
+
+  it.each([
+    ['авторизованная поверхность', { surface: 'note' }],
+    ['мусорная поверхность', { surface: 'x' }],
+    ['не строка', { surface: 7 }],
+    ['без surface', {}],
+    ['без meta', undefined],
+  ])('crisis_card_shown: %s — дропается', async (_label, meta) => {
+    await expect(
+      controller.track({ name: 'crisis_card_shown', meta }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('лишние поля meta (в т.ч. текст) не доезжают до БД', async () => {
+    await controller.track({
+      name: 'crisis_hotline_tapped',
+      meta: { surface: 'booking', text: 'не хочу жить', userId: 5 },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'crisis_hotline_tapped', {
+      surface: 'booking',
+    });
   });
 
   it('home_screen_offer с лендинга пишется анонимно (surface site_landing)', async () => {
