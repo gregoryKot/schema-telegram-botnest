@@ -107,6 +107,7 @@
 import { CASE_EVENTS } from './case-steps.constants';
 import { GAME_EVENTS } from './game-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
+import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -161,16 +162,15 @@ export const ANALYTICS_EVENTS = [
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
-// События, которые разрешено слать БЕЗ авторизации (POST /api/public-event):
-// мини-тесты «без регистрации», клики лендинга и вся игра (она вообще не
-// авторизует пользователя, правило №5/№14). Только этот срез — остальная
-// аналитика по-прежнему требует верифицированной идентичности.
+// События БЕЗ авторизации (POST /api/public-event): мини-тесты, клики лендинга,
+// игра (правило №5/№14), кризисная карточка записи. Остальное — только с входом.
 export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
   'home_screen_offer',
   ...GAME_EVENTS,
+  ...PUBLIC_CRISIS_EVENTS,
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
