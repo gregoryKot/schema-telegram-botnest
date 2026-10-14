@@ -66,7 +66,7 @@ describe('ciRunsProbe', () => {
 
   describe('возраст последнего прогона (планировщик GitHub мог перестать запускать)', () => {
     // Смок и nightly в тесте отдают одну и ту же запись; порог у них разный
-    // (8 ч и 36 ч), поэтому ответ собирается по имени воркфлоу из URL.
+    // (14 ч и 40 ч), поэтому ответ собирается по имени воркфлоу из URL.
     function respondByWorkflow(ageHours: { smoke: number; nightly: number }) {
       const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
       global.fetch = jest.fn().mockImplementation(async (url: string) => {
@@ -82,27 +82,27 @@ describe('ciRunsProbe', () => {
       }) as never;
     }
 
-    it('смок зелёный, но старше 8 часов — не ok, «смок не запускался N ч»', async () => {
-      respondByWorkflow({ smoke: 9, nightly: 1 });
+    it('смок зелёный, но старше 14 часов — не ok, «смок не запускался N ч»', async () => {
+      respondByWorkflow({ smoke: 15, nightly: 1 });
       const res = await ciRunsProbe().run();
       expect(res.ok).toBe(false);
-      expect(res.detail).toContain('смок не запускался 9 ч');
+      expect(res.detail).toContain('смок не запускался 15 ч');
       expect(res.detail).toContain('/actions/runs/');
       expect(res.detail).not.toContain('ночная проверка');
     });
 
-    it('смок ровно на пороге (8 ч) — ещё ok: так выглядит самый редкий реальный тик', async () => {
-      respondByWorkflow({ smoke: 8, nightly: 1 });
+    it('смок ровно на пороге (14 ч) — ещё ok: самый длинный замеренный разрыв — 12,1 ч', async () => {
+      respondByWorkflow({ smoke: 14, nightly: 1 });
       expect((await ciRunsProbe().run()).ok).toBe(true);
     });
 
-    it('nightly старше 36 часов — не ok; 35 часов — ok', async () => {
-      respondByWorkflow({ smoke: 1, nightly: 37 });
+    it('nightly старше 40 часов — не ok; 39 часов — ok', async () => {
+      respondByWorkflow({ smoke: 1, nightly: 41 });
       const stale = await ciRunsProbe().run();
       expect(stale.ok).toBe(false);
-      expect(stale.detail).toContain('ночная проверка не запускалась 37 ч');
+      expect(stale.detail).toContain('ночная проверка не запускалась 41 ч');
 
-      respondByWorkflow({ smoke: 1, nightly: 35 });
+      respondByWorkflow({ smoke: 1, nightly: 39 });
       expect((await ciRunsProbe().run()).ok).toBe(true);
     });
 
@@ -122,17 +122,17 @@ describe('ciRunsProbe', () => {
     it('время старта (run_started_at) важнее updated_at: долгий прогон считается от старта', async () => {
       const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
       fixture.workflow_runs[0].run_started_at = new Date(
-        FIXTURE_RUN_AT - 10 * HOUR,
+        FIXTURE_RUN_AT - 15 * HOUR,
       ).toISOString();
       global.fetch = jest
         .fn()
         .mockResolvedValue(jsonResponse(fixture)) as never;
-      // updated_at — 1 час назад, а стартовал прогон 10 часов назад.
+      // updated_at — 1 час назад, а стартовал прогон 15 часов назад.
       setNow(HOUR);
 
       const res = await ciRunsProbe().run();
       expect(res.ok).toBe(false);
-      expect(res.detail).toContain('смок не запускался 11 ч');
+      expect(res.detail).toContain('смок не запускался 16 ч');
     });
 
     it('GitHub не отдал время прогона — возраст не судим, решает conclusion', async () => {
