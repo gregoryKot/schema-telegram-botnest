@@ -8,6 +8,13 @@
  * (onboardingV2Done и т.п. — весь FLAG_FIELDS) забыли.
  */
 
+// ENCRYPTION_KEY — ДО импорта crypto (он читает ключ при загрузке), иначе
+// encrypt() — passthrough и тест кормил бы правило plaintext-массивами, которых
+// в проде в колонке нет (backend#0, аудит 2026-10-11).
+process.env.ENCRYPTION_KEY = 'ab'.repeat(32);
+
+import { Logger } from '@nestjs/common';
+import { decryptJson, encryptJson } from '../utils/crypto';
 import { mergeUserScalarFields } from './merge-user-fields';
 
 const SRC = BigInt(1001);
@@ -57,6 +64,8 @@ function baseRow(overrides: Record<string, unknown> = {}) {
 function makeTx(
   srcRow: Record<string, unknown>,
   tgtRow: Record<string, unknown>,
+  // Карточки target ПОСЛЕ переноса карточек source (merge.service шаг 2).
+  cards: { schemaIds?: string[]; modeIds?: string[] } = {},
 ) {
   const rows: Record<string, Record<string, unknown>> = {
     [SRC.toString()]: srcRow,
@@ -82,9 +91,25 @@ function makeTx(
     $queryRaw: jest.fn().mockResolvedValue([{ re: null, rev: null }]),
     $executeRaw: jest.fn().mockResolvedValue(0),
     user: { findUnique, update },
+    userSchemaNote: {
+      findMany: jest.fn(() =>
+        Promise.resolve(
+          (cards.schemaIds ?? []).map((schemaId) => ({ schemaId })),
+        ),
+      ),
+    },
+    userModeNote: {
+      findMany: jest.fn(() =>
+        Promise.resolve((cards.modeIds ?? []).map((modeId) => ({ modeId }))),
+      ),
+    },
   } as any;
   return { tx, update };
 }
+
+const dec = (v: unknown) => decryptJson<string[]>(v as string);
+const updatedData = (update: jest.Mock) =>
+  (update.mock.calls[0]?.[0]?.data ?? {}) as Record<string, unknown>;
 
 describe('mergeUserScalarFields — флаги первого входа и addressForm', () => {
   it('boolean-флаг: true у source побеждает false у target', async () => {
@@ -162,7 +187,7 @@ describe('mergeUserScalarFields — флаги первого входа и addr
 
 // Разбор 2026-08-29: слияние теряло ровно то, ради чего его затевают.
 describe('mergeUserScalarFields — то, что терялось раньше', () => {
-  it('«мои схемы» и «мои режимы» объединяются, а не пропадают', async () => {
+  it('легаси: plaintext-массивы в колонке объединяются и пишутся уже зашифрованными', async () => {
     const { tx, update } = makeTx(
       baseRow({
         mySchemaIds: ['abandonment'],
@@ -171,14 +196,10 @@ describe('mergeUserScalarFields — то, что терялось раньше',
       baseRow({ mySchemaIds: ['mistrust'], myModeIds: [] }),
     );
     await mergeUserScalarFields(tx, SRC, TGT);
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          mySchemaIds: ['mistrust', 'abandonment'],
-          myModeIds: ['vulnerable-child'],
-        }),
-      }),
-    );
+    const data = update.mock.calls[0][0].data as Record<string, unknown>;
+    expect(typeof data.mySchemaIds).toBe('string');
+    expect(dec(data.mySchemaIds)).toEqual(['mistrust', 'abandonment']);
+    expect(dec(data.myModeIds)).toEqual(['vulnerable-child']);
   });
 
   it('настройка времени напоминаний переезжает, если target на дефолте', async () => {
@@ -244,5 +265,102 @@ describe('mergeUserScalarFields — то, что терялось раньше',
         }),
       }),
     );
+  });
+});
+
+// backend#0 (аудит 2026-10-11): в проде User.mySchemaIds/myModeIds — шифротекст
+// (FIELD_POLICY.User → enc). Правило union видело две строки вместо массивов,
+// отдавало undefined, и «Привязать Telegram» стирала выбранные схемы и режимы.
+describe('mergeUserScalarFields — зашифрованные «мои схемы/режимы» (backend#0)', () => {
+  it('шифротекст у обоих аккаунтов: union расшифрованных списков, результат зашифрован', async () => {
+    const { tx, update } = makeTx(
+      baseRow({
+        mySchemaIds: encryptJson(['abandonment', 'mistrust']),
+        myModeIds: encryptJson(['vulnerable-child']),
+      }),
+      baseRow({
+        mySchemaIds: encryptJson(['mistrust', 'failure']),
+        myModeIds: encryptJson(['angry-child']),
+      }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    const data = updatedData(update);
+    expect(typeof data.mySchemaIds).toBe('string');
+    expect(typeof data.myModeIds).toBe('string');
+    // Ничего не потеряно при пересечении, дубликатов нет, список target цел.
+    expect(dec(data.mySchemaIds)).toEqual([
+      'mistrust',
+      'failure',
+      'abandonment',
+    ]);
+    expect(dec(data.myModeIds)).toEqual(['angry-child', 'vulnerable-child']);
+  });
+
+  it('target со схемным дефолтом [] (не шифр), source — шифр: список переезжает', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: encryptJson(['abandonment']) }),
+      baseRow({ mySchemaIds: [] }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(dec(updatedData(update).mySchemaIds)).toEqual(['abandonment']);
+  });
+
+  it('список target не затирается: source пуст или входит в target → поле не пишется', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: encryptJson(['mistrust']) }),
+      baseRow({ mySchemaIds: encryptJson(['mistrust', 'failure']) }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update.mock.calls).toEqual([]);
+  });
+
+  it('карточки — источник правды: их id попадают в список, даже если список source пуст', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: encryptJson([]), myModeIds: encryptJson([]) }),
+      baseRow({
+        mySchemaIds: encryptJson(['mistrust']),
+        myModeIds: encryptJson([]),
+      }),
+      { schemaIds: ['mistrust', 'abandonment'], modeIds: ['vulnerable-child'] },
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    const data = updatedData(update);
+    expect(dec(data.mySchemaIds)).toEqual(['mistrust', 'abandonment']);
+    expect(dec(data.myModeIds)).toEqual(['vulnerable-child']);
+  });
+
+  it('карточки уже в списке target → лишней записи нет', async () => {
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: encryptJson([]) }),
+      baseRow({ mySchemaIds: encryptJson(['mistrust']) }),
+      { schemaIds: ['mistrust'] },
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update.mock.calls).toEqual([]);
+  });
+
+  it('нечитаемый (чужой ключ) список target не перезаписывается', async () => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const garbage = Buffer.alloc(48, 7).toString('base64');
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: encryptJson(['abandonment']) }),
+      baseRow({ mySchemaIds: garbage }),
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(update.mock.calls).toEqual([]);
+    err.mockRestore();
+  });
+
+  it('нечитаемый список source не мешает перенести карточки', async () => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const garbage = Buffer.alloc(48, 7).toString('base64');
+    const { tx, update } = makeTx(
+      baseRow({ mySchemaIds: garbage }),
+      baseRow({ mySchemaIds: encryptJson([]) }),
+      { schemaIds: ['abandonment'] },
+    );
+    await mergeUserScalarFields(tx, SRC, TGT);
+    expect(dec(updatedData(update).mySchemaIds)).toEqual(['abandonment']);
+    err.mockRestore();
   });
 });

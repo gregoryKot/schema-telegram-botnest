@@ -147,6 +147,7 @@ export class AuthAccountController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    requireCsrf(req, 'telegram/webapp', this.securityLog);
     const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
@@ -161,9 +162,8 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    // Telegram Web (web.telegram.org, Web A/K) грузит мини-апп в iframe, как
-    // MAX — strict-кука там не продлевается (2026-08-21, «постоянно нужно
-    // логиниться заново»). Нативное вебвью Telegram остаётся на strict.
+    // Telegram Web (Web A/K) грузит мини-апп в iframe, как MAX: strict-кука
+    // там не продлевается (2026-08-21). Нативное вебвью остаётся на strict.
     const crossSite = isCrossSiteRequest(
       req,
       this.config.getOrThrow<string>('WEBAPP_URL'),
