@@ -52,7 +52,23 @@ health_wait() {
   return 1
 }
 
+# Имена переменных бэкапов — те же, что в src/infra/backup-config.ts
+# (BACKUP_REQUIRED_ENV_VARS); сверка — src/infra/vps-ops.spec.ts. На VPS
+# `pgdata` — единственная копия базы, поэтому приложение без бэкапов в B2 не
+# стартует (аудит 2026-10, infra#11). Смотрим только имена: значения в вывод
+# не попадают, логи Actions публичны.
+BACKUP_ENV_NAMES=(B2_KEY_ID B2_APP_KEY B2_BUCKET BACKUP_ENCRYPTION_KEY)
+
+require_backup_env() {
+  local name missing=""
+  for name in "${BACKUP_ENV_NAMES[@]}"; do
+    grep -Eq "^${name}=[[:space:]]*[^[:space:]]" .env || missing="$missing $name"
+  done
+  [ -z "$missing" ] || die "в .env (секрет PROD_ENV) не заданы:$missing. На VPS база лежит только на диске сервера, без бэкапов в B2 приложение не запускается. Заведите бакет и ключи (docs/MIGRATION_VPS.md, шаг до переключения DNS), обновите PROD_ENV и повторите"
+}
+
 start_app() {
+  require_backup_env
   dc up -d --remove-orphans db caddy app
   health_wait 300
 }
@@ -95,6 +111,9 @@ cmd_deploy() {
   [ -n "$token" ] || die "токен ghcr не передан на stdin"
   lock
   require_ready
+  # До любых записей состояния: иначе release указывал бы на версию, которая не
+  # стартовала. При HOLD_APP приложение не запускается, проверка в release-hold.
+  [ -e HOLD_APP ] || require_backup_env
 
   # Вход в ghcr живёт во временном DOCKER_CONFIG и стирается сразу после pull.
   DOCKER_CONFIG=$(mktemp -d)
@@ -315,6 +334,7 @@ cmd_release_hold() {
   lock
   require_ready
   [ -s release ] || die "релиза нет: сначала деплой (push в main или deploy-vps.yml)"
+  require_backup_env # до снятия флага: отказ не должен терять HOLD_APP
   rm -f HOLD_APP
   log "HOLD_APP снят"
   if start_app; then prune_images; return 0; fi

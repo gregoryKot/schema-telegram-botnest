@@ -82,6 +82,30 @@ describe('backupFreshnessProbe', () => {
     expect(f.mock).not.toHaveBeenCalled();
   });
 
+  it('DEPLOY_TARGET=vps и бэкапы не настроены — авария: единственная копия базы на диске сервера', async () => {
+    const f = fakeFetch();
+    const res = await run({ DEPLOY_TARGET: 'vps' }, f);
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('единственная копия базы');
+    expect(res.detail).toContain('B2_KEY_ID');
+    expect(f.mock).not.toHaveBeenCalled();
+  });
+
+  it('DEPLOY_TARGET=amvera (и пустой) — «выключено» остаётся штатным', async () => {
+    const f = fakeFetch();
+    expect(await run({ DEPLOY_TARGET: 'amvera' }, f)).toEqual({
+      ok: true,
+      detail: 'выключено',
+    });
+  });
+
+  it('на VPS с полным набором — идёт проверять свежесть, а не краснеет', async () => {
+    const f = fakeFetch({ files: [file('2026-10-03', NOW - 5 * H)] });
+    const res = await run({ ...ENV, DEPLOY_TARGET: 'vps' }, f);
+    expect(res.ok).toBe(true);
+    expect(res.detail).toContain('последний бэкап');
+  });
+
   it('настроено не до конца — авария с именами недостающих переменных', async () => {
     const f = fakeFetch();
     const res = await run({ B2_BUCKET: 'b', B2_KEY_ID: 'k' }, f);

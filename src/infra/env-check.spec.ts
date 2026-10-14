@@ -155,6 +155,62 @@ describe('checkEnv', () => {
       expect(ids).not.toContain('backupKeyDistinctFromEncryptionKey');
     });
 
+    // Аудит 2026-10 (infra#11): на VPS pgdata — единственная копия базы.
+    describe('vpsRequiresBackups', () => {
+      const ids = (env: Record<string, string>, mode = 'production') =>
+        checkEnv({ ...ALL_VALID, ...env }, mode).crossCheckIssues.map(
+          (i) => i.id,
+        );
+      const FULL_B2 = {
+        B2_BUCKET: 'bkt',
+        B2_KEY_ID: 'k',
+        B2_APP_KEY: 'a',
+        BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
+      };
+
+      it('DEPLOY_TARGET=vps в production без B2_* — проблема с именами всех четырёх', () => {
+        const issue = checkEnv(
+          { ...ALL_VALID, DEPLOY_TARGET: 'vps' },
+          'production',
+        ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
+        for (const name of Object.keys(FULL_B2)) {
+          expect(issue?.problem).toContain(name);
+        }
+      });
+
+      it('на VPS не хватает одной — проблема называет именно её', () => {
+        const issue = checkEnv(
+          {
+            ...ALL_VALID,
+            ...FULL_B2,
+            DEPLOY_TARGET: 'vps',
+            B2_APP_KEY: undefined,
+          },
+          'production',
+        ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
+        expect(issue?.problem).toContain('B2_APP_KEY');
+        expect(issue?.problem).not.toContain('B2_BUCKET');
+      });
+
+      it('контроль: vps с полным набором, Amvera без B2, vps вне production — без проблемы', () => {
+        expect(ids({ DEPLOY_TARGET: 'vps', ...FULL_B2 })).not.toContain(
+          'vpsRequiresBackups',
+        );
+        expect(ids({})).not.toContain('vpsRequiresBackups');
+        expect(ids({ DEPLOY_TARGET: 'amvera' })).not.toContain(
+          'vpsRequiresBackups',
+        );
+        expect(ids({ DEPLOY_TARGET: 'vps' }, 'development')).not.toContain(
+          'vpsRequiresBackups',
+        );
+      });
+
+      it('DEPLOY_TARGET с опечаткой — неверный формат, а не молчаливая Amvera', () => {
+        const bad = checkEnv({ ...ALL_VALID, DEPLOY_TARGET: 'vps2' });
+        expect(bad.invalid.map((i) => i.name)).toContain('DEPLOY_TARGET');
+      });
+    });
+
     it('BACKUP_ENCRYPTION_KEY совпадает с ENCRYPTION_KEY — проблема', () => {
       const key = 'c'.repeat(64);
       const ids = checkEnv({

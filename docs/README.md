@@ -276,12 +276,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   строка в [INCIDENTS.md](INCIDENTS.md) ([AUDIT_2026-10, «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность)).
 - **Владельцу, до первого `release-hold` на VPS:** бакет B2 и `B2_KEY_ID`,
   `B2_APP_KEY`, `B2_BUCKET`, `BACKUP_ENCRYPTION_KEY` (отдельный от ключа полей;
-  см. `docs/ENV.md`). На VPS `pgdata` — единственная копия базы: второго слоя
-  (`pg_dump` на хосте, снапшот) в `deploy/vps/**` нет, а проба
-  `probe-backup-freshness.ts:157` при незаданных `B2_*` отвечает `ok: true,
-  «выключено»` и `checkEnv('production')` их не требует — зелёная самопроверка
-  при нуле бэкапов. Код: `ops.sh` отказывает в `release-hold` без `B2_*`, профиль
-  `DEPLOY_TARGET=vps` делает их обязательными ([AUDIT_2026-10, «Прод и деплой»](AUDIT_2026-10_FINDINGS.md#прод-и-деплой)).
+  шаги — [MIGRATION_VPS.md](MIGRATION_VPS.md), 0а; `docs/ENV.md`). Без них
+  `ops.sh` (`deploy`, `release-hold`) приложение не поднимет, `checkEnv` на
+  `DEPLOY_TARGET=vps` даст `error`, а проба `backupFreshness` покраснеет. Остаток —
+  второй слой: `pg_dump` по cron на самом хосте (`bootstrap.sh`) вне контейнера app
+  и проверка свежести файла в `cmd_status`: сегодня бэкап стартует только после
+  успешных миграций внутри app, при `HOLD_APP` и на странице техработ его нет, а
+  `pgdata` остаётся единственной копией между ночными прогонами
+  ([AUDIT_2026-10, «Прод и деплой»](AUDIT_2026-10_FINDINGS.md#прод-и-деплой)).
 - **Владельцу, в env прода** (до переезда — Amvera, после — `PROD_ENV`): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).

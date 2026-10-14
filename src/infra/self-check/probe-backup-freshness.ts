@@ -1,5 +1,5 @@
 import { Probe } from './types';
-import { backupConfigState, missingBackupVars } from '../backup-config';
+import { backupMisconfigResult } from '../backup-misconfig';
 
 // Проба «бэкапы в B2 действительно делаются» (аудит D-2, правило №21).
 // Скрипт бэкапа молчал годами, потому что его никто не вызывал и никто не
@@ -153,14 +153,8 @@ export function backupFreshnessProbe(
     title: 'Бэкапы БД в Backblaze B2',
     critical: false,
     async run() {
-      const state = backupConfigState(env);
-      if (state === 'off') return { ok: true, detail: 'выключено' };
-      if (state === 'partial') {
-        return {
-          ok: false,
-          detail: `бэкапы настроены не до конца: не заданы ${missingBackupVars(env).join(', ')}`,
-        };
-      }
+      const misconfigured = backupMisconfigResult(env);
+      if (misconfigured) return misconfigured;
       try {
         const auth = await authorize(env, fetchFn);
         const bucketId = await findBucketId(
