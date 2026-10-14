@@ -48,8 +48,16 @@ describe('TELEGRAM_PROVIDERS[TELEGRAF_BOT] — useFactory', () => {
     getMeMock.mockResolvedValue({ username: 'b' });
     useMock.mockClear();
     await factoryEntry.useFactory(makeConfig('123:ABC'));
-    expect(useMock).toHaveBeenCalledTimes(1);
-    expect(useMock).toHaveBeenCalledWith(privateChatOnly);
+    expect(useMock).toHaveBeenNthCalledWith(1, privateChatOnly);
+  });
+
+  it('вторым ставит предохранитель хвоста очереди — до любых хендлеров (backend#16)', async () => {
+    getMeMock.mockResolvedValue({ username: 'b' });
+    useMock.mockClear();
+    await factoryEntry.useFactory(makeConfig('123:ABC'));
+    expect(useMock).toHaveBeenCalledTimes(2);
+    expect(useMock).toHaveBeenNthCalledWith(2, expect.any(Function));
+    expect(useMock.mock.calls[1][0]).not.toBe(privateChatOnly);
   });
 
   it('BOT_TOKEN отсутствует — бросает и логирует ошибку, Telegraf не конструируется', async () => {
