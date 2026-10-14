@@ -165,12 +165,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   сначала сверка в кабинете, потом код. Усилитель остаётся:
   `webapp/src/pages/BookingPaidPage.tsx:57` после FailURL зовёт «попробовать
   снова» по той же ссылке без проверки `heldUntil`.
-- **Вебхук Robokassa на хосте визитки получает 301 без тела** — `/api/payment`
-  не в `PRACTICE_API_PREFIXES` (`practice-domain.middleware.ts:68-76`), а с #605
-  middleware стоит на всех методах. Воспроизведено: `Host: schemehappens.ru` →
-  `OK1` и CONFIRMED, `Host: kotlarewski.gr` → 301, бронь HELD. Запись «не
-  входил никогда» ниже в «На владельце» была неверна — до #605 POST проходил.
-  [Секция «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки).
 - **Три экрана и ручки брони врут клиенту и админу.** `BookingPaidPage.tsx:74`
   рисует «Встреча подтверждена» для HELD по факту владения токеном;
   `GET /slots` (`slot.service.ts:91,100`) берёт занятость по сырому
@@ -451,7 +445,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   и режимы» в `PatternsHero.tsx:55-58`.
 
 **На владельце (не код):**
-- **Какой ResultURL стоит в кабинете Robokassa?** `docs/BOOKING_SETUP.md` велит `https://kotlarewski.gr/api/payment/result`, но `/api/payment` не входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.middleware.ts`); до #605 (2026-10-03) middleware стоял только на GET и POST-вебхук проходил — с переносом на все методы вебхук с хоста визитки получает 301 без тела (воспроизведено supertest'ом: `Host: kotlarewski.gr` → 301, бронь остаётся HELD). Код: `/api/payment` в allow-list — [AUDIT_2026-10, «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки); вопрос владельцу остаётся: какой хост стоит в кабинете. Иначе вебхуки не доходят, и каждая оплата требует ручного `POST /api/booking/admin/confirm/:id`. Остальные вопросы по кабинетам — в [RUNBOOKS.md](RUNBOOKS.md#что-проверить-владельцу).
+- **Доходит ли вебхук Robokassa?** Код больше не зависит от хоста в кабинете: `/api/payment` в `PRACTICE_API_PREFIXES`, ResultURL на `schemehappens.ru` и на `kotlarewski.gr` подтверждает бронь одинаково (`test/payment-webhook-practice-host.e2e-spec.ts`). Сверь, что ResultURL в кабинете задан (метод POST) и после тестовой оплаты бронь стала CONFIRMED без ручного `POST /api/booking/admin/confirm/:id`. Остальные вопросы по кабинетам — в [RUNBOOKS.md](RUNBOOKS.md#что-проверить-владельцу).
 - Уведомление РКН: реестр операторов + трансграничная передача, pd.rkn.gov.ru.
 - Проверка продуктовых гипотез по `/stats` — замер D1 после aha-фичи и короткого онбординга.
 - Визитка kotlarewski.gr: цена и год практики решены (3 000 ₽, практика с 2025), открыты специализация на первом экране, отзывы, оплата из-за рубежа, галочка в форме знакомства, место блока «другой специалист», минус-слова Директа — пункты 3–8 в [CONVERSION_REVIEW_KOTLAREWSKI_2026-09.md](CONVERSION_REVIEW_KOTLAREWSKI_2026-09.md#что-решить-владельцу).
