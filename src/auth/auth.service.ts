@@ -89,14 +89,9 @@ export class AuthService {
     const expectedHash = crypto
       .createHmac('sha256', secretKey)
       .update(checkString)
-      .digest('hex');
+      .digest();
 
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(hash, 'hex'),
-        Buffer.from(expectedHash, 'hex'),
-      )
-    ) {
+    if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), expectedHash)) {
       throw new UnauthorizedException('Invalid Telegram WebApp signature');
     }
 
@@ -122,7 +117,8 @@ export class AuthService {
     ticket?: string,
   ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
-    const lower = email.toLowerCase().trim();
+    // Пробелов в адресе быть не может: isValidEmail выше их не пропускает.
+    const lower = email.toLowerCase();
 
     // B-16: до подтверждения адреса ничего не создаём — аккаунт появится при
     // погашении ссылки. Известный адрес — токен сразу на его аккаунт.
@@ -145,7 +141,8 @@ export class AuthService {
     email: string,
   ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
-    const lower = email.toLowerCase().trim();
+    // Пробелов в адресе быть не может: isValidEmail выше их не пропускает.
+    const lower = email.toLowerCase();
 
     const taken = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider: 'email', providerId: lower } },

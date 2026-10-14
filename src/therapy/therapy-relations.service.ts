@@ -7,8 +7,7 @@ import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 
 // Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
 // шифруются; легаси plaintext читается как есть (decrypt tolerant).
-const decName = (v: string | null): string | null =>
-  v == null ? null : (decrypt(v) ?? v);
+const decName = (v: string | null): string | null => decrypt(v) ?? v;
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
@@ -164,7 +163,7 @@ export class TherapyRelationsService {
         therapistId,
         clientId: null,
         status: 'active',
-        virtualClientName: encrypt(name.trim()) ?? name.trim(),
+        virtualClientName: encrypt(name.trim()),
       },
     });
     return this.getClients(therapistId);

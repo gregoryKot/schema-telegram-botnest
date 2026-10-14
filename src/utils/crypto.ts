@@ -8,6 +8,14 @@ import { Logger } from '@nestjs/common';
 // `npm run rotate-encryption`. After it finishes, remove ENCRYPTION_KEY_OLD.
 const HEX_KEY_RE = /^[0-9a-f]{64}$/i;
 
+/** Записи ENCRYPTION_KEY_OLD: один разбор на загрузку и на проверку в проде. */
+function oldKeyStrings(): string[] {
+  return (process.env.ENCRYPTION_KEY_OLD ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function loadKeys(): { current: Buffer | null; all: Buffer[] } {
   // Аудит 2026-10 (D3): одной проверки длины мало — `Buffer.from('zz…', 'hex')`
   // обрывает разбор на первом не-hex символе и отдаёт КОРОТКИЙ буфер, а длина
@@ -16,12 +24,7 @@ function loadKeys(): { current: Buffer | null; all: Buffer[] } {
   const parse = (hex: string): Buffer | null =>
     HEX_KEY_RE.test(hex) ? Buffer.from(hex, 'hex') : null;
   const cur = parse((process.env.ENCRYPTION_KEY ?? '').trim());
-  const olds = (process.env.ENCRYPTION_KEY_OLD ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map(parse)
-    .filter((k): k is Buffer => k !== null);
+  const olds = oldKeyStrings().map(parse);
   const all = [cur, ...olds].filter((k): k is Buffer => k !== null);
   return { current: cur, all };
 }
@@ -30,10 +33,7 @@ const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
 // Старый ключ, молча отброшенный из-за опечатки, — это нечитаемые данные после
 // ротации. В проде такой ENCRYPTION_KEY_OLD роняет бут, как и битый текущий.
 if (process.env.NODE_ENV === 'production') {
-  const bad = (process.env.ENCRYPTION_KEY_OLD ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s && !HEX_KEY_RE.test(s));
+  const bad = oldKeyStrings().filter((s) => !HEX_KEY_RE.test(s));
   if (bad.length > 0)
     throw new Error(
       `FATAL: ENCRYPTION_KEY_OLD содержит ключи не в формате 64 hex-символа (${bad.length} шт.) — ` +
@@ -148,7 +148,7 @@ function logDecryptFailure(): void {
 export function reencrypt(value: string | null | undefined): string | null {
   if (!value || !CURRENT_KEY) return value ?? null;
   const decrypted = decrypt(value);
-  if (decrypted === null || decrypted === value) return value;
+  if (decrypted === value) return value;
   return encrypt(decrypted);
 }
 

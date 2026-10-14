@@ -20,11 +20,13 @@ let isolatedLogger: NestLogger;
 
 function loadCrypto(env: {
   key?: string;
-  old?: string;
+  /** null — переменной нет вовсе (в проде так и бывает), а не пустая строка. */
+  old?: string | null;
   nodeEnv?: string;
 }): CryptoModule {
   process.env.ENCRYPTION_KEY = env.key ?? '';
-  process.env.ENCRYPTION_KEY_OLD = env.old ?? '';
+  if (env.old === null) delete process.env.ENCRYPTION_KEY_OLD;
+  else process.env.ENCRYPTION_KEY_OLD = env.old ?? '';
   process.env.NODE_ENV = env.nodeEnv ?? 'test';
   let mod: CryptoModule | undefined;
   jest.isolateModules(() => {
@@ -144,9 +146,16 @@ describe('конфигурация ключей', () => {
   });
 
   it('перевод строки или пробелы вокруг ключа (вставка в панель хостинга) — тот же ключ', () => {
+    // Шифруем модулем с «грязным» ключом: без trim он молча остался бы без
+    // ключа (passthrough), и blob был бы открытым текстом — поэтому сначала
+    // проверяем, что это именно шифротекст, и только потом читаем чистым.
     const blob = loadCrypto({ key: `${KEY_A}\n` }).encrypt('текст')!;
+    expect(blob).not.toBe('текст');
     expect(loadCrypto({ key: KEY_A }).decrypt(blob)).toBe('текст');
     expect(loadCrypto({ key: `  ${KEY_A} ` }).decrypt(blob)).toBe('текст');
+    // И обратно: шифротекст чистого ключа читается «грязным» модулем.
+    const clean = loadCrypto({ key: KEY_A }).encrypt('текст')!;
+    expect(loadCrypto({ key: `  ${KEY_A}\n` }).decrypt(clean)).toBe('текст');
   });
 
   it('encrypt() перепроверяет NODE_ENV динамически при каждом вызове, а не только на загрузке модуля', () => {
@@ -156,6 +165,112 @@ describe('конфигурация ключей', () => {
     const { encrypt } = loadCrypto({ nodeEnv: 'test' });
     process.env.NODE_ENV = 'production';
     expect(() => encrypt('текст')).toThrow(/ENCRYPTION_KEY is not configured/);
+  });
+});
+
+// Формат ключей и production-проверка при загрузке. До аудита 2026-10 на этом
+// месте мутационный прогон находил выживших: все тесты production проверяли
+// только ПАДЕНИЕ, а «валидная конфигурация в проде грузится» не проверял никто —
+// сломанная проверка, которая роняет бут на здоровых ключах, прошла бы CI.
+describe('загрузка ключей: формат и production', () => {
+  it('production с валидным ключом и без ENCRYPTION_KEY_OLD вовсе — грузится и шифрует', () => {
+    const { encrypt, decrypt } = loadCrypto({
+      key: KEY_A,
+      old: null,
+      nodeEnv: 'production',
+    });
+    const blob = encrypt('текст')!;
+    expect(blob).not.toBe('текст');
+    expect(decrypt(blob)).toBe('текст');
+  });
+
+  it('production с пустым ENCRYPTION_KEY_OLD — тоже грузится (пустая строка не «битый ключ»)', () => {
+    expect(() =>
+      loadCrypto({ key: KEY_A, old: '', nodeEnv: 'production' }),
+    ).not.toThrow();
+  });
+
+  it('production со списком валидных старых ключей (пробелы вокруг запятой, хвостовая запятая) — грузится и читает данные обоих', () => {
+    const a = loadCrypto({ key: KEY_A }).encrypt('под A')!;
+    const b = loadCrypto({ key: KEY_B }).encrypt('под B')!;
+    const rotated = loadCrypto({
+      key: 'cc'.repeat(32),
+      old: ` ${KEY_A} , ${KEY_B} ,`,
+      nodeEnv: 'production',
+    });
+    expect(rotated.decrypt(a)).toBe('под A');
+    expect(rotated.decrypt(b)).toBe('под B');
+  });
+
+  it('вне production битая запись в ENCRYPTION_KEY_OLD не роняет загрузку, валидные ключи рядом работают', () => {
+    const a = loadCrypto({ key: KEY_A }).encrypt('под A')!;
+    const mod = loadCrypto({
+      key: KEY_B,
+      old: `опечатка,${KEY_A}`,
+      nodeEnv: 'test',
+    });
+    expect(mod.decrypt(a)).toBe('под A');
+  });
+
+  it('production: сообщение о битом старом ключе называет число записей и последствие', () => {
+    expect(() =>
+      loadCrypto({
+        key: KEY_A,
+        old: `${KEY_B},zz,oops`,
+        nodeEnv: 'production',
+      }),
+    ).toThrow(/\(2 шт\.\).*не использовался бы для расшифровки/s);
+  });
+
+  // Регэксп формата обязан быть заякорён с обеих сторон: 64 hex-символа,
+  // окружённые мусором, — не ключ (иначе Buffer.from(…, 'hex') даст ключ
+  // другой длины или не тот, что задумал оператор).
+  it.each([
+    ['мусор перед 64 hex', `zz${KEY_A}`],
+    ['мусор после 64 hex', `${KEY_A}zz`],
+  ])('ENCRYPTION_KEY: %s — не ключ (production падает)', (_name, key) => {
+    expect(() => loadCrypto({ key, nodeEnv: 'production' })).toThrow(
+      /ENCRYPTION_KEY missing or malformed/,
+    );
+  });
+
+  it.each([
+    ['мусор перед 64 hex', `zz${KEY_B}`],
+    ['мусор после 64 hex', `${KEY_B}zz`],
+  ])(
+    'ENCRYPTION_KEY_OLD: %s — не ключ (production падает)',
+    (_name, oldKey) => {
+      expect(() =>
+        loadCrypto({ key: KEY_A, old: oldKey, nodeEnv: 'production' }),
+      ).toThrow(/ENCRYPTION_KEY_OLD/);
+    },
+  );
+});
+
+describe('decrypt: граница формата и нестроковые значения', () => {
+  // iv(12) + tag(16) без единого байта данных: GCM-подпись пустого сообщения
+  // валидна, поэтому расшифровка дала бы '' — а такой формат наш encrypt()
+  // никогда не выпускает (пустая строка не шифруется), значит это не наш блоб.
+  it('28 байт (iv+tag, данных нет) — не шифротекст: возвращается как есть, а не пустая строка', () => {
+    const { decrypt } = loadCrypto({ key: KEY_A });
+    const iv = Buffer.alloc(12, 7);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createCipheriv } = require('crypto') as typeof import('crypto');
+    const cipher = createCipheriv(
+      'aes-256-gcm',
+      Buffer.from(KEY_A, 'hex'),
+      iv,
+      { authTagLength: 16 },
+    );
+    cipher.final();
+    const blob = Buffer.concat([iv, cipher.getAuthTag()]).toString('base64');
+    expect(Buffer.from(blob, 'base64').length).toBe(28);
+    expect(decrypt(blob)).toBe(blob);
+  });
+
+  it('значение не строка (число из «грязной» строки БД) — возвращается как есть, а не TypeError', () => {
+    const { decrypt } = loadCrypto({ key: KEY_A });
+    expect(decrypt(123 as unknown as string)).toBe(123);
   });
 });
 
@@ -277,6 +392,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
     // куда смотреть (порча данных или недокатившаяся ротация ключа).
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('неполная ротация ENCRYPTION_KEY'),
+    );
+    // Контекст логгера — то, по чему алерт опознают в журнале и в DM.
+    expect((warn.mock.contexts[0] as { context?: string }).context).toBe(
+      'Crypto',
     );
   });
 
@@ -506,6 +625,23 @@ describe('encryptRecord/decryptRecord: необъявленные поля не 
     const { decryptRecord } = loadCrypto({ key: KEY_A });
     const row = { id: 1, [PLACEHOLDER]: 'плейнтекст' };
     expect(decryptRecord(row, {})[PLACEHOLDER]).toBe('плейнтекст');
+  });
+
+  // На плейнтексте расшифровка — тождество, поэтому тест выше не отличает «поле
+  // не тронуто» от «поле прогнали через decrypt». Различает только настоящий
+  // шифротекст в необъявленном поле: он обязан остаться шифротекстом.
+  it('decryptRecord: шифротекст в необъявленном поле остаётся шифротекстом (строка)', () => {
+    const { decryptRecord, encrypt } = loadCrypto({ key: KEY_A });
+    const blob = encrypt('секрет')!;
+    const row = { id: 1, [PLACEHOLDER]: blob };
+    expect(decryptRecord(row, {})[PLACEHOLDER]).toBe(blob);
+  });
+
+  it('decryptRecord: зашифрованный JSON в необъявленном поле остаётся строкой-шифротекстом', () => {
+    const { decryptRecord, encryptJson } = loadCrypto({ key: KEY_A });
+    const blob = encryptJson(['секрет'])!;
+    const row = { id: 1, [PLACEHOLDER]: blob };
+    expect(decryptRecord(row, {})[PLACEHOLDER]).toBe(blob);
   });
 });
 
