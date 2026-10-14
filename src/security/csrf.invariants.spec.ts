@@ -12,6 +12,8 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { cookieOptions } from '../auth/auth-http.util';
+import { collectSourceFiles } from './collect-source-files';
+import { EMBEDDERS } from './embedders';
 
 const AUTH_DIR = join(__dirname, '../auth');
 const UTIL = join(AUTH_DIR, 'auth-http.util.ts');
@@ -158,12 +160,44 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     expect(usesCrossSite(thirdControllerComputed)).toBe(true);
   });
 
+  // Правило №4: кука SameSite=None нужна ровно там, где мессенджер встраивает
+  // нас в iframe, а значит, площадка обязана стоять в реестре встраивателей
+  // (src/security/embedders.ts) — тогда её же пускает CSP frame-ancestors.
+  // Аудит 2026-10-11: кука для Telegram Web была, а CSP его не пускал.
+  const CROSS_SITE_ENTRY_TO_EMBEDDER: Record<string, string> = {
+    'auth-account.controller.ts': 'telegram-web',
+    'auth-max.controller.ts': 'max',
+  };
+
   it('crossSite включает только обмен подписи MAX и Telegram Web (webapp)', () => {
     const optedIn = ctrlFiles
       .filter((f) => usesCrossSite(readFileSync(join(AUTH_DIR, f), 'utf8')))
       .sort();
-    expect(optedIn).toEqual(
-      ['auth-account.controller.ts', 'auth-max.controller.ts'].sort(),
-    );
+    expect(optedIn).toEqual(Object.keys(CROSS_SITE_ENTRY_TO_EMBEDDER).sort());
+  });
+
+  it('SameSite=None выставляется в одном месте (cookieOptions), а не размазан по контроллерам', () => {
+    const withNone = collectSourceFiles(join(__dirname, '..'))
+      .filter((f) =>
+        /sameSite:\s*[^,\n]*['"]none['"]/.test(
+          stripComments(readFileSync(f, 'utf8')),
+        ),
+      )
+      .map((f) => f.slice(join(__dirname, '..').length + 1));
+    expect(withNone).toEqual(['auth/auth-http.util.ts']);
+  });
+
+  it('каждая точка с SameSite=None принадлежит встраивателю из реестра, и наоборот', () => {
+    const byName = new Map(EMBEDDERS.map((e) => [e.name, e]));
+    for (const embedderName of Object.values(CROSS_SITE_ENTRY_TO_EMBEDDER)) {
+      const e = byName.get(embedderName);
+      expect(e).toBeDefined();
+      expect(e!.crossSiteSession).toBe(true);
+    }
+    // Встраиватель, объявивший кросс-сайтовую сессию, обязан иметь точку входа.
+    const mapped = new Set(Object.values(CROSS_SITE_ENTRY_TO_EMBEDDER));
+    for (const e of EMBEDDERS.filter((x) => x.crossSiteSession)) {
+      expect(mapped.has(e.name)).toBe(true);
+    }
   });
 });

@@ -228,8 +228,14 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
   `script-src` — allowlist (`telegram.org`, `mc.yandex.ru`, `st.max.ru`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
-  `frame-ancestors 'self' https://max.ru https://*.max.ru` (+ `frameguard:false`) —
-  клик-джекинг закрыт списком источников (L12 аудита 2026-08). Инлайн-стили живут:
+  `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org`
+  (+ `frameguard:false`) — клик-джекинг закрыт списком источников (L12 аудита
+  2026-08). Список строится из единого реестра встраивателей
+  `src/security/embedders.ts` (MAX, Telegram Web K/A), а настройки helmet живут в
+  `src/security/helmet-config.ts`. Площадка, для которой выдаётся кросс-сайтовая
+  кука `SameSite=None`, обязана быть в реестре (сверка в
+  `csrf.invariants.spec.ts`) — иначе браузер не отрисует мини-апп, а сервер
+  ответит 200 (аудит 2026-10-11: Telegram Web). Инлайн-стили живут:
   `style-src` наследует дефолт helmet с `'unsafe-inline'`. Тонкую настройку менять
   осторожно, проверяя рендер в браузере.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
