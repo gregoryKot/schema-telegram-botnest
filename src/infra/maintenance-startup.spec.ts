@@ -46,6 +46,10 @@ function launch(env: Record<string, string>) {
     env: { ...process.env, PORT: '0', ...env },
     detached: true,
   });
+  // Весь stderr entrypoint'а (и унаследованный stderr APP_CMD) — для тестов,
+  // которые проверяют строки `[entrypoint] …` и число запусков приложения.
+  let logBuf = '';
+  proc.stderr?.on('data', (d: Buffer) => (logBuf += d.toString()));
   const frontPort = new Promise<number>((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('front не поднялся за 5с')),
@@ -67,7 +71,7 @@ function launch(env: Record<string, string>) {
   const exit = new Promise<number>((resolve) =>
     proc.on('exit', (c) => resolve(c ?? -1)),
   );
-  return { proc, frontPort, exit };
+  return { proc, frontPort, exit, log: () => logBuf };
 }
 
 async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
@@ -83,6 +87,23 @@ async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
   }
   throw new Error(`не дождались ${want} по ${url}`);
 }
+
+// Ждём, пока предикат над логом станет истинным. Бюджет большой (10 с): на
+// загруженном раннере второго полного прогона jest спеки с настоящим процессом
+// мигали по нехватке времени (docs/README.md, «Тесты и даты»).
+async function waitLog(
+  log: () => string,
+  ok: (l: string) => boolean,
+  budgetMs = 10000,
+): Promise<string> {
+  const until = Date.now() + budgetMs;
+  while (Date.now() < until) {
+    if (ok(log())) return log();
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error(`не дождались условия по логу:\n${log()}`);
+}
+const count = (l: string, re: RegExp) => (l.match(re) ?? []).length;
 
 describe('entrypoint (супервизор старта)', () => {
   const alive: ChildProcess[] = [];
@@ -199,4 +220,83 @@ describe('entrypoint (супервизор старта)', () => {
     alive.push(proc);
     expect(await exit).toBe(0);
   }, 10000);
+
+  // Инцидент-класс аудита 2026-10-11 (r2-3#0): `if (shuttingDown || app.signal)
+  // return` читал ЛЮБОЙ сигнал у ребёнка как штатную остановку. V8 при heap-OOM
+  // (SIGABRT), OOM-killer хоста (SIGKILL), нативный модуль (SIGSEGV) → прод
+  // навсегда на техработах: ни перезапуска, ни строки в логе, а HEALTHCHECK
+  // зелёный (front отдаёт 200). Ребёнок убивает сам себя настоящим сигналом,
+  // как это делает ядро, — шов «child.on('exit', (code, signal))» проходит
+  // настоящий процесс, а не подставленный объект.
+  describe.each([
+    ['SIGKILL (OOM-killer хоста)', 'kill -9 $$', 'SIGKILL'],
+    ['SIGABRT (V8 heap-OOM)', 'kill -ABRT $$', 'SIGABRT'],
+    ['SIGSEGV (нативный модуль)', 'kill -SEGV $$', 'SIGSEGV'],
+    ['SIGTERM не от entrypoint', 'kill -TERM $$', 'SIGTERM'],
+  ])('ребёнок убит сигналом: %s', (_name, kill, sig) => {
+    const appCmd = `echo APP-START >&2; sleep 0.2; ${kill}`;
+
+    it('перезапускается с логом и бэкоффом, после лимита — техработы', async () => {
+      const { proc, frontPort, log } = launch({
+        RECOVER_CMD: 'true',
+        MIGRATE_CMD: 'true',
+        APP_CMD: appCmd,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '3',
+        STARTUP_BACKOFF_MS: '10',
+      });
+      alive.push(proc);
+      const port = await frontPort;
+      const out = await waitLog(log, (l) => /лимит перезапусков/.test(l));
+      expect(count(out, /APP-START/g)).toBe(3);
+      expect(
+        count(out, new RegExp(`приложение убито сигналом ${sig} `, 'g')),
+      ).toBe(3);
+      expect(out).toMatch(/ranMs=\d+, fails=3\/3/);
+      // Лимит исчерпан → процесс жив и отдаёт техработы (а не молча умер).
+      expect(proc.exitCode).toBeNull();
+      const text = await poll(
+        `http://127.0.0.1:${port}/`,
+        /технические работы/,
+      );
+      expect(text).toContain('технические работы');
+    }, 30000);
+
+    it('проработало дольше HEALTHY_UPTIME → счётчик сбрасывается, лимита нет', async () => {
+      const { proc, frontPort, log } = launch({
+        RECOVER_CMD: 'true',
+        MIGRATE_CMD: 'true',
+        APP_CMD: appCmd,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '2',
+        STARTUP_BACKOFF_MS: '10',
+        STARTUP_HEALTHY_MS: '0', // любой прогон дольше 0 мс — «здоровый»
+      });
+      alive.push(proc);
+      await frontPort;
+      const out = await waitLog(log, (l) => count(l, /APP-START/g) >= 4);
+      expect(out).not.toMatch(/лимит перезапусков/);
+      expect(out).toMatch(`приложение убито сигналом ${sig} (ranMs=`);
+      expect(out).not.toMatch(/fails=2\/2/);
+    }, 30000);
+  });
+
+  it('контроль: SIGTERM самому entrypoint → приложение гасится, выход 0, без перезапуска и без «убито»', async () => {
+    const { proc, frontPort, exit, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; exec sleep 30',
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '3',
+      STARTUP_BACKOFF_MS: '10',
+    });
+    alive.push(proc);
+    await frontPort;
+    await waitLog(log, (l) => /APP-START/.test(l));
+    proc.kill('SIGTERM');
+    expect(await exit).toBe(0);
+    const out = log();
+    expect(count(out, /APP-START/g)).toBe(1);
+    expect(out).not.toMatch(/убито сигналом|приложение упало/);
+  }, 30000);
 });

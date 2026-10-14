@@ -960,7 +960,7 @@
   "src/auth/merge-subscriptions.ts": 93,
   "src/auth/merge-summary.types.ts": 25,
   "src/auth/merge-two-factor.ts": 25,
-  "src/auth/merge-user-fields.ts": 100,
+  "src/auth/merge-user-fields.ts": 90,
   "src/auth/merge-user-rules.ts": 164,
   "src/auth/merge.service.ts": 349,
   "src/auth/oauth-host.ts": 90,
