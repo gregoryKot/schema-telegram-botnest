@@ -404,6 +404,11 @@ jobs:
       # миграцией (booking_pii_retention).
       - name: e2e обезличивание броней по сроку на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
+      # security#19 (аудит 2026-10): POST /api/booking/book с returning=true
+      # отвечает клиенту и не-клиенту одинаково — ClientMeeting ищется по clientKey
+      # в настоящей БД, поэтому на шве, а не на моке.
+      - name: e2e запись не выдаёт, клиент ли контакт, на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-returning-oracle.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт

@@ -20,6 +20,7 @@ import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
 import { BOOKING_SCHEMA } from './booking.schema';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 import { isValidTimeZone } from './client-timezone';
 import {
   listBookings,
@@ -83,15 +84,13 @@ export class BookingService {
     if (!dto.acceptedOffer) {
       throw new BadRequestException('OFFER_NOT_ACCEPTED');
     }
-    // Returning client: contact must match an existing personal meeting, else a
-    // duplicate room. INTRO_15 — всегда первая встреча: returning игнорируем.
-    if (
-      dto.returning &&
+    // security#19: ответ не зависит от того, клиент ли этот контакт (раньше
+    // 400 CLIENT_NOT_FOUND vs 200 HELD — оракул). Несовпадение — пометка
+    // админу. INTRO_15 — всегда первая встреча: returning игнорируем.
+    const returningUnmatched =
+      !!dto.returning &&
       dto.type !== SessionType.INTRO_15 &&
-      !(await this.meeting.hasMeetingForContact(dto.clientContact))
-    ) {
-      throw new BadRequestException('CLIENT_NOT_FOUND');
-    }
+      !(await this.meeting.hasMeetingForContact(dto.clientContact));
     // No last-minute bookings: the slot must be at least MIN_BOOK_LEAD_HOURS away.
     if (dto.startsAt.getTime() < Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000) {
       throw new BadRequestException('TOO_SOON');
@@ -155,6 +154,7 @@ export class BookingService {
         startsAt: dto.startsAt,
         type: dto.type,
         clientContact: dto.clientContact,
+        adminNote: returningUnmatched ? RETURNING_NOT_FOUND_NOTE : undefined,
       },
     );
   }
