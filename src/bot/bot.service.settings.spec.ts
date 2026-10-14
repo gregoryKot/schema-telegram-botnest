@@ -6,7 +6,6 @@ import { BotService } from './bot.service';
 function makeDb(userRow: Record<string, unknown> = {}) {
   const notes: any[] = [];
   const childhoodRatings: any[] = [];
-  const notifications: any[] = [];
   const user: any = { notifyTimezone: 'Europe/Moscow', ...userRow };
 
   const db: any = {
@@ -57,23 +56,10 @@ function makeDb(userRow: Record<string, unknown> = {}) {
         return row;
       }),
     },
-    scheduledNotification: {
-      updateMany: jest.fn(({ where }: any) => {
-        const matched = notifications.filter(
-          (n) =>
-            n.type === where.type &&
-            n.sentAt === where.sentAt &&
-            n.cancelledAt === where.cancelledAt,
-        );
-        matched.forEach((n) => (n.cancelledAt = new Date()));
-        return { count: matched.length };
-      }),
-    },
     // $transaction для saveChildhoodRatings — исполняет массив промисов, как
     // это делает реальный Prisma для batch-варианта.
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     _user: user,
-    _notifications: notifications,
   };
   return db;
 }
@@ -227,24 +213,5 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
     const svc = new BotService(db);
 
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
-  });
-});
-
-describe('BotService.cancelAllPreReminders', () => {
-  it('отменяет только неотправленные и ещё не отменённые pre_reminder', async () => {
-    const db = makeDb();
-    const svc = new BotService(db);
-    db._notifications.push(
-      { type: 'pre_reminder', sentAt: null, cancelledAt: null },
-      { type: 'pre_reminder', sentAt: null, cancelledAt: null },
-    );
-
-    const n = await svc.cancelAllPreReminders();
-
-    expect(n).toBe(2);
-    expect(db.scheduledNotification.updateMany).toHaveBeenCalledWith({
-      where: { type: 'pre_reminder', sentAt: null, cancelledAt: null },
-      data: { cancelledAt: expect.any(Date) },
-    });
   });
 });

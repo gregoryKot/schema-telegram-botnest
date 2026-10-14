@@ -501,9 +501,11 @@ jobs:
           ADMIN_ID: ${{ secrets.ADMIN_ID }}
           FAILED: ${{ steps.collect.outputs.failed }}
         run: |
+          # Нет секретов — нет DM-канала, и это видно: шаг красный (правило
+          # №15). Шаг стоит ПОСЛЕ issue: красный DM не срывает её создание.
           if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
-            echo "DM не отправлен: нет секретов BOT_TOKEN/ADMIN_ID"
-            exit 0
+            echo "::error::alarm: нет секретов BOT_TOKEN/ADMIN_ID — DM-канал не настроен, владелец о красном nightly из Telegram не узнает"
+            exit 1
           fi
           RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           TEXT=$(printf 'Ночная проверка упала: %s.\nСмотреть: %s' "${FAILED//,/, }" "$RUN_URL")

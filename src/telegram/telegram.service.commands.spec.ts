@@ -11,7 +11,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
   const botService = {
     getUserSettings: jest.fn().mockResolvedValue(null),
     hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
-    cancelAllPreReminders: jest.fn().mockResolvedValue(0),
     ...overrides.botService,
   };
   const analyticsService = {
