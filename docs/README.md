@@ -109,13 +109,17 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`merge_subscription_conflict`, `empty_signature` не в спеке).
   `src/auth/security-log-redact.ts` (#625) не в `mutate` ни одного
   stryker-конфига. [Секция «Наблюдатели и CI»](AUDIT_2026-10_FINDINGS.md#наблюдатели-и-ci).
-- **Login-CSRF: три ручки входа ставят refresh-куку без `requireCsrf`** —
-  `auth-account.controller.ts:143-173` (`telegram/webapp`), `auth-max.controller.ts:36-76`,
-  `auth-ticket.controller.ts:126-159`; глобальный `urlencoded` в `main.ts:140`
-  пускает HTML-форму. Воспроизведено supertest'ом: форма с чужого сайта →
-  `Set-Cookie refresh_token`, следующий `refresh` жертвы отдаёт JWT атакующего;
-  контроль на `telegram/widget` отбит 401. `csrf.invariants.spec.ts` пинит
-  читателей куки, не установщиков. [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
+- **`src/infra/vps-ops.spec.ts` мигает под нагрузкой** — при полном `npx jest`
+  на общей машине падает один из тестов `deploy/vps/ops.sh` (2026-10-14: «повторный
+  деплой того же sha…», на чистом `main` в изоляции — «HOLD_APP…»; каждый раз другой,
+  в одиночном прогоне иногда зелёный). Корень не разбирали: подозрение на таймаут
+  shell-скриптов при занятых ядрах. Доказано только тем, что падает и без правок.
+- **`test/refresh-rotation.e2e-spec.ts` на живом Postgres мигает** — в связке
+  `login-ticket` → `refresh-rotation` → `app-auth` с `E2E_REAL_DB=1` падает 1-2
+  теста группы «потерянный ответ против кражи» (2026-10-14: 3 прогона из 3 на чистом
+  `main`, каждый раз другие; поодиночке зелёный). Корень не разбирали: подозрение на
+  зависимость от секундной гранулярности iat/времени между шагами. В CI порядок
+  другой — как ведёт себя там, не проверено.
 - **CSP `frame-ancestors` без `web.telegram.org`** (`src/main.ts:113`): мини-апп в
   Telegram Web K/A не отрисовывается, сервер отвечает 200, отказ живёт только
   в консоли браузера. Воспроизведено в Chromium с настоящим helmet: родитель
