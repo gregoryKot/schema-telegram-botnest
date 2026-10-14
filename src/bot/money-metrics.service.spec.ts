@@ -5,14 +5,17 @@ import { MoneyMetricsService } from './money-metrics.service';
 
 describe('MoneyMetricsService.getMetrics', () => {
   type Rows = Array<Record<string, unknown>>;
-  const build = (calls: {
-    donation7: Rows;
-    charge7: Rows;
-    booking7: Rows;
-    donationAll: Rows;
-    chargeAll: Rows;
-    bookingAll: Rows;
-  }) => {
+  const build = (
+    calls: {
+      donation7: Rows;
+      charge7: Rows;
+      booking7: Rows;
+      donationAll: Rows;
+      chargeAll: Rows;
+      bookingAll: Rows;
+    },
+    withoutLink = 0,
+  ) => {
     // window() запускает три groupBy параллельно (Promise.all), дважды —
     // сначала за 7 дней (this.window(since7)), потом за всё время
     // (this.window(undefined)) — тоже через общий Promise.all в getMetrics().
@@ -33,16 +36,18 @@ describe('MoneyMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce(calls.booking7)
       .mockResolvedValueOnce(calls.bookingAll);
+    const bookingCount = jest.fn().mockResolvedValue(withoutLink);
     const prisma = {
       donation: { groupBy: donationGroupBy },
       subscriptionCharge: { groupBy: chargeGroupBy },
-      booking: { groupBy: bookingGroupBy },
+      booking: { groupBy: bookingGroupBy, count: bookingCount },
     } as never;
     return {
       service: new MoneyMetricsService(prisma),
       donationGroupBy,
       chargeGroupBy,
       bookingGroupBy,
+      bookingCount,
     };
   };
 
@@ -151,5 +156,24 @@ describe('MoneyMetricsService.getMetrics', () => {
     await expect(service.render()).resolves.toContain(
       'Поддержали проект: 3 раза на 1500 ₽',
     );
+  });
+
+  it('render() подклеивает строку про подтверждённые записи без ссылки на встречу', async () => {
+    const { service, bookingCount } = build(
+      {
+        donation7: EMPTY,
+        charge7: EMPTY,
+        booking7: EMPTY,
+        donationAll: EMPTY,
+        chargeAll: EMPTY,
+        bookingAll: EMPTY,
+      },
+      2,
+    );
+
+    await expect(service.render()).resolves.toContain(
+      'Подтверждённых записей без ссылки на встречу: 2',
+    );
+    expect(bookingCount).toHaveBeenCalledTimes(1);
   });
 });

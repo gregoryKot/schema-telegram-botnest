@@ -17,12 +17,17 @@ function makeService(
     calDavEnabled?: boolean;
     dueReminders?: any[];
     claimRun?: boolean;
+    /** Сколько строк вернёт CAS флага эффектов (0 — параллельный проход успел). */
+    flagClaimCount?: number;
   } = {},
 ) {
   const prisma: any = {
     booking: {
       update: jest.fn(({ where, data }: any) =>
         Promise.resolve({ id: where.id, ...data }),
+      ),
+      updateMany: jest.fn(() =>
+        Promise.resolve({ count: opts.flagClaimCount ?? 1 }),
       ),
       findMany: jest.fn(() => Promise.resolve(opts.dueReminders ?? [])),
     },
@@ -172,6 +177,87 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
       'Запись подтверждена',
     );
     expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
+  });
+});
+
+// security#21: onConfirmed повторяется (ретрай вебхука, ручное подтверждение,
+// крон-добор) и обязан пропускать сделанное, а флаг ставить до DM.
+describe('BookingNotifyService.onConfirmed — идемпотентность по состоянию строки', () => {
+  it('флаг confirmEffectsDoneAt уже стоит — не делает ничего', async () => {
+    const { service, prisma, meeting, calDav, telegram, email } = makeService();
+    await expect(
+      service.onConfirmed(
+        booking({ confirmEffectsDoneAt: new Date('2026-07-01') }),
+      ),
+    ).resolves.toBeUndefined();
+    expect(meeting.createMeeting).not.toHaveBeenCalled();
+    expect(calDav.pushEvent).not.toHaveBeenCalled();
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).not.toHaveBeenCalled();
+  });
+
+  it('ссылка и событие уже записаны — повтор не создаёт встречу и не пушит событие, но доделывает флаг и DM', async () => {
+    const { service, prisma, meeting, calDav, telegram } = makeService();
+    await service.onConfirmed(
+      booking({ meetingUrl: 'https://existing', calDavUid: 'uid-old' }),
+    );
+    expect(meeting.createMeeting).not.toHaveBeenCalled();
+    expect(calDav.pushEvent).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 42, confirmEffectsDoneAt: null },
+      data: { confirmEffectsDoneAt: expect.any(Date) },
+    });
+    expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
+  });
+
+  it('есть calDavUid, CalDAV включён — «не попала в календарь» не шлём (событие уже там)', async () => {
+    const { service, telegram } = makeService({ calDavEnabled: true });
+    await service.onConfirmed(
+      booking({ meetingUrl: 'https://x', calDavUid: 'uid-old' }),
+    );
+    const texts = telegram.notifyAdmin.mock.calls.map((c: any[]) => c[0]);
+    expect(texts).toHaveLength(1);
+    expect(texts[0]).toContain('Запись подтверждена');
+  });
+
+  it('флаг ставится ПОСЛЕ ссылки и календаря и ДО DM', async () => {
+    const order: string[] = [];
+    const { service, prisma, meeting, calDav, telegram } = makeService();
+    meeting.createMeeting.mockImplementation(async () => {
+      order.push('meeting');
+      return 'https://meet.jit.si/x';
+    });
+    calDav.pushEvent.mockImplementation(async () => {
+      order.push('caldav');
+      return 'uid-1';
+    });
+    prisma.booking.updateMany.mockImplementation(async () => {
+      order.push('flag');
+      return { count: 1 };
+    });
+    telegram.notifyAdmin.mockImplementation(async () => {
+      order.push('dm');
+      return true;
+    });
+    await service.onConfirmed(booking());
+    expect(order).toEqual(['meeting', 'caldav', 'flag', 'dm']);
+  });
+
+  it('падение записи ссылки: ни флага, ни DM — повтор доделает всё', async () => {
+    const { service, prisma, telegram } = makeService();
+    prisma.booking.update.mockRejectedValueOnce(new Error('ECONNRESET'));
+    await expect(service.onConfirmed(booking())).rejects.toThrow('ECONNRESET');
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+  });
+
+  it('параллельный проход уже поставил флаг (CAS 0 строк) — DM второй раз не шлём', async () => {
+    const { service, telegram, email } = makeService({ flagClaimCount: 0 });
+    await expect(service.onConfirmed(booking())).resolves.toBeUndefined();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 });
 

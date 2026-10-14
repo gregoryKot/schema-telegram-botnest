@@ -163,6 +163,7 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
     const prisma = {
       booking: {
         update: jest.fn(() => Promise.resolve({})),
+        updateMany: jest.fn(() => Promise.resolve({ count: 1 })),
       },
     };
     const calDav = {
