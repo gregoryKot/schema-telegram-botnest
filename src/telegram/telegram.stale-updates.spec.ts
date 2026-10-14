@@ -61,9 +61,11 @@ describe('staleUpdateGuard: сообщения', () => {
   });
 
   it('ровно на границе окна — ещё обрабатывается', async () => {
-    const { bot, seen } = makeBot();
+    const { bot, seen, logger } = makeBot();
     await bot.handleUpdate(message(1, NOW - STALE_MESSAGE_MS));
     expect(seen).toHaveBeenCalledTimes(1);
+    expect(seen).toHaveBeenCalledWith('message', 1);
+    expect(logger.log).not.toHaveBeenCalled();
   });
 
   it('старше 10 минут отбрасывается и логируется, хендлер не зовётся', async () => {
@@ -112,6 +114,7 @@ describe('staleUpdateGuard: повторная доставка', () => {
     await bot.handleUpdate(message(7, NOW));
     await bot.handleUpdate(message(7, NOW));
     expect(seen).toHaveBeenCalledTimes(1);
+    expect(seen).toHaveBeenCalledWith('message', 7);
   });
 
   it('память ограничена: самый старый id забывается после лимита', async () => {

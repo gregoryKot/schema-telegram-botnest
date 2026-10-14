@@ -129,6 +129,16 @@ describe('BotLauncher', () => {
     makeLauncher(launch).start();
     await failTimes(8);
     expect(launch).toHaveBeenCalledTimes(8);
+    expect(launch).toHaveBeenLastCalledWith({ dropPendingUpdates: false });
+    // error ушёл ровно один раз (на 5-й), дальше — warn с растущим счётчиком.
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('подряд неудач: 5'),
+      expect.any(Error),
+    );
+    expect(warn).toHaveBeenLastCalledWith(
+      expect.stringContaining('подряд неудач: 8'),
+    );
   });
 
   it('error не чаще раза в ERROR_REPEAT_EVERY неудач (не заливаем DM)', () => {
@@ -188,8 +198,14 @@ describe('BotLauncher', () => {
       })
       .mockImplementationOnce(PENDING);
     makeLauncher(launch).start();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /подряд неудач: 1\), ретрай через 5 с: .*sync boom/,
+      ),
+    );
     jest.advanceTimersByTime(5_000);
     expect(launch).toHaveBeenCalledTimes(2);
+    expect(launch).toHaveBeenLastCalledWith({ dropPendingUpdates: false });
   });
 
   it('первый getUpdates после ретрая переводит состояние в running и обнуляет счётчик', async () => {
@@ -251,6 +267,10 @@ describe('BotLauncher', () => {
     }
     await flush();
 
+    // Каждая неудача — «первая подряд»: счётчик обнулил long-poll перед ней.
+    expect(warn).toHaveBeenLastCalledWith(
+      expect.stringContaining('подряд неудач: 1)'),
+    );
     expect(error).not.toHaveBeenCalled();
   });
 });
