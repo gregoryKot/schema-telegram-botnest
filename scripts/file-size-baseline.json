@@ -1040,7 +1040,7 @@
   "src/booking/rule-expand.ts": 60,
   "src/booking/slot-filters.ts": 122,
   "src/booking/slot-override.service.ts": 56,
-  "src/booking/slot.service.ts": 163,
+  "src/booking/slot.service.ts": 151,
   "src/bot/account-link-metrics.format.ts": 47,
   "src/bot/account-link-metrics.service.ts": 51,
   "src/bot/account.delete.ts": 120,
