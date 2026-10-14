@@ -205,10 +205,53 @@ describe('BotLauncher', () => {
 
     await bot.telegram.callApi('getMe', {});
     expect(pollingStatus.get().state).toBe('failed');
-    await bot.telegram.callApi('getUpdates', {});
+    // Так Telegraf зовёт getUpdates в основном цикле (polling.js).
+    await bot.telegram.callApi('getUpdates', { timeout: 50, offset: 0 });
     expect(pollingStatus.get().state).toBe('running');
     expect(pollingStatus.get().lastError).toBeNull();
     expect(callApi).toHaveBeenCalledTimes(2);
+  });
+
+  it('служебный getUpdates из finally Telegraf (sync offset, limit: 1) не даёт running и не обнуляет счётчик', async () => {
+    const callApi = jest.fn().mockResolvedValue([]);
+    const bot = {
+      launch: jest.fn().mockRejectedValue(new Error('boom')),
+      telegram: { callApi },
+    };
+    new BotLauncher(bot as never, new Logger('t')).start();
+
+    for (let i = 1; i < ERROR_AFTER_FAILURES; i++) {
+      await flush();
+      await bot.telegram.callApi('getUpdates', { offset: 7, limit: 1 });
+      expect(pollingStatus.get().state).toBe('failed');
+      jest.advanceTimersByTime(retryDelayMs(i));
+    }
+    await flush();
+    await bot.telegram.callApi('getUpdates', { offset: 7, limit: 1 });
+
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('подряд неудач: 5'),
+      expect.any(Error),
+    );
+  });
+
+  it('контроль: long-poll основного цикла между неудачами по-прежнему обнуляет счётчик', async () => {
+    const callApi = jest.fn().mockResolvedValue([]);
+    const bot = {
+      launch: jest.fn().mockRejectedValue(new Error('boom')),
+      telegram: { callApi },
+    };
+    new BotLauncher(bot as never, new Logger('t')).start();
+
+    for (let i = 1; i <= ERROR_AFTER_FAILURES; i++) {
+      await flush();
+      await bot.telegram.callApi('getUpdates', { timeout: 50, offset: 0 });
+      jest.advanceTimersByTime(60_000);
+    }
+    await flush();
+
+    expect(error).not.toHaveBeenCalled();
   });
 });
 

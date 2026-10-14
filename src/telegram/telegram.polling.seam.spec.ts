@@ -5,7 +5,9 @@
 //   * 409 один раз, потом 200 → поллинг поднимается (getUpdates > 1);
 //   * 409 посреди жизни → поллинг возвращается, апдейты не теряются и не
 //     обрабатываются дважды;
-//   * апдейты, лежавшие в очереди до launch(), обработаны (не стёрты).
+//   * апдейты, лежавшие в очереди до launch(), обработаны (не стёрты);
+//   * не-409 сбой цикла: служебный getUpdates из `finally` Telegraf (sync
+//     offset) не обнуляет счётчик подряд идущих неудач.
 import { Logger } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import type { Update } from 'telegraf/types';
@@ -140,6 +142,25 @@ describe('поллинг на шве: настоящий Telegraf против �
 
     await until(() => error.mock.calls.length >= 1);
     expect(api.hits.getUpdates).toBeGreaterThanOrEqual(5);
+    expect(pollingStatus.get().state).toBe('failed');
+  });
+
+  it('long-poll отклонён (400), а служебный sync в finally Telegraf проходит: счётчик не обнуляется, error на 5-й подряд', async () => {
+    // Корень: после не-409 сбоя цикла Telegraf зовёт getUpdates {offset,
+    // limit: 1} (syncUpdateOffset). Его успех раньше считался «поллинг ожил»
+    // и сбрасывал счётчик — неудачи вечно были «первой подряд», error молчал.
+    await boot(['400-long']);
+    launcher = new BotLauncher(bot, new Logger('t'), [5]);
+    launcher.start();
+
+    await until(() => error.mock.calls.length >= 1);
+    expect(String(error.mock.calls[0][0])).toContain('подряд неудач: 5');
+    // Сверка условия: между неудачами реально проходил sync (limit: 1, без
+    // timeout) — иначе тест проверял бы не тот шов.
+    const syncs = api.getUpdatesBodies.filter(
+      (b) => b.limit === 1 && b.timeout === undefined,
+    );
+    expect(syncs.length).toBeGreaterThanOrEqual(4);
     expect(pollingStatus.get().state).toBe('failed');
   });
 

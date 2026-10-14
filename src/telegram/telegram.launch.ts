@@ -45,6 +45,13 @@ export function isPollingConflict(err: unknown): boolean {
   return msg.includes('409') || msg.includes('terminated by other');
 }
 
+/** getUpdates основного цикла поллинга (а не служебный sync offset). */
+function isLongPoll(args: readonly unknown[]): boolean {
+  if (args[0] !== 'getUpdates') return false;
+  const timeout = (args[1] as { timeout?: unknown } | undefined)?.timeout;
+  return typeof timeout === 'number' && timeout > 0;
+}
+
 export class BotLauncher {
   private failures = 0;
   private stopped = false;
@@ -74,6 +81,12 @@ export class BotLauncher {
    * `running` — только после ОТВЕТА getUpdates: getMe отвечает и у мёртвого
    * поллинга (на нём стоит telegramProbe), а 409 прилетает именно на getUpdates.
    * Telegraf не отдаёт этот факт наружу, поэтому наблюдаем вызов API.
+   *
+   * Считаем только long-poll основного цикла (`timeout` > 0). После любого
+   * не-409 сбоя Telegraf в `finally` зовёт служебный getUpdates {offset,
+   * limit: 1} без `timeout` (syncUpdateOffset): он проходит и у падающего
+   * цикла, и если засчитывать его, счётчик подряд идущих неудач обнуляется
+   * перед каждым onFailure — до error (DM владельцу) дело не доходит.
    */
   private watchGetUpdates(): void {
     const tg = this.bot.telegram as unknown as
@@ -82,7 +95,7 @@ export class BotLauncher {
     if (!tg || !original) return;
     tg.callApi = async (...args: unknown[]) => {
       const result: unknown = await original.call(tg, ...args);
-      if (args[0] === 'getUpdates' && !this.stopped) {
+      if (isLongPoll(args) && !this.stopped) {
         this.failures = 0;
         pollingStatus.set('running');
       }

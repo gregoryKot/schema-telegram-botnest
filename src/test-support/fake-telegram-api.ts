@@ -7,6 +7,9 @@
 //   * getUpdates: отдаёт апдейты с update_id >= offset, подтверждённые
 //     (< offset) выбрасывает; пустая очередь — «long poll» на HOLD_MS;
 //   * 409 «Conflict: terminated by other getUpdates request» — по сценарию;
+//   * '400-long': Telegram отклоняет long-poll (в теле есть `timeout`), а
+//     короткий служебный getUpdates (sync offset: `limit: 1`, без `timeout`)
+//     принимает — так Telegraf делает в `finally` после любого сбоя цикла;
 //   * deleteWebhook с drop_pending_updates=true стирает очередь (документация
 //     Bot API: «Pass True to drop all pending updates»).
 // Записанного ответа площадки на 409 в test/fixtures/recorded нет — текст
@@ -16,7 +19,7 @@ import { createServer, Server } from 'http';
 import { AddressInfo } from 'net';
 import type { Update } from 'telegraf/types';
 
-export type GetUpdatesStep = 'ok' | '409';
+export type GetUpdatesStep = 'ok' | '409' | '400-long';
 
 const HOLD_MS = 40;
 
@@ -27,6 +30,8 @@ export interface FakeTelegramApi {
   hits: Record<string, number>;
   /** Тела deleteWebhook — по ним видно, просил ли код стереть очередь. */
   deleteWebhookBodies: Array<Record<string, unknown>>;
+  /** Тела getUpdates: long-poll (`timeout`) отличим от служебного sync. */
+  getUpdatesBodies: Array<Record<string, unknown>>;
   /** Положить апдейт в очередь «на стороне Telegram». */
   enqueue(update: Update): void;
   /** Сценарий ответов на getUpdates; после конца — последний шаг повторяется. */
@@ -43,6 +48,7 @@ export async function startFakeTelegramApi(
 ): Promise<FakeTelegramApi> {
   const hits: Record<string, number> = {};
   const deleteWebhookBodies: Array<Record<string, unknown>> = [];
+  const getUpdatesBodies: Array<Record<string, unknown>> = [];
   let queue: Update[] = [];
   let steps = script;
   let getUpdatesCalls = 0;
@@ -69,7 +75,18 @@ export async function startFakeTelegramApi(
         return reply(true);
       }
       if (method === 'getUpdates') {
+        getUpdatesBodies.push(body);
         const step = steps[Math.min(getUpdatesCalls++, steps.length - 1)];
+        if (step === '400-long' && Number(body.timeout ?? 0) > 0) {
+          res.statusCode = 400;
+          return res.end(
+            JSON.stringify({
+              ok: false,
+              error_code: 400,
+              description: 'Bad Request: long poll rejected',
+            }),
+          );
+        }
         if (step === '409') {
           res.statusCode = 409;
           return res.end(
@@ -95,6 +112,7 @@ export async function startFakeTelegramApi(
     apiRoot: `http://127.0.0.1:${port}`,
     hits,
     deleteWebhookBodies,
+    getUpdatesBodies,
     enqueue: (u) => void queue.push(u),
     setScript: (s) => {
       steps = s;
