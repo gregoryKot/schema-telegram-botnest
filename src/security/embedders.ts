@@ -37,20 +37,28 @@ export const EMBEDDERS: readonly Embedder[] = [
     crossSiteSession: true,
   },
   {
-    // Telegram Web (версии K и A) показывает Mini App в <iframe>, родитель —
-    // https://web.telegram.org. Источник: собственный SDK площадки
-    // (webapp/public/telegram-web-app.js, ветка isIframe: проверка
-    // `event.origin === 'https://web.telegram.org'`). Оба клиента — K
-    // (/k/) и A (/a/) — живут на этом одном хосте, пути в CSP не нужны.
-    // Альтернативные хосты (webk./webz./weba.telegram.org) НЕ включены: SDK
-    // площадки знает только web.telegram.org, а те адреса исторически ведут
-    // на него редиректом, то есть родителем iframe остаётся он. Появится
-    // доказанный случай встраивания с другого хоста — допиши его сюда
-    // вместе с тестом. `*.telegram.org` шире
-    // нужного — под ним живут и другие поддомены площадки (core., oauth.,
-    // desktop. и т.д.), которым встраивать нас незачем.
+    // Telegram Web показывает Mini App в <iframe>. SDK площадки
+    // (webapp/public/telegram-web-app.js, ветка isIframe) знает только
+    // `https://web.telegram.org`, но живые хосты клиентов шире — проверено
+    // curl'ом 2026-10-14:
+    //  - web.telegram.org — основной хост (клиент K на /k/, A на /a/);
+    //  - webk.telegram.org — отдаёт полный клиент Web K (200), без редиректа
+    //    на хост выше: человек, открывший закладку webk., остаётся на нём;
+    //  - weba.telegram.org — клиент Web A (200); его redirect.js уводит на
+    //    web.telegram.org/a только если в localStorage нет `tt-global-state`,
+    //    то есть вернувшийся пользователь остаётся на weba.;
+    //  - webz.telegram.org отвечает 301 на weba., сам родителем не бывает —
+    //    не включён.
+    // `*.telegram.org` шире нужного — под ним живут и другие поддомены
+    // площадки (core., oauth., desktop. и т.д.), которым встраивать нас
+    // незачем. Появится доказанный случай встраивания с другого хоста —
+    // допиши его сюда вместе с пином в frame-ancestors.invariants.spec.ts.
     name: 'telegram-web',
-    origins: ['https://web.telegram.org'],
+    origins: [
+      'https://web.telegram.org',
+      'https://webk.telegram.org',
+      'https://weba.telegram.org',
+    ],
     crossSiteSession: true,
   },
 ];

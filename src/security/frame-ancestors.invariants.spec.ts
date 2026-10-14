@@ -40,8 +40,13 @@ describe('CSP frame-ancestors: единый реестр встраивател�
     }
   });
 
-  it('Telegram Web (web.telegram.org) пущен в iframe', async () => {
-    expect(await ancestors()).toContain('https://web.telegram.org');
+  it('Telegram Web (web., webk., weba.) пущен в iframe', async () => {
+    const got = await ancestors();
+    expect(got).toContain('https://web.telegram.org');
+    expect(got).toContain('https://webk.telegram.org');
+    expect(got).toContain('https://weba.telegram.org');
+    // webz. отвечает 301 на weba. и родителем iframe не бывает.
+    expect(got).not.toContain('https://webz.telegram.org');
   });
 
   it('заголовок состоит только из реестра: ничего лишнего и без «всем можно»', async () => {
@@ -64,7 +69,14 @@ describe('CSP frame-ancestors: единый реестр встраивател�
     expect(new Set(names).size).toBe(names.length);
     for (const e of EMBEDDERS) {
       expect(e.origins.length).toBeGreaterThan(0);
-      for (const o of e.origins) expect(o).toMatch(/^https:\/\/[^/\s]+$/);
+      for (const o of e.origins) {
+        expect(o).toMatch(/^https:\/\/[^/\s]+$/);
+        // Не «https://*»: хост — настоящее имя, допустима только подстановка
+        // одного уровня поддомена в начале.
+        expect(o).toMatch(
+          /^https:\/\/(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]+$/,
+        );
+      }
     }
   });
 });

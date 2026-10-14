@@ -228,10 +228,10 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
   `script-src` — allowlist (`telegram.org`, `mc.yandex.ru`, `st.max.ru`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
-  `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org`
+  `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org https://webk.telegram.org https://weba.telegram.org`
   (+ `frameguard:false`) — клик-джекинг закрыт списком источников (L12 аудита
   2026-08). Список строится из единого реестра встраивателей
-  `src/security/embedders.ts` (MAX, Telegram Web K/A), а настройки helmet живут в
+  `src/security/embedders.ts` (MAX; Telegram Web: web./webk./weba.telegram.org — webk. и weba. отдают клиентов сами, без редиректа, проверено 2026-10-14), а настройки helmet живут в
   `src/security/helmet-config.ts`. Площадка, для которой выдаётся кросс-сайтовая
   кука `SameSite=None`, обязана быть в реестре (сверка в
   `csrf.invariants.spec.ts`) — иначе браузер не отрисует мини-апп, а сервер
