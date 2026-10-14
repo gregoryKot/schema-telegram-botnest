@@ -89,7 +89,7 @@ jobs:
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client
-          test/body-limit test/payment-webhook-practice-host
+          test/body-limit test/login-csrf test/payment-webhook-practice-host
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high

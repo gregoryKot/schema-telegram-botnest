@@ -10,6 +10,10 @@ import { join } from 'path';
 import { BODY_LIMIT, BODY_LIMIT_BYTES } from '../infra/body-limit';
 
 const MAIN = readFileSync(join(__dirname, '../main.ts'), 'utf8');
+const PARSERS = readFileSync(
+  join(__dirname, '../infra/body-parsers.ts'),
+  'utf8',
+);
 // Опции helmet (CSP) живут в отдельном модуле: main.ts только подключает их.
 const HELMET_CFG = readFileSync(join(__dirname, 'helmet-config.ts'), 'utf8');
 
@@ -55,13 +59,24 @@ describe('трипваер: hardening-middleware в main.ts', () => {
   });
 
   it('cap тела запроса (анти-DoS через огромный JSON)', () => {
-    // Значение переехало в src/infra/body-limit.ts (аудит 2026-07-20, L2),
-    // поэтому проверяем не литерал в тексте, а оба парсера и сам потолок.
-    expect(MAIN).toMatch(/json\(\s*\{\s*limit:\s*BODY_LIMIT\s*\}/);
-    expect(MAIN).toMatch(/urlencoded\(\s*\{\s*limit:\s*BODY_LIMIT/);
+    // Значение переехало в src/infra/body-limit.ts (аудит 2026-07-20, L2), а
+    // сами парсеры — в src/infra/body-parsers.ts: main.ts и тестовые
+    // приложения зовут одну функцию. Проверяем вызов, оба парсера и потолок.
+    expect(MAIN).toMatch(/installBodyParsers\(app\)/);
+    expect(PARSERS).toMatch(/json\(\s*\{\s*limit:\s*BODY_LIMIT\s*\}/);
+    expect(PARSERS).toMatch(/urlencoded\(\s*\{\s*limit:\s*BODY_LIMIT/);
     expect(BODY_LIMIT).toMatch(/kb$/i);
     // Разумный потолок: килобайты, не десятки мегабайт.
     expect(BODY_LIMIT_BYTES).toBeLessThanOrEqual(1024 * 1024);
+  });
+
+  // Login-CSRF (аудит 2026-10-11, security#6): urlencoded без пути делал из
+  // любого POST форму-«простой запрос» — без preflight и без заголовков.
+  it('urlencoded стоит только на путях внешних форм, не глобально', () => {
+    expect(MAIN).not.toMatch(/urlencoded/);
+    const uses = [...PARSERS.matchAll(/app\.use\(([^;]*?urlencoded[^;]*)\)/g)];
+    expect(uses).toHaveLength(1);
+    expect(uses[0][1]).toMatch(/^\s*path\s*,/);
   });
 
   it('штатный парсер Nest отключён явно (иначе потолок молча падает до 100 КБ)', () => {

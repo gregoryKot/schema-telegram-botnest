@@ -105,13 +105,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`merge_subscription_conflict`, `empty_signature` не в спеке).
   `src/auth/security-log-redact.ts` (#625) не в `mutate` ни одного
   stryker-конфига. [Секция «Наблюдатели и CI»](AUDIT_2026-10_FINDINGS.md#наблюдатели-и-ci).
-- **Login-CSRF: три ручки входа ставят refresh-куку без `requireCsrf`** —
-  `auth-account.controller.ts:143-173` (`telegram/webapp`), `auth-max.controller.ts:36-76`,
-  `auth-ticket.controller.ts:126-159`; глобальный `urlencoded` в `main.ts:140`
-  пускает HTML-форму. Воспроизведено supertest'ом: форма с чужого сайта →
-  `Set-Cookie refresh_token`, следующий `refresh` жертвы отдаёт JWT атакующего;
-  контроль на `telegram/widget` отбит 401. `csrf.invariants.spec.ts` пинит
-  читателей куки, не установщиков. [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
+- **`test/refresh-rotation.e2e-spec.ts` на живом Postgres мигает** — в связке
+  `login-ticket` → `refresh-rotation` → `app-auth` с `E2E_REAL_DB=1` падает 1-2
+  теста группы «потерянный ответ против кражи» (2026-10-14: 3 прогона из 3 на чистом
+  `main`, каждый раз другие; поодиночке зелёный). Корень не разбирали: подозрение на
+  зависимость от секундной гранулярности iat/времени между шагами. В CI порядок
+  другой — как ведёт себя там, не проверено.
 - **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
   `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
   проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
@@ -595,14 +594,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md), п. 3.4. Не путать со
   следующей строкой: там у того же `maintenance-startup.spec.ts` другой дефект
   (не хватает бюджета ожидания). Файл один — чинить обе разом.
-- `src/infra/vps-ops.spec.ts`, тесты «повторный деплой того же sha не затирает
-  release.prev самим собой» и «HOLD_APP: поднимаются только db и caddy…», мигают
-  на загруженной машине: из трёх одиночных прогонов `npx jest
-  src/infra/vps-ops.spec.ts` один дал 2 красных (`deploy(NEW).status` = 1 вместо
-  0), два других и прогон на чистом `origin/main` — 29 из 29. Спек гоняет
-  настоящий `deploy/vps/ops.sh` с подставным docker; причина не разобрана
-  (подозрение — таймаут ожидания «здоровья» в `ops.sh` при занятых ядрах).
-  Найдено попутно при починке смерти приложения по сигналу, к ней не относится.
 - `src/security/install-openssl.spec.ts:99` — «первая попытка упала —
   переключается на зеркало» падает детерминированно (не флак: sandbox
   полностью подставной, `apt-get`/`sleep`/`openssl` — стабы, сети нет).
