@@ -120,13 +120,33 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `main`, каждый раз другие; поодиночке зелёный). Корень не разбирали: подозрение на
   зависимость от секундной гранулярности iat/времени между шагами. В CI порядок
   другой — как ведёт себя там, не проверено.
-- **CSP `frame-ancestors` без `web.telegram.org`** (`src/main.ts:113`): мини-апп в
-  Telegram Web K/A не отрисовывается, сервер отвечает 200, отказ живёт только
-  в консоли браузера. Воспроизведено в Chromium с настоящим helmet: родитель
-  `max.ru` грузит `/app/`, `web.telegram.org` — «Refused to frame». Код спорит
-  сам с собой: `main.ts:109-112` «Telegram сюда не нужен» против
-  `auth-account.controller.ts:164` «кука для Telegram Web в iframe».
-  [Секция «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность).
+- **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
+  `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
+  проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
+  отрисовку `/app/` в iframe с родителем `web.telegram.org` настоящий браузер в
+  CI не проверяет (нужен nightly-прогон в `e2e-browser/`: страница-обёртка с
+  iframe на `/app/`, хосты родителей разрешаются в тестовый сервер через
+  `--host-resolver-rules`, контрольный чужой хост обязан блокироваться;
+  образец сценария — воспроизведение аудита 2026-10-11, находка security#8).
+  Платформа запуска (`tgWebAppPlatform` = weba/webk/ios/…) нигде не пишется в
+  аналитику, поэтому тихую поломку одной платформы по `/stats` не увидеть.
+  Шов тоже покрыт не целиком: `frame-ancestors.invariants.spec.ts` собирает
+  `express` + `helmet(helmetOptions())`, а то, что `main.ts` ставит ровно этот
+  helmet один раз и без перекрытия CSP на маршруте, держит только регэксп в
+  `hardening.invariants.spec.ts` (второй `app.use(helmet(...))` не поймают);
+  закрывается общим `configureApp(app)` для `main.ts` и e2e-сборщиков (см.
+  «Зеркала e2e-бутстрапа расходятся с `main.ts`» в `AUDIT_2026-10_FINDINGS.md`).
+- **Сессия Telegram Web, скорее всего, не получает кросс-сайтовую куку.**
+  `isCrossSiteRequest` (`src/auth/auth-http.util.ts:53-58`) читает
+  `Sec-Fetch-Site`, а он сравнивает только того, кто начал запрос, с целью и не
+  смотрит на предков iframe: `fetch` со страницы `schemehappens.ru/app/` внутри
+  `web.telegram.org` приходит как `same-origin`, функция возвращает `false`, и
+  refresh-кука выдаётся `Strict` — браузер не пришлёт её из кросс-сайтового
+  iframe. К тому же без `Partitioned` (CHIPS) её режет блокировка сторонних кук.
+  Не доказано: нужна проверка в настоящем браузере (iframe с родителем на другом
+  хосте, логин через `telegram/webapp`, потом `refresh`). Сверка в
+  `csrf.invariants.spec.ts` закрепляет соответствие «точка входа — встраиватель»,
+  но не то, что кука реально выдаётся с `SameSite=None`.
 - **Публичный оракул «этот контакт — клиент?»**: `booking.service.ts:99-105` при
   `returning: true` отвечает 400 `CLIENT_NOT_FOUND` или 200 `HELD` по наличию
   контакта в `ClientMeeting`, заодно занимая слот на 15 минут и шля админу
