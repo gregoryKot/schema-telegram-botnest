@@ -128,7 +128,10 @@ describe('SecurityLogService — окно DM-бюджета', () => {
       service.log('csrf_blocked', { endpoint: 'refresh' });
     }
     await flush();
-    expect(mockNotify).toHaveBeenCalledTimes(K);
+    // Не просто счётчик: дошли именно K DM про это событие.
+    expect(mockNotify.mock.calls.map((c) => c[1])).toEqual(
+      Array(K).fill('🔐 Security: csrf_blocked'),
+    );
   });
 
   it('событие через полное окно после первого снова допускается', async () => {
@@ -142,7 +145,9 @@ describe('SecurityLogService — окно DM-бюджета', () => {
     now = WINDOW_MS + 1_000;
     service.log('csrf_blocked', { endpoint: 'refresh' });
     await flush();
-    expect(mockNotify).toHaveBeenCalledTimes(K + 1);
+    expect(mockNotify.mock.calls.map((c) => c[1])).toEqual(
+      Array(K + 1).fill('🔐 Security: csrf_blocked'),
+    );
   });
 });
 
