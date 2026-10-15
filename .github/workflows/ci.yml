@@ -90,6 +90,7 @@ jobs:
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
+          test/text-limits
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
@@ -150,6 +151,12 @@ jobs:
       # не проверяется: нестроковый email ловит TypeError на .trim() и отдаёт
       # 500 вместо 400. Причина по каждому исключению — в бейслайне.
       - run: node scripts/check-body-dto.mjs
+      # Контроллер не режет поля запроса молча (находка аудита 2026-10-11,
+      # backend#29): заметка терапевта на 6000 знаков при DTO на 10 000
+      # отвечала 201 и теряла хвост из-за `slice(0, 5000)` в контроллере.
+      # Лимит один и стоит в DTO — превышение даёт 400. Исключения (дата из
+      # ISO-момента) — в scripts/body-truncation-baseline.json с причиной.
+      - run: node scripts/check-body-truncation.mjs
       # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
@@ -418,6 +425,12 @@ jobs:
       # не эмулирует $executeRaw, поэтому тоже только тут.
       - name: e2e .ics для клиента на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
+      # Аудит 2026-10-11, security#15: экран после оплаты не вправе говорить
+      # «подтверждена» по SuccessURL без вебхука. Шов целиком: book →
+      # /api/payment/success → by-token (HELD, paid=false) → вебхук → CONFIRMED.
+      # book берёт advisory-lock через $executeRaw — фейковая Prisma не годится.
+      - name: e2e экран после оплаты на реальном Postgres (success без вебхука)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-paid-page.e2e-spec.ts
       # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
       # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
       # в шифрованную колонку и обратное чтение через драйвер и decryptRecord —
@@ -467,6 +480,7 @@ jobs:
           test/merge-my-lists.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts
           test/exercise-delete-ownership.e2e-spec.ts
@@ -662,6 +676,12 @@ jobs:
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
+      # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
+      # ym-disable-keys. Текстовое поле на странице из personalRoutes без метки
+      # красит CI. Абсолютный, без бейслайна. Секреты в DOM (ссылка встречи,
+      # токен в href) держит webvisorSecrets.test.tsx в vitest этой же джобы.
+      - run: node scripts/check-webvisor-fields.mjs
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
