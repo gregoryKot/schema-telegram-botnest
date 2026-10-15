@@ -18,11 +18,12 @@ const ROOT = join(__dirname, '..', '..');
 const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
 
 const TEXTAREA_RE = /<textarea/i;
-// Детекцией считается и прямой вызов detectCrisis*, и общий гейт-примитив
-// <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) — он
-// инкапсулирует detectCrisisAny + CrisisCard; что сам CrisisGate реально
-// зовёт detectCrisis, фиксирует отдельный тест ниже.
-const DETECT_CRISIS_RE = /detectCrisis|CrisisGate/;
+// Детекцией считается и прямой вызов detectCrisis*, и общие гейт-примитивы:
+// <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) и
+// <BookingCrisisNote> (webapp/src/components/booking/BookingCrisisNote.tsx,
+// форма записи на визитке) — оба инкапсулируют detectCrisisAny + карточку; что
+// сами они реально зовут detectCrisis, фиксируют отдельные тесты ниже.
+const DETECT_CRISIS_RE = /detectCrisis|CrisisGate|BookingCrisisNote/;
 
 // Все .tsx-файлы с <textarea> (свободный текст пользователя), путь
 // относительно корня репозитория.
@@ -43,13 +44,10 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'админская проверка текста фразы перед сохранением',
   'webapp/src/pages/admin/ArticleEditor.tsx': 'админский редактор статей сайта',
   'webapp/src/pages/admin/HealthyAdultSection.tsx': 'админская секция контента',
-  // Лендинг и запись на приём — контактная форма/бронирование, не дневник.
-  'webapp/src/pages/landing/BookingForm.tsx': 'лид-форма записи с лендинга',
-  // BookingPicker распилен (правило №10): <textarea> «Запрос» уехал в
-  // RequestField, сам пикер остался без свободного текста — запись переехала
-  // за полем, а не добавилась (тот же случай, что SettingsSheet ниже).
-  'webapp/src/components/booking/RequestField.tsx':
-    'поле «Запрос» записи на приём — контактная форма, не дневник',
+  // Поле «Запрос» записи на приём (BookingForm и BookingPicker) здесь больше
+  // не числится: посетитель описывает там своё состояние до всякого контакта,
+  // это свободный текст о переживаниях — кризисный путь подключён (аудит
+  // 2026-10, frontends#5; RequestField → BookingCrisisNote), запись снята.
   // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
   // рефлексия/переживание.
   'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
@@ -156,8 +154,10 @@ describe('трипваер: кризисная детекция для своб�
     // 19 → 20 (2026-08, перенос «Разбор случая» в webapp): CaseSceneScreen.tsx —
     // дочерний <textarea>-контрол потока, тот же класс, что уже допущенный
     // DiaryTextArea.tsx строкой выше (детекция стоит в родительском shared-хуке).
+    // 20 → 18 (2026-10, frontends#5): поле «Запрос» формы записи получило
+    // кризисную карточку — BookingForm.tsx и RequestField.tsx сняты с allowlist.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      20,
+      18,
     );
   });
 
@@ -170,6 +170,32 @@ describe('трипваер: кризисная детекция для своб�
     );
     expect(src).toMatch(/detectCrisisAny/);
     expect(src).toMatch(/CrisisCard/);
+  });
+
+  it('BookingCrisisNote (форма записи на визитке) сам зовёт detectCrisisAny и карточку', () => {
+    // Регэксп категории (A) засчитывает <BookingCrisisNote> как детекцию — якорь
+    // против выродившегося в пустышку примитива (тот же приём, что у CrisisGate).
+    const src = readFileSync(
+      join(ROOT, 'webapp/src/components/booking/BookingCrisisNote.tsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/detectCrisisAny/);
+    expect(src).toMatch(/CrisisCardView/);
+  });
+
+  it('форма записи: оба экрана с полем «Запрос» и оба терминальных экрана подключают детекцию', () => {
+    // RequestField — единственный <textarea> «Запроса» (BookingForm и
+    // BookingPicker берут его); результат — DoneScreen/AwaitPaymentScreen и
+    // «Заявка отправлена» простой формы. Потеря любого звена — карточки нет.
+    for (const rel of [
+      'webapp/src/components/booking/RequestField.tsx',
+      'webapp/src/components/booking/BookingResultScreens.tsx',
+      'webapp/src/pages/landing/BookingForm.tsx',
+    ]) {
+      expect(readFileSync(join(ROOT, rel), 'utf8')).toMatch(
+        /BookingCrisisNote/,
+      );
+    }
   });
 
   it('санити: ключевые терапевтические шиты подключают детекцию (diary + letter/safe place и т.п.)', () => {

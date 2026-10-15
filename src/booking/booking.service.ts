@@ -21,31 +21,20 @@ import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { isValidTimeZone } from './client-timezone';
-import type { ContactChannel } from './contact-channel';
 import {
   listBookings,
   getBookingById,
   getPublicBookingByToken,
 } from './booking.queries';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import {
+  claimCancel,
+  expireHeldBookings,
+  paymentAfterCancel,
+} from './booking.transitions';
+import type { CreateBookingDto } from './booking.types';
 
-export interface CreateBookingDto {
-  startsAt: Date;
-  durationMin: number;
-  type: SessionType;
-  clientName: string;
-  clientContact: string;
-  clientChannel?: ContactChannel;
-  message?: string;
-  /** Client ticked "returning visit" — require an existing personal meeting. */
-  returning?: boolean;
-  /** Client ticked the public-offer consent checkbox. Required to take payment. */
-  acceptedOffer?: boolean;
-  /** Атрибуция лида (страница + referrer). Не PII, хранится открыто. */
-  source?: string;
-  /** IANA-пояс посетителя из Intl. Невалидный — игнорируется (не 400). */
-  clientTimeZone?: string;
-}
+export type { CreateBookingDto };
 
 const HOLD_MINUTES = 15;
 
@@ -190,10 +179,15 @@ export class BookingService {
 
     // P-2: атомарный CAS вместо check-then-act — параллельные ретраи webhook
     // Robokassa не задваивают side-effects (уведомление, meeting-линк):
-    // updateMany выигрывает ровно один вызов.
+    // updateMany выигрывает ровно один вызов. paidAt — только при оплате
+    // вебхуком (paidAmount); ручное подтверждение админом — не оплата.
     const claimed = await this.prisma.booking.updateMany({
       where: { id, status: BookingStatus.HELD },
-      data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+      data: {
+        status: BookingStatus.CONFIRMED,
+        heldUntil: null,
+        ...(paidAmount != null && { paidAt: new Date() }),
+      },
     });
     if (claimed.count === 0) {
       const now = await this.prisma.booking.findUnique({
@@ -202,6 +196,14 @@ export class BookingService {
       });
       // Повторный webhook по уже подтверждённой броне — идемпотентный успех.
       if (now?.status === BookingStatus.CONFIRMED) return { ok: true };
+      // Деньги пришли, а бронь CANCELLED: факт оплаты в БД, затем сигнал.
+      if (now?.status === BookingStatus.CANCELLED && paidAmount != null) {
+        throw await paymentAfterCancel(
+          this.prisma,
+          decryptRecord(booking, BOOKING_SCHEMA),
+          paidAmount,
+        );
+      }
       throw new ConflictException(
         `Cannot confirm booking in status ${now?.status ?? 'UNKNOWN'}`,
       );
@@ -235,14 +237,15 @@ export class BookingService {
       throw new BadRequestException('CANCEL_TOO_LATE');
     }
 
-    await this.prisma.booking.update({
-      where: { cancelToken },
-      data: { status: BookingStatus.CANCELLED, heldUntil: null },
-    });
+    // CAS (аудит 2026-10-11, r2-1#1): параллельные отмены и отмена поверх
+    // чужого перехода не задваивают DM/письма/DELETE в CalDAV; эффекты — по
+    // свежей строке (calDavUid мог записать выигравший confirm).
+    const fresh = await claimCancel(this.prisma, cancelToken, booking);
+    if (!fresh) return { ok: true };
 
     await this.notify.onCancelled(
-      decryptRecord(booking, BOOKING_SCHEMA),
-      booking.calDavUid,
+      decryptRecord(fresh, BOOKING_SCHEMA),
+      fresh.calDavUid,
     );
     this.logger.log(`Booking ${booking.id} CANCELLED`);
     return { ok: true };
@@ -274,17 +277,14 @@ export class BookingService {
       ))
     )
       return;
-    const expiring = await this.prisma.booking.findMany({
-      where: { status: BookingStatus.HELD, heldUntil: { lte: new Date() } },
-    });
-    if (!expiring.length) return;
-    await this.prisma.booking.updateMany({
-      where: { id: { in: expiring.map((b) => b.id) } },
-      data: { status: BookingStatus.CANCELLED, heldUntil: null },
-    });
-    this.logger.log(`Expired ${expiring.length} HELD booking(s)`);
+    // CAS построчно (аудит 2026-10-11, r2-1#0): оплаченную за миллисекунды до
+    // тика бронь крон не перекрашивает, а «истекла без оплаты» шлётся только
+    // по строкам, которые перевёл именно этот тик.
+    const expired = await expireHeldBookings(this.prisma);
+    if (!expired.length) return;
+    this.logger.log(`Expired ${expired.length} HELD booking(s)`);
     await this.notify.notifyExpired(
-      expiring.map((b) => decryptRecord(b, BOOKING_SCHEMA)),
+      expired.map((b) => decryptRecord(b, BOOKING_SCHEMA)),
     );
   }
 }

@@ -255,7 +255,12 @@ describe('SlotService.getSlots — занятость из внешнего ка
       busy,
     });
     const slots = await service.getSlots(MONDAY, MONDAY);
-    expect(calDav.getBusyTimes).toHaveBeenCalledWith(MONDAY, MONDAY);
+    // Календарь читается по окну слотов (целые UTC-сутки), а не по сырым
+    // аргументам — иначе вечер последнего дня невидим (r2-1#2, тесты внизу).
+    expect(calDav.getBusyTimes).toHaveBeenCalledWith(
+      MONDAY,
+      new Date('2026-07-13T23:59:59.999Z'),
+    );
     expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
       '2026-07-13T18:00:00.000Z',
     ]);
@@ -497,5 +502,116 @@ describe('SlotService.getSlots — пересекающиеся правила �
     const { service } = makeService({ rules: [RULE, { ...RULE, id: 9 }] });
     const slots = await service.getSlots(MONDAY, MONDAY);
     expect(slots).toHaveLength(2);
+  });
+});
+
+// Аудит 2026-10-11, r2-1#2: GET /slots без параметров ставит toDate = now+14д
+// (МОМЕНТ посреди суток), слоты раздавались до 23:59:59.999Z этого дня, а
+// брони и события календаря читались только до самого toDate — всё, что
+// начиналось на 14-й день позже времени суток «сейчас», выглядело свободным,
+// и клиент получал 409 уже после заполненной формы. Фейк Prisma фильтрует по
+// where так же, как БД, а фейк CalDAV — как time-range сервера календаря, иначе
+// тест ничего бы не доказал (см. makeService).
+//
+// Про зоны (правило №25): окно считается в UTC, а правило здесь в Europe/Moscow,
+// поэтому тест проверяет точные UTC-значения. Внутри jest смена process.env.TZ
+// до Date не доходит (см. caldav-busy.spec.ts) — вторую зону даёт CI-прогон
+// всего пакета под TZ=Australia/Sydney.
+describe('SlotService.getSlots — последний день окна (toDate — момент посреди суток)', () => {
+  const NOW = new Date('2026-07-13T10:40:00Z'); // понедельник, 10:40 UTC
+  const TO = new Date(NOW.getTime() + 14 * 86_400_000); // 2026-07-27T10:40Z — тоже понедельник
+  const LAST_17 = '2026-07-27T17:00:00.000Z'; // позже 10:40 — раньше выпадало из выборки
+  const LAST_18 = '2026-07-27T18:00:00.000Z';
+  const WEEK_17 = '2026-07-20T17:00:00.000Z';
+  const confirmed = (iso: string, durationMin = 50) => ({
+    startsAt: new Date(iso),
+    durationMin,
+    status: BookingStatus.CONFIRMED,
+  });
+  const starts = (slots: { startsAt: Date }[]) =>
+    slots.map((s) => s.startsAt.toISOString());
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(NOW);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('контроль: бронь внутри [from,to] скрывает слот', async () => {
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(WEEK_17)],
+    });
+    expect(starts(await service.getSlots(NOW, TO))).not.toContain(WEEK_17);
+  });
+
+  it('бронь вечером последнего дня (позже времени суток toDate) скрывает слот, свободный вечер остаётся', async () => {
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(LAST_17)],
+    });
+    const out = starts(await service.getSlots(NOW, TO));
+    expect(out).not.toContain(LAST_17);
+    expect(out).toContain(LAST_18);
+  });
+
+  it('событие календаря вечером последнего дня скрывает слот, соседний остаётся', async () => {
+    const busy = [
+      { start: new Date(LAST_17), end: new Date('2026-07-27T17:50:00Z') },
+    ];
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: true,
+    });
+    // Как time-range-запрос iCloud: отдаёт события только внутри [from,to].
+    calDav.getBusyTimes.mockImplementation((from: Date, to: Date) =>
+      Promise.resolve(busy.filter((iv) => iv.start < to && iv.end > from)),
+    );
+    const out = starts(await service.getSlots(NOW, TO));
+    expect(out).not.toContain(LAST_17);
+    expect(out).toContain(LAST_18);
+  });
+
+  it('календарь читается по тому же окну, что и слоты: целые UTC-сутки', async () => {
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: true,
+    });
+    await service.getSlots(NOW, TO);
+    const [from, to] = calDav.getBusyTimes.mock.calls[0];
+    expect(from.toISOString()).toBe('2026-07-13T00:00:00.000Z');
+    expect(to.toISOString()).toBe('2026-07-27T23:59:59.999Z');
+  });
+
+  it('с явным to=YYYY-MM-DD (00:00Z) брони всего последнего дня тоже видны', async () => {
+    const from = new Date('2026-07-13'); // как parseSlotDate в контроллере
+    const to = new Date('2026-07-27');
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(LAST_17), confirmed(LAST_18)],
+    });
+    const out = starts(await service.getSlots(from, to));
+    expect(out).not.toContain(LAST_17);
+    expect(out).not.toContain(LAST_18);
+  });
+
+  it('бронь, начавшаяся ДО окна и заходящая в его начало, занимает первый слот', async () => {
+    // Правило UTC 00:00–03:00 по понедельникам: слоты 00:00, 01:00, 02:00.
+    const rule = {
+      ...RULE,
+      startHour: 0,
+      endHour: 3,
+      timezone: 'UTC',
+    };
+    jest.setSystemTime(new Date('2026-07-10T00:00:00Z'));
+    const sundayLate = confirmed('2026-07-19T23:30:00.000Z', 120); // до 01:30
+    const { service } = makeService({ rules: [rule], bookings: [sundayLate] });
+    const out = starts(
+      await service.getSlots(
+        new Date('2026-07-20T00:00:00Z'),
+        new Date('2026-07-20T00:00:00Z'),
+      ),
+    );
+    expect(out).toEqual(['2026-07-20T02:00:00.000Z']);
   });
 });

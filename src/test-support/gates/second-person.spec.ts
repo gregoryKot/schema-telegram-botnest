@@ -220,6 +220,30 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('владелец-only сигнал «деньги получены, а брони нет» исключён', () => {
+    // src/booking/booking-paid-after-cancel.ts — текст уходит DM и письмом
+    // владельцу (notifyAdminBoth), не пользователю с addressForm.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/booking-paid-after-cancel.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: тот же императив в соседнем файле booking/ — по-прежнему exit 1', () => {
+    // Исключение держится на одном имени файла, а не на всей папке booking/.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/booking-client-letter.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
   it('КОНТРОЛЬ: тот же императив в обычном компоненте — по-прежнему exit 1', () => {
     // Доказывает, что exclude узкий (по конкретным путям), а не случайно
     // погасил паттерн imperative-ty целиком.
@@ -456,6 +480,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'src/bot/healthy-adult.pool-alert.ts',
       'src/bot/auth-health-metrics.format.ts',
       'src/booking/caldav-health.ts',
+      'src/booking/booking-paid-after-cancel.ts',
       // Мета-код детектора и нейтральная CTA-подпись к третьему лицу.
       'shared/src/utils/tyFormsSweep.ts',
       'shared/src/utils/therapistContact.ts',

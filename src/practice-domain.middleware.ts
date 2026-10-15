@@ -1,5 +1,10 @@
 import type { Request, Response } from 'express';
 import { CANONICAL_HOST } from './infra/canonical-host';
+import {
+  PRACTICE_API_PREFIXES,
+  PRACTICE_PAGES,
+  PRACTICE_PAGE_PREFIXES,
+} from './practice-domain.surface';
 
 // Доменная стратегия (2026-09-08 / 2026-09-16): практика (kotlarewski.gr)
 // теперь отдаёт только визитку. Раньше алиас отдавал весь SPA и API: кука
@@ -43,37 +48,9 @@ Disallow: /book
 Sitemap: https://${PRACTICE_HOST}/sitemap.xml
 `;
 
-/** Страницы SPA визитки — зеркало `personalRoutes` в webapp/src/App.tsx (тест-сверка в спеке). */
-export const PRACTICE_PAGES: readonly string[] = [
-  '/',
-  '/articles',
-  '/reviews',
-  '/admin',
-  '/booking-admin',
-  '/articles-admin',
-  '/book', // ссылка для клиентов: расписание сразу (BookingLinkPage), не для поиска
-  '/booking/paid',
-  '/booking/manage',
-  '/subscribe',
-  '/donate',
-  '/privacy',
-  '/offer',
-];
-/** Префиксы страниц с параметром (`/articles/:slug`). */
-export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];
-
-/** Ручки API (любой метод), которые зовут страницы визитки, каждая с причиной. Запись
- *  (POST/PATCH/DELETE) вне списка получает 301: браузер повторяет его как GET без
- *  тела, то есть алиас запись не принимает (аудит 2026-10, I1). */
-export const PRACTICE_API_PREFIXES: readonly string[] = [
-  '/api/booking', // запись на консультацию: options, slots, by-token, admin/*
-  '/api/subscription', // подписка: options, by-token
-  '/api/donation', // донат (страница /donate)
-  '/api/site-content', // фото/бегущая строка лендинга + admin/*
-  '/api/articles', // статьи и их админка
-  '/api/healthy-adult', // админка фраз канала (AdminPage)
-  '/api/client-errors', // отчёт о сбое формы брони (bookingFailure.ts), правило №14
-];
+// Allow-list визитки живёт в соседнем модуле (правило №10), но по-прежнему
+// доступен отсюда: на него ссылаются спеки и комментарии.
+export { PRACTICE_API_PREFIXES, PRACTICE_PAGES, PRACTICE_PAGE_PREFIXES };
 
 // Хвостовой слэш не различает маршрут ('/donate/' === '/donate'); корень не трогаем.
 const stripTrailingSlash = (path: string): string =>
