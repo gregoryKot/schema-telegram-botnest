@@ -16,7 +16,7 @@ import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
+import { collectStatsMessages } from './stats-messages';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
@@ -68,18 +68,18 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
-        const [core, product, pool] = await Promise.all([
-          this.adminStatsService.getAdminStats(),
-          this.statsReport.render(),
-          this.healthyAdult.poolStatus(),
-        ]);
-        // Через replyLong: отчёт растёт с каждым новым блоком, и упереться
-        // в лимит Telegram он должен разбиением, а не падением целиком.
-        await replyLong(ctx, core, { parse_mode: 'HTML' });
-        await replyLong(ctx, `${product}\n\n${formatPoolStatus(pool)}`, {
-          parse_mode: 'HTML',
-        });
+        // Двумя сообщениями — отчёт длиннее лимита Telegram (4096); replyLong
+        // рубит рост отчёта разбиением, а не падением целиком.
+        const { first, second } = await collectStatsMessages(
+          {
+            adminStats: this.adminStatsService,
+            statsReport: this.statsReport,
+            healthyAdult: this.healthyAdult,
+          },
+          this.logger,
+        );
+        await replyLong(ctx, first, { parse_mode: 'HTML' });
+        await replyLong(ctx, second, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);

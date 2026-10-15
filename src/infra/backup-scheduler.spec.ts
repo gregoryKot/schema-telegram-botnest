@@ -1,5 +1,5 @@
-// Планировщик бэкапов в B2 (deploy/backup-scheduler.cjs, аудит D-2). До него
-// scripts/backup-to-b2.sh не вызывал никто. Модуль — CommonJS именно ради
+// Планировщик бэкапов в R2 (deploy/backup-scheduler.cjs, аудит D-2). До него
+// скрипт бэкапа не вызывал никто. Модуль — CommonJS именно ради
 // этого спека: jest не грузит ESM, а все внешнее (spawn, время, psql, лог)
 // подменяется, поэтому тик идёт без процессов и без часов.
 import { EventEmitter } from 'events';
@@ -36,9 +36,10 @@ const sched = jest.requireActual<Scheduler>(
 );
 
 const ENV = {
-  B2_KEY_ID: 'keyid',
-  B2_APP_KEY: 'appkey-SECRET',
-  B2_BUCKET: 'bkt',
+  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_BUCKET: 'bkt',
+  BACKUP_S3_ACCESS_KEY_ID: 'keyid',
+  BACKUP_S3_SECRET_ACCESS_KEY: 'appkey-SECRET',
   BACKUP_ENCRYPTION_KEY: 'enc-key-SECRET-0123456789abcdefghij',
   DATABASE_URL: 'postgresql://u:db-PASSWORD@db.example:5432/app?schema=public',
 };
@@ -104,12 +105,12 @@ function setup(opts: {
       child: null,
     },
     instanceId: 'pod-A',
-    script: '/app/scripts/backup-to-b2.sh',
+    script: '/app/scripts/backup-upload.sh',
   };
   return { ctx, psql, logs, errors, spawnCalls: fs.calls };
 }
 
-const CLAIMED: PsqlResult = { code: 0, stdout: 'backup-b2\n', stderr: '' };
+const CLAIMED: PsqlResult = { code: 0, stdout: 'db-backup\n', stderr: '' };
 const DENIED: PsqlResult = { code: 0, stdout: '', stderr: '' };
 
 describe('startBackupScheduler: конфигурация', () => {
@@ -122,30 +123,30 @@ describe('startBackupScheduler: конфигурация', () => {
     expect(res).toBeNull();
     expect(info).toHaveBeenCalledTimes(1);
     expect(info.mock.calls[0][0]).toMatch(
-      /бэкапы в B2 выключены: нет B2_KEY_ID/,
+      /бэкапы в R2 выключены: нет BACKUP_S3_ENDPOINT/,
     );
   });
 
   it('не хватает одной переменной — выключены и называет именно её', () => {
     const info = jest.fn();
-    const { B2_BUCKET: _omit, ...rest } = ENV;
+    const { BACKUP_S3_BUCKET: _omit, ...rest } = ENV;
     expect(
       sched.startBackupScheduler({
         env: rest,
         log: { info, error: jest.fn() },
       }),
     ).toBeNull();
-    expect(info.mock.calls[0][0]).toContain('нет B2_BUCKET');
-    expect(info.mock.calls[0][0]).not.toContain('B2_KEY_ID');
+    expect(info.mock.calls[0][0]).toContain('нет BACKUP_S3_BUCKET');
+    expect(info.mock.calls[0][0]).not.toContain('BACKUP_S3_ENDPOINT');
   });
 
   it('пробел вместо значения — как «не задано»', () => {
     const info = jest.fn();
     sched.startBackupScheduler({
-      env: { ...ENV, B2_APP_KEY: '   ' },
+      env: { ...ENV, BACKUP_S3_SECRET_ACCESS_KEY: '   ' },
       log: { info, error: jest.fn() },
     });
-    expect(info.mock.calls[0][0]).toContain('B2_APP_KEY');
+    expect(info.mock.calls[0][0]).toContain('BACKUP_S3_SECRET_ACCESS_KEY');
   });
 
   it('всё задано — стартует, ставит таймеры, stop() их снимает', () => {
@@ -194,12 +195,12 @@ describe('runTick: когда запускаться', () => {
     expect(await sched.runTick(t.ctx)).toBe('ok');
   });
 
-  it('аренда забрана, бэкап ok — запускает bash scripts/backup-to-b2.sh, логирует «ok <файл>»', async () => {
+  it('аренда забрана, бэкап ok — запускает bash scripts/backup-upload.sh, логирует «ok <файл>»', async () => {
     const t = setup({ psqlResults: [CLAIMED] });
     expect(await sched.runTick(t.ctx)).toBe('ok');
     expect(t.spawnCalls).toHaveLength(1);
     expect(t.spawnCalls[0].cmd).toBe('bash');
-    expect(t.spawnCalls[0].args).toEqual(['/app/scripts/backup-to-b2.sh']);
+    expect(t.spawnCalls[0].args).toEqual(['/app/scripts/backup-upload.sh']);
     // Ключи едут в окружении скрипта, а не в аргументах команды.
     expect(t.spawnCalls[0].opts.env.BACKUP_ENCRYPTION_KEY).toBe(
       ENV.BACKUP_ENCRYPTION_KEY,
@@ -258,7 +259,7 @@ describe('runTick: аренда (та же семантика, что CronLeader
     expect(sql).not.toContain('pod-A');
     expect(sql).not.toContain('2026');
     expect(vars).toEqual({
-      lease: 'backup-b2',
+      lease: 'db-backup',
       inst: 'pod-A',
       now: '2026-10-04 05:00:00.000',
       not_after: '2026-10-03 09:00:00.000', // окно 20 ч < периода 24 ч
@@ -314,7 +315,7 @@ describe('runTick: сбой бэкапа', () => {
     const [releaseSql, releaseVars] = t.psql.mock.calls[1];
     expect(releaseSql).toContain('UPDATE "CronLease"');
     expect(releaseSql).toContain('"instanceId" = :\'inst\'');
-    expect(releaseVars).toEqual({ lease: 'backup-b2', inst: 'pod-A' });
+    expect(releaseVars).toEqual({ lease: 'db-backup', inst: 'pod-A' });
 
     t.ctx.now = at('2026-10-04T06:00:00.000Z');
     expect(await sched.runTick(t.ctx)).toBe('ok');
@@ -359,10 +360,10 @@ describe('runTick: сбой бэкапа', () => {
 
 describe('makePsql: соединение с БД', () => {
   it('пароль БД едет в окружении psql (PGPASSWORD), а не в аргументах; SQL — через stdin', async () => {
-    const fs = fakeSpawn([{ code: 0, stdout: 'backup-b2\n' }]);
+    const fs = fakeSpawn([{ code: 0, stdout: 'db-backup\n' }]);
     const psql = sched.makePsql({ spawn: fs.spawn, env: ENV });
     const res = await psql("SELECT :'x';", { x: '1' });
-    expect(res.stdout).toBe('backup-b2\n');
+    expect(res.stdout).toBe('db-backup\n');
     const call = fs.calls[0];
     expect(call.cmd).toBe('psql');
     expect(call.args.join(' ')).not.toContain('db-PASSWORD');

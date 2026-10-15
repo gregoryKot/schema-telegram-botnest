@@ -318,10 +318,12 @@ describe('дробление движок + модуль правил', () => {
     expect(matches('src/auth/providers/google.provider.ts')).toBe(true);
     expect(matches('src/channel/targets/vk.target.ts')).toBe(true);
     expect(matches('src/booking/robokassa.service.ts')).toBe(true);
+    expect(matches('src/infra/s3-list-objects.ts')).toBe(true);
     // Контроль: реестр и типы провайдеров — не парсеры; соседний сервис без
     // внешнего формата гейт по пути не трогает.
     expect(matches('src/auth/providers/registry.ts')).toBe(false);
     expect(matches('src/auth/providers/types.ts')).toBe(false);
     expect(matches('src/booking/pricing.service.ts')).toBe(false);
+    expect(matches('src/infra/s3-sigv4.ts')).toBe(false);
   });
 });

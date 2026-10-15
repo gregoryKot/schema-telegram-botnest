@@ -88,8 +88,10 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client
+          test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
+          test/text-limits
+          test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -149,6 +151,12 @@ jobs:
       # не проверяется: нестроковый email ловит TypeError на .trim() и отдаёт
       # 500 вместо 400. Причина по каждому исключению — в бейслайне.
       - run: node scripts/check-body-dto.mjs
+      # Контроллер не режет поля запроса молча (находка аудита 2026-10-11,
+      # backend#29): заметка терапевта на 6000 знаков при DTO на 10 000
+      # отвечала 201 и теряла хвост из-за `slice(0, 5000)` в контроллере.
+      # Лимит один и стоит в DTO — превышение даёт 400. Исключения (дата из
+      # ISO-момента) — в scripts/body-truncation-baseline.json с причиной.
+      - run: node scripts/check-body-truncation.mjs
       # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
@@ -178,6 +186,11 @@ jobs:
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
       - run: node scripts/check-raw-sql-live.mjs
+      # Каждый test/**/*.e2e-spec.ts гоняется хотя бы одним шагом jest-e2e
+      # (аудит 2026-10-11: два спека лежали в test/ без единого прогона), и
+      # наоборот: путь в CI без файла — переименованный спек, который jest
+      # молча пропускает. Бейслайна нет, флага --update нет.
+      - run: node scripts/check-e2e-in-ci.mjs
       # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
       # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
       # в security-log-redact.ts и перестал измеряться). Классификация в
@@ -279,6 +292,11 @@ jobs:
       # тест, упоминающий его по имени (loadRegexList/loadStringList/
       # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
       - run: node scripts/check-gate-exemptions.mjs
+      # Индекс против .gitignore: отслеживаемый файл, который игнор запрещает
+      # (правило не снимает уже отслеживаемое — так в репозитории жил
+      # test/.jest-cache на 466 файлов). Нужны только git и node. Бейслайна
+      # нет: нужный файл разрешается отрицанием `!путь` в самом .gitignore.
+      - run: node scripts/check-ignored-tracked.mjs
       # Переезд на VPS (docs/MIGRATION_VPS.md): скрипты и compose-файлы
       # исполняются на сервере, до которого CI не дотягивается, поэтому
       # хотя бы разбираем их здесь. shellcheck стоит на ubuntu-latest;
@@ -382,7 +400,13 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
-      # Аренда прогона бэкапа в B2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # Ротация ENCRYPTION_KEY (аудит 2026-10-11, r2-0#0..#2; правило №18): по
+      # строке на КАЖДУЮ запись списка ротации → rotateAll → читается новым ключом,
+      # не читается старым; плюс отдельный процесс точки входа и его коды выхода.
+      # Путь реагирования на утечку ключа обязан работать ДО того, как понадобится.
+      - name: e2e ротация ENCRYPTION_KEY на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/key-rotation.e2e-spec.ts
+      # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql есть в образе
       # ubuntu-latest; на случай его отсутствия ставим клиент 16 явно.
@@ -406,6 +430,12 @@ jobs:
       # не эмулирует $executeRaw, поэтому тоже только тут.
       - name: e2e .ics для клиента на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
+      # Аудит 2026-10-11, security#15: экран после оплаты не вправе говорить
+      # «подтверждена» по SuccessURL без вебхука. Шов целиком: book →
+      # /api/payment/success → by-token (HELD, paid=false) → вебхук → CONFIRMED.
+      # book берёт advisory-lock через $executeRaw — фейковая Prisma не годится.
+      - name: e2e экран после оплаты на реальном Postgres (success без вебхука)
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-paid-page.e2e-spec.ts
       # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
       # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
       # в шифрованную колонку и обратное чтение через драйвер и decryptRecord —
@@ -455,6 +485,11 @@ jobs:
           test/merge-my-lists.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/text-limits.e2e-spec.ts
+          test/therapy-resign.e2e-spec.ts
+          test/booking-admin-cancel.e2e-spec.ts
+          test/exercise-delete-ownership.e2e-spec.ts
+          test/max-auth.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
@@ -475,13 +510,13 @@ jobs:
         run: |
           command -v psql >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/migrate-stuck-record.e2e-spec.ts
-      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-to-b2.sh →
-      # (поддельный) B2 → fetch-latest-b2.sh → restore-backup.sh на живом
+      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-upload.sh →
+      # (поддельный) S3 → backup-fetch-latest.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.
-      - name: e2e восстановление из бэкапа B2 на реальном Postgres
+      - name: e2e восстановление из бэкапа (S3) на реальном Postgres
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
-          npx jest --config ./test/jest-e2e.json --runInBand test/restore-b2.e2e-spec.ts
+          npx jest --config ./test/jest-e2e.json --runInBand test/restore-backup.e2e-spec.ts
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
       # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
       # уникальных констрейнтов и транзакционных апдейтов, которые
@@ -646,6 +681,12 @@ jobs:
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
+      # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
+      # ym-disable-keys. Текстовое поле на странице из personalRoutes без метки
+      # красит CI. Абсолютный, без бейслайна. Секреты в DOM (ссылка встречи,
+      # токен в href) держит webvisorSecrets.test.tsx в vitest этой же джобы.
+      - run: node scripts/check-webvisor-fields.mjs
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { CancelControl } from './subscribe/CancelControl';
 
 type Opt = { period: 'month' | 'year'; price: number };
 type Sub = { status: string; period: string; amount: number; nextChargeAt: string | null };
@@ -54,11 +55,6 @@ export function SubscribePage() {
     } catch { setStatus('error'); }
   };
 
-  const doCancel = async () => {
-    if (!token) return;
-    try { await api.cancelSubscription(token); setCancelled(true); } catch { /* ignore */ }
-  };
-
   let body: React.ReactNode;
 
   if (token) {
@@ -76,7 +72,7 @@ export function SubscribePage() {
         <h1 style={h1}>Подписка</h1>
         <p style={sub_}>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</p>
         {sub.nextChargeAt && <div style={card}>Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
-        <button onClick={doCancel} style={textLink}>Отменить подписку</button>
+        <CancelControl token={token} onCancelled={() => setCancelled(true)} />
       </>
     ) : subFailed ? (
       // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
@@ -133,7 +129,7 @@ export function SubscribePage() {
           })}
         </div>
 
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
+        <input type="email" className="ym-disable-keys" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
         <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
         <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
@@ -174,5 +170,4 @@ const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', bord
 const field: React.CSSProperties = { width: '100%', padding: '13px 15px', fontSize: 15, boxSizing: 'border-box', background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)', borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit' };
 const primaryBtn: React.CSSProperties = { display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer', textDecoration: 'none' };
 const hint: React.CSSProperties = { fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.6, margin: '12px 0 0' };
-const textLink: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline', marginTop: 4 };
 const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };

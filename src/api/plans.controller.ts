@@ -49,7 +49,7 @@ export class PlansController {
     const row = await this.practicesService.addPractice(
       uid(req),
       body.needId,
-      body.text.trim().slice(0, 200),
+      body.text.trim(),
     );
     return row;
   }

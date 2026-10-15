@@ -1,6 +1,6 @@
 import type { SelfCheckSnapshot } from './state';
 
-function ago(ts: number, now: number): string {
+export function ago(ts: number, now: number): string {
   const min = Math.max(0, Math.round((now - ts) / 60_000));
   if (min < 60) return `${min} мин назад`;
   const h = Math.round(min / 60);

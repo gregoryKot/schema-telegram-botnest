@@ -27,8 +27,10 @@ describe('markChargePaid — экранирование email в алерте а
       subscription: {
         findUnique: jest.fn(async () => sub),
         update: jest.fn(async () => sub),
+        updateMany: jest.fn(async () => ({ count: 1 })),
       },
     };
+    prisma.$transaction = jest.fn(async (fn: any) => fn(prisma));
     const notify = { alertAdmin: jest.fn(async () => undefined) };
     const deps: any = {
       prisma,

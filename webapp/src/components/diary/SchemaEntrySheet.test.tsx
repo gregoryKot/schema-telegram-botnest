@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -113,5 +114,18 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ excessiveReactions: 'Слишком остро отреагировал на пустяк' }),
     );
+  });
+});
+
+// backend#29: раньше контроллер молча резал поля дневника до 2000 знаков, а
+// поле ввода предела не знало. Теперь предел один (DIARY_FIELD_MAX) и виден.
+describe('SchemaEntrySheet — предел длины поля', () => {
+  it('textarea.maxLength = предел поля дневника из shared; у границы виден остаток', () => {
+    renderSheet();
+    const area = screen.getByLabelText('Что случилось?') as HTMLTextAreaElement;
+    expect(area.maxLength).toBe(DIARY_FIELD_MAX);
+    expect(screen.queryByText(/Осталось знаков/)).toBeNull();
+    fireEvent.change(area, { target: { value: 'а'.repeat(DIARY_FIELD_MAX - 7) } });
+    expect(screen.getByText(/Осталось знаков: 7/)).toBeTruthy();
   });
 });

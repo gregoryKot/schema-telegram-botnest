@@ -53,22 +53,9 @@ export class DiaryController {
   ) {
     if (!body.trigger?.trim())
       throw new BadRequestException('trigger required');
-    const LIMIT = 2000;
-    const trimmed = {
-      ...body,
-      trigger: body.trigger.slice(0, LIMIT),
-      thoughts: body.thoughts?.slice(0, LIMIT),
-      bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
-      actualBehavior: body.actualBehavior?.slice(0, LIMIT),
-      schemaOrigin: body.schemaOrigin?.slice(0, LIMIT),
-      healthyView: body.healthyView?.slice(0, LIMIT),
-      realProblems: body.realProblems?.slice(0, LIMIT),
-      excessiveReactions: body.excessiveReactions?.slice(0, LIMIT),
-      healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
-    };
     const entry = await this.diaryService.createSchemaDiaryEntry(
       uid(req),
-      trimmed,
+      body,
     );
     this.tasksService
       .checkStreakTasks(uid(req))
@@ -97,22 +84,7 @@ export class DiaryController {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
     if (!body.situation?.trim())
       throw new BadRequestException('situation required');
-    const LIMIT = 2000;
-    const trimmedMode = {
-      ...body,
-      situation: body.situation.slice(0, LIMIT),
-      thoughts: body.thoughts?.slice(0, LIMIT),
-      feelings: body.feelings?.slice(0, LIMIT),
-      bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
-      actions: body.actions?.slice(0, LIMIT),
-      actualNeed: body.actualNeed?.slice(0, LIMIT),
-      childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
-      healthyResponse: body.healthyResponse?.slice(0, LIMIT),
-    };
-    const entry = await this.diaryService.createModeDiaryEntry(
-      uid(req),
-      trimmedMode,
-    );
+    const entry = await this.diaryService.createModeDiaryEntry(uid(req), body);
     this.tasksService
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
@@ -142,11 +114,10 @@ export class DiaryController {
   ) {
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
       throw new BadRequestException('Invalid date');
-    const items = body.items.map((s: string) => String(s).slice(0, 500));
     const entry = await this.diaryService.upsertGratitudeDiaryEntry(
       uid(req),
       body.date,
-      items,
+      body.items,
     );
     this.tasksService
       .checkStreakTasks(uid(req))

@@ -17,11 +17,8 @@ import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { ModeMapsService } from './mode-maps.service';
 import { AccountService } from '../bot/account.service';
-import {
-  CustomModeDto,
-  CreateModeMapDto,
-  UpdateModeMapDto,
-} from './dto/mode-maps.dto';
+import { CustomModeDto } from './dto/custom-mode.dto';
+import { CreateModeMapDto, UpdateModeMapDto } from './dto/mode-maps.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -120,7 +117,7 @@ export class ModeMapsController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    const title = (body.title ?? 'Карта режимов').slice(0, 120);
+    const title = body.title ?? 'Карта режимов';
     try {
       return await this.modeMapsService.createModeMap(
         uid(req),

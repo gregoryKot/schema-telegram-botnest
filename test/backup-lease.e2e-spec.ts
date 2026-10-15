@@ -1,10 +1,10 @@
 // Аренда прогона бэкапа (deploy/backup-scheduler.cjs) на РЕАЛЬНОМ Postgres.
-// Планировщик берёт аренду строкой CronLease 'backup-b2' через psql, тем же
+// Планировщик берёт аренду строкой CronLease 'db-backup' через psql, тем же
 // атомарным INSERT … ON CONFLICT DO UPDATE … WHERE "runAt" <= окно, что
 // CronLeaderService.claimRun (правило №17). Атомарность — свойство Postgres,
 // а не нашего кода: фейковый psql ответит что угодно (правило №18). Здесь
 // настоящий psql против настоящей базы; подменён только запуск самого
-// скрипта бэкапа (в нём pg_dump и B2 — их проверяют другие спеки).
+// скрипта бэкапа (в нём pg_dump и хранилище — их проверяют другие спеки).
 // Гоняется в CI-джобе `migrations` (Postgres 16 + psql, миграции применены).
 import { spawn as realSpawn } from 'child_process';
 import { EventEmitter } from 'events';
@@ -20,7 +20,7 @@ const sched = jest.requireActual<Scheduler>(
   join(process.cwd(), 'deploy', 'backup-scheduler.cjs'),
 );
 
-const NAME = 'backup-b2';
+const NAME = 'db-backup';
 
 /** spawn: psql — настоящий, bash (скрипт бэкапа) — подделка с заданным исходом. */
 function mixedSpawn(
@@ -84,7 +84,7 @@ describe('аренда бэкапа на реальном Postgres', () => {
           child: null,
         },
         instanceId: id,
-        script: '/nonexistent/backup-to-b2.sh',
+        script: '/nonexistent/backup-upload.sh',
       },
     };
   }
@@ -130,7 +130,7 @@ describe('аренда бэкапа на реальном Postgres', () => {
     const failing = instance('pod-A', '2026-10-04T05:00:00.000Z', {
       code: 1,
       stdout: '',
-      stderr: '[backup] FAILED B2: авторизация не удалась\n',
+      stderr: '[backup] FAILED S3: загрузка не удалась\n',
     });
     expect(await sched.runTick(failing.ctx)).toBe('failed');
     const retry = instance('pod-B', '2026-10-04T06:00:00.000Z');
