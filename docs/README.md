@@ -563,6 +563,26 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `user-id-range.spec.ts` смотрит на константу модуля, а спек генерации id — на
   копию, и они могут разъехаться (правило №4). Перевести спек на импорт в
   первом же PR, который тронет диапазон.
+- **Зависимость `@tma.js/init-data-node` без потребителей.** После единого
+  верификатора `src/auth/telegram-init-data.ts` пакет не импортируют ни рабочий
+  код, ни тесты (`grep -rn tma.js src test` пуст; инвариант (б) в
+  `telegram-init-data.invariants.spec.ts` не даст вернуть импорт). Убрать из
+  `package.json` и перегенерировать `package-lock.json` (`npm install` у
+  владельца/CI-агента), прогнать `knip`.
+- **`POST /api/auth/telegram/webapp` отвечает обычным 401 без `suspicious_initdata`
+  и без кода `initdata_expired`** (`auth-account.controller.ts`, ошибка
+  верификатора превращается в `UnauthorizedException(message)`), в отличие от
+  гарда (`rejectInitData`). Осознанно не включено в починке верификатора: это
+  новая сигнализация (правило №14, троттлинг `initDataAlerts` уже есть) и
+  отдельный PR (правило №20). Подделка подписи на этом входе сегодня не будит
+  админа.
+- **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
+  `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
+  (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
+  Stryker по нему (107 мутантов) не уложился в 15 минут на общей машине. Прогнать
+  `npx stryker run stryker.golden-auth.config.json`, добавить файл в `mutate`
+  `stryker.golden-auth.config.json` с полом по результату и сверить пол
+  `auth.service.ts` (убавилось мутантов проверки — процент мог сдвинуться).
 
 **Хвосты решения по PII записи** (находка L3 аудита 2026-07-20, решение
 владельца 2026-10-08 — ретенция 12 месяцев, `booking-retention.service.ts`;

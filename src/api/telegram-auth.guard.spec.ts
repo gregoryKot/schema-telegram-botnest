@@ -257,6 +257,39 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
     ).rejects.toThrow('Invalid user data');
   });
 
+  // Пользователя разбирает общий верификатор (readTelegramUser): id — безопасное
+  // целое > 0. Прежняя проверка гарда `typeof id === 'number'` пропускала всё это.
+  it.each([
+    ['ноль', 0],
+    ['отрицательный', -5],
+    ['дробный', 1.5],
+    ['за пределом 2^53', 2 ** 53],
+  ])('user.id %s → 401 Invalid user data', async (_name, id) => {
+    const { guard, authService } = makeGuard();
+    const initData = signInitData({ user: { id } });
+    const attempt = guard.canActivate(
+      makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+    );
+    await expect(attempt).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(attempt).rejects.toThrow('Invalid user data');
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+  });
+
+  it('user.id = 2^53 − 1 (наибольшее безопасное целое) → впускает', async () => {
+    const { guard, authService } = makeGuard();
+    const initData = signInitData({ user: { id: Number.MAX_SAFE_INTEGER } });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).resolves.toBe(true);
+    expect(authService.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'telegram',
+      '9007199254740991',
+      undefined,
+    );
+  });
+
   it('BOT_TOKEN не сконфигурирован → Unauthorized', async () => {
     const { guard } = makeGuard({ BOT_TOKEN: undefined });
     const initData = signInitData({ user: USER });
@@ -279,6 +312,17 @@ describe('SKIP_AUTH — dev-лазейка (жёстко выключена в p
         makeCtx({ headers: { 'x-telegram-init-data': initData } }),
       ),
     ).resolves.toBe(true);
+  });
+
+  it('в dev подпись не проверяется, а user всё равно разбирает общий верификатор (id 0 → 401)', async () => {
+    const { guard, authService } = makeGuard({ SKIP_AUTH: 'true' });
+    const initData = signInitData({ user: { id: 0 }, forgeHash: true });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Invalid user data');
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
   });
 
   it('в production игнорируется — подделка отбивается несмотря на SKIP_AUTH=true', async () => {
