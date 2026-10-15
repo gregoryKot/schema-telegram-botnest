@@ -17,8 +17,10 @@ vi.mock('../../api', () => ({
   api: {
     submitBooking: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
+import { ApiError } from '../../apiClient';
 
 // Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
 // считает «сессия возможна» и молчит (решение D-4), поэтому для целей
@@ -135,6 +137,31 @@ describe('BookingForm — отказ сети виден пользовател�
     await screen.findByText(/Что-то не отправилось/);
     expect(screen.getByRole('link', { name: '@kotlarewski' })).toBeTruthy();
     expect(screen.queryByText('Заявка отправлена')).toBeNull();
+  });
+
+  // Правило №14: экран-тупик обязан сообщать наверх. Сервер теперь отвечает 503,
+  // когда заявку не удалось ни сохранить, ни доставить владельцу, — ветка достижима.
+  it('503 от сервера: тот же текст со ссылкой на Telegram и отчёт наверх в секцию booking', async () => {
+    mockApi.submitBooking.mockRejectedValue(new ApiError(503, 'Заявка не принята'));
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+
+    await screen.findByText(/Что-то не отправилось/);
+    expect(screen.getByRole('link', { name: '@kotlarewski' })).toBeTruthy();
+    expect(reportClientError).toHaveBeenCalledWith({
+      message: 'lead submit failed: HTTP 503',
+      section: 'booking',
+    });
+  });
+
+  it('успешная отправка в отчёт об ошибке не пишет', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+    await screen.findByText('Заявка отправлена');
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 
   it('после отказа кнопка снова доступна — можно повторить попытку', async () => {

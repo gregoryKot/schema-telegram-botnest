@@ -34,6 +34,8 @@ export const BASE_ROWS: Record<string, Row> = {
     durationMin: 50,
     cancelToken: 'rot-e2e-booking',
   },
+  // Публичная форма знакомства: userId нет, обязательных не-шифруемых колонок нет.
+  introLead: {},
   clientMeeting: { clientKey: 'rot-e2e-client' },
   authProvider: { userId: USER, provider: 'rot-e2e', providerId: 'rot-e2e-1' },
   donation: { amount: 100 },

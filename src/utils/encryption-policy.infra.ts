@@ -1,6 +1,7 @@
 // Продолжение реестра шифрования: бронирование и деньги, контент проекта,
 // инфраструктура. Отдельным файлом по правилу №10 (потолок 300 строк).
 import { Policy, enc, plain, ID, TOKEN } from './encryption-policy';
+import { INTRO_LEAD_FIELD_POLICY } from './encryption-policy.intro-lead';
 
 export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   AvailabilityRule: { timezone: ID },
@@ -69,4 +70,5 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
         'какой инстанс забрал прогон; пользователя в ней нет',
     ),
   },
+  ...INTRO_LEAD_FIELD_POLICY,
 };
