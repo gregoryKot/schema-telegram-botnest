@@ -1333,7 +1333,7 @@
   "test/e2e-support/fake-bot.ts": 30,
   "test/e2e-support/fake-cron-lease.ts": 48,
   "test/e2e-support/fake-prisma-engine.ts": 178,
-  "test/e2e-support/fake-prisma.ts": 142,
+  "test/e2e-support/fake-prisma.ts": 143,
   "test/e2e-support/jose.stub.ts": 15,
   "test/e2e-support/jwt.ts": 16,
   "test/setup-e2e.ts": 5,
