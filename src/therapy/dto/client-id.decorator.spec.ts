@@ -12,7 +12,7 @@ class Probe {
 const errorsFor = async (cls: new () => object, body: object) =>
   (await validate(plainToInstance(cls, body))).map((e) => e.property);
 
-// Аудит 2026-10, X-1: clientId веб-клиента (> 2^53) приходит строкой.
+// Аудит 2026-10, X-1: clientId приходит строкой (здесь выдуманный, > 2^53).
 describe('ClientIdField', () => {
   it('строка с веб-id и виртуальный отрицательный проходят как есть', async () => {
     const dto = plainToInstance(Probe, { clientId: '1000000000000000123' });

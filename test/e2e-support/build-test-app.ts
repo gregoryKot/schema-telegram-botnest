@@ -30,7 +30,7 @@ import { buildRealDbTestApp } from './build-real-db-test-app';
 const cookieParser = require('cookie-parser');
 
 // BigInt в JSON-ответах — тот же установщик, что в src/main.ts (число для
-// безопасного целого, строка для веб-id ≥ 2^53). Без него любой ответ с
+// безопасного целого, строка для id ≥ 2^53). Без него любой ответ с
 // полем-BigInt падает на JSON.stringify.
 installBigIntJson();
 
