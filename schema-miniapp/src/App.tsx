@@ -52,6 +52,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
+import { useOutboxFlush } from './hooks/useOutboxFlush';
 import { ensureSession } from './session';
 import { syncFromServer } from './utils/uiPrefsSync';
 import { logErr } from './utils/logErr';
@@ -241,7 +242,7 @@ export default function App() {
     preloadDiarySheets();
   }, [loading]);
   const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useOutboxFlush();
 
   // Overlay states (open over current tab)
   const [newDiaryEntry, setNewDiaryEntry] = useState<
@@ -250,23 +251,6 @@ export default function App() {
   const [diaryActiveSchemaIds, setDiaryActiveSchemaIds] = useState<
     string[] | undefined
   >(undefined);
-
-  useEffect(() => {
-    const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => {
-      setIsOffline(false);
-      api.flushOutbox().catch(logErr('flushOutbox'));
-    };
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    // Флаш и при старте приложения — очередь могла накопиться в прошлой
-    // сессии (webview закрылся до восстановления сети).
-    api.flushOutbox().catch(logErr('flushOutbox'));
-    return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, []);
 
   // Чужие локальные данные при смене аккаунта стирает ensureDataOwnerForToken
   // в session.ts (раньше здесь была проверка ysq_owner_id — слепая на веб-хосте).
