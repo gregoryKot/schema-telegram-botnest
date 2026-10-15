@@ -581,6 +581,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   клиента (так обещает текст диалога), а `tasks/client/:id` фильтрует по
   `assignedBy`. Осознанно не трогали: задание принадлежит клиенту. Тот же e2e,
   сценарий 2.
+- **Отмена подписки не отзывает уже отправленное списание в Robokassa.**
+  Оплата, пришедшая после отмены, засчитывается за charge, подписка остаётся
+  `cancelled`, владельцу уходит сигнал в оба канала
+  (`src/subscription/subscription.charge-activate.ts`,
+  `subscription-paid-after-cancel.ts`). Отзыв списания не сделан сознательно:
+  рекуррентный API Robokassa отзыва не даёт; деньги возвращает владелец
+  вручную. Часовой `chargeDue` по-прежнему без `claimRun` (правило №17) —
+  отдельная тема.
 - Секция `subscription` отчёта об ошибке отмены подписки
   (`webapp/src/pages/subscribe/useSubscriptionCancel.ts`) в
   `src/api/client-error-section.ts` не заведена и оседает в бакете `other`
