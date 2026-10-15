@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import type { TherapyClientSummary, ClientConceptualization } from '../../api';
+import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 
 // Состояние и обработчики концептуализации клиента. Вынесено из
 // useClientDetail.ts (правило №10); публичная форма возврата хука-фасада
@@ -55,17 +56,10 @@ export function useConceptEditing(selectedClient: TherapyClientSummary | null) {
     setConceptSaving(true);
     setConceptError('');
     try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: localConcept.schemaIds ?? [],
-        modeIds: localConcept.modeIds ?? [],
-        earlyExperience: (localConcept.earlyExperience as string) ?? '',
-        unmetNeeds: (localConcept.unmetNeeds as string) ?? '',
-        triggers: (localConcept.triggers as string) ?? '',
-        copingStyles: (localConcept.copingStyles as string) ?? '',
-        goals: (localConcept.goals as string) ?? '',
-        currentProblems: (localConcept.currentProblems as string) ?? '',
-        modeTransitions: (localConcept.modeTransitions as string) ?? '',
-      });
+      const saved = await api.saveConceptualization(
+        selectedClient.telegramId,
+        conceptSaveBody(localConcept),
+      );
       setConcept(saved);
       setLocalConcept(saved);
       setConceptDirty(false);
