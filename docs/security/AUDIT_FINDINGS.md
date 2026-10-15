@@ -648,6 +648,16 @@ plaintext в очереди уведомлений. Нумерация: букв
 - **Фикс:** единый `ensureDataOwner(serverUserId)` в `shared/` (смена
   владельца → `clearLocalData()`), оба фронта; `adoptSession` чистит
   localStorage; при авторитетном `null` от сервера локальный ключ удаляется.
+- **Путь мини-аппа (2026-10-15):** сверка по `sub` срабатывала после обмена
+  подписи, а `flushOutbox` чужой очереди оценок уходил на маунте с initData
+  нового аккаунта раньше (и `therapist_mode` читался до сверки). Теперь флаш
+  идёт только после `renewSession()` (`hooks/useOutboxFlush.ts`; `remember` →
+  `markHostSessionStarted` стирает чужое до резолва), а `main.tsx` до рендера
+  зовёт `ensureHostOwner()`: id пользователя площадки сверяется с запомненным
+  (`data_owner_host`, `shared/src/auth/hostOwnerGuard.ts`). Привязанное
+  устройство не страдает — сравнивается id площадки, не `sub`. Шов держит
+  `schema-miniapp/src/App.ownerSwitch.test.tsx` на настоящих main/App/session.
+  Webapp: порядок верный и раньше (`RequireAuth` пускает после `applyToken`).
 
 #### E-2 · Webvisor записывал ввод PII в запасной форме записи ✅ Закрыто
 - `BookingForm.tsx` (fallback `BookingPicker`) без `ym-disable-keys` на имени,

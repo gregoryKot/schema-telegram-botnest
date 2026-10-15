@@ -219,7 +219,7 @@ describe('tglink:yes — кто становится хозяином данны
   });
 
   it('провал объединения не говорит «готово»', async () => {
-    const { service, fakeBot, links } = makeDeps();
+    const { service, fakeBot, links, analytics } = makeDeps();
     (links.approve as jest.Mock).mockRejectedValue(new Error('БД легла'));
     const errors = jest.spyOn(Logger.prototype, 'error');
     service.onModuleInit();
@@ -234,6 +234,27 @@ describe('tglink:yes — кто становится хозяином данны
     expect(said).toContain('Не получилось объединить');
     expect(said).not.toContain('Готово');
     expect(errors.mock.calls[0][0]).toContain('БД легла');
+    // Провал виден в /stats («Не получилось»), а не только человеку в чате.
+    expect(analytics.track).toHaveBeenCalledWith(null, 'account_link_failed', {
+      host: 'web',
+      reason: 'error',
+    });
+  });
+
+  it('повтор того же человека: карточка «Готово», событие подтверждения не задваивается', async () => {
+    const { service, fakeBot, links, analytics } = makeDeps();
+    (links.approve as jest.Mock).mockResolvedValue({
+      merged: false,
+      repeat: true,
+    });
+    service.onModuleInit();
+
+    const ctx = await runAction(fakeBot, 'tglink:yes:K7M2QX94', {
+      from: { id: 42 },
+    });
+
+    expect(ctx.editMessageText.mock.calls[0][0]).toContain('✅ Готово');
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });
 
