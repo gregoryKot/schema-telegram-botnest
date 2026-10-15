@@ -1,11 +1,10 @@
-// Текстовое поле дневниковой записи — общее для ModeEntrySheet и
-// SchemaEntrySheet (правило №11 CLAUDE.md, jscpd-свип 2026-07).
-//
-// В7 дизайн-аудита 2026-08: вопрос был связан с полем только placeholder'ом,
-// который исчезает при вводе — человек с рабочей памятью «на пределе» теряет
-// вопрос. `labelId` связывает поле с уже отрисованным видимым вопросом
-// (aria-labelledby); `ariaLabel` — фолбэк, когда рядом нет отдельного
-// видимого вопроса (например, `schemaOrigin` внутри шага «Схемы»).
+// Поле дневниковой записи, общее для ModeEntrySheet и SchemaEntrySheet
+// (правило №11). В7 дизайн-аудита 2026-08: `labelId` связывает поле с видимым
+// вопросом (aria-labelledby), placeholder исчезает при вводе; `ariaLabel` —
+// фолбэк, когда отдельного вопроса рядом нет (`schemaOrigin` в шаге «Схемы»).
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
+
 export function DiaryTextArea({
   value,
   onChange,
@@ -22,7 +21,8 @@ export function DiaryTextArea({
   ariaLabel?: string;
 }) {
   return (
-    <textarea
+    <LimitedTextarea
+      max={DIARY_FIELD_MAX}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}

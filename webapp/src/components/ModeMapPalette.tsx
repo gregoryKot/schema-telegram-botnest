@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
-import type { ModeMapNode, TherapistCustomMode, UserId } from '../api';
-import { api } from '../api';
+import { api, type ModeMapNode, type TherapistCustomMode, type UserId } from '../api';
+import { CUSTOM_MODE_NAME_MAX } from '../../../shared/src/limits/textLimits';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
@@ -232,7 +232,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                     style={{ ...miniInputStyle, width: 34, textAlign: 'center', fontSize: 15 }} maxLength={2} />
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveCustomMode(); if (e.key === 'Escape') setAdding(false); }}
-                    placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} />
+                    placeholder="Название…" maxLength={CUSTOM_MODE_NAME_MAX} style={{ ...miniInputStyle, flex: 1 }} />
                 </div>
 
                 <ShapePicker newType={newType} newCopingSub={newCopingSub} setNewType={setNewType} setNewCopingSub={setNewCopingSub} />
