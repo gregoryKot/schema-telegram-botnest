@@ -19,6 +19,7 @@ import { RobokassaService } from './robokassa.service';
 import { MeetingService } from './meeting.service';
 import { CalDavService } from './caldav.service';
 import { buildCalendarStatus } from './booking-admin.calendar';
+import { buildAdminStatus } from './booking-admin.status';
 import { PricingService } from './pricing.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { AdminThrottle, assertAdminKey } from './admin-key.util';
@@ -74,26 +75,9 @@ export class BookingAdminController {
   @Get('status')
   async status(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
-    const meeting = this.meeting.status;
     // Fail-open inside buildCalendarStatus/getBusyTimes.
     const cal = await buildCalendarStatus(this.calDav);
-    return {
-      siteUrl:
-        this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
-      appUrl:
-        this.config.get<string>('APP_URL') ?? '(default schemehappens.ru)',
-      robokassa: this.robokassa.enabled,
-      robokassaTest: this.config.get<string>('ROBOKASSA_IS_TEST') === 'true',
-      zoom: meeting.zoom,
-      zoomVars: meeting.zoomVars,
-      meetingStaticUrl: meeting.staticUrl,
-      ...cal,
-      calendarBlocking:
-        this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
-      emailFallback:
-        !!this.config.get<string>('RESEND_API_KEY') &&
-        !!this.config.get<string>('ADMIN_EMAIL'),
-    };
+    return buildAdminStatus(this.config, this.meeting, this.robokassa, cal);
   }
 
   // ── Bookings ──────────────────────────────────────────────────────────────
@@ -106,6 +90,19 @@ export class BookingAdminController {
   ) {
     assertAdminKey(key, this.adminKey);
     return this.booking.confirm(id);
+  }
+
+  /** POST /admin/cancel/:id — отмена владельцем в любой срок (публичная
+   *  cancel/:token держит cutoff 24 ч). Переход тот же, токен с сервера не уходит. */
+  @Post('cancel/:id')
+  @HttpCode(HttpStatus.OK)
+  async cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    const { cancelToken } = await this.booking.getById(id);
+    return this.booking.cancel(cancelToken, false);
   }
 
   @Get('list')

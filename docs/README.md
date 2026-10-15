@@ -199,12 +199,19 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   сначала сверка в кабинете, потом код. Усилитель остаётся:
   `webapp/src/pages/BookingPaidPage.tsx:57` после FailURL зовёт «попробовать
   снова» по той же ссылке без проверки `heldUntil`.
-- **Экран и ручка брони врут клиенту и админу.** `BookingPaidPage.tsx:74`
-  рисует «Встреча подтверждена» для HELD по факту владения токеном; админская
-  отмена (`admin/BookingSection.tsx:218`) бьёт в публичный `cancel/:token` с
-  cutoff 24 ч, 400 уходит в `unhandledRejection` — хвост инцидента 2026-09-29
-  (#573).
+- **Экран брони врёт клиенту.** `BookingPaidPage.tsx:74` рисует «Встреча
+  подтверждена» для HELD по факту владения токеном.
   [Секция «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки).
+- **`no-floating-promises` в `webapp/` не включён, хотя правило №9 обещает error.**
+  Мини-апп линтуется корневым конфигом, где правило уже `error`
+  (бейслайн 0); `webapp/eslint.config.js` — отдельный конфиг без typed-правил, и
+  админская отмена брони (`.then(load)` без catch) прожила в нём незамеченной.
+  Замер 2026-10-14: `@typescript-eslint/no-floating-promises` с `projectService`
+  даёт **85 нарушений в `webapp/src`** (без тестов), а тестовые файлы
+  `tsconfig.app.json` не включает — понадобится `allowDefaultProject` или
+  отдельный tsconfig. Не включено осознанно: 85 мест — это 85 разборов «нужен
+  catch или осознанный `void`», отдельный PR с храповиком по файлам, а не
+  довесок к починке отмены.
 - **`scripts/encrypt-existing.ts` не исполняется (тот же класс, что чинила
   ротация ключа).** `new PrismaClient()` без driver-adapter (Prisma 7 бросает
   `PrismaClientInitializationError`), `npx ts-node --project tsconfig.json
