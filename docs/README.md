@@ -871,6 +871,32 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   --mutate src/therapy/therapy-relations.service.ts`, выжившие — в
   `reports/mutation/golden-auth.html`, вкладка Survived. Пол не снижали
   (правило №15) и не поднимали.
+- **У прод-бота нет `bot.catch`** (`src/telegram/telegram.providers.ts`).
+  Ошибка, вылетевшая из middleware или хендлера мимо его try/catch, уходит в
+  обработчик Telegraf по умолчанию (`node_modules/telegraf/lib/telegraf.js`,
+  `handleError`): он ставит `process.exitCode = 1` и пробрасывает ошибку —
+  цикл поллинга рвётся, `BotLauncher` поднимает его через 5 с с warn, а
+  апдейт с ошибкой не повторяется (offset Telegraf уже сдвинул). Нашлось при
+  разборе ci-alarm #672: тот же обработчик в `telegram.stale-updates.spec.ts`
+  ронял код выхода jest. Не чинилось: нужен решённый ответ, что делать с
+  ошибкой апдейта (лог + алерт, без обрыва поллинга).
+- **PR-CI не ловит тест, оставивший живой хендл.** Джоба `backend` в `ci.yml`
+  гоняет jest воркерами, и утечка там видна только строкой «A worker process
+  has failed to exit gracefully» при зелёном шаге — так поллинг из
+  `telegram.polling.seam.spec.ts` (#649) уехал в `main` и повесил nightly
+  (ci-alarm #672). Ловит её только ночной `backend-flaky` через
+  `scripts/jest-exit-guard.mjs`. Сторож в PR-CI осознанно не поставлен:
+  утечка от гонки проявляется не в каждом прогоне и роняла бы чужие PR как
+  флак. Вернуться, когда `backend-flaky` неделю подряд зелёный (видно по
+  `nightly.yml` в Actions): тогда такая строка в PR-CI укажет на утечку,
+  принесённую самим изменением.
+- **Проверка «спек оставил `process.exitCode`» не подключена к e2e.**
+  `src/test-support/exit-code-leak.setup.ts` стоит в `jest.setupFilesAfterEnv`
+  юнит-спеков, а `test/jest-e2e.json` его не подключает. Проверить подключение
+  можно только прогоном обоих режимов e2e (фейк и живой Postgres, джоба
+  `migrations`): локальный прогон без живой базы краснеет на десятке спеков и
+  ничего не доказывает. Пока e2e с утёкшим кодом выхода краснеет шагом CI без
+  объяснения. Подключить отдельным PR после прогона `live-e2e.py`.
 - `src/infra/vps-ops.spec.ts` флакает под нагрузкой машины: при load average
   15+ на чистом `origin/main` (25233de) один-два теста из 29 падают примерно
   в одном прогоне из трёх («релиз записан, предыдущий сохранён…», «первый

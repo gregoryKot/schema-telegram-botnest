@@ -77,10 +77,15 @@ describe('шов: настоящий Telegraf против медленного 
       if ((req.url ?? '').endsWith('/sendMessage')) hits++;
       req.resume();
       req.on('end', () => {
-        setTimeout(() => {
+        const reply = setTimeout(() => {
           res.setHeader('content-type', 'application/json');
           res.end(JSON.stringify({ ok: true, result: { message_id: 1 } }));
         }, REPLY_MS);
+        // Клиент отменил запрос (таймаут) или сервер закрыт — ответ не
+        // нужен. Без этого таймер жил до секунды после afterAll, и воркер
+        // jest, у которого спек был последним, убивался с «failed to exit
+        // gracefully» (ночной прогон, после ci-alarm #672).
+        res.on('close', () => clearTimeout(reply));
       });
     });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
