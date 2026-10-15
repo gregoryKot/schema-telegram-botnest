@@ -112,3 +112,14 @@ describe('DonatePage — ошибка API', () => {
     await screen.findByText('Не получилось. Попробовать ещё раз.');
   });
 });
+
+// security#27: Вебвизор визитки не должен писать ввод email (политика
+// конфиденциальности обещает обратное) — метка ym-disable-keys, как у формы записи.
+describe('DonatePage — Вебвизор не пишет ввод', () => {
+  it('поле email несёт ym-disable-keys', () => {
+    render(<DonatePage />);
+    const email = screen.getByPlaceholderText('Email для чека (необязательно)') as HTMLInputElement;
+    expect(email.type).toBe('email');
+    expect(email.className).toContain('ym-disable-keys');
+  });
+});

@@ -10,7 +10,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl }: {
   chosen: SessionOption | undefined; payUrl: string | null;
 }) {
   return (
-    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
+    <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Время зарезервировано</h3>
       {slot && (
@@ -48,7 +48,7 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
   meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void;
 }) {
   return (
-    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
+    <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
         {cancelled ? 'Запись отменена' : sessionType === 'INTRO_15' ? 'Заявка принята' : 'Время забронировано'}
       </h3>
@@ -66,7 +66,7 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
       {!cancelled && meetingUrl && (
         <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)' }}>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 6px' }}>Ваша персональная ссылка на встречу — она же для всех будущих сессий:</p>
-          <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, wordBreak: 'break-all', textDecoration: 'none' }}>{meetingUrl}</a>
+          <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>Открыть встречу</a>
         </div>
       )}
       {!cancelled && !meetingUrl && (
