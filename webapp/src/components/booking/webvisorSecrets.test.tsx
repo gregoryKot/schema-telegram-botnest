@@ -27,6 +27,7 @@ import { DoneScreen, AwaitPaymentScreen } from './BookingResultScreens';
 import { BookingSaveBlock } from './BookingSaveBlock';
 import { BookingCancelControl } from './BookingCancelControl';
 import { BookingPaidPage } from '../../pages/BookingPaidPage';
+import { BookingConfirmedView } from './BookingConfirmedView';
 
 const TOKEN = '11111111-2222-4333-8444-555555555555';
 const PWD = 'SeCrEtPaSsCoDe';
@@ -108,6 +109,17 @@ describe('компоненты с секретами: DOM под ym-hide-content
     expect(violations(container)).toEqual([]);
   });
 
+  it('BookingConfirmedView: отдельно от страницы защищён собственным корнем', () => {
+    const { container } = render(
+      <BookingConfirmedView
+        booking={{ status: 'CONFIRMED', type: 'SESSION_50', startsAt, durationMin: 50, meetingUrl: ZOOM } as never}
+        token={TOKEN} onReload={() => {}} onCancelled={() => {}}
+      />,
+    );
+    expect(carriers(container).length).toBeGreaterThanOrEqual(4); // Zoom + ссылки BookingSaveBlock
+    expect(violations(container)).toEqual([]);
+  });
+
   it('BookingPaidPage: после загрузки по токену ссылка встречи и управление записью — под скрытым узлом', async () => {
     window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`);
     vi.mocked(api.getBookingByToken).mockResolvedValue({
@@ -127,7 +139,7 @@ const REGISTRY: Record<string, string> = {
   'components/booking/BookingResultScreens.tsx': 'рендерит: DoneScreen, AwaitPaymentScreen — тест выше',
   'components/booking/BookingSaveBlock.tsx': 'рендерит — тест выше',
   'components/booking/BookingCancelControl.tsx': 'токен только в вызове API, в DOM нет — тест выше',
-  'pages/BookingPaidPage.tsx': 'рендерит — тест выше',
+  'components/booking/BookingConfirmedView.tsx': 'рендерит (экран CONFIRMED страницы после оплаты) — тест выше',
   'components/BookingPicker.tsx': 'держит секреты в state и отдаёт экранам выше; сам их не рисует',
   'pages/DonatePage.tsx': 'paymentUrl только для window.location.href, в DOM нет',
   'pages/SubscribePage.tsx': 'paymentUrl только для window.location.href, в DOM нет',
