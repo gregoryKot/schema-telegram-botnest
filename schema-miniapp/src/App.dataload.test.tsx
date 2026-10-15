@@ -101,14 +101,20 @@ describe('App — сохранение со стриком: селебрейшн
     );
   });
 
-  it('totalDays >= 5 и колесо детства ещё не пройдено → childhoodWheelPending включается', async () => {
+  // Связка «сохранил → показал»: флаг childhoodWheelPending живёт в App, а
+  // читает его closer заметки (крестик листа и «Назад» хоста — один и тот же).
+  it('totalDays >= 5 и колесо детства ещё не пройдено → закрытие заметки открывает колесо', async () => {
     renderApp();
     await waitFor(() =>
       expect(screen.getByTestId('app-sections')).toBeTruthy(),
     );
     fireEvent.click(screen.getByTestId('app-overlays-save-with-big-streak'));
+    expect(screen.getByTestId('app-overlays').dataset.childhoodWheel).toBe(
+      'false',
+    );
+    fireEvent.click(screen.getByTestId('app-overlays-close-today-note'));
     await waitFor(() =>
-      expect(screen.getByTestId('app-overlays').dataset.childhoodPending).toBe(
+      expect(screen.getByTestId('app-overlays').dataset.childhoodWheel).toBe(
         'true',
       ),
     );

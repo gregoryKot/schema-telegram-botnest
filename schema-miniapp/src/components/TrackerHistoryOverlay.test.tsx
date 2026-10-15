@@ -60,6 +60,7 @@ function Harness(props: {
   return (
     <TrackerHistoryOverlay
       sheets={sheets}
+      onClose={() => {}}
       safeTop={20}
       needs={props.needs ?? [need]}
       history={props.history ?? []}

@@ -82,8 +82,7 @@ export default function App() {
   // не перезапускает. Та же идея для ДАННЫХ чужих вкладок — prefetchSectionData.ts.
   useEffect(() => {
     preloadOtherSections(section);
-    // Только при маунте: начальная секция за жизнь компонента не меняется,
-    // повторный запуск плана на каждую смену вкладки не нужен.
+    // Только при маунте: начальная секция за жизнь компонента не меняется.
   }, []);
   // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
   // экран обязан сказать об этом, а не молча проглатывать 401 (правило
@@ -475,8 +474,7 @@ export default function App() {
     }
   }, [sheets.trackerTab, historyDays]);
 
-  // Кнопка «назад» хоста (Telegram/MAX) или истории браузера (web)
-  useHostBackButton({
+  const closers = useHostBackButton({
     sheets,
     newDiaryEntry,
     setNewDiaryEntry,
@@ -484,6 +482,9 @@ export default function App() {
     cabinetView,
     therapistBackHandlerRef,
     setPairData,
+    childhoodWheelPending,
+    setChildhoodWheelPending,
+    onAddressPickerDone: onboarding.markAddressFormReady,
   });
 
   // Выключает свайп секций и кладёт `inert` на AppSections (аудит 2026-09).
@@ -606,6 +607,7 @@ export default function App() {
       {/* ── История потребностей ── */}
       <TrackerHistoryOverlay
         sheets={sheets}
+        onClose={closers.tracker}
         safeTop={safeTop}
         needs={needs}
         history={history}
@@ -625,6 +627,7 @@ export default function App() {
 
       <AppOverlays
         sheets={sheets}
+        closers={closers}
         needs={needs}
         ratings={ratings}
         saved={saved}
@@ -633,14 +636,11 @@ export default function App() {
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
         showOnboarding={onboarding.visible}
-        onAddressPickerDone={onboarding.markAddressFormReady}
         consentGiven={onboarding.consentGiven}
         onConsentDisclaimer={onboarding.persist}
         onAcceptDisclaimer={onboarding.accept}
         celebrationStreak={celebrationStreak}
         setCelebrationStreak={setCelebrationStreak}
-        childhoodWheelPending={childhoodWheelPending}
-        setChildhoodWheelPending={setChildhoodWheelPending}
         setChildhoodRatings={setChildhoodRatings}
         setPairData={setPairData}
         userRole={userRole}
