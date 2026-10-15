@@ -727,9 +727,11 @@ describe('getClients — список клиентов терапевта', () =
     expect(list[0].name).toBe('Аня');
   });
 
-  // Аудит 2026-10, X-1: веб-клиент (Google/VK/MAX/почта) живёт в [1e18, 9e18),
-  // выше 2^53. Number(id) округлял его, и следующий запрос терапевта с этим
-  // id не проходил assertRelation. id обязан пройти от БД до ответа точным bigint.
+  // Аудит 2026-10, X-1: веб-клиент (Google/VK/MAX/почта) живёт в [1e15, 9e15),
+  // ниже 2^53 (границу держит user-id-range.spec.ts). Id выше 2^53 здесь
+  // выдуманный: он стережёт bigint-путь на случай расширения диапазона, когда
+  // Number(id) округлит его и следующий запрос терапевта не пройдёт
+  // assertRelation. Id обязан пройти от БД до ответа точным bigint.
   it('веб-клиент с id > 2^53: getClients и getRelation отдают точный bigint, assertHasClient проходит', async () => {
     const WEB = 1000000000000000123n;
     const { service } = makeFullService(

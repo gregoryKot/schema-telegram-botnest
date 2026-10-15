@@ -444,8 +444,10 @@ plaintext в очереди уведомлений. Нумерация: букв
   `parseId` (≤ 16 цифр), `DueNotification.userId` и бакет троттлера
   (`uid:${Number}`) округлили бы id при расширении диапазона за 2^53.
   Допущение «диапазон ниже 2^53» держит пин в `user-id-range.spec.ts`.
-  Хвосты остаются открытыми: мёртвое `req.telegramUserId = Number(…)` и
-  `notifyApplicant` (`therapist-request.*`), см. `docs/README.md`.
+  Хвосты остаются открытыми: мёртвое `req.telegramUserId = Number(…)` —
+  строка в `docs/README.md`, «Что осталось открытым»; и `notifyApplicant`
+  (`therapist-request.*`) — запись «Решение по заявке «Я психолог» уходит
+  только в Telegram» в [AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога).
 - **Стало:** id идут точными от БД до фронтов. `src/utils/bigint-json.ts` —
   число, если влезает в ±2^53, иначе десятичная строка; `parseUserId`/
   `parseClientId` (`src/api/parse-user-id.ts`) отдают bigint; весь
