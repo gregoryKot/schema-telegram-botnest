@@ -139,6 +139,8 @@ describe('patchConcept / autoSave', () => {
     expect(mockApi.saveConceptualization).toHaveBeenCalledWith(1, {
       schemaIds: [], modeIds: [], earlyExperience: 'детство', unmetNeeds: '',
       triggers: '', copingStyles: '', goals: 'цель', currentProblems: '', modeTransitions: '',
+      modeLinks: [],
+      schemaLinks: [],
     });
   });
 

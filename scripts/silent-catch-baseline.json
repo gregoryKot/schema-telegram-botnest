@@ -41,6 +41,5 @@
   "webapp/src/pages/MergePage.tsx": 1,
   "webapp/src/pages/tests/QuizPage.tsx": 1,
   "webapp/src/sections/DiarySection.tsx": 1,
-  "webapp/src/sections/SchemasSection.tsx": 1,
   "webapp/src/sections/TherapistTodaySection.tsx": 1
 }

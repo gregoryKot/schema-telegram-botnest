@@ -1,0 +1,64 @@
+/* Раздел «Практика» кабинета клиента. Префикс cp-. */
+.cp-page { max-width: 1100px; }
+.cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
+.cp-block .section { margin: 0; }
+
+/* Верхний ряд */
+.cp-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.cp-top-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px;
+  display: flex; flex-direction: column; gap: 6px; cursor: pointer; min-height: 130px; box-sizing: border-box;
+  transition: border-color .12s;
+}
+.cp-top-card:hover { border-color: var(--line-hover); }
+.cp-top-card--crisis { background: var(--err); border-color: var(--err); color: #fff; }
+.cp-top-card--crisis:hover { border-color: var(--err); }
+.cp-top-crisis-title { font-family: var(--serif); font-size: 26px; line-height: 1.15; }
+.cp-top-crisis-sub { font-size: 13px; line-height: 1.4; }
+.cp-top-go { margin-top: auto; font-size: 13px; font-weight: 700; }
+.cp-top-line { font-size: 16px; font-weight: 700; }
+.cp-top-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+
+/* Задания и цели */
+.cp-tasks { display: flex; flex-direction: column; gap: 10px; }
+.cp-task { display: flex; align-items: center; gap: 16px; min-height: 44px; }
+.cp-task-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--accent); }
+.cp-task-body { flex: 1; min-width: 0; }
+.cp-task-from { color: var(--accent); margin-bottom: 4px; }
+.cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.cp-empty { font-size: 14px; line-height: 1.55; color: var(--text-muted); }
+.cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.cp-alert { font-size: 13px; color: var(--err); }
+
+/* Быстрые инструменты и каталоги */
+.cp-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.cp-tool { padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; border-top: 3px solid var(--line-strong); }
+.cp-tool-title { font-size: 15px; font-weight: 700; }
+.cp-tool-sub { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.cp-tool .ds-link { margin-top: auto; padding-top: 8px; align-self: flex-start; }
+
+/* Библиотека */
+.cp-lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.cp-ex {
+  border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px;
+  cursor: pointer; min-height: 180px; box-sizing: border-box; color: var(--text);
+  transition: transform .12s;
+}
+.cp-ex:hover { transform: translateY(-2px); }
+.cp-ex-top { display: flex; justify-content: space-between; align-items: baseline; }
+.cp-ex-num { font-size: 32px; }
+.cp-ex-time { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
+.cp-ex-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+.cp-ex-title { font-size: 17px; font-weight: 700; line-height: 1.25; }
+.cp-ex-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.cp-ex-state { margin-top: auto; font-size: 12px; color: var(--text-sub); }
+
+@media (max-width: 767px) {
+  .cp-lib { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cp-ex { border-radius: 16px; padding: 12px; min-height: 118px; gap: 4px; }
+  .cp-ex-num { font-size: 22px; }
+  .cp-ex-title { font-size: 14px; line-height: 1.2; }
+  .cp-ex-desc, .cp-ex-eyebrow { display: none; }
+  .cp-top-card--crisis { min-height: 0; border-radius: 18px; padding: 16px; }
+  .cp-top-crisis-title { font-size: 22px; }
+}

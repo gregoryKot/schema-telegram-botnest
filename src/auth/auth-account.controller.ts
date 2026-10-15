@@ -13,6 +13,8 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { STRICT_THROTTLE } from './auth-throttles';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
@@ -61,10 +63,7 @@ export class AuthAccountController {
   // ─── Email magic-link login ───────────────────────────────────────────────
 
   @Post('email/link')
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async emailLoginLink(
     @Body() dto: EmailBodyDto,
@@ -120,10 +119,7 @@ export class AuthAccountController {
 
   @Post('email/link-to-account')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async emailLinkToAccount(
     @Body() dto: EmailBodyDto,
@@ -176,10 +172,7 @@ export class AuthAccountController {
 
   @Post('merge')
   @UseGuards(OptionalJwtGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async confirmMerge(
     @Body() dto: MergeConfirmDto,

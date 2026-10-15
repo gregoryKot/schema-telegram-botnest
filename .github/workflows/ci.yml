@@ -192,6 +192,11 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Счётчик попыток в памяти процесса обнуляется деплоем и не общий между
+      # инстансами (правило №5). Каждая ручка с лимитом или с проверкой кода /
+      # заявкой несёт @PersistentThrottle (счёт в Postgres) либо запись exempt с
+      # причиной в scripts/persistent-throttle-baseline.json. Флага --update нет.
+      - run: node scripts/check-persistent-throttle.mjs
       - run: node scripts/check-raw-sql-live.mjs
       # Каждый test/**/*.e2e-spec.ts гоняется хотя бы одним шагом jest-e2e
       # (аудит 2026-10-11: два спека лежали в test/ без единого прогона), и

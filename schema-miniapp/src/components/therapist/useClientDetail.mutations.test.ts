@@ -166,6 +166,8 @@ describe('saveConcept', () => {
       goals: 'цель',
       currentProblems: '',
       modeTransitions: '',
+      modeLinks: [],
+      schemaLinks: [],
     });
   });
 

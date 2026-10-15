@@ -42,8 +42,8 @@ describe('AddClientForm — отказ буфера при копировани�
 
     render(<Host />);
     fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Иван' } });
-    fireEvent.click(screen.getByText('Создать ссылку-приглашение'));
-    await act(async () => { fireEvent.click(screen.getByText('Добавить')); });
+    fireEvent.click(screen.getByLabelText('Сразу создать ссылку-приглашение в бот'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
 
     await screen.findByText('https://example.com/invite');
     await act(async () => { fireEvent.click(screen.getByText('Скопировать')); });
@@ -62,8 +62,8 @@ describe('AddClientForm — отказ буфера при копировани�
 
     render(<Host />);
     fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Мария' } });
-    fireEvent.click(screen.getByText('Создать ссылку-приглашение'));
-    await act(async () => { fireEvent.click(screen.getByText('Добавить')); });
+    fireEvent.click(screen.getByLabelText('Сразу создать ссылку-приглашение в бот'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
 
     await screen.findByText('https://example.com/ok');
     await act(async () => { fireEvent.click(screen.getByText('Скопировать')); });

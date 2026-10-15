@@ -1,8 +1,10 @@
-import type { ClientConceptualization } from '../../api';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
-import { CONCEPT_FIELDS } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
+import { ClientConceptFields } from './ClientConceptFields';
+import { ClientConceptGraph } from './ClientConceptGraph';
+import '../../styles/therapist-concept.css';
+import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 
 interface Props {
   detail: ClientDetail;
@@ -11,130 +13,45 @@ interface Props {
 export function ClientConceptTab({ detail }: Props) {
   const {
     saveStatus, exportCopied, handleExport, conceptError,
-    localConcept, concept, patchConcept,
-    activeSchemaIds, toggleSchemaId, activeModeIds, toggleModeId,
+    concept,
+    activeSchemaIds, activeModeIds,
     ysqSchemaIds, expandedSnapshot, setExpandedSnapshot,
   } = detail;
+  // Вид выбирается один раз при открытии вкладки (см. useConceptView).
+  const [view, setView] = useConceptView(activeModeIds.length);
 
   return (
     <div className="page-inner-wide u-pt40">
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+      <div className="ds-head-row tcp-head">
         <div>
-          <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Концептуализация</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
+          <h2 className="ds-h2">Концептуализация</h2>
+          <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 120, textAlign: 'right' }}>
+        <div className="tcp-head-actions">
+          <span className="tcp-save">
             {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
           </span>
-          <button onClick={handleExport} style={{ padding: '8px 14px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
+          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={handleExport}>
             ↗ Экспорт{exportCopied ? ' ✓' : ''}
           </button>
         </div>
       </div>
 
+      <div style={{ marginBottom: 20 }}>
+        <ConceptViewSwitch view={view} onChange={setView} />
+      </div>
+
       {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 'var(--r-8)', background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
 
-      <div className="doc-grid">
-        <div>
-          {/* Goals */}
-          <div className="section">
-            <div className="eyebrow u-mb12">Цели схема-терапии</div>
-            <textarea
-              className="textarea"
-              value={(localConcept.goals as string) ?? ''}
-              onChange={e => patchConcept({ goals: e.target.value })}
-              placeholder="Что должно измениться. Конкретные результаты, на которые направлена работа."
-              rows={3}
-              style={{ fontSize: 15, lineHeight: 1.6, borderColor: 'var(--accent-line)' }}
-            />
-          </div>
-
-          {/* Schema selection */}
-          <div className="section">
-            <div className="section-head u-mb20">
-              <h3>Актуальные схемы</h3>
-              <span className="hint">{activeSchemaIds.length} активны из 20</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {SCHEMA_DOMAINS.map(domain => (
-                <div key={domain.id}>
-                  <div className="eyebrow" style={{ color: domain.color, marginBottom: 10 }}>{domain.domain}</div>
-                  <div className="u-wrap8">
-                    {domain.schemas.map(s => {
-                      const active = activeSchemaIds.includes(s.id);
-                      return (
-                        <button key={s.id} onClick={() => toggleSchemaId(s.id)} style={{ padding: '6px 12px', borderRadius: 'var(--r-6)', fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? domain.color : 'var(--surface-2)', color: active ? 'var(--on-accent)' : 'var(--text-faint)', border: `1px solid ${active ? domain.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
-                          {s.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mode selection */}
-          <div className="section">
-            <div className="section-head u-mb20">
-              <h3>Карта режимов</h3>
-              <span className="hint">{activeModeIds.length} в работе</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {MODE_GROUPS.map(group => (
-                <div key={group.id}>
-                  <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
-                  <div className="u-wrap8">
-                    {group.items.map(m => {
-                      const active = activeModeIds.includes(m.id);
-                      return (
-                        <button key={m.id} onClick={() => toggleModeId(m.id)} style={{ padding: '6px 12px', borderRadius: 'var(--r-6)', fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? group.color : 'var(--surface-2)', color: active ? 'var(--on-accent)' : 'var(--text-faint)', border: `1px solid ${active ? group.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
-                          {m.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Text fields */}
-          {CONCEPT_FIELDS.map(field => (
-            <div key={String(field.key)} className="section">
-              <div className="eyebrow u-mb12">{field.label}</div>
-              <textarea
-                className="textarea"
-                value={(localConcept[field.key as keyof ClientConceptualization] as string) ?? ''}
-                onChange={e => patchConcept({ [field.key]: e.target.value })}
-                placeholder={field.placeholder}
-                rows={4}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
+        {view === 'graph' ? (
+          <ClientConceptGraph detail={detail} />
+        ) : (
+          <ClientConceptFields detail={detail} />
+        )}
 
         {/* Right sidebar */}
         <aside>
-          <div className="eyebrow u-mb16">Что заполнено</div>
-          <div className="u-col10">
-            {([
-              ['Цели терапии', !!(localConcept.goals || concept?.goals)],
-              ['Ранний опыт', !!(localConcept.earlyExperience || concept?.earlyExperience)],
-              ['Неудовл. потребности', !!(localConcept.unmetNeeds || concept?.unmetNeeds)],
-              ['Триггеры', !!(localConcept.triggers || concept?.triggers)],
-              ['Копинги', !!(localConcept.copingStyles || concept?.copingStyles)],
-              ['Переходы режимов', !!(localConcept.modeTransitions || concept?.modeTransitions)],
-              ['Актуальные проблемы', !!(localConcept.currentProblems || concept?.currentProblems)],
-            ] as [string, boolean][]).map(([label, has]) => (
-              <div key={label} className="u-ac8">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: has ? 'var(--accent)' : 'var(--text-ghost)', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: has ? 'var(--text)' : 'var(--text-faint)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
           {/* YSQ cross-reference */}
           {ysqSchemaIds.length > 0 && (
             <>

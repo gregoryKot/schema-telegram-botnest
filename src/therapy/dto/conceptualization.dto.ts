@@ -1,10 +1,16 @@
+// @Type() (ниже) читает design-time метаданные через Reflect — полифилл
+// нужен явно: в юнит-тесте DTO грузится без бутстрапа Nest.
+import 'reflect-metadata';
 import {
   ArrayMaxSize,
   IsArray,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
 
 const TEXT_MAX = 5000;
 
@@ -72,4 +78,20 @@ export class ConceptualizationDto {
   @IsArray()
   @ArrayMaxSize(500)
   modeMapEdges?: unknown[];
+
+  /** Связи режимов графической концептуализации (не больше 40 режимов). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptModeLinkDto)
+  modeLinks?: ConceptModeLinkDto[];
+
+  /** Тексты схем графической концептуализации (схем в форме Янга 18, запас до 20). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptSchemaLinkDto)
+  schemaLinks?: ConceptSchemaLinkDto[];
 }

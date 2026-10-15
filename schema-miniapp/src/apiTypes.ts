@@ -1,6 +1,6 @@
 // DTO/типы ответов API мини-аппа. Общие с webapp типы — в shared/src/apiTypes
 // (правило №3): единый источник; ре-экспортируются из api.ts.
-import type { ConceptSnapshot, UserId } from '../../shared/src/apiTypes';
+import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
 export type {
   UserId,
   UserSettings,
@@ -21,20 +21,5 @@ export type {
 // Единственная фронтовая копия — в shared (правило №3).
 export type { TherapyClientSummary } from '../../shared/src/types';
 
-// В мини-аппе БЕЗ mode-map (фича только в webapp) — поэтому остаётся локальным.
-export interface ClientConceptualization {
-  id: number;
-  therapistId: UserId;
-  clientId: UserId;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions: string | null;
-  history: ConceptSnapshot[];
-  updatedAt: string;
-}
+// В мини-аппе БЕЗ mode-map (фича только в webapp) — это общая часть как есть.
+export type ClientConceptualization = ClientConceptualizationBase;

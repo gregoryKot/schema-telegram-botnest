@@ -56,6 +56,11 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'desktop_app_open', meta: { host: 'web' } },
   { name: 'screen_block_toggle', meta: { screen: 'today', block: 'needs' } },
   { name: 'profile_pattern_open', meta: { pattern: 'abandonment' } },
+  // Графическая концептуализация: блок считает count/groupBy через Prisma
+  // (не сырой SQL), но исполняется драйвером тем же прогоном.
+  { name: 'concept_graph_open' },
+  { name: 'concept_mode_linked' },
+  { name: 'concept_schema_linked' },
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },
@@ -136,6 +141,10 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     // Секция 'booking' события client_error (инцидент 2026-09-13) считается
     // отдельным FILTER'ом в сыром SQL — на живой базе он обязан дать ≥1.
     expect(product).toContain('Запись на консультацию');
+    // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
+    expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
+    expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);
+    expect(product).toMatch(/Убеждения и опыт схем записывали [1-9]\d* раз/);
     // JSON-фильтр по meta.surface (countCrisis) исполнен драйвером и увидел
     // анонимные строки: обе цифры «из них в форме записи» не меньше 1.
     expect(product).toMatch(
