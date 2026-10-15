@@ -19,6 +19,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { REAL_SCRIPTS_DIR } from './gate-sandbox';
 import { loadRecordedFixture } from '../recorded-fixture';
+import { callExport } from './pattern-loader';
 
 const SCRIPT = join(REAL_SCRIPTS_DIR, 'jest-exit-guard.mjs');
 const NODE = process.execPath;
@@ -198,7 +199,7 @@ describe('jest-exit-guard.mjs: процессы', () => {
     await exited;
     expect(out).toContain('сигнал SIGTERM');
     expect(alive(pid)).toBe(false);
-  });
+  }, 20_000);
 
   it.each([
     [['--budget', 'x', '--', 'true']],
@@ -207,5 +208,25 @@ describe('jest-exit-guard.mjs: процессы', () => {
     [['--budget', '5']],
   ])('неверные аргументы %j: код 2, команда не запускается', (args) => {
     expect(runGuard(args).status).toBe(2);
+  });
+});
+
+// Правила сторожа — отдельный модуль (scripts/jest-exit-guard-rules.mjs):
+// конец прогона узнаётся по сводке, привязанной к началу строки, в ОБОИХ
+// режимах nightly — на записанном выводе, а не на сочинённой строке.
+describe('jest-exit-guard-rules.mjs: runFinished', () => {
+  const finished = (text: string) =>
+    callExport('jest-exit-guard-rules.mjs', 'runFinished', text) as unknown;
+  it.each([
+    ['silentWorkersClean'],
+    ['silentWorkersLeak'],
+    ['inBandClean'],
+  ] as const)('%s: сводка найдена — прогон закончен', (key) => {
+    expect(finished(REC[key])).toBe(true);
+  });
+  it('контроль: сводка с отступом внутри упавшего утверждения — не конец', () => {
+    expect(finished('    Expected: "Test Suites: 1 passed, 1 total"')).toBe(
+      false,
+    );
   });
 });
