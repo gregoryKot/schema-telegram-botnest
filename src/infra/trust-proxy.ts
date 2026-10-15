@@ -3,7 +3,10 @@ import { BlockList, isIP } from 'net';
 /**
  * Сколько прокси стоит между пользователем и Express (`app.set('trust proxy')`).
  *
- * Ровно один: Caddy на VPS (deploy/vps/Caddyfile) либо прокси Amvera. Не `true`:
+ * Ровно один HTTP-хоп: Caddy на VPS (deploy/vps/Caddyfile) либо прокси Amvera.
+ * TCP-проброс deploy/front-server.mjs перед приложением хопом не считается: он
+ * не разбирает HTTP, XFF не трогает, а сокет у приложения из-за него всегда
+ * 127.0.0.1, поэтому по адресу сокета о прокси судить нельзя. Не `true`:
  * тогда Express верил бы самому левому адресу в X-Forwarded-For, а его
  * присылает клиент, и IP-бакеты троттлинга (правило №5) обходились бы
  * подделкой заголовка. Caddy без `trusted_proxies` (v2.5+) не верит
@@ -38,10 +41,6 @@ for (const [net, prefix] of [
   PRIVATE.addSubnet(net, prefix, 'ipv6');
 }
 
-const LOOPBACK = new BlockList();
-LOOPBACK.addSubnet('127.0.0.0', 8, 'ipv4');
-LOOPBACK.addAddress('::1', 'ipv6');
-
 /** Приводит `::ffff:a.b.c.d` к `a.b.c.d`, отбрасывает зону `%eth0`. */
 function normalize(ip: string): string {
   const bare = ip.split('%')[0];
@@ -60,9 +59,4 @@ function inList(list: BlockList, ip: string | undefined): boolean {
 /** Адрес из частной сети, loopback, link-local или CGNAT: не посетитель из интернета. */
 export function isPrivateAddress(ip: string | undefined): boolean {
   return inList(PRIVATE, ip);
-}
-
-/** Loopback: запрос изнутри контейнера (например, HEALTHCHECK), а не от посетителя. */
-export function isLoopbackAddress(ip: string | undefined): boolean {
-  return inList(LOOPBACK, ip);
 }
