@@ -33,6 +33,12 @@ export function LimitedTextarea({
     <>
       <textarea
         {...rest}
+        // Свободный текст человека: Вебвизор Метрики на визитке не пишет
+        // нажатия в поле с этой меткой (security#27, гейт
+        // scripts/check-webvisor-fields.mjs). Метка стоит в самом общем поле,
+        // а не у каждого вызывающего — новое место с пределом длины
+        // защищено сразу; класс вызывающего сохраняется.
+        className={['ym-disable-keys', rest.className].filter(Boolean).join(' ')}
         aria-describedby={describedBy}
         value={value}
         maxLength={max}

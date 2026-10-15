@@ -24,6 +24,24 @@ describe('LimitedTextarea', () => {
     expect(area.rows).toBe(3);
   });
 
+  it('поле несёт метку ym-disable-keys и сохраняет класс вызывающего (Вебвизор не пишет свободный текст)', () => {
+    render(
+      <LimitedTextarea
+        max={200}
+        value=""
+        onChange={() => {}}
+        placeholder="С классом"
+        className="field"
+      />,
+    );
+    const area = screen.getByPlaceholderText('С классом');
+    expect(area.classList.contains('ym-disable-keys')).toBe(true);
+    expect(area.classList.contains('field')).toBe(true);
+    cleanup();
+    render(<LimitedTextarea max={200} value="" onChange={() => {}} placeholder="Без класса" />);
+    expect(screen.getByPlaceholderText('Без класса').className).toBe('ym-disable-keys');
+  });
+
   it('onChange получает введённый текст', () => {
     const seen: string[] = [];
     render(
