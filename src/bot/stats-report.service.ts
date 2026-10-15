@@ -12,6 +12,7 @@ import { WebBannerMetricsService } from './web-banner-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
+import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
@@ -44,6 +45,7 @@ export class StatsReportService {
     private readonly siteInstall: SiteInstallMetricsService,
     private readonly screen: ScreenMetricsService,
     private readonly profilePattern: ProfilePatternMetricsService,
+    private readonly conceptGraph: ConceptGraphMetricsService,
     private readonly authHealth: AuthHealthMetricsService,
     private readonly loginTicket: LoginTicketMetricsService,
     private readonly clientErrors: ClientErrorMetricsService,
@@ -71,6 +73,7 @@ export class StatsReportService {
       { name: 'Установка с сайта', svc: this.siteInstall },
       { name: 'Настройка экранов', svc: this.screen },
       { name: 'Паттерны со вкладки Я', svc: this.profilePattern },
+      { name: 'Графическая концептуализация', svc: this.conceptGraph },
       { name: 'Вход в мессенджере', svc: this.authHealth },
       { name: 'Вход по коду', svc: this.loginTicket },
       { name: 'Поломки на клиенте', svc: this.clientErrors },

@@ -570,6 +570,7 @@ model ClientConceptualization {
   goals           String?  // Цели схема-терапии
   currentProblems String?  // Текущие проблемы и симптомы
   modeTransitions String?  // Переключение режимов
+  modeLinks       Json     @default("[]")  // ConceptModeLink[] — encrypted JSON: связи режимов графической концептуализации
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]
