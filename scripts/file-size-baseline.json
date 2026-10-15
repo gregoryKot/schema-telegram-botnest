@@ -513,7 +513,7 @@
   "scripts/check-jscpd-ratchet.mjs": 82,
   "scripts/check-legacy-name.mjs": 60,
   "scripts/check-mutation-ratchet.mjs": 158,
-  "scripts/check-paired-files.mjs": 83,
+  "scripts/check-paired-files.mjs": 85,
   "scripts/check-pool-sync.mjs": 177,
   "scripts/check-public-scripts.mjs": 138,
   "scripts/check-raw-sql-live.mjs": 177,
