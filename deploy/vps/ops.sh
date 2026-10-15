@@ -56,13 +56,15 @@ health_wait() {
 # (BACKUP_REQUIRED_ENV_VARS); сверка — src/infra/vps-ops.spec.ts. На VPS
 # `pgdata` — единственная копия базы, поэтому приложение без бэкапов в R2 не
 # стартует (аудит 2026-10, infra#11). Смотрим только имена: значения в вывод
-# не попадают, логи Actions публичны.
+# не попадают, логи Actions публичны. Значение из одних пробелов и кавычек
+# (`NAME=""`) — тоже «не задано»: env_file в compose читается как raw, кавычки
+# не снимаются, приложение получит литерал из двух кавычек.
 BACKUP_ENV_NAMES=(BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY BACKUP_ENCRYPTION_KEY)
 
 require_backup_env() {
   local name missing=""
   for name in "${BACKUP_ENV_NAMES[@]}"; do
-    grep -Eq "^${name}=[[:space:]]*[^[:space:]]" .env || missing="$missing $name"
+    grep -Eq "^${name}=[[:space:]\"']*[^[:space:]\"']" .env || missing="$missing $name"
   done
   [ -z "$missing" ] || die "в .env (секрет PROD_ENV) не заданы:$missing. На VPS база лежит только на диске сервера, без бэкапов в R2 приложение не запускается. Заведите бакет и API-токен Cloudflare R2 (docs/MIGRATION_VPS.md, шаг до переключения DNS), обновите PROD_ENV и повторите"
 }
@@ -332,6 +334,7 @@ echo "[restore-backup] восстановлен файл: $(basename "$f")"'
 cmd_restore_backup() {
   lock
   require_ready
+  require_backup_env
   [ -e HOLD_APP ] || die "нужен HOLD_APP (op=transfer-open или свежий bootstrap): восстанавливать можно только при остановленном приложении"
   { [ -s image ] && [ -s release ]; } || die "релиза нет: сначала деплой (push в main или deploy-vps.yml), контейнеру восстановления нужен образ приложения"
   dc up -d db

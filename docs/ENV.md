@@ -121,8 +121,9 @@
 
 **На VPS пять переменных бэкапов обязательны.** `BACKUP_S3_ENDPOINT`,
 `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
-`BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии делает
-платформа. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны и на VPS. Когда `DEPLOY_TARGET=vps`, их отсутствие: `ops.sh`
+`BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии
+делает платформа. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны и
+на VPS. Когда `DEPLOY_TARGET=vps`, их отсутствие: `ops.sh`
 (`deploy`, `release-hold`) отказывается запускать приложение и называет недостающие
 имена; `checkEnv` в production даёт `error` владельцу в DM и строку в блоке
 «Переменные» `/stats`; проба `backupFreshness` отвечает `ok: false`. `DEPLOY_TARGET`

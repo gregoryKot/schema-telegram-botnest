@@ -277,6 +277,51 @@ describe('deploy/vps/ops.sh', () => {
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('не заданы: BACKUP_S3_BUCKET.');
     });
+    it('значение из одних кавычек (NAME="") тоже «не задано»: env_file читается как raw', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(
+        BACKUP_ENV.replace(
+          `BACKUP_S3_BUCKET=${BACKUP_SECRET}`,
+          'BACKUP_S3_BUCKET=""',
+        ).replace(
+          `BACKUP_ENCRYPTION_KEY=${BACKUP_SECRET}`,
+          "BACKUP_ENCRYPTION_KEY=''",
+        ),
+      );
+
+      const res = ops(['release-hold']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        'не заданы: BACKUP_S3_BUCKET BACKUP_ENCRYPTION_KEY.',
+      );
+    });
+
+    it('значение в кавычках с содержимым считается заданным (контроль к проверке выше)', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(
+        BACKUP_ENV.replace(
+          `BACKUP_S3_BUCKET=${BACKUP_SECRET}`,
+          'BACKUP_S3_BUCKET="bucket"',
+        ),
+      );
+
+      expect(ops(['release-hold']).status).toBe(0);
+    });
+
+    it('restore-backup без бэкапов: понятный отказ до запуска контейнера восстановления', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv('X=1\n');
+
+      const res = ops(['restore-backup']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(BACKUP_REQUIRED_ENV_VARS.join(' '));
+      expect(dockerLog()).not.toMatch(/\brun --rm\b/);
+    });
   });
 
   it('при HOLD_APP restart-app и rollback отказываются', () => {
