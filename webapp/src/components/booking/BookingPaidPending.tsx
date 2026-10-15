@@ -25,7 +25,7 @@ export function BookingPaidPending({ booking, timedOut, onRetry }: {
           <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>{CANCEL_SUPPORT_HANDLE}</a>.
         </p>
       ) : (
-        <p style={sub}>Подтверждаем запись, это занимает меньше минуты. Страница обновится сама.</p>
+        <p style={sub}>Подтверждаю запись, это занимает меньше минуты. Страница обновится сама.</p>
       )}
 
       <BookingSessionCard type={booking.type} durationMin={booking.durationMin} startsAt={booking.startsAt} />
@@ -34,17 +34,5 @@ export function BookingPaidPending({ booking, timedOut, onRetry }: {
         ? <button onClick={onRetry} style={ghostBtn}>Проверить ещё раз</button>
         : <Skeleton height={48} radius={12} />}
     </>
-  );
-}
-
-/** Силуэт экрана, пока грузится бронь: значок, заголовок, текст, карточка. */
-export function BookingPaidSkeleton() {
-  return (
-    <div aria-hidden style={{ marginTop: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-12)' }}>
-      <Skeleton width={56} height={56} radius={28} />
-      <Skeleton width="60%" height={30} />
-      <Skeleton width="85%" height={14} />
-      <Skeleton height={72} radius={14} style={{ marginTop: 8 }} />
-    </div>
   );
 }

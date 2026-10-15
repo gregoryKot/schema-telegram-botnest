@@ -2,9 +2,10 @@
 // подписанному редиректу SuccessURL, а он приходит раньше (или вместо)
 // вебхука ResultURL, который единственный переводит бронь в CONFIRMED. Поэтому
 // «Встреча подтверждена» можно говорить только про CONFIRMED (аудит 2026-10-11,
-// security#15): HELD — «оплата принята, подтверждаем», остальное — нейтрально.
+// security#15): HELD — «оплата принята, подтверждаю», COMPLETED — «встреча прошла»
+// (ссылка управления из .ics живёт и после сессии), остальное — нейтрально.
 
-export type PaidPhase = 'confirmed' | 'pending' | 'cancelled' | 'unknown';
+export type PaidPhase = 'confirmed' | 'pending' | 'cancelled' | 'completed' | 'unknown';
 
 /** Статус брони (BookingStatus из Prisma) → что показывать. Незнакомый → unknown. */
 export function paidPhase(status: string): PaidPhase {
@@ -15,6 +16,8 @@ export function paidPhase(status: string): PaidPhase {
       return 'pending';
     case 'CANCELLED':
       return 'cancelled';
+    case 'COMPLETED':
+      return 'completed';
     default:
       return 'unknown';
   }

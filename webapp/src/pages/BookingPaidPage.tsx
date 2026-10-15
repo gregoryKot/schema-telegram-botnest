@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { BookingConfirmedView } from '../components/booking/BookingConfirmedView';
-import { BookingPaidPending, BookingPaidSkeleton } from '../components/booking/BookingPaidPending';
+import { BookingPaidPending } from '../components/booking/BookingPaidPending';
+import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
+import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
 import { paidPhase } from '../components/booking/paidPageModel';
-import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from '../components/booking/cancelPolicy';
 import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
 import { icon, primaryBtn } from '../components/booking/bookingPaidStyles';
 
@@ -45,25 +46,13 @@ export function BookingPaidPage() {
   } else if (!loaded) {
     body = <BookingPaidSkeleton />;
   } else if (phase === 'cancelled') {
-    body = (
-      <>
-        <div style={icon}>✓</div>
-        <h1 style={h1}>Запись отменена</h1>
-        {booking?.paid ? (
-          <p style={sub}>
-            Оплата получена. Напишите мне в Telegram, верну деньги:{' '}
-            <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>{CANCEL_SUPPORT_HANDLE}</a>.
-          </p>
-        ) : (
-          <p style={sub}>Если оплата уже прошла – напишите мне, верну деньги.</p>
-        )}
-        <a href="/#booking" style={primaryBtn}>Записаться снова</a>
-      </>
-    );
+    body = <BookingCancelledView paid={!!booking?.paid} />;
   } else if (booking && phase === 'confirmed') {
     body = <BookingConfirmedView booking={booking} token={token} onReload={reload} onCancelled={() => setCancelledByClient(true)} />;
   } else if (booking && phase === 'pending') {
     body = <BookingPaidPending booking={booking} timedOut={timedOut} onRetry={reload} />;
+  } else if (booking && phase === 'completed') {
+    body = <BookingCompletedView booking={booking} />;
   } else {
     body = (
       <>

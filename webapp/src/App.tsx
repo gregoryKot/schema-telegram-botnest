@@ -31,7 +31,7 @@ import { ReviewsPage } from './pages/ReviewsPage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
-const BookingPaidPage = lazy(() => import('./pages/BookingPaidPage').then(m => ({ default: m.BookingPaidPage }))); // не в главном чанке: экран после оплаты
+import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 import { SubscribePage } from './pages/SubscribePage';
 
@@ -85,11 +85,11 @@ const personalRoutes = [
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
-  { path: '/booking/paid',   element: <Suspense fallback={null}><BookingPaidPage /></Suspense> },
+  { path: '/booking/paid',   element: <BookingPaidRoute /> },
   // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
   // что у /booking/paid: путь переименовывать нельзя, туда редиректит
   // Робокасса, а новая capability-ссылка ведёт на другой путь.
-  { path: '/booking/manage', element: <Suspense fallback={null}><BookingPaidPage /></Suspense> },
+  { path: '/booking/manage', element: <BookingPaidRoute /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },

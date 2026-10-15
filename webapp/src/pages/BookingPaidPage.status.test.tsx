@@ -6,7 +6,8 @@
 // BookingStatus из Prisma, не по ручному списку.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
-import { BookingStatus } from '@prisma/client';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { BookingPaidPage } from './BookingPaidPage';
 import { POLL_INTERVAL_MS, POLL_LIMIT_MS, paidPhase, type PaidPhase } from '../components/booking/paidPageModel';
 
@@ -39,11 +40,11 @@ afterEach(() => {
 const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 
 describe('BookingPaidPage — HELD: оплата принята, запись ещё не подтверждена', () => {
-  it('не говорит «подтверждена», показывает «Оплата принята» и «подтверждаем запись»', async () => {
+  it('не говорит «подтверждена», показывает «Оплата принята» и «подтверждаю запись»', async () => {
     getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false, meetingUrl: null }));
     render(<BookingPaidPage />);
     expect(await screen.findByText('Оплата принята')).toBeTruthy();
-    expect(screen.getByText(/Подтверждаем запись/)).toBeTruthy();
+    expect(screen.getByText(/Подтверждаю запись/)).toBeTruthy();
     expect(screen.queryByText(CONFIRMED_TEXT)).toBeNull();
     // Отмена и «в календарь» до подтверждения не предлагаются.
     expect(screen.queryByText('Отменить запись')).toBeNull();
@@ -150,14 +151,32 @@ describe('FailURL', () => {
 // Класс: каждое значение enum BookingStatus обязано иметь решённую ветку.
 // Новый статус в schema.prisma без записи здесь роняет тест — и заставляет
 // решить, что страница о нём говорит (по умолчанию она нейтральна, не «подтверждена»).
+// Значения читаем из prisma/schema.prisma, а не из @prisma/client: джоба webapp в CI
+// ставит только webapp/node_modules, пакета @prisma/client там нет
+// (тот же приём, что в cancelPolicy.sync.test.ts).
+function bookingStatuses(): string[] {
+  const schema = readFileSync(resolve(__dirname, '../../../prisma/schema.prisma'), 'utf8');
+  const block = schema.match(/enum BookingStatus\s*\{([^}]*)\}/);
+  if (!block) throw new Error('enum BookingStatus не найден в prisma/schema.prisma');
+  return block[1]
+    .split('\n')
+    .map((l) => l.replace(/\/\/.*$/, '').trim())
+    .filter(Boolean);
+}
+
 describe('BookingPaidPage — все значения BookingStatus', () => {
-  const EXPECTED: Record<BookingStatus, PaidPhase> = {
+  const EXPECTED: Record<string, PaidPhase> = {
     HELD: 'pending',
     CONFIRMED: 'confirmed',
     CANCELLED: 'cancelled',
-    COMPLETED: 'unknown',
+    COMPLETED: 'completed',
   };
-  const statuses = Object.values(BookingStatus);
+  const statuses = bookingStatuses();
+
+  it('разбор enum из schema.prisma нашёл статусы', () => {
+    expect(statuses).toContain('HELD');
+    expect(statuses).toContain('CONFIRMED');
+  });
 
   it('у каждого статуса из Prisma есть решённая ветка', () => {
     expect(Object.keys(EXPECTED).sort()).toEqual([...statuses].sort());
@@ -173,6 +192,15 @@ describe('BookingPaidPage — все значения BookingStatus', () => {
     // Дождаться конца загрузки: скелетон сменяется любым из заголовков.
     await screen.findByRole('heading');
     const shown = screen.queryByText(CONFIRMED_TEXT) !== null;
-    expect(shown).toBe(status === BookingStatus.CONFIRMED);
+    expect(shown).toBe(status === 'CONFIRMED');
+  });
+
+  it('COMPLETED: «Встреча прошла», без обещания прислать ссылку и без отмены', async () => {
+    getBookingByToken.mockResolvedValue(booking({ status: 'COMPLETED', paid: true }));
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Встреча прошла')).toBeTruthy();
+    expect(screen.queryByText(/пришлю ссылку/)).toBeNull();
+    expect(screen.queryByText('Отменить запись')).toBeNull();
+    expect(screen.getByText('Записаться снова')).toBeTruthy();
   });
 });
