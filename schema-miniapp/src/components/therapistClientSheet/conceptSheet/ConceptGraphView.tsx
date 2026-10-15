@@ -5,7 +5,7 @@ import { conceptGraphSource } from '../../../../../shared/src/therapy/conceptGra
 import type { ClientDetail } from '../types';
 
 /**
- * Вид «Схема» листа концептуализации: схема случая по модели режимов. Правки
+ * Вид «Схема» листа концептуализации: схема случая (потребности в центре). Правки
  * идут через те же patchConcept/toggleModeId, что и вид «Поля», — кнопка
  * «Сохранить концептуализацию» и ошибка общие под обоими видами. Картинкой
  * схему не скачать: файл из WebView Telegram скачивается ненадёжно.
@@ -14,8 +14,10 @@ export function ConceptGraphView({ detail }: { detail: ClientDetail }) {
   const { concept, localConcept, activeSchemaIds, toggleModeId, patchConcept } =
     detail;
   const source = conceptGraphSource({ ...concept, ...localConcept });
-  const { onChangeLink, onAddSchema } = conceptGraphHandlers({
+  const handlers = conceptGraphHandlers({
+    modeIds: source.modeIds,
     modeLinks: source.modeLinks,
+    schemaLinks: source.schemaLinks,
     schemaIds: activeSchemaIds,
     patch: patchConcept,
   });
@@ -23,8 +25,10 @@ export function ConceptGraphView({ detail }: { detail: ClientDetail }) {
     <ConceptGraph
       source={source}
       onToggleMode={toggleModeId}
-      onChangeLink={onChangeLink}
-      onAddSchema={onAddSchema}
+      onChangeLink={handlers.onChangeLink}
+      onChangeSchemaLink={handlers.onChangeSchemaLink}
+      onToggleSchema={handlers.onToggleSchema}
+      onAddSchema={handlers.onAddSchema}
       track={api.trackEvent}
     />
   );

@@ -2,7 +2,7 @@ import { buildProbes } from './registry';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 describe('buildProbes', () => {
-  it('собирает все 17 проб с уникальными id', () => {
+  it('собирает все 18 проб с уникальными id', () => {
     const probes = buildProbes({} as unknown as PrismaService);
     const ids = probes.map((p) => p.id);
     expect(ids.sort()).toEqual(
@@ -12,6 +12,7 @@ describe('buildProbes', () => {
         'caldav',
         'clinicalLabels',
         'ciRuns',
+        'clientIp',
         'cronLeases',
         'db',
         'email',

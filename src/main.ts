@@ -13,6 +13,8 @@ import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
+import { clientIpSampler } from './infra/client-ip-sample';
+import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
@@ -41,19 +43,16 @@ async function bootstrap() {
     bodyParser: false,
   });
 
-  // M5 (аудит 2026-08): за Express стоит один reverse-proxy Amvera. Без этого
-  // Express игнорирует X-Forwarded-For, и req.ip отражает ПРОКСИ, а не клиента —
-  // все IP-бакеты троттлинга (правило №5), WebSession.ipAddress и IP в
-  // аудит-логах схлопываются в один. Доверяем ровно одному хопу (не `true` —
-  // иначе клиент подделает XFF); x-forwarded-proto ниже уже трактуется как
-  // доказательство прокси, так что доверие к XFF от того же хопа консистентно.
-  app.set('trust proxy', 1);
+  // Доверяем XFF ровно одному прокси: число и причина — в infra/trust-proxy.ts.
+  // Выборка адресов для пробы clientIp ставится до редиректов, чтобы видеть и их.
+  app.set('trust proxy', TRUSTED_PROXY_HOPS);
+  app.use(clientIpSampler);
 
   // Domain + protocol redirects (production only) — host list lives in
   // src/infra/canonical-host.ts (правило «одна механика — один компонент»,
   // инцидент 2026-09-16: OAuth редиректил на хост, который эта же логика
   // редиректила обратно — цикл). Everything else (incl. kotlarewski.ru/.gr
-  // aliases) → just force HTTPS via x-forwarded-proto (Amvera's proxy).
+  // aliases) → just force HTTPS via x-forwarded-proto (set by the proxy in front).
   if (process.env.NODE_ENV === 'production') {
     app.use((req: Request, res: Response, next: NextFunction) => {
       const host = (req.headers.host ?? '').toLowerCase();

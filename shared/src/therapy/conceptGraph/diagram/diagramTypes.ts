@@ -1,66 +1,52 @@
 // Типы и размеры диаграммы концептуализации. Раскладка — чистая функция
-// (diagramLayout.ts): на вход модель графа и ширина, на выход фигуры, зоны и
+// (diagramLayout.ts): на вход модель графа и ширина, на выход фигуры, секции и
 // линии в пикселях. React здесь не нужен, поэтому всё проверяется тестами без DOM.
-import type { ConceptLane } from '../modeLanes';
 
-export type DiagramBandId =
-  'healthy' | 'roots' | 'schemas' | 'backstage' | 'coping' | 'cost';
+/** Секция диаграммы: у каждой свой заголовок и своя кнопка добавления. */
+export type SectionId = 'modes' | 'schemas' | 'needs' | 'healthy';
 
-export interface DiagramBand {
-  id: DiagramBandId;
-  title: string;
-  subtitle: string;
-  y: number;
-  h: number;
-  color: string;
-}
+/** Секции с кнопкой добавления: у круга потребностей её нет. */
+export type AddSection = Exclude<SectionId, 'needs'>;
 
 export type DiagramNodeKind =
-  | 'mode'
-  | 'schema'
-  | 'need'
-  | 'experience'
-  | 'goals'
-  | 'trigger'
-  | 'problems'
-  | 'placeholder';
+  'mode' | 'schema' | 'origin' | 'need' | 'placeholder';
 
 /** Язык карты режимов: ребёнок — эллипс, критик — восьмиугольник и так далее. */
 export type DiagramShape =
-  | 'ellipse'
-  | 'octagon'
-  | 'pentagon'
-  | 'shield'
-  | 'pill'
-  | 'rounded'
-  | 'cloud'
-  | 'tag';
+  'ellipse' | 'octagon' | 'pentagon' | 'shield' | 'pill' | 'rounded';
 
 export interface DiagramNode {
   id: string;
   kind: DiagramNodeKind;
   shape: DiagramShape;
+  section: SectionId;
   x: number;
   y: number;
   w: number;
   h: number;
+  /** Главная строка: имя клиента, название режима или схемы, потребности. */
   label: string;
+  /** Мелкая строка под названием: название режима из метода, вид копинга. */
   sublabel?: string;
-  /** Полный текст для подсказки, если в фигуре он обрезан. */
-  title?: string;
+  /** Мелкая подпись над текстом (у овала опыта). */
+  caption?: string;
+  /** Текст терапевта на фигуре: убеждение, опыт, что говорит / делает. */
+  body?: string;
+  /** Сколько строк текста фигура вмещает; больше — обрезка многоточием. */
+  bodyLines?: number;
   /** Название режима из метода (aria-label), когда главная строка — имя клиента. */
   name?: string;
+  /** Подсказка при наведении у заготовки. */
+  title?: string;
   color: string;
   modeId?: string;
   schemaId?: string;
   needId?: string;
-  lane?: ConceptLane;
-  /** Режим без единой связи: рисуется пунктиром и без линий. */
+  /** Режим или схема без единой связи и текста: бледный контур. */
   empty?: boolean;
 }
 
-export type DiagramEdgeKind =
-  'feeds' | 'need' | 'presses' | 'protects' | 'cost' | 'triggers';
+export type DiagramEdgeKind = 'link' | 'origin' | 'blocks' | 'meets';
 
 export interface Pt {
   x: number;
@@ -77,44 +63,42 @@ export interface DiagramEdge {
   color: string;
   /** Обычная непрозрачность линии; при фокусе её перекрывает diagramFocus. */
   opacity: number;
-  dashed?: boolean;
-  label?: string;
-  labelAt?: Pt;
+  /** Стрелки на обоих концах: режим ⇄ схема. */
+  both?: boolean;
+  /** Значок посередине: ✗ — схема блокирует потребность, ✓ — о ней заботятся. */
+  badge?: { at: Pt; kind: 'block' | 'meet' };
+}
+
+export interface DiagramSection {
+  id: AddSection;
+  title: string;
+  hint: string;
+  x: number;
+  y: number;
+  w: number;
+  /** Подпись кнопки добавления; у секции потребностей кнопки нет. */
+  add?: string;
+}
+
+export interface DiagramCircle {
+  cx: number;
+  cy: number;
+  r: number;
+  title: string;
 }
 
 export interface DiagramLayout {
   width: number;
   height: number;
-  bands: DiagramBand[];
+  /** Четыре колонки (true) или секции друг под другом (false). */
+  wide: boolean;
+  sections: DiagramSection[];
+  circle: DiagramCircle;
+  /** Высота подписи круга. */
+  titleY: number;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
 }
 
-/** Размеры фигур. Ширина режима и схемы сужается только на телефоне (см. fitWidth). */
-export const SIZE = {
-  mode: { w: 168, h: 80 },
-  schema: { w: 184, h: 40 },
-  need: { w: 140, h: 36 },
-  text: { w: 280, h: 76 },
-  trigger: { w: 196, h: 80 },
-  placeholder: { w: 168, h: 80 },
-} as const;
-
-export const SPACE = {
-  /** Между фигурами. */
-  gap: 16,
-  /** Между зонами. */
-  zoneGap: 28,
-  /** Заголовок зоны над фигурами. */
-  header: 40,
-  /** Поле слева и справа. */
-  pad: 16,
-  /** Воздух под последним рядом зоны. */
-  bottom: 16,
-  /** Между кластерами «за кулисами»: здесь стоит подпись стрелки «давит». */
-  clusterGap: 64,
-  /** Между триггером и детьми: здесь стоит подпись «запускает». */
-  triggerGap: 72,
-  /** Узкая раскладка: расстояние между верхним и нижним кластером. */
-  clusterRowGap: 36,
-} as const;
+/** Шире этого — четыре колонки, уже — секции друг под другом. */
+export const WIDE_MIN = 960;

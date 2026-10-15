@@ -2,32 +2,22 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { buildConceptGraph } from '../conceptGraphModel';
-import type { ConceptGraphSource } from '../conceptGraphTypes';
-import { emptyModeLink } from '../modeLinks';
+import { RICH, source } from './diagram.test-helpers';
 import { ConceptDiagram } from './ConceptDiagram';
 import { FALLBACK_WIDTH } from './useContainerWidth';
 
-const source: ConceptGraphSource = {
-  modeIds: ['vulnerable_child', 'punitive_critic', 'detached_protector'],
-  schemaIds: ['abandonment'],
-  modeLinks: [
-    {
-      ...emptyModeLink('vulnerable_child'),
-      schemaIds: ['abandonment'],
-      needIds: ['attachment'],
-    },
-  ],
-  currentProblems: 'выгорание',
-};
-const graph = buildConceptGraph(source, (ty) => ty);
+const graph = buildConceptGraph(source(RICH), (ty) => ty);
 
 const mount = (props: Partial<Parameters<typeof ConceptDiagram>[0]> = {}) =>
   render(
     <ConceptDiagram
       graph={graph}
-      openModeId={null}
-      onToggleMode={() => {}}
-      onPickLane={() => {}}
+      openId={null}
+      addOpen={null}
+      panel={null}
+      onOpenMode={() => {}}
+      onOpenSchema={() => {}}
+      onAdd={() => {}}
       {...props}
     />,
   );
@@ -58,7 +48,7 @@ describe('ConceptDiagram: ширина', () => {
     expect(box.style.height).toBe(`${svg().getAttribute('height')}px`);
   });
 
-  it('измеренная ширина контейнера перераскладывает диаграмму, изменение размера — тоже', () => {
+  it('измеренная ширина перераскладывает диаграмму, изменение размера — тоже: узкая выше широкой', () => {
     vi.stubGlobal('ResizeObserver', FakeResizeObserver);
     let width = 358;
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
@@ -67,104 +57,122 @@ describe('ConceptDiagram: ширина', () => {
     mount();
     expect(svg().getAttribute('width')).toBe('358');
     const narrowHeight = Number(svg().getAttribute('height'));
-
-    width = 1000;
+    width = 1200;
     act(() => observers.forEach((cb) => cb()));
-    expect(svg().getAttribute('width')).toBe('1000');
+    expect(svg().getAttribute('width')).toBe('1200');
     expect(Number(svg().getAttribute('height'))).toBeLessThan(narrowHeight);
   });
 });
 
-describe('ConceptDiagram: фигуры и линии', () => {
-  it('подписи стрелок и заголовки зон нарисованы', () => {
-    mount();
-    for (const t of [
-      'давит',
-      'боль включает копинг',
-      'За кулисами',
-      'Копинги',
-      'Цена',
-    ]) {
-      expect(screen.getAllByText(t).length).toBeGreaterThan(0);
-    }
-    expect(
-      document.querySelector(
-        '[data-edge-label$="mode:punitive_critic>mode:vulnerable_child"]',
-      ),
-    ).toBeTruthy();
-  });
-
-  it('у каждой линии стрелка ссылается на существующий marker', () => {
-    mount();
-    const paths = document.querySelectorAll<SVGPathElement>('path[data-edge]');
-    expect(paths.length).toBeGreaterThan(3);
-    for (const p of paths) {
-      const id = /url\(#(.+)\)/.exec(p.getAttribute('marker-end') ?? '')?.[1];
-      expect(id, p.dataset.edge).toBeTruthy();
-      expect(
-        document.getElementById(id as string),
-        p.dataset.edge,
-      ).toBeTruthy();
-    }
-  });
-
-  it('две диаграммы на странице не делят id стрелок', () => {
-    mount();
-    mount();
-    const ids = Array.from(document.querySelectorAll('marker')).map(
-      (m) => m.id,
+describe('ConceptDiagram: нажатия', () => {
+  it('режим, схема и овал опыта зовут свои колбэки, заготовка — выбор своей секции', () => {
+    const onOpenMode = vi.fn();
+    const onOpenSchema = vi.fn();
+    const onAdd = vi.fn();
+    const { unmount } = mount({ onOpenMode, onOpenSchema, onAdd });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Внушающий Вину Критик: связи' }),
     );
-    expect(new Set(ids).size).toBe(ids.length);
+    expect(onOpenMode).toHaveBeenCalledWith('guilt_critic');
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Схема Эмоциональная депривация: убеждение и опыт',
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Как нарушалась потребность: схема Эмоциональная скованность',
+      }),
+    );
+    expect(onOpenSchema.mock.calls).toEqual([
+      ['emotional_deprivation'],
+      ['emotional_inhibition'],
+    ]);
+    expect(onAdd).not.toHaveBeenCalled();
+    unmount();
+
+    const empty = buildConceptGraph(source(), (ty) => ty);
+    mount({ graph: empty, onAdd });
+    fireEvent.click(screen.getByRole('button', { name: 'Схема не отмечена' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Здоровый Взрослый не отмечен' }),
+    );
+    expect(onAdd.mock.calls).toEqual([['schemas'], ['healthy']]);
   });
 
-  it('зона нажатия схемы и потребности не меньше 44, хотя сама фигура ниже', () => {
-    mount();
-    for (const name of [/Покинутость/, 'Привязанность']) {
-      const btn = screen.getByRole('button', { name });
-      expect(Number.parseFloat(btn.style.height)).toBeGreaterThanOrEqual(44);
-    }
+  it('открытая фигура помечена aria-expanded, овал опыта открытой схемы — тоже', () => {
+    mount({ openId: 'schema:emotional_deprivation' });
     expect(
-      Number.parseFloat(
-        screen.getByRole('button', { name: 'Уязвимый Ребёнок: связи' }).style
-          .height,
-      ),
-    ).toBeGreaterThanOrEqual(44);
+      screen
+        .getByRole('button', {
+          name: 'Схема Эмоциональная депривация: убеждение и опыт',
+        })
+        .getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(
+      screen
+        .getByRole('button', {
+          name: 'Как нарушалась потребность: схема Эмоциональная депривация',
+        })
+        .getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(
+      screen
+        .getByRole('button', {
+          name: 'Схема Эмоциональная скованность: убеждение и опыт',
+        })
+        .getAttribute('aria-expanded'),
+    ).toBe('false');
   });
 
-  it('текстовые поля концептуализации не кнопки: нажимать там нечего', () => {
-    mount();
-    const problems = screen.getByText('выгорание').closest('[data-node]')!;
-    expect(problems.tagName).toBe('DIV');
+  it('тап по потребности подсвечивает линии и не зовёт колбэки', () => {
+    const onOpenMode = vi.fn();
+    const onOpenSchema = vi.fn();
+    const onAdd = vi.fn();
+    mount({ onOpenMode, onOpenSchema, onAdd });
+    fireEvent.click(screen.getByRole('button', { name: 'Привязанность' }));
+    expect(onOpenMode).not.toHaveBeenCalled();
+    expect(onOpenSchema).not.toHaveBeenCalled();
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(
+      screen
+        .getByRole('button', { name: 'Привязанность' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
   });
 });
 
-describe('ConceptDiagram: нажатия', () => {
-  it('режим зовёт onToggleMode с id, открытый режим помечен aria-expanded', () => {
-    const onToggleMode = vi.fn();
-    const { rerender } = mount({ onToggleMode });
-    const btn = screen.getByRole('button', { name: 'Карающий Критик: связи' });
-    expect(btn.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(btn);
-    expect(onToggleMode).toHaveBeenCalledWith('punitive_critic');
-    rerender(
-      <ConceptDiagram
-        graph={graph}
-        openModeId="punitive_critic"
-        onToggleMode={onToggleMode}
-        onPickLane={() => {}}
-      />,
+describe('ConceptDiagram: выбор у заголовка секции', () => {
+  it('панель рисуется только у открытой секции и под её заголовком', () => {
+    mount({ addOpen: 'schemas', panel: <div>выбор схем</div> });
+    const header = document.querySelector<HTMLElement>(
+      '[data-section="schemas"]',
+    )!;
+    const panel = screen.getByText('выбор схем').parentElement!;
+    expect(panel.hasAttribute('data-export-skip')).toBe(true);
+    expect(parseFloat(panel.style.top)).toBeGreaterThan(
+      parseFloat(header.style.top),
     );
-    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    expect(parseFloat(panel.style.left)).toBeGreaterThanOrEqual(
+      parseFloat(header.style.left) - 1,
+    );
+    expect(screen.queryByText('выбор режимов')).toBeNull();
   });
 
-  it('заготовка зовёт onPickLane с клеткой, схема onToggleMode не зовёт', () => {
-    const onPickLane = vi.fn();
-    const onToggleMode = vi.fn();
-    mount({ onPickLane, onToggleMode });
-    fireEvent.click(screen.getByTitle(/Пусто\. Здорового Взрослого/));
-    expect(onPickLane).toHaveBeenCalledWith('healthy');
-    fireEvent.click(screen.getByRole('button', { name: /Покинутость/ }));
-    expect(onToggleMode).not.toHaveBeenCalled();
-    expect(onPickLane).toHaveBeenCalledTimes(1);
+  it('у правого края панель не уезжает за контейнер', () => {
+    mount({ addOpen: 'healthy', panel: <div>выбор</div> });
+    const panel = screen.getByText('выбор').parentElement!;
+    expect(
+      parseFloat(panel.style.left) + parseFloat(panel.style.width),
+    ).toBeLessThanOrEqual(FALLBACK_WIDTH);
+  });
+
+  it('узкий вид: панель на всю ширину с полем', () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(358);
+    mount({ addOpen: 'modes', panel: <div>выбор</div> });
+    const panel = screen.getByText('выбор').parentElement!;
+    expect(panel.style.left).toBe('8px');
+    expect(panel.style.width).toBe('342px');
   });
 });

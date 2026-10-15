@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   bezierAt,
-  chainMid,
   isClear,
   smooth,
   smoothSide,
@@ -28,14 +27,6 @@ describe('кривые', () => {
     expect(bezierAt(p, 0)).toEqual({ x: 0, y: 0 });
     expect(bezierAt(p, 1)).toEqual({ x: 100, y: 100 });
     expect(bezierAt(p, 0.5)).toEqual({ x: 50, y: 50 });
-  });
-
-  it('chainMid: у цепочки из трёх сегментов — середина среднего', () => {
-    const a = smooth({ x: 0, y: 0 }, { x: 0, y: 10 });
-    const b = smooth({ x: 0, y: 10 }, { x: 0, y: 110 });
-    const c = smooth({ x: 0, y: 110 }, { x: 40, y: 120 });
-    const chain = [...a, ...b.slice(1), ...c.slice(1)];
-    expect(chainMid(chain).y).toBeCloseTo(60, 5);
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { conceptSaveBody } from './conceptSaveBody';
 import { emptyModeLink } from './modeLinks';
+import { emptySchemaLink } from './schemaLinks';
 
 describe('conceptSaveBody', () => {
   it('пустой ввод — все умолчания: пустые массивы и строки, modeLinks []', () => {
@@ -15,6 +16,7 @@ describe('conceptSaveBody', () => {
       currentProblems: '',
       modeTransitions: '',
       modeLinks: [],
+      schemaLinks: [],
     });
   });
 
@@ -58,5 +60,36 @@ describe('conceptSaveBody', () => {
       ],
     });
     expect(body.modeLinks).toEqual([{ ...emptyModeLink('m'), alias: 'Судья' }]);
+  });
+
+  it('schemaLinks нормализуется: мусор и дубли не уходят на сервер, тексты и потребности целы', () => {
+    const body = conceptSaveBody({
+      schemaLinks: [
+        {
+          schemaId: 'emotional_deprivation',
+          belief: 'Я верю, что мои переживания не имеют смысла',
+          origin: 'Некому было пожаловаться',
+          needIds: ['attachment', 'expression'],
+        },
+        { ...emptySchemaLink('emotional_deprivation'), belief: 'дубль' },
+        { belief: 'без id' } as never,
+        null as never,
+      ],
+    });
+    expect(body.schemaLinks).toEqual([
+      {
+        schemaId: 'emotional_deprivation',
+        belief: 'Я верю, что мои переживания не имеют смысла',
+        origin: 'Некому было пожаловаться',
+        needIds: ['attachment', 'expression'],
+      },
+    ]);
+  });
+
+  it('легаси-ответ без schemaLinks (или не массив) уходит как []', () => {
+    expect(conceptSaveBody({ schemaLinks: undefined }).schemaLinks).toEqual([]);
+    expect(conceptSaveBody({ schemaLinks: 'x' as never }).schemaLinks).toEqual(
+      [],
+    );
   });
 });

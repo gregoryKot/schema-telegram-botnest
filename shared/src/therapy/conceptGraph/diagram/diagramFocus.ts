@@ -1,21 +1,19 @@
-// Фокус диаграммы: нажатая схема или потребность (или открытый режим) делает
-// свои линии яркими, остальные гасит. Чистые функции — чтобы проверять без DOM.
+// Фокус диаграммы: нажатая потребность или открытый режим / схема делают свои
+// линии яркими, остальное гасит. Чистые функции — чтобы проверять без DOM.
 import type { DiagramEdge, DiagramLayout, DiagramNode } from './diagramTypes';
 
 export const DIM_EDGE = 0.12;
 export const DIM_NODE = 0.35;
 
-/** Линии «питает» привязаны к фигуре; стрелки между кластерами — нет. */
-const touches = (e: DiagramEdge, id: string) =>
-  (e.kind === 'feeds' || e.kind === 'need') && (e.from === id || e.to === id);
+const touches = (e: DiagramEdge, id: string) => e.from === id || e.to === id;
 
 /** Фокус только на существующую фигуру: устаревший id не гасит всю схему. */
 export function resolveFocus(
   layout: DiagramLayout,
   pressedId: string | null,
-  openModeId: string | null,
+  openId: string | null,
 ): string | null {
-  const id = pressedId ?? (openModeId ? `mode:${openModeId}` : null);
+  const id = pressedId ?? openId;
   return id && layout.nodes.some((n) => n.id === id) ? id : null;
 }
 

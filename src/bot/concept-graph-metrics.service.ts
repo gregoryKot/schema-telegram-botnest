@@ -9,12 +9,14 @@ import {
 // Типизированные имена: опечатка не даст молча пустой отчёт (сверка с allow-list).
 const OPEN_EVENT: AnalyticsEventName = 'concept_graph_open';
 const LINKED_EVENT: AnalyticsEventName = 'concept_mode_linked';
+const SCHEMA_LINKED_EVENT: AnalyticsEventName = 'concept_schema_linked';
 
 // Счётчики графической концептуализации в кабинете терапевта для /stats:
-// события concept_graph_open (открыл схему случая) и concept_mode_linked
-// (заполнил связи режима) из AnalyticsEvent. Без сырого SQL — count/groupBy
-// через Prisma (число терапевтов мало, групп немного). Свой домен — свой
-// файл (правило №10), образец — profile-pattern-metrics.service.ts.
+// события concept_graph_open (открыл схему случая), concept_mode_linked
+// (заполнил связи режима) и concept_schema_linked (записал тексты схемы)
+// из AnalyticsEvent. Без сырого SQL — count/groupBy через Prisma (число
+// терапевтов мало, групп немного). Свой домен — свой файл (правило №10),
+// образец — profile-pattern-metrics.service.ts.
 @Injectable()
 export class ConceptGraphMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,7 +28,7 @@ export class ConceptGraphMetricsService {
 
   async getMetrics(): Promise<ConceptGraphMetrics> {
     const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
-    const [opens30, openers, linked30] = await Promise.all([
+    const [opens30, openers, linked30, schemaLinked30] = await Promise.all([
       this.prisma.analyticsEvent.count({
         where: { name: OPEN_EVENT, createdAt },
       }),
@@ -39,7 +41,15 @@ export class ConceptGraphMetricsService {
       this.prisma.analyticsEvent.count({
         where: { name: LINKED_EVENT, createdAt },
       }),
+      this.prisma.analyticsEvent.count({
+        where: { name: SCHEMA_LINKED_EVENT, createdAt },
+      }),
     ]);
-    return { opens30, therapists30: openers.length, linked30 };
+    return {
+      opens30,
+      therapists30: openers.length,
+      linked30,
+      schemaLinked30,
+    };
   }
 }
