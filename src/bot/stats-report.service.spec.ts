@@ -65,6 +65,9 @@ describe('StatsReportService.render', () => {
     const bookingRetention = {
       render: jest.fn().mockResolvedValue('данные записей: стёрто 5'),
     };
+    const introLeads = {
+      render: jest.fn().mockResolvedValue('заявки со знакомства: 3'),
+    };
     return {
       blocks: {
         entryDelete,
@@ -82,6 +85,7 @@ describe('StatsReportService.render', () => {
         game,
         dataExport,
         bookingRetention,
+        introLeads,
       },
       service: new StatsReportService(
         product as never,
@@ -104,6 +108,7 @@ describe('StatsReportService.render', () => {
         game as never,
         dataExport as never,
         bookingRetention as never,
+        introLeads as never,
       ),
     };
   };
@@ -125,7 +130,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -133,7 +138,7 @@ describe('StatsReportService.render', () => {
     const settings = out.indexOf('⚙️ <b>Настройки</b>');
     const env = out.indexOf('Настройки: переменные</b>');
     const selfCheck = out.indexOf('🩺 <b>Самопроверка</b>');
-    expect(settings).toBeGreaterThan(out.indexOf('данные записей: стёрто 5'));
+    expect(settings).toBeGreaterThan(out.indexOf('заявки со знакомства: 3'));
     expect(env).toBeGreaterThan(settings);
     expect(selfCheck).toBeGreaterThan(env);
     expect(out.indexOf('🩺', selfCheck + 1)).toBe(-1);
@@ -225,6 +230,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.game.render).toHaveBeenCalledTimes(1);
     expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
     expect(blocks.bookingRetention.render).toHaveBeenCalledTimes(1);
+    expect(blocks.introLeads.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
@@ -240,5 +246,18 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('игра: открыли 12');
     expect(out).toContain('забирают свои данные: 7');
     expect(out).toContain('данные записей: стёрто 5');
+    expect(out).toContain('заявки со знакомства: 3');
+  });
+
+  it('упавший запрос заявок числится под своим именем и не гасит «Данные записей» (settleBlocks)', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { service, blocks } = build();
+    blocks.introLeads.render.mockRejectedValue(new Error('db down'));
+    const out = await service.render();
+    expect(out).toContain('данные записей: стёрто 5');
+    expect(out).toContain('«Заявки с формы знакомства»');
+    expect(out).not.toContain('заявки со знакомства: 3');
+    jest.restoreAllMocks();
   });
 });

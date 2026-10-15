@@ -16,6 +16,7 @@ export const CRON_LEASE_REGISTRY: Record<
   healthyAdultMorning: { window: 'fiveMinutes', cron: '*/5 9,10 * * *' },
   healthyAdultEvening: { window: 'fiveMinutes', cron: '*/5 18,19 * * *' },
   healthyAdultCatchUp: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
+  introLeadRedelivery: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
   telegramDomainWatchdog: { window: 'hourly', cron: '7 * * * *' },
   bookingConfirmRetry: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },

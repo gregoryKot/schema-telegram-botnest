@@ -118,6 +118,7 @@ export const TARGETS: RotationTarget[] = [
     // meetingUrl — Zoom-ссылка с `?pwd=` (D-9, аудит 2026-10).
     fields: ['clientName', 'clientContact', 'message', 'meetingUrl'],
   },
+  { name: 'introLead', fields: ['clientName', 'clientContact', 'message'] },
   { name: 'clientMeeting', fields: ['meetingUrl'], pk: 'clientKey' },
   // AuthProvider.email/displayName — PII из OAuth-профиля (D-9, аудит 2026-10).
   { name: 'authProvider', fields: ['email', 'displayName'] },

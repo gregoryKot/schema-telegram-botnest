@@ -19,6 +19,7 @@ import { MoneyMetricsService } from './money-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
+import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { infraBlocks } from './stats-infra-blocks';
 import { settleBlocks } from './stats-settle';
 
@@ -51,6 +52,7 @@ export class StatsReportService {
     private readonly game: GameMetricsService,
     private readonly dataExport: DataExportMetricsService,
     private readonly bookingRetention: BookingRetentionMetricsService,
+    private readonly introLeads: IntroLeadMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
@@ -77,6 +79,7 @@ export class StatsReportService {
       { name: 'Игра', svc: this.game },
       { name: 'Забирают свои данные', svc: this.dataExport },
       { name: 'Данные записей', svc: this.bookingRetention },
+      { name: 'Заявки с формы знакомства', svc: this.introLeads },
     ];
     const parts = await settleBlocks(
       [
