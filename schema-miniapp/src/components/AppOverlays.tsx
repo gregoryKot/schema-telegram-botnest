@@ -1,6 +1,5 @@
 import { Need } from '../types';
-import { markAddressFormAsked } from '../../../shared/src/settings/addressFormPrompt';
-import { api, PairsData, StreakData } from '../api';
+import { PairsData, StreakData } from '../api';
 import { Section } from './BottomNav';
 import { TrackerOverlay } from './TrackerOverlay';
 import { Disclaimer } from './Disclaimer';
@@ -23,10 +22,13 @@ import {
 } from './LazyOverlays';
 import { AppDiaryNav } from './AppDiaryNav';
 import { UseSheetsReturn } from '../hooks/useSheets';
+import type { OverlaySheetKey } from '../hooks/sheetsStack';
 import { TODAY_DATE } from '../utils/todayConstants';
 
 interface Props {
   sheets: UseSheetsReturn;
+  /** Единый реестр закрытия листов (useHostBackButton): крестик = «Назад». */
+  closers: Record<OverlaySheetKey, () => void>;
   needs: Need[];
   ratings: Record<string, number>;
   saved: Record<string, boolean>;
@@ -35,14 +37,11 @@ interface Props {
   onSaved: (needId: string, streak?: StreakData) => void;
   yesterdayRatings: Record<string, number>;
   showOnboarding: boolean;
-  onAddressPickerDone: () => void;
   consentGiven: boolean;
   onConsentDisclaimer: () => void;
   onAcceptDisclaimer: () => void;
   celebrationStreak: number | null;
   setCelebrationStreak: (v: number | null) => void;
-  childhoodWheelPending: boolean;
-  setChildhoodWheelPending: (v: boolean) => void;
   setChildhoodRatings: (r: Record<string, number>) => void;
   setPairData: (data: PairsData) => void;
   userRole: 'CLIENT' | 'THERAPIST';
@@ -66,6 +65,7 @@ import { SelfMapOverlay } from './selfMap/SelfMapOverlay';
 
 export function AppOverlays({
   sheets,
+  closers,
   needs,
   ratings,
   saved,
@@ -74,14 +74,11 @@ export function AppOverlays({
   onSaved,
   yesterdayRatings,
   showOnboarding,
-  onAddressPickerDone,
   consentGiven,
   onConsentDisclaimer,
   onAcceptDisclaimer,
   celebrationStreak,
   setCelebrationStreak,
-  childhoodWheelPending,
-  setChildhoodWheelPending,
   setChildhoodRatings,
   setPairData,
   userRole,
@@ -107,14 +104,12 @@ export function AppOverlays({
           isOffline={isOffline}
           onChange={onChange}
           onSaved={onSaved}
-          onClose={() =>
-            sheets.close('trackerOverlay', { trackerNeedId: null })
-          }
+          onClose={closers.trackerOverlay}
           initialNeedId={sheets.trackerNeedId}
           onOpenNote={() => sheets.open('todayNote')}
           onOpenGoal={() => sheets.open('trackerGoal')}
           onOpenHistory={() => {
-            sheets.close('trackerOverlay', { trackerNeedId: null });
+            closers.trackerOverlay();
             sheets.open('tracker', { trackerTab: 'history' });
           }}
           yesterdayRatings={yesterdayRatings}
@@ -132,9 +127,9 @@ export function AppOverlays({
           }}
         >
           <DiarySection
-            onClose={() => sheets.close('diaries')}
+            onClose={closers.diaries}
             onOpenTracker={() => {
-              sheets.close('diaries');
+              closers.diaries();
               sheets.open('trackerOverlay', { trackerNeedId: null });
             }}
           />
@@ -163,23 +158,14 @@ export function AppOverlays({
       )}
 
       {sheets.todayNote && (
-        <NoteSheet
-          date={TODAY_DATE}
-          onClose={() => {
-            sheets.close('todayNote');
-            if (childhoodWheelPending) {
-              setChildhoodWheelPending(false);
-              sheets.open('childhoodWheel');
-            }
-          }}
-        />
+        <NoteSheet date={TODAY_DATE} onClose={closers.todayNote} />
       )}
 
       {sheets.trackerGoal && (
         <TaskCreateSheet
           defaultType="tracker_streak"
-          onCreated={() => sheets.close('trackerGoal')}
-          onClose={() => sheets.close('trackerGoal')}
+          onCreated={closers.trackerGoal}
+          onClose={closers.trackerGoal}
         />
       )}
 
@@ -189,40 +175,31 @@ export function AppOverlays({
 
       {sheets.childhoodWheel && (
         <ChildhoodWheelSheet
-          onClose={() => sheets.close('childhoodWheel')}
+          onClose={closers.childhoodWheel}
           onOpenSchemas={() => {
-            sheets.close('childhoodWheel');
+            closers.childhoodWheel();
             sheets.open('schemaInfo');
           }}
           onSaved={(r) => setChildhoodRatings(r)}
         />
       )}
 
-      {sheets.pairSheet && (
-        <PairSheet
-          onClose={() => {
-            sheets.close('pairSheet');
-            void api.getPair().then(setPairData);
-          }}
-        />
-      )}
+      {sheets.pairSheet && <PairSheet onClose={closers.pairSheet} />}
 
       {sheets.joinConfirm && sheets.joinKind && sheets.joinCode && (
         <JoinConfirmSheet
           joinKind={sheets.joinKind}
           joinCode={sheets.joinCode}
-          onClose={() =>
-            sheets.close('joinConfirm', { joinKind: null, joinCode: null })
-          }
+          onClose={closers.joinConfirm}
           onPairJoined={setPairData}
         />
       )}
 
       {sheets.about && (
         <AboutSheet
-          onClose={() => sheets.close('about')}
+          onClose={closers.about}
           onOpenSchemaInfo={() => {
-            sheets.close('about');
+            closers.about();
             sheets.open('schemaInfo');
           }}
         />
@@ -230,12 +207,12 @@ export function AppOverlays({
 
       {sheets.settings && (
         <SettingsSheet
-          onClose={() => sheets.close('settings')}
+          onClose={closers.settings}
           userRole={userRole}
           displayName={displayName}
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => {
-            sheets.close('settings');
+            closers.settings();
             switchTherapistMode(true);
           }}
           therapistMode={therapistMode}
@@ -244,43 +221,32 @@ export function AppOverlays({
         />
       )}
       {sheets.addressPicker && (
-        <AddressFormPicker
-          onDone={() => {
-            markAddressFormAsked();
-            sheets.close('addressPicker');
-            onAddressPickerDone();
-          }}
-        />
+        <AddressFormPicker onDone={closers.addressPicker} />
       )}
       <DonateNudge />
 
       {/* therapistMode renders inline in main flow, not as overlay — see below */}
       {sheets.practices && (
         <PracticesScreen
-          onClose={() => sheets.close('practices')}
+          onClose={closers.practices}
           onOpenTracker={() => {
-            sheets.close('practices');
+            closers.practices();
             sheets.open('trackerOverlay', { trackerNeedId: null });
           }}
         />
       )}
       {sheets.plans && (
         <PlansScreen
-          onClose={() => sheets.close('plans')}
+          onClose={closers.plans}
           onOpenTracker={() => {
-            sheets.close('plans');
+            closers.plans();
             sheets.open('trackerOverlay', { trackerNeedId: null });
           }}
         />
       )}
       {sheets.schemaInfo && (
         <SchemaInfoSheet
-          onClose={() =>
-            sheets.close('schemaInfo', {
-              schemaAutoStartTest: false,
-              schemaHighlight: undefined,
-            })
-          }
+          onClose={closers.schemaInfo}
           ratings={ratings}
           autoStartTest={sheets.schemaAutoStartTest}
           initialTab={sheets.schemaInitialTab}

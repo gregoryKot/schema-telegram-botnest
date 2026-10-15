@@ -88,7 +88,7 @@ vi.mock('../components/AppOverlays', () => ({
       data-join-code={p.sheets.joinCode ?? ''}
       data-settings={String(p.sheets.settings)}
       data-celebration-streak={p.celebrationStreak ?? ''}
-      data-childhood-pending={String(p.childhoodWheelPending)}
+      data-childhood-wheel={String(p.sheets.childhoodWheel)}
       data-show-onboarding={String(p.showOnboarding)}
       data-consent-given={String(p.consentGiven)}
       data-therapist-mode={String(p.therapistMode)}
@@ -148,10 +148,10 @@ vi.mock('../components/AppOverlays', () => ({
         change
       </button>
       <button
-        data-testid="app-overlays-address-picker-done"
-        onClick={() => p.onAddressPickerDone()}
+        data-testid="app-overlays-close-today-note"
+        onClick={() => p.closers.todayNote()}
       >
-        address-picker-done
+        close-today-note
       </button>
       <button
         data-testid="app-overlays-accept-disclaimer"

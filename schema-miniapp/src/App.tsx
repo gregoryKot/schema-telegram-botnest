@@ -491,8 +491,7 @@ export default function App() {
     }
   }, [sheets.trackerTab, historyDays]);
 
-  // Кнопка «назад» хоста (Telegram/MAX) или истории браузера (web)
-  useHostBackButton({
+  const closers = useHostBackButton({
     sheets,
     newDiaryEntry,
     setNewDiaryEntry,
@@ -500,6 +499,9 @@ export default function App() {
     cabinetView,
     therapistBackHandlerRef,
     setPairData,
+    childhoodWheelPending,
+    setChildhoodWheelPending,
+    onAddressPickerDone: onboarding.markAddressFormReady,
   });
 
   // Выключает свайп секций и кладёт `inert` на AppSections (аудит 2026-09).
@@ -641,6 +643,7 @@ export default function App() {
 
       <AppOverlays
         sheets={sheets}
+        closers={closers}
         needs={needs}
         ratings={ratings}
         saved={saved}
@@ -649,14 +652,11 @@ export default function App() {
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
         showOnboarding={onboarding.visible}
-        onAddressPickerDone={onboarding.markAddressFormReady}
         consentGiven={onboarding.consentGiven}
         onConsentDisclaimer={onboarding.persist}
         onAcceptDisclaimer={onboarding.accept}
         celebrationStreak={celebrationStreak}
         setCelebrationStreak={setCelebrationStreak}
-        childhoodWheelPending={childhoodWheelPending}
-        setChildhoodWheelPending={setChildhoodWheelPending}
         setChildhoodRatings={setChildhoodRatings}
         setPairData={setPairData}
         userRole={userRole}
