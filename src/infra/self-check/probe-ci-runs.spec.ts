@@ -1,7 +1,7 @@
-// Наблюдатель за CI переехал в приложение (CLAUDE.md, правило №21/№24):
-// GitHub-джоба `alarm` не может слать DM без секретов BOT_TOKEN/ADMIN_ID в
-// самом репозитории (их там нет, run 35103908387 — DM не ушёл), а
-// приложение эти секреты знает (Amvera). Фикстура — настоящий ответ GitHub
+// Наблюдатель за CI в приложении (CLAUDE.md, правило №21/№24): GitHub-джоба
+// `alarm` шлёт DM только при секретах BOT_TOKEN/ADMIN_ID в репозитории, а
+// приложение знает эти секреты всегда (и не зависит от планировщика GitHub:
+// проба сверяет ещё и возраст прогона). Фикстура — настоящий ответ GitHub
 // REST (test/fixtures/recorded/github-workflow-runs.json, правило №14: «тест
 // стоит на шве, не рядом»).
 import { ciRunsProbe } from './probe-ci-runs';
@@ -10,6 +10,16 @@ import { loadRecordedFixture } from '../../test-support/recorded-fixture';
 const FIXTURE = 'github-workflow-runs.json';
 
 const originalFetch = global.fetch;
+
+// Прогон в фикстуре — 2026-09-17T01:23:13Z; «сейчас» стоит через 3 часа после
+// него, то есть в пределах порога возраста смока (8 ч) и nightly (36 ч).
+const FIXTURE_RUN_AT = Date.parse('2026-09-17T01:23:13Z');
+const HOUR = 3_600_000;
+function setNow(msAfterRun: number) {
+  jest.spyOn(Date, 'now').mockReturnValue(FIXTURE_RUN_AT + msAfterRun);
+}
+
+beforeEach(() => setNow(3 * HOUR));
 
 afterEach(() => {
   global.fetch = originalFetch;
@@ -38,6 +48,103 @@ describe('ciRunsProbe', () => {
     expect(urls[0]).toContain('/workflows/nightly.yml/runs');
     expect(urls[1]).toContain('/workflows/prod-smoke.yml/runs');
     expect(urls[0]).toContain('status=completed');
+  });
+
+  it('спрашивает прогоны только ветки main: ручной прогон на ветке PR не становится «последним»', async () => {
+    const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+    const fetchMock = jest.fn().mockResolvedValue(jsonResponse(fixture));
+    global.fetch = fetchMock as never;
+
+    await ciRunsProbe().run();
+
+    for (const call of fetchMock.mock.calls) {
+      expect(new URL(call[0] as string).searchParams.get('branch')).toBe(
+        'main',
+      );
+    }
+  });
+
+  describe('возраст последнего прогона (планировщик GitHub мог перестать запускать)', () => {
+    // Смок и nightly в тесте отдают одну и ту же запись; порог у них разный
+    // (14 ч и 40 ч), поэтому ответ собирается по имени воркфлоу из URL.
+    function respondByWorkflow(ageHours: { smoke: number; nightly: number }) {
+      const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+      global.fetch = jest.fn().mockImplementation(async (url: string) => {
+        const age = url.includes('prod-smoke.yml')
+          ? ageHours.smoke
+          : ageHours.nightly;
+        const run = {
+          ...fixture.workflow_runs[0],
+          updated_at: new Date(FIXTURE_RUN_AT).toISOString(),
+        };
+        setNow(age * HOUR);
+        return jsonResponse({ workflow_runs: [run] });
+      }) as never;
+    }
+
+    it('смок зелёный, но старше 14 часов — не ok, «смок не запускался N ч»', async () => {
+      respondByWorkflow({ smoke: 15, nightly: 1 });
+      const res = await ciRunsProbe().run();
+      expect(res.ok).toBe(false);
+      expect(res.detail).toContain('смок не запускался 15 ч');
+      expect(res.detail).toContain('/actions/runs/');
+      expect(res.detail).not.toContain('ночная проверка');
+    });
+
+    it('смок ровно на пороге (14 ч) — ещё ok: самый длинный замеренный разрыв — 12,1 ч', async () => {
+      respondByWorkflow({ smoke: 14, nightly: 1 });
+      expect((await ciRunsProbe().run()).ok).toBe(true);
+    });
+
+    it('nightly старше 40 часов — не ok; 39 часов — ok', async () => {
+      respondByWorkflow({ smoke: 1, nightly: 41 });
+      const stale = await ciRunsProbe().run();
+      expect(stale.ok).toBe(false);
+      expect(stale.detail).toContain('ночная проверка не запускалась 41 ч');
+
+      respondByWorkflow({ smoke: 1, nightly: 39 });
+      expect((await ciRunsProbe().run()).ok).toBe(true);
+    });
+
+    it('красный И старый прогон — в detail обе причины', async () => {
+      const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+      fixture.workflow_runs[0].conclusion = 'failure';
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(jsonResponse(fixture)) as never;
+      setNow(50 * HOUR);
+
+      const res = await ciRunsProbe().run();
+      expect(res.detail).toContain('смок прода красный');
+      expect(res.detail).toContain('смок не запускался 50 ч');
+    });
+
+    it('время старта (run_started_at) важнее updated_at: долгий прогон считается от старта', async () => {
+      const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+      fixture.workflow_runs[0].run_started_at = new Date(
+        FIXTURE_RUN_AT - 15 * HOUR,
+      ).toISOString();
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(jsonResponse(fixture)) as never;
+      // updated_at — 1 час назад, а стартовал прогон 15 часов назад.
+      setNow(HOUR);
+
+      const res = await ciRunsProbe().run();
+      expect(res.ok).toBe(false);
+      expect(res.detail).toContain('смок не запускался 16 ч');
+    });
+
+    it('GitHub не отдал время прогона — возраст не судим, решает conclusion', async () => {
+      const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+      delete fixture.workflow_runs[0].updated_at;
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(jsonResponse(fixture)) as never;
+      setNow(1000 * HOUR);
+
+      expect((await ciRunsProbe().run()).ok).toBe(true);
+    });
   });
 
   // Тот же реальный ответ, только conclusion подменён на failure — форма

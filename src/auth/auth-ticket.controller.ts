@@ -119,10 +119,9 @@ export class AuthTicketController {
   }
 
   // ─── Шаг 4: контейнер забирает сессию ─────────────────────────────────────
-  // Без JwtAuthGuard: длинный код и есть доказательство — так же устроен token
-  // endpoint в RFC 8628. При входе сессии у контейнера ещё нет вовсе, а при
-  // привязке аккаунт, под которым начинали, к этому моменту уже слит и его
-  // токен ничего не докажет.
+  // Без JwtAuthGuard: длинный код и есть доказательство (token endpoint RFC
+  // 8628): при входе сессии нет вовсе, при привязке исходный аккаунт уже слит.
+  // Ставит куку неаутентифицированному запросу — отсюда requireCsrf.
   @Post('poll')
   @Throttle({
     short: { limit: 40, ttl: 60_000 },
@@ -138,6 +137,7 @@ export class AuthTicketController {
     accessToken?: string;
     expiresIn?: number;
   }> {
+    requireCsrf(req, 'ticket/poll', this.securityLog);
     const result = await this.tickets.poll(
       body.deviceCode,
       req.ip,
