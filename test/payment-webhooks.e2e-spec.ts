@@ -50,7 +50,13 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-11',
   'bk-ct-12',
 ];
-const SUBSCRIPTION_CANCEL_TOKENS = ['sub-ct-1', 'sub-ct-2', 'sub-ct-3'];
+const SUBSCRIPTION_CANCEL_TOKENS = [
+  'sub-ct-1',
+  'sub-ct-2',
+  'sub-ct-3',
+  'sub-ct-4',
+  'sub-ct-5',
+];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
 // Свой контакт у сценариев «эффекты подтверждения»: по нему из писем и DM
@@ -679,6 +685,93 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ ok: true });
       expect(await subscriptionStatus(sub.id)).toBe('cancelled');
+    });
+
+    // Аудит 2026-10, security#17: оплата после отмены не воскрешает подписку.
+    // Предикат `status in` в одной транзакции с charge проверяет драйвер на
+    // живом Postgres, а не мок; письма/DM владельцу ловятся шпионами.
+    describe('оплата после отмены', () => {
+      let tg: jest.SpyInstance;
+      let mail: jest.SpyInstance;
+      beforeAll(async () => {
+        await new Promise((r) => setTimeout(r, 1100)); // окно throttler
+        tg = jest.spyOn(app.get(TelegramService), 'notifyAdmin');
+        mail = jest.spyOn(app.get(EmailService), 'sendAdminNotification');
+      });
+      beforeEach(() => {
+        tg.mockReset().mockResolvedValue(true);
+        mail.mockReset().mockResolvedValue(undefined);
+      });
+      afterAll(() => {
+        tg.mockRestore();
+        mail.mockRestore();
+      });
+
+      async function seed(status: string, token: string, extra = {}) {
+        const sub = await prisma.subscription.create({
+          data: {
+            status,
+            period: 'month',
+            amount: 500,
+            cancelToken: token,
+            firstInvId: 900001,
+            nextChargeAt: new Date(Date.now() + 86_400_000),
+            ...extra,
+          },
+        });
+        const charge = await prisma.subscriptionCharge.create({
+          data: { subscriptionId: sub.id, amount: 500, status: 'pending' },
+        });
+        const invId = String(SUBSCRIPTION_INVID_BASE + charge.id);
+        return { sub, charge, invId };
+      }
+      const payInv = (invId: string) =>
+        postResult('500.00', invId, resultSig('500.00', invId));
+      const subRow = (id: number) =>
+        prisma.subscription.findUnique({ where: { id } });
+
+      it('active + pending-charge → cancel → ResultURL: OK, подписка cancelled, charge paid, сигнал в оба канала', async () => {
+        const { sub, charge, invId } = await seed('active', 'sub-ct-4');
+        const cancel = await request(app.getHttpServer())
+          .post('/api/subscription/cancel/sub-ct-4')
+          .send({});
+        expect(cancel.status).toBe(200);
+
+        const res = await payInv(invId);
+
+        expect(res.text).toBe(`OK${invId}`);
+        const row = await subRow(sub.id);
+        expect(row?.status).toBe('cancelled');
+        expect(row?.nextChargeAt).toBeNull();
+        expect(await chargeStatus(charge.id)).toBe('paid');
+        expect(tg).toHaveBeenCalledTimes(1);
+        expect(mail).toHaveBeenCalledTimes(1);
+        expect(String(tg.mock.calls[0][0])).toContain(`#${sub.id}`);
+        expect(String(tg.mock.calls[0][0])).toContain('Верните деньги');
+
+        // Повтор вебхука Robokassa: тот же OK, второго сигнала нет.
+        await payInv(invId);
+        expect(tg).toHaveBeenCalledTimes(1);
+        expect(mail).toHaveBeenCalledTimes(1);
+      });
+
+      it('КОНТРОЛЬ: past_due + ResultURL → active, счётчик сбоев обнулён, без сигнала «после отмены»', async () => {
+        const { sub, charge, invId } = await seed('past_due', 'sub-ct-5', {
+          failedAttempts: 3,
+          nextChargeAt: null,
+        });
+
+        const res = await payInv(invId);
+
+        expect(res.text).toBe(`OK${invId}`);
+        const row = await subRow(sub.id);
+        expect(row?.status).toBe('active');
+        expect(row?.failedAttempts).toBe(0);
+        expect(row?.nextChargeAt).toBeInstanceOf(Date);
+        expect(await chargeStatus(charge.id)).toBe('paid');
+        const texts = tg.mock.calls.map((c) => String(c[0])).join('\n');
+        expect(texts).not.toContain('Верните деньги');
+      });
     });
 
     it('чужой/битый токен → отказ на by-token и cancel', async () => {
