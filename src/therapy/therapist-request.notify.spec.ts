@@ -69,7 +69,7 @@ function makeService(
     }
     return Promise.resolve(m);
   });
-  const email = { send: jest.fn(() => Promise.resolve()) };
+  const email = { send: jest.fn(() => Promise.resolve(true)) };
   const svc = new TherapistRequestNotifyService(
     prisma,
     { telegramIdsFor } as any,
@@ -408,6 +408,21 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy.mock.calls[0][0]).toContain('#42');
+    expect(errorSpy.mock.calls[0][0]).not.toContain('anya@example.com');
+  });
+
+  it('письмо не принято (send вернул false, например нет RESEND_API_KEY) → error с номером заявки', async () => {
+    const { svc, email } = makeService('vy', {
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    email.send.mockResolvedValue(false);
+    await svc.notifyApplicant(req(WEB_ID));
+
+    expect(email.send).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('#42');
+    expect(errorSpy.mock.calls[0][0]).toContain('письмо не ушло');
     expect(errorSpy.mock.calls[0][0]).not.toContain('anya@example.com');
   });
 

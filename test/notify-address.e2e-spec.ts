@@ -178,9 +178,7 @@ describeOnRealDb('e2e: адресация уведомлений после сл
     });
 
     beforeEach(() => {
-      send = jest
-        .spyOn(app.get(EmailService), 'send')
-        .mockResolvedValue(undefined);
+      send = jest.spyOn(app.get(EmailService), 'send').mockResolvedValue(true);
       fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
         status: 200,

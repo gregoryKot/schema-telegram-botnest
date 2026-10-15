@@ -58,10 +58,10 @@ export async function deliverDecision(
   if (profile.email) {
     const m = decisionMessage(profile.form, decision, reason, 'email');
     try {
-      // EmailService.send без RESEND_API_KEY в проде не бросает, а сам
-      // логирует error о мисконфиге — владелец узнаёт оттуда.
-      await d.email.send(profile.email, m.subject, m.text);
-      return;
+      // send() без RESEND_API_KEY не бросает, а возвращает false (в проде ещё
+      // и логирует error о мисконфиге). Письмо не принято — это недоставка:
+      // идём к error с номером заявки, а не считаем решение доставленным.
+      if (await d.email.send(profile.email, m.subject, m.text)) return;
     } catch (e) {
       d.logger.warn(`notifyApplicant: письмо не ушло: ${errMsg(e)}`);
     }
