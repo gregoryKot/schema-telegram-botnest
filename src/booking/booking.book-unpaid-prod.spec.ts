@@ -5,6 +5,16 @@
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingService } from './booking.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { BookingNotifyService } from './booking-notify.service';
+import type { MeetingService } from './meeting.service';
+import type { RobokassaService } from './robokassa.service';
+import type { PricingService } from './pricing.service';
+import type { ConfigService } from '@nestjs/config';
+import type { CronLeaderService } from '../infra/cron-leader.service';
+
+type CreateArgs = { data: Record<string, unknown> };
+type TxFn = (tx: unknown) => Promise<unknown>;
 
 // В production crypto без ENCRYPTION_KEY отказывает писать — шифрование к теме
 // теста не относится, подменяем его прозрачным.
@@ -22,13 +32,13 @@ function makeService(robokassaEnabled: boolean) {
     $executeRaw: jest.fn(async () => undefined),
     booking: {
       findMany: jest.fn(async () => []),
-      create: jest.fn(async ({ data }: any) => ({ id: 100, ...data })),
+      create: jest.fn(async ({ data }: CreateArgs) => ({ id: 100, ...data })),
     },
   };
-  const prisma: any = {
+  const prisma = {
     availabilityRule: { findMany: jest.fn(async () => []) },
     slotOverride: { findMany: jest.fn(async () => []) },
-    $transaction: jest.fn(async (fn: any) => fn(tx)),
+    $transaction: jest.fn(async (fn: TxFn) => fn(tx)),
     booking: { update: jest.fn(async () => ({})) },
   };
   const notify = {
@@ -41,13 +51,17 @@ function makeService(robokassaEnabled: boolean) {
     buildPaymentUrl: jest.fn(() => 'https://robokassa.test/pay'),
   };
   const service = new BookingService(
-    prisma,
-    notify as any,
-    { hasMeetingForContact: jest.fn(async () => true) } as any,
-    robokassa as any,
-    { getPrice: jest.fn(async () => 4000) } as any,
-    { get: () => undefined } as any,
-    { claimRun: jest.fn().mockResolvedValue(true) } as any,
+    prisma as unknown as PrismaService,
+    notify as unknown as BookingNotifyService,
+    {
+      hasMeetingForContact: jest.fn(async () => true),
+    } as unknown as MeetingService,
+    robokassa as unknown as RobokassaService,
+    { getPrice: jest.fn(async () => 4000) } as unknown as PricingService,
+    { get: () => undefined } as unknown as ConfigService,
+    {
+      claimRun: jest.fn().mockResolvedValue(true),
+    } as unknown as CronLeaderService,
   );
   return { service, prisma, tx, notify };
 }

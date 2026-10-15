@@ -601,6 +601,11 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `onOpenSchema({ startTest: true })`. Тот же дефект у строки «Что такое схемы
   и режимы» в `PatternsHero.tsx:55-58`.
 
+- **Живой вызов Robokassa в самопроверке.** Пробы `robokassa` и `paymentWebhooks`
+  смотрят конфигурацию и следы вебхуков в БД, но площадку не спрашивают:
+  записанного ответа Robokassa нет (правило №23), эндпоинт выдумывать нельзя.
+  Подробности — [RUNBOOKS.md](RUNBOOKS.md), «Чего не видит ни одна проба», п. 1.
+
 **На владельце (не код):**
 - **Доходит ли вебхук Robokassa?** Код больше не зависит от хоста в кабинете: `/api/payment` в `PRACTICE_API_PREFIXES`, ResultURL на `schemehappens.ru` и на `kotlarewski.gr` подтверждает бронь одинаково (`test/payment-webhook-practice-host.e2e-spec.ts`). Сверь, что ResultURL в кабинете задан (метод POST) и после тестовой оплаты бронь стала CONFIRMED без ручного `POST /api/booking/admin/confirm/:id`. Остальные вопросы по кабинетам — в [RUNBOOKS.md](RUNBOOKS.md#что-проверить-владельцу).
 - Уведомление РКН: реестр операторов + трансграничная передача, pd.rkn.gov.ru.

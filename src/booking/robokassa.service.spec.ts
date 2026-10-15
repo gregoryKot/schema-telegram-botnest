@@ -30,6 +30,13 @@ describe('RobokassaService.enabled', () => {
     expect(makeService({ ROBOKASSA_PASSWORD2: undefined }).enabled).toBe(false);
     expect(makeService({ ROBOKASSA_MERCHANT_LOGIN: '' }).enabled).toBe(false);
   });
+
+  it('значение из одних пробелов — «не задано», как в записи реестра возможностей', () => {
+    // Расхождение предикатов: capability/проба режут пробелы, а enabled — нет,
+    // и гард считал бы режим 'live' при «не настроено» в отчёте.
+    expect(makeService({ ROBOKASSA_PASSWORD1: '  ' }).enabled).toBe(false);
+    expect(makeService({ ROBOKASSA_MERCHANT_LOGIN: '\n' }).enabled).toBe(false);
+  });
 });
 
 describe('RobokassaService.validateWebhook (ResultURL, MD5(OutSum:InvId:Password2))', () => {
