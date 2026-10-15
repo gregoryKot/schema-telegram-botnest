@@ -377,7 +377,7 @@ describe('deploy/vps/ops.sh', () => {
     expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true); // приложение отпускает только release-hold
   });
 
-  describe('restore-b2 (план Б: восстановление из бэкапа B2)', () => {
+  describe('restore-backup (план Б: восстановление из бэкапа R2)', () => {
     const HOLD = () => writeFileSync(join(base(), 'HOLD_APP'), '');
     const runCalls = () =>
       dockerLog()
@@ -385,7 +385,7 @@ describe('deploy/vps/ops.sh', () => {
         .filter((l) => /\brun --rm --no-deps\b/.test(l));
     const READY = {
       FAKE_RUN_OUT:
-        '[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 123 байт, дата 2026-10-09',
+        '[fetch-backup] ok schemehappens-2026-10-09.sql.gz.enc размер 123 байт, дата 2026-10-09',
       FAKE_MIGS: '250',
       FAKE_USERS: '7',
     };
@@ -393,7 +393,7 @@ describe('deploy/vps/ops.sh', () => {
     it('без HOLD_APP отказывается и ничего не запускает', () => {
       seedRelease(NEW);
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('нужен HOLD_APP');
@@ -403,7 +403,7 @@ describe('deploy/vps/ops.sh', () => {
     it('без релиза: понятная ошибка «сначала деплой», контейнер не запускается', () => {
       HOLD();
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('сначала деплой');
@@ -414,7 +414,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_TABLES: '12' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_TABLES: '12' });
 
       expect(res.status).toBe(1);
       expect(res.stderr).toMatch(/ОТКАЗ: в базе уже есть таблицы \(всего 12\)/);
@@ -426,7 +426,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(0);
       expect(dockerLog()).toMatch(/up -d db\n/);
@@ -435,7 +435,7 @@ describe('deploy/vps/ops.sh', () => {
       expect(calls[0]).toMatch(
         /run --rm --no-deps -T --entrypoint bash app -c /,
       );
-      expect(calls[0]).toContain('scripts/fetch-latest-b2.sh');
+      expect(calls[0]).toContain('scripts/backup-fetch-latest.sh');
       expect(calls[0]).toContain('scripts/restore-backup.sh');
       expect(res.stdout).toContain('schemehappens-2026-10-09.sql.gz.enc');
       expect(res.stdout).toContain('строк в _prisma_migrations: 250');
@@ -450,10 +450,10 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_RUN_EXIT: '1' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_RUN_EXIT: '1' });
 
       expect(res.status).toBe(1);
-      expect(res.stderr).toContain('восстановление из B2 не удалось');
+      expect(res.stderr).toContain('восстановление из бэкапа не удалось');
       expect(dockerLog()).toContain('DROP SCHEMA public CASCADE');
       expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true);
     });
@@ -462,7 +462,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_MIGS: '0' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_MIGS: '0' });
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('в _prisma_migrations нет строк');
@@ -474,9 +474,9 @@ describe('deploy/vps/ops.sh', () => {
         app = join(dir, 'app');
         mkdirSync(join(app, 'scripts'), { recursive: true });
         writeFileSync(
-          join(app, 'scripts', 'fetch-latest-b2.sh'),
+          join(app, 'scripts', 'backup-fetch-latest.sh'),
           '#!/bin/bash\nmkdir -p "$1"; : > "$1/schemehappens-2026-10-09.sql.gz.enc"\n' +
-            'echo "[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 5 байт, дата 2026-10-09"\n',
+            'echo "[fetch-backup] ok schemehappens-2026-10-09.sql.gz.enc размер 5 байт, дата 2026-10-09"\n',
         );
         writeFileSync(
           join(app, 'scripts', 'restore-backup.sh'),
@@ -496,7 +496,7 @@ describe('deploy/vps/ops.sh', () => {
         HOLD();
       });
       const exec = (env: Record<string, string> = {}) =>
-        ops(['restore-b2'], {
+        ops(['restore-backup'], {
           ...READY,
           FAKE_RUN_EXEC: '1',
           FAKE_RUN_CWD: app,

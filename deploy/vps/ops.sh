@@ -73,17 +73,73 @@ start_app() {
   health_wait 300
 }
 
-# Возвращает release.prev. После отката prev стирается: повторный rollback не
-# должен вернуть только что откатанный релиз.
+# Снимает застрявшие записи миграций (finished_at IS NULL): Prisma помечает так
+# миграцию, упавшую или убитую посреди выполнения, и до снятия записи любой
+# `migrate deploy` отвечает P3009, то есть образ без упавшей миграции тоже не
+# поднимется. Prisma не оборачивает миграцию в транзакцию, поэтому огрызок
+# остаётся в схеме, а безопасность держится на идемпотентности миграций
+# (CLAUDE.md, «Миграции БД», п. 3). Тот же запрос, что в prisma/recover-p3009.sql
+# (сверяет src/infra/vps-ops.spec.ts), включая защиту: пока Prisma держит свой
+# advisory-lock, миграция идёт, а не застряла, и запись не трогается.
+# Печатает ТОЛЬКО имена: логи Actions публичны, а logs несёт значения из таблиц.
+RESOLVE_STUCK_COUNT_SQL='SELECT count(*) FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL'
+RESOLVE_FAILED_SQL='DELETE FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL AND pg_try_advisory_xact_lock(72707369) RETURNING migration_name'
+
+resolve_failed_migrations() {
+  local out name stuck count=0 other=0
+  out=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_FAILED_SQL" 2> /dev/null) || {
+    log "не удалось обратиться к _prisma_migrations (база не отвечает или таблицы нет)"
+    return 1
+  }
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    if [[ "$name" =~ ^[0-9A-Za-z_-]{1,100}$ ]]; then
+      log "снята застрявшая запись миграции: $name"
+      count=$((count + 1))
+    else
+      other=$((other + 1))
+    fi
+  done <<< "$out"
+  [ "$other" -eq 0 ] || log "снято записей с нестандартным именем: $other"
+  [ $((count + other)) -eq 0 ] || return 0
+  # 0 снятых строк — не всегда «всё чисто»: запись есть, но замок Prisma занят.
+  # Так бывает, когда `dc stop app` оборвал клиента посреди долгого оператора
+  # (CREATE INDEX), а бэкенд Postgres продолжает его выполнять и держит замок.
+  stuck=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_STUCK_COUNT_SQL" 2> /dev/null | tr -dc '0-9') || stuck=""
+  if [ -n "$stuck" ] && [ "$stuck" -gt 0 ]; then
+    log "миграция ещё выполняется (замок Prisma занят), повторите позже: op=migrate-resolve-failed"
+    return 1
+  fi
+  log "застрявших записей миграций нет"
+}
+
+# Возвращает release.prev. Новый релиз мог умереть посреди миграции, а запись о
+# ней блокирует любой образ (P3009), поэтому перед подъёмом prev приложение
+# останавливается (миграция точно не идёт) и застрявшая запись снимается:
+# релиз, которому она принадлежала, снят с эксплуатации. Огрызок схемы остаётся,
+# prev-код на нём работает, если миграция была аддитивной и идемпотентной.
+# release.prev стирается только когда откат стал здоровым: иначе при сбое (база
+# ещё не починена) ручной rollback нечем было бы повторить. Повтор после сбоя
+# безопасен: release уже равен prev, и откатанный релиз назад не вернётся.
 rollback_release() {
   [ -s release.prev ] || { log "откатываться некуда: нет release.prev"; return 1; }
   local bad
   bad=$(cat release)
+  dc stop app > /dev/null 2>&1 || true
+  resolve_failed_migrations || true
   cat release.prev > release
-  rm -f release.prev
-  log "ОТКАТ: $(echo "$bad" | short) -> $(short < release)"
-  dc up -d app || { log "образ предыдущего релиза не поднялся (нет на диске?)"; return 1; }
-  health_wait 180
+  if [ "$bad" = "$(cat release)" ]; then
+    log "повторный подъём предыдущего релиза: $(short < release)"
+  else
+    log "ОТКАТ: $(echo "$bad" | short) -> $(short < release)"
+  fi
+  dc up -d app || { log "образ предыдущего релиза не поднялся (нет на диске?); release.prev оставлен"; return 1; }
+  if health_wait 180; then
+    rm -f release.prev
+    return 0
+  fi
+  log "откат не стал здоровым: release.prev оставлен, после устранения причины op=rollback повторит попытку"
+  return 1
 }
 
 # Оставляем образы текущего и предыдущего релиза, остальные чистим: диск не
@@ -202,6 +258,18 @@ cmd_rollback() {
   rollback_release || die "откат не удался"
 }
 
+# Ручной люк на случай, когда автооткат не справился: снимает застрявшую запись
+# миграции (эквивалент `prisma migrate resolve --rolled-back`) и больше ничего.
+# Произвольного SQL здесь нет: запрос один, зашит выше. Приложение не трогает.
+cmd_migrate_resolve_failed() {
+  lock
+  [ -f db.env ] || die "нет db.env: сначала op=bootstrap"
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  resolve_failed_migrations || die "запись не снята"
+  log "дальше: op=rollback (вернуть предыдущий релиз) или новый деплой с исправленной миграцией"
+}
+
 wait_db() {
   for _ in $(seq 1 30); do
     if dc exec -T db pg_isready -U postgres -d schemehappens > /dev/null 2>&1; then return 0; fi
@@ -242,26 +310,26 @@ cmd_transfer_check() {
   q 'SELECT migration_name FROM _prisma_migrations ORDER BY started_at DESC LIMIT 3'
 }
 
-# Скрипт для контейнера app: скачать свежий бэкап из B2 и залить в базу. Ошибки
+# Скрипт для контейнера app: скачать свежий бэкап из R2 и залить в базу. Ошибки
 # psql фильтруются до строк с ERROR/FATAL (CONTEXT/DETAIL несут значения из
 # таблиц, а логи Actions публичны); весь остальной вывод заливки уходит в файл.
 # shellcheck disable=SC2016  # переменные раскрывает bash внутри контейнера, не здесь
-RESTORE_B2_INNER='set -Eeuo pipefail
+RESTORE_BACKUP_INNER='set -Eeuo pipefail
 d=$(mktemp -d)
-bash scripts/fetch-latest-b2.sh "$d"
+bash scripts/backup-fetch-latest.sh "$d"
 f=$(ls "$d"/*.sql.gz.enc)
 if ! bash scripts/restore-backup.sh "$f" "$DATABASE_URL" > "$d/out" 2> "$d/err"; then
   grep -hE "ERROR|FATAL" "$d/err" | cut -c1-200 | head -5 >&2 || true
-  echo "[restore-b2] заливка не прошла" >&2
+  echo "[restore-backup] заливка не прошла" >&2
   exit 1
 fi
 grep -hE "^\[restore\] (контрольная|готово)" "$d/out" || true
-echo "[restore-b2] восстановлен файл: $(basename "$f")"'
+echo "[restore-backup] восстановлен файл: $(basename "$f")"'
 
 # План Б (docs/MIGRATION_VPS.md): основная база недоступна, поднимаем из
-# ночного бэкапа в B2. Только в пустую базу и только пока приложение держит
+# ночного бэкапа в R2. Только в пустую базу и только пока приложение держит
 # HOLD_APP; после успеха флаг остаётся (приложение поднимает release-hold).
-cmd_restore_b2() {
+cmd_restore_backup() {
   lock
   require_ready
   [ -e HOLD_APP ] || die "нужен HOLD_APP (op=transfer-open или свежий bootstrap): восстанавливать можно только при остановленном приложении"
@@ -272,14 +340,14 @@ cmd_restore_b2() {
   tables=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')") \
     || die "не прочитать список таблиц в базе"
   [ "$tables" = "0" ] || die "ОТКАЗ: в базе уже есть таблицы (всего $tables), заливку не начинаю, ничего не изменено"
-  log "база пуста, качаю свежий бэкап из B2 и заливаю"
+  log "база пуста, качаю свежий бэкап из R2 и заливаю"
   # -T: у ssh из Actions нет tty; --entrypoint обходит CMD образа (entrypoint.mjs
   # поднял бы приложение); --no-deps: db уже поднята и проверена.
-  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_B2_INNER"; then
+  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_BACKUP_INNER"; then
     # Приёмник до заливки был пуст (проверено выше): убираем только свой огрызок.
     dc exec -T db psql -U postgres -d schemehappens -X -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public' > /dev/null 2>&1 \
       || log "не удалось сбросить неполную заливку: очистите базу вручную перед повтором"
-    die "восстановление из B2 не удалось, неполная заливка сброшена; причина в строках выше"
+    die "восстановление из бэкапа не удалось, неполная заливка сброшена; причина в строках выше"
   fi
   print_counts
   local migs
@@ -349,10 +417,11 @@ case "${1:-}" in
   restart-app) cmd_restart_app ;;
   restart-caddy) cmd_restart_caddy ;;
   rollback) cmd_rollback ;;
+  migrate-resolve-failed) cmd_migrate_resolve_failed ;;
   transfer-open) cmd_transfer_open ;;
   transfer-close) cmd_transfer_close ;;
   transfer-check) cmd_transfer_check ;;
-  restore-b2) cmd_restore_b2 ;;
+  restore-backup) cmd_restore_backup ;;
   external-db-check) cmd_external_db_check ;;
   release-hold) cmd_release_hold ;;
   *) die "неизвестная операция" ;;

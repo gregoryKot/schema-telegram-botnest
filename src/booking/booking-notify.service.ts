@@ -6,16 +6,13 @@ import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
-import { decryptRecord, encrypt } from '../utils/crypto';
+import { decryptRecord } from '../utils/crypto';
 import { BOOKING_SCHEMA } from './booking.schema';
-import { sessionLabel } from './caldav-event.util';
-import {
-  bookingCardText,
-  formatTime,
-  subjectFromTitle,
-} from './booking-notify.format';
+import { awaitingPaymentTitle } from './booking-admin-note';
+import { bookingCardText, subjectFromTitle } from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { runConfirmEffects } from './booking-confirm-run';
 
 export interface PlainBooking {
   id: number;
@@ -31,6 +28,10 @@ export interface PlainBooking {
   /** Атрибуция лида (страница + referrer), хранится открыто. */
   source?: string | null;
   clientTimeZone?: string | null;
+  /** Событие в календаре уже создано (строка брони) — повторно не пушим. */
+  calDavUid?: string | null;
+  /** Эффекты подтверждения доведены до конца — onConfirmed ничего не делает. */
+  confirmEffectsDoneAt?: Date | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */
@@ -53,41 +54,18 @@ export class BookingNotifyService {
     ).replace(/\/$/, '');
   }
 
-  /** On confirmation: meeting link + Apple Calendar + admin notify. Mutates b.meetingUrl. */
+  /** On confirmation: meeting link + Apple Calendar + admin notify (идемпотентно, см. booking-confirm-run.ts). */
   async onConfirmed(b: PlainBooking): Promise<void> {
-    if (!b.meetingUrl) {
-      b.meetingUrl = await this.meeting.createMeeting(b);
-      await this.prisma.booking.update({
-        where: { id: b.id },
-        // В БД ссылка лежит зашифрованной (`?pwd=` пускает в комнату клиента).
-        data: { meetingUrl: encrypt(b.meetingUrl) },
-      });
-    }
-    const uid = await this.calDav.pushEvent({
-      uid: `booking-${b.id}@schemehappens.ru`,
-      startsAt: b.startsAt,
-      durationMin: b.durationMin,
-      summary: `${sessionLabel(b.type)} — ${b.clientName}`,
-      description: [b.clientContact, b.message, b.meetingUrl]
-        .filter(Boolean)
-        .join('\n'),
-      location: b.meetingUrl ?? undefined,
-    });
-    if (uid) {
-      await this.prisma.booking.update({
-        where: { id: b.id },
-        data: { calDavUid: uid },
-      });
-    }
-    await this.sendAdmin('✅ <b>Запись подтверждена</b>', b);
-    // CalDAV настроен, но запись не удалась — тоже событие брони: оба канала.
-    if (this.calDav.enabled && !uid) {
-      const title = '⚠ <b>Подтверждена, но НЕ попала в Apple Calendar</b>';
-      await this.notifyAdminBoth(
-        `${title}\n${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
-        subjectFromTitle(title),
-      );
-    }
+    await runConfirmEffects(
+      {
+        prisma: this.prisma,
+        meeting: this.meeting,
+        calDav: this.calDav,
+        sendAdmin: (title, booking) => this.sendAdmin(title, booking),
+        notifyAdminBoth: (html, subject) => this.notifyAdminBoth(html, subject),
+      },
+      b,
+    );
   }
 
   /** Remove from Apple Calendar + notify admin when cancelled. */
@@ -97,11 +75,8 @@ export class BookingNotifyService {
   }
 
   /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */
-  async onAwaitingPayment(b: PlainBooking): Promise<void> {
-    await this.sendAdmin(
-      '⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)',
-      b,
-    );
+  async onAwaitingPayment(b: PlainBooking, note?: string): Promise<void> {
+    await this.sendAdmin(awaitingPaymentTitle(note), b);
   }
 
   /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
