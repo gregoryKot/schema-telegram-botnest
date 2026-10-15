@@ -40,7 +40,6 @@
   "webapp/src/pages/LandingPage.tsx": 2,
   "webapp/src/pages/LinkDevicePage.tsx": 1,
   "webapp/src/pages/MergePage.tsx": 1,
-  "webapp/src/pages/SubscribePage.tsx": 1,
   "webapp/src/pages/tests/QuizPage.tsx": 1,
   "webapp/src/sections/DiarySection.tsx": 1,
   "webapp/src/sections/SchemasSection.tsx": 1,

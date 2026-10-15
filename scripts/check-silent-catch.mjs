@@ -25,10 +25,9 @@
 //   - тестовые файлы (*.test.ts(x), *.spec.ts) — там глушить рассинхрон
 //     легитимно (мок, ожидаемый reject);
 //   - dist/, node_modules/, game/ (game — заморожен отдельным правилом);
-//   - catch-тело с комментарием-но-без-кода технически не «пустое» по этому
-//     скрипту (регэксп ищет буквально `{}`) — известная слепая зона, см. ALLOW
-//     ниже про то, почему список короткий: цель — поймать опасное
-//     большинство, а не рассудить каждый случай.
+//   - комментарий в теле catch пустоту не прячет: stripComments вычищает его
+//     до поиска, `catch { /* ignore */ }` считается пустым. Денежные пути
+//     (subscri|donat|booking|payment) вне храповика: тихий catch там запрещён.
 //
 // Аллоу-лист (см. ALLOW) — вызовы, где .catch(() => …) не факт ошибки, а
 // продуктовое решение: fire-and-forget аналитика (правило №8 CLAUDE.md) и
@@ -51,6 +50,7 @@ import {
   ENCLOSING_ALLOW,
   FILE_ALLOW,
 } from './silent-catch-rules.mjs';
+import { failOnMoneyPaths } from './silent-catch-money.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'silent-catch-baseline.json');
@@ -198,7 +198,7 @@ try {
   );
   process.exit(1);
 }
-
+failOnMoneyPaths(counts, baseline);
 const grown = [];
 const born = [];
 for (const [file, n] of Object.entries(counts)) {

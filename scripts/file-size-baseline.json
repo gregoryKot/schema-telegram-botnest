@@ -1654,7 +1654,7 @@
   "webapp/src/pages/ProductLandingPage.tsx": 219,
   "webapp/src/pages/RecoveryPage.tsx": 126,
   "webapp/src/pages/ReviewsPage.tsx": 84,
-  "webapp/src/pages/SubscribePage.tsx": 178,
+  "webapp/src/pages/SubscribePage.tsx": 173,
   "webapp/src/pages/telegramAuthResult.ts": 78,
   "webapp/src/pages/TelegramWidgetCallback.tsx": 118,
   "webapp/src/pages/tests/QuizPage.tsx": 171,
