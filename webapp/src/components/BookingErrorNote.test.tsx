@@ -9,8 +9,8 @@ import { BookingErrorNote } from './BookingErrorNote';
 import { classifyBookingFailure, handleBookingFailure } from './bookingFailure';
 
 describe('classifyBookingFailure', () => {
-  it('CLIENT_NOT_FOUND → not_found', () => {
-    expect(classifyBookingFailure(new ApiError(400, 'CLIENT_NOT_FOUND'))).toBe('not_found');
+  it('CLIENT_NOT_FOUND больше не отдельный исход: сервер его не шлёт, а старый ответ читается как обычный отказ', () => {
+    expect(classifyBookingFailure(new ApiError(400, 'CLIENT_NOT_FOUND'))).toBe('taken');
   });
   it('409 и прочие 400 — «время недоступно», выбрать другое поможет', () => {
     expect(classifyBookingFailure(new ApiError(409, 'Slot already taken'))).toBe('taken');
