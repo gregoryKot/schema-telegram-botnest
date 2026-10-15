@@ -7,7 +7,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-function buildAdapter(): PrismaPg {
+export function buildPrismaAdapter(): PrismaPg {
   return new PrismaPg({
     connectionString: process.env.DATABASE_URL ?? '',
     max: 15,
@@ -31,7 +31,7 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super({ adapter: buildAdapter() });
+    super({ adapter: buildPrismaAdapter() });
   }
 
   async onModuleInit() {

@@ -93,7 +93,7 @@ describe('NotificationService — шифрование payload', () => {
     expect(decryptPayload('это не шифротекст и не JSON')).toBeNull();
   });
 
-  // F1: шаг ротации ключа (scripts/rotate-encryption-key.ts) гонит строковый
+  // F1: шаг ротации ключа (src/cli/rotate-encryption/rotate-all.ts) гонит строковый
   // payload через reencrypt — результат обязан читаться так же.
   it('reencrypt (шаг ротации) даёт строку, которую decryptPayload читает как прежде', () => {
     const stored = encryptPayload({ text: 'Напиши письмо маме' })!;
