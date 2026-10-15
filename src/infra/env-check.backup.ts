@@ -1,4 +1,4 @@
-// Кросс-проверки env для бэкапов БД в B2 (аудит D-2): подключаются в
+// Кросс-проверки env для бэкапов БД в R2 (аудит D-2): подключаются в
 // CROSS_CHECKS (env-check.ts). Отдельный файл — env-check.ts под храповиком
 // размера (правило №10).
 import type { CrossCheck } from './env-check';
@@ -8,13 +8,15 @@ export const BACKUP_CROSS_CHECKS: CrossCheck[] = [
   {
     // Бэкапы включаются только полным набором: без любой переменной
     // планировщик молча не стартует, а владелец думает, что копии есть.
-    id: 'b2BucketRequiresBackupSetup',
+    id: 'backupBucketRequiresBackupSetup',
     check: (env) => {
-      if (!env.B2_BUCKET?.trim()) return null;
-      const missing = missingBackupVars(env).filter((k) => k !== 'B2_BUCKET');
+      if (!env.BACKUP_S3_BUCKET?.trim()) return null;
+      const missing = missingBackupVars(env).filter(
+        (k) => k !== 'BACKUP_S3_BUCKET',
+      );
       return missing.length === 0
         ? null
-        : `B2_BUCKET задан, но не задан(ы) ${missing.join(', ')} ` +
+        : `BACKUP_S3_BUCKET задан, но не задан(ы) ${missing.join(', ')} ` +
             `(нужны все: ${BACKUP_REQUIRED_ENV_VARS.join(', ')})`;
     },
   },

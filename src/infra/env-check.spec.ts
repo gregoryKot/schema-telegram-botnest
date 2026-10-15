@@ -132,26 +132,29 @@ describe('checkEnv', () => {
       );
     });
 
-    // Аудит D-2: бэкапы в B2 включаются только полным набором.
-    it('B2_BUCKET без остальных трёх переменных бэкапа — проблема с их именами', () => {
+    // Аудит D-2: бэкапы в R2 включаются только полным набором.
+    it('BACKUP_S3_BUCKET без остальных переменных бэкапа — проблема с их именами', () => {
       const issue = checkEnv({
         ...ALL_VALID,
-        B2_BUCKET: 'bkt',
-      }).crossCheckIssues.find((i) => i.id === 'b2BucketRequiresBackupSetup');
-      expect(issue?.problem).toContain('B2_KEY_ID');
-      expect(issue?.problem).toContain('B2_APP_KEY');
+        BACKUP_S3_BUCKET: 'bkt',
+      }).crossCheckIssues.find(
+        (i) => i.id === 'backupBucketRequiresBackupSetup',
+      );
+      expect(issue?.problem).toContain('BACKUP_S3_ENDPOINT');
+      expect(issue?.problem).toContain('BACKUP_S3_SECRET_ACCESS_KEY');
       expect(issue?.problem).toContain('BACKUP_ENCRYPTION_KEY');
     });
 
     it('полный набор переменных бэкапа — без проблемы (контроль)', () => {
       const ids = checkEnv({
         ...ALL_VALID,
-        B2_BUCKET: 'bkt',
-        B2_KEY_ID: 'k',
-        B2_APP_KEY: 'a',
+        BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+        BACKUP_S3_BUCKET: 'bkt',
+        BACKUP_S3_ACCESS_KEY_ID: 'k',
+        BACKUP_S3_SECRET_ACCESS_KEY: 'a',
         BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
       }).crossCheckIssues.map((i) => i.id);
-      expect(ids).not.toContain('b2BucketRequiresBackupSetup');
+      expect(ids).not.toContain('backupBucketRequiresBackupSetup');
       expect(ids).not.toContain('backupKeyDistinctFromEncryptionKey');
     });
 
