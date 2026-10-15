@@ -113,7 +113,7 @@ export function decrypt(value: string | null | undefined): string | null {
 // ≥1 байт данных). Строже проверки внутри decrypt() (она мягкая, по длине).
 // GCM-тэг не проверяется: отличить шифротекст от plaintext, случайно
 // похожего на base64, нельзя — вызывающий трактует «похоже + decrypt не
-// сработал» как «неизвестно, не трогать» (см. encrypt-migration.ts).
+// сработал» как «неизвестно, не трогать» (см. classify в encrypt-migration.rows.ts).
 const STRICT_BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
 export function looksLikeCiphertext(value: string | null | undefined): boolean {

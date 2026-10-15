@@ -8,7 +8,7 @@ import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { installBigIntJson } from './utils/bigint-json';
-import { migrateClinicalLabels } from './utils/encrypt-migration';
+import { runClinicalLabelMigration } from './infra/self-check/clinical-labels-status';
 import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
@@ -129,8 +129,9 @@ async function bootstrap() {
 
   // Run after listen so PrismaService.onModuleInit has already connected.
   // Idempotent — skips rows already encrypted. Doesn't block startup.
-  migrateClinicalLabels(app.get(PrismaService)).catch((e) =>
-    console.error('Clinical-label migration failed:', e),
+  void runClinicalLabelMigration(
+    app.get(PrismaService),
+    new Logger('EncryptMigration'),
   );
 
   process.on('SIGTERM', () => void app.close());
@@ -138,6 +139,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error('Fatal error during bootstrap:', err);
+  new Logger('Bootstrap').error('Fatal error during bootstrap:', err);
   process.exit(1);
 });
