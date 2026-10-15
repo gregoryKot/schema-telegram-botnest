@@ -166,15 +166,18 @@ describe('check-mutation-zone.mjs', () => {
     ['class', 'export class Box {}'],
     ['реэкспорт значения', "export { x } from './x';"],
     ['обычный import', "import { y } from './y';"],
-  ])('контроль: тип + рантайм-строка (%s) — по-прежнему кандидат', (_n, line) => {
-    const res = runGate(GATE, {
-      'src/service.ts': importsTypes('dto'),
-      'src/dto.ts': `${typesOnly}${line}\n`,
-      'stryker.a.config.json': config(['src/service.ts']),
-    });
-    expect(res.status).toBe(1);
-    expect(res.stderr).toContain('src/dto.ts');
-  });
+  ])(
+    'контроль: тип + рантайм-строка (%s) — по-прежнему кандидат',
+    (_n, line) => {
+      const res = runGate(GATE, {
+        'src/service.ts': importsTypes('dto'),
+        'src/dto.ts': `${typesOnly}${line}\n`,
+        'stryker.a.config.json': config(['src/service.ts']),
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('src/dto.ts');
+    },
+  );
 
   it('запись про файл, ставший файлом только из типов, — протухшая', () => {
     const res = runGate(GATE, {
