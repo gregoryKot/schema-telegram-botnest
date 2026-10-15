@@ -3,6 +3,7 @@
 import { SessionType } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 import {
+  PAID_AT_TRACKED_SINCE,
   paymentWebhooksProbe,
   robokassaConfigProbe,
   robokassaProbes,
@@ -80,7 +81,7 @@ function fakePrisma(
   return prisma as unknown as PrismaService & typeof prisma;
 }
 
-const NOW = Date.parse('2026-10-15T12:00:00Z');
+const NOW = Date.parse('2026-10-25T12:00:00Z');
 
 describe('paymentWebhooksProbe', () => {
   it('в /health не попадает: отказ клиентов не должен ронять prod-smoke', () => {
@@ -97,7 +98,7 @@ describe('paymentWebhooksProbe', () => {
     ).run();
     expect(res.ok).toBe(true);
     expect(res.detail).toContain('неподтверждённых попыток нет');
-    expect(res.detail).toContain('оплат ещё не было');
+    expect(res.detail).toContain('с начала учёта оплат не было');
     expect(res.detail).not.toMatch(/null|NaN|undefined/);
   });
 
@@ -105,8 +106,8 @@ describe('paymentWebhooksProbe', () => {
     const res = await paymentWebhooksProbe(
       fakePrisma(
         {
-          booking: new Date('2026-10-01T09:00:00Z'),
-          donation: new Date('2026-10-03T09:00:00Z'),
+          booking: new Date('2026-10-16T09:00:00Z'),
+          donation: new Date('2026-10-18T09:00:00Z'),
         },
         { booking: 3, donation: 1, charge: 1 },
       ),
@@ -115,7 +116,7 @@ describe('paymentWebhooksProbe', () => {
     ).run();
     expect(res.ok).toBe(false);
     expect(res.detail).toContain(`${SILENT_ATTEMPTS_LIMIT} попыток`);
-    expect(res.detail).toContain('последняя оплата 03.10');
+    expect(res.detail).toContain('последняя оплата 18.10');
   });
 
   it('на одну попытку меньше порога — ещё ok, но число видно', async () => {
@@ -131,7 +132,7 @@ describe('paymentWebhooksProbe', () => {
   });
 
   it('запрос попыток: после последней оплаты, старше 15 минут, только платные брони', async () => {
-    const last = new Date('2026-10-14T10:00:00Z');
+    const last = new Date('2026-10-20T10:00:00Z');
     const prisma = fakePrisma({ booking: last }, {});
     await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
     const createdAt = { gt: last, lt: new Date(NOW - 15 * 60_000) };
@@ -150,14 +151,51 @@ describe('paymentWebhooksProbe', () => {
     });
   });
 
-  it('без оплат вовсе нижней границы нет — считаются все истёкшие попытки', async () => {
+  it('без оплат нижняя граница — начало учёта paidAt, а не вся история', async () => {
     const prisma = fakePrisma({}, {});
     await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
+    const createdAt = {
+      gt: PAID_AT_TRACKED_SINCE,
+      lt: new Date(NOW - 15 * 60_000),
+    };
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ createdAt }),
+    });
     expect(prisma.donation.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ createdAt }),
+    });
+  });
+
+  it('оплата старше начала учёта границу не двигает назад', async () => {
+    const prisma = fakePrisma(
+      { donation: new Date('2026-06-30T09:00:00Z') },
+      {},
+    );
+    await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
+    expect(prisma.booking.count).toHaveBeenCalledWith({
       where: expect.objectContaining({
-        createdAt: { lt: new Date(NOW - 15 * 60_000) },
+        createdAt: expect.objectContaining({ gt: PAID_AT_TRACKED_SINCE }),
       }),
     });
+  });
+
+  it('попытки до начала учёта paidAt не считаются: старые отменённые брони не красят пробу', async () => {
+    // Фейк отдаёт «пять» только на запросе, чья нижняя граница не позже начала
+    // учёта; как это решает настоящая БД, доказывает e2e на живом Postgres.
+    const prisma = fakePrisma({}, {});
+    (prisma.booking.count as jest.Mock).mockImplementation(
+      ({ where }: { where: { createdAt: { gt: Date } } }) =>
+        Promise.resolve(where.createdAt.gt < PAID_AT_TRACKED_SINCE ? 9 : 0),
+    );
+    const res = await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
+    expect(res.ok).toBe(true);
+    expect(res.detail).toContain('неподтверждённых попыток нет');
+  });
+
+  it('контроль: пять попыток после начала учёта и без оплат — красная', async () => {
+    const prisma = fakePrisma({}, { booking: SILENT_ATTEMPTS_LIMIT });
+    const res = await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
+    expect(res.ok).toBe(false);
   });
 
   it('не прод и «не настроено» — пропускается без запросов в БД', async () => {

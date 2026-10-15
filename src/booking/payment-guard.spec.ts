@@ -127,7 +127,7 @@ describe('assertBookingPayable', () => {
     expect(html).toContain('Мария');
     expect(html).toContain('@maria');
     expect(html).toContain('оплата не настроена');
-    expect(subject).toContain('Заявка на запись не сохранилась');
+    expect(subject).toBe('🚨 Заявка на запись не сохранилась');
   });
 
   it('контроль: бесплатное знакомство в том же окружении не затрагивается', async () => {

@@ -17,8 +17,14 @@ import { Probe, ProbeResult } from './types';
 //    Порог — по числу попыток, а не по времени: у практики с малым потоком
 //    недели без оплат — норма, и временной порог красил бы пробу впустую.
 //    В /health не попадает: отказ клиентов не должен ронять prod-smoke.
+//    Учёт начинается с PAID_AT_TRACKED_SINCE: Booking.paidAt появился в
+//    миграции 20261014100000, у старых броней он NULL даже там, где деньги
+//    пришли, и считать их «попытками без вебхука» значило бы красить пробу
+//    на брошенных холдах и отменённых оплатах за всю историю. Раньше этой даты
+//    серия не считается — ни у броней, ни у донатов, ни у подписки: «подряд»
+//    честно только внутри периода, где оплаты вообще записывались.
 //    Ограничение: «попытка без вебхука» — платная бронь без paidAt (HELD,
-//    EXPIRED, CANCELLED). Так считаются и подтверждённая админом вручную, и
+//    CANCELLED). Так считаются и подтверждённая админом вручную, и
 //    потом отменённая бронь, и бронь, где вебхук пришёл с расхождением суммы
 //    (деньги есть, статус остаётся HELD, paidAt пуст). Ложный красный возможен
 //    только в DM и в /stats; смотреть сначала список броней, потом ResultURL.
@@ -27,6 +33,12 @@ type Env = Record<string, string | undefined>;
 
 /** Столько истёкших попыток подряд без единой оплаты — уже серия. */
 export const SILENT_ATTEMPTS_LIMIT = 5;
+/**
+ * С этого момента Booking.paidAt заполняется вебхуком. Миграция влита в main
+ * 2026-10-14 22:04 UTC (#650), деплой — после; берём ближайшую полночь, чтобы
+ * не засчитать оплаченные в окне деплоя брони (paidAt у них ещё не писался).
+ */
+export const PAID_AT_TRACKED_SINCE = new Date('2026-10-15T00:00:00Z');
 /** Холд брони живёт 15 минут: раньше попытка ещё может завершиться оплатой. */
 const ATTEMPT_GRACE_MS = 15 * 60_000;
 
@@ -94,10 +106,9 @@ export function paymentWebhooksProbe(
         const last = stamps.length
           ? new Date(Math.max(...stamps.map((t) => t.getTime())))
           : null;
-        const createdAt = {
-          ...(last ? { gt: last } : {}),
-          lt: new Date(now() - ATTEMPT_GRACE_MS),
-        };
+        const from =
+          last && last > PAID_AT_TRACKED_SINCE ? last : PAID_AT_TRACKED_SINCE;
+        const createdAt = { gt: from, lt: new Date(now() - ATTEMPT_GRACE_MS) };
         const [nb, nd, nc] = await Promise.all([
           prisma.booking.count({
             where: {
@@ -122,7 +133,7 @@ export function paymentWebhooksProbe(
         const attempts = nb + nd + nc;
         const since = last
           ? `последняя оплата ${ddmm(last)}`
-          : 'оплат ещё не было';
+          : 'с начала учёта оплат не было';
         if (attempts >= SILENT_ATTEMPTS_LIMIT) {
           return {
             ok: false,
