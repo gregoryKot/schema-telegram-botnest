@@ -1274,7 +1274,7 @@
   "src/telegram/ticket-actions.ts": 83,
   "src/telegram/ticket-code.ts": 45,
   "src/telegram/viewer-id.ts": 10,
-  "src/test-support/cron-source-scan.ts": 201,
+  "src/test-support/cron-source-scan.ts": 197,
   "src/test-support/fake-prisma.spec-helper.ts": 265,
   "src/test-support/fake-s3.ts": 232,
   "src/test-support/gates/gate-sandbox.ts": 184,

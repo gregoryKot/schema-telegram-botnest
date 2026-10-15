@@ -160,6 +160,21 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `git rm -r --cached test/.jest-cache` + гейт в `src/test-support/gates`
   (`git ls-files -ci --exclude-standard` пуст). Не сделано в PR про деплой:
   правило №20, один PR — одна починка.
+- **Кэш jest в CI лежит в `src/.jest-cache`, а `actions/cache` сохраняет
+  `.jest-cache` в корне.** `--cacheDirectory=.jest-cache` (`ci.yml:37,76`)
+  резолвится от `rootDir=src` (`node_modules/jest-config/build/index.js:1772`),
+  поэтому путь в `actions/cache` (`ci.yml:50-56`) пуст: в логе PR #680 «Cache not
+  found» и на ключ, и на restore-keys, то есть кэш ts-jest, по-видимому, ни разу
+  не сохранялся (доказательство — «Path Validation Error» в post-шаге зелёного
+  прогона). Чинить абсолютным путём (`${{ github.workspace }}/.jest-cache`):
+  заодно кэш уходит из `src/`. Не сделано в PR про обходы дерева: другой класс
+  («конфиг кэша указывает не туда»), правило №20.
+- **33 `scripts/check-*.mjs` обходят дерево через `readdirSync`+`statSync` и не
+  пропускают скрытые каталоги.** Безопасны, пока не идут параллельно с jest:
+  в CI они стоят отдельными шагами после jest или в джобе без его кэша, а
+  спеки гейтов гоняют их в песочнице tmp. Гейт `source-walk.spec.ts` их
+  сознательно не смотрит (они обязаны быть самодостаточными для песочницы).
+  Вернётся, если запустить гейты руками при живом `src/.jest-cache`.
 - **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
   `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
   проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
