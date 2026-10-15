@@ -113,7 +113,7 @@ export class AuthTicketController {
   async approve(
     @Body() body: UserCodeDto,
     @Req() req: Request,
-  ): Promise<{ merged: boolean }> {
+  ): Promise<{ merged: boolean; repeat?: true }> {
     requireCsrf(req, 'ticket/approve', this.securityLog);
     return this.links.approve(body.code, req.webUser!.userId, req.ip);
   }

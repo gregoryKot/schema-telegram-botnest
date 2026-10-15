@@ -127,17 +127,13 @@ export class AccountService {
     });
   }
 
-  async getAllUserIds(): Promise<number[]> {
-    const users = await this.prisma.user.findMany({ select: { id: true } });
-    return users.map((u) => Number(u.id));
-  }
-
-  async getBroadcastUserIds(): Promise<number[]> {
+  /** Кому рассылка вообще адресована. bigint как есть: номер не округляется. */
+  async getBroadcastUserIds(): Promise<bigint[]> {
     const users = await this.prisma.user.findMany({
       where: { deletedAt: null, botBlockedAt: null },
       select: { id: true },
     });
-    return users.map((u) => Number(u.id));
+    return users.map((u) => u.id);
   }
 
   /**

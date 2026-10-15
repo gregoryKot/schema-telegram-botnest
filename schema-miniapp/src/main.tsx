@@ -2,6 +2,7 @@ import { StrictMode, Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getHost } from '../../shared/src/host';
 import { isStandalone } from '../../shared/src/host/web';
+import { ensureHostOwner } from '../../shared/src/auth/hostOwnerGuard';
 import { shouldOpenCabinet, CABINET_PATH } from './utils/desktopLaunch';
 import './index.css';
 // Классы-утилиты — строго ПОСЛЕ index.css (почему — в самом файле).
@@ -20,9 +21,8 @@ import {
 } from './utils/perfLog';
 import { applyExperiments } from './utils/perfExperiments';
 
-// Метка «js»: сколько прошло от старта страницы до исполнения бандла —
-// это сеть + парсинг/компиляция JS. Монитор кадров и бенчмарк скорости
-// движка работают только при включённой панели замеров (см. perfLog.ts).
+// Метка «js»: время от старта страницы до исполнения бандла (сеть + парсинг).
+// Мониторы и бенчмарк работают только при включённой панели замеров.
 perfMark('js');
 startJankMonitor();
 startTimerMonitor();
@@ -89,9 +89,10 @@ class ErrorBoundary extends Component<
   }
 }
 
-// Развилка запуска установленного приложения (utils/desktopLaunch): на
-// компьютере полноценнее кабинет сайта, на телефоне — мини-апп. Решаем ДО
-// рендера, иначе мелькнёт мобильный экран перед уходом.
+// До рендера: данные прежнего аккаунта не должны попасть в первый кадр (E-1).
+ensureHostOwner();
+// Развилка запуска установленного приложения (utils/desktopLaunch): на компьютере
+// кабинет сайта, на телефоне — мини-апп. Решаем ДО рендера, иначе мелькнёт экран.
 if (
   shouldOpenCabinet({
     standalone: isStandalone(),
@@ -119,9 +120,7 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Только в web-хосте (registerServiceWorker сама проверяет), фаза 1
-// docs/PWA_PLAN.md.
-// Эксперимент 2026-08-25: функция теперь СНИМАЕТ установленный SW и чистит
-// его кеши (см. шапку registerServiceWorker.ts). 5 секунд — вне первых
-// кадров, но достаточно рано, чтобы чистка успела до сворачивания.
+// Только в web-хосте (docs/PWA_PLAN.md, фаза 1). Эксперимент 2026-08-25: функция
+// СНИМАЕТ установленный SW и чистит кеши (шапка registerServiceWorker.ts).
+// 5 секунд — вне первых кадров, но чистка успеет до сворачивания.
 setTimeout(registerServiceWorker, 5_000);

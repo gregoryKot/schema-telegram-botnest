@@ -435,14 +435,19 @@ plaintext в очереди уведомлений. Нумерация: букв
 
 ### Сквозное
 
-#### X-1 · Веб-номера `userId` (≥ 1e18) не помещаются в `Number` ✅ Закрыто
-- **Было:** `WEB_USER_ID_MIN = 1e18 > 2^53`; глобальный `BigInt.prototype.toJSON →
-  Number` и `Number(clientId)` в therapy/pairs округляли id клиента, вошедшего
-  через Google/VK/MAX/почту. Психолог видел округлённый id, следующий запрос с
-  ним не проходил `assertRelation` — терапия и пары для веб-клиентов не
-  работали. Тот же класс: `parseId` (≤ 16 цифр), `DueNotification.userId`
-  (адрес уведомления искался по округлённому id), бакет троттлера
-  (`uid:${Number}` склеивал соседние веб-аккаунты).
+#### X-1 · Веб-номера `userId` и `Number` ✅ Закрыто (латентно: веб-id в [1e15, 9e15), ниже 2^53; пин в `user-id-range.spec.ts`)
+- **Было:** мотивировка исходила из ошибочного диапазона веб-id 1e18 > 2^53;
+  на деле `WEB_USER_ID_MIN` всегда был 1e15, id лежат в [1e15, 9e15) и
+  `Number()` их не округляет (проверено на 100 000 сэмплах и `git log`).
+  Переход на bigint и строки сделан превентивно: глобальный
+  `BigInt.prototype.toJSON → Number`, `Number(clientId)` в therapy/pairs,
+  `parseId` (≤ 16 цифр), `DueNotification.userId` и бакет троттлера
+  (`uid:${Number}`) округлили бы id при расширении диапазона за 2^53.
+  Допущение «диапазон ниже 2^53» держит пин в `user-id-range.spec.ts`.
+  Хвосты остаются открытыми: мёртвое `req.telegramUserId = Number(…)` —
+  строка в `docs/README.md`, «Что осталось открытым»; и `notifyApplicant`
+  (`therapist-request.*`) — запись «Решение по заявке «Я психолог» уходит
+  только в Telegram» в [AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога).
 - **Стало:** id идут точными от БД до фронтов. `src/utils/bigint-json.ts` —
   число, если влезает в ±2^53, иначе десятичная строка; `parseUserId`/
   `parseClientId` (`src/api/parse-user-id.ts`) отдают bigint; весь
@@ -648,6 +653,16 @@ plaintext в очереди уведомлений. Нумерация: букв
 - **Фикс:** единый `ensureDataOwner(serverUserId)` в `shared/` (смена
   владельца → `clearLocalData()`), оба фронта; `adoptSession` чистит
   localStorage; при авторитетном `null` от сервера локальный ключ удаляется.
+- **Путь мини-аппа (2026-10-15):** сверка по `sub` срабатывала после обмена
+  подписи, а `flushOutbox` чужой очереди оценок уходил на маунте с initData
+  нового аккаунта раньше (и `therapist_mode` читался до сверки). Теперь флаш
+  идёт только после `renewSession()` (`hooks/useOutboxFlush.ts`; `remember` →
+  `markHostSessionStarted` стирает чужое до резолва), а `main.tsx` до рендера
+  зовёт `ensureHostOwner()`: id пользователя площадки сверяется с запомненным
+  (`data_owner_host`, `shared/src/auth/hostOwnerGuard.ts`). Привязанное
+  устройство не страдает — сравнивается id площадки, не `sub`. Шов держит
+  `schema-miniapp/src/App.ownerSwitch.test.tsx` на настоящих main/App/session.
+  Webapp: порядок верный и раньше (`RequireAuth` пускает после `applyToken`).
 
 #### E-2 · Webvisor записывал ввод PII в запасной форме записи ✅ Закрыто
 - `BookingForm.tsx` (fallback `BookingPicker`) без `ym-disable-keys` на имени,
