@@ -1,63 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt, decrypt, encryptJson, looksLikeCiphertext } from './crypto';
+import { encrypt, encryptJson } from './crypto';
+import { classify, safeUpdate, warnUnknownKey } from './encrypt-migration.rows';
 
 const logger = new Logger('EncryptMigration');
-
-// Heuristic — a value is plaintext iff decrypt() returns it unchanged
-// (and it's non-empty). Decrypt is no-op for non-base64 / wrong-tag input.
-//
-// БАГ (найден аудитом, см. encrypt-migration.spec.ts): если ключ, которым
-// строка была зашифрована, больше не сконфигурирован (ENCRYPTION_KEY_OLD
-// убрали раньше времени), decrypt(v) === v тоже — не потому что v плейнтекст,
-// а потому что decrypt() тихо возвращает вход как есть, не подобрав ключ.
-// Раньше это трактовалось как «плейнтекст» и шифровалось ЕЩЁ РАЗ — оригинал
-// становился нечитаемым без старого ключа.
-//
-// Фикс: если строка decrypt-инвариантна, но ПОХОЖА на наш формат шифротекста
-// (looksLikeCiphertext — строгий base64 + длина ≥29 байт), это не плейнтекст,
-// а неизвестный/утерянный ключ — строку нельзя трогать. Тред-офф: настоящий
-// плейнтекст, случайно являющийся валидным base64 ≥29 байт (редко, но
-// возможно), тоже будет пропущен и останется незашифрованным — миграция
-// идемпотентна и дошифрует его позже, после починки ключей. Это дешевле, чем
-// необратимая потеря данных от двойного шифрования.
-type PlaintextCheck = 'plaintext' | 'encrypted' | 'unknown-key';
-
-function classify(v: string): PlaintextCheck {
-  if (!v) return 'encrypted'; // пусто — трогать нечего
-  if (decrypt(v) !== v) return 'encrypted';
-  if (looksLikeCiphertext(v)) return 'unknown-key';
-  return 'plaintext';
-}
-
-function warnUnknownKey(table: string, id: unknown): void {
-  console.warn(
-    `[encrypt-migration] ${table}#${String(id)}: возможна неполная ротация ` +
-      'ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
-  );
-}
-
-// Обёртка над prisma.update — одна упавшая строка не должна обрывать всю
-// миграцию (раньше падение for-цикла на первой же ошибке БД оставляло
-// необработанными все остальные строки и таблицы, см. spec).
-async function safeUpdate(
-  table: string,
-  id: unknown,
-  run: () => Promise<unknown>,
-  failures: { count: number },
-): Promise<boolean> {
-  try {
-    await run();
-    return true;
-  } catch (e) {
-    failures.count++;
-    logger.warn(
-      `${table}#${String(id)}: update failed, skipping — ${(e as Error).message}`,
-    );
-    return false;
-  }
-}
 
 // Force-encrypt clinical labels that were stored before encryption was added
 // to those fields. Idempotent — runs on every startup but only mutates rows
@@ -69,12 +16,21 @@ async function safeUpdate(
 //   SchemaDiaryEntry.schemaIds
 //   ModeDiaryEntry.modeId
 //   ClientConceptualization.schemaIds, modeIds, history[].schemaIds, modeIds
+export interface ClinicalMigrationResult {
+  /** Сколько строк зашифровано за этот прогон, по таблицам. */
+  encrypted: Record<string, number>;
+  /** Сколько строк не удалось записать. */
+  failures: number;
+  /** Строки, похожие на шифротекст, но не читаемые текущим ключом, по таблицам. */
+  unknownKey: Record<string, number>;
+}
+
 export async function migrateClinicalLabels(
   prisma: PrismaService,
-): Promise<void> {
+): Promise<ClinicalMigrationResult> {
   if (!process.env.ENCRYPTION_KEY) {
     logger.warn('ENCRYPTION_KEY not set — skipping clinical-label migration');
-    return;
+    return { encrypted: {}, failures: 0, unknownKey: {} };
   }
   const startedAt = Date.now();
   const totals = {
@@ -85,6 +41,7 @@ export async function migrateClinicalLabels(
     ClientConceptualization: 0,
   };
   const failures = { count: 0 };
+  const unknownKey: Record<string, number> = {};
 
   // ── Note.tags ──────────────────────────────────────────────────────────────
   // Stored as comma-separated string. Encrypt the whole thing as one blob.
@@ -95,7 +52,7 @@ export async function migrateClinicalLabels(
   for (const n of notes) {
     const status = classify(n.tags);
     if (status === 'unknown-key') {
-      warnUnknownKey('Note', n.id);
+      warnUnknownKey('Note', n.id, unknownKey);
       continue;
     }
     if (status !== 'plaintext') continue;
@@ -164,7 +121,7 @@ export async function migrateClinicalLabels(
   for (const e of modeEntries) {
     const status = classify(e.modeId);
     if (status === 'unknown-key') {
-      warnUnknownKey('ModeDiaryEntry', e.id);
+      warnUnknownKey('ModeDiaryEntry', e.id, unknownKey);
       continue;
     }
     if (status !== 'plaintext') continue;
@@ -227,10 +184,22 @@ export async function migrateClinicalLabels(
 
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
   const ms = Date.now() - startedAt;
-  if (failures.count > 0) {
-    logger.warn(
-      `Clinical-label migration finished with ${failures.count} row failure(s) ` +
-        `— see warnings above for affected ids (${ms}ms)`,
+  const skipped = Object.values(unknownKey).reduce((x, y) => x + y, 0);
+  if (failures.count > 0 || skipped > 0) {
+    // Один error за старт — через AlertLogger уходит владельцу в DM. Только
+    // счётчики и имена таблиц: метки клинические, содержимое в лог не идёт.
+    const parts: string[] = [];
+    if (skipped > 0)
+      parts.push(
+        `${skipped} строк не прочитаны текущим ключом ` +
+          `(${JSON.stringify(unknownKey)}) — возможна неполная ротация ENCRYPTION_KEY`,
+      );
+    if (failures.count > 0)
+      parts.push(
+        `${failures.count} строк не записаны — см. предупреждения выше`,
+      );
+    logger.error(
+      `Clinical-label migration finished with problems: ${parts.join('; ')} (${ms}ms)`,
     );
   }
   if (total > 0) {
@@ -242,4 +211,5 @@ export async function migrateClinicalLabels(
       `No plaintext clinical labels found — migration is up-to-date (${ms}ms)`,
     );
   }
+  return { encrypted: totals, failures: failures.count, unknownKey };
 }

@@ -1315,7 +1315,7 @@
   "src/utils/build-info.ts": 41,
   "src/utils/crypto.ts": 218,
   "src/utils/encrypt-if-plain.ts": 19,
-  "src/utils/encrypt-migration.ts": 245,
+  "src/utils/encrypt-migration.ts": 215,
   "src/utils/encryption-policy.infra.ts": 74,
   "src/utils/encryption-policy.throttle.ts": 24,
   "src/utils/encryption-policy.ts": 244,

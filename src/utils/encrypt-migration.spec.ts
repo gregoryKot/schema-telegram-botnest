@@ -14,6 +14,8 @@
 // свежую пару crypto.ts/encrypt-migration.ts через jest.isolateModules
 // (паттерн из src/utils/crypto.spec.ts).
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import type { PrismaService } from '../prisma/prisma.service';
 
 type CryptoModule = typeof import('./crypto');
@@ -250,9 +252,14 @@ describe('поведение при уже проведённой смене ENC
     // Сценарий инцидента: старый ключ убрали из env, не прогнав
     // src/cli/rotate-encryption/rotate-all.ts перед этим.
     const { migrateClinicalLabels } = load({ key: KEY_B });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const stdoutWrite = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({ notes: [{ id: 1, tags: oldBlob }] }) as any;
-    await migrateClinicalLabels(db);
+    const result = await migrateClinicalLabels(db);
 
     // Раньше: decrypt(oldBlob) новым ключом не срабатывает ⇒ decrypt()
     // возвращает oldBlob без изменений ⇒ looksPlaintext(oldBlob) === true
@@ -264,11 +271,22 @@ describe('поведение при уже проведённой смене ENC
     // «неизвестный ключ», а не «плейнтекст» ⇒ строка НЕ трогается, только
     // громкий warn — можно восстановить после починки ENCRYPTION_KEY_OLD.
     expect(db.note.update).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'возможна неполная ротация ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
-      ),
+    expect(result.unknownKey).toEqual({ Note: 1 });
+    const warned = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(warned).toContain(
+      'возможна неполная ротация ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
     );
+    // Итог — ОДИН error (его алертит AlertLogger), только счётчики и имя
+    // таблицы: ни id строки, ни шифроблок в сводку не попадают.
+    // (decrypt() в crypto.ts отдельно логирует свой error на нечитаемый blob —
+    // это его сигнал, здесь считаем только сводку миграции.)
+    const errored = stderrWrite.mock.calls
+      .map((c) => String(c[0]))
+      .filter((l) => l.includes('[EncryptMigration]'));
+    expect(errored).toHaveLength(1);
+    expect(errored[0]).toContain('1 строк не прочитаны текущим ключом');
+    expect(errored[0]).toContain('"Note":1');
+    expect(errored[0]).not.toContain(oldBlob);
 
     // Блоб остался нетронутым и всё ещё читается старым ключом.
     expect(oldMods.crypto.decrypt(oldBlob)).toBe('anxiety,anger');
@@ -286,6 +304,9 @@ describe('устойчивость к ошибкам при записи (изо
     const stdoutWrite = jest
       .spyOn(process.stdout, 'write')
       .mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({
       notes: [
         { id: 1, tags: 'anxiety' },
@@ -298,7 +319,9 @@ describe('устойчивость к ошибкам при записи (изо
     // Раньше: первая же упавшая строка обрывала for-цикл целиком (throw
     // наружу из migrateClinicalLabels) — вторая заметка (id=2) и таблица
     // User так и не обрабатывались, try/catch по строке отсутствовал.
-    await expect(migrateClinicalLabels(db)).resolves.toBeUndefined();
+    const result = await migrateClinicalLabels(db);
+    expect(result.failures).toBe(1);
+    expect(result.encrypted).toMatchObject({ Note: 1, User: 1 });
 
     // Строка id=1 упала и осталась нетронутой в БД (update откатился),
     // но строка id=2 всё равно обработана, и таблица User дошла до findMany
@@ -309,7 +332,41 @@ describe('устойчивость к ошибкам при записи (изо
 
     // Сводка о падениях залогирована через Logger.warn.
     const logged = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(logged).toEqual(expect.stringContaining('1 row failure'));
+    expect(logged).toEqual(expect.stringContaining('update failed, skipping'));
+    // Сводка — error (alert), а не warn: иначе до владельца не доходит.
+    const errored = stderrWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(errored).toContain('1 строк не записаны');
     stdoutWrite.mockRestore();
+    stderrWrite.mockRestore();
+  });
+
+  it('чистый прогон не шлёт error-сводку', async () => {
+    const { migrateClinicalLabels } = load({ key: KEY_A });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const db = makeDb({ notes: [{ id: 1, tags: 'anxiety' }] }) as any;
+    const result = await migrateClinicalLabels(db);
+    expect(result).toEqual({
+      encrypted: expect.objectContaining({ Note: 1 }),
+      failures: 0,
+      unknownKey: {},
+    });
+    expect(stderrWrite).not.toHaveBeenCalled();
+  });
+});
+
+// Класс «сигнал мимо AlertLogger» (аудит 2026-10): console.* и logger.warn не
+// доходят до владельца. Трипваер строгий, без исключений: в этих файлах
+// сообщения идут только через Nest Logger.
+describe('миграция клинических меток не пишет в console.*', () => {
+  it.each([
+    'src/utils/encrypt-migration.ts',
+    'src/utils/encrypt-migration.rows.ts',
+    'src/main.ts',
+  ])('%s', (file) => {
+    const src = readFileSync(join(__dirname, '..', '..', file), 'utf8');
+    expect(src).not.toMatch(/\bconsole\.(log|warn|error|info)\(/);
   });
 });
