@@ -524,7 +524,7 @@ describe('AppShell — карточка клиента в кабинете: rout
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
     expect(screen.queryByText('А')).toBeNull();
     fireEvent.click(screen.getByTestId('therapist-client-sheet-clients'));
-    await waitFor(() => expect(screen.getByText('А')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('А', { selector: '.sb-client-name' })).toBeTruthy());
   });
 });
 
