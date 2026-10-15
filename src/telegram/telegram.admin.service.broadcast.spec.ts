@@ -7,6 +7,8 @@
 import { Logger } from '@nestjs/common';
 import { TelegramAdminService } from './telegram.admin.service';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
+import { AccountService } from '../bot/account.service';
+import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
@@ -135,7 +137,7 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, accountService } = makeDeps({
       accountService: {
-        getBroadcastUserIds: jest.fn().mockResolvedValue([1, 2]),
+        getBroadcastUserIds: jest.fn().mockResolvedValue([1n, 2n]),
       },
     });
     service.onModuleInit();
@@ -161,7 +163,7 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
     const dbError = new Error('db down');
     const { service, fakeBot, accountService } = makeDeps({
       accountService: {
-        getBroadcastUserIds: jest.fn().mockResolvedValue([2]),
+        getBroadcastUserIds: jest.fn().mockResolvedValue([2n]),
         markUserBlocked: jest.fn().mockRejectedValue(dbError),
       },
     });
@@ -180,5 +182,75 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
     expect(warnSpy).toHaveBeenCalledWith('markUserBlocked failed', dbError);
     const summary = ctx.reply.mock.calls.at(-1)![0];
     expect(summary).toContain('1 ошибок');
+  }, 10_000);
+});
+
+// Шов рассылки (правило №14): настоящий AccountService над фейковой Prisma,
+// а не мок telegramIdsFor «id -> id». Раньше путь «веб-номер + привязка
+// AuthProvider -> chat_id» в рассылке тестом не проходился, а между базой и
+// отправкой userId дважды превращался Number -> BigInt (аудит 2026-10, X-1).
+describe('TelegramAdminService — /broadcast на настоящем AccountService', () => {
+  const OLD_BOT_ID = 42n; // старый пользователь бота: номер == chat_id
+  const WEB_LINKED = 1_234_567_890_123_457n; // веб-номер + Telegram '555'
+  const WEB_ONLY = 2_000_000_000_000_001n; // веб-номер без привязки
+  const ABOVE_2_53 = 2n ** 53n + 1n; // Number() даёт ...992 — другой человек
+
+  function makeReal() {
+    const user = createFakeTable(
+      [OLD_BOT_ID, WEB_LINKED, WEB_ONLY, ABOVE_2_53].map((id) => ({ id })),
+    );
+    user.updateMany.mockImplementation(() => ({ count: 1 }));
+    const authProvider = createFakeTable([
+      { id: 1, provider: 'telegram', providerId: '555', userId: WEB_LINKED },
+      { id: 2, provider: 'telegram', providerId: '777', userId: ABOVE_2_53 },
+    ]);
+    const prisma = { user, authProvider } as never;
+    const real = new AccountService(prisma);
+    // makeDeps разворачивает overrides спредом, а методы класса лежат на
+    // прототипе — отдаём их привязанными, логика остаётся настоящей.
+    const accountService = {
+      getBroadcastUserIds: () => real.getBroadcastUserIds(),
+      telegramIdsFor: (ids: bigint[]) => real.telegramIdsFor(ids),
+      markUserBlocked: jest.fn((id: bigint) => real.markUserBlocked(id)),
+    };
+    return { accountService, user };
+  }
+
+  it('адресует по привязке, а не по userId; id > 2^53 не округляется; без чата — в пропущенные', async () => {
+    process.env.ADMIN_ID = '999';
+    const { accountService } = makeReal();
+    const { service, fakeBot } = makeDeps({ accountService });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'broadcast', {
+      from: { id: 999 },
+      message: { text: '/broadcast привет' },
+    });
+    const sentTo = fakeBot.telegram.sendMessage.mock.calls.map((c) => c[0]);
+    expect(sentTo).toEqual([42, 555, 777]);
+    const summary = ctx.reply.mock.calls.at(-1)![0];
+    expect(summary).toContain('3 доставлено');
+    expect(summary).toContain('1 без чата в Telegram');
+  }, 10_000);
+
+  it('403 у получателя с id > 2^53 — markUserBlocked получает тот же bigint', async () => {
+    process.env.ADMIN_ID = '999';
+    const { accountService } = makeReal();
+    const { service, fakeBot } = makeDeps({ accountService });
+    service.onModuleInit();
+    fakeBot.telegram.sendMessage.mockImplementation((chatId: number) =>
+      chatId === 777
+        ? Promise.reject(
+            Object.assign(new Error('Forbidden'), {
+              response: { error_code: 403 },
+            }),
+          )
+        : Promise.resolve(undefined),
+    );
+    await runCommand(fakeBot, 'broadcast', {
+      from: { id: 999 },
+      message: { text: '/broadcast привет' },
+    });
+    expect(accountService.markUserBlocked).toHaveBeenCalledTimes(1);
+    expect(accountService.markUserBlocked).toHaveBeenCalledWith(ABOVE_2_53);
   }, 10_000);
 });

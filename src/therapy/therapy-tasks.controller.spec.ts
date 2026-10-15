@@ -160,9 +160,10 @@ describe('TherapyTasksController.createTask', () => {
   });
 });
 
-// Аудит 2026-10, X-1: веб-id > 2^53 обязан дойти до сервиса ТОЧНЫМ bigint, а не
-// округлённым числом (Number('1000000000000000123') !== 1000000000000000123).
-describe('TherapyTasksController — веб-клиент с id > 2^53', () => {
+// Аудит 2026-10, X-1: id > 2^53 (выдуманный, веб-id ниже) обязан дойти до
+// сервиса ТОЧНЫМ bigint, а не округлённым числом
+// (Number('1000000000000000123') !== 1000000000000000123).
+describe('TherapyTasksController — клиент с выдуманным id > 2^53', () => {
   const WEB = 1000000000000000123n;
 
   it('createTask: clientId-строка → точный bigint в assertHasClient и createTask', async () => {

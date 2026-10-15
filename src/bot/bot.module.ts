@@ -17,6 +17,7 @@ import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
+import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -75,6 +76,7 @@ const INTERNAL_PROVIDERS = [
   SignupSourceMetricsService,
   DataExportMetricsService,
   BookingRetentionMetricsService,
+  IntroLeadMetricsService,
   PracticeMetricsService,
   CaseMetricsService,
   PhraseCheckMetricsService,

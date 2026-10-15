@@ -25,7 +25,7 @@ export class BookingDto {
   @MaxLength(L.BOOKING_MESSAGE_MAX)
   message?: string;
 
-  // Откуда заявка (страница + referrer): только в уведомление, в БД не пишется.
+  // Откуда заявка (страница + referrer): в уведомление и в IntroLead.source (открыто, не PII).
   @IsOptional()
   @IsString()
   @MaxLength(L.BOOKING_SOURCE_MAX)
