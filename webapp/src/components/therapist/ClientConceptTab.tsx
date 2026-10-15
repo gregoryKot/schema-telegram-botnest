@@ -3,6 +3,7 @@ import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyDat
 import type { ClientDetail } from './clientSheetTypes';
 import { ClientConceptFields } from './ClientConceptFields';
 import { ClientConceptGraph } from './ClientConceptGraph';
+import '../../styles/therapist-concept.css';
 import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 export function ClientConceptTab({ detail }: Props) {
   const {
     saveStatus, exportCopied, handleExport, conceptError,
-    localConcept, concept,
+    concept,
     activeSchemaIds, activeModeIds,
     ysqSchemaIds, expandedSnapshot, setExpandedSnapshot,
   } = detail;
@@ -21,16 +22,16 @@ export function ClientConceptTab({ detail }: Props) {
 
   return (
     <div className="page-inner-wide u-pt40">
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+      <div className="ds-head-row tcp-head">
         <div>
-          <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Концептуализация</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
+          <h2 className="ds-h2">Концептуализация</h2>
+          <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 120, textAlign: 'right' }}>
+        <div className="tcp-head-actions">
+          <span className="tcp-save">
             {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
           </span>
-          <button onClick={handleExport} style={{ padding: '8px 14px', borderRadius: 'var(--r-6)', border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
+          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={handleExport}>
             ↗ Экспорт{exportCopied ? ' ✓' : ''}
           </button>
         </div>
@@ -51,24 +52,6 @@ export function ClientConceptTab({ detail }: Props) {
 
         {/* Right sidebar */}
         <aside>
-          <div className="eyebrow u-mb16">Что заполнено</div>
-          <div className="u-col10">
-            {([
-              ['Цели терапии', !!(localConcept.goals || concept?.goals)],
-              ['Ранний опыт', !!(localConcept.earlyExperience || concept?.earlyExperience)],
-              ['Неудовл. потребности', !!(localConcept.unmetNeeds || concept?.unmetNeeds)],
-              ['Триггеры', !!(localConcept.triggers || concept?.triggers)],
-              ['Копинги', !!(localConcept.copingStyles || concept?.copingStyles)],
-              ['Переходы режимов', !!(localConcept.modeTransitions || concept?.modeTransitions)],
-              ['Актуальные проблемы', !!(localConcept.currentProblems || concept?.currentProblems)],
-            ] as [string, boolean][]).map(([label, has]) => (
-              <div key={label} className="u-ac8">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: has ? 'var(--accent)' : 'var(--text-ghost)', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: has ? 'var(--text)' : 'var(--text-faint)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
           {/* YSQ cross-reference */}
           {ysqSchemaIds.length > 0 && (
             <>

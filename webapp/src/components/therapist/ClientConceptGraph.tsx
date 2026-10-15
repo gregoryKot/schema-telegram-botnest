@@ -39,23 +39,15 @@ export function ClientConceptGraph({ detail }: { detail: ClientDetail }) {
         }}
       >
         <button
+          type="button"
+          className="ds-btn ds-btn--secondary ds-btn--sm"
           onClick={image.download}
           disabled={image.busy}
-          style={{
-            minHeight: 44,
-            padding: '0 16px',
-            borderRadius: 'var(--r-6)',
-            border: '1px solid var(--line)',
-            background: 'transparent',
-            fontSize: 13,
-            cursor: image.busy ? 'default' : 'pointer',
-            opacity: image.busy ? 0.6 : 1,
-          }}
         >
           {image.busy ? 'Готовлю картинку…' : '↓ Скачать картинкой'}
         </button>
         {image.failed && (
-          <span role="alert" style={{ fontSize: 13, color: 'var(--c-rose)' }}>
+          <span role="alert" style={{ fontSize: 13, color: 'var(--err)' }}>
             {tr(
               'Не удалось сохранить картинку. Попробуй ещё раз.',
               'Не удалось сохранить картинку. Попробуйте ещё раз.',
