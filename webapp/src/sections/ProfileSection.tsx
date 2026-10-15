@@ -492,8 +492,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       </div>
 
       {/* ── Достижения ── */}
-      {/* Список прячем, пока открыта деталь: два диалога с фокус-ловушкой на
-          одном документе дерутся за Tab (useDialogA11y) */}
+      {/* Список прячем, пока открыта деталь (когда-то — из-за драки двух
+          фокус-ловушек; теперь трап у верхнего слоя, dialogStack) */}
       {showAchievements && achievements && !selectedAchievement && (
         <Dialog
           label="Достижения"
