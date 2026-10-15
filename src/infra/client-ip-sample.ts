@@ -22,21 +22,21 @@ import { isPrivateAddress } from './trust-proxy';
  * пробу (лишний DM по смене состояния), на безопасность не влияет.
  */
 export interface IpSampleEntry {
-  /** req.ip из частной сети: доверие к XFF не сработало или прокси стоит без XFF. */
-  ipPrivate: boolean;
   /**
-   * req.ip совпал с адресом сокета при пришедших X-Forwarded-* заголовках:
-   * доверие к прокси не применилось (trust proxy 0). За front сокет всегда
-   * 127.0.0.1, так что значим именно этот признак, а не адрес сокета сам по себе.
+   * req.ip из частной сети: доверие к XFF не сработало (trust proxy 0, req.ip
+   * остался адресом сокета) или прокси стоит без XFF. Отдельного признака
+   * «req.ip равен сокету» нет: за deploy/front-server.mjs сокет всегда
+   * 127.0.0.1, то есть такой случай уже частный адрес, а признак при публичном
+   * сокете описывал бы чужую раскладку, которой в проде нет.
    */
-  ipIsSocket: boolean;
+  ipPrivate: boolean;
   /** Заголовки, которые ставит CDN перед прокси. */
   cdnMarked: boolean;
 }
 
 export interface IpSampleSummary {
   total: number;
-  /** Записей с ipPrivate или ipIsSocket: адрес посетителя не дошёл. */
+  /** Записей с ipPrivate: адрес посетителя не дошёл. */
   unresolved: number;
   cdnMarked: number;
 }
@@ -62,7 +62,7 @@ export function createClientIpSampler(size = CLIENT_IP_SAMPLE_SIZE) {
   // Счётчики держатся вместе с кольцом, а не пересчитываются на каждый summary().
   const sums = { unresolved: 0, cdnMarked: 0 };
   const apply = (e: IpSampleEntry, sign: 1 | -1) => {
-    if (e.ipPrivate || e.ipIsSocket) sums.unresolved += sign;
+    if (e.ipPrivate) sums.unresolved += sign;
     if (e.cdnMarked) sums.cdnMarked += sign;
   };
 
@@ -72,7 +72,6 @@ export function createClientIpSampler(size = CLIENT_IP_SAMPLE_SIZE) {
       if (old) apply(old, -1);
       const entry: IpSampleEntry = {
         ipPrivate: isPrivateAddress(req.ip),
-        ipIsSocket: req.ip === req.socket?.remoteAddress,
         cdnMarked: hasAny(req, CDN_HEADERS),
       };
       ring[next] = entry;
