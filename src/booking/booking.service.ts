@@ -129,7 +129,7 @@ export class BookingService {
         heldUntil,
         cancelToken,
         acceptedOfferAt: new Date(),
-        source: dto.source?.slice(0, 200) ?? null,
+        source: dto.source ?? null,
         clientTimeZone:
           dto.clientTimeZone && isValidTimeZone(dto.clientTimeZone)
             ? dto.clientTimeZone

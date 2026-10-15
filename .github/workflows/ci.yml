@@ -149,6 +149,12 @@ jobs:
       # не проверяется: нестроковый email ловит TypeError на .trim() и отдаёт
       # 500 вместо 400. Причина по каждому исключению — в бейслайне.
       - run: node scripts/check-body-dto.mjs
+      # Контроллер не режет поля запроса молча (находка аудита 2026-10-11,
+      # backend#29): заметка терапевта на 6000 знаков при DTO на 10 000
+      # отвечала 201 и теряла хвост из-за `slice(0, 5000)` в контроллере.
+      # Лимит один и стоит в DTO — превышение даёт 400. Исключения (дата из
+      # ISO-момента) — в scripts/body-truncation-baseline.json с причиной.
+      - run: node scripts/check-body-truncation.mjs
       # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
@@ -440,6 +446,7 @@ jobs:
           test/merge-my-lists.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/text-limits.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие

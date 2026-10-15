@@ -6,7 +6,7 @@ import { TG_URL } from './constants';
 import { trackGoal } from '../../lib/metrika';
 import { ContactChannelField } from '../../components/booking/ContactChannelField';
 import type { ContactChannel } from '../../../../shared/src/booking/contactChannel';
-
+import { BOOKING_MESSAGE_MAX, BOOKING_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 // ─── Простая заявка «напишите мне» — основной путь записи на визитке ─────────
 export function BookingForm() {
   const [name, setName]       = useState('');
@@ -44,12 +44,12 @@ export function BookingForm() {
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
-        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
+        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={BOOKING_NAME_MAX} /></div>
         <ContactChannelField id="booking-contact" channel={channel} onChannelChange={setChannel} value={contact} onChange={setContact} labelStyle={labelSt} fieldStyle={field} />
       </div>
       <div>
         <label htmlFor="booking-message" style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-        <textarea id="booking-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
+        <textarea id="booking-message" className="ym-disable-keys" style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={BOOKING_MESSAGE_MAX} />
       </div>
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />

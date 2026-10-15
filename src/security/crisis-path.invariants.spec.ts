@@ -17,7 +17,9 @@ const ROOT = join(__dirname, '..', '..');
 // Директории фронтендов, где вообще может жить пользовательский ввод.
 const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
 
-const TEXTAREA_RE = /<textarea/i;
+// `<LimitedTextarea` — общая обёртка поля с пределом длины (shared): без неё в
+// регэкспе все поля, переехавшие на обёртку, выпали бы из-под трипваера.
+const TEXTAREA_RE = /<(?:textarea|LimitedTextarea)/i;
 // Детекцией считается и прямой вызов detectCrisis*, и общий гейт-примитив
 // <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) — он
 // инкапсулирует detectCrisisAny + CrisisCard; что сам CrisisGate реально
@@ -86,6 +88,11 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // SchemaEntrySheet), который прогоняет detectCrisisAny по всем полям.
   'schema-miniapp/src/components/diary/DiaryTextArea.tsx':
     'дочерний <textarea>-контрол, детекция в родительском шите',
+  // Общая обёртка поля с пределом длины (backend#29): сама ничего не знает о
+  // содержании, детекция стоит у каждого вызывающего — они попадают в скан
+  // через `<LimitedTextarea` (регэксп выше) и классифицируются поштучно.
+  'shared/src/components/LimitedTextarea.tsx':
+    'дочерний <textarea>-контрол с пределом длины, детекция у вызывающих',
   // Разбор случая (webapp): сцена — поле общего shared-хука
   // useCaseFlowState (crisis = detectCrisisAny(scene, bodyOwn, impulseOwn,
   // alias)), CrisisCard рисует CaseFlowFoot на том же экране. Тот же приём,
@@ -156,8 +163,12 @@ describe('трипваер: кризисная детекция для своб�
     // 19 → 20 (2026-08, перенос «Разбор случая» в webapp): CaseSceneScreen.tsx —
     // дочерний <textarea>-контрол потока, тот же класс, что уже допущенный
     // DiaryTextArea.tsx строкой выше (детекция стоит в родительском shared-хуке).
+    // 20 → 21 (2026-10, backend#29): shared/LimitedTextarea.tsx — общий
+    // контрол-обёртка `<textarea>` с `maxLength` и счётчиком, тот же класс
+    // «дочерний контрол», что DiaryTextArea/CaseSceneScreen; вызывающие файлы
+    // скан ловит по `<LimitedTextarea`.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      20,
+      21,
     );
   });
 
