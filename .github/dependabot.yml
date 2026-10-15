@@ -1,23 +1,50 @@
 # Dependabot — автообновление зависимостей (best-practice, отсутствовал до 2026-07).
 # npm audit-гейт в CI ловит уже известные уязвимости, но НЕ предлагает апдейты —
 # секьюрити-патчи копились без движения. Для соло-мейнтейнера автоматизация PR
-# важнее, чем для команды. Три lockfile'а (корень + два фронтенда) + сами actions.
+# важнее, чем для команды.
 #
-# Группируем patch/minor в один недельный PR на пакет, чтобы не заваливать ревью;
-# major — отдельными PR (ломающие, требуют внимания). CI (правило №1) всё равно
-# гоняет tsc+jest+eslint+сборки+migrate на каждом PR Dependabot'а.
+# Покрыты ВСЕ package-lock.json репозитория (корень, webapp, schema-miniapp,
+# shared, game) плюс сами actions — сверка тестом
+# src/test-support/gates/dependabot-coverage.spec.ts: lock-файл без записи или
+# запись без lock-файла роняют jest.
+#
+# Как устроены очереди:
+#  - minor + patch — одна недельная группа на пакет (не заваливать ревью);
+#  - major — группами по СЕМЕЙСТВАМ (Nest, Stryker, Vitest): члены семейства
+#    требуют друг друга и поодиночке не ставятся, одиночный PR красный по
+#    построению. Остальные мажоры — отдельными PR, они ломающие и требуют глаз.
+#
+# ВАЖНО про зелёность бот-PR. CI красит их по построению, и это не поломка:
+#  - PR с правкой зависимостей мини-аппа красен на «dist устарел» — dist
+#    коммитится в git, а бот его не пересобирает;
+#  - PR с правкой зависимостей webapp/мини-аппа может упереться в бандл-храповик.
+# Гейты для бота не ослаблены (правило №15). Доводка — вручную, порядок в
+# docs/README.md, «Что осталось открытым» → «Dependabot: доводка бот-PR».
+#
+# Ошибка в этом файле CI не роняет: Dependabot молча перестаёт работать, а
+# причина видна только в Insights → Dependency graph → Dependabot. После
+# каждой правки файла — зайти и посмотреть статус.
+#
+# Лейблов `dependencies`/`frontend`/`ci` в репозитории нет (бот жаловался в
+# каждом PR), поэтому ключей `labels:` здесь нет. Создашь лейблы — верни ключи.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 8
     groups:
       backend-minor-patch:
         update-types: [minor, patch]
-    labels:
-      - dependencies
+      # Nest 12: serve-static 12 требует @nestjs/core ^12, поодиночке не ставится.
+      nestjs-major:
+        patterns: ['@nestjs/*']
+        update-types: [major]
+      # Stryker 10: jest-runner 10 требует core 10.
+      stryker-major:
+        patterns: ['@stryker-mutator/*']
+        update-types: [major]
 
   - package-ecosystem: npm
     directory: /webapp
@@ -27,9 +54,11 @@ updates:
     groups:
       webapp-minor-patch:
         update-types: [minor, patch]
-    labels:
-      - dependencies
-      - frontend
+      # @vitest/coverage-v8 пинит точную версию vitest: вместе или никак.
+      # В shared и мини-аппе то же семейство (правило №3: пара версий едина).
+      vitest-major:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major]
 
   - package-ecosystem: npm
     directory: /schema-miniapp
@@ -39,13 +68,47 @@ updates:
     groups:
       miniapp-minor-patch:
         update-types: [minor, patch]
-    labels:
-      - dependencies
-      - frontend
+      # Причина та же, что у webapp: vitest и coverage-v8 идут парой.
+      vitest-major:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major]
+
+  # shared/ собирается в оба фронтенда; его vitest и react разъезжаются с
+  # фронтовыми, если бамп пришёл в одном пакете без пары.
+  - package-ecosystem: npm
+    directory: /shared
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      shared-minor-patch:
+        update-types: [minor, patch]
+      # Причина та же, что у webapp: vitest и coverage-v8 идут парой.
+      vitest-major:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major]
+
+  # Игра заморожена (CLAUDE.md, game/), но собирается в прод-образ (Dockerfile,
+  # CI-джоба docker), а тестов у неё нет. Поэтому только патчи, один PR за раз.
+  # Уязвимости транзитивных зависимостей (postcss, source-map-js под vite)
+  # version update не чинит — это Dependabot security updates, их включает
+  # владелец в Settings → Code security (см. README).
+  - package-ecosystem: npm
+    directory: /game
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    groups:
+      game-patch:
+        update-types: [patch]
+    # Миноры и мажоры игры осознанно не берём: проверить их нечем, кроме сборки.
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    labels:
-      - ci
