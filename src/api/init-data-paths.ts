@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { validate } from '@tma.js/init-data-node';
 import type { Request } from 'express';
 import { AuthService } from '../auth/auth.service';
 import { MaxNotConfiguredError } from '../auth/max-init-data';
@@ -16,7 +15,7 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { rejectInitData } from './initdata-alert';
 import { reportAuthSuccess } from './auth-success.report';
-import { INIT_DATA_MAX_AGE_S } from './init-data-window';
+import { verifyTelegramInitDataSignature } from '../auth/telegram-init-data';
 
 export async function applyTelegramInitData(
   req: Request,
@@ -40,7 +39,7 @@ export async function applyTelegramInitData(
     logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
   } else {
     try {
-      validate(initData, botToken, { expiresIn: INIT_DATA_MAX_AGE_S });
+      verifyTelegramInitDataSignature(initData, botToken);
     } catch (err) {
       rejectInitData(err, req.ip, logger, securityLog);
     }
