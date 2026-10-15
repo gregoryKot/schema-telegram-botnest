@@ -1,6 +1,9 @@
 import { bigintToJson, installBigIntJson } from './bigint-json';
 
-// Аудит 2026-10, X-1: веб-id ≥ 1e18 округлялись `Number(...)` в JSON-ответах.
+// Аудит 2026-10, X-1: веб-id лежат в [1e15, 9e15), ниже 2^53 (границу держит
+// user-id-range.spec.ts), так что сегодня `Number(...)` в JSON их не округляет.
+// Значения выше 2^53 здесь выдуманные: тест стережёт bigint-путь на случай
+// расширения диапазона.
 describe('bigintToJson', () => {
   it('безопасное целое отдаётся числом (id Telegram)', () => {
     expect(bigintToJson(123456789n)).toBe(123456789);

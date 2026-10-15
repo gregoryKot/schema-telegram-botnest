@@ -226,9 +226,7 @@ export class TelegramAdminService implements OnModuleInit {
         // почту и MAX он лежит в веб-диапазоне, и после слияния аккаунтов тоже.
         // Раньше рассылка слала прямо по userId и каждый её прогон молча метил
         // таких людей botBlockedAt.
-        const chatIds = await this.accountService.telegramIdsFor(
-          userIds.map((id) => BigInt(id)),
-        );
+        const chatIds = await this.accountService.telegramIdsFor(userIds);
         await ctx.reply(
           `Начинаю рассылку для ${userIds.length} пользователей...`,
         );
@@ -236,14 +234,15 @@ export class TelegramAdminService implements OnModuleInit {
           failed = 0,
           skipped = 0;
         for (const uid of userIds) {
-          const chatId = chatIds.get(String(uid));
+          const chatId = chatIds.get(uid.toString());
           if (chatId === undefined) {
             skipped++;
             continue;
           }
           try {
             // Plain text — no parse_mode. Avoids stray markdown chars from
-            // breaking the broadcast for half the users.
+            // breaking the broadcast for half the users. Number(chatId) —
+            // чат в Telegram (< 2^53, telegraf ждёт number), не userId.
             await this.bot!.telegram.sendMessage(Number(chatId), text, {
               parse_mode: undefined,
             });
@@ -252,7 +251,7 @@ export class TelegramAdminService implements OnModuleInit {
             failed++;
             if (classifySendFailure(err) !== 'transient') {
               await this.accountService
-                .markUserBlocked(BigInt(uid))
+                .markUserBlocked(uid)
                 .catch((e) => this.logger.warn('markUserBlocked failed', e));
             }
           }

@@ -21,7 +21,7 @@ import {
   GenericExceptionFilter,
 } from './prisma/prisma-exception.filter';
 
-// BigInt в JSON: безопасное целое — числом, веб-id (≥ 1e18) — строкой
+// BigInt в JSON: безопасное целое — числом, номер за пределами 2^53 (веб-id сегодня ниже) — строкой
 // (src/utils/bigint-json.ts, аудит 2026-10 X-1).
 installBigIntJson();
 
