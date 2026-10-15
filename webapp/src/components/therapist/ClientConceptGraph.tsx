@@ -12,7 +12,7 @@ import { useConceptGraphImage } from './useConceptGraphImage';
 // автосохранение и экспорт остаются одни на оба вида. «Скачать картинкой»
 // только здесь: мини-апп файл из WebView Telegram не скачивает. Схеме нужна вся
 // ширина (четыре колонки от 960px), поэтому ClientConceptTab в виде «Схема» не
-// ставит боковую колонку рядом: «Что заполнено» уходит под схему.
+// ставит боковую колонку рядом: сверка с YSQ и история версий уходят под схему.
 export function ClientConceptGraph({ detail }: { detail: ClientDetail }) {
   const tr = useTr();
   const { concept, localConcept, activeSchemaIds, toggleModeId, patchConcept } =
