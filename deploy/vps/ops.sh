@@ -239,7 +239,13 @@ cmd_write_env() {
   mv -f "$tmp.f" "$tmp"
   rm -f "$tmp.f"
   kept=$(wc -l < "$tmp")
-  [ "$kept" -gt 0 ] || { rm -f "$tmp"; die "PROD_ENV пуст"; }
+  if [ "$kept" -eq 0 ]; then
+    rm -f "$tmp"
+    # Пустой секрет и секрет, где всё отброшено, чинятся по-разному: во втором
+    # случае строки были, но их задаёт образ или compose. Печатаем только имена.
+    [ "$total" -gt 0 ] || die "PROD_ENV пуст"
+    die "в PROD_ENV остались только переменные, которые write-env отбрасывает ($dropped): их задаёт образ или compose, а не секрет. Переменных приложения в секрете нет. Добавьте их и повторите"
+  fi
   chmod 600 "$tmp"
   mv -f "$tmp" .env
   log ".env записан: переменных $kept, отброшено $((total - kept))${dropped:+: $dropped}"

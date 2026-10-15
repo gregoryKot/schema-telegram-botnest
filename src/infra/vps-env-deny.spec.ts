@@ -4,8 +4,15 @@
 // и с docker-compose.yml. Инцидент-класс (аудит 2026-10, infra#20): строка
 // NODE_ENV/APP_CMD/MIGRATE_CMD/PORT в PROD_ENV доходила до контейнера, а
 // env_file сильнее ENV образа.
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
+import { tmpdir } from 'os';
+import { join, posix } from 'path';
 import { ENV_REGISTRY } from './env-registry.entries';
 
 const ROOT = process.cwd();
@@ -39,18 +46,40 @@ const COMPOSE_OWNED = shellArray(OPS, 'COMPOSE_OWNED_ENV');
 const TRANSFER = shellArray(OPS, 'TRANSFER_ENV_NAMES');
 
 /**
- * Файлы, исполняемые супервизором контейнера: entrypoint.mjs и его локальные
- * `.mjs`-модули, выводятся из импортов, а не списком (новый модуль, прочитавший
- * env, не должен выпасть из сверки). `backup-scheduler.cjs` намеренно вне
- * сверки: он читает B2_*, PG*, HOSTNAME — переменные приложения из реестра,
- * которые обязаны приходить из PROD_ENV.
+ * Локальные `.mjs`-импорты одного файла: `from './x.mjs'`, `import './x.mjs'`,
+ * `import('./x.mjs')`, в одинарных и двойных кавычках. Пакеты (`node:net`) не
+ * подходят: путь обязан начинаться с `./` или `../`.
+ */
+const LOCAL_MJS_IMPORT =
+  /(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])(\.{1,2}\/[\w./-]+\.mjs)\1/g;
+
+/**
+ * Обход локальных `.mjs`-импортов от входа, рекурсивно (visited-set: циклы не
+ * зависают). Имена — пути от корня обхода через `/`, вход первым.
+ */
+function walkLocalMjs(entry: string, read: (name: string) => string): string[] {
+  const visited = new Set<string>();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const cur = queue.shift() as string;
+    if (visited.has(cur)) continue;
+    visited.add(cur);
+    for (const m of read(cur).matchAll(LOCAL_MJS_IMPORT)) {
+      queue.push(posix.normalize(posix.join(posix.dirname(cur), m[2])));
+    }
+  }
+  return [...visited];
+}
+
+/**
+ * Файлы, исполняемые супервизором контейнера: entrypoint.mjs и все его локальные
+ * `.mjs`-модули, в том числе вложенные, выводятся из импортов, а не списком
+ * (новый модуль, прочитавший env, не должен выпасть из сверки).
+ * `backup-scheduler.cjs` намеренно вне сверки: он читает B2_*, PG*, HOSTNAME —
+ * переменные приложения из реестра, которые обязаны приходить из PROD_ENV.
  */
 function supervisorFiles(): string[] {
-  const entry = file('deploy', 'entrypoint.mjs');
-  const imported = [...entry.matchAll(/from '\.\/([\w.-]+\.mjs)'/g)].map(
-    (m) => m[1],
-  );
-  return ['entrypoint.mjs', ...imported];
+  return walkLocalMjs('entrypoint.mjs', (n) => file('deploy', n));
 }
 const SUPERVISOR_FILES = supervisorFiles();
 
@@ -109,6 +138,72 @@ describe('deny-list write-env ↔ супервизор и compose', () => {
       expect(blindEnvForms(file('deploy', name))).toEqual([]);
     },
   );
+
+  it('обход импортов находит всё, что находила прежняя сверка по прямым импортам entrypoint.mjs', () => {
+    const direct = [
+      ...file('deploy', 'entrypoint.mjs').matchAll(
+        /from '\.\/([\w.-]+\.mjs)'/g,
+      ),
+    ].map((m) => m[1]);
+    expect(direct.length).toBeGreaterThan(0);
+    expect(SUPERVISOR_FILES).toEqual(expect.arrayContaining(direct));
+  });
+
+  describe('walkLocalMjs: обход локальных импортов (контроль на фикстуре)', () => {
+    let tmp: string;
+    const put = (name: string, src: string) => {
+      mkdirSync(join(tmp, posix.dirname(name)), { recursive: true });
+      writeFileSync(join(tmp, name), src);
+    };
+    const walk = () =>
+      walkLocalMjs('main.mjs', (n) => readFileSync(join(tmp, n), 'utf8'));
+
+    beforeEach(() => {
+      tmp = mkdtempSync(join(tmpdir(), 'vps-env-walk-'));
+    });
+    afterEach(() => {
+      rmSync(tmp, { recursive: true, force: true });
+    });
+
+    it('идёт вглубь, понимает двойные кавычки, side-effect и динамический import', () => {
+      put(
+        'main.mjs',
+        [
+          "import { a } from './a.mjs';",
+          'import b from "./b.mjs";',
+          'import "./side.mjs";',
+          "const c = await import('./dyn.mjs');",
+        ].join('\n'),
+      );
+      put('a.mjs', 'export { z } from "./deep/z.mjs";');
+      put('deep/z.mjs', "import '../tail.mjs';");
+      for (const n of ['b.mjs', 'side.mjs', 'dyn.mjs', 'tail.mjs']) {
+        put(n, 'export const x = 1;');
+      }
+
+      expect(walk().sort()).toEqual(
+        [
+          'a.mjs',
+          'b.mjs',
+          'deep/z.mjs',
+          'dyn.mjs',
+          'main.mjs',
+          'side.mjs',
+          'tail.mjs',
+        ].sort(),
+      );
+    });
+
+    it('циклы не зависают, пакеты и .cjs не попадают в обход', () => {
+      put(
+        'main.mjs',
+        "import './a.mjs'; import 'node:net'; import x from './sched.cjs';",
+      );
+      put('a.mjs', "import './main.mjs'; import { y } from 'node:fs';");
+
+      expect(walk().sort()).toEqual(['a.mjs', 'main.mjs']);
+    });
+  });
 
   it('контроль: слепые формы действительно распознаются', () => {
     expect(blindEnvForms('const { A } = process.env;')).toHaveLength(1);
