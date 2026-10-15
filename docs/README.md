@@ -115,6 +115,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `STARTUP_HEALTHY_MS` (60 с) после каждого старта, крутится вечно с паузой 2 с:
   счётчик сбрасывается, лимита нет, DM на каждом круге.
   [Секция «Прод и деплой»](AUDIT_2026-10_FINDINGS.md#прод-и-деплой).
+- **Кэш ts-jest в CI не сохраняется: `actions/cache` смотрит не туда, куда пишет jest.**
+  `.github/workflows/ci.yml:37` задаёт `JEST_CACHE_DIR: .jest-cache`, и `:53` кэширует
+  этот путь от корня репозитория, но jest резолвит относительный `--cacheDirectory`
+  от `rootDir` своего конфига (проверено: `npx jest --cacheDirectory=.jest-cache`
+  создаёт `src/.jest-cache`, корневого каталога нет; e2e с `test/jest-e2e.json`
+  пишет в `test/.jest-cache`). Каждый прогон в CI холодный, шаг «Кэш ts-jest»
+  сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
+  после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
+  Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
 - **Dependabot: доводка бот-PR (процедура и решения владельца).** Конфиг
   `.github/dependabot.yml` теперь покрывает все пять lock-файлов (сверка —
   `src/test-support/gates/dependabot-coverage.spec.ts`), мажоры идут семейными
@@ -153,13 +162,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `directories:` на три фронтенда (один PR красил бы сразу webapp, мини-апп и
   shared, доводить его тяжелее; vitest-мажор приходит тремя PR с одним именем
   группы, мержить их надо одним заходом, правило №3).
-- **`test/.jest-cache` закоммичен: 466 файлов, 6,2 МБ** (`git ls-files test/.jest-cache`).
-  Правило `.gitignore:154` появилось позже файлов и отслеживаемые не снимает;
-  232 из них — `.map` с `sourcesContent`, то есть вторая копия `src`, а
-  локальный e2e-прогон перепишет кэш (шумные диффы, конфликты агентов). Чинить:
-  `git rm -r --cached test/.jest-cache` + гейт в `src/test-support/gates`
-  (`git ls-files -ci --exclude-standard` пуст). Не сделано в PR про деплой:
-  правило №20, один PR — одна починка.
 - **30 `scripts/check-*.mjs` (и `feature-parity-patterns.mjs`) обходят дерево через
   `readdirSync`+`statSync` и не пропускают скрытые каталоги.** Безопасны, пока не идут параллельно с jest:
   в CI они стоят отдельными шагами после jest или в джобе без его кэша, а
