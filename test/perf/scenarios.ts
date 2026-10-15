@@ -10,6 +10,7 @@
 import { Client } from 'pg';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { BotAdminStatsService } from '../../src/bot/bot.admin-stats.service';
+import { BLOCK_FAILED_MARK } from '../../src/bot/stats-settle';
 import { BotAnalyticsService } from '../../src/bot/bot.analytics.service';
 import { BotClientOverviewService } from '../../src/bot/bot.client-overview.service';
 import { TherapyRelationsService } from '../../src/therapy/therapy-relations.service';
@@ -35,11 +36,18 @@ export const SCENARIOS: Scenario[] = [
     title: 'Админский отчёт /stats (оба сообщения команды)',
     // Ровно то, что делает команда /stats в telegram.admin.service.ts: ядро
     // отчёта и продуктовый блок считаются параллельно.
-    run: ({ prisma }) =>
-      Promise.all([
+    run: async ({ prisma }) => {
+      const texts = await Promise.all([
         new BotAdminStatsService(prisma).getAdminStats(),
         buildStatsReport(prisma).render(),
-      ]),
+      ]);
+      // render() не бросает при упавшем блоке (stats-settle.ts), а подставляет
+      // заглушку; без этой проверки сломанный запрос тихо выпал бы из замера.
+      if (texts.some((t) => t.includes(BLOCK_FAILED_MARK))) {
+        throw new Error('stats-report: блок отчёта не посчитался');
+      }
+      return texts;
+    },
   },
   {
     name: 'therapist-clients',

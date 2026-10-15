@@ -19,7 +19,6 @@ interface ClientListViewProps {
   safeTop: number;
   animKey: number;
   onClose: () => void;
-  telegramInputRef: React.RefObject<HTMLInputElement | null>;
   virtualInputRef: React.RefObject<HTMLInputElement | null>;
   detail: ClientDetail;
   addClient: AddClient;
@@ -33,7 +32,6 @@ export function ClientListView({
   safeTop,
   animKey,
   onClose,
-  telegramInputRef,
   virtualInputRef,
   detail,
   addClient,
@@ -192,18 +190,6 @@ export function ClientListView({
             />
 
             {addMode === 'invite' && <InvitePanel addClient={addClient} />}
-
-            {addMode === 'telegram' && (
-              <AddInputPanel
-                addClient={addClient}
-                inputRef={telegramInputRef}
-                onSubmit={addClient.addByTelegramId}
-                placeholder="Telegram ID клиента"
-                inputMode="numeric"
-                submitLabel="Добавить"
-                hint="Клиент должен хотя бы раз открыть приложение"
-              />
-            )}
 
             {addMode === 'virtual' && (
               <AddInputPanel

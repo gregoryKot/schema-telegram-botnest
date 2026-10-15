@@ -28,6 +28,8 @@ const PAIRS = [
   'utils/telemetryUrl.test.ts',
   'components/schemaFlashcard/constants.ts',
   'components/schemaFlashcard/types.ts',
+  'test-support/rtlCleanup.ts',
+  'test-support/rtlCleanup.test.tsx',
 ];
 
 describe('check-paired-files.mjs', () => {

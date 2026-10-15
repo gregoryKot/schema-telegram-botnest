@@ -4,7 +4,7 @@
 // ClientConceptualization.schemaIds/modeIds/history).
 //
 // Важно: это НЕ универсальный скрипт ротации ENCRYPTION_KEY (тот —
-// scripts/rotate-encryption-key.ts, через reencrypt()). migrateClinicalLabels
+// src/cli/rotate-encryption/rotate-all.ts, через reencrypt()). migrateClinicalLabels
 // переводит легаси-плейнтекст в шифротекст текущим ключом эвристикой
 // looksPlaintext/Array.isArray — и НЕ перешифровывает уже зашифрованное
 // старым ключом (см. describe про смену ENCRYPTION_KEY, включая найденный
@@ -238,7 +238,7 @@ describe('поведение при уже проведённой смене ENC
     // decrypt() успешно читает старым ключом из ENCRYPTION_KEY_OLD ⇒
     // looksPlaintext=false ⇒ строка пропускается как «уже зашифрованная».
     // Значит, migrateClinicalLabels НЕ выполняет фактическую перешифровку на
-    // новый ключ — этим занимается только scripts/rotate-encryption-key.ts.
+    // новый ключ — этим занимается только src/cli/rotate-encryption/rotate-all.ts.
     expect(db.note.update).not.toHaveBeenCalled();
     expect(crypto.decrypt(oldBlob)).toBe('anxiety,anger'); // читается, пока жив OLD-ключ
   });
@@ -248,7 +248,7 @@ describe('поведение при уже проведённой смене ENC
     const oldBlob = oldMods.crypto.encrypt('anxiety,anger')!;
 
     // Сценарий инцидента: старый ключ убрали из env, не прогнав
-    // scripts/rotate-encryption-key.ts перед этим.
+    // src/cli/rotate-encryption/rotate-all.ts перед этим.
     const { migrateClinicalLabels } = load({ key: KEY_B });
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const db = makeDb({ notes: [{ id: 1, tags: oldBlob }] }) as any;

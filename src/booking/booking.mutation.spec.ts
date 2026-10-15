@@ -162,7 +162,7 @@ describe('BookingService.book — денормализованные ?? null п�
     expect(created).not.toHaveProperty('clientTelegramId');
   });
 
-  it('source длиннее 200 символов обрезается до 200 (MethodExpression .slice)', async () => {
+  it('source уходит в бронь как есть: предел 200 стоит в book.dto.ts (@MaxLength), сервис не режет молча', async () => {
     const { service, tx } = makeService();
     const longSource = 'x'.repeat(500);
     await service.book({
@@ -173,8 +173,7 @@ describe('BookingService.book — денормализованные ?? null п�
       type: SessionType.INTRO_15,
     });
     const created = tx.booking.create.mock.calls[0][0].data;
-    expect(created.source).toHaveLength(200);
-    expect(created.source).toBe('x'.repeat(200));
+    expect(created.source).toBe(longSource);
   });
 
   it('source не передан → null, а не undefined-строка', async () => {
@@ -248,13 +247,7 @@ describe('BookingService.confirm — сообщения об ошибках и o
     const state = { row };
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) =>
-          select
-            ? state.row
-              ? { status: state.row.status }
-              : null
-            : state.row,
-        ),
+        findUnique: jest.fn(async () => state.row),
         updateMany: jest.fn(async () => ({ count: 0 })), // никогда не забираем CAS
       },
     };
@@ -283,9 +276,9 @@ describe('BookingService.confirm — сообщения об ошибках и o
     let calls = 0;
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) => {
+        findUnique: jest.fn(async () => {
           calls++;
-          if (select) return null; // второй запрос "не нашёл" статус
+          if (calls > 1) return null; // второй запрос "не нашёл" строку
           return { id: 1, status: 'HELD' };
         }),
         updateMany: jest.fn(async () => ({ count: 0 })),

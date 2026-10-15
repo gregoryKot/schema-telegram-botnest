@@ -10,14 +10,13 @@ export const APP_URL = normalizeBaseUrl(
 );
 export const SUBSCRIBE_URL = `${APP_URL}/subscribe`;
 export const DONATE_URL = `${APP_URL}/donate`;
-export const BOT_USERNAME = process.env.BOT_USERNAME ?? 'SchemaLabBot';
+// Дефолтов нет: 'SchemaLabBot' и vercel-адрес вели в старого бота (см. miniapp-link.ts).
+export const BOT_USERNAME = (process.env.BOT_USERNAME ?? '')
+  .trim()
+  .replace(/^@/, '');
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
-/** Base URL for webApp buttons (can be Vercel or custom domain) */
-export const MINIAPP_URL =
-  process.env.MINIAPP_URL ?? 'https://schema-miniapp.vercel.app';
-/** t.me deep link — use for shareable invite links so Telegram opens the miniapp correctly */
-export const MINIAPP_TGLINK = `https://t.me/${BOT_USERNAME}/${MINIAPP_APP_NAME}`;
-export const DIARIES_URL = `${MINIAPP_URL}?section=diaries`;
+// Слэш в конце обязателен: vite base '/app/', а 301 /app → /app/ теряет #tgWebAppData.
+export const MINIAPP_URL = process.env.MINIAPP_URL?.trim() || `${APP_URL}/app/`;
 
 /** Меню команд бота (setMyCommands). Единый список — правится здесь. */
 export const BOT_COMMANDS = [

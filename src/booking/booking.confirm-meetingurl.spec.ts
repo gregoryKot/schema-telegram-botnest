@@ -159,14 +159,18 @@ describe('BookingService.confirm — paidAmount не передан → свер
   });
 });
 
-describe('BookingService.confirm — повторный findUnique в CAS-ретрае бьёт точным where/select', () => {
-  it('запрос статуса идёт с where:{id} и select:{status:true} (не пустые объекты)', async () => {
+describe('BookingService.confirm — повторный findUnique в CAS-ретрае бьёт точным where', () => {
+  it('запрос свежей строки идёт с where:{id}, а повтор по доделанной брони эффектов не зовёт', async () => {
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) => {
-          if (select) return { status: BookingStatus.CONFIRMED };
-          return { id: 3, status: BookingStatus.HELD };
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 3, status: BookingStatus.HELD })
+          .mockResolvedValueOnce({
+            id: 3,
+            status: BookingStatus.CONFIRMED,
+            confirmEffectsDoneAt: new Date(),
+          }),
         updateMany: jest.fn(async () => ({ count: 0 })), // CAS проигран
       },
     };
@@ -183,9 +187,7 @@ describe('BookingService.confirm — повторный findUnique в CAS-рет
     );
     await expect(service.confirm(3, 4000)).resolves.toEqual({ ok: true });
     const secondCallArgs = prisma.booking.findUnique.mock.calls[1][0];
-    expect(secondCallArgs).toEqual({
-      where: { id: 3 },
-      select: { status: true },
-    });
+    expect(secondCallArgs).toEqual({ where: { id: 3 } });
+    expect(notify.onConfirmed).not.toHaveBeenCalled();
   });
 });

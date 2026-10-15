@@ -12,6 +12,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import * as L from '../utils/text-limits';
 import { CONTACT_CHANNELS, type ContactChannel } from './contact-channel';
 
 /** Тело POST /api/booking/book — публичный эндпоинт с деньгами, рантайм-валидация (аудит 2026-07, правило №6). */
@@ -43,13 +44,13 @@ export class BookDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(L.BOOKING_SLOT_MESSAGE_MAX)
   message?: string;
 
   // Атрибуция лида: страница + referrer (собирает фронт, leadSource()).
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(L.BOOKING_SOURCE_MAX)
   source?: string;
 
   @IsOptional()
@@ -57,8 +58,7 @@ export class BookDto {
   returning?: boolean;
 
   // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — из Intl на фронте.
-  // Валидность проверяет сервис; невалидное значение игнорируется, а не
-  // отклоняет запрос (правило №14: странный пояс не должен ронять заявку).
+  // Невалидное значение сервис игнорирует, а не отклоняет запрос (правило №14).
   @IsOptional()
   @IsString()
   @MaxLength(64)

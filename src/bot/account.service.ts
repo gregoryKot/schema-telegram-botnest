@@ -4,6 +4,7 @@ import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { canonicalUserId, telegramIdsFor } from '../auth/telegram-identity';
 import { WEB_USER_ID_MIN, isTelegramUserId } from '../auth/user-id-range';
 import { deleteAllUserData } from './account.delete';
+import { endTherapistRelations } from '../therapy/end-therapist-relations';
 // Реестр живёт отдельным файлом (им пользуется и account.delete.ts);
 // ре-экспорт — чтобы импорты соседей и спек продолжали работать.
 export { USER_DATA_TABLES } from './user-data-tables';
@@ -106,10 +107,8 @@ export class AccountService {
     });
   }
 
-  // Отказ от роли терапевта: возврат в CLIENT, выключение кабинета и удаление
-  // заявки (чтобы можно было подать заново с чистого листа — иначе 'approved'
-  // блокирует повторную submit). Связи с клиентами не трогаем: role-гейтед
-  // эндпоинты терапевта всё равно вернут 403, пока роль не THERAPIST.
+  // Отказ от роли терапевта: CLIENT, кабинет выключен, заявка удалена (иначе
+  // 'approved' блокирует повторную), связи завершены — одной транзакцией.
   async resignTherapist(userId: bigint): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({
@@ -117,6 +116,7 @@ export class AccountService {
         data: { role: 'CLIENT', therapistMode: false },
       });
       await tx.therapistRequest.deleteMany({ where: { userId } });
+      await endTherapistRelations(tx, userId);
     });
   }
 

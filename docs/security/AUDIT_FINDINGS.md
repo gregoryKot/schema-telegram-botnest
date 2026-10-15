@@ -537,6 +537,14 @@ plaintext в очереди уведомлений. Нумерация: букв
   квартал стоит скачать файл из бакета и прогнать `scripts/restore-backup.sh`.
   Открытые вопросы по бэкапам CNPG самой Amvera (раздел «Резервные копии БД» в
   `CLAUDE.md`) этим не закрываются — это вторая, независимая копия.
+- **2026-10-15: хранилище сменилось на Cloudflare R2** (решение владельца; B2 на
+  проде так и не был настроен, переносить нечего). Переменные теперь
+  `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`,
+  `BACKUP_S3_SECRET_ACCESS_KEY` (+ `BACKUP_ENCRYPTION_KEY`, необязательные
+  `BACKUP_RETENTION_DAYS`, `BACKUP_S3_REGION`), скрипты — `backup-upload.sh`,
+  `backup-fetch-latest.sh`, `s3-api.sh`, аренда — `db-backup`. Инструкция
+  владельцу — docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы». Абзац выше
+  оставлен как история.
 
 #### D-3 · Фильтры исключений слали URL с токенами и текст Prisma в алерт ✅ Закрыто
 - **Severity:** Medium-High. `Prisma error on ${req.url}: ${exception.message}`
@@ -558,7 +566,8 @@ plaintext в очереди уведомлений. Нумерация: букв
   маршрут SPA (`/diary`, `/cabinet/*`), `clickmap`/`trackLinks` включены.
   Названия маршрутов терапевтического продукта — данные о здоровье по
   выводу; CSP разрешает скрипт — компрометация CDN Метрики равна XSS на
-  клинических страницах. Webvisor корректно ограничен визиткой.
+  клинических страницах. Webvisor ограничен визиткой (но не только полями:
+  см. E-2, дополнение 2026-10 — DOM экранов записи тоже).
 - **Предложение:** не инициализировать Метрику при живой сессии (или только на
   публичных маршрутах), выключить `clickmap`/`trackLinks`, описать Метрику в
   политике. Текст баннера сейчас обещает меньше, чем собирается.
@@ -642,10 +651,35 @@ plaintext в очереди уведомлений. Нумерация: букв
 - **Фикс:** единый `ensureDataOwner(serverUserId)` в `shared/` (смена
   владельца → `clearLocalData()`), оба фронта; `adoptSession` чистит
   localStorage; при авторитетном `null` от сервера локальный ключ удаляется.
+- **Путь мини-аппа (2026-10-15):** сверка по `sub` срабатывала после обмена
+  подписи, а `flushOutbox` чужой очереди оценок уходил на маунте с initData
+  нового аккаунта раньше (и `therapist_mode` читался до сверки). Теперь флаш
+  идёт только после `renewSession()` (`hooks/useOutboxFlush.ts`; `remember` →
+  `markHostSessionStarted` стирает чужое до резолва), а `main.tsx` до рендера
+  зовёт `ensureHostOwner()`: id пользователя площадки сверяется с запомненным
+  (`data_owner_host`, `shared/src/auth/hostOwnerGuard.ts`). Привязанное
+  устройство не страдает — сравнивается id площадки, не `sub`. Шов держит
+  `schema-miniapp/src/App.ownerSwitch.test.tsx` на настоящих main/App/session.
+  Webapp: порядок верный и раньше (`RequireAuth` пускает после `applyToken`).
 
 #### E-2 · Webvisor записывал ввод PII в запасной форме записи ✅ Закрыто
 - `BookingForm.tsx` (fallback `BookingPicker`) без `ym-disable-keys` на имени,
   контакте и свободном тексте — Webvisor на визитке писал клавиши.
+- **Дополнение 2026-10 (security#26, #27) — класс шире ввода клавиш.** Вебвизор
+  снимает ещё и DOM: экран «запись принята» нёс в href `cancelToken` (просмотр,
+  `.ics`, отмена брони без другой проверки) и Zoom-ссылку с `?pwd=` (в href и
+  текстом); поля email на `/donate` и `/subscribe` не имели `ym-disable-keys`,
+  хотя политика обещает «содержимое полей ввода не записывается». Починено на
+  трёх слоях: `ym-hide-content` на корнях компонентов с секретами
+  (`BookingResultScreens`, `BookingSaveBlock`, `BookingPaidPage`; тест
+  `webvisorSecrets.test.tsx` рендерит их с узнаваемыми секретами и сверяет
+  реестр файлов с исходниками), allow-list стартовых путей записи
+  (`shouldRecordSession` + `WEBVISOR_PATHS` в `webapp/src/lib/webvisorRoutes.ts`:
+  `/`, `/articles/*`, `/reviews`) и гейт `scripts/check-webvisor-fields.mjs` (каждое текстовое поле
+  на страницах `personalRoutes` несёт `ym-disable-keys`, включая числовое поле
+  суммы доната: политика обещает «поля ввода не записываются» без исключений).
+  Что уже попало в
+  плеер до починки, видно только в кабинете счётчика — у владельца.
 
 #### E-3 · Мёртвая popup-ветка OAuth-колбэка отдавала токен окну-открывателю ✅ Закрыто
 - `window.opener.location.href = …#access_token=` на чужой origin не бросает
