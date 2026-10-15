@@ -14,7 +14,7 @@ import { getHost } from '../../shared/src/host';
 import { renewWithRetries } from '../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../shared/src/auth/crossTabLock';
 import { clearApiCache } from '../../shared/src/api/apiCache';
-import { markSessionStarted } from '../../shared/src/auth/dataOwnerGuard';
+import { markHostSessionStarted } from '../../shared/src/auth/hostOwnerGuard';
 import { clearLocalData } from '../../shared/src/auth/clearLocalData';
 import { attemptRenewOnce } from './sessionRenew';
 import { registerSessionRetryListeners } from './sessionRetryListeners';
@@ -45,7 +45,7 @@ function tokenIsFresh(now = Date.now()): boolean {
 
 function remember(token: string, expiresIn: number): void {
   // Отметка «вход удавался» (shared/auth/authSeen) + стирание данных прежнего аккаунта (E1).
-  markSessionStarted(token);
+  markHostSessionStarted(token);
   accessToken = token;
   accessExpiresAt = Date.now() + expiresIn * 1000;
   deadUntil = 0;

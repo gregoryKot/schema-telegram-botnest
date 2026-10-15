@@ -14,7 +14,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
-describe('e2e: терапия и пары с веб-клиентом (User.id > 2^53)', () => {
+describe('e2e: терапия и пары с веб-клиентом (выдуманный User.id > 2^53)', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
 

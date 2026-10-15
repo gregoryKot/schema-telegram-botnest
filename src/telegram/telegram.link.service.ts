@@ -27,6 +27,7 @@ import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
 import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
 import { viewerTelegramId } from './viewer-id';
+import { trackLinkConfirmed, trackLinkFailed } from './telegram.link-outcome';
 
 @Injectable()
 export class TelegramLinkService implements OnModuleInit {
@@ -75,18 +76,13 @@ export class TelegramLinkService implements OnModuleInit {
           'tglink approve',
           async (code, userId, rawId) => {
             const form = await this.form(ctx.from?.id);
-            const { merged } = await this.links.approve(
+            const res = await this.links.approve(
               code,
               userId,
               undefined,
               rawId,
             );
-            // Событие пишет сервер: подтверждение произошло здесь, а сайт
-            // узнаёт об исходе только опросом и поля `merged` не видит.
-            void this.analytics.track(userId, 'account_link_confirmed', {
-              host: 'web',
-              merged,
-            });
+            trackLinkConfirmed(this.analytics, userId, res);
             await ctx
               .editMessageText(
                 t(
@@ -98,10 +94,11 @@ export class TelegramLinkService implements OnModuleInit {
               .catch(() => null);
           },
         );
-      } catch {
+      } catch (err) {
         // Причина уже в логе (withConfirmingUser её пишет и пробрасывает),
         // а человеку нужен исход: молчание после нажатия читается как
         // «наверное, получилось».
+        trackLinkFailed(this.analytics, err);
         await ctx
           .editMessageText(
             // Безлично: форма обращения читается из профиля, а сюда мы

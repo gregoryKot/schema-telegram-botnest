@@ -183,23 +183,29 @@ export class EmailService {
     await this.send(to, letter.subject, letter.body);
   }
 
-  async sendAdminNotification(subject: string, text: string): Promise<void> {
+  async sendAdminNotification(subject: string, text: string): Promise<boolean> {
     const to = process.env.ADMIN_EMAIL;
+    // true = Resend принял письмо.
     // Правило №14: молчаливый пропуск — невидимая авария; warn, не error (без DM на каждое письмо).
     if (!to) {
       this.logger.warn(`ADMIN_EMAIL пуст, письмо не ушло: ${subject}`);
-      return;
+      return false;
     }
-    await this.send(to, subject, text).catch((err) => {
+    return this.send(to, subject, text).catch((err) => {
       this.logger.error(
         `sendAdminNotification failed: ${(err as Error).message}`,
       );
+      return false;
     });
   }
 
   // ─── Resend SMTP wrapper ──────────────────────────────────────────────────
 
-  private async send(to: string, subject: string, text: string): Promise<void> {
+  private async send(
+    to: string,
+    subject: string,
+    text: string,
+  ): Promise<boolean> {
     const apiKey = process.env.RESEND_API_KEY;
     const from =
       process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
@@ -211,13 +217,13 @@ export class EmailService {
         this.logger.error(
           'RESEND_API_KEY not configured — magic-link email NOT sent (misconfiguration)',
         );
-        return;
+        return false;
       }
       // Dev / CI — тело можно логировать для локальной проверки ссылки.
       this.logger.warn(
         `[DEV: no RESEND_API_KEY] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`,
       );
-      return;
+      return false;
     }
 
     try {
@@ -237,6 +243,7 @@ export class EmailService {
         );
         throw new Error('Email delivery failed');
       }
+      return true;
     } catch (e) {
       this.logger.error(`Resend error: ${(e as Error).message}`);
       throw new Error('Email delivery failed', { cause: e });

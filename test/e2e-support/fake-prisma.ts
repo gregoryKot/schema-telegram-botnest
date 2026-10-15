@@ -119,6 +119,7 @@ export function makeFakePrisma() {
     cronLease: makeTable(),
     availabilityRule: withDefaults(makeTable(), { isActive: true }), // @default(true)
     slotOverride: makeTable(),
+    introLead: makeTable(), // форма знакомства, POST /api/booking (IntroLeadService)
   };
 
   const prisma: any = {

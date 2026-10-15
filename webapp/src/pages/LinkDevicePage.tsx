@@ -89,10 +89,10 @@ function LinkDeviceContent({ code }: { code: string }) {
     setBusy(true);
     setError(null);
     try {
-      const res = (await call('approve')) as { merged?: boolean };
-      // Успех считает именно этот экран: мини-апп в этот момент ещё ждёт и о
-      // результате не знает, а посчитать «довели до конца» надо ровно один раз.
-      api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {
+      const res = (await call('approve')) as { merged?: boolean; repeat?: boolean };
+      // Успех считает именно этот экран (мини-апп ещё ждёт и не знает) —
+      // ровно один раз: повтор из второй вкладки уже посчитан первым.
+      if (!res.repeat) api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {
         host: (preview?.provider ?? 'max') as AccountLinkHost,
         merged: res.merged === true,
       });

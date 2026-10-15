@@ -27,6 +27,14 @@
     "status": "leader",
     "reason": "Снятие истёкших холдов записи — гонка на двух инстансах может снять чужой свежий холд."
   },
+  "src/booking/intro-lead-redelivery.service.ts::redeliver": {
+    "status": "leader",
+    "reason": "Повтор доставки заявки шлёт DM и письмо админу — на двух инстансах дубль каждого сообщения."
+  },
+  "src/booking/intro-lead-retention.service.ts::anonymizeOld": {
+    "status": "exempt",
+    "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни письма."
+  },
   "src/channel/channel-schedule.service.ts::tickCatchUp": {
     "status": "leader",
     "reason": "Догоняющая публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."

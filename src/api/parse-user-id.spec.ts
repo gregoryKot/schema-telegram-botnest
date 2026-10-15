@@ -2,10 +2,12 @@ import { BadRequestException } from '@nestjs/common';
 import { parseUserId } from './parse-user-id';
 import { parseId } from './request-utils';
 
-// Аудит 2026-10, X-1: веб-id (≥ 1e18) не помещаются в Number — parseId их
-// отвергает, а Number() округляет. parseUserId обязан вернуть точный bigint.
+// Аудит 2026-10, X-1: веб-id лежат в [1e15, 9e15), ниже 2^53; границу держит
+// user-id-range.spec.ts. Id выше 2^53 здесь выдуманный: он стережёт bigint-путь
+// на случай, если диапазон расширят. parseId такой id отвергает, Number()
+// округляет, parseUserId обязан вернуть точный bigint.
 describe('parseUserId', () => {
-  it('веб-id ≥ 2^53 возвращается точным bigint', () => {
+  it('id ≥ 2^53 (выдуманный) возвращается точным bigint', () => {
     const id = parseUserId('1000000000000000123');
     expect(typeof id).toBe('bigint');
     expect(id).toBe(1000000000000000123n);

@@ -26,6 +26,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../auth.service';
 import { SecurityLogService } from '../security-log.service';
 import { newUserCode, staleTicketsWhere } from './ticket-user-code';
+import { claimApproval, loadForApproval } from './ticket-approval';
 import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import type { StartTicketInput } from './ticket-start.types';
@@ -162,23 +163,18 @@ export class LoginTicketService {
     approvedUserId: bigint,
     viaTelegramId?: bigint,
   ): Promise<void> {
-    const row = await this.liveByUserCode(userCode, viaTelegramId);
-    if (row.intent !== 'login') {
-      throw new BadRequestException('Этот код не для входа');
+    // Идемпотентность (разбор 2026-08-31, аудит 2026-10): повторный тап «это
+    // я» тем же человеком — НЕ ошибка, ни до опроса, ни после него: раньше
+    // бот рисовал ложный провал поверх успеха. ЧУЖОЙ занятый код — отказ.
+    const row = await loadForApproval(
+      { prisma: this.prisma, tickets: this },
+      userCode,
+      { userId: approvedUserId, intent: 'login', via: viaTelegramId },
+    );
+    if (!row) return;
+    if ((await claimApproval(this.prisma, row, approvedUserId)) === 'repeat') {
+      return;
     }
-    if (row.approvedUserId) {
-      // Идемпотентность (разбор 2026-08-31): повторный тап «это я» тем же
-      // человеком до того, как опрос заберёт сессию, — это НЕ ошибка. Раньше
-      // второй тап падал в «Код уже подтверждён» и бот показывал ложную
-      // карточку провала после успеха. Тот же хозяин — тихо подтверждаем ещё
-      // раз; ЧУЖОЙ уже занятый код — по-прежнему отказ.
-      if (row.approvedUserId === approvedUserId) return;
-      throw new BadRequestException('Код уже подтверждён');
-    }
-    await this.prisma.loginTicket.update({
-      where: { id: row.id },
-      data: { approvedUserId, approvedAt: new Date() },
-    });
     this.report.step('confirmed', row.hostId);
   }
 
