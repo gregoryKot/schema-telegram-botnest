@@ -6,28 +6,6 @@ import { Probe } from './types';
 
 type Env = Record<string, string | undefined>;
 
-/** Резервный канал алертов на почту сконфигурирован (RESEND_API_KEY +
- * ADMIN_EMAIL) — только конфиг, живой запрос в Resend не делаем (квота).
- * Выключенный резервный канал — не авария сам по себе, авария — когда мёртвы
- * ОБА (см. alertsProbe ниже). */
-export function emailProbe(env: Env = process.env): Probe {
-  return {
-    id: 'email',
-    title: 'Резервные алерты на почту',
-    critical: false,
-    run() {
-      const cap = buildCapabilityReport(env).find((c) => c.id === 'alertEmail');
-      const on = cap?.on ?? false;
-      return Promise.resolve({
-        ok: true,
-        detail: on
-          ? 'настроено (RESEND_API_KEY + ADMIN_EMAIL)'
-          : 'не настроено — это резервный канал, основной может работать без него',
-      });
-    },
-  };
-}
-
 /** Сигнализация владельцу не мертва целиком (ни Telegram, ни почта). */
 export function alertsProbe(env: Env = process.env): Probe {
   return {

@@ -18,7 +18,6 @@
   "src/booking/caldav-busy.ts": 1,
   "src/site-content/site-content.service.ts": 1,
   "src/telegram/telegram.service.ts": 1,
-  "src/utils/admin-alert.ts": 1,
   "src/utils/crypto.ts": 1,
   "webapp/src/api.ts": 1,
   "webapp/src/components/AddressFormPicker.tsx": 1,
