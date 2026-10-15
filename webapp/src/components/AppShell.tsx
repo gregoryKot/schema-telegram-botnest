@@ -367,6 +367,7 @@ export function AppShell() {
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
         <AppSections
+          rating={{ onChange: handleChange, onSaved: handleSaved, isOffline }}
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
           pathname={location.pathname}
