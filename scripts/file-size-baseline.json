@@ -873,7 +873,7 @@
   "src/api/exercises.controller.ts": 142,
   "src/api/flag-fields.ts": 29,
   "src/api/health.controller.ts": 52,
-  "src/api/hybrid-throttle-storage.ts": 76,
+  "src/api/hybrid-throttle-storage.ts": 75,
   "src/api/init-data-paths.ts": 120,
   "src/api/init-data-window.ts": 6,
   "src/api/initdata-alert.ts": 60,
