@@ -24,6 +24,10 @@ const ALL_CONFIGURED = {
   B2_APP_KEY: 'a',
   B2_BUCKET: 'b',
   BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
+  // Приём оплаты (аудит 2026-10-11) — тоже «настроено».
+  ROBOKASSA_MERCHANT_LOGIN: 'shop',
+  ROBOKASSA_PASSWORD1: 'p1',
+  ROBOKASSA_PASSWORD2: 'p2',
 };
 
 describe('logCapabilityReport', () => {

@@ -6,8 +6,7 @@ import {
   emailProbe,
   alertsProbe,
 } from './probe-capabilities';
-import { throttleStorageProbe } from './probe-throttle-storage';
-import { cronLeasesProbe } from './probe-cron-leases';
+import { dbBackedProbes } from './registry.db';
 import { liveIntegrationProbes } from './registry.live';
 
 /** Полный набор проб самопроверки прода (правило №14 CLAUDE.md). */
@@ -17,8 +16,7 @@ export function buildProbes(prisma: PrismaService): Probe[] {
     oauthRedirectsProbe(),
     emailProbe(),
     alertsProbe(),
-    throttleStorageProbe(prisma),
-    cronLeasesProbe(prisma),
+    ...dbBackedProbes(prisma),
     ...liveIntegrationProbes(),
   ];
 }

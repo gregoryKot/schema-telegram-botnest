@@ -4,6 +4,7 @@
 // расхождение суммы webhook и failed-charge путь chargeDue (grace period,
 // отключение после MAX_FAILS).
 import {
+  Logger,
   ServiceUnavailableException,
   NotFoundException,
   BadRequestException,
@@ -247,6 +248,38 @@ describe('SubscriptionService.subscribe', () => {
     const sub = prisma.subs.get(res.id);
     expect(sub.status).toBe('active');
     expect(sub.firstInvId).toBeDefined();
+  });
+
+  describe('прод без Robokassa (аудит 2026-10-11)', () => {
+    const was = process.env.NODE_ENV;
+    beforeEach(() => {
+      process.env.NODE_ENV = 'production';
+      jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    });
+    afterEach(() => {
+      process.env.NODE_ENV = was;
+      jest.restoreAllMocks();
+    });
+
+    it('отказ 503 до INSERT: подписка не создаётся и не включается бесплатно', async () => {
+      const { service, prisma } = makeService({ robokassaEnabled: false });
+      await expect(
+        service.subscribe({ period: 'month', acceptedOffer: true }),
+      ).rejects.toThrow(ServiceUnavailableException);
+      expect(prisma.subscription.create).not.toHaveBeenCalled();
+      expect(prisma.subs.size).toBe(0);
+      expect(prisma.charges.size).toBe(0);
+    });
+
+    it('контроль: с настроенной Robokassa в проде подписка идёт на оплату', async () => {
+      const { service, prisma } = makeService();
+      const res = await service.subscribe({
+        period: 'month',
+        acceptedOffer: true,
+      });
+      expect(res.paymentUrl).toContain('robokassa.test');
+      expect(prisma.subs.get(res.id).status).toBe('pending');
+    });
   });
 
   it('Robokassa включена — возвращает paymentUrl, подписка остаётся pending', async () => {
