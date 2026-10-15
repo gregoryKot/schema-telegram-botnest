@@ -6,6 +6,8 @@ import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useTr } from '../../utils/addressForm';
+import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import { formatModeLinksExport } from '../../../../shared/src/therapy/conceptGraph/modeLinksExport';
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
@@ -214,17 +216,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setSaveStatus('saving');
     const c = localConceptRef.current; // не state — см. комментарий у localConceptRef
     try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: (c.schemaIds ?? []) as string[],
-        modeIds: (c.modeIds ?? []) as string[],
-        earlyExperience: (c.earlyExperience as string) ?? '',
-        unmetNeeds: (c.unmetNeeds as string) ?? '',
-        triggers: (c.triggers as string) ?? '',
-        copingStyles: (c.copingStyles as string) ?? '',
-        goals: (c.goals as string) ?? '',
-        currentProblems: (c.currentProblems as string) ?? '',
-        modeTransitions: (c.modeTransitions as string) ?? '',
-      });
+      const saved = await api.saveConceptualization(selectedClient.telegramId, conceptSaveBody(c));
       setConcept(saved);
       setConceptError('');
       setSaveStatus('saved');
@@ -297,11 +289,13 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     });
     const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '–'}\n`;
     const div = '─'.repeat(44);
+    const links = formatModeLinksExport(activeModeIds, c.modeLinks ?? []);
     return [
       `Клиент: ${clientName}   Дата: ${date}`,
       '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',
       div, row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
       div, row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
+      ...(links ? [div, `${links}\n`] : []),
       div, row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience as string),
       div, row('НЕУДОВЛЕТВОРЁННЫЕ БАЗОВЫЕ ПОТРЕБНОСТИ', c.unmetNeeds as string),
       div, row('СХЕМНЫЕ ТРИГГЕРЫ', c.triggers as string),

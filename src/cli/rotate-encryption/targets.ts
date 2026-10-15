@@ -107,6 +107,7 @@ export const TARGETS: RotationTarget[] = [
       'modeIds',
       'modeMapNodes',
       'modeMapEdges',
+      'modeLinks',
     ],
   },
   // ── Достроено аудитом 2026-07-20 (H4): целые модели, которые ротация
