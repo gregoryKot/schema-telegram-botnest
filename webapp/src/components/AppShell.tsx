@@ -20,6 +20,7 @@ import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { SECTION_HUE, clientHue, hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
@@ -238,11 +239,11 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${therapistMode ? ' light-lock' : ''}`}>
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sb-brand">
-          <div className="sb-logo">ВС</div>
+          <div className="sb-logo">В</div>
           <div className="sb-name">Всё по схеме</div>
         </div>
 
@@ -259,7 +260,7 @@ export function AppShell() {
           {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>{item.label}</span>
+              <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
             </NavLink>
           ))}
           {therapistMode && (<>
@@ -269,25 +270,14 @@ export function AppShell() {
             </NavLink>
             <NavLink to="/cabinet" end
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Все клиенты</span>
+              <span>Все клиенты</span><span className="badge">{therapistClients.length || ''}</span>
             </NavLink>
             {therapistClients.length > 0 && (
               <div className="sb-clients">
+                <div className="sb-section-label">Клиенты</div>
                 {therapistClients.length > 4 && (
-                  <div style={{ padding: '4px 12px 6px' }}>
-                    <input
-                      value={clientSearch}
-                      onChange={e => setClientSearch(e.target.value)}
-                      placeholder="Поиск клиента…"
-                      style={{
-                        width: '100%', padding: '5px 9px', borderRadius: 'var(--r-6)',
-                        border: '1px solid rgba(var(--fg-rgb),0.13)',
-                        background: 'rgba(var(--fg-rgb),0.05)',
-                        color: 'var(--text)', fontSize: 12.5, outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
+                  <input className="sb-search" value={clientSearch} placeholder="Поиск клиента…"
+                         onChange={e => setClientSearch(e.target.value)} />
                 )}
                 {therapistClients
                   .filter(c => {
@@ -301,8 +291,9 @@ export function AppShell() {
                     return (
                       <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
                                className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-                        {activeToday && <span className="sb-active-dot" />}
+                        <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{name.slice(0, 2).toUpperCase()}</span>
                         <span className="sb-client-name">{name}</span>
+                        {activeToday && <span className="sb-active-dot" />}
                       </NavLink>
                     );
                   })}
@@ -345,19 +336,14 @@ export function AppShell() {
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
           </NavLink>
-          <button className="sb-item" onClick={() => ov.setShowSettings(true)} style={{ marginTop: 2 }}>
-            <span>Настройки</span>
-          </button>
-          <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-            <span>Аккаунт и привязки</span>
-          </NavLink>
-          <button className="sb-item sb-danger" onClick={() => logout()}
-                  style={{ marginTop: 2 }}>
-            <span>Выйти</span>
-          </button>
-          <div style={{ display: 'flex', gap: 'var(--space-12)', padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
-            <a href="/privacy" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Конфиденциальность</a>
-            <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
+          <div className="sb-links">
+            <button className="sb-item" onClick={() => ov.setShowSettings(true)}>Настройки</button>
+            <NavLink to="/account" className="sb-item">Аккаунт</NavLink>
+            <button className="sb-item sb-danger" onClick={() => logout()}>Выйти</button>
+          </div>
+          <div className="sb-links sb-legal">
+            <a href="/privacy" target="_blank">Конфиденциальность</a>
+            <a href="/offer" target="_blank">Оферта</a>
           </div>
         </div>
         </div>{/* end sb-foot-wrap */}
