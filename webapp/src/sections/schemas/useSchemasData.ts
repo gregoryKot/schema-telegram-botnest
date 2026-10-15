@@ -19,7 +19,12 @@ export function useSchemasData() {
     Promise.all([
       api.getProfile(),
       api.getYsqHistory(),
-      api.getYsqProgress().catch(() => null),
+      // Прогресс незаконченного теста — необязательная подпись на карточке:
+      // без него экран работает, но сбой виден в отчётах.
+      api.getYsqProgress().catch(() => {
+        reportClientError({ message: 'schemas ysq progress load failed', section: 'schemas' });
+        return null;
+      }),
     ]).then(([p, history, progress]) => {
       setYsqProgressAnswered(
         Array.isArray(progress?.answers) ? progress.answers.filter(a => a > 0).length : null,

@@ -34,10 +34,8 @@ describe('dayIndex', () => {
 });
 
 describe('buildHistory / weekDelta / sparkBars', () => {
-  const day = (n: number) => {
-    const d = new Date(); d.setDate(d.getDate() - n);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
+  // Календарный день истории — UTC (правило №25), как todayCalendarDate().
+  const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
   it('сортирует по дате, пустой день — 0, сегодня добавляется из живых оценок', () => {
     const vals = buildHistory([
