@@ -1,5 +1,5 @@
 // Установка клиента Postgres 16 в runtime-образ (deploy/install-pg-client.sh,
-// аудит D-2): без pg_dump/psql зашифрованные бэкапы в B2 просто не запустятся,
+// аудит D-2): без pg_dump/psql зашифрованные бэкапы в R2 просто не запустятся,
 // а образ с ними «молча без клиента» — тот же класс, что инцидент 2026-08-08
 // с openssl (сеть билдера Amvera до зарубежных хостов отваливается).
 //
@@ -187,8 +187,10 @@ describe('Dockerfile: клиент Postgres и скрипты бэкапа в ru
     expect(build).not.toMatch(/install-pg-client/);
   });
 
-  it('скрипты бэкапа и восстановления попадают в образ (планировщик запускает scripts/backup-to-b2.sh)', () => {
-    expect(runtime).toMatch(/scripts\/backup-to-b2\.sh/);
+  it('скрипты бэкапа и восстановления попадают в образ (планировщик запускает scripts/backup-upload.sh)', () => {
+    expect(runtime).toMatch(/scripts\/backup-upload\.sh/);
+    expect(runtime).toMatch(/scripts\/backup-fetch-latest\.sh/);
+    expect(runtime).toMatch(/scripts\/s3-api\.sh/);
     expect(runtime).toMatch(/scripts\/restore-backup\.sh/);
   });
 

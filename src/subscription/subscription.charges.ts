@@ -6,6 +6,8 @@ import { SubPeriod } from '../booking/booking.config';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
 import { escapeHtml } from '../utils/escape-html';
+import { activatePaidCharge } from './subscription.charge-activate';
+import { reportPaidAfterCancel } from './subscription-paid-after-cancel';
 
 // Списания по подписке: подтверждение оплаченного charge из вебхука и
 // почасовой прогон due-подписок. Вынесено из subscription.service.ts
@@ -49,28 +51,21 @@ export async function markChargePaid(
     );
   }
 
-  // P-2 (аудит 2026-07): атомарный CAS по статусу charge — параллельные
-  // ретраи webhook не задваивают активацию/алерты: выигрывает один вызов.
-  const claimed = await deps.prisma.subscriptionCharge.updateMany({
-    where: { id: chargeId, status: { not: 'paid' } },
-    data: { status: 'paid', paidAt: new Date() },
-  });
-  if (claimed.count === 0) return { ok: true };
-
   const next = addPeriod(new Date(), sub.period as SubPeriod);
-  await deps.prisma.subscription.update({
-    where: { id: sub.id },
-    data: {
-      status: 'active',
-      lastChargeAt: new Date(),
-      nextChargeAt: next,
-      failedAttempts: 0,
-      // The first paid charge becomes the PreviousInvoiceID for all future charges.
-      ...(charge.isFirst ? { firstInvId: invId } : {}),
-    },
+  const outcome = await activatePaidCharge(deps.prisma, {
+    chargeId,
+    subId: sub.id,
+    isFirst: charge.isFirst,
+    invId,
+    next,
   });
+  if (outcome === 'skip') return { ok: true };
 
   const plain = decryptRecord(sub, SCHEMA);
+  if (outcome === 'cancelled') {
+    await reportPaidAfterCancel(deps, plain, charge, paidAmount);
+    return { ok: true };
+  }
   await deps.notify.alertAdmin(
     `${charge.isFirst ? '🎉 <b>Новая подписка</b>' : '🔁 <b>Продление подписки</b>'} ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'}` +
       // M1 (аудит 2026-10): email вводит подписчик, уходит админу как HTML.
@@ -158,8 +153,10 @@ export async function chargeDue(deps: ChargeDeps) {
           where: { id: charge.id },
           data: { status: 'failed' },
         }),
-        deps.prisma.subscription.update({
-          where: { id: sub.id },
+        // Отмена между захватом и ответом Robokassa не откатывается:
+        // updateMany с предикатом статуса вместо update по id.
+        deps.prisma.subscription.updateMany({
+          where: { id: sub.id, status: { in: ['active', 'past_due'] } },
           data: {
             failedAttempts: fails,
             status: fails >= MAX_FAILS ? 'past_due' : sub.status,

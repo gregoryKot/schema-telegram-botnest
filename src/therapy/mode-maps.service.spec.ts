@@ -164,17 +164,17 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
 });
 
 describe('ModeMapsService — кастомные режимы терапевта', () => {
-  it('createCustomMode: неизвестный nodeType подменяется на "custom", имя обрезается до 80 символов, emoji — до 8', async () => {
+  it('createCustomMode: неизвестный nodeType подменяется на "custom", имя и emoji сохраняются как пришли (пределы — в DTO, backend#29)', async () => {
     const { service, customModes } = makeService([]);
-    const longName = 'а'.repeat(100);
+    const name = 'а'.repeat(80);
     const mode = await service.createCustomMode(T1, {
-      name: longName,
-      emoji: '🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥',
+      name,
+      emoji: '🔥',
       nodeType: 'bogus',
     });
     expect(mode.nodeType).toBe('custom');
-    expect(mode.name).toHaveLength(80);
-    expect(customModes[0].emoji.length).toBeLessThanOrEqual(8);
+    expect(mode.name).toBe(name);
+    expect(customModes[0].emoji).toBe('🔥');
   });
 
   it('createCustomMode: emoji по умолчанию "⬡", если не передан', async () => {

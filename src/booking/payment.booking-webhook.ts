@@ -1,6 +1,7 @@
 import { ConflictException, Logger } from '@nestjs/common';
 import { BookingService, PaymentAmountMismatchError } from './booking.service';
 import { PaymentAfterCancelError } from './booking.transitions';
+import { ConfirmEffectsFailedError } from './booking.confirm-effects';
 import { BookingNotifyService } from './booking-notify.service';
 import { paidAfterCancelAlert } from './booking-paid-after-cancel';
 
@@ -51,6 +52,17 @@ export async function bookingWebhookReply(
         return `FAIL${invId}`;
       }
       return `OK${invId}`;
+    }
+    // Оплата принята, CAS прошёл — бронь CONFIRMED, но ссылка/календарь не
+    // доехали (security#21). Это не «не подтвердилась»: FAIL нужен, чтобы
+    // Robokassa повторила вебхук, а повтор доделает эффекты (кроме него —
+    // крон-добор). warn, не error: error ушёл бы владельцу вторым DM.
+    if (e instanceof ConfirmEffectsFailedError) {
+      logger.warn(`Booking ${id}: confirmed, effects pending: ${e.message}`);
+      await notify.alertAdmin(
+        `⚠️ <b>Бронь #${id} оплачена и подтверждена, но ссылка на встречу и календарь не готовы</b>\nПовтор уведомления Robokassa или автодобор (раз в 5 минут) доделает сам. Если число «подтверждённых без ссылки» в /stats не уходит — проверьте вручную.`,
+      );
+      return `FAIL${invId}`;
     }
     // Остальные ConflictException — бронь уже в статусе, где подтверждать
     // нечего (COMPLETED: поздний повтор вебхука) — ack, чтобы Robokassa

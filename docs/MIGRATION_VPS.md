@@ -19,7 +19,7 @@ GitHub Actions: прямого SSH у него нет, ключ лежит в с
 | `deploy/vps/ops.sh` | фиксированные операции: deploy, откат, перенос, статус |
 | `deploy/vps/dc.sh` | единственная обёртка над `docker compose` на сервере |
 | `deploy/transfer-db.sh` | перенос БД; запускается внутри контейнера на Amvera |
-| `scripts/fetch-latest-b2.sh`, `scripts/b2-api.sh` | скачать самый свежий бэкап из B2 (`b2-api.sh` — общий вход в B2, его же подключает `backup-to-b2.sh`); план Б ниже |
+| `scripts/backup-fetch-latest.sh`, `scripts/s3-api.sh` | скачать самый свежий бэкап из Cloudflare R2 (`s3-api.sh` — общий вход в хранилище, его же подключает `backup-upload.sh`); план Б ниже |
 | `deploy/vps/external-db-check.sh` | три проверки подключения к базе на VPS изнутри образа приложения (`op=external-db-check`) |
 | `.github/workflows/deploy-vps.yml` | зелёный CI на push в `main` (`workflow_run`) → сборка того же коммита → ghcr → сервер → здоровье → автооткат |
 | `.github/workflows/vps.yml` | ручные операции (`op`) |
@@ -37,8 +37,33 @@ GitHub Actions: прямого SSH у него нет, ключ лежит в с
 Раньше всего остального. `ENCRYPTION_KEY` шифрует свободный текст пользователей
 (дневники, заметки, письма), `BACKUP_ENCRYPTION_KEY` шифрует бэкапы. Нигде, кроме env
 Amvera, они не хранятся. Исчезнут вместе с аккаунтом Amvera, и перенесённая база
-станет нечитаемой, а бэкапы в B2 не расшифровать. Сохранить значения, а не только
+станет нечитаемой, а бэкапы в R2 не расшифровать. Сохранить значения, а не только
 имена переменных.
+
+### 0а. Завести бакет R2 и положить ключи бэкапов в `PROD_ENV` (до переключения DNS)
+
+На VPS база лежит в `pgdata` на диске сервера, и это единственная копия: снапшотов
+хостинга и бэкапов Amvera здесь нет. Поэтому бэкапы в Cloudflare R2 не «план Б», а
+условие запуска: пока в `.env` на сервере нет `BACKUP_S3_ENDPOINT`,
+`BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` и
+`BACKUP_ENCRYPTION_KEY`, `deploy` и `release-hold` отказываются поднимать
+приложение (в ошибке имена недостающих переменных, значения не печатаются), а
+самопроверка красная.
+
+1. В Cloudflare завести **приватный** бакет R2 и API-токен только на этот бакет с
+   правом **Object Read & Write** (запись нужна бэкапу и ротации старых копий,
+   чтение и листинг нужны плану Б ниже). Шаги в Cloudflare не дублируются:
+   [RUNBOOKS.md](RUNBOOKS.md), «Cloudflare R2 — бэкапы базы».
+2. Сгенерировать `BACKUP_ENCRYPTION_KEY` (не короче 32 символов, отличный от
+   `ENCRYPTION_KEY`): `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+   Сохранить в менеджер паролей отдельно от сервера: без него бэкап не расшифровать.
+3. Добавить пять строк (`BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`,
+   `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, `BACKUP_ENCRYPTION_KEY`)
+   в секрет `PROD_ENV` и перезапустить «Деплой на VPS».
+   `DEPLOY_TARGET=vps` вручную добавлять не нужно, его ставит `docker-compose.yml`.
+
+Второго слоя (копия `pg_dump` на самом хосте) пока нет: он в списке открытого
+([README](README.md), «Что осталось открытым»).
 
 ### 1. Создать VPS
 
@@ -200,29 +225,31 @@ TRANSFER_TARGET_URL=postgresql://postgres:<пароль>@<IP>:5432/schemehappens
 Окно деплоя: приложение пересоздаётся, `migrate deploy` и запуск занимают десятки
 секунд. Caddy ждёт до 20 секунд, дольше клиент видит 502.
 
-## План Б: старая база недоступна, поднимаем из бэкапа B2
+## План Б: старая база недоступна, поднимаем из бэкапа R2
 
 Когда Postgres на Amvera не отвечает и перенос (`transfer-db.sh`) невозможен, прод
-поднимается из ночного бэкапа в Backblaze B2. Бэкап делает `scripts/backup-to-b2.sh`
+поднимается из ночного бэкапа в Cloudflare R2. Бэкап делает `scripts/backup-upload.sh`
 (раз в сутки после 03:00 UTC, то есть около 06:00 по Москве), восстанавливает
-`op=restore-b2`.
+`op=restore-backup`.
 
 Что должно быть готово заранее:
 
-- В секрете `PROD_ENV` есть `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET` и
-  `BACKUP_ENCRYPTION_KEY`. Ключ B2 нужен **с правом `readFiles`**: ключ, созданный
-  только под загрузку, пройдёт листинг, а скачивание получит 401 (операция скажет
-  об этом в ошибке). Если права нет, выпустить новый ключ в Backblaze и обновить
+- В секрете `PROD_ENV` есть `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`,
+  `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` и
+  `BACKUP_ENCRYPTION_KEY` (как завести — docs/RUNBOOKS.md, «Cloudflare R2 —
+  бэкапы базы»). API-токен R2 нужен **с правом Object Read & Write**: токен
+  только на запись не пройдёт ни листинг, ни скачивание (операция скажет об этом
+  в ошибке). Если права нет, выпустить новый токен в Cloudflare и обновить
   `PROD_ENV`.
-- Образ релиза собран из `main` с `scripts/fetch-latest-b2.sh` (он едет в образ
-  рядом с `backup-to-b2.sh`): операция запускает скрипты из образа приложения.
+- Образ релиза собран из `main` с `scripts/backup-fetch-latest.sh` (он едет в образ
+  рядом с `backup-upload.sh`): операция запускает скрипты из образа приложения.
 
 Порядок:
 
 1. **`bootstrap`**. На свежем сервере ставит `HOLD_APP`.
 2. **Деплой** (зелёный CI на `main` или «Деплой на VPS»). Под `HOLD_APP` поднимаются `db` и
-   `caddy`, релиз записывается. Без релиза `restore-b2` отвечает «сначала деплой».
-3. **`restore-b2`**. Отказывает без `HOLD_APP` и если в базе уже есть таблицы (та же
+   `caddy`, релиз записывается. Без релиза `restore-backup` отвечает «сначала деплой».
+3. **`restore-backup`**. Отказывает без `HOLD_APP` и если в базе уже есть таблицы (та же
    проверка «пусто», что у `transfer-db.sh`). Иначе в контейнере приложения
    (`--entrypoint bash`, без запуска самого приложения) скачивает самый свежий
    `schemehappens-*.sql.gz.enc` вместе с `.sha256`, сверяет сумму, расшифровывает
@@ -248,7 +275,7 @@ TRANSFER_TARGET_URL=postgresql://postgres:<пароль>@<IP>:5432/schemehappens
 
 1. `bootstrap`, затем деплой (приложение на VPS остаётся под `HOLD_APP`).
 2. **`transfer-open`**: `HOLD_APP` и порт 5432 наружу по TLS.
-3. **`restore-b2`**: база заполняется из бэкапа (раздел выше).
+3. **`restore-backup`**: база заполняется из бэкапа (раздел выше).
 4. **`external-db-check`**: изнутри образа приложения, но с публичным IP сервера
    (`--network host`), проверяются те три пути, которыми ходит прод:
    `prisma migrate status` (так приложение мигрирует базу на старте), `select 1`

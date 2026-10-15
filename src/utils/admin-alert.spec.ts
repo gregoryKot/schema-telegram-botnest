@@ -9,6 +9,11 @@ import {
   isAdminSender,
   notifyAdminWithFallback,
 } from './admin-alert';
+import {
+  getAlertEmailHealth,
+  resetAlertEmailHealth,
+} from './alert-email-health';
+import { Logger } from '@nestjs/common';
 
 const ORIGINAL_ENV = { ...process.env };
 const originalFetch = global.fetch;
@@ -23,6 +28,7 @@ function mockFetch(
 }
 
 afterEach(() => {
+  resetAlertEmailHealth();
   process.env = { ...ORIGINAL_ENV };
   global.fetch = originalFetch;
   jest.restoreAllMocks();
@@ -232,5 +238,90 @@ describe('notifyAdminWithFallback', () => {
       const urls = fetchMock.mock.calls.map((c) => String(c[0]));
       expect(urls).toEqual(['https://api.resend.com/emails']);
     });
+  });
+});
+
+// Аудит 2026-10-11: sendEmail не смотрел ответ Resend — отозванный ключ, 403
+// и 429 считались доставкой и не оставляли ни строки в логе.
+describe('Resend не принял письмо', () => {
+  const SECRET_TEXT = 'секретный текст алерта admin@example.com';
+
+  function setup(resend: () => Promise<unknown>) {
+    process.env.BOT_TOKEN = 'tg-token';
+    process.env.ADMIN_ID = '777';
+    process.env.RESEND_API_KEY = 'resend-key';
+    process.env.ADMIN_EMAIL = 'admin@example.com';
+    global.fetch = jest.fn((url: unknown) =>
+      String(url).includes('api.telegram.org')
+        ? Promise.resolve({ ok: false, status: 500 })
+        : resend(),
+    );
+    return {
+      warn: jest.spyOn(Logger.prototype, 'warn').mockImplementation(),
+      error: jest.spyOn(Logger.prototype, 'error').mockImplementation(),
+    };
+  }
+
+  it.each([401, 403, 422, 429, 500])(
+    'HTTP %i: снимок не ok со статусом, warn без секретов, error не зовётся',
+    async (status) => {
+      const { warn, error } = setup(() =>
+        Promise.resolve({ ok: false, status }),
+      );
+
+      await expect(
+        notifyAdminWithFallback(SECRET_TEXT),
+      ).resolves.toBeUndefined();
+
+      expect(getAlertEmailHealth()).toMatchObject({ ok: false, status });
+      expect(warn).toHaveBeenCalledTimes(1);
+      const line = String(warn.mock.calls[0][0]);
+      expect(line).toContain(`HTTP ${status}`);
+      expect(line).not.toContain('resend-key');
+      expect(line).not.toContain('admin@example.com');
+      expect(line).not.toContain('секретный');
+      // error ушёл бы через AlertLogger обратно в этот же фолбэк
+      expect(error).not.toHaveBeenCalled();
+    },
+  );
+
+  it('серия одинаковых отказов — одна строка в логе', async () => {
+    const { warn } = setup(() => Promise.resolve({ ok: false, status: 403 }));
+    await notifyAdminWithFallback('a');
+    await notifyAdminWithFallback('b');
+    await notifyAdminWithFallback('c');
+    expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([
+      'Резервный канал алертов (Resend) не принял письмо: HTTP 403',
+    ]);
+  });
+
+  it('сеть недоступна: status network, не бросает', async () => {
+    const { warn } = setup(() => Promise.reject(new Error('ECONNRESET')));
+    await expect(notifyAdminWithFallback('x')).resolves.toBeUndefined();
+    expect(getAlertEmailHealth()).toMatchObject({
+      ok: false,
+      status: 'network',
+    });
+    expect(String(warn.mock.calls[0][0])).toContain('сеть');
+  });
+
+  it('таймаут (TimeoutError): status timeout', async () => {
+    const { warn } = setup(() =>
+      Promise.reject(new DOMException('timed out', 'TimeoutError')),
+    );
+    await notifyAdminWithFallback('x');
+    expect(getAlertEmailHealth()).toMatchObject({
+      ok: false,
+      status: 'timeout',
+    });
+    expect(String(warn.mock.calls[0][0])).toContain('таймаут');
+  });
+
+  it('принятое письмо: снимок ok, warn не зовётся', async () => {
+    const { warn } = setup(() => Promise.resolve({ ok: true, status: 200 }));
+    await notifyAdminWithFallback('x');
+    expect(getAlertEmailHealth()).toMatchObject({ ok: true, status: null });
+    expect(getAlertEmailHealth().lastOkAt).not.toBeNull();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

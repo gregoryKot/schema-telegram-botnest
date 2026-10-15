@@ -17,11 +17,17 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { BACKUP_REQUIRED_ENV_VARS } from './backup-config';
 
 const OLD = 'a'.repeat(40);
 const NEW = 'b'.repeat(40);
 const IMAGE = 'ghcr.io/owner/repo';
 const TOKEN = 'ghp_SECRET_TOKEN_VALUE';
+// Пять переменных бэкапов: без них на VPS приложение не стартует (infra#11).
+const BACKUP_SECRET = 'BACKUP_SECRET_VALUE_DO_NOT_PRINT';
+const BACKUP_ENV = BACKUP_REQUIRED_ENV_VARS.map(
+  (k) => `${k}=${BACKUP_SECRET}\n`,
+).join('');
 
 // Поддельный docker: всё пишет в $FAKE_LOG; `exec` (проба здоровья) отвечает
 // «ок» только если текущий release входит в $FAKE_HEALTHY; `port` — по $FAKE_PORT_OPEN.
@@ -80,7 +86,7 @@ describe('deploy/vps/ops.sh', () => {
       copyFileSync(join(process.cwd(), 'deploy', 'vps', f), join(base, f));
     }
     writeFileSync(join(base, 'db.env'), 'POSTGRES_PASSWORD=pw\n');
-    writeFileSync(join(base, '.env'), 'X=1\n');
+    writeFileSync(join(base, '.env'), `X=1\n${BACKUP_ENV}`);
     writeFileSync(join(base, 'docker-compose.yml'), 'services: {}\n');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -98,7 +104,7 @@ describe('deploy/vps/ops.sh', () => {
         FAKE_LOG: log,
         FAKE_URL_FILE: join(dir, 'db-url'),
         FAKE_HEALTHY: NEW,
-        OPS_HEALTH_LIMIT: '2',
+        OPS_HEALTH_LIMIT: '4', // с запасом: под нагрузкой один опрос поддельного docker длится секунды
         OPS_HEALTH_POLL: '1',
         ...env,
       },
@@ -182,6 +188,140 @@ describe('deploy/vps/ops.sh', () => {
     const bad = ops(['release-hold'], { FAKE_HEALTHY: OLD });
     expect(bad.status).toBe(1);
     expect(read('release')).toBe(OLD);
+  });
+
+  describe('бэкапы в R2 обязательны (infra#11: на VPS pgdata — единственная копия базы)', () => {
+    const setEnv = (text: string) => writeFileSync(join(base(), '.env'), text);
+
+    it('имена в ops.sh те же, что требует планировщик бэкапов (src/infra/backup-config.ts)', () => {
+      const src = readFileSync(
+        join(process.cwd(), 'deploy', 'vps', 'ops.sh'),
+        'utf8',
+      );
+      const names = /^BACKUP_ENV_NAMES=\((.*)\)$/m.exec(src)?.[1].split(' ');
+      expect([...(names ?? [])].sort()).toEqual(
+        [...BACKUP_REQUIRED_ENV_VARS].sort(),
+      );
+    });
+
+    it('docker-compose.yml задаёт DEPLOY_TARGET=vps контейнеру app (откуда код узнаёт площадку)', () => {
+      const compose = readFileSync(
+        join(process.cwd(), 'deploy', 'vps', 'docker-compose.yml'),
+        'utf8',
+      );
+      expect(compose).toMatch(/^ {6}DEPLOY_TARGET: vps$/m);
+    });
+
+    it('release-hold без бэкапов: отказ, приложение не запущено, HOLD_APP на месте, значений в выводе нет', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(`X=1\nBACKUP_S3_ENDPOINT=${BACKUP_SECRET}\nBACKUP_S3_BUCKET=\n`);
+
+      const res = ops(['release-hold']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        'не заданы: BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY BACKUP_ENCRYPTION_KEY',
+      );
+      expect(res.stderr).not.toContain('BACKUP_S3_ENDPOINT');
+      expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true);
+      expect(dockerLog()).not.toMatch(/ up /);
+      expect(res.stdout + res.stderr).not.toContain(BACKUP_SECRET);
+    });
+
+    it('release-hold с полным набором — приложение поднято (контроль)', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+
+      const res = ops(['release-hold']);
+
+      expect(res.status).toBe(0);
+      expect(dockerLog()).toMatch(/up -d --remove-orphans db caddy app/);
+    });
+
+    it('deploy без бэкапов: отказ до записи релиза и до pull, прежняя версия остаётся', () => {
+      seedRelease(OLD);
+      setEnv('X=1\n');
+
+      const res = deploy(NEW);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(BACKUP_REQUIRED_ENV_VARS.join(' '));
+      expect(read('release')).toBe(OLD);
+      expect(existsSync(join(base(), 'release.prev'))).toBe(false);
+      expect(dockerLog()).not.toMatch(/pull|up /);
+    });
+
+    it('deploy при HOLD_APP идёт без бэкапов: приложение не стартует, проверка достанется release-hold', () => {
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv('X=1\n');
+
+      const res = deploy(NEW);
+
+      expect(res.status).toBe(0);
+      expect(read('release')).toBe(NEW);
+    });
+
+    it('пустое значение и пробелы вместо значения считаются «не задано»', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(
+        BACKUP_ENV.replace(
+          `BACKUP_S3_BUCKET=${BACKUP_SECRET}`,
+          'BACKUP_S3_BUCKET=  ',
+        ),
+      );
+
+      const res = ops(['release-hold']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('не заданы: BACKUP_S3_BUCKET.');
+    });
+    it('значение из одних кавычек (NAME="") тоже «не задано»: env_file читается как raw', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(
+        BACKUP_ENV.replace(
+          `BACKUP_S3_BUCKET=${BACKUP_SECRET}`,
+          'BACKUP_S3_BUCKET=""',
+        ).replace(
+          `BACKUP_ENCRYPTION_KEY=${BACKUP_SECRET}`,
+          "BACKUP_ENCRYPTION_KEY=''",
+        ),
+      );
+
+      const res = ops(['release-hold']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        'не заданы: BACKUP_S3_BUCKET BACKUP_ENCRYPTION_KEY.',
+      );
+    });
+
+    it('значение в кавычках с содержимым считается заданным (контроль к проверке выше)', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv(
+        BACKUP_ENV.replace(
+          `BACKUP_S3_BUCKET=${BACKUP_SECRET}`,
+          'BACKUP_S3_BUCKET="bucket"',
+        ),
+      );
+
+      expect(ops(['release-hold']).status).toBe(0);
+    });
+
+    it('restore-backup без бэкапов: понятный отказ до запуска контейнера восстановления', () => {
+      seedRelease(NEW);
+      writeFileSync(join(base(), 'HOLD_APP'), '');
+      setEnv('X=1\n');
+
+      const res = ops(['restore-backup']);
+
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(BACKUP_REQUIRED_ENV_VARS.join(' '));
+      expect(dockerLog()).not.toMatch(/\brun --rm\b/);
+    });
   });
 
   it('при HOLD_APP restart-app и rollback отказываются', () => {
@@ -325,7 +465,7 @@ describe('deploy/vps/ops.sh', () => {
     expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true); // приложение отпускает только release-hold
   });
 
-  describe('restore-b2 (план Б: восстановление из бэкапа B2)', () => {
+  describe('restore-backup (план Б: восстановление из бэкапа R2)', () => {
     const HOLD = () => writeFileSync(join(base(), 'HOLD_APP'), '');
     const runCalls = () =>
       dockerLog()
@@ -333,7 +473,7 @@ describe('deploy/vps/ops.sh', () => {
         .filter((l) => /\brun --rm --no-deps\b/.test(l));
     const READY = {
       FAKE_RUN_OUT:
-        '[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 123 байт, дата 2026-10-09',
+        '[fetch-backup] ok schemehappens-2026-10-09.sql.gz.enc размер 123 байт, дата 2026-10-09',
       FAKE_MIGS: '250',
       FAKE_USERS: '7',
     };
@@ -341,7 +481,7 @@ describe('deploy/vps/ops.sh', () => {
     it('без HOLD_APP отказывается и ничего не запускает', () => {
       seedRelease(NEW);
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('нужен HOLD_APP');
@@ -351,7 +491,7 @@ describe('deploy/vps/ops.sh', () => {
     it('без релиза: понятная ошибка «сначала деплой», контейнер не запускается', () => {
       HOLD();
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('сначала деплой');
@@ -362,7 +502,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_TABLES: '12' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_TABLES: '12' });
 
       expect(res.status).toBe(1);
       expect(res.stderr).toMatch(/ОТКАЗ: в базе уже есть таблицы \(всего 12\)/);
@@ -374,7 +514,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], READY);
+      const res = ops(['restore-backup'], READY);
 
       expect(res.status).toBe(0);
       expect(dockerLog()).toMatch(/up -d db\n/);
@@ -383,7 +523,7 @@ describe('deploy/vps/ops.sh', () => {
       expect(calls[0]).toMatch(
         /run --rm --no-deps -T --entrypoint bash app -c /,
       );
-      expect(calls[0]).toContain('scripts/fetch-latest-b2.sh');
+      expect(calls[0]).toContain('scripts/backup-fetch-latest.sh');
       expect(calls[0]).toContain('scripts/restore-backup.sh');
       expect(res.stdout).toContain('schemehappens-2026-10-09.sql.gz.enc');
       expect(res.stdout).toContain('строк в _prisma_migrations: 250');
@@ -398,10 +538,10 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_RUN_EXIT: '1' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_RUN_EXIT: '1' });
 
       expect(res.status).toBe(1);
-      expect(res.stderr).toContain('восстановление из B2 не удалось');
+      expect(res.stderr).toContain('восстановление из бэкапа не удалось');
       expect(dockerLog()).toContain('DROP SCHEMA public CASCADE');
       expect(existsSync(join(base(), 'HOLD_APP'))).toBe(true);
     });
@@ -410,7 +550,7 @@ describe('deploy/vps/ops.sh', () => {
       seedRelease(NEW);
       HOLD();
 
-      const res = ops(['restore-b2'], { ...READY, FAKE_MIGS: '0' });
+      const res = ops(['restore-backup'], { ...READY, FAKE_MIGS: '0' });
 
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('в _prisma_migrations нет строк');
@@ -422,9 +562,9 @@ describe('deploy/vps/ops.sh', () => {
         app = join(dir, 'app');
         mkdirSync(join(app, 'scripts'), { recursive: true });
         writeFileSync(
-          join(app, 'scripts', 'fetch-latest-b2.sh'),
+          join(app, 'scripts', 'backup-fetch-latest.sh'),
           '#!/bin/bash\nmkdir -p "$1"; : > "$1/schemehappens-2026-10-09.sql.gz.enc"\n' +
-            'echo "[fetch-b2] ok schemehappens-2026-10-09.sql.gz.enc размер 5 байт, дата 2026-10-09"\n',
+            'echo "[fetch-backup] ok schemehappens-2026-10-09.sql.gz.enc размер 5 байт, дата 2026-10-09"\n',
         );
         writeFileSync(
           join(app, 'scripts', 'restore-backup.sh'),
@@ -444,7 +584,7 @@ describe('deploy/vps/ops.sh', () => {
         HOLD();
       });
       const exec = (env: Record<string, string> = {}) =>
-        ops(['restore-b2'], {
+        ops(['restore-backup'], {
           ...READY,
           FAKE_RUN_EXEC: '1',
           FAKE_RUN_CWD: app,

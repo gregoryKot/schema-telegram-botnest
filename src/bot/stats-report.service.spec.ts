@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { StatsReportService } from './stats-report.service';
+import { BLOCK_FAILED_MARK } from './stats-settle';
+import { selfCheckState } from '../infra/self-check/state';
 
 describe('StatsReportService.render', () => {
   const build = () => {
@@ -124,14 +127,82 @@ describe('StatsReportService.render', () => {
     expect(out).toContain(
       'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5',
     );
-    // Блок «Настройки» (щит, волна 8) — считается из process.env напрямую
-    // (не мокается через blocks), но обязан приезжать последним куском
-    // отчёта, сразу после блока «Игра».
-    const capabilityIndex = out.indexOf('⚙️ <b>Настройки</b>');
-    expect(capabilityIndex).toBeGreaterThan(-1);
-    expect(out.slice(capabilityIndex)).toBe(
-      out.trimEnd().slice(capabilityIndex),
-    );
+    // Хвост — блоки о здоровье системы (считаются из process.env и состояния
+    // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
+    // Переменные → Самопроверка, и ничего после них.
+    const settings = out.indexOf('⚙️ <b>Настройки</b>');
+    const env = out.indexOf('Настройки: переменные</b>');
+    const selfCheck = out.indexOf('🩺 <b>Самопроверка</b>');
+    expect(settings).toBeGreaterThan(out.indexOf('данные записей: стёрто 5'));
+    expect(env).toBeGreaterThan(settings);
+    expect(selfCheck).toBeGreaterThan(env);
+    expect(out.indexOf('🩺', selfCheck + 1)).toBe(-1);
+  });
+
+  describe('один блок упал — отчёт не гаснет', () => {
+    let warn: jest.SpyInstance;
+    let error: jest.SpyInstance;
+    beforeEach(() => {
+      warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+      error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('render() бросает: остальные блоки, Настройки, Переменные и Самопроверка на месте', async () => {
+      const { service, blocks } = build();
+      blocks.money.render.mockRejectedValue(
+        new Error('pool <timeout>\nstack: at x'),
+      );
+      const out = await service.render();
+      // Заглушка стоит на месте блока: между соседями, в прежнем порядке.
+      expect(out).toContain(
+        `вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\n⚠️ <b>«Деньги»</b>: ${BLOCK_FAILED_MARK} — pool &lt;timeout&gt;\n\nновенькие по ссылкам: 5`,
+      );
+      expect(out).not.toContain('stack: at x');
+      expect(out).toContain('продуктовые метрики');
+      expect(out).toContain('данные записей: стёрто 5');
+      expect(out).toContain('⚙️ <b>Настройки</b>');
+      expect(out).toContain('Настройки: переменные</b>');
+      expect(out).toContain('🩺 <b>Самопроверка</b>');
+      // warn, не error: error ушёл бы админу в DM на каждый его же /stats.
+      expect(warn).toHaveBeenCalledWith(
+        'stats block "Деньги" failed: pool <timeout>',
+      );
+      expect(error).not.toHaveBeenCalled();
+    });
+
+    it('упали все блоки метрик: инфраструктурный хвост всё равно приезжает', async () => {
+      const { service, blocks } = build();
+      for (const b of Object.values(blocks)) {
+        b.render.mockRejectedValue(new Error('db down'));
+      }
+      const out = await service.render();
+      expect(out).toContain(BLOCK_FAILED_MARK);
+      expect(out).toContain('🩺 <b>Самопроверка</b>');
+      expect(out).toContain('⚙️ <b>Настройки</b>');
+    });
+
+    it('инфраструктурный блок бросает синхронно: продуктовые блоки и соседние не страдают', async () => {
+      jest.spyOn(selfCheckState, 'get').mockImplementation(() => {
+        throw new Error('state broken');
+      });
+      const { service } = build();
+      const out = await service.render();
+      expect(out).toContain('данные записей: стёрто 5');
+      expect(out).toContain('⚙️ <b>Настройки</b>');
+      expect(out).toContain(`«Самопроверка»</b>: ${BLOCK_FAILED_MARK}`);
+      expect(out).toContain('state broken');
+    });
+
+    it('отклонение не-Error значением не даёт «undefined» и «[object Object]»', async () => {
+      const { service, blocks } = build();
+      blocks.game.render.mockRejectedValue(undefined);
+      blocks.money.render.mockRejectedValue('строкой');
+      const out = await service.render();
+      expect(out).toContain(`«Игра»</b>: ${BLOCK_FAILED_MARK}\n`);
+      expect(out).toContain('— строкой');
+      expect(out).not.toMatch(/undefined|\[object Object\]/);
+    });
   });
 
   it('новый блок реально спрашивается — событие без строки в отчёте невидимо', async () => {

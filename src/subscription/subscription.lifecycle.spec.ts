@@ -13,6 +13,7 @@ import {
   SUBSCRIPTION_INVID_BASE,
 } from './subscription.service';
 import { SUB_DEFAULT_PRICE } from '../booking/booking.config';
+import { subscriptionUpdateMany } from '../test-support/subscription-update-many';
 
 // Стейтфул-фейк Prisma: хранит подписки/списания в Map, чтобы find/update
 // вели себя реалистично между вызовами внутри одного теста.
@@ -76,6 +77,7 @@ function makePrisma() {
         Object.assign(row, data);
         return row;
       }),
+      updateMany: subscriptionUpdateMany(subs),
     },
     // Атомарный захват подписки перед списанием: UPDATE "Subscription"
     // SET nextChargeAt = $1 WHERE id = $2 AND nextChargeAt <= $3. Дублёр
@@ -145,6 +147,7 @@ function makeService(
     alertAdmin: jest.fn((msg: string) => {
       calls.alerts.push(msg);
     }),
+    notifyAdminBoth: jest.fn(async (_html: string, _subject: string) => {}),
   };
   const config = {
     get: (k: string) => {
@@ -337,7 +340,7 @@ describe('SubscriptionService.markChargePaidByInvId — расхождение �
     expect(calls.alerts.length).toBe(0);
   });
 
-  it('charge уже paid → тихий no-op, subscription.update не вызывается', async () => {
+  it('charge уже paid → тихий no-op, подписка не трогается', async () => {
     const { service, prisma, calls } = makeService();
     const sub = await prisma.subscription.create({
       data: { status: 'active', period: 'month', amount: 300 },
@@ -355,7 +358,7 @@ describe('SubscriptionService.markChargePaidByInvId — расхождение �
       300,
     );
     expect(res).toEqual({ ok: true });
-    expect(prisma.subscription.update).not.toHaveBeenCalled();
+    expect(prisma.subscription.updateMany).not.toHaveBeenCalled();
     expect(calls.alerts.length).toBe(0);
   });
 });
@@ -671,5 +674,174 @@ describe('SubscriptionService.chargeDue — успешное списание', 
     expect(robokassa.chargeRecurring).not.toHaveBeenCalled();
     // Подписка не тронута этим тиком (не сдвинулась дальше pending-состояния).
     expect(prisma.subs.get(sub.id).nextChargeAt).toEqual(sub.nextChargeAt);
+  });
+});
+
+// Аудит 2026-10, security#17: оплата после отмены не воскрешает подписку.
+// Деньги засчитаны за charge, владельцу уходит сигнал в оба канала.
+describe('SubscriptionService — оплата и сбой списания после отмены', () => {
+  async function seed(
+    prisma: ReturnType<typeof makePrisma>,
+    status: string,
+    over: Record<string, unknown> = {},
+    isFirst = false,
+  ) {
+    const sub = await prisma.subscription.create({
+      data: {
+        status,
+        cancelToken: 'tok-late',
+        period: 'month',
+        amount: 300,
+        telegramId: 777n,
+        email: 'late@example.com',
+        firstInvId: 900001,
+        nextChargeAt: new Date(Date.now() + 86_400_000),
+        ...over,
+      },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: { subscriptionId: sub.id, amount: 300, isFirst },
+    });
+    return { sub, charge, invId: SUBSCRIPTION_INVID_BASE + charge.id };
+  }
+
+  it('active + pending-charge → cancel → вебхук: charge paid, подписка cancelled, сигнал один раз', async () => {
+    const { service, prisma, notify, calls } = makeService();
+    const { sub, charge, invId } = await seed(prisma, 'active');
+    await service.cancel('tok-late');
+
+    const res = await service.markChargePaidByInvId(invId, 300);
+
+    expect(res).toEqual({ ok: true });
+    expect(prisma.charges.get(charge.id).status).toBe('paid');
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('cancelled');
+    expect(row.nextChargeAt).toBeNull();
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    const [html, subject] = notify.notifyAdminBoth.mock.calls[0];
+    expect(html).toContain(`#${sub.id}`);
+    expect(html).toContain('Верните деньги');
+    expect(subject).not.toMatch(/<|💸/);
+    expect(calls.alerts.join('')).not.toContain('Продление');
+
+    // Повтор вебхука: тишина, второго сигнала нет.
+    await service.markChargePaidByInvId(invId, 300);
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+  });
+
+  it('pending (первый charge) → cancel → оплата по старой ссылке: подписка cancelled, firstInvId не пишется', async () => {
+    const { service, prisma, notify } = makeService();
+    const { sub, invId } = await seed(
+      prisma,
+      'pending',
+      { firstInvId: null, nextChargeAt: null },
+      true,
+    );
+    await service.cancel('tok-late');
+
+    await service.markChargePaidByInvId(invId, 300);
+
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('cancelled');
+    expect(row.firstInvId).toBeNull();
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+  });
+
+  it('chargeDue: отмена во время запроса в Robokassa, отказ → подписка остаётся cancelled без повторного списания', async () => {
+    const { service, prisma, robokassa } = makeService();
+    const { sub } = await seed(prisma, 'active', {
+      nextChargeAt: new Date(Date.now() - 1000),
+    });
+    robokassa.chargeRecurring.mockImplementation(async () => {
+      await service.cancel('tok-late');
+      return { ok: false, body: 'declined' };
+    });
+    // Для этой подписки выше засеян pending-charge: чистим, чтобы дошло до списания.
+    prisma.charges.clear();
+
+    await service.chargeDue();
+
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('cancelled');
+    expect(row.nextChargeAt).toBeNull();
+  });
+
+  it('chargeDue: то же на пороге MAX_FAILS — не past_due', async () => {
+    const { service, prisma, robokassa } = makeService();
+    const { sub } = await seed(prisma, 'active', {
+      failedAttempts: 2,
+      nextChargeAt: new Date(Date.now() - 1000),
+    });
+    robokassa.chargeRecurring.mockImplementation(async () => {
+      await service.cancel('tok-late');
+      return { ok: false, body: 'declined' };
+    });
+    prisma.charges.clear();
+
+    await service.chargeDue();
+
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('cancelled');
+    expect(row.failedAttempts).toBe(2);
+  });
+
+  it('атомарность: падение записи подписки откатывает charge, ретрай вебхука довершает активацию', async () => {
+    const { service, prisma } = makeService();
+    const { sub, charge, invId } = await seed(
+      prisma,
+      'pending',
+      { firstInvId: null, nextChargeAt: null },
+      true,
+    );
+    // Откат как в Postgres: интерактивная транзакция вернёт charge в pending.
+    prisma.$transaction.mockImplementation(async (fn: any) => {
+      const snapshot = { ...prisma.charges.get(charge.id) };
+      try {
+        return await fn(prisma);
+      } catch (e) {
+        prisma.charges.set(charge.id, snapshot);
+        throw e;
+      }
+    });
+    prisma.subscription.updateMany.mockImplementationOnce(() => {
+      throw new Error('db down');
+    });
+
+    await expect(service.markChargePaidByInvId(invId, 300)).rejects.toThrow(
+      'db down',
+    );
+    expect(prisma.charges.get(charge.id).status).toBe('pending');
+
+    await service.markChargePaidByInvId(invId, 300);
+    expect(prisma.charges.get(charge.id).status).toBe('paid');
+    expect(prisma.subs.get(sub.id).status).toBe('active');
+    expect(prisma.subs.get(sub.id).firstInvId).toBe(invId);
+  });
+
+  it('КОНТРОЛЬ: past_due + поздний платёж → active, счётчик сбоев обнулён, сигнала нет', async () => {
+    const { service, prisma, notify } = makeService();
+    const { sub, invId } = await seed(prisma, 'past_due', {
+      failedAttempts: 3,
+      nextChargeAt: null,
+    });
+
+    await service.markChargePaidByInvId(invId, 300);
+
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('active');
+    expect(row.failedAttempts).toBe(0);
+    expect(row.nextChargeAt).toBeInstanceOf(Date);
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+  });
+
+  it('КОНТРОЛЬ: обычное продление active → active, алерт «Продление»', async () => {
+    const { service, prisma, notify, calls } = makeService();
+    const { sub, invId } = await seed(prisma, 'active');
+
+    await service.markChargePaidByInvId(invId, 300);
+
+    expect(prisma.subs.get(sub.id).status).toBe('active');
+    expect(calls.alerts.join('')).toContain('Продление');
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 });

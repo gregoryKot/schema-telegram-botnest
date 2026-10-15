@@ -1,14 +1,12 @@
 import { Probe } from './types';
-import {
-  oauthRedirectsProbe,
-  emailProbe,
-  alertsProbe,
-} from './probe-capabilities';
+import { oauthRedirectsProbe, alertsProbe } from './probe-capabilities';
+import { emailProbe } from './probe-email';
 import { runtimeModeProbe } from './probe-runtime-mode';
 
 /**
  * Пробы конфигурации и режима процесса (без живых запросов на площадки).
- * Вынесены из registry.ts: тот под храповиком размера (правило №10).
+ * Вынесены из registry.ts, чтобы файл с перечнем проб не рос с каждой новой
+ * пробой конфигурации.
  */
 export function configProbes(): Probe[] {
   return [

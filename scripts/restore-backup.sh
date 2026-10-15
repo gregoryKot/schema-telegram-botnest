@@ -1,12 +1,12 @@
 #!/bin/bash
 # Восстановление зашифрованного бэкапа Postgres — обратная операция к
-# scripts/backup-to-b2.sh.
+# scripts/backup-upload.sh.
 #
 # «Бэкап без проверенного restore — не бэкап» (аудит тестовых практик
 # 2026-08): этот скрипт гоняет nightly.yml (джоба backup-restore, настоящий
 # Postgres) и src/infra/backup-restore.spec.ts (round-trip и негативные пробы).
 #
-# Формат файла (см. backup-to-b2.sh) — стандартный openssl:
+# Формат файла (см. backup-upload.sh) — стандартный openssl:
 #   `openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt`
 #   = «Salted__» + 8 байт соли + шифртекст gzip(дамп). Ручками то же самое:
 #   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_ENCRYPTION_KEY \

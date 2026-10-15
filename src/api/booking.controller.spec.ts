@@ -34,19 +34,17 @@ describe('BookingController.submitBooking', () => {
     expect(sendAdminNotification).toHaveBeenCalled();
   });
 
-  it('source попадает строкой «Откуда» — экранированный и обрезанный до 200', () => {
+  it('source попадает строкой «Откуда» — экранированный, без обрезки в контроллере (предел 200 — в DTO)', () => {
     controller.submitBooking({
       name: 'Имя',
       contact: '@c',
-      source: `<i>${'x'.repeat(300)}</i>`,
+      source: `<i>${'x'.repeat(190)}</i>`,
     });
     const tg = notifyAdmin.mock.calls[0][0] as string;
     expect(tg).toContain('Откуда:');
     expect(tg).toContain('&lt;i&gt;');
     expect(tg).not.toContain('<i>');
-    // Обрезка до 200 символов исходной строки: '<i>' + 197 «x».
-    expect(tg).toContain('x'.repeat(197));
-    expect(tg).not.toContain('x'.repeat(198));
+    expect(tg).toContain('x'.repeat(190));
   });
 
   it('без source строки «Откуда» в уведомлении нет', () => {
