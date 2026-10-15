@@ -21,7 +21,7 @@ export function PriceRow({ label, value, min, onChange, onSave }: {
         onClick={() => price !== null && onSave(price)}>Сохранить</button>
       {price === null && (
         <span style={{ width: '100%', fontSize: 12, color: 'var(--accent-red)' }}>
-          Сумма — целое число от {min} до {PRICE_MAX.toLocaleString('ru-RU')} ₽
+          Сумма — от {min} до {PRICE_MAX.toLocaleString('ru-RU')} ₽
         </span>
       )}
     </div>

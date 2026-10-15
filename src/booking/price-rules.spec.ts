@@ -1,4 +1,6 @@
 // Правила цены (аудит 2026-10-11, «цена платной сессии может быть 0»).
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { SessionType } from '@prisma/client';
 import { minPrice, parsePrice, payableAmount, PRICE_MAX } from './price-rules';
 
@@ -48,4 +50,19 @@ describe('payableAmount', () => {
       expect(() => payableAmount(amount)).toThrow('Invalid payment amount');
     },
   );
+});
+
+describe('PRICE_MAX: сверка с формой админки', () => {
+  // Правило №4: потолок живёт в двух местах (сервер и webapp), обязаны совпадать.
+  // Разошлись бы тихо: форма блокировала бы цены, которые сервер принимает,
+  // или слала те, что сервер отвергает.
+  it('webapp/src/pages/admin/priceInput.ts объявляет тот же PRICE_MAX', () => {
+    const src = readFileSync(
+      join(__dirname, '../../webapp/src/pages/admin/priceInput.ts'),
+      'utf8',
+    );
+    const m = /export const PRICE_MAX = ([\d_]+);/.exec(src);
+    expect(m).not.toBeNull();
+    expect(Number((m as RegExpExecArray)[1].replace(/_/g, ''))).toBe(PRICE_MAX);
+  });
 });

@@ -167,7 +167,7 @@ describe('BookingSection — цены сессий', () => {
     expect(save.disabled).toBe(true);
     fireEvent.click(save);
     expect(mockApi.adminSetPrice).not.toHaveBeenCalled();
-    expect(within(section('Цены')).getByText(/Сумма — целое число от 1 до/)).toBeTruthy();
+    expect(within(section('Цены')).getByText(/Сумма — от 1 до/)).toBeTruthy();
   });
 
   it('контроль: после исправления поля кнопка снова работает и шлёт введённую сумму', async () => {
