@@ -1,7 +1,7 @@
 // Jest setupFiles (test/jest-e2e.json) — выполняется ДО импорта тестовых
 // файлов, а значит и до первого require('../../src/app.module'). Критично:
 // ConfigService.getOrThrow('JWT_SECRET'/'BOT_TOKEN') читается в конструкторах
-// провайдеров (TelegramOidcProvider) при сборке TestingModule — если выставить
+// провайдеров (TelegramProvider) при сборке TestingModule — если выставить
 // переменные внутри спека ПОСЛЕ import, будет поздно (BOT_USERNAME — тем более).
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'e2e-smoke-test-secret';

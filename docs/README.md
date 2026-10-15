@@ -665,12 +665,21 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (Имя)…»), а тест `MergePage.test.tsx:81` подаёт `provider=Google` — тест на
   выдуманной фикстуре (правило №23). Нужен словарь `PROVIDER_NAMES` и тест на
   реальных `google`/`vk`.
-- **`/api/auth/telegram-oidc` — мёртвый публичный роут**
-  (`auth-oauth.controller.ts:114-189`): ни один фронт его не вызывает, а
-  `auth.service.ts:193-194` отдаёт `telegramId`-как-`userId` только провайдеру
-  `'telegram'`, так что через OIDC рождается второй web-only аккаунт без связи
-  с ботом. Удалить провайдер либо маппить `sub` на `'telegram'` с тестом «OIDC
-  и виджет дают один userId» ([AUDIT_2026-10, «Безопасность и приватность»](AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность)).
+- **`PrivacyPage` объявляет куку `tg_pkce_verifier`, которой больше никто не
+  ставит** (`webapp/src/pages/PrivacyPage.tsx:189`, строка «OAuth-cookie
+  (oauth_state, tg_pkce_verifier)»): её ставил удалённый вход
+  `/api/auth/telegram-oidc`. Безопасно, но юридический текст неточен; правку
+  делает только владелец. Заодно владельцу: `SELECT count(*) FROM
+  "AuthProvider" WHERE provider='telegram-oidc'` — если не ноль, такие
+  аккаунты потеряли этот способ входа (миграцию-чистку не делали: она
+  разрушительна). Вернуть вход через Telegram OIDC можно из git, но сначала
+  `sub` → `telegramId` нужно доказать записанным ответом oauth.telegram.org
+  (правило №23).
+- **`check-feature-parity.mjs` слеп к `src/auth/*.controller.ts`**: он смотрит
+  только `src/api/**`. Мёртвый публичный роут в `src/auth` (так жил
+  `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
+  только для роутов провайдеров из `registry.ts`. Прочие роуты `src/auth/*`
+  (2fa, ticket, recovery) паритетом не сверяются.
 - **Запасной код 2FA нельзя набрать на телефоне**:
   `webapp/src/pages/TwoFactorChallengePage.tsx:67` ставит `inputMode="numeric"`,
   а резервный код — 10 символов hex с буквами a–f

@@ -15,7 +15,7 @@ export interface OauthRedirectIssue {
 type Env = Record<string, string | undefined>;
 
 // GOOGLE_REDIRECT_URI/VK_REDIRECT_URI — явный redirect_uri провайдера.
-// WEBAPP_URL — из него TelegramOidcProvider.callbackOrigin() строит колбэк.
+// WEBAPP_URL — от него строятся frontendBase-редиректы колбэков Google/VK.
 const REDIRECT_ENV_VARS = [
   'GOOGLE_REDIRECT_URI',
   'VK_REDIRECT_URI',
