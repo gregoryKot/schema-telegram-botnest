@@ -1,31 +1,34 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import type { ConceptModeLink } from '../../apiTypes';
 import { buildConceptGraph } from './conceptGraphModel';
 import type { ConceptGraphSource } from './conceptGraphTypes';
-import { laneOfMode, type ConceptLane } from './modeLanes';
+import { groupIdsOfLane, type ConceptLane } from './modeLanes';
 import { findModeLink } from './modeLinks';
 import { useConceptGraphTracking } from './useConceptGraphTracking';
-import { ConceptLaneCell } from './ConceptLaneCell';
-import { ConceptModeEditor } from './ConceptModeEditor';
+import { ConceptDiagram } from './diagram/ConceptDiagram';
+import { ConceptGaps } from './ConceptGaps';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
-import {
-  ConceptArrow,
-  ConceptGaps,
-  ConceptTextBlock,
-} from './ConceptGraphBlocks';
-import { ConceptRoots } from './ConceptRoots';
+import { ConceptModeEditor } from './ConceptModeEditor';
+import { ConceptModePicker } from './ConceptModePicker';
+import { boxStyle, hintStyle } from './graphStyles';
 
-const ROW = {
-  display: 'grid',
-  gap: 'var(--space-12)',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+const toolbarButton = {
+  minHeight: 44,
+  padding: '0 12px',
+  borderRadius: 'var(--r-12)',
+  border: 'none',
+  background: 'transparent',
+  color: 'var(--accent)',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
 } as const;
 
 /**
- * Схема случая по модели режимов (шаблон Редигера, ISST). Наверху триггер и
- * здоровые режимы, в середине детские и критик, ниже копинги, цена копингов и
- * корни. Пустая клетка — часть картины, а не пробел.
+ * Схема случая по модели режимов (шаблон Редигера, ISST): диаграмма из фигур
+ * и линий, под ней редактор открытого режима, порядок смены режимов и мягкие
+ * подсказки «чего не хватает». Пустая клетка — часть картины, а не пробел.
  */
 export function ConceptGraph({
   source,
@@ -42,51 +45,26 @@ export function ConceptGraph({
 }) {
   const tr = useTr();
   const [openModeId, setOpenModeId] = useState<string | null>(null);
+  // null — выбор режимов закрыт; undefined в groupIds — показать все группы.
+  const [picker, setPicker] = useState<{ groupIds?: string[] } | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const { markLinked } = useConceptGraphTracking(track);
   const graph = buildConceptGraph(source, tr);
 
   const openCard = Object.values(graph.lanes)
     .flat()
     .find((c) => c.modeId === openModeId);
-  const openLane = openCard ? laneOfMode(openCard.modeId) : null;
-  const toggleOpen = (modeId: string) =>
-    setOpenModeId((cur) => (cur === modeId ? null : modeId));
   // Режим, снятый с карты, не должен «воскреснуть» открытым редактором при
   // повторном добавлении.
   const toggleMode = (modeId: string) => {
     if (openModeId === modeId) setOpenModeId(null);
     onToggleMode(modeId);
   };
-
-  const cell = (lane: ConceptLane, footer?: ReactNode) => (
-    <ConceptLaneCell
-      lane={lane}
-      cards={graph.lanes[lane]}
-      allModeIds={source.modeIds}
-      openModeId={openModeId}
-      onOpenCard={toggleOpen}
-      onToggleMode={toggleMode}
-      footer={footer}
-    />
-  );
-  // Редактор встаёт сразу под рядом, в котором лежит карточка: на всю ширину,
-  // а не втиснутым в половину ряда.
-  const editorUnder = (lanes: ConceptLane[]) =>
-    openCard && openLane && lanes.includes(openLane) ? (
-      <ConceptModeEditor
-        key={openCard.modeId}
-        card={openCard}
-        link={findModeLink(source.modeLinks, openCard.modeId)}
-        conceptSchemaIds={source.schemaIds}
-        onChangeLink={(link) => {
-          markLinked(link.modeId);
-          onChangeLink(link);
-        }}
-        onAddSchema={onAddSchema}
-        onToggleMode={toggleMode}
-        onClose={() => setOpenModeId(null)}
-      />
-    ) : null;
+  const pickLane = (lane: ConceptLane) =>
+    setPicker({ groupIds: groupIdsOfLane(lane) });
+  useEffect(() => {
+    if (picker) pickerRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [picker]);
 
   return (
     <div
@@ -97,53 +75,51 @@ export function ConceptGraph({
       }}
     >
       <ConceptGraphIntro />
-      <div style={ROW}>
-        <ConceptTextBlock
-          title="Триггер"
-          hint="Что запускает цикл сейчас"
-          value={graph.trigger}
-          emptyText="Триггеры пока не описаны"
-        />
-        {cell(
-          'healthy',
-          graph.goals && (
-            <div style={{ marginTop: 'var(--space-10)' }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Цели терапии</div>
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {graph.goals}
-              </div>
-            </div>
-          ),
+      {/* Управление не попадает в картинку схемы (data-export-skip). */}
+      <div data-export-skip>
+        <button
+          type="button"
+          aria-expanded={picker !== null}
+          onClick={() => setPicker(picker ? null : {})}
+          style={toolbarButton}
+        >
+          {picker ? 'Свернуть' : '+ режим'}
+        </button>
+        {picker && (
+          <div ref={pickerRef} style={boxStyle}>
+            <ConceptModePicker
+              activeModeIds={source.modeIds}
+              onToggle={toggleMode}
+              groupIds={picker.groupIds}
+            />
+          </div>
         )}
       </div>
-      {editorUnder(['healthy'])}
-      <div style={ROW}>
-        {cell('child')}
-        {cell('critic')}
-      </div>
-      {editorUnder(['child', 'critic'])}
-      <ConceptArrow label="напряжение снимает копинг" />
-      {cell('coping')}
-      {editorUnder(['coping'])}
-      <ConceptArrow label="цена" />
-      <ConceptTextBlock
-        title="Проблемы сейчас"
-        hint="Цена копингов в жизни"
-        value={graph.problems}
-        emptyText="Проблемы пока не описаны"
+      <ConceptDiagram
+        graph={graph}
+        openModeId={openCard ? openCard.modeId : null}
+        onToggleMode={(id) => setOpenModeId((cur) => (cur === id ? null : id))}
+        onPickLane={pickLane}
       />
-      <ConceptRoots roots={graph.roots} />
-      {graph.sequence && (
-        <ConceptTextBlock
-          title="Как режимы сменяют друг друга"
-          value={graph.sequence}
+      {openCard && (
+        <ConceptModeEditor
+          key={openCard.modeId}
+          card={openCard}
+          link={findModeLink(source.modeLinks, openCard.modeId)}
+          conceptSchemaIds={source.schemaIds}
+          onChangeLink={(link) => {
+            markLinked(link.modeId);
+            onChangeLink(link);
+          }}
+          onAddSchema={onAddSchema}
+          onToggleMode={toggleMode}
+          onClose={() => setOpenModeId(null)}
         />
+      )}
+      {graph.sequence && (
+        <p style={{ ...hintStyle, margin: 0 }}>
+          <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
+        </p>
       )}
       <ConceptGaps gaps={graph.gaps} />
     </div>
