@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../api';
+import { api, ApiError } from '../api';
 
 const PRESETS = [200, 500, 1000, 2000];
 
@@ -12,7 +12,7 @@ export function DonatePage() {
   const [amount, setAmount] = useState(500);
   const [email, setEmail] = useState('');
   const [website, setWebsite] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable'>('idle');
 
   const submit = async () => {
     if (amount < 10) return;
@@ -21,7 +21,7 @@ export function DonatePage() {
       const res = await api.donate({ amount, source: 'app', email: email.trim() || undefined, website });
       if (res.paymentUrl) { window.location.href = res.paymentUrl; return; }
       window.location.search = '?donation=ok'; // dev / unconfigured
-    } catch { setStatus('error'); }
+    } catch (e) { setStatus(e instanceof ApiError && e.status === 503 ? 'unavailable' : 'error'); } // 503: оплата не настроена, повтор не поможет
   };
 
   const field: React.CSSProperties = {
@@ -61,7 +61,7 @@ export function DonatePage() {
             <input type="email" className="ym-disable-keys" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...field, marginBottom: 20 }} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
-            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробовать ещё раз.</p>}
+            {(status === 'error' || status === 'unavailable') && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>{status === 'unavailable' ? 'Оплата сейчас недоступна: сбой на стороне сайта, о нём уже знают. Повторять бесполезно, лучше вернуться позже.' : 'Не получилось. Попробовать ещё раз.'}</p>}
             <button onClick={submit} disabled={status === 'loading' || amount < 10} style={{
               width: '100%', padding: '15px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit',
               background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',

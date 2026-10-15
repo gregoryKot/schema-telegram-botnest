@@ -4,10 +4,11 @@ import { BookingNotifyService } from './booking-notify.service';
 import { RobokassaService } from './robokassa.service';
 import { PricingService } from './pricing.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
+import { assertPaymentAvailable } from './payment-guard';
 
-// Что происходит после создания брони: бесплатная сессия подтверждается
-// сразу, платная получает ссылку на оплату (или тоже подтверждается, если
-// Robokassa не настроена — dev). Вынесено из booking.service.ts (правило №10).
+// После создания брони: бесплатная сессия подтверждается сразу, платная
+// получает ссылку на оплату (вне прода без Robokassa — тоже подтверждается).
+// Вынесено из booking.service.ts (правило №10).
 
 /** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
 function isEmail(s: string): boolean {
@@ -32,11 +33,8 @@ export interface BookingResult {
   meetingUrl: string | null;
 }
 
-/**
- * Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ.
- * Один путь для бесплатной сессии и для dev-режима без Robokassa — раньше
- * этот блок стоял в двух местах слово в слово.
- */
+/** Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ
+ * (бесплатная сессия и dev-режим без Robokassa — один путь). */
 async function confirmNow(
   deps: CheckoutDeps,
   booking: Booking,
@@ -70,7 +68,9 @@ export async function completeCheckout(
   const { isFree, cancelToken, heldUntil } = opts;
   if (isFree) return confirmNow(deps, booking, cancelToken);
 
-  // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
+  // Вторая линия обороны: book() отказывает раньше, до INSERT (payment-guard).
+  assertPaymentAvailable(deps.robokassa, 'booking');
+  // Robokassa not configured (dev, не прод): auto-confirm, слот не виснет в HELD.
   if (!deps.robokassa.enabled) {
     await deps.prisma.booking.update({
       where: { id: booking.id },

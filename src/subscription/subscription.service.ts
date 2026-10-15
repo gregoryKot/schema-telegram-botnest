@@ -9,12 +9,12 @@ import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RobokassaService } from '../booking/robokassa.service';
+import { assertPaymentAvailable } from '../booking/payment-guard';
 import { BookingNotifyService } from '../booking/booking-notify.service';
 import { encryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUB_DEFAULT_PRICE, SubPeriod } from '../booking/booking.config';
 import { normalizeBaseUrl } from '../utils/url';
 import { randomUUID } from 'crypto';
-
 import {
   markChargePaid,
   chargeDue,
@@ -51,8 +51,7 @@ export class SubscriptionService {
       config.get<string>('APP_URL'),
       'https://schemehappens.ru',
     );
-    // Hidden until Robokassa enables the recurring service. Flip with
-    // SUBSCRIPTION_ENABLED=true once auto-charge actually works.
+    // Скрыта, пока рекуррент Robokassa не заработает (SUBSCRIPTION_ENABLED).
     this.enabled = config.get<string>('SUBSCRIPTION_ENABLED') === 'true';
   }
 
@@ -103,6 +102,7 @@ export class SubscriptionService {
       throw new ServiceUnavailableException('SUBSCRIPTION_DISABLED');
     // Explicit consent to recurring auto-charges is required (auto-renewal).
     if (!dto.acceptedOffer) throw new BadRequestException('OFFER_NOT_ACCEPTED');
+    assertPaymentAvailable(this.robokassa, 'subscription');
     const period: SubPeriod = dto.period === 'year' ? 'year' : 'month';
     const amount = await this.getPrice(period);
     const cancelToken = randomUUID();
@@ -127,7 +127,7 @@ export class SubscriptionService {
     this.logger.log(`Subscription ${sub.id} created (${amount}₽/${period})`);
 
     if (!this.robokassa.enabled) {
-      // Dev — activate immediately so the flow is testable without Robokassa.
+      // Вне прода: включаем сразу, без Robokassa (в проде отказали выше).
       await markChargePaid(
         this.chargeDeps(),
         SUBSCRIPTION_INVID_BASE + charge.id,
