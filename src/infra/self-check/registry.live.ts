@@ -7,7 +7,7 @@ import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
 
 /**
  * Пробы, которые ходят во внешние площадки живым запросом (Telegram, iCloud,
- * Google, VK, GitHub, Backblaze B2) — всё, что не про нашу БД и конфигурацию.
+ * Google, VK, GitHub, Cloudflare R2) — всё, что не про нашу БД и конфигурацию.
  * Вынесены из registry.ts: тот под храповиком размера (правило №10).
  */
 export function liveIntegrationProbes(): Probe[] {

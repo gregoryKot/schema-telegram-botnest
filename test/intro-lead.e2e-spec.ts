@@ -20,10 +20,10 @@ process.env.ADMIN_ID = '424242';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { IntroLeadService } from '../src/booking/intro-lead.service';
+import { IntroLeadRedeliveryService } from '../src/booking/intro-lead-redelivery.service';
 import { IntroLeadRetentionService } from '../src/booking/intro-lead-retention.service';
+import { IntroLeadMetricsService } from '../src/bot/intro-lead-metrics.service';
 import { INTRO_LEAD_SCHEMA } from '../src/booking/intro-lead.schema';
-import { BookingRetentionMetricsService } from '../src/bot/booking-retention-metrics.service';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { decryptRecord, encryptRecord } from '../src/utils/crypto';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
@@ -42,7 +42,11 @@ describe('e2e: заявка с формы знакомства пишется в
     await prisma.introLead.deleteMany({
       where: { source: { startsWith: MARK } },
     });
-    // Троттл заявки (6/ч на IP) живёт в Postgres и переживает прогон.
+    // Троттл заявки (6/ч на IP) живёт в Postgres и переживает прогон. Сузить до
+    // ключа этой ручки нельзя: @nestjs/throttler кладёт в key sha256 от
+    // класса/метода/IP, по префиксу строку не найти. Полная очистка безопасна:
+    // джоба migrations гоняет e2e по одному (--runInBand, отдельные шаги), базы
+    // с чужими счётчиками тут нет (так же делает booking-returning-oracle).
     await prisma.throttleHit.deleteMany({});
     await prisma.cronLease.deleteMany({
       where: { name: 'introLeadRedelivery' },
@@ -137,7 +141,7 @@ describe('e2e: заявка с формы знакомства пишется в
     const lost = await oldLead('redeliver');
     const done = await oldLead('delivered', { tgDeliveredAt: OLD_AT });
     sendMessage.mockClear();
-    const service = app.get(IntroLeadService);
+    const service = app.get(IntroLeadRedeliveryService);
 
     // «Сейчас» = час после заявки: окно 5 минут … 7 дней захватывает фикстуры 2000-го.
     const hourLater = new Date(OLD_AT.getTime() + 3_600_000);
@@ -161,7 +165,7 @@ describe('e2e: заявка с формы знакомства пишется в
 
   it('/stats на живой базе: блок заявок отдаётся без сырого мусора, недошедшие видны', async () => {
     await oldLead('stats-lost'); // createdAt 2000-й, не доставлена, не обезличена
-    const text = await new BookingRetentionMetricsService(prisma).render();
+    const text = await new IntroLeadMetricsService(prisma).render();
     expect(text).toContain('Заявки с формы знакомства');
     expect(text).toMatch(/За неделю заявок: \d+/);
     expect(text).toMatch(/Недоставленных заявок старше недели: \d+/);
@@ -214,7 +218,7 @@ describe('e2e: заявка с формы знакомства пишется в
     const before = await prisma.introLead.count({
       where: { source: { startsWith: MARK }, anonymizedAt: { not: null } },
     });
-    const service = app.get(IntroLeadService);
+    const service = app.get(IntroLeadRedeliveryService);
     await prisma.cronLease.deleteMany({
       where: { name: 'introLeadRedelivery' },
     });

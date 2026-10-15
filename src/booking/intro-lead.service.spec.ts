@@ -6,8 +6,6 @@
 // базы и доставка отмечается — test/intro-lead.e2e-spec.ts.
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { IntroLeadService } from './intro-lead.service';
-import { INTRO_LEAD_SCHEMA } from './intro-lead.schema';
-import { encryptRecord } from '../utils/crypto';
 
 // В юнит-среде ключа шифрования нет (encrypt отдаёт открытый текст), поэтому
 // шифрование подменено маркером «enc:» строго по полям схемы: тест проверяет,
@@ -28,16 +26,11 @@ jest.mock('../utils/crypto', () => {
   return { encryptRecord: map(true), decryptRecord: map(false) };
 });
 
-const NOW = new Date('2026-10-15T12:00:00.000Z');
-const MIN = 60_000;
-
 function make(
   opts: {
     tg?: boolean;
     mail?: boolean;
     createFails?: boolean;
-    rows?: Record<string, unknown>[];
-    lease?: boolean;
   } = {},
 ) {
   const calls: string[] = [];
@@ -50,7 +43,6 @@ function make(
         return { id: 7 };
       }),
       update: jest.fn(async () => ({})),
-      findMany: jest.fn(async () => opts.rows ?? []),
     },
   };
   const telegram = {
@@ -65,14 +57,12 @@ function make(
       return opts.mail ?? true;
     }),
   };
-  const cronLeader = { claimRun: jest.fn(async () => opts.lease ?? true) };
   const service = new IntroLeadService(
     prisma as never,
     telegram as never,
     email as never,
-    cronLeader as never,
   );
-  return { service, prisma, telegram, email, cronLeader, calls };
+  return { service, prisma, telegram, email, calls };
 }
 
 const DTO = {
@@ -166,6 +156,29 @@ describe('IntroLeadService.submit', () => {
     }
   });
 
+  it('площадка ответила ПОСЛЕ потолка — флаг доставки всё равно проставлен (повтор не пришлёт дубль)', async () => {
+    jest.useFakeTimers();
+    try {
+      const { service, prisma, telegram } = make({ mail: false });
+      let answer: (v: boolean) => void = () => {};
+      telegram.notifyAdmin.mockImplementation(
+        () => new Promise<boolean>((r) => (answer = r)),
+      );
+      const pending = service.submit(DTO);
+      await jest.advanceTimersByTimeAsync(10_001);
+      await expect(pending).resolves.toEqual({ ok: true });
+      expect(prisma.introLead.update).not.toHaveBeenCalled();
+      answer(true);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(prisma.introLead.update).toHaveBeenCalledWith({
+        where: { id: 7 },
+        data: { tgDeliveredAt: expect.any(Date) },
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('пустое имя или контакт — молча ok: ни записи, ни уведомлений', async () => {
     const { service, prisma, telegram, email } = make();
     await expect(service.submit({ name: ' ', contact: '' })).resolves.toEqual({
@@ -214,88 +227,5 @@ describe('IntroLeadService.submit — запись в БД упала', () => {
       'Intro lead create failed, lead alerted: Error P1001',
     );
     expect(messages.join('\n')).not.toContain('maria');
-  });
-});
-
-describe('IntroLeadService.redeliver', () => {
-  const row = (over = {}) => ({
-    id: 3,
-    ...encryptRecord(
-      { clientName: 'Ира', clientContact: '@ira', message: null },
-      INTRO_LEAD_SCHEMA,
-    ),
-    clientChannel: 'telegram',
-    source: null,
-    ...over,
-  });
-
-  it('без аренды ничего не читает и не шлёт', async () => {
-    const { service, prisma, telegram } = make({ lease: false });
-    await expect(service.redeliver(NOW)).resolves.toBe(0);
-    expect(prisma.introLead.findMany).not.toHaveBeenCalled();
-    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
-  });
-
-  it('берёт только недоставленные, не обезличенные, до 5 попыток, от 5 минут до 7 дней', async () => {
-    const { service, prisma, cronLeader } = make();
-    await service.redeliver(NOW);
-    expect(cronLeader.claimRun).toHaveBeenCalledWith(
-      'introLeadRedelivery',
-      expect.any(Number),
-      NOW,
-    );
-    expect(prisma.introLead.findMany).toHaveBeenCalledWith({
-      where: {
-        tgDeliveredAt: null,
-        emailDeliveredAt: null,
-        anonymizedAt: null,
-        deliveryAttempts: { lt: 5 },
-        createdAt: {
-          gt: new Date(NOW.getTime() - 7 * 86_400_000),
-          lt: new Date(NOW.getTime() - 5 * MIN),
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
-    });
-  });
-
-  it('шлёт расшифрованную заявку с пометкой повтора, считает попытку до отправки, отмечает доставку', async () => {
-    const { service, prisma, telegram, calls } = make({
-      rows: [row()],
-      mail: false,
-    });
-    await expect(service.redeliver(NOW)).resolves.toBe(1);
-    expect(prisma.introLead.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 3 },
-      data: { deliveryAttempts: { increment: 1 } },
-    });
-    const text = telegram.notifyAdmin.mock.calls[0] as unknown as [string];
-    expect(text[0]).toContain('Повторная отправка');
-    expect(text[0]).toContain('Ира');
-    expect(text[0]).toContain('@ira');
-    expect(prisma.introLead.update).toHaveBeenLastCalledWith({
-      where: { id: 3 },
-      data: { tgDeliveredAt: expect.any(Date) },
-    });
-    expect(calls).toEqual(expect.arrayContaining(['tg', 'email']));
-  });
-
-  it('строка с пустыми (стёртыми) полями не шлётся', async () => {
-    const { service, telegram } = make({
-      rows: [row({ clientName: '', clientContact: '' })],
-    });
-    await expect(service.redeliver(NOW)).resolves.toBe(0);
-    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
-  });
-
-  it('падение запроса не бросает наружу и логируется', async () => {
-    const { service, prisma } = make();
-    prisma.introLead.findMany.mockRejectedValueOnce(new Error('db down'));
-    await expect(service.redeliver(NOW)).resolves.toBe(0);
-    expect(Logger.prototype.error).toHaveBeenCalledWith(
-      'intro lead redelivery failed',
-      expect.any(Error),
-    );
   });
 });

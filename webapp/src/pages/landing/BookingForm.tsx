@@ -8,7 +8,7 @@ import { ContactChannelField } from '../../components/booking/ContactChannelFiel
 import { RequestField } from '../../components/booking/RequestField';
 import { BookingCrisisNote } from '../../components/booking/BookingCrisisNote';
 import type { ContactChannel } from '../../../../shared/src/booking/contactChannel';
-
+import { BOOKING_MESSAGE_MAX, BOOKING_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 // ─── Простая заявка «напишите мне» — основной путь записи на визитке ─────────
 export function BookingForm() {
   const [name, setName]       = useState('');
@@ -47,10 +47,10 @@ export function BookingForm() {
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
-        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
+        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={BOOKING_NAME_MAX} /></div>
         <ContactChannelField id="booking-contact" channel={channel} onChannelChange={setChannel} value={contact} onChange={setContact} labelStyle={labelSt} fieldStyle={field} />
       </div>
-      <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} minHeight={96} />
+      <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} minHeight={96} max={BOOKING_MESSAGE_MAX} />
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
         <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>

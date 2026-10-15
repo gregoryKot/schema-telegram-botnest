@@ -11,6 +11,10 @@
     "status": "leader",
     "reason": "Проверка домена бота шлёт DM админу при расхождении — на двух инстансах дубль DM."
   },
+  "src/booking/booking-confirm-retry.service.ts::retryStalled": {
+    "status": "leader",
+    "reason": "Добор эффектов подтверждения брони (ссылка, календарь, DM админу) — на двух инстансах одна бронь доделывается дважды: два события в календаре и два одинаковых уведомления."
+  },
   "src/booking/booking-notify.service.ts::sendReminders": {
     "status": "leader",
     "reason": "Напоминание о записи пользователю — на двух инстансах уйдёт два одинаковых сообщения."
@@ -27,7 +31,7 @@
     "status": "exempt",
     "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни письма."
   },
-  "src/booking/intro-lead.service.ts::redeliver": {
+  "src/booking/intro-lead-redelivery.service.ts::redeliver": {
     "status": "leader",
     "reason": "Повтор доставки заявки шлёт DM и письмо админу — на двух инстансах дубль каждого сообщения."
   },

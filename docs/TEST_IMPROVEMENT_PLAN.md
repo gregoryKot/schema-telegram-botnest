@@ -102,6 +102,9 @@ settings, pairs).
 *Механизм:* новый трипваер `e2e-route-coverage`: сверяет guarded-маршруты
 (категория A из route-auth) со списком путей, встречающихся в `test/*.e2e-spec.ts`;
 непокрытый маршрут = упавший тест; allowlist только сокращается.
+Трипваер верит readdir по `test/*.e2e-spec.ts`, потому что гейт
+`scripts/check-e2e-in-ci.mjs` держит readdir равным составу джоб CI: спек вне
+CI не может быть «покрытием».
 
 **1.4 Платёжный контур по HTTP.** e2e: вебхуки Robokassa
 (booking/subscription/donation) — подпись, идемпотентный повтор, FAIL при

@@ -14,7 +14,7 @@ export interface IntroLeadInput {
   source?: string;
 }
 
-/** Заявка после нормализации: обрезано, trim, пустое = null. */
+/** Заявка после нормализации: trim, пустое = null. Длину не режем: предел — в DTO (400), тихая обрезка запрещена #671. */
 export interface IntroLeadFields {
   name: string;
   contact: string;
@@ -27,15 +27,15 @@ export interface IntroLeadFields {
 export function normalizeIntroLead(
   dto: IntroLeadInput,
 ): IntroLeadFields | null {
-  const name = dto.name?.slice(0, 100).trim();
-  const contact = dto.contact?.slice(0, 100).trim();
+  const name = dto.name?.trim();
+  const contact = dto.contact?.trim();
   if (!name || !contact) return null;
   return {
     name,
     contact,
     channel: dto.channel ?? null,
-    message: dto.message?.slice(0, 500).trim() || null,
-    source: dto.source?.slice(0, 200).trim() || null,
+    message: dto.message?.trim() || null,
+    source: dto.source?.trim() || null,
   };
 }
 

@@ -3,6 +3,7 @@ import { TelegramModule } from '../telegram/telegram.module';
 import { AuthModule } from '../auth/auth.module';
 import { BookingController } from '../api/booking.controller';
 import { IntroLeadService } from './intro-lead.service';
+import { IntroLeadRedeliveryService } from './intro-lead-redelivery.service';
 import { IntroLeadRetentionService } from './intro-lead-retention.service';
 
 // Заявка с простой формы знакомства (POST /api/booking): контроллер, запись в
@@ -11,6 +12,10 @@ import { IntroLeadRetentionService } from './intro-lead-retention.service';
 @Module({
   imports: [TelegramModule, AuthModule],
   controllers: [BookingController],
-  providers: [IntroLeadService, IntroLeadRetentionService],
+  providers: [
+    IntroLeadService,
+    IntroLeadRedeliveryService,
+    IntroLeadRetentionService,
+  ],
 })
 export class IntroLeadModule {}

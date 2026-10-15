@@ -19,18 +19,17 @@ describe('normalizeIntroLead', () => {
     expect(normalizeIntroLead({})).toBeNull();
   });
 
-  it('обрезает по длине и trim: имя и контакт 100, запрос 500, откуда 200', () => {
+  it('не обрезает длину (предел — в DTO, 400), только trim', () => {
     const n = normalizeIntroLead({
       name: ` ${'и'.repeat(150)}`,
       contact: `${'к'.repeat(150)} `,
       message: ' ' + 'з'.repeat(900),
       source: 'с'.repeat(300),
     });
-    // Срез по 100 символов идёт до trim: ведущий пробел съедает одну букву.
-    expect(n?.name).toBe('и'.repeat(99));
-    expect(n?.contact).toHaveLength(100);
-    expect(n?.message).toHaveLength(499); // тот же порядок: срез 500, потом trim
-    expect(n?.source).toHaveLength(200);
+    expect(n?.name).toBe('и'.repeat(150));
+    expect(n?.contact).toBe('к'.repeat(150));
+    expect(n?.message).toBe('з'.repeat(900));
+    expect(n?.source).toBe('с'.repeat(300));
   });
 
   it('пустые необязательные поля становятся null, канал сохраняется', () => {

@@ -2,12 +2,11 @@
 // подменяем провайдер TELEGRAF_BOT (src/telegram/telegram.providers.ts),
 // иначе сборка AppModule реально резолвит BOT_TOKEN и стучится в Telegram
 // API за getMe() при старте.
-//
 // Сервисы TelegramModule (telegram.service.ts, telegram.schedule.service.ts,
 // telegram.settings.service.ts, telegram.notify-*.service.ts) регистрируют
 // хендлеры через bot.command()/bot.action()/bot.on() в onModuleInit() и
-// иногда вызывают bot.launch()/bot.telegram.sendMessage() — все эти методы
-// здесь no-op, ни разу не вызываются реальные HTTP-хендлеры бота в смоуке.
+// иногда вызывают bot.launch()/telegram.sendMessage()/callApi() (очередь
+// уведомлений) — здесь все no-op, HTTP-хендлеры бота в смоуке не зовутся.
 export function makeFakeBot(): any {
   const chain = () => fakeBot;
   const fakeBot: any = {
@@ -24,6 +23,7 @@ export function makeFakeBot(): any {
         Promise.resolve({ id: 1, is_bot: true, username: 'test_bot' }),
       ),
       sendMessage: jest.fn(() => Promise.resolve({ message_id: 1 })),
+      callApi: jest.fn(() => Promise.resolve({ message_id: 1 })),
     },
   };
   return fakeBot;

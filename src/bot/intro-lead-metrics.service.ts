@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   formatIntroLeads,
@@ -8,8 +9,9 @@ const WEEK_MS = 7 * 86_400_000;
 
 // Счётчики заявок с формы знакомства для /stats. Prisma count, не сырой SQL:
 // иначе нужна запись в scripts/raw-sql-live-baseline.json (правило №18).
-// Подключается через BookingRetentionMetricsService (соседний блок про данные
-// записей), чтобы не плодить провайдеров в BotModule (правило №10).
+// Свой блок в StatsReportService: сбой запроса по заявкам не должен ронять
+// соседний блок «Данные записей» и числиться под чужим именем (settleBlocks).
+@Injectable()
 export class IntroLeadMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 

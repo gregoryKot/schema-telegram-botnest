@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
@@ -19,20 +19,18 @@ import { MoneyMetricsService } from './money-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
-import { formatCapabilityReport } from './capability-metrics.format';
-import { buildCapabilityReport } from '../infra/capability-report';
-import { formatEnvCheckReport } from './env-check.format';
-import { checkEnv } from '../infra/env-check';
-import { renderCalendarHealthBlock } from '../booking/caldav-health';
-import { formatSelfCheck } from '../infra/self-check/format';
-import { selfCheckState } from '../infra/self-check/state';
+import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { infraBlocks } from './stats-infra-blocks';
+import { settleBlocks } from './stats-settle';
 
-// Единая склейка второго сообщения /stats (продуктовые метрики + карточки
-// режимов + дневник режимов + тёплые слова). Отдельный модуль — правило №10:
-// не раздувать ни ProductMetricsService (зафиксирован на 257 строках), ни
-// telegram.service.ts (худший файл репозитория, храповик держит его без роста).
+// Единая склейка второго сообщения /stats (все блоки метрик + здоровье
+// системы). Отдельный модуль — правило №10: не раздувать ни
+// ProductMetricsService, ни telegram.service.ts. Блоки считаются независимо
+// (stats-settle.ts): упавший заменяется строкой, отчёт не гаснет целиком.
 @Injectable()
 export class StatsReportService {
+  private readonly logger = new Logger(StatsReportService.name);
+
   constructor(
     private readonly product: ProductMetricsService,
     private readonly modeCard: ModeCardMetricsService,
@@ -54,38 +52,42 @@ export class StatsReportService {
     private readonly game: GameMetricsService,
     private readonly dataExport: DataExportMetricsService,
     private readonly bookingRetention: BookingRetentionMetricsService,
+    private readonly introLeads: IntroLeadMetricsService,
   ) {}
 
   /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
    * порядок в отчёте, менять только осознанно (см. тест этого сервиса). */
   async render(): Promise<string> {
     const blocks = [
-      this.product,
-      this.modeCard,
-      this.modeDiary,
-      this.warmWords,
-      this.phraseChecks,
-      this.entryDelete,
-      this.accountLink,
-      this.plus,
-      this.webBanner,
-      this.siteInstall,
-      this.screen,
-      this.profilePattern,
-      this.authHealth,
-      this.loginTicket,
-      this.clientErrors,
-      this.money,
-      this.signupSource,
-      this.game,
-      this.dataExport,
-      this.bookingRetention,
+      { name: 'Как пользуются продуктом', svc: this.product },
+      { name: 'Карточки режимов', svc: this.modeCard },
+      { name: 'Дневник режимов', svc: this.modeDiary },
+      { name: 'Тёплые слова', svc: this.warmWords },
+      { name: 'Разбор фразы: критик или забота', svc: this.phraseChecks },
+      { name: 'Удаление своих записей', svc: this.entryDelete },
+      { name: 'Перенос данных из другого приложения', svc: this.accountLink },
+      { name: 'Кнопка плюс', svc: this.plus },
+      { name: 'Баннеры-переходы', svc: this.webBanner },
+      { name: 'Установка с сайта', svc: this.siteInstall },
+      { name: 'Настройка экранов', svc: this.screen },
+      { name: 'Паттерны со вкладки Я', svc: this.profilePattern },
+      { name: 'Вход в мессенджере', svc: this.authHealth },
+      { name: 'Вход по коду', svc: this.loginTicket },
+      { name: 'Поломки на клиенте', svc: this.clientErrors },
+      { name: 'Деньги', svc: this.money },
+      { name: 'Откуда пришли новенькие', svc: this.signupSource },
+      { name: 'Игра', svc: this.game },
+      { name: 'Забирают свои данные', svc: this.dataExport },
+      { name: 'Данные записей', svc: this.bookingRetention },
+      { name: 'Заявки с формы знакомства', svc: this.introLeads },
     ];
-    const parts = await Promise.all(blocks.map((b) => b.render()));
-    parts.push(renderCalendarHealthBlock());
-    parts.push(formatCapabilityReport(buildCapabilityReport()));
-    parts.push(formatEnvCheckReport(checkEnv()));
-    parts.push(formatSelfCheck(selfCheckState.get()));
+    const parts = await settleBlocks(
+      [
+        ...blocks.map((b) => ({ name: b.name, run: () => b.svc.render() })),
+        ...infraBlocks(),
+      ],
+      this.logger,
+    );
     return parts.join('\n\n');
   }
 }

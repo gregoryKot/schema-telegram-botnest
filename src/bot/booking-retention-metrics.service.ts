@@ -8,7 +8,6 @@ import {
   BookingRetentionMetrics,
   formatBookingRetention,
 } from './booking-retention-metrics.format';
-import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 
 const DAY_MS = 86_400_000;
 
@@ -17,25 +16,13 @@ const DAY_MS = 86_400_000;
 // Prisma count/findFirst, не сырым SQL: сырой запрос потребовал бы записи в
 // scripts/raw-sql-live-baseline.json (правило №18), а здесь он не нужен.
 // Свой домен — свой файл (правило №10), образец — data-export-metrics.service.ts.
-//
-// Второй блок этого же сервиса — «Заявки с формы знакомства» (intro-lead-
-// metrics.service.ts): данные записей и заявок живут рядом, а новый провайдер
-// в StatsReportService/BotModule упёрся бы в храповик размера этих файлов.
 @Injectable()
 export class BookingRetentionMetricsService {
-  private readonly leads: IntroLeadMetricsService;
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(private readonly prisma: PrismaService) {
-    this.leads = new IntroLeadMetricsService(prisma);
-  }
-
-  /** Готовые текстовые блоки для /stats: данные записей + заявки со знакомства. */
+  /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    const [retention, leads] = await Promise.all([
-      this.getMetrics().then(formatBookingRetention),
-      this.leads.render(),
-    ]);
-    return `${retention}\n\n${leads}`;
+    return formatBookingRetention(await this.getMetrics());
   }
 
   async getMetrics(now = new Date()): Promise<BookingRetentionMetrics> {
