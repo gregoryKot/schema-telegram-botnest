@@ -1,4 +1,5 @@
 import { TherapistInviteShare } from '../../share/TherapistInviteShare';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
 import type { useAddClient } from './useAddClient';
 import '../../styles/therapist-clients.css';
@@ -60,6 +61,7 @@ export function AddClientForm({ addClient, onClose }: Props) {
         onKeyDown={e => e.key === 'Enter' && submitAddClient()}
         placeholder="Имя клиента, например Анна К."
         autoComplete="off"
+        maxLength={CLIENT_NAME_MAX}
       />
       <button className="ds-btn ds-btn--accent" onClick={submitAddClient} disabled={!addValid || addSubmitting}>
         {addSubmitting ? '...' : 'Создать карточку'}
