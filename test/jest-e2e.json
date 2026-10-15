@@ -7,6 +7,7 @@
     "<rootDir>/e2e-support/env.setup.ts",
     "<rootDir>/setup-e2e.ts"
   ],
+  "setupFilesAfterEnv": ["<rootDir>/e2e-support/throttle-reset.setup.ts"],
   "moduleNameMapper": {
     "^jose$": "<rootDir>/e2e-support/jose.stub.ts"
   },
