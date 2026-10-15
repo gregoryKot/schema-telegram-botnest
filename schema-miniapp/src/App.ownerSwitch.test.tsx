@@ -21,6 +21,24 @@ vi.mock('./components/TherapistClientSheet', () => ({
 vi.mock('./components/TrackerHistoryOverlay', () => ({
   TrackerHistoryOverlay: () => null,
 }));
+// main.tsx ставит setTimeout(registerServiceWorker, 5 с): каждый запуск в файле
+// оставил бы таймер, переживающий снос jsdom.
+vi.mock('./registerServiceWorker', () => ({ registerServiceWorker: () => {} }));
+// main.tsx монтирует App через свой createRoot — cleanup из RTL такие корни не
+// видит. Запоминаем их, чтобы размонтировать после каждого теста: иначе
+// экземпляры App с эффектами и слушателями живут до конца файла.
+const roots = vi.hoisted(() => [] as Array<{ unmount: () => void }>);
+vi.mock('react-dom/client', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('react-dom/client')>();
+  return {
+    ...mod,
+    createRoot: (...args: Parameters<typeof mod.createRoot>) => {
+      const root = mod.createRoot(...args);
+      roots.push(root);
+      return root;
+    },
+  };
+});
 
 import { clearSession } from './session';
 import { clearApiCache } from '../../shared/src/api/apiCache';
@@ -143,6 +161,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Пусто — перехват createRoot перестал работать, и App снова живёт до конца файла.
+  expect(roots.length).toBeGreaterThan(0);
+  act(() => roots.splice(0).forEach((r) => r.unmount()));
   cleanup();
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
