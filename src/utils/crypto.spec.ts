@@ -22,9 +22,13 @@ function loadCrypto(env: {
   key?: string;
   old?: string;
   nodeEnv?: string;
+  /** Переменной нет вовсе (undefined), а не пустая строка: так выглядит
+   * окружение, где ключ ни разу не задавали. */
+  unsetOld?: boolean;
 }): CryptoModule {
   process.env.ENCRYPTION_KEY = env.key ?? '';
   process.env.ENCRYPTION_KEY_OLD = env.old ?? '';
+  if (env.unsetOld) delete process.env.ENCRYPTION_KEY_OLD;
   process.env.NODE_ENV = env.nodeEnv ?? 'test';
   let mod: CryptoModule | undefined;
   jest.isolateModules(() => {
@@ -145,8 +149,101 @@ describe('конфигурация ключей', () => {
 
   it('перевод строки или пробелы вокруг ключа (вставка в панель хостинга) — тот же ключ', () => {
     const blob = loadCrypto({ key: `${KEY_A}\n` }).encrypt('текст')!;
+    // Ключ реально принят: без обрезки он считался бы «битым», модуль
+    // переходил в passthrough, и blob оказывался бы открытым текстом — а
+    // roundtrip ниже в passthrough тоже проходит, поэтому одного его мало.
+    expect(blob).not.toBe('текст');
+    expect(Buffer.from(blob, 'base64').length).toBe(
+      12 + 16 + 'текст'.length * 2,
+    );
     expect(loadCrypto({ key: KEY_A }).decrypt(blob)).toBe('текст');
-    expect(loadCrypto({ key: `  ${KEY_A} ` }).decrypt(blob)).toBe('текст');
+    const padded = loadCrypto({ key: `  ${KEY_A} ` }).encrypt('текст')!;
+    expect(padded).not.toBe('текст');
+    expect(loadCrypto({ key: KEY_A }).decrypt(padded)).toBe('текст');
+  });
+
+  // Якоря HEX_KEY_RE. Без `^` подходил бы мусор перед ключом, без `$` — после
+  // него и лишние hex-цифры; Buffer.from(…, 'hex') обрезает такой ключ молча
+  // (пустой буфер или 32 байта из 65 символов), и ключ «принят», хотя это не
+  // тот ключ, который вписал владелец.
+  const MALFORMED_KEYS: Array<[string, string]> = [
+    ['мусор перед 64 hex', `zz${KEY_A}`],
+    ['мусор после 64 hex', `${KEY_A}zz`],
+    ['65 hex-символов', `${KEY_A}a`],
+    ['65 hex-символов, лишний спереди', `a${KEY_A}`],
+    ['63 hex-символа', KEY_A.slice(1)],
+  ];
+
+  it.each(MALFORMED_KEYS)(
+    'ключ: %s — отвергнут как «ключа нет» (passthrough), без обрезанного буфера',
+    (_name, key) => {
+      const { encrypt } = loadCrypto({ key });
+      expect(encrypt('текст')).toBe('текст');
+    },
+  );
+
+  it.each(MALFORMED_KEYS)(
+    'ключ: %s — в production падение на буте',
+    (_name, key) => {
+      expect(() => loadCrypto({ key, nodeEnv: 'production' })).toThrow(
+        /ENCRYPTION_KEY missing or malformed/,
+      );
+    },
+  );
+
+  it.each(MALFORMED_KEYS)(
+    'старый ключ: %s — в production падение на буте, а не молча не читается',
+    (_name, old) => {
+      expect(() =>
+        loadCrypto({ key: KEY_B, old, nodeEnv: 'production' }),
+      ).toThrow(/ENCRYPTION_KEY_OLD.*1 шт/);
+    },
+  );
+
+  it('ENCRYPTION_KEY_OLD: пробелы вокруг ключей и пустые элементы списка — не ошибка, ключи читают', () => {
+    // Вставка в панель хостинга даёт пробелы и хвостовую запятую; такой
+    // список в production не должен ронять бут, а ключи в нём — работать.
+    const a = loadCrypto({ key: KEY_A }).encrypt('от ключа A')!;
+    const b = loadCrypto({ key: KEY_B }).encrypt('от ключа B')!;
+    const rotated = loadCrypto({
+      key: 'cc'.repeat(32),
+      old: ` ${KEY_A} , ${KEY_B} ,,`,
+      nodeEnv: 'production',
+    });
+    expect(rotated.decrypt(a)).toBe('от ключа A');
+    expect(rotated.decrypt(b)).toBe('от ключа B');
+  });
+
+  it('пустой ENCRYPTION_KEY_OLD в production — не ошибка', () => {
+    expect(() =>
+      loadCrypto({ key: KEY_A, old: '', nodeEnv: 'production' }),
+    ).not.toThrow();
+  });
+
+  it('ENCRYPTION_KEY_OLD не задан вовсе в production — не ошибка, текущий ключ работает', () => {
+    // Обычное состояние прода вне ротации: переменной нет. Проверка списка
+    // старых ключей не должна принимать «нет переменной» за мусорный ключ.
+    const mod = loadCrypto({
+      key: KEY_A,
+      unsetOld: true,
+      nodeEnv: 'production',
+    });
+    expect(mod.decrypt(mod.encrypt('текст'))).toBe('текст');
+  });
+
+  it('битый старый ключ вне production не роняет загрузку — отбрасывается, текущий и валидные старые работают', () => {
+    // Падать на бут из-за мусора в OLD нужно только в проде; в dev/тестах
+    // молчаливо игнорируем, чтобы не ломать локальный запуск.
+    const fromA = loadCrypto({ key: KEY_A }).encrypt('от ключа A')!;
+    const mod = loadCrypto({ key: KEY_B, old: `zz${KEY_A},${KEY_A}` });
+    expect(mod.decrypt(fromA)).toBe('от ключа A');
+    expect(mod.decrypt(mod.encrypt('свежее'))).toBe('свежее');
+  });
+
+  it('текст падения из-за битого старого ключа объясняет последствие — его читают при упавшем проде', () => {
+    expect(() =>
+      loadCrypto({ key: KEY_B, old: 'zz', nodeEnv: 'production' }),
+    ).toThrow(/молча не использовался бы для расшифровки/);
   });
 
   it('encrypt() перепроверяет NODE_ENV динамически при каждом вызове, а не только на загрузке модуля', () => {
@@ -282,6 +379,18 @@ describe('GCM-аутентификация и алерт о порче (ауди
 
   // D-8 (аудит 2026-10): алерт обязан быть уровня error (AlertLogger шлёт в DM
   // только error), и в нём нет ни шифротекста, ни расшифрованного значения.
+  it('лог порчи идёт под контекстом Crypto', () => {
+    // По контексту владелец находит строку порчи в логах Amvera и фильтрует
+    // AlertLogger; потеря имени делает алерт неотличимым от шума.
+    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const err = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    decrypt(tamper(encrypt('секрет')!));
+    const logger = err.mock.contexts[0] as unknown as { context: string };
+    expect(logger.context).toBe('Crypto');
+  });
+
   it('лог порчи — именно error и без содержимого поля', () => {
     const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
     const err = jest
