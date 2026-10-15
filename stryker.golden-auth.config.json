@@ -18,6 +18,7 @@
     "src/auth/merge.service.ts",
     "src/api/telegram-auth.guard.ts",
     "src/auth/security-log.service.ts",
+    "src/auth/security-log-redact.ts",
     "src/therapy/therapy-relations.service.ts"
   ],
   "reporters": [
