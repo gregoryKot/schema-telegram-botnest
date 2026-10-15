@@ -96,6 +96,7 @@
 | Дублирование логики | `scripts/check-jscpd-ratchet.mjs` |
 | Разъезд парных файлов двух фронтендов | `scripts/check-paired-files.mjs` |
 | Раздувание файлов | `scripts/check-file-size-ratchet.mjs` |
+| Отслеживаемый файл, который запрещает `.gitignore` (правило не снимает уже отслеживаемое: 466 файлов `test/.jest-cache` жили в индексе с #243) | `scripts/check-ignored-tracked.mjs` — `git ls-files -ci --exclude-per-directory=.gitignore`, без бейслайна; тест в песочнице на настоящем индексе, `src/test-support/gates/ignored-tracked.spec.ts` |
 | Просадка покрытия (бэк и три фронт-пакета) | `check-coverage-ratchet.mjs`, `check-frontend-coverage-ratchet.mjs` |
 | Битый SQL миграций | джоба `migrations` на реальном Postgres |
 | Сырой SQL проверяется только моком, который отвечает что угодно (инцидент 2026-09-13: из 31 файла с `$queryRaw`/`$executeRaw` на живой базе гонялись 6, весь `/stats` — ни одного) | `scripts/check-raw-sql-live.mjs` — классификация каждого файла с сырым SQL на спек в джобе `migrations` (`test/raw-sql-live-*.e2e-spec.ts`) или честный exempt |
