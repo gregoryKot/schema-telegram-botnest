@@ -2,14 +2,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationInfo } from './therapy.types';
 
 // Статус связи терапевт↔клиент «глазами» пользователя (экран «Мой терапевт»).
-// Вынесено из therapy-relations.service.ts (правило №10: сервис упирался в
-// потолок размера).
 //
-// Связи «в роли терапевта» ищем, только если человек СЕЙЧАС терапевт (A-3,
-// аудит 2026-10): у вышедшего из роли (CLIENT) остаются старые строки со
-// стороны терапевта, и «Мой терапевт» показывал бы его бывшего клиента, а
-// «Отключиться» (disconnect удаляет только связи, где он клиент) ничего бы не
-// делал. Не терапевт — смотрим только связь со стороны клиента.
+// Роль партнёра сверяется с обеих сторон. Терапевт: у вышедшего из роли
+// остаются старые строки (A-3, аудит 2026-10). Клиент: связи бывшего терапевта,
+// осиротевшие до статуса `ended`, не показываем (backend#33).
 export async function getRelationInfo(
   prisma: PrismaService,
   uid: bigint,
@@ -35,10 +31,13 @@ export async function getRelationInfo(
       nextSession: null,
     };
   }
-  const asClient = await prisma.therapyRelation.findFirst({
+  const rows = await prisma.therapyRelation.findMany({
     where: { clientId: uid, status: 'active' },
-    include: { therapist: { select: { id: true, firstName: true } } },
+    include: {
+      therapist: { select: { id: true, firstName: true, role: true } },
+    },
   });
+  const asClient = rows.find((r) => r.therapist?.role === 'THERAPIST');
   if (!asClient) return null;
   return {
     role: 'client',
