@@ -40,7 +40,6 @@ const PAIRS = [
   'utils/telemetryUrl.test.ts',
   'components/schemaFlashcard/constants.ts',
   'components/schemaFlashcard/types.ts',
-  // Свой экземпляр RTL в каждом пакете — потому копия, а не shared (шапка файла).
   'test-support/rtlCleanup.ts',
   'test-support/rtlCleanup.test.tsx',
 ];
