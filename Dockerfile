@@ -103,9 +103,15 @@ COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/r
 # Непривилегированный пользователь (в node-образе уже есть `node`)
 USER node
 
-# Зависший процесс/потерянная БД видны оркестратору (см. /health).
+# Зависший процесс/потерянная БД/парковка на техработах видны оркестратору.
+# Смотрим ТЕЛО /health, а не код: front (deploy/front-server.mjs) отвечает 200
+# страницей техработ на любой путь, и по r.ok запаркованный контейнер был бы
+# «здоров». Маркер тот же, что в deploy/vps/ops.sh и prod-smoke.yml. HEALTHCHECK
+# ничего не перезапускает, он даёт честный статус (unhealthy в `op=status`).
+# 127.0.0.1 (front слушает IPv4); redirect:'manual' — хостовый редирект не
+# уведёт проверку на внешний прод.
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-  CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health',{redirect:'manual'}).then(r=>r.text()).then(t=>process.exit(t.includes('\"status\":\"ok\"')?0:1)).catch(()=>process.exit(1))"
 
 # Точка входа — Node-супервизор (deploy/entrypoint.mjs). Front держит публичный
 # порт 3000 с первой секунды; приложение слушает внутренний APP_PORT. Пока идёт
