@@ -436,13 +436,16 @@ plaintext в очереди уведомлений. Нумерация: букв
 ### Сквозное
 
 #### X-1 · Веб-номера `userId` и `Number` ✅ Закрыто (латентно: веб-id в [1e15, 9e15), ниже 2^53; пин в `user-id-range.spec.ts`)
-- **Было:** `WEB_USER_ID_MIN = 1e18 > 2^53`; глобальный `BigInt.prototype.toJSON →
-  Number` и `Number(clientId)` в therapy/pairs округляли id клиента, вошедшего
-  через Google/VK/MAX/почту. Психолог видел округлённый id, следующий запрос с
-  ним не проходил `assertRelation` — терапия и пары для веб-клиентов не
-  работали. Тот же класс: `parseId` (≤ 16 цифр), `DueNotification.userId`
-  (адрес уведомления искался по округлённому id), бакет троттлера
-  (`uid:${Number}` склеивал соседние веб-аккаунты).
+- **Было:** мотивировка исходила из ошибочного диапазона веб-id 1e18 > 2^53;
+  на деле `WEB_USER_ID_MIN` всегда был 1e15, id лежат в [1e15, 9e15) и
+  `Number()` их не округляет (проверено на 100 000 сэмплах и `git log`).
+  Переход на bigint и строки сделан превентивно: глобальный
+  `BigInt.prototype.toJSON → Number`, `Number(clientId)` в therapy/pairs,
+  `parseId` (≤ 16 цифр), `DueNotification.userId` и бакет троттлера
+  (`uid:${Number}`) округлили бы id при расширении диапазона за 2^53.
+  Допущение «диапазон ниже 2^53» держит пин в `user-id-range.spec.ts`.
+  Хвосты остаются открытыми: мёртвое `req.telegramUserId = Number(…)` и
+  `notifyApplicant` (`therapist-request.*`), см. `docs/README.md`.
 - **Стало:** id идут точными от БД до фронтов. `src/utils/bigint-json.ts` —
   число, если влезает в ±2^53, иначе десятичная строка; `parseUserId`/
   `parseClientId` (`src/api/parse-user-id.ts`) отдают bigint; весь
