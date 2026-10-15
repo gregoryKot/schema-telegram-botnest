@@ -541,8 +541,6 @@
   "scripts/merge-miniapp-dist.mjs": 97,
   "scripts/recorded-fixtures-patterns.mjs": 30,
   "scripts/render-poison-patterns.mjs": 53,
-  "scripts/rotate-encryption-key.ts": 172,
-  "scripts/rotate-encryption-targets.ts": 138,
   "scripts/schema-terms-modes.mjs": 114,
   "scripts/schema-terms-rules.mjs": 206,
   "scripts/second-person-blanking.mjs": 140,

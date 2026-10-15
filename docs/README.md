@@ -205,6 +205,18 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   cutoff 24 ч, 400 уходит в `unhandledRejection` — хвост инцидента 2026-09-29
   (#573).
   [Секция «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки).
+- **`scripts/encrypt-existing.ts` не исполняется (тот же класс, что чинила
+  ротация ключа).** `new PrismaClient()` без driver-adapter (Prisma 7 бросает
+  `PrismaClientInitializationError`), `npx ts-node --project tsconfig.json
+  scripts/encrypt-existing.ts` не компилируется (`TS2591`, `scripts/` вне
+  `rootDir`), в прод-образе скрипта нет. `check-db-phrases.ts` адаптер строит,
+  но его компиляцию под ts-node и наличие в образе никто не проверял.
+  Сначала решить, нужны ли они вообще (`encrypt-existing` — разовая миграция
+  легаси-открытого текста; её роль частично играет `migrateClinicalLabels`):
+  нужны — переезд в `src/cli/` по образцу `rotate-encryption-key.ts` и
+  `buildPrismaAdapter()`, не нужны — удалить. Гейта «каждая команда из ранбука
+  имеет smoke» нет: ротация ключа теперь под `test/key-rotation.e2e-spec.ts`,
+  остальные команды документов — нет.
 - **409 «Slot already taken» нигде не считается.** `POST /api/booking/book`
   при занятом слоте отвечает 409, в `/stats` такого счётчика нет. Сознательно не
   сделано в починке слотов последнего дня (r2-1#2, правило №20: один инцидент —
@@ -234,21 +246,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   поведенческий тест на каждый вход свободного текста (ввод фразы → телефон
   доверия в DOM) вместо поиска по тексту файла; `<input>` длиннее имени — в
   обзор инварианта.
-- **Ротация `ENCRYPTION_KEY` не исполняется ни одним путём из ранбука.**
-  `npm run rotate-encryption` падает на компиляции (ts-node не грузит
-  глобальные типы Node), с `--files` — на `new PrismaClient()` без адаптера; в
-  прод-образе ни ts-node, ни скрипта (`Dockerfile:68`). Копия с адаптером
-  падает на седьмой модели из 27 (`rotate-encryption-targets.ts:52,90`: нет
-  верного `pk` у `userSafePlace`/`diaryDraft`), под старым ключом остаются 20
-  моделей, четыре колонки `User` (в т.ч. 2FA) и история концептуализаций;
-  шесть из 96 enc-полей (`ysq*.answers`, `EmailToken.email`,
-  `UserModeNote.origins/healthyView`) не в TARGETS вовсе (P2). Спек
-  `encryption-rotation-coverage.spec.ts:99` ищет имя поля в тексте скрипта.
-  Воспроизведено на живом Postgres целиком, включая шаг 4 ранбука: после
-  удаления `ENCRYPTION_KEY_OLD` заметки читаются как base64. Та же беда у
-  `encrypt-existing.ts`. Починка M: адаптер через общий `buildAdapter()`,
-  скрипт в `src/cli/` (попадёт в `dist/`), e2e ротации в джобе `migrations`.
-  [Секция «Данные и целостность»](AUDIT_2026-10_FINDINGS.md#данные-и-целостность).
 - **Бот и рестарт: остаток после починки.** Поллинг теперь ретраит 409 и виден
   пробой `telegramPolling`, но ответ Telegram на 409 после чистого `bot.stop()`
   старого контейнера нигде не записан (поддельный Bot API в
