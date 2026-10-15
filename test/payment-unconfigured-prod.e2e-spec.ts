@@ -157,7 +157,10 @@ describe('e2e: прод без Robokassa не подтверждает плат�
 // Проба «приходят ли подтверждения» на настоящих запросах Postgres. Метки
 // времени — в 2096 году и `now` оттуда же: проба смотрит всю таблицу, а строки
 // других спеков живут в настоящем и не попадают ни в «последнюю оплату», ни в
-// окно попыток.
+// окно попыток. Кейсы границы учёта (внизу, в `inCleanWorld`) живут в 2026:
+// граница PAID_AT_TRACKED_SINCE — настоящая дата, в 2096 её не проверить.
+// Там чужие строки не мешают иначе: `inCleanWorld` обнуляет все оплаты внутри
+// транзакции с откатом, а окно EARLY_NOW узкое (первый час после границы).
 describe('e2e: проба paymentWebhooks на живой БД', () => {
   let prisma: PrismaService;
   let app: INestApplication;
@@ -290,11 +293,7 @@ describe('e2e: проба paymentWebhooks на живой БД', () => {
         }
         if (oldPaidAt) await seedBooking(oldPaidAt, oldPaidAt, tx);
         const probe = () =>
-          paymentWebhooksProbe(
-            tx as unknown as PrismaService,
-            PROD_ENV,
-            () => EARLY_NOW,
-          ).run();
+          paymentWebhooksProbe(tx, PROD_ENV, () => EARLY_NOW).run();
 
         const quiet = await probe();
         expect(quiet.ok).toBe(true);

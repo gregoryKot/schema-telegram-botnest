@@ -78,8 +78,15 @@ const ddmm = (d: Date): string => {
   return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}`;
 };
 
+// Только три делегата, которые проба читает: клиент транзакции подходит без
+// приведения типов (живой спек гоняет пробу в транзакции с откатом).
+export type PaymentWebhooksDb = Pick<
+  PrismaService,
+  'booking' | 'donation' | 'subscriptionCharge'
+>;
+
 export function paymentWebhooksProbe(
-  prisma: PrismaService,
+  prisma: PaymentWebhooksDb,
   env: Env = process.env,
   now: () => number = Date.now,
 ): Probe {
@@ -161,6 +168,6 @@ export function paymentWebhooksProbe(
   };
 }
 
-export function robokassaProbes(prisma: PrismaService): Probe[] {
+export function robokassaProbes(prisma: PaymentWebhooksDb): Probe[] {
   return [robokassaConfigProbe(), paymentWebhooksProbe(prisma)];
 }

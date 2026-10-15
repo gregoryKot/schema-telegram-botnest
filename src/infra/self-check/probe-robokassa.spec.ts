@@ -1,9 +1,9 @@
 // Две пробы приёма оплаты (аудит 2026-10-11). Площадку не вызывают: проверяют
 // конфигурацию и следы настоящих вебхуков в нашей БД.
 import { SessionType } from '@prisma/client';
-import type { PrismaService } from '../../prisma/prisma.service';
 import {
   PAID_AT_TRACKED_SINCE,
+  type PaymentWebhooksDb,
   paymentWebhooksProbe,
   robokassaConfigProbe,
   robokassaProbes,
@@ -78,7 +78,7 @@ function fakePrisma(
       count: jest.fn().mockResolvedValue(counts.charge ?? 0),
     },
   };
-  return prisma as unknown as PrismaService & typeof prisma;
+  return prisma as PaymentWebhooksDb & typeof prisma;
 }
 
 const NOW = Date.parse('2026-10-25T12:00:00Z');
