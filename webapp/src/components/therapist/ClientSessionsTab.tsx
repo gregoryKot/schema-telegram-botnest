@@ -1,15 +1,14 @@
 import { fmtDate, todayStr } from '../../utils/format';
 import type { ClientDetail } from './clientSheetTypes';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 
 interface Props {
   detail: ClientDetail;
 }
 
 export function ClientSessionsTab({ detail }: Props) {
-  const {
-    newNoteDate, setNewNoteDate, newNoteText, setNewNoteText,
-    addNote, noteSaving, noteError, notes, removeNote,
-  } = detail;
+  const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notes, removeNote } = detail;
 
   return (
     <div className="page-inner-wide u-pt40">
@@ -20,7 +19,8 @@ export function ClientSessionsTab({ detail }: Props) {
           <input type="date" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)}
                  style={{ marginLeft: 10, fontSize: 11, padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 'var(--r-4)', background: 'transparent', color: 'var(--text-faint)' }} />
         </div>
-        <textarea
+        <LimitedTextarea
+          max={SESSION_NOTE_MAX}
           className="textarea"
           value={newNoteText}
           onChange={e => setNewNoteText(e.target.value)}

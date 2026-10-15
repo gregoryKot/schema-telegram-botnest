@@ -9,6 +9,13 @@ import { ALREADY_CONNECTED_ERROR, INVITE_TTL_MS } from './therapy-invite';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 
+// Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
+// явно, как это делает env прода.
+jest.mock('../telegram/telegram.constants', () => ({
+  ...jest.requireActual('../telegram/telegram.constants'),
+  BOT_USERNAME: 'SchemeHappensBot',
+}));
+
 const T1 = 100n;
 const T2 = 200n;
 const CLIENT = 555n;

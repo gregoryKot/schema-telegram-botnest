@@ -11,8 +11,9 @@
 //      классификация: гейт обязан краснеть и на незарегистрированном ключе
 //      (значение молча уехало в `[redacted]`), и на протухшей записи,
 //      которую больше никто не передаёт.
-import { readdirSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join, relative } from 'path';
+import { collectSourceFiles } from '../security/collect-source-files';
 
 type RedactModule = typeof import('./security-log-redact');
 let LOGGABLE_FIELDS: RedactModule['LOGGABLE_FIELDS'];
@@ -180,16 +181,6 @@ describe('redactSecurityLogData — разрешённое поле доходи
 
 const SRC = join(__dirname, '..');
 
-function tsFiles(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) tsFiles(p, out);
-    else if (e.name.endsWith('.ts') && !e.name.endsWith('.spec.ts'))
-      out.push(p);
-  }
-  return out;
-}
-
 /** Конец строкового литерала, начинающегося на `i` (с учётом escape). */
 function endOfString(src: string, i: number): number {
   const quote = src[i];
@@ -285,7 +276,7 @@ function callSiteKeys(): { keys: Map<string, string[]>; broken: string[] } {
   const broken: string[] = [];
   // Приёмник всегда назван `securityLog` (this./deps./sinks./необязательный).
   const CALL = /securityLog\s*\??\.\s*log\(\s*'([a-z_]+)'\s*,\s*/g;
-  for (const file of tsFiles(SRC)) {
+  for (const file of collectSourceFiles(SRC)) {
     const src = withoutInstrumentation(readFileSync(file, 'utf8'));
     const where = relative(SRC, file);
     let m: RegExpExecArray | null;

@@ -4,6 +4,7 @@
 // этом сообщить — см. env-check-boot-log.spec.ts), неверный формат,
 // кросс-проверки.
 import { checkEnv } from './env-check';
+import { BACKUP_REQUIRED_ENV_VARS } from './backup-config';
 
 // Минимальный набор, закрывающий все requiredInProd:true записи реестра —
 // иначе checkEnv(ALL_VALID) сообщал бы о «missing» не из-за теста, а из-за
@@ -12,6 +13,7 @@ const ALL_VALID = {
   ADMIN_BOOKING_KEY: 'super-secret-key-0123456789-abcdefghij',
   ADMIN_ID: '123456789',
   BOT_TOKEN: `123456789:${'A'.repeat(35)}`,
+  BOT_USERNAME: 'SchemeHappensBot',
   DATABASE_URL: 'postgres://localhost/db',
   ENCRYPTION_KEY: 'a'.repeat(64),
   JWT_SECRET: 'Zr8k2VqLx9Tn4Wc7Hb3Yd6Fm1Pj5Ug0aKs',
@@ -132,27 +134,92 @@ describe('checkEnv', () => {
       );
     });
 
-    // Аудит D-2: бэкапы в B2 включаются только полным набором.
-    it('B2_BUCKET без остальных трёх переменных бэкапа — проблема с их именами', () => {
+    // Аудит D-2: бэкапы в R2 включаются только полным набором.
+    it('BACKUP_S3_BUCKET без остальных переменных бэкапа — проблема с их именами', () => {
       const issue = checkEnv({
         ...ALL_VALID,
-        B2_BUCKET: 'bkt',
-      }).crossCheckIssues.find((i) => i.id === 'b2BucketRequiresBackupSetup');
-      expect(issue?.problem).toContain('B2_KEY_ID');
-      expect(issue?.problem).toContain('B2_APP_KEY');
+        BACKUP_S3_BUCKET: 'bkt',
+      }).crossCheckIssues.find(
+        (i) => i.id === 'backupBucketRequiresBackupSetup',
+      );
+      expect(issue?.problem).toContain('BACKUP_S3_ENDPOINT');
+      expect(issue?.problem).toContain('BACKUP_S3_SECRET_ACCESS_KEY');
       expect(issue?.problem).toContain('BACKUP_ENCRYPTION_KEY');
     });
 
     it('полный набор переменных бэкапа — без проблемы (контроль)', () => {
       const ids = checkEnv({
         ...ALL_VALID,
-        B2_BUCKET: 'bkt',
-        B2_KEY_ID: 'k',
-        B2_APP_KEY: 'a',
+        BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+        BACKUP_S3_BUCKET: 'bkt',
+        BACKUP_S3_ACCESS_KEY_ID: 'k',
+        BACKUP_S3_SECRET_ACCESS_KEY: 'a',
         BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
       }).crossCheckIssues.map((i) => i.id);
-      expect(ids).not.toContain('b2BucketRequiresBackupSetup');
+      expect(ids).not.toContain('backupBucketRequiresBackupSetup');
       expect(ids).not.toContain('backupKeyDistinctFromEncryptionKey');
+    });
+
+    // Аудит 2026-10 (infra#11): на VPS pgdata — единственная копия базы.
+    describe('vpsRequiresBackups', () => {
+      const ids = (env: Record<string, string>, mode = 'production') =>
+        checkEnv({ ...ALL_VALID, ...env }, mode).crossCheckIssues.map(
+          (i) => i.id,
+        );
+      // Значения валидны по формату реестра; имена — из единственного
+      // источника, а не литералами.
+      const FORMAT_OK: Record<string, string> = {
+        BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+        BACKUP_S3_BUCKET: 'bkt',
+        BACKUP_S3_ACCESS_KEY_ID: 'k',
+        BACKUP_S3_SECRET_ACCESS_KEY: 'a',
+        BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
+      };
+      const FULL_BACKUP: Record<string, string> = Object.fromEntries(
+        BACKUP_REQUIRED_ENV_VARS.map((n) => [n, FORMAT_OK[n]]),
+      );
+
+      it('DEPLOY_TARGET=vps в production без бэкапов — проблема с именами всех пяти', () => {
+        const issue = checkEnv(
+          { ...ALL_VALID, DEPLOY_TARGET: 'vps' },
+          'production',
+        ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
+        for (const name of BACKUP_REQUIRED_ENV_VARS) {
+          expect(issue?.problem).toContain(name);
+        }
+      });
+
+      it('на VPS не хватает одной — проблема называет именно её', () => {
+        const issue = checkEnv(
+          {
+            ...ALL_VALID,
+            ...FULL_BACKUP,
+            DEPLOY_TARGET: 'vps',
+            BACKUP_S3_SECRET_ACCESS_KEY: undefined,
+          },
+          'production',
+        ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
+        expect(issue?.problem).toContain('BACKUP_S3_SECRET_ACCESS_KEY');
+        expect(issue?.problem).not.toContain('BACKUP_S3_BUCKET');
+      });
+
+      it('контроль: vps с полным набором, Amvera без бэкапов, vps вне production — без проблемы', () => {
+        expect(ids({ DEPLOY_TARGET: 'vps', ...FULL_BACKUP })).not.toContain(
+          'vpsRequiresBackups',
+        );
+        expect(ids({})).not.toContain('vpsRequiresBackups');
+        expect(ids({ DEPLOY_TARGET: 'amvera' })).not.toContain(
+          'vpsRequiresBackups',
+        );
+        expect(ids({ DEPLOY_TARGET: 'vps' }, 'development')).not.toContain(
+          'vpsRequiresBackups',
+        );
+      });
+
+      it('DEPLOY_TARGET с опечаткой — неверный формат, а не молчаливая Amvera', () => {
+        const bad = checkEnv({ ...ALL_VALID, DEPLOY_TARGET: 'vps2' });
+        expect(bad.invalid.map((i) => i.name)).toContain('DEPLOY_TARGET');
+      });
     });
 
     it('BACKUP_ENCRYPTION_KEY совпадает с ENCRYPTION_KEY — проблема', () => {
@@ -260,6 +327,71 @@ describe('checkEnv', () => {
         expect(issue(undefined)).toBeUndefined();
         expect(issue('')).toBeUndefined();
       });
+    });
+  });
+});
+
+// Аудит 2026-10 (infra#18): дефолты MINIAPP_URL/BOT_USERNAME вели на старый
+// деплой и старого бота, а прод это не показывал.
+describe('checkEnv — имя бота и адрес мини-аппа', () => {
+  it('BOT_USERNAME обязателен в проде: пустой env его требует', () => {
+    expect(checkEnv({}, 'production').missing).toContain('BOT_USERNAME');
+  });
+
+  it('BOT_USERNAME с пробелом и «!» — формат неверен', () => {
+    const result = checkEnv(
+      { ...ALL_VALID, BOT_USERNAME: 'bad name!' },
+      'production',
+    );
+    expect(result.invalid.map((i) => i.name)).toContain('BOT_USERNAME');
+  });
+
+  it('BOT_USERNAME с @ — формат неверен (в env имя без @)', () => {
+    const result = checkEnv(
+      { ...ALL_VALID, BOT_USERNAME: '@SchemeHappensBot' },
+      'production',
+    );
+    expect(result.invalid.map((i) => i.name)).toContain('BOT_USERNAME');
+  });
+
+  describe('miniappUrlCanonicalHost', () => {
+    const issue = (url: string | undefined, mode: string) =>
+      checkEnv({ ...ALL_VALID, MINIAPP_URL: url }, mode).crossCheckIssues.find(
+        (i) => i.id === 'miniappUrlCanonicalHost',
+      );
+
+    it('старый vercel-деплой в проде — проблема с названием хоста', () => {
+      expect(
+        issue('https://schema-miniapp.vercel.app', 'production')?.problem,
+      ).toContain('schema-miniapp.vercel.app');
+    });
+
+    it('www. редиректится сам — проблема', () => {
+      expect(
+        issue('https://www.schemehappens.ru/app/', 'production'),
+      ).toBeDefined();
+    });
+
+    it('канонический хост без /app/ — проблема про путь', () => {
+      expect(
+        issue('https://schemehappens.ru/', 'production')?.problem,
+      ).toContain('/app/');
+    });
+
+    it('контрольный: https://schemehappens.ru/app/ — чисто', () => {
+      expect(
+        issue('https://schemehappens.ru/app/', 'production'),
+      ).toBeUndefined();
+    });
+
+    it('не в проде чужой хост законен (localhost, staging)', () => {
+      expect(
+        issue('https://schema-miniapp.vercel.app', 'development'),
+      ).toBeUndefined();
+    });
+
+    it('MINIAPP_URL не задан — дефолт из APP_URL, проверять нечего', () => {
+      expect(issue(undefined, 'production')).toBeUndefined();
     });
   });
 });

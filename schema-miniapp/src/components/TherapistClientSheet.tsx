@@ -120,15 +120,11 @@ export function TherapistClientSheet({
   const today = todayCalendarDate();
 
   // ─── Autofocus via refs (jsx-a11y/no-autofocus) ──────────────────────────────
-  const telegramInputRef = useRef<HTMLInputElement>(null);
   const virtualInputRef = useRef<HTMLInputElement>(null);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   const startDateInputRef = useRef<HTMLInputElement>(null);
   const nextSessionInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (addMode === 'telegram') telegramInputRef.current?.focus();
-  }, [addMode]);
   useEffect(() => {
     if (addMode === 'virtual') virtualInputRef.current?.focus();
   }, [addMode]);
@@ -156,7 +152,6 @@ export function TherapistClientSheet({
           safeTop={safeTop}
           animKey={animKey}
           onClose={onClose}
-          telegramInputRef={telegramInputRef}
           virtualInputRef={virtualInputRef}
           detail={detail}
           addClient={addClient}

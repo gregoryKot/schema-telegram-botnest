@@ -1,6 +1,6 @@
 'use strict';
-// Планировщик зашифрованных бэкапов БД в Backblaze B2 (аудит D-2: скрипт
-// scripts/backup-to-b2.sh годами лежал без вызывающего — бэкапов не было).
+// Планировщик зашифрованных бэкапов БД в Cloudflare R2 (аудит D-2: скрипт
+// бэкапа годами лежал без вызывающего — бэкапов не было).
 //
 // Живёт здесь, а не в src/: код в src/** не имеет права на child_process
 // (src/security/injection.invariants.spec.ts), а entrypoint — супервизор
@@ -8,15 +8,14 @@
 // jest-спека (ESM jest не грузит) и из ESM-entrypoint одновременно.
 //
 // Что делает: раз в час спрашивает «пора ли?» — UTC-час ≥ 3 и сегодня ещё
-// не отработано. Прогон забирается арендой строки CronLease 'backup-b2' (тот
+// не отработано. Прогон забирается арендой строки CronLease 'db-backup' (тот
 // же атомарный INSERT … ON CONFLICT DO UPDATE … WHERE "runAt" <= окно, что в
 // src/infra/cron-leader.service.ts, правило №17): на двух инстансах бэкап
 // делает один. SQL идёт через psql — своего драйвера у супервизора нет, а
 // пересобирать его ради одного запроса незачем. Значения в SQL подставляет
-// сам psql (`:'var'` — безопасное квотирование литерала), строкой SQL они не
-// склеиваются.
+// сам psql (`:'var'` — безопасное квотирование), строкой SQL не склеиваются.
 //
-// Не настроено (нет B2_*/BACKUP_ENCRYPTION_KEY) — одна строка в лог при
+// Не настроено (нет BACKUP_S3_*/BACKUP_ENCRYPTION_KEY) — одна строка в лог при
 // старте и больше ничего. Результат прогона — строка `[backup] ok <файл>` или
 // `[backup] FAILED <причина>`; ключей и паролей в логе нет по построению
 // (скрипт их не печатает, сюда попадает только хвост его stderr).
@@ -32,13 +31,14 @@ const { join } = require('node:path');
 const { pgEnvFromUrl } = require('./pg-url-env.cjs');
 
 const REQUIRED_ENV = [
-  'B2_KEY_ID',
-  'B2_APP_KEY',
-  'B2_BUCKET',
+  'BACKUP_S3_ENDPOINT',
+  'BACKUP_S3_BUCKET',
+  'BACKUP_S3_ACCESS_KEY_ID',
+  'BACKUP_S3_SECRET_ACCESS_KEY',
   'BACKUP_ENCRYPTION_KEY',
   'DATABASE_URL',
 ];
-const LEASE_NAME = 'backup-b2';
+const LEASE_NAME = 'db-backup';
 const HOUR_MS = 3_600_000;
 /** Меньше периода (сутки): иначе законный завтрашний прогон был бы отказан. */
 const LEASE_WINDOW_MS = 20 * HOUR_MS;
@@ -46,7 +46,7 @@ const START_HOUR_UTC = 3;
 const FIRST_TICK_MS = 60_000;
 const MAX_FAILS_PER_DAY = 3;
 const BACKUP_TIMEOUT_MS = 40 * 60_000;
-const SCRIPT = join(__dirname, '..', 'scripts', 'backup-to-b2.sh');
+const SCRIPT = join(__dirname, '..', 'scripts', 'backup-upload.sh');
 
 const missingEnv = (env) => REQUIRED_ENV.filter((k) => !(env[k] ?? '').trim());
 
@@ -198,7 +198,7 @@ function startBackupScheduler(opts = {}) {
   const log = opts.log ?? { info: console.log, error: console.error };
   const missing = missingEnv(env);
   if (missing.length > 0) {
-    log.info(`[backup] бэкапы в B2 выключены: нет ${missing.join(', ')}`);
+    log.info(`[backup] бэкапы в R2 выключены: нет ${missing.join(', ')}`);
     return null;
   }
   const spawn = opts.spawn ?? nodeSpawn;
@@ -217,7 +217,7 @@ function startBackupScheduler(opts = {}) {
   const timer = setInterval(tick, opts.tickMs ?? HOUR_MS);
   first.unref?.();
   timer.unref?.();
-  log.info('[backup] бэкапы в B2 включены: проверка раз в час, прогон после 03:00 UTC');
+  log.info('[backup] бэкапы в R2 включены: проверка раз в час, прогон после 03:00 UTC');
   return {
     tick,
     stop() {

@@ -3,7 +3,7 @@
 import { ENV_REGISTRY } from './env-registry.entries';
 import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
 import { BACKUP_CROSS_CHECKS } from './env-check.backup';
-import { ORIGIN_CROSS_CHECKS } from './env-check.origins';
+import { HOST_CROSS_CHECKS } from './env-check.hosts';
 
 type Env = Record<string, string | undefined>;
 
@@ -46,7 +46,7 @@ function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
 // Кросс-проверки связывают несколько переменных; адрес возврата OAuth сверяет oauth-redirect-config.ts.
 export const CROSS_CHECKS: CrossCheck[] = [
   ...BACKUP_CROSS_CHECKS,
-  ...ORIGIN_CROSS_CHECKS,
+  ...HOST_CROSS_CHECKS,
   // Инцидент 2026-09-15: пустой ADMIN_EMAIL при заданном RESEND_API_KEY —
   // письма о записях молчали.
   requiresToo('resendRequiresAdminEmail', 'RESEND_API_KEY', 'ADMIN_EMAIL'),

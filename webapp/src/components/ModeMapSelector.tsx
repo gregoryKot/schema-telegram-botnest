@@ -4,10 +4,9 @@ import { ModeMapEditor } from './ModeMapEditor';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import { ConfirmDialog } from './ConfirmDialog';
+import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 
-interface Props {
-  clientId: UserId;
-}
+interface Props { clientId: UserId }
 
 const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
   personality: { label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
@@ -127,7 +126,7 @@ export function ModeMapSelector({ clientId }: Props) {
           <div key={m.id} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 0 }}>
             {editingId === m.id ? (
               <input
-                ref={titleRef}
+                ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
                 onBlur={() => renameMap(m.id, editTitle)}
