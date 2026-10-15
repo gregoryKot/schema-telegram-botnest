@@ -12,6 +12,7 @@ import {
 } from '@testing-library/react';
 import { WeeklyQuestion, shouldShowWeeklyQuestion } from './WeeklyQuestion';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 vi.mock('../api', () => ({
   api: {
@@ -148,5 +149,25 @@ describe('WeeklyQuestion — сохранение ответа', () => {
     expect(onDismiss).not.toHaveBeenCalled();
     expect(shouldShowWeeklyQuestion()).toBe(true);
     expect(screen.getByText('Не сохранилось, попробуй ещё раз')).toBeTruthy();
+  });
+});
+
+// backend#29: ответ уходит заметкой дня с заголовком «[Вопрос недели] …», а
+// предел заметки (DAY_NOTE_MAX) относится ко всей строке. Раньше поле пускало
+// 500 знаков ответа, заголовок добавлял ещё ~100, и сервер отрезал хвост ответа.
+describe('WeeklyQuestion — ответ с заголовком укладывается в предел заметки дня', () => {
+  it('ответ ровно во всю длину поля уходит строкой не длиннее DAY_NOTE_MAX', async () => {
+    const textarea = renderCard() as HTMLTextAreaElement;
+    expect(textarea.maxLength).toBeGreaterThan(0);
+    expect(textarea.maxLength).toBeLessThan(DAY_NOTE_MAX);
+    fireEvent.change(textarea, {
+      target: { value: 'я'.repeat(textarea.maxLength) },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Сохранить'));
+    });
+    const sent = mockApi.saveNote.mock.calls[0][1] as string;
+    expect(sent.length).toBe(DAY_NOTE_MAX);
+    expect(sent.endsWith('я'.repeat(textarea.maxLength))).toBe(true);
   });
 });

@@ -34,7 +34,7 @@ afterEach(() => {
 // BookingCancelControl всегда показывал кнопку отмены в этих тестах; для
 // проверки окна < 24 часов — отдельный тест с относительным временем.
 const BOOKING = {
-  status: 'CONFIRMED', type: 'SESSION_50' as const,
+  status: 'CONFIRMED', paid: true, type: 'SESSION_50' as const,
   startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z',
   durationMin: 50, meetingUrl: 'https://meet.example/xyz',
 };
@@ -57,11 +57,13 @@ describe('BookingPaidPage — fail=1', () => {
 });
 
 describe('BookingPaidPage — с токеном', () => {
-  it('пока бронь грузится — показывает «Загружаем…», не пустой экран', () => {
+  it('пока бронь грузится — силуэт экрана (скелетон), не пустота и не «подтверждена»', () => {
     setUrl('?token=abc');
     getBookingByToken.mockReturnValue(new Promise(() => {}));
-    render(<BookingPaidPage />);
-    expect(screen.getByText('Загружаем…')).toBeTruthy();
+    const { container } = render(<BookingPaidPage />);
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText(/Встреча подтверждена/)).toBeNull();
+    expect(screen.queryByText('Загружаем…')).toBeNull();
   });
 
   it('успешная загрузка показывает время встречи и ссылку на видеовстречу', async () => {
