@@ -5,21 +5,20 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { NEED_IDS } from '../../bot/bot.service';
+import { PRACTICE_TEXT_MAX } from '../../utils/text-limits';
 
-/**
- * DTO для POST /api/practices (аудит 2026-07, 2г / правило №6 CLAUDE.md).
- * `text` обрезается контроллером до 200 символов (не отклоняется) — жёсткий
- * лимит здесь не дублируем, чтобы не менять поведение.
- */
+/** POST /api/practices (правило №6): `text` длиннее предела — 400, не обрезка (backend#29). */
 export class AddPracticeDto {
   @IsIn(NEED_IDS)
   needId!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(PRACTICE_TEXT_MAX)
   text!: string;
 }
 
