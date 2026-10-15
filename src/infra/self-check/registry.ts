@@ -1,11 +1,8 @@
 import type { PrismaService } from '../../prisma/prisma.service';
 import { Probe } from './types';
 import { dbProbe } from './probe-db';
-import {
-  oauthRedirectsProbe,
-  emailProbe,
-  alertsProbe,
-} from './probe-capabilities';
+import { oauthRedirectsProbe, alertsProbe } from './probe-capabilities';
+import { emailProbe } from './probe-email';
 import { throttleStorageProbe } from './probe-throttle-storage';
 import { cronLeasesProbe } from './probe-cron-leases';
 import { liveIntegrationProbes } from './registry.live';

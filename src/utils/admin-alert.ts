@@ -1,13 +1,12 @@
-// Single place to alert the admin with a delivery guarantee: try Telegram, and
-// if that fails (bot down, network, revoked token) fall back to e-mail via
-// Resend. Dependency-free (reads env) so it works both inside DI services and
-// in AlertLogger, which is constructed before the DI container exists.
-//
-// Swallows all errors silently and never uses the NestJS Logger — otherwise an
-// e-mail failure would log an error that routes back through AlertLogger and
-// recurse. This is the last line of defence; if both channels fail, give up.
-//
-// Env: BOT_TOKEN, ADMIN_ID (Telegram) · RESEND_API_KEY, ADMIN_EMAIL, EMAIL_FROM (e-mail)
+// Последняя линия оповещения админа: Telegram, при отказе — e-mail (Resend).
+// Без DI (читает env): работает и в AlertLogger, созданном раньше контейнера.
+// Ничего не бросает и не логирует уровнем error — он вернулся бы через
+// AlertLogger в этот же фолбэк. Итог письма — в alert-email-health.ts.
+// Env: BOT_TOKEN, ADMIN_ID · RESEND_API_KEY, ADMIN_EMAIL, EMAIL_FROM
+import {
+  noteAlertEmailError,
+  noteAlertEmailResponse,
+} from './alert-email-health';
 
 /** Числовой ADMIN_ID из env (null, если не задан/некорректен). */
 export function adminIdNum(): number | null {
@@ -69,7 +68,7 @@ async function sendEmail(subject: string, text: string): Promise<void> {
     process.env.EMAIL_FROM ?? 'SchemeHappens <no-reply@schemehappens.ru>';
   if (!apiKey || !to) return;
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +82,8 @@ async function sendEmail(subject: string, text: string): Promise<void> {
       }),
       signal: AbortSignal.timeout(10_000),
     });
-  } catch {
-    /* both channels down — nothing more we can do */
+    noteAlertEmailResponse(res);
+  } catch (e) {
+    noteAlertEmailError(e);
   }
 }
