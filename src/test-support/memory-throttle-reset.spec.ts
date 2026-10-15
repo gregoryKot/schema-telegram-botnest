@@ -27,17 +27,33 @@ describe('resetMemoryThrottle — сброс троттлера в памяти 
     jest.useRealTimers();
   });
 
-  // Контрольный образец: ровно тот приём, что жил в спеке до разбора. Если
-  // библиотека когда-нибудь начнёт переживать пропажу записи, этот тест
-  // покраснеет — значит, разбор выше устарел и его надо перечитать.
-  it('контроль: стереть записи и оставить таймеры — таймер хита падает', async () => {
-    const lib = new ThrottlerStorageService();
-    await hit(lib);
-    lib.storage.clear();
-    expect(() => jest.advanceTimersByTime(TTL)).toThrow(
-      /Cannot destructure property 'totalHits'/,
-    );
-    lib.onApplicationShutdown();
+  // Контрольный образец: приём «стереть одну Map библиотеки», что жил в спеке
+  // до разбора. Форма провала зависит от версии @nestjs/throttler, класс один:
+  //  - 6.5.0: таймер на каждый хит берёт запись без проверки и падает
+  //    TypeError, когда записи уже нет;
+  //  - 6.7.1: таймеров на хит нет, счётчик восстанавливается из
+  //    hitExpirations — следующий хит не свежий (totalHits > 1).
+  // Не провалился ни так, ни так — разбор выше устарел, его надо перечитать.
+  it('контроль: стереть только записи — это не сброс (таймер падает или счётчик живёт)', async () => {
+    // Две независимые проверки на двух хранилищах: время идёт только вперёд.
+    const timers = new ThrottlerStorageService();
+    await hit(timers);
+    timers.storage.clear();
+    let threw = false;
+    try {
+      jest.advanceTimersByTime(TTL);
+    } catch {
+      threw = true;
+    }
+    timers.onApplicationShutdown();
+
+    const counter = new ThrottlerStorageService();
+    await hit(counter);
+    counter.storage.clear();
+    const next = await hit(counter);
+    counter.onApplicationShutdown();
+
+    expect(threw || next.totalHits > 1).toBe(true);
   });
 
   it('таймер хита, сделанного до сброса, истекает после него без ошибки', async () => {
