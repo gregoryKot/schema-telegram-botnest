@@ -20,6 +20,9 @@
     "src/booking/slot.service.ts",
     "src/booking/pricing.service.ts",
     "src/booking/payment.controller.ts",
+    "src/booking/payment.booking-webhook.ts",
+    "src/booking/booking-paid-after-cancel.ts",
+    "src/booking/booking.transitions.ts",
     "src/donation/donation.service.ts",
     "src/notification/notification.planner.service.ts"
   ],

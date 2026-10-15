@@ -89,7 +89,7 @@ jobs:
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client
-          test/body-limit
+          test/body-limit test/login-csrf test/payment-webhook-practice-host
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -396,6 +396,11 @@ jobs:
       # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
       - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
+      # Аудит 2026-10-11 (r2-1#2): слоты последнего дня окна раздавались свободными
+      # при занятом времени — брони читались по сырому toDate. Фильтр по startsAt
+      # делает СУБД, поэтому проверка сквозь HTTP — только на живой базе.
+      - name: e2e слоты последнего дня окна на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/slot-last-day.e2e-spec.ts
       # PR B (.ics для клиента): POST /api/booking/book той же advisory-lock
       # дорогой, что и booking-slot-lock.e2e-spec.ts выше — фейковая Prisma
       # не эмулирует $executeRaw, поэтому тоже только тут.
@@ -471,10 +476,11 @@ jobs:
       # фикстуры спека по фиксированным cancelToken/marker перед прогоном,
       # поэтому сам спек идемпотентен и локально гоняется на одной БД подряд
       # без ручной чистки между прогонами.
-      - name: e2e payment webhook smoke на реальном Postgres (идемпотентность)
+      - name: e2e payment webhook smoke на реальном Postgres (идемпотентность, хост визитки)
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/payment-webhooks.e2e-spec.ts
+          test/payment-webhook-practice-host.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
 

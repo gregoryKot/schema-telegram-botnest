@@ -12,7 +12,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     // По умолчанию — новый юзер (getUserSettings → null, isReturning=false).
     getUserSettings: jest.fn().mockResolvedValue(null),
     hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false),
-    cancelAllPreReminders: jest.fn().mockResolvedValue(0),
     ...overrides.botService,
   };
   const analyticsService = {

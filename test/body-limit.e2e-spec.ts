@@ -75,15 +75,24 @@ describe('e2e: лимит размера тела запроса (аудит 202
     expect(res.status).toBe(404);
   });
 
-  it('urlencoded держит тот же потолок', async () => {
-    const form = (chars: number) =>
+  it('urlencoded держит тот же потолок — там, где он вообще есть', async () => {
+    // Форма разбирается только на путях из FORM_BODY_PATHS (ResultURL
+    // Robokassa, src/infra/body-parsers.ts): глобальный парсер формы убран как
+    // дыра login-CSRF (аудит 2026-10-11, security#6).
+    const form = (path: string, chars: number) =>
       request(app.getHttpServer())
-        .post('/api/__body-limit-probe__')
+        .post(path)
         .set('Content-Type', 'application/x-www-form-urlencoded')
         .send(`pad=${'x'.repeat(chars)}`);
 
-    expect((await form(200 * 1024)).status).toBe(404);
-    expect((await form(300 * 1024)).status).toBe(413);
+    // Обработчик Robokassa отвечает 200 («FAIL…»: подписи нет) — тело прошло.
+    expect((await form('/api/payment/result', 200 * 1024)).status).toBe(200);
+    expect((await form('/api/payment/result', 300 * 1024)).status).toBe(413);
+    // На прочих путях парсера формы нет: тело не читается вовсе (ни 413, ни
+    // разбора), роутер отвечает 404 как на любое неизвестное.
+    expect((await form('/api/__body-limit-probe__', 300 * 1024)).status).toBe(
+      404,
+    );
   });
 
   it('самое длинное законное тело — фото главной — проходит с запасом', async () => {
