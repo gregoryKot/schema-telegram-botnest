@@ -1008,7 +1008,7 @@
   "src/booking/booking-calendar-admin.dto.ts": 57,
   "src/booking/booking-ics.ts": 56,
   "src/booking/booking-notify.format.ts": 94,
-  "src/booking/booking-notify.service.ts": 189,
+  "src/booking/booking-notify.service.ts": 168,
   "src/booking/booking-slot-lock.ts": 25,
   "src/booking/booking.availability.ts": 73,
   "src/booking/booking.checkout.ts": 106,
