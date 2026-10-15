@@ -44,6 +44,9 @@ export async function sendBounded(
 
 // Ошибки node-fetch, после которых запрос УЖЕ мог уйти в Telegram.
 const SENT_BUT_UNANSWERED_CODES = new Set(['ECONNRESET', 'EPIPE']);
+// 'aborted' — наша отмена. 'request-timeout'/'body-timeout' бывают только от
+// внутреннего таймаута telegraf (500 с), который 15-секундная отмена опережает:
+// ветка страховочная, на практике недостижима.
 const SENT_BUT_UNANSWERED_TYPES = new Set([
   'aborted',
   'request-timeout',
