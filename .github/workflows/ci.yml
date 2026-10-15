@@ -280,6 +280,11 @@ jobs:
       # тест, упоминающий его по имени (loadRegexList/loadStringList/
       # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
       - run: node scripts/check-gate-exemptions.mjs
+      # Индекс против .gitignore: отслеживаемый файл, который игнор запрещает
+      # (правило не снимает уже отслеживаемое — так в репозитории жил
+      # test/.jest-cache на 466 файлов). Нужны только git и node. Бейслайна
+      # нет: нужный файл разрешается отрицанием `!путь` в самом .gitignore.
+      - run: node scripts/check-ignored-tracked.mjs
       # Переезд на VPS (docs/MIGRATION_VPS.md): скрипты и compose-файлы
       # исполняются на сервере, до которого CI не дотягивается, поэтому
       # хотя бы разбираем их здесь. shellcheck стоит на ubuntu-latest;

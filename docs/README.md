@@ -120,13 +120,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   библиотека не удаляет никогда — Map растёт до рестарта. Найдено попутно при разборе
   мигалки `refresh-rotation` (2026-10-15); решения нет (своё хранилище с таймером на
   ключ, апстрим или другая версия).
-- **`test/.jest-cache` закоммичен: 466 файлов, 6,2 МБ** (`git ls-files test/.jest-cache`).
-  Правило `.gitignore:154` появилось позже файлов и отслеживаемые не снимает;
-  232 из них — `.map` с `sourcesContent`, то есть вторая копия `src`, а
-  локальный e2e-прогон перепишет кэш (шумные диффы, конфликты агентов). Чинить:
-  `git rm -r --cached test/.jest-cache` + гейт в `src/test-support/gates`
-  (`git ls-files -ci --exclude-standard` пуст). Не сделано в PR про деплой:
-  правило №20, один PR — одна починка.
+- **Кэш ts-jest в CI не сохраняется: `actions/cache` смотрит не туда, куда пишет jest.**
+  `.github/workflows/ci.yml:37` задаёт `JEST_CACHE_DIR: .jest-cache`, и `:53` кэширует
+  этот путь от корня репозитория, но jest резолвит относительный `--cacheDirectory`
+  от `rootDir` своего конфига (проверено: `npx jest --cacheDirectory=.jest-cache`
+  создаёт `src/.jest-cache`, корневого каталога нет; e2e с `test/jest-e2e.json`
+  пишет в `test/.jest-cache`). Каждый прогон в CI холодный, шаг «Кэш ts-jest»
+  сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
+  после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
+  Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
 - **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
   `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
   проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
