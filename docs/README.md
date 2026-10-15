@@ -135,7 +135,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   пишет в `test/.jest-cache`). Каждый прогон в CI холодный, шаг «Кэш ts-jest»
   сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
   после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
-  Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
+  Не сделано в #680 (снятие `test/.jest-cache` с учёта): правило №20, один PR — одна починка.
 - **Dependabot: доводка бот-PR (процедура и решения владельца).** Конфиг
   `.github/dependabot.yml` теперь покрывает все пять lock-файлов (сверка —
   `src/test-support/gates/dependabot-coverage.spec.ts`), мажоры идут семейными
@@ -747,6 +747,16 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   Завести бакет (`CLIENT_ERROR_SECTIONS`, `KNOWN`, `client-error-metrics.*`),
   когда подписку включат. Сознательно не сделано в починке отмены: правка
   метрик — отдельный PR (правило №20).
+- **Экран управления подпиской открывается только по `?token=…`, а страница
+  обещает прислать ссылку.** `SubscribePage.tsx` пишет «по ссылке, которую мы
+  пришлём, или в настройках». Токен отмены попадает в адрес только из
+  `successUrl` (`src/subscription/subscription.service.ts`), а
+  `src/booking/payment.controller.ts` на редиректе `/subscribe?sub=ok` его не
+  добавляет; письма со ссылкой нет. Есть ли управление подпиской «в
+  настройках», не проверяли. Починить текстом (убрать обещание) либо письмом со
+  ссылкой; решить до включения `SUBSCRIPTION_ENABLED`.
+  [Находка](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки): «Отмена подписки на
+  сайте глотает отказ».
 - Отчёты фронта об ошибках несут только имя источника, без причины:
   `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
   `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
@@ -801,7 +811,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
   `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие). Гейт `check-mutation-zone.mjs` (#614) не даёт выпасть новому,
+  и другие). Гейт `check-mutation-zone.mjs` (#657) не даёт выпасть новому,
   а этим двадцати одному ничего не мешает остаться за кадром: включать их в
   `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
   волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
