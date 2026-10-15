@@ -91,7 +91,7 @@ jobs:
           test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits
-          test/booking-admin-cancel
+          test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -186,6 +186,11 @@ jobs:
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
       - run: node scripts/check-raw-sql-live.mjs
+      # Каждый test/**/*.e2e-spec.ts гоняется хотя бы одним шагом jest-e2e
+      # (аудит 2026-10-11: два спека лежали в test/ без единого прогона), и
+      # наоборот: путь в CI без файла — переименованный спек, который jest
+      # молча пропускает. Бейслайна нет, флага --update нет.
+      - run: node scripts/check-e2e-in-ci.mjs
       # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
       # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
       # в security-log-redact.ts и перестал измеряться). Классификация в
@@ -287,6 +292,11 @@ jobs:
       # тест, упоминающий его по имени (loadRegexList/loadStringList/
       # loadNamedPatterns или прямой импорт) в src/test-support/gates/.
       - run: node scripts/check-gate-exemptions.mjs
+      # Индекс против .gitignore: отслеживаемый файл, который игнор запрещает
+      # (правило не снимает уже отслеживаемое — так в репозитории жил
+      # test/.jest-cache на 466 файлов). Нужны только git и node. Бейслайна
+      # нет: нужный файл разрешается отрицанием `!путь` в самом .gitignore.
+      - run: node scripts/check-ignored-tracked.mjs
       # Переезд на VPS (docs/MIGRATION_VPS.md): скрипты и compose-файлы
       # исполняются на сервере, до которого CI не дотягивается, поэтому
       # хотя бы разбираем их здесь. shellcheck стоит на ubuntu-latest;
@@ -478,6 +488,8 @@ jobs:
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts
+          test/exercise-delete-ownership.e2e-spec.ts
+          test/max-auth.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие

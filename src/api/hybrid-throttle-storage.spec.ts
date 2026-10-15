@@ -11,13 +11,9 @@ function fakePrisma(queryRaw: jest.Mock) {
 }
 
 describe('HybridThrottleStorage — маршрутизация по префиксу ключа', () => {
-  // Штатное in-memory хранилище (`this.memory`) ставит реальный setTimeout на
-  // истечение ключа (тут — до 60_000мс). Без вызова onApplicationShutdown()
-  // таймер переживает тест и держит event loop открытым — обычный `npx jest`
-  // это маскирует принудительным выходом воркера, а `--detectOpenHandles
-  // --forceExit=false` (nightly.yml, джоба backend-flaky) висит на нём вечно.
-  // Та же причина, что у инцидента в hybrid-throttle-storage.shutdown.spec.ts,
-  // только тут таймер настоящий, а не фейковый — чистим за каждым тестом.
+  // In-memory часть (MemoryThrottleStorage) таймеров не ставит, но
+  // onApplicationShutdown() вызываем за каждым тестом: хук — часть контракта
+  // обёртки (шов DI проверяет hybrid-throttle-storage.shutdown.spec.ts).
   let storage: HybridThrottleStorage;
 
   afterEach(() => {

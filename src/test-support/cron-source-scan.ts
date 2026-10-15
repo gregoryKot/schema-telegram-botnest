@@ -8,8 +8,9 @@
 //   исходниками (и окно, и саму cron-строку).
 // Период/окно из windowKey — дело каждого потребителя (cronPeriodMs /
 // LEASE_WINDOW у себя), этот модуль отдаёт только сырое совпадение.
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, resolve } from 'path';
+import { readFileSync } from 'fs';
+import { join, relative, resolve, sep } from 'path';
+import { collectSourceFiles } from '../security/collect-source-files';
 
 const ROOT = resolve(__dirname, '..', '..');
 
@@ -134,19 +135,14 @@ function firstCronArg(
   return consts.get(m[0]) ?? null;
 }
 
-function walk(dir: string, acc: string[] = []): string[] {
-  for (const name of readdirSync(join(ROOT, dir))) {
-    const rel = `${dir}/${name}`;
-    const st = statSync(join(ROOT, rel));
-    if (st.isDirectory()) {
-      if (name === 'node_modules' || name === 'dist' || name === 'test-support')
-        continue;
-      walk(rel, acc);
-    } else if (/\.ts$/.test(name) && !/\.(spec|test)\.ts$/.test(name)) {
-      acc.push(rel);
-    }
-  }
-  return acc;
+// Обход — общий collectSourceFiles (issue #215): он не заходит в скрытые
+// каталоги, поэтому `src/.jest-cache`, куда параллельные воркеры jest пишут
+// файлы прямо во время обхода, не роняет сканер ENOENT. test-support — сам
+// сканер и его фикстуры, не прод-код.
+function sourceFiles(root: string): string[] {
+  return collectSourceFiles(join(root, 'src'), {
+    filter: (p) => !p.split(sep).includes('test-support'),
+  }).map((p) => relative(root, p).split(sep).join('/'));
 }
 
 const CLAIM_RE =
@@ -162,10 +158,10 @@ export interface CronClaimFinding {
 
 /** Каждая пара `@Cron(...)` + `claimRun('имя', LEASE_WINDOW.<x>)` в теле
  * одного метода, во всём `src/**`. */
-export function scanCronClaims(): CronClaimFinding[] {
+export function scanCronClaims(root: string = ROOT): CronClaimFinding[] {
   const out: CronClaimFinding[] = [];
-  for (const rel of walk('src')) {
-    const raw = readFileSync(join(ROOT, rel), 'utf8');
+  for (const rel of sourceFiles(root)) {
+    const raw = readFileSync(join(root, rel), 'utf8');
     if (!raw.includes('@Cron(')) continue;
     const src = stripComments(raw);
     const consts = fileStringConsts(src);

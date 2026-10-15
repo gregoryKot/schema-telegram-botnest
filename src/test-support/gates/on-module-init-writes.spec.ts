@@ -9,9 +9,10 @@
 // процесса. Гейт рождается с нулём нарушений; исключений нет (правило №15: не
 // замалчивать). Граница проверки — тело метода: косвенный вызов
 // (onModuleInit → this.cleanup() → updateMany) тест не видит.
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, relative } from 'path';
+import { readFileSync } from 'fs';
+import { join, relative, sep } from 'path';
 import * as ts from 'typescript';
+import { collectSourceFiles } from '../../security/collect-source-files';
 
 const SRC = join(__dirname, '..', '..');
 
@@ -31,17 +32,11 @@ const HANDLER_REGISTRARS = new Set([
 
 const FORBIDDEN_NAME = /^(?:updateMany|deleteMany|cancelAll\w*)$/;
 
+// Обход — общий collectSourceFiles (не заходит в скрытый src/.jest-cache, где
+// параллельные воркеры jest пишут файлы прямо во время обхода — флак ENOENT).
 function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      return name === 'test-support' || name === 'node_modules'
-        ? []
-        : sourceFiles(full);
-    }
-    return /\.ts$/.test(name) && !/\.(spec|test|d)\.ts$/.test(name)
-      ? [full]
-      : [];
+  return collectSourceFiles(dir, {
+    filter: (p) => !relative(dir, p).split(sep).includes('test-support'),
   });
 }
 

@@ -96,6 +96,7 @@
 | Дублирование логики | `scripts/check-jscpd-ratchet.mjs` |
 | Разъезд парных файлов двух фронтендов | `scripts/check-paired-files.mjs` |
 | Раздувание файлов | `scripts/check-file-size-ratchet.mjs` |
+| Отслеживаемый файл, который запрещает `.gitignore` (правило не снимает уже отслеживаемое: 466 файлов `test/.jest-cache` жили в индексе с #243) | `scripts/check-ignored-tracked.mjs` — `git ls-files -ci --exclude-per-directory=.gitignore`, без бейслайна; тест в песочнице на настоящем индексе, `src/test-support/gates/ignored-tracked.spec.ts` |
 | Просадка покрытия (бэк и три фронт-пакета) | `check-coverage-ratchet.mjs`, `check-frontend-coverage-ratchet.mjs` |
 | Битый SQL миграций | джоба `migrations` на реальном Postgres |
 | Сырой SQL проверяется только моком, который отвечает что угодно (инцидент 2026-09-13: из 31 файла с `$queryRaw`/`$executeRaw` на живой базе гонялись 6, весь `/stats` — ни одного) | `scripts/check-raw-sql-live.mjs` — классификация каждого файла с сырым SQL на спек в джобе `migrations` (`test/raw-sql-live-*.e2e-spec.ts`) или честный exempt |
@@ -105,6 +106,7 @@
 | Сырой запрос, который драйвер БД не может прочитать (инцидент 2026-09-13: `pg_advisory_xact_lock` возвращает `void`, Prisma 7 с driver-adapter падает в `$queryRaw`; 12 юнит-спеков мокали `$queryRaw` и были зелёными, запись на консультацию отвечала 500 каждому) | `src/booking/booking-slot-lock.ts` (`$executeRaw`) + `test/booking-slot-lock.e2e-spec.ts` на живом Postgres — лок в настоящей транзакции, контрольный тест «через `$queryRaw` падает», весь `POST /api/booking/book` по HTTP с read-after-write |
 | Расхождение фейковой Prisma с настоящей | второй прогон ключевых e2e с `E2E_REAL_DB=1` |
 | Дубли маршрутов | `scripts/check-route-collisions.mjs` |
+| e2e-спек лежит в `test/`, а ни одна джоба CI его не запускает (аудит 2026-10-11: `exercise-delete-ownership`, `max-auth` не гонялись месяцами; jest с несколькими паттернами молча пропускает несовпавший) | `scripts/check-e2e-in-ci.mjs` — каждый `test/**/*.e2e-spec.ts` покрыт путём в шаге `jest-e2e`, и каждый путь в CI соответствует файлу; бейслайна нет |
 | Тихий отказ входа | `src/api/auth-failure.report.ts` + блок «Вход в мессенджере» в `/stats` |
 | Успех входа не считался (виден только рост отказов, не провал успехов) | `src/api/auth-success.report.ts` (событие `auth_success`, троттлинг per userId+host) + расширенный блок «Вход в мессенджере» (`auth-health-metrics.service.ts`/`.format.ts`) |
 | Экран-тупик без отчёта наверх | `useAuthFailureReport` (`shared/`, оба фронта) |

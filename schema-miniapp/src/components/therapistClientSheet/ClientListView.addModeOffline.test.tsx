@@ -47,7 +47,6 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     openAddMode: vi.fn(),
     createInvite: vi.fn(),
     copyInvite: vi.fn(),
-    addByTelegramId: vi.fn(),
     addVirtualClient: vi.fn(),
     addLoading: false,
     ...overrides,
@@ -71,7 +70,6 @@ function baseProps(
     safeTop: 0,
     animKey: 0,
     onClose: vi.fn(),
-    telegramInputRef: createRef<HTMLInputElement>(),
     virtualInputRef: createRef<HTMLInputElement>(),
     detail: makeDetail(),
     addClient: makeAddClient(),
@@ -131,7 +129,7 @@ describe('ClientListView — ошибка добавления', () => {
       <ClientListView
         {...baseProps({
           addClient: makeAddClient({
-            addMode: 'telegram',
+            addMode: 'invite',
             addError: 'Клиент не найден',
           }),
         })}
