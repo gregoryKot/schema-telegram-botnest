@@ -78,7 +78,7 @@ describe('AppOverlays — разбор случая и карта себя за�
   it.each([
     ['caseFlow', 'case-flow-close'],
     ['selfMap', 'self-map-close'],
-  ] as const)('%s: тап по крестику зовёт closers[%s]', (key, label) => {
+  ] as const)('%s: тап по крестику (%s) зовёт свой closer', (key, label) => {
     const { sheets, closers } = mount(key);
     fireEvent.click(screen.getByText(label));
     expect(closers[key]).toHaveBeenCalledTimes(1);

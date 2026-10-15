@@ -6,7 +6,15 @@
 // api.createModeDiary/saveModeNote — иначе разбор красиво проходит на экране
 // и никуда не сохраняется (та же логика read-after-write, что и в
 // notes.service.spec.ts на бэкенде, только на стыке компонент↔API).
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {
   render,
   screen,
@@ -42,14 +50,15 @@ beforeEach(() => {
   mockApi.saveModeNote.mockResolvedValue(undefined);
 });
 afterEach(cleanup);
+// Холодная загрузка ленивого чанка разбора на загруженной машине дольше
+// секунды (findBy по умолчанию): греем его в хуке, у которого свой таймаут.
+beforeAll(() => import('./CaseFlowSheet'));
 
 describe('CaseFlowOverlay — счётчик разборов приезжает из API', () => {
   it('дожидается api.getModeDiary и показывает реальный поток (не заглушку)', async () => {
     mockApi.getModeDiary.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     render(<CaseFlowOverlay sheets={makeSheets()} onClose={vi.fn()} />);
-    // Первый тест файла платит за холодную загрузку ленивого чанка; на
-    // загруженной машине это дольше секунды (findBy по умолчанию).
-    await screen.findByText('Разобрать свой случай', {}, { timeout: 5000 });
+    await screen.findByText('Разобрать свой случай');
     expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
   });
 });

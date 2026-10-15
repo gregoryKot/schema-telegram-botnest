@@ -22,7 +22,7 @@ function formatHeaderDate(): string {
 }
 
 interface Props {
-  sheets: UseSheetsReturn;
+  sheets: Omit<UseSheetsReturn, 'close'>; // закрытие — только через onClose
   onClose: () => void; // closers.tracker: реестр закрытия, как у «Назад» хоста
   safeTop: number;
   needs: Need[];
