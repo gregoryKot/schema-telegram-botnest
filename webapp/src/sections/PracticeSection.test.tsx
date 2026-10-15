@@ -397,6 +397,19 @@ describe('PracticeSection — «давность» и число записей 
     renderSection();
     await screen.findByText(/3 записи/);
   });
+
+  // Колесо детства — единственное упражнение, у которого даты прохождения
+  // нет вообще (`lastDone: null`): API отдаёт только оценки. Подпись
+  // «пройдено» — ветка вызова, а не shared-функции: fmtAgo принимает только
+  // момент (правило №11 — локальная копия с обработкой null жила здесь
+  // до переезда fmtAgo в shared).
+  it('колесо детства без даты прохождения — подпись "пройдено", а не пустота или "Invalid Date"', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValue({ safety: 3, freedom: 5 });
+    renderSection();
+    const stat = await screen.findByText(/1 запись/);
+    expect(stat.textContent).toContain('пройдено');
+    expect(stat.textContent).not.toContain('Invalid Date');
+  });
 });
 
 describe('PracticeSection — согласование числительных «задание/задания/заданий»', () => {
