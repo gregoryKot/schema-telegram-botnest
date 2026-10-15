@@ -20,6 +20,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
+import { markChargeFailed } from '../src/subscription/subscription.charge-failed';
 import { BookingService } from '../src/booking/booking.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
@@ -54,6 +55,7 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-13',
   'bk-ct-14',
   'bk-ct-15',
+  'bk-ct-16',
 ];
 const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-1',
@@ -61,6 +63,8 @@ const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-3',
   'sub-ct-4',
   'sub-ct-5',
+  'sub-ct-6',
+  'sub-ct-7',
 ];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
@@ -685,6 +689,16 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(dms('Запись отменена')).toHaveLength(1);
     });
 
+    it('отмена HELD-брони: события не было, DELETE в календарь не уходит, админ уведомлён', async () => {
+      const b = await create('bk-ct-16', 'HELD');
+
+      await bookingSvc.cancel('bk-ct-16');
+
+      expect((await row(b.id))?.status).toBe('CANCELLED');
+      expect(remove).not.toHaveBeenCalled();
+      expect(dms('Запись отменена')).toHaveLength(1);
+    });
+
     it('контроль: обычный порядок (оплата завершилась, потом отмена) — DELETE по записанному uid', async () => {
       await pauseThrottle();
       const b = await create('bk-ct-15', 'HELD');
@@ -898,6 +912,48 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
         expect(await chargeStatus(charge.id)).toBe('paid');
         const texts = tg.mock.calls.map((c) => String(c[0])).join('\n');
         expect(texts).not.toContain('Верните деньги');
+      });
+
+      // Сбой списания против вебхука оплаты: транзакция на живом Postgres решает
+      // по count пометки charge. Оплата пришла раньше — подписку не трогаем
+      // (nextChargeAt от вебхука), иначе ретрай через сутки = второе списание.
+      it('вебхук оплатил charge раньше сбоя: markChargeFailed не засчитывает сбой, подписка не тронута', async () => {
+        const { sub, charge, invId } = await seed('active', 'sub-ct-6');
+        expect((await payInv(invId)).text).toBe(`OK${invId}`);
+        const before = await subRow(sub.id);
+
+        const counted = await markChargeFailed(prisma, {
+          chargeId: charge.id,
+          subId: sub.id,
+          status: 'active',
+          fails: 1,
+          maxFails: 3,
+        });
+
+        expect(counted).toBe(false);
+        expect(await chargeStatus(charge.id)).toBe('paid');
+        const after = await subRow(sub.id);
+        expect(after?.failedAttempts).toBe(0);
+        expect(after?.nextChargeAt).toEqual(before?.nextChargeAt);
+      });
+
+      it('КОНТРОЛЬ: charge ещё pending → сбой засчитан, charge failed, ретрай через сутки', async () => {
+        const { sub, charge } = await seed('active', 'sub-ct-7');
+
+        const counted = await markChargeFailed(prisma, {
+          chargeId: charge.id,
+          subId: sub.id,
+          status: 'active',
+          fails: 1,
+          maxFails: 3,
+        });
+
+        expect(counted).toBe(true);
+        expect(await chargeStatus(charge.id)).toBe('failed');
+        const row = await subRow(sub.id);
+        expect(row?.failedAttempts).toBe(1);
+        expect(row?.status).toBe('active');
+        expect(row?.nextChargeAt?.getTime()).toBeGreaterThan(Date.now());
       });
     });
 

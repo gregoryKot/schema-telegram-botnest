@@ -338,12 +338,10 @@ describe('BookingNotifyService.onCancelled', () => {
     expect(calDav.removeEvent).toHaveBeenCalledWith('ics-uid-old');
   });
 
-  it('без calDavUid (под умер между PUT и записью uid) — DELETE по детерминированному uid брони, админ уведомлён в ОБА канала', async () => {
+  it('без calDavUid (у HELD события не бывает) — DELETE не уходит, админ уведомлён в ОБА канала', async () => {
     const { service, calDav, telegram, email } = makeService();
     await service.onCancelled(booking(), null);
-    expect(calDav.removeEvent).toHaveBeenCalledWith(
-      'booking-42@schemehappens.ru',
-    );
+    expect(calDav.removeEvent).not.toHaveBeenCalled();
     expect(telegram.notifyAdmin.mock.calls[0][0]).toContain('Запись отменена');
     expect(email.sendAdminNotification).toHaveBeenCalledWith(
       'Запись отменена',

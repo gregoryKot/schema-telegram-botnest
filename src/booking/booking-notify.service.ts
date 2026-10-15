@@ -12,7 +12,7 @@ import { awaitingPaymentTitle } from './booking-admin-note';
 import { bookingCardText, subjectFromTitle } from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
-import { bookingEventUid, runConfirmEffects } from './booking-confirm-run';
+import { runConfirmEffects } from './booking-confirm-run';
 
 export interface PlainBooking {
   id: number;
@@ -70,7 +70,7 @@ export class BookingNotifyService {
 
   /** Remove from Apple Calendar + notify admin when cancelled. */
   async onCancelled(b: PlainBooking, calDavUid: string | null): Promise<void> {
-    await this.calDav.removeEvent(calDavUid ?? bookingEventUid(b.id));
+    if (calDavUid) await this.calDav.removeEvent(calDavUid);
     await this.sendAdmin('❌ <b>Запись отменена</b>', b);
   }
 

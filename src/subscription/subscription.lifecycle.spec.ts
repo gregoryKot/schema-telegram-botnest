@@ -673,6 +673,27 @@ describe('SubscriptionService.chargeDue — неудачное списание 
     expect(row.nextChargeAt).toBeNull();
   });
 
+  // Вебхук оплаты пришёл, пока chargeRecurring возвращал сбой: charge уже paid,
+  // nextChargeAt выставил вебхук. Сбой не засчитывается и ретрай через сутки не
+  // ставится — иначе второе реальное списание за оплаченный период.
+  it('вебхук оплатил charge раньше сбоя: подписка не тронута, алерта нет', async () => {
+    const { service, prisma, robokassa, calls } = makeService();
+    const paidUntil = new Date(Date.now() + 30 * 24 * 3_600_000);
+    robokassa.chargeRecurring.mockImplementation(() => {
+      const [charge] = [...prisma.charges.values()];
+      charge.status = 'paid';
+      prisma.subs.get(1).nextChargeAt = paidUntil;
+      return { ok: false, body: 'timeout' };
+    });
+    const sub = await makeDueSub(prisma, 0);
+    await service.chargeDue();
+    const row = prisma.subs.get(sub.id);
+    expect(row.failedAttempts).toBe(0);
+    expect(row.nextChargeAt).toBe(paidUntil);
+    expect([...prisma.charges.values()][0].status).toBe('paid');
+    expect(calls.alerts).toHaveLength(0);
+  });
+
   it('charge помечается failed в БД (не остаётся pending)', async () => {
     const { service, prisma } = makeService({
       chargeRecurringResult: { ok: false, body: 'boom' },

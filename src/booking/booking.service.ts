@@ -221,15 +221,14 @@ export class BookingService {
       throw new BadRequestException('CANCEL_TOO_LATE');
     }
 
-    // CAS (аудит 2026-10-11, r2-1#1): параллельные отмены и отмена поверх
-    // чужого перехода не задваивают DM/письма/DELETE в CalDAV; эффекты — по
-    // свежей строке (calDavUid мог записать выигравший confirm).
-    const fresh = await claimCancel(this.prisma, cancelToken, booking);
-    if (!fresh) return { ok: true };
+    // CAS (аудит 2026-10-11): параллельные отмены не задваивают эффекты; они
+    // идут по свежей строке (calDavUid мог записать выигравший confirm).
+    const claimed = await claimCancel(this.prisma, cancelToken, booking);
+    if (!claimed) return { ok: true };
 
     await this.notify.onCancelled(
-      decryptRecord(fresh, BOOKING_SCHEMA),
-      fresh.calDavUid,
+      decryptRecord(claimed.row, BOOKING_SCHEMA),
+      claimed.eventUid,
     );
     this.logger.log(`Booking ${booking.id} CANCELLED`);
     return { ok: true };

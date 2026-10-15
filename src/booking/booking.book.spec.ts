@@ -516,6 +516,22 @@ describe('BookingService.cancel', () => {
     );
   });
 
+  // Событие календаря: у CONFIRMED без записанного uid (под умер между PUT и
+  // записью) DELETE идёт по детерминированному uid, у HELD события не бывает.
+  it.each([
+    [BookingStatus.CONFIRMED, 'booking-5@schemehappens.ru'],
+    [BookingStatus.HELD, null],
+  ])(
+    'без calDavUid: бронь %s → onCancelled получает uid %s',
+    async (status, uid) => {
+      const { service, notify } = makeSimpleService({
+        bookingRow: activeBooking({ status, calDavUid: null }),
+      });
+      await service.cancel('tok');
+      expect(notify.onCancelled).toHaveBeenCalledWith(expect.anything(), uid);
+    },
+  );
+
   // Аудит 2026-10-11, r2-1#1: find→update без предиката статуса — N параллельных
   // отмен давали N× DM+письмо+DELETE, а отмена поверх подтверждения брала
   // calDavUid из снимка до CAS (null) и не снимала событие из календаря.
