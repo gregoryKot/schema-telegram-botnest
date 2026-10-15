@@ -5,6 +5,7 @@
 import { telemetryUrl } from '../utils/telemetryUrl';
 import { isPracticeHost } from '../utils/domainChrome';
 import { metrikaAllowed } from './metrikaGate';
+import { WEBVISOR_PATHS } from './webvisorRoutes';
 
 export const YM_ID = 109568051;
 
@@ -18,7 +19,7 @@ declare global {
 
 /**
  * Вебвизор (запись сессий/DOM) — только на визитке практики (kotlarewski.gr),
- * и только если стартовая страница не админка. Решение владельца 2026-09-28
+ * и только если стартовая страница в allow-list. Решение владельца 2026-09-28
  * по итогам H2 (docs/security/AUDIT_2026-08-12.md): изначально Webvisor был
  * выключен целиком, потому что тот же SPA-бандл на schemehappens.ru рендерит
  * авторизованные клинические экраны (дневники, письма, YSQ) — рекордер,
@@ -29,19 +30,18 @@ declare global {
  * (разные origin), не SPA-навигация, так что кабинет никогда не окажется под
  * уже запущенной записью визитки.
  *
- * Внутри визитки один экран не для чужих глаз — админка (`/admin`). Функция
- * решает по СТАРТОВОМУ пути (init один раз на загрузке): при заходе сразу на
- * `/admin` запись не включаем. SPA-переход НА `/admin` этим не поймать
- * («рекордер уже запущен») — там второй слой, класс `ym-hide-content` на
- * корне `AdminPage`. Поля формы записи в `BookingPicker` — `ym-disable-keys`
- * (не писать ввод).
+ * Внутри визитки есть экраны с секретами клиента (ссылка встречи, токен в href,
+ * поля email/контакта), поэтому запись включается по allow-list СТАРТОВЫХ путей
+ * (`WEBVISOR_PATHS`, `webvisorRoutes.ts`), а не «всё, кроме /admin».
+ * SPA-переход на закрытый экран рекордер не остановит — второй слой обязателен:
+ * `ym-hide-content` на узлах с секретами и `AdminPage`, `ym-disable-keys` на полях.
  */
 export function shouldRecordSession(
   hostname: string = typeof window === 'undefined' ? '' : window.location.hostname,
   pathname: string = typeof window === 'undefined' ? '' : window.location.pathname,
 ): boolean {
   if (!isPracticeHost(hostname)) return false;
-  return pathname !== '/admin' && !pathname.startsWith('/admin/');
+  return WEBVISOR_PATHS.test(pathname);
 }
 
 /**

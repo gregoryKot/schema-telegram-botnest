@@ -152,7 +152,7 @@ function countBodyParams(): number {
 // phishing 2026-08-31 убрал из контроллера инъекцию LoginTicketService, но
 // номер строки после prettier совпал с прежним.
 const VIOLATIONS_LEGACY: Record<string, string> = {
-  'api/tracker.controller.ts:194':
+  'api/tracker.controller.ts:189':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
   'auth/auth-account.controller.ts:242':

@@ -11,6 +11,7 @@
 // именно так (запись остаётся, DELETE её снимает, migrate deploy проходит),
 // доказывает test/migrate-stuck-record.e2e-spec.ts на живой базе.
 import { spawnSync } from 'child_process';
+import { BACKUP_REQUIRED_ENV_VARS } from './backup-config';
 import {
   copyFileSync,
   existsSync,
@@ -83,7 +84,11 @@ describe('deploy/vps/ops.sh: откат поверх упавшей миграц
       copyFileSync(join(process.cwd(), 'deploy', 'vps', f), join(base(), f));
     }
     writeFileSync(join(base(), 'db.env'), 'POSTGRES_PASSWORD=pw\n');
-    writeFileSync(join(base(), '.env'), 'X=1\n');
+    // Бэкапы на VPS обязательны (infra#11): без них deploy не стартует приложение.
+    writeFileSync(
+      join(base(), '.env'),
+      `X=1\n${BACKUP_REQUIRED_ENV_VARS.map((k) => `${k}=v\n`).join('')}`,
+    );
     writeFileSync(join(base(), 'docker-compose.yml'), 'services: {}\n');
     writeFileSync(join(base(), 'image'), IMAGE);
   });

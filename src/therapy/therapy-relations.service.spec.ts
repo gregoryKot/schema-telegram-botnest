@@ -9,7 +9,7 @@
 // 24% веток — общий хелпер therapy.test-helpers.ts (makeRelationPrismaMock)
 // умеет только findFirst/findUnique/update на therapyRelation и не покрывает
 // createInvite/getRelation/disconnect/getClients/addVirtualClient/
-// addClientManually/renameClient. Ниже — локальный расширенный фейк Prisma
+// renameClient. Ниже — локальный расширенный фейк Prisma
 // (только для этого файла, test-helpers.ts не трогаем — общий для другого
 // спека).
 import { TherapyRelationsService } from './therapy-relations.service';
@@ -181,7 +181,7 @@ describe('joinAsClient — правила подключения по коду',
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Расширенный фейк Prisma для createInvite/getRelation/disconnect/getClients/
-// addVirtualClient/addClientManually/renameClient — makeRelationPrismaMock
+// addVirtualClient/renameClient — makeRelationPrismaMock
 // выше не умеет findMany/create/updateMany/deleteMany и не знает про
 // clientConceptualization/user. Локально для этого файла (test-helpers.ts
 // не трогаем — он общий с therapy-notes.service.spec.ts).
@@ -426,9 +426,10 @@ describe('getRelation — статус связи для терапевта и �
           createdAt: new Date(),
         },
       ],
-      [{ id: T1, firstName: 'Терапевт Т' }],
+      [{ id: T1, firstName: 'Терапевт Т', role: 'THERAPIST' }],
     );
     const spy = jest.spyOn(prisma.therapyRelation, 'findFirst');
+    const spyMany = jest.spyOn(prisma.therapyRelation, 'findMany');
     const info = await service.getRelation(CLIENT);
     expect(info).toEqual({
       role: 'client',
@@ -439,11 +440,15 @@ describe('getRelation — статус связи для терапевта и �
       nextSession: '2026-08-01',
     });
     // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
-    // вовсе (A-3), единственный findFirst — клиентская сторона.
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith({
+    // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
+    // клиентской стороне, с ролью партнёра для сверки (backend#33).
+    expect(spy).not.toHaveBeenCalled();
+    expect(spyMany).toHaveBeenCalledTimes(1);
+    expect(spyMany).toHaveBeenCalledWith({
       where: { clientId: CLIENT, status: 'active' },
-      include: { therapist: { select: { id: true, firstName: true } } },
+      include: {
+        therapist: { select: { id: true, firstName: true, role: true } },
+      },
     });
   });
 
@@ -472,8 +477,8 @@ describe('getRelation — статус связи для терапевта и �
         },
       ],
       [
-        { id: T1, firstName: 'Мой терапевт' },
-        { id: T2, firstName: 'Чужой терапевт' },
+        { id: T1, firstName: 'Мой терапевт', role: 'THERAPIST' },
+        { id: T2, firstName: 'Чужой терапевт', role: 'THERAPIST' },
       ],
     );
     const info = await service.getRelation(CLIENT);
@@ -561,21 +566,89 @@ describe('getRelation — статус связи для терапевта и �
     expect((await service.getRelation(T1))?.role).toBe('therapist');
   });
 
-  it('роль клиента: терапевт не резолвится (FK-запись без пользователя) — партнёр пуст, nextSession null по умолчанию', async () => {
-    const { service } = makeFullService([
-      {
-        id: 1,
-        therapistId: T1,
-        clientId: CLIENT,
-        status: 'active',
-        code: 'AAA111',
-        createdAt: new Date(),
-      },
-    ]); // терапевта нет в users — include вернёт null
+  it('роль клиента: у терапевта нет имени — партнёр пуст, nextSession null по умолчанию', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: null, role: 'THERAPIST' }],
+    );
     const info = await service.getRelation(CLIENT);
     expect(info?.partnerName).toBeNull();
-    expect(info?.partnerId).toBeNull();
+    expect(info?.partnerId).toBe(T1);
     expect(info?.nextSession).toBeNull();
+  });
+
+  // backend#33: строка, осиротевшая до статуса `ended` (терапевт вышел из
+  // роли, связь осталась active), не показывает бывшего терапевта клиенту.
+  it('партнёр уже не терапевт (role CLIENT) — «Мой терапевт» пуст', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
+  });
+
+  it('осиротевшая связь не заслоняет живую: клиент видит действующего терапевта', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+        {
+          id: 2,
+          therapistId: T2,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'LIVE22',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: T2, firstName: 'Действующий', role: 'THERAPIST' },
+      ],
+    );
+    const info = await service.getRelation(CLIENT);
+    expect(info).toMatchObject({ partnerId: T2, code: 'LIVE22' });
+  });
+
+  it('завершённая связь (ended) клиенту не показывается', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'ended',
+          code: 'ENDED1',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Терапевт', role: 'THERAPIST' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
   });
 });
 
@@ -1094,98 +1167,13 @@ describe('addVirtualClient — офлайн-клиент без Telegram', () =>
   });
 });
 
-describe('addClientManually — подключение по Telegram ID без кода', () => {
-  it('клиент не найден — ошибка, связь не создаётся', async () => {
-    const { service, rels } = makeFullService([]);
-    await expect(service.addClientManually(T1, CLIENT)).rejects.toThrow(
-      'User not found',
-    );
-    expect(rels).toHaveLength(0);
-  });
-
-  it('уже есть активная связь с этим клиентом — ошибка "Already connected"', async () => {
-    const { service, rels } = makeFullService(
-      [
-        {
-          id: 1,
-          therapistId: T1,
-          clientId: CLIENT,
-          status: 'active',
-          code: 'AAA111',
-          createdAt: new Date(),
-        },
-      ],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    await expect(service.addClientManually(T1, CLIENT)).rejects.toThrow(
-      'Already connected',
-    );
-    expect(rels).toHaveLength(1); // повторной связи не создалось
-  });
-
-  it('успешное подключение — создаёт активную связь и возвращает список клиентов', async () => {
-    const { service, rels, prisma } = makeFullService(
-      [],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    // Мутационное усиление (L226, ObjectLiteral/BooleanLiteral в select):
-    // фейк отдаёт весь user-объект вне зависимости от select — ловим только
-    // сверкой точных аргументов вызова findUnique.
-    const userSpy = jest.spyOn(prisma.user, 'findUnique');
-    const list = await service.addClientManually(T1, CLIENT);
-    expect(rels).toHaveLength(1);
-    expect(rels[0].status).toBe('active');
-    expect(rels[0].clientId).toBe(CLIENT);
-    expect(list).toHaveLength(1);
-    expect(list[0].telegramId).toBe(CLIENT);
-    expect(list[0].name).toBe('Аня');
-    expect(userSpy).toHaveBeenCalledWith({
-      where: { id: CLIENT },
-      select: { id: true, firstName: true },
-    });
-  });
-
-  // Мутационное усиление (L231/L232, ObjectLiteral where→{}): если проверка
-  // "уже подключён" потеряет свой where, findFirst вернёт ПЕРВУЮ связь в
-  // таблице — здесь она принадлежит ЧУЖОМУ терапевту с ТЕМ ЖЕ клиентом — и
-  // T1 ошибочно получит "Already connected", хотя своей связи с CLIENT у
-  // него нет.
-  it('активная связь ЧУЖОГО терапевта с тем же клиентом не мешает новому подключению (изоляция по where)', async () => {
-    const { service, rels } = makeFullService(
-      [
-        {
-          id: 1,
-          therapistId: T2,
-          clientId: CLIENT,
-          status: 'active',
-          code: 'FOREIGN',
-          createdAt: new Date(),
-        },
-      ],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    await service.addClientManually(T1, CLIENT); // не должно бросить "Already connected"
-    const own = rels.find((r) => r.therapistId === T1);
-    expect(own?.clientId).toBe(CLIENT);
-    expect(own?.status).toBe('active');
-  });
-
-  // Мутационное усиление (L237, MethodExpression toUpperCase→toLowerCase) —
-  // см. аналогичный тест в addVirtualClient выше.
-  it('код связи при ручном подключении генерируется в ВЕРХНЕМ регистре', async () => {
-    const { service, rels } = makeFullService(
-      [],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    const spy = mockableRandomBytes as jest.Mock;
-    spy.mockClear();
-    spy.mockReturnValueOnce(Buffer.from('aabbccddee', 'hex'));
-    try {
-      await service.addClientManually(T1, CLIENT);
-      expect(rels[0].code).toBe('AABBCCDDEE');
-    } finally {
-      spy.mockClear();
-    }
+describe('addClientManually — удалён', () => {
+  // Метод создавал активную связь терапевт↔клиент без согласия клиента.
+  // Реальный клиент подключается только по приглашению (joinAsClient);
+  // пин не даёт методу вернуться.
+  it('в сервисе нет метода ручного добавления реального пользователя', () => {
+    const { service } = makeFullService([]);
+    expect('addClientManually' in service).toBe(false);
   });
 });
 

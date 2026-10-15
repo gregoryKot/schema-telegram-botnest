@@ -1,6 +1,6 @@
 import { AddMode } from '../../therapist/useAddClient';
 
-// Переключатель способа добавления клиента (ссылка / Telegram ID / оффлайн).
+// Переключатель способа добавления клиента (ссылка / оффлайн).
 // Вынесено из ClientListView.tsx (правило №10).
 export function AddModeTabs({
   addMode,
@@ -14,7 +14,6 @@ export function AddModeTabs({
       {(
         [
           ['invite', 'Ссылка'],
-          ['telegram', 'Telegram ID'],
           ['virtual', 'Оффлайн'],
         ] as [AddMode, string][]
       ).map(([mode, label]) => (

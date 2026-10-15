@@ -1,8 +1,6 @@
 import { Chip } from './Chip';
-import {
-  CONTACT_CHANNELS, contactChannelLabel, contactPlaceholder, telegramNumberHint,
-  type ContactChannel,
-} from '../../../../shared/src/booking/contactChannel';
+import { CONTACT_CHANNELS, contactChannelLabel, contactPlaceholder, telegramNumberHint, type ContactChannel } from '../../../../shared/src/booking/contactChannel';
+import { BOOKING_CONTACT_MAX } from '../../../../shared/src/limits/textLimits';
 
 interface Props {
   id: string;
@@ -40,7 +38,7 @@ export function ContactChannelField({
       </div>
       <input
         id={id} ref={inputRef} className="ym-disable-keys" style={fieldStyle} placeholder={contactPlaceholder(channel)}
-        value={value} onChange={(e) => onChange(e.target.value)} onFocus={onFocus} required maxLength={100}
+        value={value} onChange={(e) => onChange(e.target.value)} onFocus={onFocus} required maxLength={BOOKING_CONTACT_MAX}
         aria-invalid={invalid || undefined} aria-describedby={note ? `${id}-hint` : undefined}
       />
       {note && (

@@ -68,7 +68,7 @@ export class TherapyNotesController {
     if (!body.text?.trim()) throw new BadRequestException('text required');
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
       throw new BadRequestException('Invalid date');
-    const note = { date: body.date, text: body.text.slice(0, 5000) };
+    const note = { date: body.date, text: body.text };
     try {
       return await this.notesService.createNote(
         uid(req),

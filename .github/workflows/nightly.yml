@@ -260,7 +260,7 @@ jobs:
 
   # Репетиция restore бэкапа (аудит тестовых практик 2026-08, пункт №1):
   # «бэкап без проверенного restore — не бэкап». До этой джобы restore
-  # существовал только как комментарий в хвосте scripts/backup-to-b2.sh — и
+  # существовал только как комментарий в хвосте скрипта бэкапа (тогда backup-to-b2.sh) — и
   # он был НЕВЕРЕН (encrypt-сторона кладёт IV как 16 сырых байт, комментарий
   # читал первые 32 БАЙТА как «32 hex-символа»); по задокументированной
   # процедуре восстановление отдавало бы мусор. Живой фикс — scripts/restore-backup.sh
@@ -315,7 +315,7 @@ jobs:
       # совпадать с сервером (postgres:16 выше) — Ubuntu 24.04 (noble) несёт
       # postgresql-client-16 в основных репах, отдельный apt-репозиторий pgdg
       # не нужен. xxd ставим явно, а не полагаемся на то, что он уже есть в
-      # образе — backup-to-b2.sh и restore-backup.sh оба на нём завязаны.
+      # образе — backup-upload.sh и restore-backup.sh оба на нём завязаны.
       - name: клиент Postgres 16 + xxd
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
       - name: создать исходную БД и применить миграции — ловит битые миграции тем же приёмом, что джоба migrations
@@ -330,10 +330,10 @@ jobs:
           MARKER="restore-rehearsal-$(date -u +%Y-%m-%d)"
           echo "MARKER=$MARKER" >> "$GITHUB_ENV"
           psql -d backup_rehearsal_src -c "INSERT INTO \"HealthyAdultPost\" (text, source) VALUES ('$MARKER', 'nightly-rehearsal');"
-      - name: зашифрованный бэкап (SKIP_UPLOAD=1 — без B2-кредов, файл локально)
+      - name: зашифрованный бэкап (SKIP_UPLOAD=1 — без ключей хранилища, файл локально)
         run: |
           SKIP_UPLOAD=1 BACKUP_ENCRYPTION_KEY="$TEST_ENCRYPTION_KEY" DATABASE_URL="$SRC_DB" \
-            BACKUP_OUT_DIR="$OUT_DIR" bash scripts/backup-to-b2.sh
+            BACKUP_OUT_DIR="$OUT_DIR" bash scripts/backup-upload.sh
       - name: вторая пустая БД + restore из бэкапа
         run: |
           psql -c "CREATE DATABASE backup_rehearsal_dst;"

@@ -9,6 +9,7 @@
 //   рассинхроне). confirm() теперь бросает отдельный подкласс
 //   PaymentAmountMismatchError именно для mismatch-ветки.
 import { ConflictException } from '@nestjs/common';
+import { ConfirmEffectsFailedError } from './booking.confirm-effects';
 import { BookingStatus } from '@prisma/client';
 import { BookingService, PaymentAmountMismatchError } from './booking.service';
 import { PaymentAfterCancelError } from './booking.transitions';
@@ -17,22 +18,23 @@ function makeService(bookingRow: any) {
   const state = { row: bookingRow };
   const prisma: any = {
     booking: {
-      findUnique: jest.fn(async ({ select }: any = {}) =>
-        select ? { status: state.row.status } : state.row,
-      ),
+      findUnique: jest.fn(async () => state.row),
       // CAS: имитируем реальную семантику updateMany по WHERE (статус, paidAt)
       updateMany: jest.fn(async ({ where, data }: any) => {
         if ('status' in where && state.row.status !== where.status)
           return { count: 0 };
         if ('paidAt' in where && (state.row.paidAt ?? null) !== where.paidAt)
           return { count: 0 };
-        Object.assign(state.row, data);
+        Object.assign(state.row, data, { updatedAt: new Date() }); // как @updatedAt
         return { count: 1 };
       }),
     },
   };
+  // Как настоящий onConfirmed: довёл до конца — флаг на строке (security#21).
   const notify = {
-    onConfirmed: jest.fn(async () => undefined),
+    onConfirmed: jest.fn(async () => {
+      state.row.confirmEffectsDoneAt = new Date();
+    }),
     alertAdmin: jest.fn(async () => undefined),
   };
   const pricing = { getPrice: jest.fn(async () => 4000) };
@@ -64,11 +66,64 @@ describe('BookingService.confirm — идемпотентность и свер�
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
   });
 
-  it('повторный webhook по уже подтверждённой броне — идемпотентный ok БЕЗ повторного уведомления', async () => {
+  it('повторный webhook по доделанной броне — идемпотентный ok БЕЗ ПОВТОРА уже сделанного', async () => {
     const { service, notify } = makeService(held());
     await service.confirm(7, 4000);
     await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1); // не задвоилось
+  });
+
+  // security#21: CAS прошёл, эффекты упали. Повтор раньше отвечал ok без
+  // эффектов — бронь оставалась CONFIRMED без ссылки и календаря навсегда.
+  it('падение эффектов после CAS: бронь CONFIRMED, ошибка узнаваема; второй вызов доделывает, третий уже ничего не делает', async () => {
+    const { service, notify, state } = makeService(held());
+    notify.onConfirmed.mockRejectedValueOnce(new Error('ECONNRESET'));
+
+    const err = await service.confirm(7, 4000).catch((e) => e);
+    expect(err).toBeInstanceOf(ConfirmEffectsFailedError);
+    expect(err).not.toBeInstanceOf(ConflictException);
+    expect(err.bookingId).toBe(7);
+    expect(state.row.status).toBe(BookingStatus.CONFIRMED);
+    expect(state.row.confirmEffectsDoneAt).toBeUndefined();
+
+    // Свежая строка: первый проход мог ещё идти — повтор его не перебивает.
+    await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+    state.row.updatedAt = new Date(Date.now() - 120_000); // проход давно кончился
+
+    await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(2);
+    const retried = notify.onConfirmed.mock.calls[1][0] as any;
+    expect(retried).toMatchObject({ id: 7, status: BookingStatus.CONFIRMED });
+    expect(retried.confirmEffectsDoneAt).toBeUndefined();
+    expect(state.row.confirmEffectsDoneAt).toBeInstanceOf(Date);
+
+    await service.confirm(7, 4000);
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(2);
+  });
+
+  it('ручное подтверждение админом (без суммы) по CONFIRMED с пустым флагом тоже доделывает эффекты', async () => {
+    const { service, notify, state } = makeService({
+      ...held(),
+      status: BookingStatus.CONFIRMED,
+      updatedAt: new Date(Date.now() - 120_000),
+    });
+    await expect(service.confirm(7)).resolves.toEqual({ ok: true });
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+    expect(state.row.paidAt).toBeUndefined(); // это не оплата
+    expect(state.row.confirmEffectsDoneAt).toBeInstanceOf(Date);
+  });
+
+  it('CONFIRMED без флага, но строку писали только что (проход идёт): повтор вебхука и двойной клик админа эффекты не запускают', async () => {
+    const { service, notify } = makeService({
+      ...held(),
+      status: BookingStatus.CONFIRMED,
+      updatedAt: new Date(Date.now() - 5_000),
+    });
+    await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+    await expect(service.confirm(7)).resolves.toEqual({ ok: true });
+    // иначе второй проход создал бы вторую Zoom-встречу (сирота) и упал на ClientMeeting
+    expect(notify.onConfirmed.mock.calls).toHaveLength(0);
   });
 
   it('расхождение суммы блокирует подтверждение (бронь остаётся HELD) и алертит', async () => {

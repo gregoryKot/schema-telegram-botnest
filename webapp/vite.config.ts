@@ -16,10 +16,10 @@ export default defineConfig({
       '/api': { target: 'http://localhost:3000', changeOrigin: true },
     },
   },
-  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —
-  // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
-  // (см. CLAUDE.md / существующие тесты). Настраиваем только coverage.
+  // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
+  // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
   test: {
+    setupFiles: ['./src/test-support/rtlCleanup.ts'],
     // Запас на медленный раннер (самый долгий тест локально — 1.6с). Прежние
     // 15000 стояли ради `findByText(…, {timeout: 8000})` — их больше нет.
     testTimeout: 10000,

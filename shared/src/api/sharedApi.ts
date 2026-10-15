@@ -165,10 +165,6 @@ export const buildSharedApi = (t: ApiTransport) => ({
   leaveTherapy: () => t.del('/api/therapy/relation'),
   getTherapyClients: () =>
     t.get<TherapyClientSummary[]>('/api/therapy/clients'),
-  addClientManually: (clientTelegramId: number) =>
-    t.postJson<TherapyClientSummary[]>('/api/therapy/clients/add', {
-      clientTelegramId,
-    }),
   addVirtualClient: (name: string) =>
     t.postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', {
       name,

@@ -14,6 +14,7 @@ import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { NoteSheet } from './NoteSheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -145,5 +146,17 @@ describe('NoteSheet — сохранение: read-after-write и видимая
     await waitFor(() =>
       expect(screen.getByText(/Попробуйте ещё раз/)).toBeTruthy(),
     );
+  });
+});
+
+// backend#29: предел заметки дня один (DAY_NOTE_MAX = @MaxLength в DTO) — поле
+// его знает и показывает «N/предел», а не молча отдаёт серверу лишнее.
+describe('NoteSheet — предел длины', () => {
+  it('textarea.maxLength = предел из shared, счётчик «N/предел» виден с первого знака', async () => {
+    const textarea = (await renderSheet()) as HTMLTextAreaElement;
+    expect(textarea.maxLength).toBe(DAY_NOTE_MAX);
+    expect(screen.getByText(`0/${DAY_NOTE_MAX}`)).toBeTruthy();
+    fireEvent.change(textarea, { target: { value: 'три' } });
+    expect(screen.getByText(`3/${DAY_NOTE_MAX}`)).toBeTruthy();
   });
 });

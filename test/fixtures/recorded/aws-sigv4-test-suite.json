@@ -1,0 +1,43 @@
+{
+  "credentials": {
+    "accessKeyId": "AKIDEXAMPLE",
+    "secretAccessKey": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+    "region": "us-east-1",
+    "service": "service",
+    "date": "2015-08-30T12:36:00Z"
+  },
+  "cases": [
+    {
+      "name": "get-vanilla",
+      "method": "GET",
+      "url": "https://example.amazonaws.com/",
+      "headers": {},
+      "body": "",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31"
+    },
+    {
+      "name": "get-vanilla-query-order-key-case",
+      "method": "GET",
+      "url": "https://example.amazonaws.com/?Param2=value2&Param1=value1",
+      "headers": {},
+      "body": "",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=b97d918cfa904a5beff61c982a1b6f458b799221646efd99d3219ec94cdf2500"
+    },
+    {
+      "name": "get-vanilla-query-unreserved",
+      "method": "GET",
+      "url": "https://example.amazonaws.com/?-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+      "headers": {},
+      "body": "",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=9c3e54bfcdf0b19771a7f523ee5669cdf59bc7cc0884027167c21bb143a40197"
+    },
+    {
+      "name": "post-x-www-form-urlencoded",
+      "method": "POST",
+      "url": "https://example.amazonaws.com/",
+      "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+      "body": "Param1=value1",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=ff11897932ad3f4e8b18135d722051e5ac45fc38421b1da7b9d196a0fe09473a"
+    }
+  ]
+}

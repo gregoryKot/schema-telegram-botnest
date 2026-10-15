@@ -1,8 +1,10 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа infra:
 // БД, публичные адреса сайта/вебаппа, CORS, платные фичи-флаги.
 import { EnvVarSpec, formats } from './env-registry';
+import { PLATFORM_ENV_ENTRIES } from './env-registry.entries.platform';
 
 export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
+  ...PLATFORM_ENV_ENTRIES,
   {
     name: 'ALLOWED_ORIGINS',
     purpose:
@@ -27,14 +29,6 @@ export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
       'Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает.',
     requiredInProd: true,
     format: formats.nonEmpty,
-    group: 'infra',
-  },
-  {
-    name: 'SITE_URL',
-    purpose:
-      'Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr.',
-    requiredInProd: false,
-    format: formats.url,
     group: 'infra',
   },
   {
