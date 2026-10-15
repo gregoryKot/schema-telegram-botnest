@@ -38,8 +38,17 @@ describe('LimitedTextarea', () => {
     expect(area.classList.contains('ym-disable-keys')).toBe(true);
     expect(area.classList.contains('field')).toBe(true);
     cleanup();
-    render(<LimitedTextarea max={200} value="" onChange={() => {}} placeholder="Без класса" />);
-    expect(screen.getByPlaceholderText('Без класса').className).toBe('ym-disable-keys');
+    render(
+      <LimitedTextarea
+        max={200}
+        value=""
+        onChange={() => {}}
+        placeholder="Без класса"
+      />,
+    );
+    expect(screen.getByPlaceholderText('Без класса').className).toBe(
+      'ym-disable-keys',
+    );
   });
 
   it('onChange получает введённый текст', () => {
