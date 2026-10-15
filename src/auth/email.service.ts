@@ -46,8 +46,7 @@ export class EmailService {
     });
     // Pretend success even if no user / unverified — don't leak existence.
     if (!user || !user.recoveryEmailVerifiedAt) {
-      // M8 (аудит 2026-07): сырой адрес не логируем (PII, публичный эндпоинт) —
-      // короткий хеш даёт корреляцию (виден брутфорс) без раскрытия адреса.
+      // M8 (аудит 2026-07): сырой адрес не логируем (PII), короткий хеш даёт корреляцию.
       this.logger.warn(
         `Recovery requested (${user ? 'unverified' : 'no match'}) emailHash=${hashToken(
           lower,
@@ -90,8 +89,7 @@ export class EmailService {
     if (taken)
       throw new ConflictException('Этот email уже привязан к другому аккаунту');
 
-    // Форма обращения владельца userId — она уже выбрана (бот/сайт), просто
-    // не была доступна этому сервису (аудит 2026-08: письма всегда были «ты»).
+    // Форма обращения владельца userId (аудит 2026-08: письма всегда были «ты»).
     const owner = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { addressForm: true },
@@ -138,11 +136,9 @@ export class EmailService {
     if (!row.userId)
       throw new UnauthorizedException('Token has no user binding');
 
-    // H4 аудита 2026-10: погашение атомарно (та же схема, что в
-    // email-token.service.ts). Раньше findUnique→проверка usedAt→update были
-    // раздельны: два параллельных запроса с одной ссылкой восстановления
-    // проходили проверку оба и выдавали ДВЕ сессии. updateMany с usedAt:null —
-    // CAS: побеждает ровно один, второй получает count=0.
+    // H4 аудита 2026-10: погашение атомарно (как в email-token.service.ts).
+    // Раздельные find→check→update выдавали ДВЕ сессии на одну ссылку; updateMany
+    // с usedAt:null — CAS: побеждает ровно один, второй получает count=0.
     const consumed = await this.prisma.emailToken.updateMany({
       where: { id: row.id, usedAt: null },
       data: { usedAt: new Date() },
@@ -162,8 +158,7 @@ export class EmailService {
     return { userId: row.userId, email };
   }
 
-  // form: у вызывающего (AuthService) userId уже разрешён, форма обращения
-  // известна — дефолт 'ty' только на случай вызова без формы (совместимость).
+  // form: AuthService уже знает форму обращения; дефолт 'ty' — для вызова без формы.
   async sendLoginLink(
     to: string,
     link: string,
@@ -183,41 +178,45 @@ export class EmailService {
     await this.send(to, letter.subject, letter.body);
   }
 
-  async sendAdminNotification(subject: string, text: string): Promise<void> {
+  async sendAdminNotification(subject: string, text: string): Promise<boolean> {
     const to = process.env.ADMIN_EMAIL;
-    // Правило №14: молчаливый пропуск — невидимая авария; warn, не error (без DM на каждое письмо).
+    // true = Resend принял письмо. №14: молчаливый пропуск — невидимая авария; warn, не error (без DM на каждое письмо).
     if (!to) {
       this.logger.warn(`ADMIN_EMAIL пуст, письмо не ушло: ${subject}`);
-      return;
+      return false;
     }
-    await this.send(to, subject, text).catch((err) => {
+    return this.send(to, subject, text).catch((err) => {
       this.logger.error(
         `sendAdminNotification failed: ${(err as Error).message}`,
       );
+      return false;
     });
   }
 
   // ─── Resend SMTP wrapper ──────────────────────────────────────────────────
 
-  private async send(to: string, subject: string, text: string): Promise<void> {
+  private async send(
+    to: string,
+    subject: string,
+    text: string,
+  ): Promise<boolean> {
     const apiKey = process.env.RESEND_API_KEY;
     const from =
       process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
 
     if (!apiKey) {
-      // M9 (аудит 2026-07): тело письма НЕ логируем в проде — `text` несёт
-      // живой magic-link-токен. Отсутствие ключа тут = мисконфиг: алерт без токена.
+      // M9 (аудит 2026-07): тело в проде НЕ логируем (`text` несёт magic-link-токен); нет ключа = мисконфиг.
       if (process.env.NODE_ENV === 'production') {
         this.logger.error(
           'RESEND_API_KEY not configured — magic-link email NOT sent (misconfiguration)',
         );
-        return;
+        return false;
       }
       // Dev / CI — тело можно логировать для локальной проверки ссылки.
       this.logger.warn(
         `[DEV: no RESEND_API_KEY] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`,
       );
-      return;
+      return false;
     }
 
     try {
@@ -237,6 +236,7 @@ export class EmailService {
         );
         throw new Error('Email delivery failed');
       }
+      return true;
     } catch (e) {
       this.logger.error(`Resend error: ${(e as Error).message}`);
       throw new Error('Email delivery failed', { cause: e });

@@ -414,6 +414,13 @@ jobs:
       # миграцией (booking_pii_retention).
       - name: e2e обезличивание броней по сроку на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
+      # Глобальный аудит 2026-10-11: заявка с простой формы знакомства
+      # (POST /api/booking) раньше жила только в DM и письме. Строка пишется в БД
+      # до уведомлений; шифртекст, флаги доставки по каждому каналу, повтор
+      # недоставленного и ретенция ('' в шифрованной колонке) доказываются только
+      # настоящей базой и настоящим хостом визитки (правила №14, №18, №19).
+      - name: e2e заявка с формы знакомства сохраняется до уведомлений на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/intro-lead.e2e-spec.ts
       # security#19 (аудит 2026-10): POST /api/booking/book с returning=true
       # отвечает клиенту и не-клиенту одинаково — ClientMeeting ищется по clientKey
       # в настоящей БД, поэтому на шве, а не на моке.

@@ -10,7 +10,6 @@ export interface RotationTarget {
   pk?: string;
 }
 
-// (table prismaName, fields to rotate)
 // ПОЛНОТА этого списка проверяется тестом
 // src/utils/encryption-rotation-coverage.spec.ts — он падает, если в src/
 // появилось зашифрованное поле, которого тут нет (иначе ротация оставит его
@@ -117,6 +116,7 @@ export const TARGETS: RotationTarget[] = [
     // meetingUrl — Zoom-ссылка с `?pwd=` (D-9, аудит 2026-10).
     fields: ['clientName', 'clientContact', 'message', 'meetingUrl'],
   },
+  { name: 'introLead', fields: ['clientName', 'clientContact', 'message'] },
   { name: 'clientMeeting', fields: ['meetingUrl'], pk: 'clientKey' },
   // AuthProvider.email/displayName — PII из OAuth-профиля (D-9, аудит 2026-10).
   { name: 'authProvider', fields: ['email', 'displayName'] },

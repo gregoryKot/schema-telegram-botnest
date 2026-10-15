@@ -10,7 +10,7 @@ import { TrackerController } from './tracker.controller';
 import { SettingsController } from './settings.controller';
 import { HealthController } from './health.controller';
 import { DiaryController } from './diary.controller';
-import { BookingController } from './booking.controller';
+import { IntroLeadModule } from '../booking/intro-lead.module';
 import { ClientErrorsController } from './client-errors.controller';
 import { AnalyticsController } from './analytics.controller';
 import { PublicEventsController } from './public-events.controller';
@@ -35,6 +35,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthModule,
     AnalyticsModule,
     AccountApiModule,
+    IntroLeadModule,
   ],
   controllers: [
     ApiController,
@@ -47,7 +48,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     TrackerController,
     SettingsController,
     DiaryController,
-    BookingController,
     AnalyticsController,
     PublicEventsController,
     QuizController,

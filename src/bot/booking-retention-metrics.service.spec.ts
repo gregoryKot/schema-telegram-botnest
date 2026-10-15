@@ -11,6 +11,7 @@ describe('BookingRetentionMetricsService.getMetrics', () => {
     anonymized?: number;
     waiting?: number;
     oldest?: Date | null;
+    leads?: number;
   }) => {
     const count = jest.fn(async (args: { where: { anonymizedAt: unknown } }) =>
       args.where.anonymizedAt === null
@@ -20,7 +21,11 @@ describe('BookingRetentionMetricsService.getMetrics', () => {
     const findFirst = jest.fn(async () =>
       opts.oldest ? { startsAt: opts.oldest } : null,
     );
-    const prisma = { booking: { count, findFirst } } as never;
+    const leadCount = jest.fn(async () => opts.leads ?? 0);
+    const prisma = {
+      booking: { count, findFirst },
+      introLead: { count: leadCount },
+    } as never;
     return {
       service: new BookingRetentionMetricsService(prisma),
       count,
@@ -101,5 +106,24 @@ describe('BookingRetentionMetricsService.getMetrics', () => {
     const out = await service.render();
     expect(out).toContain('Записей пока нет, стирать нечего.');
     expect(out).not.toContain('NaN');
+  });
+
+  // Второй блок того же сервиса (intro-lead-metrics): заявки со знакомства.
+  it('render() подклеивает блок заявок после данных записей', async () => {
+    const { service } = build({ leads: 2 });
+    const out = await service.render();
+    expect(out.indexOf('Данные записей')).toBeLessThan(
+      out.indexOf('Заявки с формы знакомства'),
+    );
+    expect(out).toContain(
+      'За неделю заявок: 2, не дошли ни в бот, ни на почту: 2.',
+    );
+  });
+
+  it('render() на пустой базе: оба блока без цифр-нулей и NaN', async () => {
+    const { service } = build({});
+    const out = await service.render();
+    expect(out).toContain('За неделю заявок не было.');
+    expect(out).not.toMatch(/NaN|undefined/);
   });
 });

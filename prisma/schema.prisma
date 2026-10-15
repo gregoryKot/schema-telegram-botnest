@@ -825,6 +825,32 @@ model Booking {
   @@index([heldUntil, status])
 }
 
+// Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).
+// Пишется в БД ДО уведомлений: если Telegram и почта мертвы, заявка не
+// исчезает (находка глобального аудита 2026-10-11). Связи с аккаунтом нет
+// (форма публичная), поэтому в USER_DATA_TABLES модели нет, а срок хранения
+// держит крон intro-lead-retention.service.ts. PII зашифрована.
+model IntroLead {
+  id               Int       @id @default(autoincrement())
+  createdAt        DateTime  @default(now())
+  // PII — stored encrypted (intro-lead.schema.ts)
+  clientName       String
+  clientContact    String
+  message          String?
+  clientChannel    String?   // telegram | whatsapp | max | email — не PII, открыто
+  source           String?   // страница + referrer — структурная атрибуция, не PII
+  // Факт доставки админу по каждому каналу; оба null = заявка до владельца не
+  // дошла, её подберёт повтор доставки (intro-lead.service.ts); deliveryAttempts —
+  // сколько раз его уже пробовал крон.
+  tgDeliveredAt    DateTime?
+  emailDeliveredAt DateTime?
+  deliveryAttempts Int       @default(0)
+  // Обезличено по сроку (12 месяцев от createdAt): имя, контакт и текст затёрты.
+  anonymizedAt     DateTime?
+
+  @@index([createdAt])
+}
+
 // Persistent per-client video room. A returning client (same contact) reuses
 // the same Zoom meeting link across all their sessions. clientKey is a SHA-256
 // hash of the normalised contact — pseudonymised, not reversible.

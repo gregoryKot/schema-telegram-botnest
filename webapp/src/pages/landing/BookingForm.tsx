@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { Btn } from '../../components/landing-kit';
 import { leadSource } from '../../utils/leadSource';
 import { TG_URL } from './constants';
@@ -26,7 +26,7 @@ export function BookingForm() {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource(), channel });
       setStatus('done');
       trackGoal('booking_submit'); trackGoal('lead_submit', { channel }); // booking_submit — все заявки; lead_submit — только простая форма (слоты: booking_intro/session)
-    } catch { setStatus('error'); }
+    } catch (err) { const st = (err as { status?: number } | null)?.status; reportClientError({ message: `lead submit failed: ${st ? `HTTP ${st}` : String(err)}`, section: 'booking' }); setStatus('error'); } // №14: тупик сообщает наверх
   };
 
   const field: React.CSSProperties = {

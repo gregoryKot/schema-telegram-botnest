@@ -17,6 +17,7 @@ export const CRON_LEASE_REGISTRY: Record<
   healthyAdultMorning: { window: 'fiveMinutes', cron: '*/5 9,10 * * *' },
   healthyAdultEvening: { window: 'fiveMinutes', cron: '*/5 18,19 * * *' },
   healthyAdultCatchUp: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
+  introLeadRedelivery: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
   telegramDomainWatchdog: { window: 'hourly', cron: '7 * * * *' },
   bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
@@ -25,10 +26,8 @@ export const CRON_LEASE_REGISTRY: Record<
 };
 
 /**
- * Номинальный период тика по категории — нужен только тесту «окно меньше
- * номинального периода категории» (свойство самого `LEASE_WINDOW`). Порог
- * свежести аренды (`maxLeaseAgeMs`) период отсюда больше не берёт — считает
- * его из расписания через `cronGapsMs`.
+ * Номинальный период тика по категории — только для теста «окно меньше периода
+ * категории» (свойство `LEASE_WINDOW`); порог свежести (`maxLeaseAgeMs`) считается из расписания.
  */
 export const NOMINAL_PERIOD_MS: Record<keyof typeof LEASE_WINDOW, number> = {
   everyMinute: 60_000,

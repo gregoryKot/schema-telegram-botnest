@@ -1,6 +1,6 @@
-// Продолжение реестра шифрования: бронирование и деньги, контент проекта,
-// инфраструктура. Отдельным файлом по правилу №10 (потолок 300 строк).
+// Продолжение реестра шифрования: записи и деньги, контент, инфраструктура (правило №10).
 import { Policy, enc, plain, ID, TOKEN } from './encryption-policy';
+import { INTRO_LEAD_FIELD_POLICY } from './encryption-policy.intro-lead';
 
 export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   AvailabilityRule: { timezone: ID },
@@ -65,8 +65,8 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   CronLease: {
     name: plain('имя расписания (midnightPlanner и т.п.), не данные юзера'),
     instanceId: plain(
-      'имя процесса-лидера из HOSTNAME — нужно, чтобы по строке было видно, ' +
-        'какой инстанс забрал прогон; пользователя в ней нет',
+      'имя процесса-лидера из HOSTNAME, пользователя в нём нет',
     ),
   },
+  ...INTRO_LEAD_FIELD_POLICY,
 };

@@ -1175,7 +1175,7 @@
   "src/infra/request-host.ts": 11,
   "src/infra/self-check/alert-tracker.ts": 54,
   "src/infra/self-check/cron-gap.ts": 96,
-  "src/infra/self-check/cron-lease-registry.ts": 49,
+  "src/infra/self-check/cron-lease-registry.ts": 48,
   "src/infra/self-check/format.ts": 30,
   "src/infra/self-check/probe-backup-freshness.ts": 195,
   "src/infra/self-check/probe-caldav.ts": 64,
