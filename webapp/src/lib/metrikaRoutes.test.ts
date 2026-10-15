@@ -4,6 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { isPublicMetrikaRoute } from './metrikaRoutes';
+import { WEBVISOR_PATHS } from './webvisorRoutes';
+
+const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 
 // Маршруты, которым счётчик НЕЛЬЗЯ: вход, аккаунт, кабинет, приложение, админка.
 // Редиректы (Navigate) и '*' сюда не входят — страницы у них нет.
@@ -50,5 +53,25 @@ describe('сверка с маршрутами App.tsx', () => {
     for (const p of PRIVATE) expect(isPublicMetrikaRoute(sample(p))).toBe(false);
     const routes = appRoutePaths();
     for (const p of PRIVATE) expect(routes).toContain(p); // протухшая запись тоже красная
+  });
+});
+
+describe('isWebvisorRecordRoute (allow-list записи экрана)', () => {
+  it.each(['/', '/articles', '/articles/', '/articles/some-slug', '/reviews'])(
+    '%s — писать', (p) => expect(isWebvisorRecordRoute(p)).toBe(true));
+
+  it.each(['/book', '/booking/paid', '/booking/manage', '/subscribe', '/donate', '/privacy',
+    '/offer', '/tests', '/admin', '/articles-admin', '/booking-admin', '/reviews/x', '//', '/articlesx'])(
+    '%s — не писать', (p) => expect(isWebvisorRecordRoute(p)).toBe(false));
+
+  it('allow-list записи — подмножество публичных маршрутов Метрики (запись без счётчика бессмысленна)', () => {
+    for (const p of ['/', '/articles', '/articles/', '/articles/some-slug', '/reviews']) {
+      expect(isWebvisorRecordRoute(p) && isPublicMetrikaRoute(p)).toBe(true);
+    }
+  });
+
+  it('каждый маршрут App.tsx, не попавший в allow-list, остаётся закрытым для записи (новый маршрут пишется только осознанно)', () => {
+    const recorded = appRoutePaths().filter((p) => isWebvisorRecordRoute(sample(p))).sort();
+    expect(recorded).toEqual(['/', '/articles', '/articles/:slug', '/reviews']);
   });
 });

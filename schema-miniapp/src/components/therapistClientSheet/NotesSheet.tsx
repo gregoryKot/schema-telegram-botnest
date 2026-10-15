@@ -2,6 +2,9 @@ import { BottomSheet } from '../BottomSheet';
 import { fmtDate } from '../../utils/format';
 import { ClientDetail } from './types';
 import { useTr } from '../../utils/addressForm';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
+import { NOTE_FIELD_STYLE } from './noteFieldStyle';
 
 interface NotesSheetProps {
   detail: ClientDetail;
@@ -109,7 +112,8 @@ export function NotesSheet({ detail }: NotesSheetProps) {
             marginTop: 8,
           }}
         >
-          <textarea
+          <LimitedTextarea
+            max={SESSION_NOTE_MAX}
             value={newNoteText}
             onChange={(e) => {
               setNewNoteText(e.target.value);
@@ -117,18 +121,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
             }}
             placeholder="Заметка сессии: наблюдения, гипотезы, динамика, план следующей встречи..."
             rows={3}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              color: 'var(--text)',
-              fontSize: 13,
-              lineHeight: 1.5,
-              fontFamily: 'inherit',
-            }}
+            style={NOTE_FIELD_STYLE}
           />
           <div
             style={{

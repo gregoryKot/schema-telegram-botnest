@@ -129,7 +129,7 @@ export function SubscribePage() {
           })}
         </div>
 
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
+        <input type="email" className="ym-disable-keys" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
         <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
         <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
