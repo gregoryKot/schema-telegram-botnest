@@ -2,8 +2,15 @@
 // над текстом воркфлоу: yaml-парсера в зависимостях нет, а нужные места
 // (`on:`, job-level `if:`) в репозитории плоские и однотипные. Прогон по
 // настоящим файлам и контрольные образцы — deploy-needs-ci.spec.ts.
+//
+// Что гейт считает деплоем: ssh/scp, ops.sh, ssh-setup.sh и сторонние
+// ssh-экшены (`uses: …ssh…`). Чего НЕ видит: `docker push` прямо в боевой
+// реестр без захода на сервер и деплой через экшен, в имени которого нет
+// «ssh». Новый способ доставки на сервер добавляется в DEPLOY_MARKS в том же
+// PR, иначе воркфлоу с ним останется вне гейта молча.
 
-const DEPLOY_MARKS = /\b(?:ops\.sh|ssh-setup\.sh|scp|ssh vps)\b/;
+const DEPLOY_MARKS =
+  /\b(?:ops\.sh|ssh-setup\.sh|scp|ssh vps)\b|uses:\s*\S*ssh/i;
 /** Единственные триггеры воркфлоу, который ходит на боевой сервер. */
 const SAFE_EVENTS = ['workflow_run', 'workflow_dispatch'];
 
@@ -65,6 +72,44 @@ export function jobConditions(text: string): Record<string, string> {
   return out;
 }
 
+/** Шаги воркфлоу: текст каждого `- …` на отступе шести пробелов. */
+export function steps(text: string): string[] {
+  const out: string[] = [];
+  for (const l of stripComments(text).split('\n')) {
+    if (/^ {6}- /.test(l)) out.push(l);
+    else if (out.length && /^ {7,}/.test(l)) out[out.length - 1] += '\n' + l;
+  }
+  return out;
+}
+
+/**
+ * В workflow_run-деплое checkout без `ref:` берёт github.sha (HEAD main), а
+ * не коммит, который проверил CI; сборка образа без `context:` берёт git-контекст
+ * того же github.sha. Оба случая молча обходят привязку к head_sha.
+ */
+function pinnedShaViolations(text: string): string[] {
+  const bad: string[] = [];
+  for (const step of steps(text)) {
+    if (/uses:\s*actions\/checkout/.test(step)) {
+      const ref = /^\s+ref:\s*(.*)$/m.exec(step)?.[1] ?? '';
+      if (!/workflow_run\.head_sha|DEPLOY_SHA/.test(ref)) {
+        bad.push(
+          'actions/checkout без ref: head_sha/DEPLOY_SHA берёт HEAD main, а не коммит, проверенный CI',
+        );
+      }
+    }
+    if (/uses:\s*docker\/build-push-action/.test(step)) {
+      const ctx = /^\s+context:\s*(.*)$/m.exec(step)?.[1].trim() ?? '';
+      if (!ctx || /^(?:git|https?):|^\$\{\{/.test(ctx)) {
+        bad.push(
+          'docker/build-push-action без локального context: собирает git-контекст github.sha, а не checkout головы CI',
+        );
+      }
+    }
+  }
+  return bad;
+}
+
 /** Нарушения для одного воркфлоу с деплоем; пусто — всё в порядке. */
 export function deployViolations(text: string, ciName: string): string[] {
   const bad: string[] = [];
@@ -111,6 +156,7 @@ export function deployViolations(text: string, ciName: string): string[] {
       }
     }
   }
+  if (run !== undefined) bad.push(...pinnedShaViolations(text));
   if (run === undefined || 'workflow_dispatch' in triggers) {
     for (const [job, cond] of Object.entries(conds)) {
       if (!/github\.ref\s*==\s*'refs\/heads\/main'/.test(cond)) {

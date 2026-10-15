@@ -89,6 +89,43 @@ describe('гейт: деплой ждёт CI', () => {
       expect(deployViolations(fixed, CI_NAME)).toEqual([]);
     });
 
+    it('checkout без ref: в workflow_run-деплое краснеет (неявно github.sha)', () => {
+      const bare = wf(ON_RUN, COND_OK).replace(
+        '      - run: ssh vps true',
+        '      - uses: actions/checkout@v7\n      - run: ssh vps true',
+      );
+      expect(deployViolations(bare, CI_NAME)).toEqual([
+        expect.stringContaining('actions/checkout без ref'),
+      ]);
+      const pinned = bare.replace(
+        'actions/checkout@v7',
+        'actions/checkout@v7\n        with:\n          ref: ${{ env.DEPLOY_SHA }}',
+      );
+      expect(deployViolations(pinned, CI_NAME)).toEqual([]);
+    });
+
+    it('сборка образа без локального context: краснеет, context: . — нет', () => {
+      const build = (with_: string) =>
+        wf(ON_RUN, COND_OK).replace(
+          '      - run: ssh vps true',
+          `      - uses: docker/build-push-action@v7\n        with:\n${with_}\n      - run: ssh vps true`,
+        );
+      expect(deployViolations(build('          push: true'), CI_NAME)).toEqual([
+        expect.stringContaining('build-push-action без локального'),
+      ]);
+      expect(deployViolations(build('          context: .'), CI_NAME)).toEqual(
+        [],
+      );
+    });
+
+    it('сторонний ssh-экшен считается деплоем', () => {
+      expect(
+        isDeployWorkflow(
+          'name: X\njobs:\n  d:\n    steps:\n      - uses: appleboy/ssh-action@v1\n',
+        ),
+      ).toBe(true);
+    });
+
     it('только ручной запуск без защиты ref == main краснеет', () => {
       const bad = deployViolations(
         wf('  workflow_dispatch:', '    if: true'),
