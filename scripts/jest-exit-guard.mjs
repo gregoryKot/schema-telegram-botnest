@@ -12,38 +12,18 @@
 // exit gracefully» и оставались зелёными.
 //
 // Что делает: запускает команду, её вывод идёт в лог шага сразу, и
-//   * после итоговой строки jest («Ran all test suites») ждёт выхода не
-//     дольше --exit-grace секунд, потом убивает группу процессов и падает:
-//     тесты закончились, а процесс держит незакрытый хендл;
-//   * за общий бюджет --budget секунд тесты не закончились — падает: завис
-//     тест (или прогон стал в разы медленнее обычного);
-//   * признак утечки в выводе (см. LEAK_SIGNS) роняет шаг и при нулевом коде;
+//   * после сводки jest («Test Suites: … total») ждёт выхода не дольше
+//     --exit-grace секунд, потом убивает группу процессов и падает: тесты
+//     закончились, а процесс держит незакрытый хендл;
+//   * за общий бюджет --budget секунд сводки нет — падает: завис тест (или
+//     прогон стал в разы медленнее обычного);
+//   * признак утечки в выводе или ненулевой код при сводке без упавших
+//     тестов роняет шаг с причиной (правила — jest-exit-guard-rules.mjs);
 //   * иначе выходит с кодом команды.
 //
 //   node scripts/jest-exit-guard.mjs [--budget 600] [--exit-grace 60] -- npx jest …
 import { spawn } from 'child_process';
-
-const RUN_DONE = /Ran all test suites/;
-
-/** Признаки утечки, которые jest печатает сам, и что они значат. */
-const LEAK_SIGNS = [
-  [
-    /A worker process has failed to exit gracefully/,
-    'воркер jest не вышел сам и был убит («failed to exit gracefully»): тест оставил живой хендл',
-  ],
-  [
-    /Jest has detected the following \d+ open handles?/,
-    'jest нашёл открытые хендлы — список выше, под «Jest has detected the following»',
-  ],
-  [
-    /Jest did not exit one second after the test run has completed/,
-    'после всех тестов процесс jest не вышел сам («Jest did not exit»): его держит живой хендл',
-  ],
-];
-
-const HINT =
-  'Найти виновника: npx jest <каталог> --detectOpenHandles по каталогам, ' +
-  'затем по одному спеку без --forceExit; сокеты и поллинг jest в список не включает.';
+import { HINT, runFinished, verdicts } from './jest-exit-guard-rules.mjs';
 
 function usage(msg) {
   console.error(`jest-exit-guard: ${msg}`);
@@ -77,67 +57,74 @@ function main() {
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   });
-  let out = '';
+  // Потоки копятся раздельно: строка stdout, разрезанная куском stderr,
+  // не должна склеиться в «начало строки» для шаблонов правил.
+  const streams = { stdout: '', stderr: '' };
   let killedFor = null;
   let graceTimer;
   let exited = false;
   let finished = false;
 
-  const kill = (reason) => {
-    if (exited) return;
-    killedFor ??= reason;
+  const killGroup = (signal = 'SIGKILL') => {
     try {
-      process.kill(-child.pid, 'SIGKILL');
+      process.kill(-child.pid, signal);
     } catch {
-      // группа уже вышла — убивать некого
+      // в группе никого не осталось — убивать некого
     }
   };
+  // Причина убийства — только пока команда жива; после её выхода группу
+  // всё равно добиваем: в ней может остаться потомок с нашими пайпами.
+  const kill = (reason) => {
+    if (!exited) killedFor ??= reason;
+    killGroup();
+  };
   const budgetTimer = setTimeout(
-    () => kill(RUN_DONE.test(out) ? 'held' : 'budget'),
+    () =>
+      kill(
+        runFinished(streams.stderr + '\n' + streams.stdout) ? 'held' : 'budget',
+      ),
     budget * 1000,
   );
-  const relay = (sink) => (chunk) => {
+  const relay = (name, sink) => (chunk) => {
     sink.write(chunk);
-    const before = out.length;
-    out += chunk.toString();
-    // Хвост прошлого куска — строка могла разрезаться на границе.
-    if (!graceTimer && RUN_DONE.test(out.slice(Math.max(0, before - 64)))) {
+    const before = streams[name].length;
+    streams[name] += chunk.toString();
+    // С начала строки, на которой кончился прошлый кусок: сводка могла
+    // разрезаться на границе, а шаблоны правил привязаны к началу строки.
+    const fresh = streams[name].slice(
+      streams[name].lastIndexOf('\n', before - 1) + 1,
+    );
+    if (!graceTimer && runFinished(fresh)) {
       graceTimer = setTimeout(() => kill('held'), grace * 1000);
     }
   };
-  child.stdout.on('data', relay(process.stdout));
-  child.stderr.on('data', relay(process.stderr));
+  child.stdout.on('data', relay('stdout', process.stdout));
+  child.stderr.on('data', relay('stderr', process.stderr));
+  // Отмена шага (SIGINT/SIGTERM) доходит до jest: он в своей группе.
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => killGroup(signal));
+  }
 
   const finish = (code, signal, pipesHeld) => {
     if (finished) return;
     finished = true;
     clearTimeout(budgetTimer);
     clearTimeout(graceTimer);
-    const verdicts = [];
-    if (killedFor === 'held') {
-      verdicts.push(
-        `тесты закончились, а процесс jest не вышел за ${grace} с — его держит живой хендл (таймер, сервер, сокет, поллинг, дочерний процесс); процесс убит`,
-      );
-    }
-    if (killedFor === 'budget') {
-      verdicts.push(
-        `тесты не закончились за ${budget} с — завис тест (или прогон стал в разы медленнее обычного); процесс убит`,
-      );
-    }
-    if (pipesHeld) {
-      verdicts.push(
-        'jest вышел, но процесс, запущенный тестами, пережил его и держит вывод открытым — тест не убил своего потомка',
-      );
-    }
-    for (const [re, meaning] of LEAK_SIGNS)
-      if (re.test(out)) verdicts.push(meaning);
+    if (pipesHeld) killGroup();
+    const found = verdicts({
+      output: streams.stderr + '\n' + streams.stdout,
+      code,
+      killedFor,
+      pipesHeld,
+      grace,
+      budget,
+    });
     const secs = Math.round((Date.now() - started) / 1000);
     console.log(
       `\njest-exit-guard: команда завершилась (код ${code ?? '—'}, сигнал ${signal ?? '—'}) за ${secs} с`,
     );
-    for (const v of verdicts)
-      console.log(`::error title=jest-exit-guard::${v}`);
-    if (verdicts.length === 0) process.exit(code ?? 1);
+    for (const v of found) console.log(`::error title=jest-exit-guard::${v}`);
+    if (found.length === 0) process.exit(code ?? 1);
     console.log(HINT);
     process.exit(code || 1);
   };
