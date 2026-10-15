@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildConceptGraph } from '../conceptGraphModel';
-import { emptyModeLink } from '../modeLinks';
+import { RICH, layoutOf, node } from './diagram.test-helpers';
 import {
   DIM_EDGE,
   DIM_NODE,
@@ -8,75 +7,100 @@ import {
   nodeOpacity,
   resolveFocus,
 } from './diagramFocus';
-import { layoutConceptDiagram } from './diagramLayout';
 
-const l = layoutConceptDiagram(
-  buildConceptGraph(
-    {
-      modeIds: ['vulnerable_child', 'punitive_critic', 'detached_protector'],
-      schemaIds: ['abandonment', 'defectiveness'],
-      modeLinks: [
-        {
-          ...emptyModeLink('vulnerable_child'),
-          schemaIds: ['abandonment'],
-          needIds: ['limits'],
-        },
-        { ...emptyModeLink('punitive_critic'), schemaIds: ['defectiveness'] },
-      ],
-    },
-    (ty) => ty,
-  ),
-  1000,
-);
-const edge = (kind: string, to?: string) =>
-  l.edges.find((e) => e.kind === kind && (!to || e.to === to))!;
-const node = (id: string) => l.nodes.find((n) => n.id === id)!;
+const l = layoutOf(RICH, 1200);
+const edge = (id: string) => l.edges.find((e) => e.id === id)!;
+const opacityOf = (id: string, focus: string | null) =>
+  nodeOpacity(node(l, id), focus, l.edges);
 
 describe('фокус', () => {
-  it('без фокуса линии такой же непрозрачности, как заданы раскладкой, фигуры целые', () => {
+  it('без фокуса линии прежней непрозрачности, фигуры целые', () => {
     for (const e of l.edges) expect(edgeOpacity(e, null)).toBe(e.opacity);
     for (const n of l.nodes) expect(nodeOpacity(n, null, l.edges)).toBe(1);
   });
 
-  it('схема в фокусе: её линия 100%, остальные приглушены', () => {
-    const focus = 'schema:abandonment';
-    expect(edgeOpacity(edge('feeds', 'mode:vulnerable_child'), focus)).toBe(1);
-    expect(edgeOpacity(edge('feeds', 'mode:punitive_critic'), focus)).toBe(
+  it('потребность в фокусе: её ✗ и ✓ яркие, остальные линии приглушены', () => {
+    const focus = 'need:expression';
+    expect(
+      edgeOpacity(
+        edge('blocks:schema:emotional_deprivation>need:expression'),
+        focus,
+      ),
+    ).toBe(1);
+    expect(
+      edgeOpacity(
+        edge('blocks:schema:emotional_inhibition>need:expression'),
+        focus,
+      ),
+    ).toBe(1);
+    expect(
+      edgeOpacity(
+        edge('blocks:schema:emotional_deprivation>need:attachment'),
+        focus,
+      ),
+    ).toBe(DIM_EDGE);
+    expect(edgeOpacity(edge('meets:mode:healthy_adult>need:play'), focus)).toBe(
       DIM_EDGE,
     );
-    expect(edgeOpacity(edge('need'), focus)).toBe(DIM_EDGE);
   });
 
-  it('стрелки между кластерами не принадлежат фигуре: при фокусе они приглушены', () => {
-    const presses = edge('presses');
-    expect(edgeOpacity(presses, presses.from)).toBe(DIM_EDGE);
-    expect(edgeOpacity(presses, presses.to)).toBe(DIM_EDGE);
+  it('потребность с ✓ в фокусе: здоровый режим яркий, не связанные схемы приглушены', () => {
+    const focus = 'need:play';
+    expect(edgeOpacity(edge('meets:mode:healthy_adult>need:play'), focus)).toBe(
+      1,
+    );
+    expect(opacityOf('mode:healthy_adult', focus)).toBe(1);
+    expect(opacityOf('schema:emotional_deprivation', focus)).toBe(DIM_NODE);
   });
 
-  it('фигуры: сама, связанные с ней — целые, прочие 35%', () => {
-    const focus = 'schema:abandonment';
-    expect(nodeOpacity(node('schema:abandonment'), focus, l.edges)).toBe(1);
-    expect(nodeOpacity(node('mode:vulnerable_child'), focus, l.edges)).toBe(1);
-    expect(nodeOpacity(node('mode:punitive_critic'), focus, l.edges)).toBe(
-      DIM_NODE,
-    );
-    expect(nodeOpacity(node('schema:defectiveness'), focus, l.edges)).toBe(
-      DIM_NODE,
-    );
+  it('схема в фокусе: линии к режимам, опыту и потребностям яркие, чужие приглушены', () => {
+    const focus = 'schema:emotional_deprivation';
+    expect(
+      edgeOpacity(
+        edge('link:mode:guilt_critic>schema:emotional_deprivation'),
+        focus,
+      ),
+    ).toBe(1);
+    expect(
+      edgeOpacity(
+        edge(
+          'origin:origin:emotional_deprivation>schema:emotional_deprivation',
+        ),
+        focus,
+      ),
+    ).toBe(1);
+    expect(
+      edgeOpacity(
+        edge('blocks:schema:emotional_deprivation>need:attachment'),
+        focus,
+      ),
+    ).toBe(1);
+    expect(
+      edgeOpacity(
+        edge('link:mode:detached_protector>schema:emotional_inhibition'),
+        focus,
+      ),
+    ).toBe(DIM_EDGE);
+    expect(opacityOf('origin:emotional_deprivation', focus)).toBe(1);
+    expect(opacityOf('need:attachment', focus)).toBe(1);
+    expect(opacityOf('need:play', focus)).toBe(DIM_NODE);
+    expect(opacityOf('mode:detached_protector', focus)).toBe(DIM_NODE);
   });
 
-  it('открытый режим фокусирует свои линии, нажатая схема сильнее открытого режима', () => {
-    expect(resolveFocus(l, null, 'vulnerable_child')).toBe(
-      'mode:vulnerable_child',
-    );
-    expect(resolveFocus(l, 'schema:defectiveness', 'vulnerable_child')).toBe(
-      'schema:defectiveness',
+  it('режим в фокусе: его схемы яркие, чужие потребности и здоровые приглушены', () => {
+    const focus = 'mode:detached_protector';
+    expect(opacityOf('schema:emotional_inhibition', focus)).toBe(1);
+    expect(opacityOf('schema:emotional_deprivation', focus)).toBe(DIM_NODE);
+    expect(opacityOf('mode:healthy_adult', focus)).toBe(DIM_NODE);
+  });
+
+  it('resolveFocus: нажатое важнее открытого, устаревший id сбрасывается', () => {
+    expect(resolveFocus(l, 'need:play', 'mode:guilt_critic')).toBe('need:play');
+    expect(resolveFocus(l, null, 'schema:emotional_deprivation')).toBe(
+      'schema:emotional_deprivation',
     );
     expect(resolveFocus(l, null, null)).toBeNull();
-  });
-
-  it('устаревший id (фигуры больше нет) фокуса не создаёт и схему не гасит', () => {
-    expect(resolveFocus(l, 'schema:failure', null)).toBeNull();
-    expect(resolveFocus(l, null, 'lonely_child')).toBeNull();
+    expect(resolveFocus(l, 'need:ghost', null)).toBeNull();
+    expect(resolveFocus(l, null, 'mode:removed')).toBeNull();
   });
 });

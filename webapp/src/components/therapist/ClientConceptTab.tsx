@@ -43,7 +43,7 @@ export function ClientConceptTab({ detail }: Props) {
 
       {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 'var(--r-8)', background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
 
-      <div className="doc-grid">
+      <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
         {view === 'graph' ? (
           <ClientConceptGraph detail={detail} />
         ) : (

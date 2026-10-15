@@ -1,29 +1,25 @@
 import { colorMix } from '../../../utils/colorMix';
 import {
-  BEHAVIOR_PATH,
   CRITIC_PATH,
   PENTA_PATH,
   SHIELD_PATH,
-  TRIGGER_PATH,
   scalePath,
 } from '../../../modeMap/modeShapes';
 import type { DiagramShape as Shape } from './diagramTypes';
 
 const ROUNDED_RADIUS = 14;
 
-/** Контуры из карты режимов; облако живёт в пространстве 100×60, остальные 100×100. */
-const PATHS: Partial<Record<Shape, { d: string; vbH: number }>> = {
-  octagon: { d: CRITIC_PATH, vbH: 100 },
-  pentagon: { d: PENTA_PATH, vbH: 100 },
-  shield: { d: SHIELD_PATH, vbH: 100 },
-  tag: { d: BEHAVIOR_PATH, vbH: 100 },
-  cloud: { d: TRIGGER_PATH, vbH: 60 },
+/** Контуры из карты режимов; все живут в пространстве 100×100. */
+const PATHS: Partial<Record<Shape, string>> = {
+  octagon: CRITIC_PATH,
+  pentagon: PENTA_PATH,
+  shield: SHIELD_PATH,
 };
 
 /**
- * Фигура режима в пикселях своего бокса. Контур масштабируется в реальные
- * пиксели (scalePath), а не растягивается через viewBox: обводка одной толщины
- * со всех сторон при любом соотношении сторон, как на холсте карты.
+ * Фигура в пикселях своего бокса. Контур рисуется 1:1 в пикселях, а не
+ * растягивается через viewBox: обводка одной толщины со всех сторон при любом
+ * соотношении сторон, как на холсте карты режимов.
  */
 export function DiagramShapeSvg({
   shape,
@@ -42,9 +38,9 @@ export function DiagramShapeSvg({
   /** Отступ сверху: бокс кнопки выше фигуры, чтобы зона нажатия была не меньше 44. */
   top: number;
   open?: boolean;
-  /** Режим без связей: контур бледнее. */
+  /** Режим или схема без связей: контур бледнее. */
   faint?: boolean;
-  /** Заготовка пустой клетки: без заливки, пунктиром. */
+  /** Заготовка пустой секции: без заливки, пунктиром. */
   ghost?: boolean;
 }) {
   const common = {
@@ -73,9 +69,7 @@ export function DiagramShapeSvg({
           {...common}
         />
       )}
-      {path && (
-        <path d={scalePath(path.d, w / 100, h / path.vbH)} {...common} />
-      )}
+      {path && <path d={scalePath(path, w / 100, h / 100)} {...common} />}
     </svg>
   );
 }

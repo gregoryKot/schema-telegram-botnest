@@ -1,52 +1,79 @@
+// Все линии диаграммы из данных терапевта и стороны фигур, с которых они
+// идут. В широком виде стороны фиксированы колонками (режимы слева, схемы,
+// круг, здоровые справа), в узком — одна колонка, и линия выходит вбок.
 import type { ConceptGraphModel } from '../conceptGraphTypes';
-import type { DiagramNode } from './diagramTypes';
+import { needSide, type NeedCtx } from './diagramNeedRoutes';
+import type { Side } from './diagramPorts';
+import type { DiagramEdgeKind, DiagramNode } from './diagramTypes';
 
-/** Какие режимы питает схема и на каких режимах держится потребность. */
-export function linkIndex(graph: ConceptGraphModel): {
-  schemas: Map<string, string[]>;
-  needs: Map<string, string[]>;
-} {
-  const schemas = new Map<string, string[]>();
-  const needs = new Map<string, string[]>();
-  const add = (m: Map<string, string[]>, key: string, modeId: string) =>
-    m.set(key, [...(m.get(key) ?? []), modeId]);
-  for (const card of Object.values(graph.lanes).flat()) {
-    for (const s of card.schemas) add(schemas, s.id, card.modeId);
-    for (const n of card.needs) add(needs, n.id, card.modeId);
+export interface Link {
+  kind: DiagramEdgeKind;
+  from: DiagramNode;
+  to: DiagramNode;
+  sides: [Side, Side];
+}
+
+export const center = (n: DiagramNode) => ({
+  x: n.x + n.w / 2,
+  y: n.y + n.h / 2,
+});
+
+/** Все линии из данных; стороны фигур зависят от вида (колонки или одна колонка с дорожками). */
+export function collect(
+  graph: ConceptGraphModel,
+  byId: Map<string, DiagramNode>,
+  ctx: NeedCtx,
+): Link[] {
+  const { wide } = ctx;
+  const out: Link[] = [];
+  const { critic, child, coping, healthy } = graph.lanes;
+  let linkN = 0;
+  for (const card of [...critic, ...child, ...coping]) {
+    const mode = byId.get(`mode:${card.modeId}`);
+    for (const s of card.schemas) {
+      const schema = byId.get(`schema:${s.id}`);
+      if (!mode || !schema) continue;
+      const side: Side = linkN++ % 2 === 0 ? 'left' : 'right';
+      const sides: [Side, Side] = wide ? ['right', 'left'] : [side, side];
+      out.push({ kind: 'link', from: mode, to: schema, sides });
+    }
   }
-  return { schemas, needs };
-}
-
-/**
- * Порядок, уменьшающий пересечения линий: фигура стоит там, где в среднем
- * стоят режимы, к которым от неё идут линии. Без линий — в конец, в исходном
- * порядке (домены схем, NEED_ORDER).
- */
-export function byBarycenter<T>(
-  items: T[],
-  idOf: (item: T) => string,
-  links: Map<string, string[]>,
-  modeCx: Map<string, number>,
-): T[] {
-  const bary = (item: T): number => {
-    const xs = (links.get(idOf(item)) ?? [])
-      .map((m) => modeCx.get(m))
-      .filter((x): x is number => x !== undefined);
-    return xs.length === 0
-      ? Infinity
-      : xs.reduce((a, b) => a + b, 0) / xs.length;
-  };
-  return items
-    .map((item, i) => ({ item, i, b: bary(item) }))
-    .sort((a, b) => (a.b === b.b ? a.i - b.i : a.b - b.b))
-    .map((e) => e.item);
-}
-
-/** Центры режимов по x: из них считаются барицентры. */
-export function modeCenters(nodes: DiagramNode[]): Map<string, number> {
-  return new Map(
-    nodes
-      .filter((n) => n.modeId)
-      .map((n) => [n.modeId as string, n.x + n.w / 2] as const),
-  );
+  for (const card of graph.schemas) {
+    const schema = byId.get(`schema:${card.id}`);
+    const origin = byId.get(`origin:${card.id}`);
+    if (schema && origin) {
+      out.push({
+        kind: 'origin',
+        from: origin,
+        to: schema,
+        sides: ['bottom', 'top'],
+      });
+    }
+    for (const id of card.needIds) {
+      const pill = byId.get(`need:${id}`);
+      if (!schema || !pill) continue;
+      const to = needSide('blocks', ctx, pill);
+      out.push({
+        kind: 'blocks',
+        from: schema,
+        to: pill,
+        sides: [wide ? 'right' : to, to],
+      });
+    }
+  }
+  for (const card of healthy) {
+    const mode = byId.get(`mode:${card.modeId}`);
+    for (const n of card.needs) {
+      const pill = byId.get(`need:${n.id}`);
+      if (!mode || !pill) continue;
+      const to = needSide('meets', ctx, pill);
+      out.push({
+        kind: 'meets',
+        from: mode,
+        to: pill,
+        sides: [wide ? 'left' : to, to],
+      });
+    }
+  }
+  return out;
 }

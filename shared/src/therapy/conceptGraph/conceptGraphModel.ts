@@ -1,5 +1,5 @@
-// Модель графической концептуализации: из плоских полей концептуализации и
-// связей режимов собирает раскладку по клеткам шаблона Редигера, корни и
+// Модель графической концептуализации: из плоских полей концептуализации,
+// связей режимов и текстов схем собирает карточки для схемы случая и
 // подсказки «чего не хватает». Чистая функция, без React.
 import {
   MODE_GROUPS,
@@ -14,11 +14,17 @@ import {
   type ConceptLane,
 } from './modeLanes';
 import { findModeLink, isModeLinkEmpty } from './modeLinks';
+import {
+  conceptSchemaIds,
+  findSchemaLink,
+  isSchemaLinkEmpty,
+} from './schemaLinks';
 import type {
   ConceptGraphModel,
   ConceptGraphSource,
   GraphModeCard,
   GraphNeedChip,
+  GraphSchemaCard,
   GraphSchemaChip,
 } from './conceptGraphTypes';
 
@@ -46,7 +52,7 @@ function buildCards(src: ConceptGraphSource): GraphModeCard[] {
   const onMap = new Set(src.modeIds);
   return MODE_GROUPS.flatMap((group) =>
     group.items
-      .filter((mode) => onMap.has(mode.id))
+      .filter((mode) => onMap.has(mode.id) && laneOfMode(mode.id))
       .map((mode) => {
         const link = findModeLink(src.modeLinks, mode.id);
         const strategyGroup = strategyGroupOf(mode.id);
@@ -55,14 +61,36 @@ function buildCards(src: ConceptGraphSource): GraphModeCard[] {
           name: mode.name,
           alias: link.alias.trim(),
           color: group.color,
+          lane: laneOfMode(mode.id) as ConceptLane,
           copingKind: copingKindOf(mode.id),
           schemas: schemaChips(new Set(link.schemaIds)),
           needs: needChips(new Set(link.needIds)),
-          origin: link.origin.trim(),
           manifest: link.manifest.trim(),
-          strategy: link.strategy.trim(),
           strategyHint: strategyGroup ? STRATEGY_HINTS[strategyGroup] : '',
           empty: isModeLinkEmpty(link),
+        };
+      }),
+  );
+}
+
+/** Схемы схемы случая: порядок доменов, тексты — из ConceptSchemaLink. */
+function buildSchemas(src: ConceptGraphSource): GraphSchemaCard[] {
+  const shown = conceptSchemaIds(src.schemaIds, src.modeIds, src.modeLinks);
+  return SCHEMA_DOMAINS.flatMap((d) =>
+    d.schemas
+      .filter((s) => shown.has(s.id))
+      .map((s) => {
+        const link = findSchemaLink(src.schemaLinks, s.id);
+        const blocked = new Set(link.needIds);
+        return {
+          id: s.id,
+          name: s.name,
+          color: d.color,
+          domain: d.domain,
+          belief: link.belief.trim(),
+          origin: link.origin.trim(),
+          needIds: NEED_ORDER.filter((id) => blocked.has(id)),
+          empty: isSchemaLinkEmpty(link),
         };
       }),
   );
@@ -94,8 +122,8 @@ function buildGaps(
     gaps.push({
       id: 'unlinked',
       text: tr(
-        'Часть режимов пока без связей — нажми на фигуру режима, чтобы добавить схемы, потребности и истоки.',
-        'Часть режимов пока без связей — нажмите на фигуру режима, чтобы добавить схемы, потребности и истоки.',
+        'Часть режимов пока без связей — нажми на фигуру режима, чтобы связать его со схемами и записать текст.',
+        'Часть режимов пока без связей — нажмите на фигуру режима, чтобы связать его со схемами и записать текст.',
       ),
     });
   }
@@ -113,23 +141,11 @@ export function buildConceptGraph(
     coping: [],
   };
   const cards = buildCards(src);
-  for (const card of cards) {
-    const lane = laneOfMode(card.modeId);
-    if (lane) lanes[lane].push(card);
-  }
-  const mapNeeds = new Set(cards.flatMap((c) => c.needs.map((n) => n.id)));
+  for (const card of cards) lanes[card.lane].push(card);
   return {
     lanes,
-    trigger: text(src.triggers),
-    goals: text(src.goals),
-    problems: text(src.currentProblems),
+    schemas: buildSchemas(src),
     sequence: text(src.modeTransitions),
-    roots: {
-      experience: text(src.earlyExperience),
-      unmetNeeds: text(src.unmetNeeds),
-      needs: needChips(mapNeeds),
-      schemas: schemaChips(new Set(src.schemaIds)),
-    },
     gaps: buildGaps(lanes, cards.length, tr),
     modeCount: cards.length,
   };

@@ -76,6 +76,7 @@ const concept = (patch: Record<string, unknown> = {}) => ({
   currentProblems: null,
   modeTransitions: null,
   modeLinks: [LINK],
+  schemaLinks: [],
   modeMapNodes: [],
   modeMapEdges: [],
   history: [],
@@ -133,7 +134,7 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
       screen.getByRole('button', { name: 'Поля' }).getAttribute('aria-pressed'),
     ).toBe('true');
     expect(screen.getByText('Актуальные схемы')).toBeTruthy();
-    expect(screen.queryByText(/Схема случая по модели режимов/)).toBeNull();
+    expect(screen.queryByText(/Схема случая: в центре базовые потребности/)).toBeNull();
   });
 
   it('режимы на карте есть — открывается «Схема»; переключатель ходит туда и обратно', async () => {
@@ -143,7 +144,7 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
         .getByRole('button', { name: 'Схема' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
-    expect(screen.getByText(/Схема случая по модели режимов/)).toBeTruthy();
+    expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
     expect(screen.queryByText('Актуальные схемы')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
@@ -151,7 +152,7 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
     expect(screen.getByText('Карта режимов')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Схема' }));
-    expect(screen.getByText(/Схема случая по модели режимов/)).toBeTruthy();
+    expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
   });
 
   it('«Скачать картинкой» есть только в виде «Схема»', async () => {
@@ -215,8 +216,12 @@ describe('ClientConceptTab: схема — сохранение → отобра
 
   it('связь нового режима: добавили на карту через пустую клетку, заполнили → в теле оба режима и связь', async () => {
     await openTab(concept());
-    // Клетка детских режимов пуста: её заготовка предлагает детские режимы.
-    fireEvent.click(screen.getByTitle(/Без детского режима непонятно/));
+    // «+ режим» в колонке режимов предлагает режимы всех групп, кроме здоровых.
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Режимы' })).getByRole('button', {
+        name: '+ режим',
+      }),
+    );
     fireEvent.click(screen.getByRole('button', { name: /Одинокий Ребёнок/ }));
     fireEvent.click(card('Одинокий Ребёнок'));
     fireEvent.change(screen.getByLabelText('Как называет клиент'), {
@@ -237,7 +242,7 @@ describe('ClientConceptTab: схема — сохранение → отобра
     await openTab(concept());
     fireEvent.click(card('Карающий Критик'));
     const schemas = within(
-      screen.getByRole('group', { name: 'Какие схемы питают режим' }),
+      screen.getByRole('group', { name: 'Какие схемы включают режим' }),
     );
     fireEvent.click(schemas.getByRole('button', { name: 'Все схемы' }));
     fireEvent.click(schemas.getByRole('button', { name: /Покинутость/ }));
@@ -249,6 +254,106 @@ describe('ClientConceptTab: схема — сохранение → отобра
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
     expect(saved().schemaIds).toEqual(['failure', 'abandonment']);
     expect(saved().modeLinks[0].schemaIds).toEqual(['failure', 'abandonment']);
+  });
+});
+
+describe('ClientConceptTab: тексты схем — правка → автосохранение → отображение', () => {
+  const schemaButton = () =>
+    screen.getByRole('button', { name: 'Схема Неуспешность: убеждение и опыт' });
+
+  it('убеждение, опыт и блокируемая потребность схемы уходят в schemaLinks и рисуются на схеме', async () => {
+    await openTab(concept());
+    fireEvent.click(schemaButton());
+    fireEvent.change(screen.getByLabelText('Во что человек верит'), {
+      target: { value: 'Я не справлюсь' },
+    });
+    fireEvent.change(screen.getByLabelText('Как нарушалась потребность'), {
+      target: { value: 'Критика за каждую ошибку' },
+    });
+    fireEvent.click(
+      within(
+        screen.getByRole('group', { name: 'Какие потребности блокирует' }),
+      ).getByRole('button', { name: /Автономия/ }),
+    );
+
+    await waitFor(
+      () => expect(saved()?.schemaLinks?.[0]?.needIds).toEqual(['autonomy']),
+      { timeout: 2500 },
+    );
+    expect(saved().schemaLinks).toEqual([
+      {
+        schemaId: 'failure',
+        belief: 'Я не справлюсь',
+        origin: 'Критика за каждую ошибку',
+        needIds: ['autonomy'],
+      },
+    ]);
+    // остальное тело на месте
+    expect(saved().modeLinks).toEqual([LINK]);
+    expect(saved().schemaIds).toEqual(['failure']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Готово' }));
+    await waitFor(() =>
+      expect(within(schemaButton()).getByText('Я не справлюсь')).toBeTruthy(),
+    );
+    expect(
+      screen.getByRole('button', {
+        name: 'Как нарушалась потребность: схема Неуспешность',
+      }),
+    ).toBeTruthy();
+    expect(document.querySelectorAll('[data-badge="block"]')).toHaveLength(1);
+  });
+
+  it('ответ сервера с schemaLinks рисуется на схеме; легаси-ответ без schemaLinks не роняет вкладку и шлёт []', async () => {
+    await openTab(
+      concept({
+        schemaLinks: [
+          { schemaId: 'failure', belief: 'Я хуже других', origin: '', needIds: [] },
+        ],
+      }),
+    );
+    expect(within(schemaButton()).getByText('Я хуже других')).toBeTruthy();
+    cleanup();
+
+    const legacy = concept();
+    delete (legacy as Partial<typeof legacy>).schemaLinks;
+    await openTab(legacy);
+    expect(within(schemaButton()).getByText('связи не заполнены')).toBeTruthy();
+    fireEvent.click(card('Карающий Критик'));
+    fireEvent.change(screen.getByLabelText('Как называет клиент'), {
+      target: { value: 'Судья Петров' },
+    });
+    await waitFor(
+      () => expect(mockApi.saveConceptualization).toHaveBeenCalled(),
+      { timeout: 2500 },
+    );
+    expect(saved().schemaLinks).toEqual([]);
+  });
+
+  it('«Убрать схему» снимает её из schemaIds автосохранением, тексты уходят в теле как были', async () => {
+    await openTab(
+      concept({
+        schemaLinks: [
+          { schemaId: 'failure', belief: 'Я хуже других', origin: '', needIds: [] },
+        ],
+      }),
+    );
+    fireEvent.click(schemaButton());
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Убрать схему из концептуализации' }),
+    );
+    await waitFor(() => expect(saved()?.schemaIds).toEqual([]), {
+      timeout: 2500,
+    });
+    expect(saved().schemaLinks[0].belief).toBe('Я хуже других');
+  });
+
+  it('в виде «Схема» боковой колонки рядом нет (схеме нужна вся ширина), в виде «Поля» она есть', async () => {
+    await openTab(concept());
+    const grid = () => document.querySelector<HTMLElement>('.doc-grid')!;
+    expect(grid().style.gridTemplateColumns).toBe('minmax(0, 1fr)');
+    fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
+    expect(grid().style.gridTemplateColumns).toBe('');
   });
 });
 
@@ -274,6 +379,41 @@ describe('ClientConceptTab: экспорт и аналитика', () => {
     expect(text).toContain('  Откуда: строгий отец');
   });
 
+  it('текстовый экспорт содержит блок «СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ» перед режимами', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+      writable: true,
+    });
+    await openTab(
+      concept({
+        schemaLinks: [
+          {
+            schemaId: 'failure',
+            belief: 'Я хуже других',
+            origin: 'строгий отец',
+            needIds: ['autonomy'],
+          },
+        ],
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Экспорт/ }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    const text = writeText.mock.calls[0][0] as string;
+    expect(text).toContain('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ');
+    expect(text).toContain('  Убеждение: Я хуже других');
+    expect(text).toContain('  Блокирует потребности: Автономия');
+    expect(text.indexOf('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ')).toBeLessThan(
+      text.indexOf('РЕЖИМЫ: СВЯЗИ'),
+    );
+  });
+
   it('экспорт без связей не печатает пустой блок', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', {
@@ -290,6 +430,7 @@ describe('ClientConceptTab: экспорт и аналитика', () => {
     fireEvent.click(screen.getByRole('button', { name: /Экспорт/ }));
     await waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(writeText.mock.calls[0][0]).not.toContain('РЕЖИМЫ: СВЯЗИ');
+    expect(writeText.mock.calls[0][0]).not.toContain('СХЕМЫ: УБЕЖДЕНИЯ');
   });
 
   it('открытие схемы шлёт concept_graph_open; вид «Поля» событий не шлёт', async () => {

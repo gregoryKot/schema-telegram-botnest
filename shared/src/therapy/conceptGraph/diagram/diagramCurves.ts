@@ -1,5 +1,5 @@
-// Кривые диаграммы: цепочка кубических сегментов Безье, точка на кривой и
-// проверка, не задевает ли она чужую фигуру.
+// Кривые диаграммы: кубические сегменты Безье, точка на кривой и проверка, не
+// задевает ли кривая чужую фигуру.
 import type { Pt } from './diagramTypes';
 
 export interface Rect {
@@ -32,13 +32,6 @@ export function bezierAt(p: Pt[], t: number): Pt {
     3 * u * t * t * c[k] +
     t * t * t * d[k];
   return { x: mix('x'), y: mix('y') };
-}
-
-/** Середина цепочки: центр средней кривой. */
-export function chainMid(points: Pt[]): Pt {
-  const segs = (points.length - 1) / 3;
-  const i = Math.floor(segs / 2) * 3;
-  return bezierAt(points.slice(i, i + 4), 0.5);
 }
 
 export function isClear(points: Pt[], obstacles: Rect[]): boolean {
