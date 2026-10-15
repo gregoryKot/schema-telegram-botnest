@@ -149,26 +149,16 @@ describe('AccountService.markUserBlocked', () => {
   });
 });
 
-describe('AccountService.getAllUserIds / getBroadcastUserIds', () => {
-  it('getAllUserIds конвертирует bigint id в number для КАЖДОГО юзера, без фильтра', async () => {
+describe('AccountService.getBroadcastUserIds', () => {
+  it('исключает удалённых и заблокировавших бота и отдаёт id как bigint, без округления', async () => {
     const prisma = makePrisma();
-    prisma.user.findMany.mockResolvedValue([{ id: 1n }, { id: 2n }]);
-    const service = new AccountService(prisma);
-
-    const ids = await service.getAllUserIds();
-
-    expect(ids).toEqual([1, 2]);
-    expect(prisma.user.findMany).toHaveBeenCalledWith({ select: { id: true } });
-  });
-
-  it('getBroadcastUserIds исключает удалённых и заблокировавших бота', async () => {
-    const prisma = makePrisma();
-    prisma.user.findMany.mockResolvedValue([{ id: 3n }]);
+    const big = 2n ** 53n + 1n;
+    prisma.user.findMany.mockResolvedValue([{ id: 3n }, { id: big }]);
     const service = new AccountService(prisma);
 
     const ids = await service.getBroadcastUserIds();
 
-    expect(ids).toEqual([3]);
+    expect(ids).toEqual([3n, big]);
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: { deletedAt: null, botBlockedAt: null },
       select: { id: true },

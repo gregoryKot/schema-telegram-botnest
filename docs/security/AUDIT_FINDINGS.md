@@ -435,7 +435,7 @@ plaintext в очереди уведомлений. Нумерация: букв
 
 ### Сквозное
 
-#### X-1 · Веб-номера `userId` (≥ 1e18) не помещаются в `Number` ✅ Закрыто
+#### X-1 · Веб-номера `userId` и `Number` ✅ Закрыто (латентно: веб-id в [1e15, 9e15), ниже 2^53; пин в `user-id-range.spec.ts`)
 - **Было:** `WEB_USER_ID_MIN = 1e18 > 2^53`; глобальный `BigInt.prototype.toJSON →
   Number` и `Number(clientId)` в therapy/pairs округляли id клиента, вошедшего
   через Google/VK/MAX/почту. Психолог видел округлённый id, следующий запрос с

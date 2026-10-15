@@ -334,6 +334,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   [1e15, 9e15), ниже 2^53 (100 000 сэмплов `src/auth/user-id-range.ts`) — прежняя
   запись «[1e18, 9e18)» была неверна, ссылка в никуда от этого не меняется.
   Нужно решение: прятать ссылку, если у партнёра нет Telegram.
+- Мёртвое поле `req.telegramUserId = Number(…)` (`src/api/telegram-auth.guard.ts:45`,
+  `src/api/init-data-paths.ts:75,114`; тип — `src/types/express.d.ts:13`,
+  `src/api/request-utils.ts:9`, `telegramUserId: number` в семи контроллерах):
+  `grep '\.telegramUserId'` находит читателя только в `guard.spec`. Сегодня
+  безвредно (веб-id < 2^53, пин в `src/auth/user-id-range.spec.ts`), но при
+  расширении диапазона за 2^53 это округляющий `Number()` над userId. Снести
+  поле и тип отдельным PR; рассылка уже на bigint, путь заявителя —
+  в ветке `therapist-request-web`.
 
 **Хвосты решения по PII записи** (находка L3 аудита 2026-07-20, решение
 владельца 2026-10-08 — ретенция 12 месяцев, `booking-retention.service.ts`;
