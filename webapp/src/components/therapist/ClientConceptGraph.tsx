@@ -7,10 +7,12 @@ import { conceptGraphSource } from '../../../../shared/src/therapy/conceptGraph/
 import type { ClientDetail } from './clientSheetTypes';
 import { useConceptGraphImage } from './useConceptGraphImage';
 
-// Вид «Схема» вкладки концептуализации: схема случая по модели режимов.
+// Вид «Схема» вкладки концептуализации: схема случая (потребности в центре).
 // Правки идут через те же patchConcept/toggleModeId, что и вид «Поля», —
 // автосохранение и экспорт остаются одни на оба вида. «Скачать картинкой»
-// только здесь: мини-апп файл из WebView Telegram не скачивает.
+// только здесь: мини-апп файл из WebView Telegram не скачивает. Схеме нужна вся
+// ширина (четыре колонки от 960px), поэтому ClientConceptTab в виде «Схема» не
+// ставит боковую колонку рядом: «Что заполнено» уходит под схему.
 export function ClientConceptGraph({ detail }: { detail: ClientDetail }) {
   const tr = useTr();
   const { concept, localConcept, activeSchemaIds, toggleModeId, patchConcept } =
@@ -18,8 +20,10 @@ export function ClientConceptGraph({ detail }: { detail: ClientDetail }) {
   const graphRef = useRef<HTMLDivElement>(null);
   const image = useConceptGraphImage(graphRef);
   const source = conceptGraphSource({ ...concept, ...localConcept });
-  const { onChangeLink, onAddSchema } = conceptGraphHandlers({
+  const handlers = conceptGraphHandlers({
+    modeIds: source.modeIds,
     modeLinks: source.modeLinks,
+    schemaLinks: source.schemaLinks,
     schemaIds: activeSchemaIds,
     patch: patchConcept,
   });
@@ -63,8 +67,10 @@ export function ClientConceptGraph({ detail }: { detail: ClientDetail }) {
         <ConceptGraph
           source={source}
           onToggleMode={toggleModeId}
-          onChangeLink={onChangeLink}
-          onAddSchema={onAddSchema}
+          onChangeLink={handlers.onChangeLink}
+          onChangeSchemaLink={handlers.onChangeSchemaLink}
+          onToggleSchema={handlers.onToggleSchema}
+          onAddSchema={handlers.onAddSchema}
           track={api.trackEvent}
         />
       </div>

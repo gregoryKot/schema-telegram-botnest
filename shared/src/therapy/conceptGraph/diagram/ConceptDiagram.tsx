@@ -1,44 +1,63 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { ConceptGraphModel } from '../conceptGraphTypes';
-import type { ConceptLane } from '../modeLanes';
 import { DiagramEdges } from './DiagramEdges';
 import { DiagramNodeView } from './DiagramNodeView';
+import { DiagramSectionHeader } from './DiagramSectionHeader';
 import { nodeOpacity, resolveFocus } from './diagramFocus';
 import { layoutConceptDiagram } from './diagramLayout';
-import { SPACE, type DiagramNode } from './diagramTypes';
+import { HEAD_H } from './diagramSections';
+import type { AddSection, DiagramNode } from './diagramTypes';
 import { useContainerWidth } from './useContainerWidth';
 
+const PANEL_W = 380;
+const PANEL_MARGIN = 8;
+
 /**
- * Диаграмма случая: фигуры режимов на языке карты режимов и линии связей.
- * Режим открывает редактор, схема и потребность включают подсветку своих
- * линий, заготовка пустой клетки зовёт выбор режима этой клетки.
+ * Диаграмма случая: круг базовых потребностей в центре, слева схемы с
+ * убеждением и опытом и ещё левее режимы, справа Здоровый Взрослый. Режим и
+ * схема открывают свои редакторы, потребность включает подсветку своих линий
+ * (✗ и ✓), заготовка пустой секции и «+» в заголовке зовут выбор.
  */
 export function ConceptDiagram({
   graph,
-  openModeId,
-  onToggleMode,
-  onPickLane,
+  openId,
+  addOpen,
+  panel,
+  onOpenMode,
+  onOpenSchema,
+  onAdd,
 }: {
   graph: ConceptGraphModel;
-  openModeId: string | null;
-  onToggleMode: (modeId: string) => void;
-  onPickLane: (lane: ConceptLane) => void;
+  /** Открытый редактор: `mode:<id>` или `schema:<id>`. */
+  openId: string | null;
+  /** Секция, у которой сейчас открыт выбор («+ режим», «+ схема»). */
+  addOpen: AddSection | null;
+  /** Содержимое выбора; рисуется под заголовком открытой секции. */
+  panel: ReactNode;
+  onOpenMode: (modeId: string) => void;
+  onOpenSchema: (schemaId: string) => void;
+  onAdd: (section: AddSection) => void;
 }) {
   const [ref, width] = useContainerWidth();
   const uid = useId().replace(/:/g, '');
   const [pressedId, setPressedId] = useState<string | null>(null);
   const layout = layoutConceptDiagram(graph, width);
-  const focus = resolveFocus(layout, pressedId, openModeId);
+  const focus = resolveFocus(layout, pressedId, openId);
+  const { circle } = layout;
+  const panelAt = layout.sections.find((s) => s.id === addOpen);
+  const panelW = layout.wide ? PANEL_W : layout.width - 2 * PANEL_MARGIN;
 
   const tap = (n: DiagramNode) => {
-    if (n.kind === 'mode' && n.modeId) {
-      setPressedId(null);
-      onToggleMode(n.modeId);
-    } else if (n.kind === 'placeholder' && n.lane) {
-      onPickLane(n.lane);
-    } else {
+    if (n.kind === 'need') {
       setPressedId((cur) => (cur === n.id ? null : n.id));
+      return;
     }
+    setPressedId(null);
+    if (n.kind === 'mode' && n.modeId) onOpenMode(n.modeId);
+    else if ((n.kind === 'schema' || n.kind === 'origin') && n.schemaId) {
+      onOpenSchema(n.schemaId);
+    } else if (n.kind === 'placeholder' && n.section !== 'needs')
+      onAdd(n.section);
   };
 
   return (
@@ -53,59 +72,68 @@ export function ConceptDiagram({
         height={layout.height}
         style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}
       >
-        {layout.bands.map((b) => (
-          <g key={b.id} data-band={b.id}>
-            <rect
-              x={0}
-              y={b.y}
-              width={layout.width}
-              height={b.h}
-              rx={14}
-              fill={`color-mix(in srgb, ${b.color} 6%, transparent)`}
-            />
-            <line
-              x1={14}
-              x2={layout.width - 14}
-              y1={b.y + 0.5}
-              y2={b.y + 0.5}
-              stroke={`color-mix(in srgb, ${b.color} 38%, transparent)`}
-              strokeDasharray="4 4"
-            />
-          </g>
-        ))}
+        <circle
+          data-needs-circle
+          cx={circle.cx}
+          cy={circle.cy}
+          r={circle.r}
+          fill="color-mix(in srgb, var(--accent) 6%, transparent)"
+          stroke="color-mix(in srgb, var(--accent) 45%, transparent)"
+          strokeWidth={2}
+        />
+        <text
+          x={circle.cx}
+          y={layout.titleY}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={700}
+          fill="var(--text)"
+        >
+          {circle.title}
+        </text>
         <DiagramEdges edges={layout.edges} focus={focus} uid={uid} />
-        {layout.bands.map((b) => (
-          <g key={b.id}>
-            <text
-              x={SPACE.pad}
-              y={b.y + 18}
-              fontSize={13}
-              fontWeight={700}
-              fill={b.color}
-            >
-              {b.title}
-            </text>
-            <text
-              x={SPACE.pad}
-              y={b.y + 33}
-              fontSize={11}
-              fill="var(--text-sub)"
-            >
-              {b.subtitle}
-            </text>
-          </g>
-        ))}
       </svg>
+      {layout.sections.map((s) => (
+        <DiagramSectionHeader
+          key={s.id}
+          section={s}
+          open={addOpen === s.id}
+          onAdd={() => onAdd(s.id)}
+        />
+      ))}
       {layout.nodes.map((n) => (
         <DiagramNodeView
           key={n.id}
           node={n}
           opacity={nodeOpacity(n, focus, layout.edges)}
-          open={n.modeId !== undefined && n.modeId === openModeId}
+          open={
+            n.id === openId ||
+            (n.kind === 'origin' && `schema:${n.schemaId}` === openId)
+          }
           pressed={n.id === pressedId}
           onTap={() => tap(n)}
         />
       ))}
+      {panelAt && (
+        <div
+          data-export-skip
+          style={{
+            position: 'absolute',
+            zIndex: 5,
+            top: panelAt.y + HEAD_H - 4,
+            width: panelW,
+            left: layout.wide
+              ? Math.max(
+                  PANEL_MARGIN,
+                  Math.min(panelAt.x, layout.width - panelW - PANEL_MARGIN),
+                )
+              : PANEL_MARGIN,
+          }}
+        >
+          {panel}
+        </div>
+      )}
     </div>
   );
 }

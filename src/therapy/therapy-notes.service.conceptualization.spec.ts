@@ -5,6 +5,7 @@
 // шли отдельным (непокрытым) путём в encryptConceptFields/decryptConceptFields.
 // Ниже — связи режимов графической концептуализации (modeLinks): связка
 // «сохранил → прочитал», шифрование в «БД», снапшот истории, legacy-строки.
+// Те же свойства — для schemaLinks (убеждение, детский опыт, потребности схем).
 import { TherapyNotesService } from './therapy-notes.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -276,5 +277,185 @@ describe('TherapyNotesService.getConceptualization — legacy-строки бе�
     );
     const loaded = await service.getConceptualization(T1, CLIENT);
     expect(loaded!.modeLinks).toEqual([]);
+  });
+});
+
+const SCHEMA_LINKS = [
+  {
+    schemaId: 'defectiveness',
+    belief: 'Со мной что-то не так, если узнают, отвернутся',
+    origin: 'Мать сравнивала с сестрой: «у Лены получилось бы лучше»',
+    needIds: ['safety', 'autonomy'],
+  },
+  { schemaId: 'abandonment', belief: '', origin: '', needIds: [] },
+];
+
+describe('TherapyNotesService.saveConceptualization — schemaLinks', () => {
+  it('сохранил тексты схем → getConceptualization вернул те же значения (read-after-write)', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaIds: ['defectiveness', 'abandonment'],
+      schemaLinks: SCHEMA_LINKS,
+    });
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual(SCHEMA_LINKS);
+  });
+
+  it('ответ самого saveConceptualization тоже несёт расшифрованные тексты схем', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    const saved = await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+    expect(saved.schemaLinks).toEqual(SCHEMA_LINKS);
+  });
+
+  it('в «БД» тексты схем лежат шифротекстом: ни убеждения, ни детского опыта в открытом виде', async () => {
+    const { service, concept } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+
+    const stored = concept.row.schemaLinks;
+    expect(typeof stored).toBe('string');
+    expect(stored).not.toContain('отвернутся');
+    expect(stored).not.toContain('сестрой');
+  });
+
+  it('повторное сохранение без поля schemaLinks не стирает тексты схем', async () => {
+    const { service, concept } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+    const storedBefore = concept.row.schemaLinks;
+
+    await service.saveConceptualization(T1, CLIENT, { goals: 'g' });
+
+    expect(concept.row.schemaLinks).toBe(storedBefore);
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual(SCHEMA_LINKS);
+  });
+
+  it('сохранение одних modeLinks не трогает schemaLinks, и наоборот', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+    await service.saveConceptualization(T1, CLIENT, { modeLinks: LINKS });
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual(SCHEMA_LINKS);
+    expect(loaded!.modeLinks).toEqual(LINKS);
+  });
+
+  it('schemaLinks: [] явно очищает тексты (отличается от «поле не пришло»)', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+    await service.saveConceptualization(T1, CLIENT, { schemaLinks: [] });
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual([]);
+  });
+
+  it('первое сохранение без schemaLinks создаёт строку с пустыми текстами схем', async () => {
+    const { service, prisma } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, { goals: 'g' });
+
+    expect(
+      prisma.clientConceptualization.upsert.mock.calls[0][0].create.schemaLinks,
+    ).toEqual([]);
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual([]);
+  });
+
+  it('снапшот истории несёт прежние тексты схем шифротекстом и расшифровывает их при чтении', async () => {
+    const { service, concept } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+    const v2 = [{ ...SCHEMA_LINKS[0], belief: 'Версия 2' }];
+    await service.saveConceptualization(T1, CLIENT, { schemaLinks: v2 });
+
+    const rawSnapshot = (concept.row.history as any[])[0];
+    expect(typeof rawSnapshot.schemaLinks).toBe('string');
+    expect(rawSnapshot.schemaLinks).not.toContain('отвернутся');
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual(v2);
+    expect(loaded!.history).toHaveLength(1);
+    expect(loaded!.history[0].schemaLinks).toEqual(SCHEMA_LINKS);
+  });
+
+  it('снапшот строки с ещё пустыми текстами схем читается как []', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, { goals: 'v1' });
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinks: SCHEMA_LINKS,
+    });
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.history[0].schemaLinks).toEqual([]);
+  });
+});
+
+describe('TherapyNotesService.getConceptualization — legacy-строки без schemaLinks', () => {
+  const legacyRow = (over: Record<string, unknown>) => ({
+    id: 1,
+    therapistId: T1,
+    clientId: CLIENT,
+    schemaIds: [],
+    modeIds: [],
+    history: [],
+    ...over,
+  });
+
+  it.each([
+    ['undefined (колонки в строке нет)', undefined],
+    ['null', null],
+  ])('schemaLinks: %s читается как []', async (_label, value) => {
+    const { service } = makeService(
+      [activeRel],
+      legacyRow({ schemaLinks: value }),
+    );
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual([]);
+  });
+
+  it('значение по умолчанию колонки ([] массивом, не строкой) возвращается как есть', async () => {
+    const { service } = makeService(
+      [activeRel],
+      legacyRow({ schemaLinks: [] }),
+    );
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual([]);
+  });
+
+  it('снапшот истории без поля schemaLinks (до фичи) читается как []', async () => {
+    const { service } = makeService(
+      [activeRel],
+      legacyRow({
+        history: [
+          {
+            savedAt: '2026-01-01T00:00:00.000Z',
+            schemaIds: ['x'],
+            goals: 'old',
+          },
+        ],
+      }),
+    );
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.history[0].schemaLinks).toEqual([]);
+    expect(loaded!.history[0].goals).toBe('old');
+  });
+
+  it('нечитаемое значение в schemaLinks не роняет чтение — пустой массив', async () => {
+    const { service } = makeKeyedService(
+      [activeRel],
+      legacyRow({ schemaLinks: 'enc:v1:not-a-real-ciphertext' }),
+    );
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.schemaLinks).toEqual([]);
   });
 });

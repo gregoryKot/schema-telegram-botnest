@@ -3,7 +3,7 @@ import { DiagramNodeText, EMPTY_HINT } from './DiagramNodeText';
 import { DiagramShapeSvg } from './DiagramShape';
 import type { DiagramNode } from './diagramTypes';
 
-/** Зона нажатия не меньше 44, даже если фигура ниже (схема 40, потребность 36). */
+/** Зона нажатия не меньше 44, даже если фигура ниже (таблетка потребности 38). */
 const MIN_HIT = 44;
 
 /** Что кнопка сообщает программам чтения с экрана — у каждого вида фигуры своё. */
@@ -11,7 +11,7 @@ function buttonProps(
   node: DiagramNode,
   open?: boolean,
   pressed?: boolean,
-): ButtonHTMLAttributes<HTMLButtonElement> | null {
+): ButtonHTMLAttributes<HTMLButtonElement> {
   switch (node.kind) {
     case 'mode':
       return {
@@ -21,18 +21,28 @@ function buttonProps(
         title: node.empty ? EMPTY_HINT : undefined,
       };
     case 'schema':
+      return {
+        'aria-label': `Схема ${node.name}: убеждение и опыт`,
+        'aria-expanded': !!open,
+        'aria-describedby': node.empty ? `${node.id}:empty` : undefined,
+        title: node.empty ? EMPTY_HINT : undefined,
+      };
+    case 'origin':
+      return {
+        'aria-label': `Как нарушалась потребность: схема ${node.name}`,
+        'aria-expanded': !!open,
+      };
     case 'need':
       return { 'aria-pressed': !!pressed };
-    case 'placeholder':
-      return { title: node.title };
     default:
-      return null;
+      return {};
   }
 }
 
 /**
- * Одна фигура диаграммы. Режим, схема, потребность и заготовка пустой клетки —
- * кнопки; текстовые поля концептуализации — просто подписанные фигуры.
+ * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка
+ * пустой секции — кнопки: тап открывает редактор, включает подсветку линий или
+ * зовёт выбор.
  */
 export function DiagramNodeView({
   node,
@@ -45,7 +55,7 @@ export function DiagramNodeView({
   opacity: number;
   open?: boolean;
   pressed?: boolean;
-  onTap?: () => void;
+  onTap: () => void;
 }) {
   const hit = Math.max(node.h, MIN_HIT);
   const dy = (hit - node.h) / 2;
@@ -63,45 +73,28 @@ export function DiagramNodeView({
     color: 'var(--text)',
     font: 'inherit',
     textAlign: 'center',
+    cursor: 'pointer',
   };
-  const body = (
-    <>
+  return (
+    <button
+      type="button"
+      data-shape={node.shape}
+      data-node={node.id}
+      onClick={onTap}
+      style={style}
+      {...buttonProps(node, open, pressed)}
+    >
       <DiagramShapeSvg
         shape={node.shape}
         w={node.w}
         h={node.h}
         top={dy}
         color={node.color}
-        open={open}
+        open={open || pressed}
         faint={node.empty}
         ghost={node.kind === 'placeholder'}
       />
       <DiagramNodeText node={node} top={dy} />
-    </>
-  );
-  const button = buttonProps(node, open, pressed);
-  if (button) {
-    return (
-      <button
-        type="button"
-        data-shape={node.shape}
-        data-node={node.id}
-        onClick={onTap}
-        style={{ ...style, cursor: 'pointer' }}
-        {...button}
-      >
-        {body}
-      </button>
-    );
-  }
-  return (
-    <div
-      data-shape={node.shape}
-      data-node={node.id}
-      title={node.title}
-      style={style}
-    >
-      {body}
-    </div>
+    </button>
   );
 }

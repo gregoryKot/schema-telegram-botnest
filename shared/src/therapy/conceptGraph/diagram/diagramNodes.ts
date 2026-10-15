@@ -1,26 +1,30 @@
-// Фабрики фигур диаграммы: из карточки режима, схемы, потребности или текстового
-// поля концептуализации делают DiagramNode (координаты ставит раскладка).
+// Фабрики фигур диаграммы: из карточки режима или схемы делают DiagramNode с
+// высотой под текст (координаты ставит раскладка).
 import { MODE_GROUPS } from '../../../schemaTherapy/schemaTherapyData';
-import { needColor } from '../../../needs/needColors';
-import type {
-  GraphModeCard,
-  GraphNeedChip,
-  GraphSchemaChip,
-} from '../conceptGraphTypes';
+import type { GraphModeCard, GraphSchemaCard } from '../conceptGraphTypes';
 import {
   COPING_KIND_LABEL,
-  LANE_META,
   groupIdsOfLane,
   type ConceptLane,
   type CopingKind,
 } from '../modeLanes';
-import { SIZE, type DiagramNode, type DiagramShape } from './diagramTypes';
+import { measureNode } from './diagramMeasure';
+import type { AddSection, DiagramNode, DiagramShape } from './diagramTypes';
 
 const COPING_SHAPE: Record<CopingKind, DiagramShape> = {
   overcompensation: 'pentagon',
   avoidance: 'shield',
   surrender: 'pill',
 };
+
+/** Сколько строк текста вмещает фигура: Здоровый Взрослый — крупнее. */
+export const BODY_LINES = {
+  mode: 6,
+  healthy: 8,
+  schema: 7,
+  origin: 5,
+} as const;
+const MIN_H = { mode: 78, healthy: 104, schema: 72, origin: 84 } as const;
 
 export function shapeOf(lane: ConceptLane, kind?: CopingKind): DiagramShape {
   if (lane === 'child') return 'ellipse';
@@ -36,13 +40,6 @@ export function laneColor(lane: ConceptLane): string {
   return group?.color ?? 'var(--text-sub)';
 }
 
-const PLACEHOLDER_TEXT: Record<ConceptLane, string> = {
-  healthy: 'Здоровый Взрослый не отмечен',
-  child: 'Детский режим не отмечен',
-  critic: 'Критик не отмечен',
-  coping: 'Копинг не отмечен',
-};
-
 const base = { x: 0, y: 0 } as const;
 
 export function modeNode(
@@ -50,90 +47,100 @@ export function modeNode(
   lane: ConceptLane,
   w: number,
 ): DiagramNode {
+  const healthy = lane === 'healthy';
   // Имя клиента — главная строка, название режима из метода — мелко. У копинга
   // без имени мелко стоит вид: форма и подпись говорят об одном.
   const kind = card.copingKind && COPING_KIND_LABEL[card.copingKind];
-  return {
+  const node: DiagramNode = {
     ...base,
     id: `mode:${card.modeId}`,
     kind: 'mode',
     shape: shapeOf(lane, card.copingKind),
+    section: healthy ? 'healthy' : 'modes',
     w,
-    h: SIZE.mode.h,
+    h: 0,
     label: card.alias || card.name,
     name: card.name,
     sublabel: card.alias ? card.name : kind,
+    body: card.manifest || undefined,
+    bodyLines: healthy ? BODY_LINES.healthy : BODY_LINES.mode,
     color: card.color,
     modeId: card.modeId,
-    lane,
     empty: card.empty,
   };
+  const min = healthy ? MIN_H.healthy : MIN_H.mode;
+  return { ...node, h: measureNode(node, w, node.bodyLines ?? 0, min).h };
 }
 
-export function placeholderNode(lane: ConceptLane, w: number): DiagramNode {
-  return {
+export function schemaNode(card: GraphSchemaCard, w: number): DiagramNode {
+  const node: DiagramNode = {
     ...base,
-    id: `placeholder:${lane}`,
-    kind: 'placeholder',
-    shape: shapeOf(lane),
-    w,
-    h: SIZE.placeholder.h,
-    label: PLACEHOLDER_TEXT[lane],
-    title: LANE_META[lane].empty,
-    color: laneColor(lane),
-    lane,
-  };
-}
-
-export function schemaNode(chip: GraphSchemaChip, w: number): DiagramNode {
-  return {
-    ...base,
-    id: `schema:${chip.id}`,
+    id: `schema:${card.id}`,
     kind: 'schema',
-    shape: 'pill',
+    shape: 'rounded',
+    section: 'schemas',
     w,
-    h: SIZE.schema.h,
-    label: chip.name,
-    color: chip.color,
-    schemaId: chip.id,
+    h: 0,
+    label: `Схема ${card.name}`,
+    name: card.name,
+    body: card.belief || undefined,
+    bodyLines: BODY_LINES.schema,
+    color: card.color,
+    schemaId: card.id,
+    empty: card.empty,
+  };
+  return {
+    ...node,
+    h: measureNode(node, w, BODY_LINES.schema, MIN_H.schema).h,
   };
 }
 
-export function needNode(chip: GraphNeedChip): DiagramNode {
-  return {
+/** Овал «Как нарушалась потребность» над схемой; рисуется, только если опыт записан. */
+export function originNode(card: GraphSchemaCard, w: number): DiagramNode {
+  const node: DiagramNode = {
     ...base,
-    id: `need:${chip.id}`,
-    kind: 'need',
-    shape: 'pill',
-    w: SIZE.need.w,
-    h: SIZE.need.h,
-    label: chip.name,
-    color: needColor(chip.id),
-    needId: chip.id,
+    id: `origin:${card.id}`,
+    kind: 'origin',
+    shape: 'ellipse',
+    section: 'schemas',
+    w,
+    h: 0,
+    label: '',
+    name: card.name,
+    caption: 'Как нарушалась потребность',
+    body: card.origin,
+    bodyLines: BODY_LINES.origin,
+    color: card.color,
+    schemaId: card.id,
+  };
+  return {
+    ...node,
+    h: measureNode(node, w, BODY_LINES.origin, MIN_H.origin).h,
   };
 }
 
-/** Текстовое поле концептуализации: заголовок и обрезанный текст. */
-export function textNode(
-  id: string,
-  kind: 'experience' | 'goals' | 'problems' | 'trigger',
-  label: string,
-  text: string,
-  color: string,
-  avail: number,
-): DiagramNode {
-  const trigger = kind === 'trigger';
-  const size = trigger ? SIZE.trigger : SIZE.text;
+const PLACEHOLDER: Record<AddSection, string> = {
+  modes: 'Режим не отмечен',
+  schemas: 'Схема не отмечена',
+  healthy: 'Здоровый Взрослый не отмечен',
+};
+
+/** Пунктирная заготовка пустой секции: по тапу открывает тот же выбор, что и «+». */
+export function placeholderNode(section: AddSection, w: number): DiagramNode {
   return {
     ...base,
-    id,
-    kind,
-    shape: trigger ? 'cloud' : kind === 'problems' ? 'tag' : 'rounded',
-    w: Math.min(size.w, avail),
-    h: size.h,
-    label,
-    sublabel: text,
-    title: text,
-    color,
+    id: `placeholder:${section}`,
+    kind: 'placeholder',
+    shape:
+      section === 'schemas'
+        ? 'rounded'
+        : section === 'modes'
+          ? 'octagon'
+          : 'rounded',
+    section,
+    w,
+    h: 92,
+    label: PLACEHOLDER[section],
+    color: section === 'healthy' ? 'var(--accent-green)' : 'var(--text-sub)',
   };
 }

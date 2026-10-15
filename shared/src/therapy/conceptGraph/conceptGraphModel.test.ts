@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { buildConceptGraph } from './conceptGraphModel';
 import type { ConceptGraphSource } from './conceptGraphTypes';
 import { emptyModeLink } from './modeLinks';
-import type { ConceptModeLink } from '../../apiTypes';
+import { emptySchemaLink } from './schemaLinks';
+import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 
 const ty = (a: string) => a;
 const vy = (_a: string, b: string) => b;
@@ -11,11 +12,17 @@ const src = (patch: Partial<ConceptGraphSource> = {}): ConceptGraphSource => ({
   modeIds: [],
   schemaIds: [],
   modeLinks: [],
+  schemaLinks: [],
   ...patch,
 });
 
 const linked = (modeId: string, patch: Partial<ConceptModeLink>) => ({
   ...emptyModeLink(modeId),
+  ...patch,
+});
+
+const schemaLink = (schemaId: string, patch: Partial<ConceptSchemaLink>) => ({
+  ...emptySchemaLink(schemaId),
   ...patch,
 });
 
@@ -84,7 +91,7 @@ describe('раскладка по клеткам', () => {
       ty,
     );
     expect(g.lanes.critic).toEqual([]);
-    expect(g.roots.needs).toEqual([]);
+    expect(g.schemas).toEqual([]);
   });
 });
 
@@ -111,9 +118,8 @@ describe('карточка', () => {
     expect(card.name).toBe('Уязвимый Ребёнок');
     expect(card.schemas.map((s) => s.id)).toEqual(['abandonment', 'failure']);
     expect(card.needs.map((n) => n.name)).toEqual(['Привязанность', 'Границы']);
-    expect(card.origin).toBe('мама уезжала');
+    expect(card.lane).toBe('child');
     expect(card.manifest).toBe('замирает');
-    expect(card.strategy).toBe('рескриптинг');
     expect(card.empty).toBe(false);
   });
 
@@ -129,49 +135,89 @@ describe('карточка', () => {
   });
 });
 
-describe('корни, цели, текстовые блоки', () => {
-  it('потребности корней — объединение связей режимов на карте, в порядке NEED_ORDER', () => {
+describe('схемы на схеме случая', () => {
+  const ed = 'emotional_deprivation';
+
+  it('схемы — отмеченные в концептуализации плюс упомянутые связями режимов с карты, в порядке доменов', () => {
     const g = buildConceptGraph(
       src({
-        modeIds: ['vulnerable_child', 'punitive_critic'],
+        modeIds: ['vulnerable_child', 'guilt_critic'],
+        schemaIds: ['failure', 'ghost'],
         modeLinks: [
-          linked('vulnerable_child', { needIds: ['limits', 'attachment'] }),
-          linked('punitive_critic', { needIds: ['attachment', 'play'] }),
+          linked('guilt_critic', { schemaIds: [ed] }),
+          linked('vulnerable_child', { schemaIds: ['abandonment'] }),
         ],
-        schemaIds: ['failure', 'abandonment', 'ghost'],
-        earlyExperience: ' рано ',
-        unmetNeeds: 'нужна опора',
       }),
       ty,
     );
-    expect(g.roots.needs.map((n) => n.id)).toEqual([
-      'attachment',
-      'play',
-      'limits',
-    ]);
-    expect(g.roots.schemas.map((s) => s.id)).toEqual([
-      'abandonment',
-      'failure',
-    ]);
-    expect(g.roots.schemas[0].color).toBe('var(--accent-red)');
-    expect(g.roots.experience).toBe('рано');
-    expect(g.roots.unmetNeeds).toBe('нужна опора');
+    expect(g.schemas.map((s) => s.id)).toEqual([ed, 'abandonment', 'failure']);
+    expect(g.schemas[0]).toMatchObject({
+      name: 'Эмоциональная депривация',
+      domain: 'Нарушение связи и отвержение',
+      color: 'var(--accent-red)',
+    });
   });
 
-  it('тексты обрезаются, пустое и null дают пустую строку', () => {
+  it('связь режима не с карты и связь здорового режима схему не показывают', () => {
     const g = buildConceptGraph(
       src({
-        triggers: ' критика ',
-        currentProblems: null,
-        goals: '   ',
-        modeTransitions: '\n  ',
+        modeIds: ['healthy_adult'],
+        modeLinks: [
+          linked('healthy_adult', { schemaIds: ['failure'] }),
+          linked('punitive_critic', { schemaIds: ['abandonment'] }),
+        ],
       }),
       ty,
     );
-    expect(g.trigger).toBe('критика');
-    expect(g.problems).toBe('');
-    expect(g.goals).toBe('');
-    expect(g.sequence).toBe('');
+    expect(g.schemas).toEqual([]);
+  });
+
+  it('тексты схемы обрезаются, потребности идут по NEED_ORDER без неизвестных; пусто — empty', () => {
+    const g = buildConceptGraph(
+      src({
+        schemaIds: [ed, 'failure'],
+        schemaLinks: [
+          schemaLink(ed, {
+            belief: ' Я верю, что… ',
+            origin: ' нужно было молчать ',
+            needIds: ['limits', 'attachment', 'ghost'],
+          }),
+        ],
+      }),
+      ty,
+    );
+    const [first, second] = g.schemas;
+    expect(first).toMatchObject({
+      belief: 'Я верю, что…',
+      origin: 'нужно было молчать',
+      needIds: ['attachment', 'limits'],
+      empty: false,
+    });
+    expect(second).toMatchObject({
+      belief: '',
+      origin: '',
+      needIds: [],
+      empty: true,
+    });
+  });
+
+  it('тексты схемы, снятой из концептуализации, на схему случая не возвращают схему', () => {
+    const g = buildConceptGraph(
+      src({ schemaLinks: [schemaLink(ed, { belief: 'х' })] }),
+      ty,
+    );
+    expect(g.schemas).toEqual([]);
+  });
+});
+
+describe('переходы между режимами', () => {
+  it('тексты обрезаются, пустое и null дают пустую строку', () => {
+    expect(
+      buildConceptGraph(src({ modeTransitions: '\n  ' }), ty).sequence,
+    ).toBe('');
+    expect(buildConceptGraph(src({ modeTransitions: null }), ty).sequence).toBe(
+      '',
+    );
   });
 
   it('sequence — обрезанный текст переходов', () => {
@@ -187,12 +233,7 @@ describe('пустая концептуализация', () => {
     expect(g.lanes).toEqual({ healthy: [], child: [], critic: [], coping: [] });
     expect(g.modeCount).toBe(0);
     expect(g.gaps).toEqual([]);
-    expect(g.roots).toEqual({
-      experience: '',
-      unmetNeeds: '',
-      needs: [],
-      schemas: [],
-    });
+    expect(g.schemas).toEqual([]);
     expect(JSON.stringify(g)).not.toMatch(/undefined|NaN|null/);
   });
 });
@@ -269,10 +310,10 @@ describe('подсказки «чего не хватает»', () => {
     const ty$ = buildConceptGraph(s, ty).gaps;
     const vy$ = buildConceptGraph(s, vy).gaps;
     expect(ty$.find((g) => g.id === 'unlinked')!.text).toMatch(
-      /нажми на фигуру режима/,
+      /нажми на фигуру режима, чтобы связать/,
     );
     expect(vy$.find((g) => g.id === 'unlinked')!.text).toMatch(
-      /нажмите на фигуру режима/,
+      /нажмите на фигуру режима, чтобы связать/,
     );
     expect(ty$.find((g) => g.id === 'coping_without_child')!.text).toBe(
       vy$.find((g) => g.id === 'coping_without_child')!.text,
