@@ -5,7 +5,8 @@ import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api, reportClientError } from '../api';
+import { api } from '../api';
+import { useRatingSaver } from '../hooks/useRatingSaver';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hitboxStyle } from '../utils/hitbox';
 import type { Props } from './trackerOverlay/types';
@@ -33,7 +34,6 @@ export function TrackerOverlay({
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const isDesktop = useIsDesktop();
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const isBackfill = !!date;
 
   const [localRatings, setLocalRatings] = useState<Record<string, number>>({});
@@ -77,48 +77,23 @@ export function TrackerOverlay({
   const extra = NEED_DATA[need.id];
   const needName = extra?.name ?? need.chartLabel;
 
+  const markSaved = useCallback(() => setLastSavedAt(new Date()), []);
+  // Бэкафилл пишет оценки прошлого дня: своя дата, без стрика и без офлайн-паузы.
+  const save = useRatingSaver({
+    date: isBackfill ? date : undefined,
+    isOffline: !isBackfill && isOffline,
+    onSaved: isBackfill ? undefined : onSaved,
+    onSavedAt: markSaved,
+    errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
+    section: 'tracker',
+  });
   const handleChange = useCallback(
     (needId: string, v: number) => {
-      if (isBackfill) {
-        setLocalRatings((prev) => ({ ...prev, [needId]: v }));
-        clearTimeout(timers.current[needId]);
-        timers.current[needId] = setTimeout(async () => {
-          if (v === 0) return;
-          try {
-            await api.saveRating(needId, v, date);
-            setLastSavedAt(new Date());
-          } catch (e) {
-            // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
-            // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
-            console.error('saveRating failed', e);
-            reportClientError({
-              message: 'tracker backfill rating save failed',
-              section: 'tracker',
-            });
-          }
-        }, 500);
-        return;
-      }
-      onChange(needId, v);
-      if (isOffline) return;
-      clearTimeout(timers.current[needId]);
-      timers.current[needId] = setTimeout(async () => {
-        if (v === 0) return;
-        try {
-          const res = await api.saveRating(needId, v);
-          onSaved(needId, res.allDone ? res.streak : undefined);
-          setLastSavedAt(new Date());
-        } catch (e) {
-          // См. бэкафилл-ветку выше: здесь только ошибка запроса.
-          console.error('saveRating failed', e);
-          reportClientError({
-            message: 'tracker rating save failed',
-            section: 'tracker',
-          });
-        }
-      }, 500);
+      if (isBackfill) setLocalRatings((prev) => ({ ...prev, [needId]: v }));
+      else onChange(needId, v);
+      save(needId, v);
     },
-    [onChange, onSaved, isOffline, isBackfill, date],
+    [onChange, isBackfill, save],
   );
 
   const touchRef = useRef<{ x: number; y: number } | null>(null);

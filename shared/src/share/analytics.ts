@@ -143,6 +143,8 @@ export type ProfilePatternKind = 'schema' | 'mode';
 // src/bot/concept-graph-metrics.*.
 export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
 export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
+// Терапевт записал убеждение / детский опыт / блокируемые потребности схемы.
+export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает

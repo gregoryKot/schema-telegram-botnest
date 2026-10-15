@@ -16,6 +16,7 @@ import { QuickPracticeSheet } from '../../components/practice/QuickPracticeSheet
 import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import { pressable } from '../../utils/a11y';
+import '../../styles/client-practice.css';
 
 type Counts = Record<QuickPracticeId, number>;
 
@@ -50,11 +51,11 @@ export function HereAndNowBlock() {
   }, []);
 
   return (
-    <div className="section">
-      <div className="section-head">
-        <h3>Здесь и сейчас</h3>
+    <>
+      <div className="ds-head-row">
+        <h3 className="ds-h2">Здесь и сейчас</h3>
       </div>
-      <p className="text-sm muted" style={{ lineHeight: 1.6, marginBottom: 20 }}>
+      <p className="ds-sub" style={{ lineHeight: 1.6 }}>
         Три коротких практики самопомощи из КПТ и ДБТ — на одну-три минуты,
         для того момента, когда накрыло. Дыхание 4-4-6 успокаивает тело,
         заземление по пяти чувствам возвращает в комнату, «Стоп» ставит паузу
@@ -64,31 +65,26 @@ export function HereAndNowBlock() {
 
       <BreathingCard />
 
-      <div className="eyebrow" style={{ margin: '24px 0 4px' }}>
-        Если нужно больше
-      </div>
+      <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (
         <div
           key={row.id}
-          className="list-line"
-          style={{ cursor: 'pointer' }}
+          className="ds-card ds-card--row ds-card--hover cp-task"
           {...pressable(() => setActive(row.id))}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="text-md" style={{ fontWeight: 500 }}>
-              {row.label}
-            </div>
-            <div className="text-sm muted" style={{ marginTop: 'var(--space-4)' }}>
+          <div className="cp-task-body">
+            <div className="cp-task-title">{row.label}</div>
+            <div className="ds-sub">
               {practiceCountLabel(counts?.[row.id] ?? null) ?? row.sub}
             </div>
           </div>
-          <span className="link">начать →</span>
+          <span className="ds-link">начать →</span>
         </div>
       ))}
 
       {active && (
         <QuickPracticeSheet id={active} onClose={() => setActive(null)} />
       )}
-    </div>
+    </>
   );
 }

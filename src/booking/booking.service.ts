@@ -21,6 +21,7 @@ import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
 import { buildBookingData } from './booking-data';
 import { assertBookingPayable } from './payment-guard';
+import { assertPaidAmount } from './booking-amount';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 import {
@@ -38,16 +39,9 @@ import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
 import type { CreateBookingDto } from './booking.types';
 
 export type { CreateBookingDto };
+export { PaymentAmountMismatchError } from './booking-amount';
 
 const HOLD_MINUTES = 15;
-
-/**
- * Thrown by confirm() when the webhook-reported paid amount doesn't match
- * the expected price. A distinct ConflictException subclass so PaymentController
- * tells it apart from an idempotent-repeat: opposite Robokassa acks — repeat
- * → "OK" (already handled), mismatch → "FAIL" (NOT handled, keep it visible).
- */
-export class PaymentAmountMismatchError extends ConflictException {}
 
 @Injectable()
 export class BookingService {
@@ -102,14 +96,23 @@ export class BookingService {
     // слотов — прямой POST мог забронировать 3 часа ночи любой длительности.
     await assertWithinAvailability(this.prisma, dto.startsAt, dto.durationMin);
     const isFree = dto.type === SessionType.INTRO_15;
-    // Прод без Robokassa: отказ ДО INSERT (иначе HELD держит слот 15 минут).
-    await assertBookingPayable(this.robokassa, this.notify, dto);
+    // Сумма счёта фиксируется в брони сейчас: оплата сверяется с ней, а не с
+    // ценой на момент вебхука; та же сумма уходит в Robokassa (booking.checkout).
+    const amount = isFree ? null : await this.pricing.getPrice(dto.type);
+    // Прод без Robokassa или платная цена не задана: отказ ДО INSERT (иначе
+    // HELD держит слот 15 минут).
+    await assertBookingPayable(this.robokassa, this.notify, dto, amount);
     const heldUntil = isFree
       ? null
       : new Date(Date.now() + HOLD_MINUTES * 60_000);
     const cancelToken = randomUUID();
 
-    const data = buildBookingData(dto, { isFree, heldUntil, cancelToken });
+    const data = buildBookingData(dto, {
+      isFree,
+      heldUntil,
+      cancelToken,
+      amount,
+    });
 
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
     // случай падения (лид уходит админу) — см. booking.create.ts.
@@ -127,7 +130,6 @@ export class BookingService {
         prisma: this.prisma,
         notify: this.notify,
         robokassa: this.robokassa,
-        pricing: this.pricing,
         siteUrl: this.siteUrl,
         schema: BOOKING_SCHEMA,
       },
@@ -137,7 +139,6 @@ export class BookingService {
         cancelToken,
         heldUntil,
         startsAt: dto.startsAt,
-        type: dto.type,
         clientContact: dto.clientContact,
         adminNote: returningUnmatched ? RETURNING_NOT_FOUND_NOTE : undefined,
       },
@@ -146,19 +147,17 @@ export class BookingService {
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action).
    * @param paidAmount  when confirming from a payment webhook, the amount paid —
-   *                    verified against the expected price (defense in depth). */
+   *                    verified against the invoiced Booking.amount (defense in depth). */
   async confirm(id: number, paidAmount?: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
     // P-4 (аудит 2026-07): расхождение суммы блокирует авто-подтверждение (HELD).
     if (paidAmount != null) {
-      const expected = await this.pricing.getPrice(booking.type);
-      if (Math.round(paidAmount) !== expected) {
-        await this.notify.alertAdmin(
-          `⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Бронь НЕ подтверждена автоматически — проверьте и подтвердите вручную.`,
-        );
-        throw new PaymentAmountMismatchError('Amount mismatch — manual review');
-      }
+      await assertPaidAmount(
+        { pricing: this.pricing, notify: this.notify },
+        booking,
+        paidAmount,
+      );
     }
 
     // P-2: атомарный CAS вместо check-then-act — параллельные ретраи webhook
