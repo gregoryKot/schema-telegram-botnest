@@ -269,10 +269,10 @@ describe('подсказки «чего не хватает»', () => {
     const ty$ = buildConceptGraph(s, ty).gaps;
     const vy$ = buildConceptGraph(s, vy).gaps;
     expect(ty$.find((g) => g.id === 'unlinked')!.text).toMatch(
-      /нажми на карточку/,
+      /нажми на фигуру режима/,
     );
     expect(vy$.find((g) => g.id === 'unlinked')!.text).toMatch(
-      /нажмите на карточку/,
+      /нажмите на фигуру режима/,
     );
     expect(ty$.find((g) => g.id === 'coping_without_child')!.text).toBe(
       vy$.find((g) => g.id === 'coping_without_child')!.text,

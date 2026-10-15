@@ -213,13 +213,11 @@ describe('ClientConceptTab: схема — сохранение → отобра
     );
   });
 
-  it('связь нового режима: добавили на карту через «+ режим», заполнили → в теле оба режима и связь', async () => {
+  it('связь нового режима: добавили на карту через пустую клетку, заполнили → в теле оба режима и связь', async () => {
     await openTab(concept());
-    const child = within(
-      screen.getByRole('region', { name: 'Детские режимы' }),
-    );
-    fireEvent.click(child.getByRole('button', { name: '+ режим' }));
-    fireEvent.click(child.getByRole('button', { name: /Одинокий Ребёнок/ }));
+    // Клетка детских режимов пуста: её заготовка предлагает детские режимы.
+    fireEvent.click(screen.getByTitle(/Без детского режима непонятно/));
+    fireEvent.click(screen.getByRole('button', { name: /Одинокий Ребёнок/ }));
     fireEvent.click(card('Одинокий Ребёнок'));
     fireEvent.change(screen.getByLabelText('Как называет клиент'), {
       target: { value: 'Маленькая Аня' },

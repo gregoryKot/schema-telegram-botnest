@@ -51,6 +51,16 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
+**Счётчик попыток в Postgres** (`scripts/check-persistent-throttle.mjs`, #708):
+- **`therapy/join` и `pair/join` без собственного `@Throttle`** — считаются только
+  глобальным лимитом в памяти. Не переведены в Postgres осознанно: код приглашения —
+  40–48 бит (`randomBytes(5|6)`, `therapy-relations.service.ts`, `pairs.service.ts`),
+  перебор нереален, а гейт их не видит (нет ни лимита, ни `verifyCode(`/`.approve(`
+  в теле). Появится лимит или проверка кода в теле — гейт потребует решения сам.
+- **Гейт читает тело хендлера вместе со строковыми литералами**: `verifyCode(` в
+  тексте ошибки сошёл бы за вызов (ложно-красное, лечится записью `exempt` с
+  причиной). Комментарии он стирает.
+
 **Графическая концептуализация** (кабинет терапевта, `shared/src/therapy/conceptGraph/`):
 - **Картинкой схема скачивается только на сайте.** В мини-аппе скачивание
   файла из WebView Telegram ненадёжно, там остаётся текстовый экспорт (связи
@@ -160,7 +170,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   пишет в `test/.jest-cache`). Каждый прогон в CI холодный, шаг «Кэш ts-jest»
   сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
   после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
-  Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
+  Не сделано в #680 (снятие `test/.jest-cache` с учёта): правило №20, один PR — одна починка.
 - **Dependabot: доводка бот-PR (процедура и решения владельца).** Конфиг
   `.github/dependabot.yml` теперь покрывает все пять lock-файлов (сверка —
   `src/test-support/gates/dependabot-coverage.spec.ts`), мажоры идут семейными
@@ -553,6 +563,41 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `user-id-range.spec.ts` смотрит на константу модуля, а спек генерации id — на
   копию, и они могут разъехаться (правило №4). Перевести спек на импорт в
   первом же PR, который тронет диапазон.
+- **Семь роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
+  хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
+  `ticket/start`, `google`, `vk`, `telegram-oidc` в `src/auth/*.controller.ts`):
+  гвард в `route-method-auth.ts` засчитывается по имени, классификации
+  «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20).
+  Что каждый делает на самом деле: `google`, `vk`, `telegram-oidc` — стартовые
+  GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
+  есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
+  (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука
+  `tg_link_user` с подписанным `linkUserId` (если сессия есть) и 302 на
+  oauth.telegram.org.
+  `telegram/widget`: CSRF-заголовок и HMAC-подпись Telegram-payload. `merge`:
+  CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
+  аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
+  троттлинг и 401 для `intent: 'link'` без сессии; выдаёт device-код.
+- **Зависимость `@tma.js/init-data-node` без потребителей.** После единого
+  верификатора `src/auth/telegram-init-data.ts` пакет не импортируют ни рабочий
+  код, ни тесты (`grep -rn tma.js src test` пуст; инвариант (б) в
+  `telegram-init-data.invariants.spec.ts` не даст вернуть импорт). Убрать из
+  `package.json` и перегенерировать `package-lock.json` (`npm install` у
+  владельца/CI-агента), прогнать `knip`.
+- **`POST /api/auth/telegram/webapp` отвечает обычным 401 без `suspicious_initdata`
+  и без кода `initdata_expired`** (`auth-account.controller.ts`, ошибка
+  верификатора превращается в `UnauthorizedException(message)`), в отличие от
+  гарда (`rejectInitData`). Осознанно не включено в починке верификатора: это
+  новая сигнализация (правило №14, троттлинг `initDataAlerts` уже есть) и
+  отдельный PR (правило №20). Подделка подписи на этом входе сегодня не будит
+  админа.
+- **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
+  `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
+  (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
+  Stryker по нему (107 мутантов) не уложился в 15 минут на общей машине. Прогнать
+  `npx stryker run stryker.golden-auth.config.json`, добавить файл в `mutate`
+  `stryker.golden-auth.config.json` с полом по результату и сверить пол
+  `auth.service.ts` (убавилось мутантов проверки — процент мог сдвинуться).
 
 **Хвосты решения по PII записи** (находка L3 аудита 2026-07-20, решение
 владельца 2026-10-08 — ретенция 12 месяцев, `booking-retention.service.ts`;
@@ -773,6 +818,16 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   Завести бакет (`CLIENT_ERROR_SECTIONS`, `KNOWN`, `client-error-metrics.*`),
   когда подписку включат. Сознательно не сделано в починке отмены: правка
   метрик — отдельный PR (правило №20).
+- **Экран управления подпиской открывается только по `?token=…`, а страница
+  обещает прислать ссылку.** `SubscribePage.tsx` пишет «по ссылке, которую мы
+  пришлём, или в настройках». Токен отмены попадает в адрес только из
+  `successUrl` (`src/subscription/subscription.service.ts`), а
+  `src/booking/payment.controller.ts` на редиректе `/subscribe?sub=ok` его не
+  добавляет; письма со ссылкой нет. Есть ли управление подпиской «в
+  настройках», не проверяли. Починить текстом (убрать обещание) либо письмом со
+  ссылкой; решить до включения `SUBSCRIPTION_ENABLED`.
+  [Находка](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки): «Отмена подписки на
+  сайте глотает отказ».
 - Отчёты фронта об ошибках несут только имя источника, без причины:
   `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
   `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
@@ -827,7 +882,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
   `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие). Гейт `check-mutation-zone.mjs` (#614) не даёт выпасть новому,
+  и другие). Гейт `check-mutation-zone.mjs` (#657) не даёт выпасть новому,
   а этим двадцати одному ничего не мешает остаться за кадром: включать их в
   `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
   волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
@@ -862,6 +917,32 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   --mutate src/therapy/therapy-relations.service.ts`, выжившие — в
   `reports/mutation/golden-auth.html`, вкладка Survived. Пол не снижали
   (правило №15) и не поднимали.
+- **У прод-бота нет `bot.catch`** (`src/telegram/telegram.providers.ts`).
+  Ошибка, вылетевшая из middleware или хендлера мимо его try/catch, уходит в
+  обработчик Telegraf по умолчанию (`node_modules/telegraf/lib/telegraf.js`,
+  `handleError`): он ставит `process.exitCode = 1` и пробрасывает ошибку —
+  цикл поллинга рвётся, `BotLauncher` поднимает его через 5 с с warn, а
+  апдейт с ошибкой не повторяется (offset Telegraf уже сдвинул). Нашлось при
+  разборе ci-alarm #672: тот же обработчик в `telegram.stale-updates.spec.ts`
+  ронял код выхода jest. Не чинилось: нужен решённый ответ, что делать с
+  ошибкой апдейта (лог + алерт, без обрыва поллинга).
+- **PR-CI не ловит тест, оставивший живой хендл.** Джоба `backend` в `ci.yml`
+  гоняет jest воркерами, и утечка там видна только строкой «A worker process
+  has failed to exit gracefully» при зелёном шаге — так поллинг из
+  `telegram.polling.seam.spec.ts` (#649) уехал в `main` и повесил nightly
+  (ci-alarm #672). Ловит её только ночной `backend-flaky` через
+  `scripts/jest-exit-guard.mjs`. Сторож в PR-CI осознанно не поставлен:
+  утечка от гонки проявляется не в каждом прогоне и роняла бы чужие PR как
+  флак. Вернуться, когда `backend-flaky` неделю подряд зелёный (видно по
+  `nightly.yml` в Actions): тогда такая строка в PR-CI укажет на утечку,
+  принесённую самим изменением.
+- **Проверка «спек оставил `process.exitCode`» не подключена к e2e.**
+  `src/test-support/exit-code-leak.setup.ts` стоит в `jest.setupFilesAfterEnv`
+  юнит-спеков, а `test/jest-e2e.json` его не подключает. Проверить подключение
+  можно только прогоном обоих режимов e2e (фейк и живой Postgres, джоба
+  `migrations`): локальный прогон без живой базы краснеет на десятке спеков и
+  ничего не доказывает. Пока e2e с утёкшим кодом выхода краснеет шагом CI без
+  объяснения. Подключить отдельным PR после прогона `live-e2e.py`.
 - `src/infra/vps-ops.spec.ts` флакает под нагрузкой машины: при load average
   15+ на чистом `origin/main` (25233de) один-два теста из 29 падают примерно
   в одном прогоне из трёх («релиз записан, предыдущий сохранён…», «первый
@@ -869,6 +950,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   зелёные. Причина не разобрана: подозрение на лимиты проб здоровья
   (`OPS_HEALTH_LIMIT`/`OPS_HEALTH_POLL`) и `timeout 15` вокруг поддельного
   docker. Нашлось попутно при починке наблюдателей (2026-10-14), не чинилось.
+- Ещё два спека того же класса (2026-10-15, полный `npx jest --silent` при load
+  average 13–19 на четырёх ядрах; в одиночном прогоне зелёные):
+  `src/auth/totp.service.spec.ts`, «повторный confirmSetup на уже включённой
+  2FA → ConflictException» — `Exceeded timeout of 5000 ms` (сьют шёл 57 с, в
+  одиночку 23 с: похоже на дорогое хеширование кодов восстановления в каждом
+  тесте); `src/infra/backup-fetch-latest.spec.ts`, «посторонние имена … не
+  считаются бэкапами» — shell-скрипт против поддельного S3. На CI не падали.
+  Чинить причину (стоимость хеша в тестах, бюджет ожидания скрипта), а не
+  поднимать таймаут. Нашлось при доработке #708 и #710, не чинилось.
 - Воскресный прогон `nightly.yml` (крон `0 4 * * 0`) гоняет только
   `mutation-bot`, и его зелёный закрывает issue `ci-alarm`, а проба
   самопроверки `ciRuns` (`src/infra/self-check/probe-ci-runs.ts` берёт
