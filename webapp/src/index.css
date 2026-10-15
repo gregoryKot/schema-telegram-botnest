@@ -933,36 +933,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 /* ─── Sparkline ──────────────────────────────────────────────────────────── */
 .spark { width: 100%; display: block; }
 
-/* ─── Roster ─────────────────────────────────────────────────────────────── */
-.r-row, .r-row-head {
-  display: grid;
-  grid-template-columns: 1.6fr 170px 150px 1.4fr;
-  gap: var(--space-20);
-}
-.r-roster--no-state .r-row, .r-roster--no-state .r-row-head {
-  grid-template-columns: 1.6fr 170px 1.6fr;
-}
-.r-row {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--line);
-  align-items: center; cursor: pointer; transition: background .1s;
-}
-.r-row:hover { background: var(--surface-2); }
-.r-row-head {
-  padding: 0 0 10px;
-  border-bottom: 1px solid var(--line);
-}
 .chev { font-size: 14px; color: var(--text-ghost); }
-@media (max-width: 600px) {
-  /* На телефоне остаются имя и схемы: встреча (2-я) и самочувствие (3-я) прячутся. */
-  .r-row, .r-row-head, .r-roster--no-state .r-row, .r-roster--no-state .r-row-head {
-    grid-template-columns: 1fr auto;
-  }
-  /* !important: у ячеек inline display:flex, обычное правило его не перебьёт. */
-  .r-row > *:nth-child(2), .r-row-head > *:nth-child(2) { display: none !important; }
-  .r-roster:not(.r-roster--no-state) .r-row > *:nth-child(3),
-  .r-roster:not(.r-roster--no-state) .r-row-head > *:nth-child(3) { display: none !important; }
-}
 
 /* ─── Today aside: compact card on mobile ────────────────────────────────── */
 @media (max-width: 767px) {
@@ -1055,7 +1026,6 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 
 /* Mobile: header padding + horizontal tab scroll */
 @media (max-width: 767px) {
-  .therapist-client-header { padding: 16px 16px 0 !important; }
   .tabs {
     padding: 0 16px;
     overflow-x: auto;
@@ -1539,20 +1509,6 @@ html[data-theme="dark"] .dialog-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0
   transition: border-color .15s; resize: none; line-height: 1.6;
 }
 .paper-input:focus { outline: none; border-bottom-color: var(--accent); }
-/* Поле «Имя клиента»: родная линия-подчёркивание, но заметная — без коробки
-   и теней (белая рамка с ореолом выбивалась из бумажного стиля, #588). */
-.name-field {
-  display: flex; align-items: center; gap: var(--space-16);
-  border-bottom: 1.5px solid var(--text-faint);
-  transition: border-color .15s;
-}
-.name-field:hover, .name-field:focus-within { border-color: var(--text); }
-.name-field input {
-  flex: 1; min-width: 0; background: none; border: none; outline: none;
-  font-family: var(--serif); font-size: 26px; letter-spacing: -0.01em;
-  color: var(--text); padding: 10px 0;
-}
-.name-field input::placeholder { color: var(--text-faint); }
 .paper-area {
   width: 100%; background: transparent;
   border: 1px solid var(--line); border-radius: var(--r-10);
