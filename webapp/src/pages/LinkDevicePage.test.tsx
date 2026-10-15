@@ -190,6 +190,19 @@ describe('подтверждение', () => {
     });
   });
 
+  it('повтор из второй вкладки — экран «Готово», но событие успеха второй раз не уходит', async () => {
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
+
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { merged: false, repeat: true }),
+    );
+    fireEvent.click(screen.getByText('Разрешить доступ'));
+
+    await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
+    expect(api.trackEvent).not.toHaveBeenCalled();
+  });
+
   it('подтверждение упало — событие успеха не уходит', async () => {
     renderAt('/link?code=ABCD2345');
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
