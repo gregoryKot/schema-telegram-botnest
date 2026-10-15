@@ -52,7 +52,7 @@ describe('decisionMessage', () => {
     );
     expect(mail.text).toBe(
       'Твоя заявка на роль терапевта отклонена.\n\nПричина: нужен <диплом>\n\n' +
-        'Подать заявку заново можно на https://schemehappens.ru/account: кнопка «Я психолог — подать заявку».',
+        'Подать заявку заново можно кнопкой «Я психолог — подать заявку» на странице https://schemehappens.ru/account',
     );
     expect(mail.subject).toBe('Заявка на роль терапевта отклонена');
   });
@@ -61,13 +61,16 @@ describe('decisionMessage', () => {
     const vyMail = mod.decisionMessage('vy', 'rejected', undefined, 'email');
     expect(vyMail.text).toBe(
       'Ваша заявка на роль терапевта отклонена.\n\n' +
-        'Подать заявку заново можно на https://schemehappens.ru/account: кнопка «Я психолог — подать заявку».',
+        'Подать заявку заново можно кнопкой «Я психолог — подать заявку» на странице https://schemehappens.ru/account',
     );
     const tyTg = mod.decisionMessage('ty', 'rejected', undefined, 'tg').text;
     expect(tyTg).toMatch(
       /^❌ Твоя заявка[^\n]*отклонена\.\n\nПодать заявку заново/,
     );
     expect(tyTg).not.toContain('Причина');
+    // Письмо кончается ссылкой: ни точки, ни двоеточия вплотную — автолинкер
+    // почтового клиента утащил бы знак препинания в адрес.
+    expect(vyMail.text).toMatch(/https:\/\/schemehappens\.ru\/account$/);
     // Обращения в хвосте нет: ни «ты», ни «вы» не просочиваются мимо t().
     expect(vyMail.text.split('\n\n')[1]).not.toMatch(
       /(^|[^а-яё])(ты|вы)([^а-яё]|$)/i,
@@ -76,18 +79,36 @@ describe('decisionMessage', () => {
     expect(ok).not.toContain('заново');
   });
 
-  // Подпись кнопки живёт в двух фронтендах (правило №3) и в письме — три места,
-  // обязанные совпадать (правило №4): переименуют кнопку — письмо поведёт «не туда».
-  it('подпись кнопки из письма есть в настройках сайта и мини-аппа', () => {
+  // Подпись кнопки живёт в трёх местах фронтов (правило №3 и №4): страница
+  // /account сайта, настройки сайта и настройки мини-аппа. Письмо и сообщение в
+  // Telegram называют её дословно — переименуют кнопку, человека поведёт «не туда».
+  // Строка подписи должна стоять сама по себе (текст кнопки), а не мелькать в
+  // комментарии рядом: иначе пин зелёный и после удаления кнопки.
+  const BUTTON_SOURCES = [
+    'webapp/src/pages/account/TherapistRequestSection.tsx',
+    'webapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
+    'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
+  ];
+  const hasButton = (src: string) =>
+    new RegExp(`^\\s*${mod.APPLY_BUTTON}\\s*$`, 'm').test(src);
+
+  it('подпись кнопки из письма и Telegram есть на каждой площадке подачи заявки', () => {
     const root = join(__dirname, '..', '..');
-    for (const file of [
-      'webapp/src/pages/account/TherapistRequestSection.tsx',
-      'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
-    ]) {
-      expect(readFileSync(join(root, file), 'utf8')).toContain(
-        mod.APPLY_BUTTON,
-      );
+    for (const file of BUTTON_SOURCES) {
+      expect({
+        file,
+        found: hasButton(readFileSync(join(root, file), 'utf8')),
+      }).toEqual({ file, found: true });
     }
+  });
+
+  it('пин не обманывается комментарием и переименованной кнопкой', () => {
+    const label = mod.APPLY_BUTTON;
+    expect(hasButton(`<button>\n  ${label}\n</button>`)).toBe(true);
+    expect(
+      hasButton(`// кнопка «${label}»\n<button>Подать заявку</button>`),
+    ).toBe(false);
+    expect(hasButton('<button>\n  Подать заявку\n</button>')).toBe(false);
   });
 });
 

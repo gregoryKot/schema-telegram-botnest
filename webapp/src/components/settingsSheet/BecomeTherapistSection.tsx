@@ -68,7 +68,7 @@ export function BecomeTherapistSection() {
             </p>
             <button onClick={() => setShowReqForm(true)}
               style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Подать заявку
+              Я психолог — подать заявку
             </button>
           </div>
         ) : (

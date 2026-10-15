@@ -458,7 +458,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
 describe('SettingsSheet — форма обращения в заявке на роль специалиста', () => {
   it('форма «ты»: пустая заявка просит на «ты»', async () => {
     await renderSheetWithForm('ty');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
@@ -466,7 +466,7 @@ describe('SettingsSheet — форма обращения в заявке на �
 
   it('форма «вы»: та же проверка звучит на «вы»', async () => {
     await renderSheetWithForm('vy');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполните ФИО, квалификацию и контакты');
@@ -614,7 +614,7 @@ describe('SettingsSheet — сбой начальной загрузки не б
   it('getTherapistRequest() падает — форма заявки на специалиста доступна как для новой заявки', async () => {
     mockApi.getTherapistRequest.mockRejectedValueOnce(new Error('network down'));
     await renderSheet();
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заявка на рассмотрении.', { exact: false })).toBeNull();
   });
 });
@@ -623,7 +623,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
   it('api.submitTherapistRequest падает — текст ошибки сервера показан, форма не закрывается', async () => {
     mockApi.submitTherapistRequest.mockRejectedValue(new Error('уже подана заявка'));
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
@@ -635,7 +635,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
   it('успех: заявка уходит на сервер, форма закрывается, статус — «на рассмотрении»', async () => {
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
@@ -976,21 +976,21 @@ describe('SettingsSheet — вход по коду терапевта (клие�
 });
 
 describe('SettingsSheet — заявка на специалиста: необязательное сообщение и отмена формы', () => {
-  it('отмена формы очищает ошибку и возвращает к кнопке «Подать заявку»', async () => {
+  it('отмена формы очищает ошибку и возвращает к кнопке «Я психолог — подать заявку»', async () => {
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
 
     fireEvent.click(screen.getByText('Отмена'));
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
   });
 
   it('необязательное сообщение уходит в submitTherapistRequest', async () => {
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm({ fio: 'Иван' });
     fireEvent.change(screen.getByPlaceholderText('Сообщение (необязательно)'), { target: { value: 'Работаю со схема-терапией' } });
     fireEvent.click(screen.getByText('Отправить заявку'));

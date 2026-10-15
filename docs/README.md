@@ -451,12 +451,13 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   счётчик потребовал бы событие аналитики, ветку `sanitizeMeta` и форматтер с тестом
   пустого состояния ради нескольких заявок в год.
 - **Гейта «`chat_id` из `userId` вне `telegram-identity`/`account.service`» нет.**
-  После этой починки `therapist-request.notify.ts` был последним сырым
+  До этой починки `therapist-request.notify.ts` был последним сырым
   `sendTg(userId)`; трипваер класса #456 — отдельный PR.
-- **Отказ по заявке в настройках не виден сразу.** Сайт показывает «Прошлая заявка
+- **Отказ по заявке виден не везде сразу.** Страница /account сайта показывает «Прошлая заявка
   отклонена» и причину только внутри раскрытой формы подачи
   (`webapp/src/pages/account/TherapistRequestSection.tsx`, ветка `rejected`
-  внутри `open`), мини-апп (`schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx`)
+  внутри `open`; настройки сайта, `webapp/src/components/settingsSheet/BecomeTherapistSection.tsx`,
+  показывают отказ сразу), мини-апп (`schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx`)
   не рисует `rejected` вовсе: после отказа там та же кнопка «Я психолог — подать
   заявку», что и до заявки. Письмо об отказе теперь называет эту кнопку, так что
   человек не потеряется, но причину в самом приложении он не прочтёт. Не чинилось:

@@ -46,8 +46,13 @@ describe('TherapistRequestSection — статусы существующей з
     const note = await screen.findByText(/на рассмотрении/);
     expect(screen.queryByText('ФИО')).toBeNull();
     // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
-    expect(note.textContent).toContain('Решение появится здесь');
+    // «Решение появится здесь» тут неверно: отказ виден только внутри раскрытой
+    // формы (тест ниже), поэтому обещаем сообщение и смену статуса.
+    expect(note.textContent).toContain(
+      'О решении сообщим в Telegram, на почту или по контактам из заявки',
+    );
     expect(note.textContent).not.toContain('в боте');
+    expect(note.textContent).not.toContain('появится здесь');
   });
 
   it('approved — сообщение "одобрена"', async () => {
