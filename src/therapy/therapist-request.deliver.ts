@@ -70,7 +70,7 @@ export async function deliverDecision(
   // заявки, а владельцу нужно понять, кому писать. AlertLogger троттлит ключи.
   d.logger.error(
     `Решение по заявке #${requestId} (${decision}) не доставлено: ` +
-      `${chatId === undefined ? 'нет Telegram' : 'Telegram отказал'}, ` +
+      `${chatId === undefined ? 'нет Telegram' : 'Telegram не принял'}, ` +
       `${profile.email ? 'письмо не ушло' : 'нет почты'}`,
   );
 }

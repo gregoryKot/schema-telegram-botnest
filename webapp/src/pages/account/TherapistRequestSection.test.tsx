@@ -46,7 +46,6 @@ describe('TherapistRequestSection — статусы существующей з
     const note = await screen.findByText(/на рассмотрении/);
     expect(screen.queryByText('ФИО')).toBeNull();
     // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
-    expect(note.textContent).toContain('появится здесь');
     expect(note.textContent).toContain('Решение появится здесь');
     expect(note.textContent).not.toContain('в боте');
   });

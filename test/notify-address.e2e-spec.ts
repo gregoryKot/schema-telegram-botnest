@@ -224,7 +224,7 @@ describeOnRealDb('e2e: адресация уведомлений после сл
       await waitFor(() => send.mock.calls.length > 0);
 
       expect(send.mock.calls[0][0]).toBe('applicant@example.com');
-      expect(tgChats()).not.toContain(Number(WEB_ONLY));
+      expect(tgChats()).toEqual([]);
     });
 
     it('после слияния решение уходит на telegramId из перенесённой привязки', async () => {
