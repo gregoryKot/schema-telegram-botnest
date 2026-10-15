@@ -12,7 +12,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { Request } from 'express';
 import { uid } from '../api/request-utils';
 import { parseClientId } from '../api/parse-user-id';
@@ -151,7 +151,7 @@ export class TherapyConnectionController {
   // ─── Therapist role request (admin-approved) ────────────────────────────
 
   @Post('request')
-  @Throttle({
+  @PersistentThrottleLimit({
     short: { limit: 2, ttl: 60_000 },
     long: { limit: 5, ttl: 24 * 3_600_000 },
   })
