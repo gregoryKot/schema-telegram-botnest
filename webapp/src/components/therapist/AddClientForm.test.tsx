@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { AddClientForm } from './AddClientForm';
 import { useAddClient } from './useAddClient';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -69,5 +70,15 @@ describe('AddClientForm — отказ буфера при копировани�
 
     await screen.findByText('✓ Скопировано');
     expect(screen.queryByText(/Не удалось скопировать/)).toBeNull();
+  });
+});
+
+// Аудит 2026-10-11: сервер ограничил имя офлайн-клиента (@MaxLength), поле
+// обязано не пускать больше — иначе набранное имя вернётся 400 на «Добавить».
+describe('AddClientForm — предел длины имени', () => {
+  it('поле имени не принимает больше CLIENT_NAME_MAX знаков', () => {
+    render(<Host />);
+    const input = screen.getByLabelText('Имя клиента') as HTMLInputElement;
+    expect(input.maxLength).toBe(CLIENT_NAME_MAX);
   });
 });

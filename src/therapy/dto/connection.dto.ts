@@ -12,11 +12,6 @@ export class JoinTherapyDto {
   code!: string;
 }
 
-export class VirtualClientDto {
-  @IsString()
-  name!: string;
-}
-
 // Запоминаемое предпочтение терапевта: стартовать в кабинете (on=true) или в
 // клиентском режиме (on=false). Правило №6 CLAUDE.md — рантайм-валидация тела.
 export class TherapistViewDto {

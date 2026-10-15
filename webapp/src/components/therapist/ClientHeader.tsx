@@ -5,6 +5,7 @@ import { ClientTabs } from './ClientTabs';
 import { clientInitials } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { clientHue, hueStyle } from '../../lib/tone';
 import '../../styles/therapist-card.css';
@@ -40,6 +41,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
           {renamingAlias ? (
             <div className="tk-alias-form">
               <input ref={aliasInputRef} className="tk-alias-input" value={aliasInput} onChange={e => setAliasInput(e.target.value)}
+                maxLength={CLIENT_NAME_MAX}
                 onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }} />
               <button className="ds-btn ds-btn--sm" onClick={saveAlias} disabled={aliasSaving}>{aliasSaving ? '…' : 'OK'}</button>
               <button className="ds-btn ds-btn--icon" onClick={() => setRenamingAlias(false)} aria-label="Отменить">✕</button>

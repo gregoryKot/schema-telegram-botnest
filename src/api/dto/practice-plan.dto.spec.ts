@@ -2,6 +2,7 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { PRACTICE_TEXT_MAX } from '../../utils/text-limits';
 import { AddPracticeDto, CreatePlanDto } from './practice-plan.dto';
 
 async function errorsFor(
@@ -63,5 +64,22 @@ describe('CreatePlanDto', () => {
     await expect(
       errorsFor(CreatePlanDto, { needId: 'play', practiceText: '' }),
     ).resolves.toContain('practiceText');
+  });
+
+  // Аудит 2026-10-11: `AddPracticeDto.text` уже стоял на PRACTICE_TEXT_MAX,
+  // а тот же текст в плане был без границы (тело — до 256 КБ).
+  it('practiceText длиннее PRACTICE_TEXT_MAX — отказ, ровно по пределу проходит', async () => {
+    await expect(
+      errorsFor(CreatePlanDto, {
+        needId: 'play',
+        practiceText: 'я'.repeat(PRACTICE_TEXT_MAX + 1),
+      }),
+    ).resolves.toContain('practiceText');
+    await expect(
+      errorsFor(CreatePlanDto, {
+        needId: 'play',
+        practiceText: 'я'.repeat(PRACTICE_TEXT_MAX),
+      }),
+    ).resolves.toEqual([]);
   });
 });
