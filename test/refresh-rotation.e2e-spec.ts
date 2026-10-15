@@ -18,6 +18,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../src/auth/security-log.service';
+import { resetMemoryThrottle } from '../src/test-support/memory-throttle-reset';
 
 describe('e2e smoke: ротация refresh — потерянный ответ против кражи', () => {
   let app: INestApplication;
@@ -126,18 +127,12 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
    * сценария ниже. Сброс общего in-memory стораджа троттлера не трогает
    * прод-код — только тестовую изоляцию одного сценария от соседних.
    *
-   * Инцидент 2026-09-13: `ThrottlerStorage` в DI теперь `HybridThrottleStorage`
-   * — немаркированные ключи (у `/api/auth/refresh` нет `@PersistentThrottle()`)
-   * по-прежнему живут в памяти, но во вложенном `.memory`, а не в самом
-   * сторадже. Старую форму (плоский `.storage`) держим как фолбэк на случай
-   * прямой `ThrottlerStorageService` в других сборках теста.
+   * Сбрасывать надо вместе с таймерами истечения, а не одну Map записей:
+   * таймер, переживший свою запись, падал TypeError и ронял «каждый раз
+   * другой» тест этого файла (разбор 2026-10-15 — в шапке хелпера).
    */
   function resetRefreshThrottle(): void {
-    const storage: {
-      storage?: Map<string, unknown>;
-      memory?: { storage: Map<string, unknown> };
-    } = app.get(ThrottlerStorage);
-    (storage.memory?.storage ?? storage.storage)?.clear();
+    resetMemoryThrottle(app.get(ThrottlerStorage));
   }
 
   afterAll(async () => {
