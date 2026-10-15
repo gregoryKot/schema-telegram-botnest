@@ -7,7 +7,10 @@
 //     обрабатываются дважды;
 //   * апдейты, лежавшие в очереди до launch(), обработаны (не стёрты);
 //   * не-409 сбой цикла: служебный getUpdates из `finally` Telegraf (sync
-//     offset) не обнуляет счётчик подряд идущих неудач.
+//     offset) не обнуляет счётчик подряд идущих неудач;
+//   * stop() посреди попытки запуска: поллинг после остановки не поднимается
+//     (иначе цикл ретраит мёртвый адрес вечно и держит процесс — ночной jest
+//     не выходил после всех тестов, ci-alarm #672).
 import { Logger } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import type { Update } from 'telegraf/types';
@@ -162,6 +165,32 @@ describe('поллинг на шве: настоящий Telegraf против �
     );
     expect(syncs.length).toBeGreaterThanOrEqual(4);
     expect(pollingStatus.get().state).toBe('failed');
+  });
+
+  it('stop() посреди попытки запуска (deleteWebhook в полёте): long-poll после остановки не уходит', async () => {
+    await boot(['409', 'ok']);
+    const release = api.holdDeleteWebhook();
+    launcher = new BotLauncher(bot, new Logger('t'), [20]);
+    launcher.start();
+    await until(() => api.deleteWebhookBodies.length === 1);
+    release(); // первая попытка → 409 → ретрай, его deleteWebhook ждёт
+    await until(() => api.deleteWebhookBodies.length === 2);
+    const longPolls = () =>
+      api.getUpdatesBodies.filter((b) => b.timeout !== undefined).length;
+    expect(longPolls()).toBe(1);
+
+    // Как TelegramService.onModuleDestroy. Прежний цикл (409) уже мёртв —
+    // bot.stop() не бросает, но и рвать ему нечего.
+    launcher.stop();
+    bot.stop();
+    release();
+
+    // Служебный sync из finally Telegraf — знак, что цикл новой попытки
+    // закончился; без обрыва его бы не было, а long-poll шли бы дальше.
+    await until(() => api.getUpdatesBodies.some((b) => b.limit === 1));
+    await new Promise((r) => setTimeout(r, 100));
+    expect(longPolls()).toBe(1);
+    expect(pollingStatus.get().state).toBe('stopped');
   });
 
   it('очередь до launch() через настоящий TelegramService.onModuleInit: ничего не стёрто', async () => {

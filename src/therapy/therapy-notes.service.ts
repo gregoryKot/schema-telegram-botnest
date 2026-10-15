@@ -14,6 +14,18 @@ const CONCEPT_TEXT_FIELDS = [
   'modeTransitions',
 ] as const;
 
+// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра) и связи
+// режимов (alias, истоки, проявления, работа в терапии) — клинические данные,
+// шифруются целиком. Новое поле такого рода = строка здесь (и в
+// encryption-policy / rotate-encryption/targets).
+const CONCEPT_JSON_ARRAY_FIELDS = [
+  'schemaIds',
+  'modeIds',
+  'modeMapNodes',
+  'modeMapEdges',
+  'modeLinks',
+] as const;
+
 function encryptConceptFields(
   body: Record<string, unknown>,
 ): Record<string, string | null> {
@@ -21,22 +33,12 @@ function encryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     if (f in body) result[f] = encrypt(body[f] as string | null | undefined);
   }
-  // Clinical labels — encrypted JSON string (plaintext-tolerant on read).
-  if ('schemaIds' in body && Array.isArray(body.schemaIds)) {
-    result.schemaIds =
-      encryptJson(body.schemaIds) ?? JSON.stringify(body.schemaIds);
-  }
-  if ('modeIds' in body && Array.isArray(body.modeIds)) {
-    result.modeIds = encryptJson(body.modeIds) ?? JSON.stringify(body.modeIds);
-  }
-  // Mode map — nodes and edges contain sensitive clinical data, must be encrypted.
-  if ('modeMapNodes' in body && Array.isArray(body.modeMapNodes)) {
-    result.modeMapNodes =
-      encryptJson(body.modeMapNodes) ?? JSON.stringify(body.modeMapNodes);
-  }
-  if ('modeMapEdges' in body && Array.isArray(body.modeMapEdges)) {
-    result.modeMapEdges =
-      encryptJson(body.modeMapEdges) ?? JSON.stringify(body.modeMapEdges);
+  // Encrypted JSON string (plaintext-tolerant on read).
+  for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
+    const v = body[f];
+    if (f in body && Array.isArray(v)) {
+      result[f] = encryptJson(v) ?? JSON.stringify(v);
+    }
   }
   return result;
 }
@@ -48,24 +50,12 @@ function decryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     result[f] = row[f] != null ? decrypt(row[f] as string) : null;
   }
-  // schemaIds / modeIds / modeMapNodes / modeMapEdges: legacy rows have JSON arrays;
-  // new rows have encrypted strings.
-  for (const f of ['schemaIds', 'modeIds']) {
+  // Legacy rows have plain JSON arrays; new rows have encrypted strings. Нет
+  // значения (старый снапшот истории, строка до колонки modeLinks) — [].
+  for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
     const v = row[f];
-    if (v == null) {
-      result[f] = [];
-      continue;
-    }
-    if (typeof v === 'string') result[f] = decryptJson<string[]>(v) ?? [];
-    else result[f] = v;
-  }
-  for (const f of ['modeMapNodes', 'modeMapEdges']) {
-    const v = row[f];
-    if (v == null) {
-      result[f] = [];
-      continue;
-    }
-    if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
+    if (v == null) result[f] = [];
+    else if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
     else result[f] = v;
   }
   return result;
@@ -155,6 +145,7 @@ export class TherapyNotesService {
       modeTransitions?: string;
       modeMapNodes?: unknown[];
       modeMapEdges?: unknown[];
+      modeLinks?: unknown[];
     },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
@@ -188,6 +179,7 @@ export class TherapyNotesService {
           goals: existing.goals,
           currentProblems: existing.currentProblems,
           modeTransitions: existing.modeTransitions ?? null,
+          modeLinks: existing.modeLinks,
         };
         hist = [snapshot, ...hist].slice(0, 20);
       }
@@ -220,6 +212,7 @@ export class TherapyNotesService {
           modeTransitions: enc.modeTransitions ?? null,
           modeMapNodes: enc.modeMapNodes ?? [],
           modeMapEdges: enc.modeMapEdges ?? [],
+          modeLinks: enc.modeLinks ?? [],
           history: [],
         },
         update,

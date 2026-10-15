@@ -60,8 +60,15 @@
 - `SKIP_AUTH` действует только при `NODE_ENV !== 'production'`. Проверку
   `process.env.NODE_ENV !== 'production'` в гварде **никогда не убирать** —
   иначе утёкший/ошибочный env даёт полный захват любого пользователя.
-- Свежесть initData в гварде и в `verifyTelegramWebAppData` должна совпадать
-  (сейчас 3600 с). Рассинхрон = разное окно replay-атаки.
+- Подпись initData Telegram проверяет **одна** реализация —
+  `src/auth/telegram-init-data.ts`; ею пользуются гард, бакет лимита
+  (`throttler-init-data.ts`) и `verifyTelegramWebAppData`. Окно свежести —
+  `INIT_DATA_MAX_AGE_S` в `src/api/init-data-window.ts` (сейчас 3600 с), литерала
+  окна в верификаторе нет. Порядок «подпись → срок»: поддельная, но старая
+  строка получает ошибку подписи и алерт, а не тихое «просрочено». Четвёртая
+  копия HMAC `WebAppData` или `validate()` из `@tma.js` в рабочем коде роняет
+  `src/auth/telegram-init-data.invariants.spec.ts`. MAX — отдельная площадка
+  с отдельным верификатором (`max-init-data.ts`).
 - Сравнение HMAC/подписей — только `crypto.timingSafeEqual`, никогда `===`.
 - JWT при verify — всегда явный `algorithms: ['HS256']`. Без этого возможна
   alg-confusion и подделка через `alg: none`.
