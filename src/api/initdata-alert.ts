@@ -8,7 +8,6 @@
 // цикл, а не атака: будить ею админа нельзя, и главное — в этом потоке тонет
 // настоящая подделка подписи, ради которой алерт и заводился.
 import { Logger, UnauthorizedException } from '@nestjs/common';
-import { ExpiredError } from '@tma.js/init-data-node';
 import { SecurityLogService } from '../auth/security-log.service';
 import { AlertThrottle } from '../utils/alert-throttle';
 
@@ -18,9 +17,8 @@ export type InitDataFailureKind = 'expired' | 'suspicious';
 export const INITDATA_EXPIRED_CODE = 'initdata_expired';
 
 export function classifyInitDataFailure(err: unknown): InitDataFailureKind {
-  if (err instanceof ExpiredError) return 'expired';
-  // Подстраховка: error-kid-классы теряют instanceof, если пакет продублирован
-  // (ESM/CJS-копии в дереве зависимостей) — тогда смотрим на текст ошибки.
+  // Просрочку отдаёт верификатор (auth/telegram-init-data.ts, MAX) ошибкой с
+  // текстом «init data expired»; по тексту её и узнаём.
   const msg = err instanceof Error ? err.message : String(err);
   return /^init data expired/i.test(msg) ? 'expired' : 'suspicious';
 }

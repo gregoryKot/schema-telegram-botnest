@@ -21,6 +21,7 @@ import { shouldSkipRotation } from './refresh-rotation';
 import { resolveReuse } from './refresh-reuse';
 import { revokeFamilyQuiet } from './refresh-logout';
 import { unlinkProviderSafely } from './unlink-provider';
+import { verifyTelegramInitData } from './telegram-init-data';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -60,59 +61,16 @@ export class AuthService {
     id: number;
     firstName: string;
   } {
-    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
-
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) throw new UnauthorizedException('Missing hash in initData');
-    // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
-    // wrong-length buffer and timingSafeEqual throws RangeError → 500.
-    if (!/^[0-9a-f]{64}$/i.test(hash))
-      throw new UnauthorizedException('Malformed hash in initData');
-
-    // Check auth_date freshness (allow 1 hour for mini apps — WebApp is long-lived)
-    const authDate = parseInt(params.get('auth_date') ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 3600)
-      throw new UnauthorizedException('Telegram initData expired');
-
-    // Build check string: all fields except hash, sorted, joined with \n
-    params.delete('hash');
-    const checkString = Array.from(params.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
-
-    const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
-      .update(botToken)
-      .digest();
-    const expectedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(checkString)
-      .digest('hex');
-
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(hash, 'hex'),
-        Buffer.from(expectedHash, 'hex'),
-      )
-    ) {
-      throw new UnauthorizedException('Invalid Telegram WebApp signature');
-    }
-
-    // Parse user field (JSON string in initData)
-    const userJson = params.get('user');
-    if (!userJson) throw new UnauthorizedException('Missing user in initData');
-    let user: { id: number; first_name?: string };
+    const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
+    // Подпись, окно свежести и разбор user — один верификатор на все входы
+    // (telegram-init-data.ts); здесь только превращение отказа в 401.
     try {
-      user = JSON.parse(userJson) as { id: number; first_name?: string };
-    } catch {
-      throw new UnauthorizedException('Invalid user JSON in initData');
+      const { user } = verifyTelegramInitData(initData, botToken);
+      return { id: user.id, firstName: user.first_name ?? '' };
+    } catch (err) {
+      // Верификатор бросает только Error (см. шапку telegram-init-data.ts).
+      throw new UnauthorizedException((err as Error).message);
     }
-
-    if (!user.id)
-      throw new UnauthorizedException('Missing user id in initData');
-    return { id: user.id, firstName: user.first_name ?? '' };
   }
 
   // ─── Email magic-link login ───────────────────────────────────────────────
