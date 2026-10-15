@@ -1,3 +1,4 @@
+// Сброс умеет обе формы: MemoryThrottleStorage (прод) и голый штатный.
 // Регресс мигалки test/refresh-rotation.e2e-spec.ts (разбор 2026-10-15, см.
 // шапку memory-throttle-reset.ts): сброс троттлера между сценариями стирал
 // записи, оставляя таймеры истечения, и таймер падал TypeError. Время здесь
@@ -5,6 +6,7 @@
 // порядок «хит → сброс → истечение» задан руками и воспроизводится всегда.
 import { ThrottlerStorageService } from '@nestjs/throttler';
 import { HybridThrottleStorage } from '../api/hybrid-throttle-storage';
+import { MemoryThrottleStorage } from '../api/memory-throttle-storage';
 import type { PrismaService } from '../prisma/prisma.service';
 import { resetMemoryThrottle } from './memory-throttle-reset';
 
@@ -87,6 +89,14 @@ describe('resetMemoryThrottle — сброс троттлера в памяти 
     resetMemoryThrottle(lib);
     expect(() => jest.advanceTimersByTime(TTL)).not.toThrow();
     expect(lib.storage.size).toBe(0);
+  });
+
+  it('MemoryThrottleStorage без обёртки сбрасывается через reset()', async () => {
+    const own = new MemoryThrottleStorage();
+    await hit(own);
+    resetMemoryThrottle(own);
+    expect(own.size).toBe(0);
+    expect((await hit(own)).totalHits).toBe(1);
   });
 
   it('чужая форма хранилища — громкая ошибка, а не тихий no-op', () => {
