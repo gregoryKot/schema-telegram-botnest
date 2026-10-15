@@ -8,6 +8,12 @@
 //       платёжек с проверкой подписи, публичный контент, capability-token
 //       потоки). Allowlist может только СОКРАЩАТЬСЯ.
 //
+// Единица учёта — МЕТОД, а не файл (аудит 2026-10): гвард на одном методе
+// делал защищённым весь файл, и новый анонимный `@Post` рядом не краснел.
+// Теперь в контроллере вне PUBLIC_BY_DESIGN/ADMIN_KEY_GATED каждый роут-метод
+// либо под гвардом (класс или метод), либо назван в ANONYMOUS_BY_DESIGN с
+// причиной. Разбор — src/test-support/route-method-auth.ts (AST).
+//
 // Классификация (стены PUBLIC_BY_DESIGN/ADMIN_KEY_GATED/GUARD_RE) живёт в
 // controller-classification.ts — общий источник с e2e-route-coverage.
 // invariants.spec.ts (правило №4 CLAUDE.md: денормализованные копии без
@@ -19,9 +25,18 @@ import {
   CONTROLLERS,
   PUBLIC_BY_DESIGN,
   ADMIN_KEY_GATED,
+  ANONYMOUS_BY_DESIGN,
   GUARD_RE,
-  ROUTE_RE,
 } from './controller-classification';
+import { routeMethods } from '../test-support/route-method-auth';
+
+const methodsOf = (rel: string) =>
+  routeMethods(rel, readFileSync(join(SRC, rel), 'utf8'));
+
+// Контроллеры, где защиту проверяем по методу: не публичные и не admin-key.
+const METHOD_CHECKED = CONTROLLERS.filter(
+  (rel) => !PUBLIC_BY_DESIGN[rel] && !ADMIN_KEY_GATED.has(rel),
+);
 
 describe('трипваер: каждый контроллер защищён (guard / admin-key / публичный)', () => {
   it.each(CONTROLLERS)('%s классифицирован и защищён', (rel) => {
@@ -39,15 +54,42 @@ describe('трипваер: каждый контроллер защищён (gu
   });
 
   it.each([...ADMIN_KEY_GATED])(
-    'admin-gated %s: assertAdminKey на каждом роут-методе',
+    'admin-gated %s: assertAdminKey вызван в теле каждого роут-метода',
     (rel) => {
-      const src = readFileSync(join(SRC, rel), 'utf8');
-      const routes = (src.match(ROUTE_RE) ?? []).length;
-      const adminChecks = (src.match(/assertAdminKey/g) ?? []).length;
-      // Каждый роут гейтит админ-ключ (обычно ещё и объявление adminKey).
-      expect(adminChecks).toBeGreaterThanOrEqual(routes);
+      const methods = methodsOf(rel);
+      expect(methods.length).toBeGreaterThan(0);
+      // По методу, а не счётом совпадений в файле: строка импорта давала
+      // запас в одно совпадение, и новый роут без проверки проходил.
+      expect(methods.filter((m) => !m.callsAdminKey).map((m) => m.key)).toEqual(
+        [],
+      );
     },
   );
+
+  it('каждый роут-метод под гвардом либо назван в ANONYMOUS_BY_DESIGN', () => {
+    const unprotected = METHOD_CHECKED.flatMap(methodsOf)
+      .filter((m) => !m.guard && !ANONYMOUS_BY_DESIGN[m.key])
+      .map((m) => m.key);
+    expect(unprotected).toEqual([]);
+  });
+
+  it('в ANONYMOUS_BY_DESIGN нет протухших записей (метод есть и без гварда)', () => {
+    const anonymousNow = new Set(
+      METHOD_CHECKED.flatMap(methodsOf)
+        .filter((m) => !m.guard)
+        .map((m) => m.key),
+    );
+    const stale = Object.keys(ANONYMOUS_BY_DESIGN).filter(
+      (k) => !anonymousNow.has(k),
+    );
+    expect(stale).toEqual([]);
+  });
+
+  it('у каждой записи ANONYMOUS_BY_DESIGN есть причина', () => {
+    for (const [key, reason] of Object.entries(ANONYMOUS_BY_DESIGN)) {
+      expect({ key, ok: reason.length >= 20 }).toEqual({ key, ok: true });
+    }
+  });
 
   it('нет контроллеров вне классификации (новый = защити или внеси в allowlist)', () => {
     const unclassified = CONTROLLERS.filter((rel) => {
@@ -74,5 +116,9 @@ describe('трипваер: каждый контроллер защищён (gu
     // 4 → 5: +booking-calendar-admin.controller.ts — контракт «Календарь
     // слотов в админке», тот же x-admin-key, обоснование в ADMIN_KEY_GATED.
     expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(5);
+    // 14 (2026-10): реестр только назвал уже существующие анонимные методы
+    // guarded-контроллеров (вход, OAuth-колбэки, восстановление, refresh,
+    // logout, poll тикета). Может только сокращаться.
+    expect(Object.keys(ANONYMOUS_BY_DESIGN).length).toBeLessThanOrEqual(14);
   });
 });

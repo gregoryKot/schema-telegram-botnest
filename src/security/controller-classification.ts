@@ -1,9 +1,8 @@
-// Общая классификация *.controller.ts — guarded (A) / admin-key-gated (B) /
-// public-by-design (C). Единственный источник правды для двух трипваеров
-// (route-auth.invariants.spec.ts и e2e-route-coverage.invariants.spec.ts):
-// правило №4 CLAUDE.md запрещает денормализованные копии без сверки — если
-// бы у каждого спека была своя копия PUBLIC_BY_DESIGN/ADMIN_KEY_GATED, они
-// могли бы разойтись (один спек «забыл» новый публичный контроллер).
+// Классификация *.controller.ts — guarded (A) / admin-key-gated (B) /
+// public-by-design (C): единственный источник правды для двух трипваеров
+// (route-auth и e2e-route-coverage; правило №4 — копий без сверки нет).
+// Анонимные методы внутри guarded-файлов — в anonymous-routes.ts.
+export { ANONYMOUS_BY_DESIGN } from './anonymous-routes';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';

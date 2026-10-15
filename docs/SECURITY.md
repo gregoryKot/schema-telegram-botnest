@@ -394,6 +394,11 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 - **Обход авторизации** (`src/security/route-auth.invariants.spec.ts`):
   каждый контроллер под guard, либо admin-key на каждом методе, либо в
   явном публичном allowlist. Новый контроллер без защиты роняет тест.
+  Единица учёта — **метод** (разбор через AST, `src/test-support/route-method-auth.ts`):
+  в guarded-контроллере каждый роут-метод либо под гвардом (на классе или на
+  методе), либо назван в `ANONYMOUS_BY_DESIGN` (`src/security/anonymous-routes.ts`,
+  14 записей с причиной, список только сокращается; протухшая запись роняет
+  тест). Для admin-key — `assertAdminKey(` в теле каждого метода.
 - **Инъекции/RCE/pollution** (`src/security/injection.invariants.spec.ts`):
   бан eval/Function/child_process; `*RawUnsafe` только с литералом;
   `Prisma.raw` всегда через whitelist `ident()`; `__proto__` не загрязняет
