@@ -102,13 +102,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`Dockerfile:107-108` смотрит `r.ok`, а не `"status":"ok"`), смок видит это
   через `grep`, DM нет, счётчика рестартов в `/health` нет.
   [Секция «Прод и деплой»](AUDIT_2026-10_FINDINGS.md#прод-и-деплой).
-- **Nightly `mutation-golden-auth` красный с 10-04, issue #614 без владельца**
-  (10-12 заведена #642 с той же причиной). `security-log.service.ts` 95.74% →
-  65.71%: десять из двенадцати выживших — статические мутанты `ALERT_EVENTS`,
-  судимые чужим спеком через `jest.isolateModules` (#605); настоящих дыр две
-  (`merge_subscription_conflict`, `empty_signature` не в спеке).
-  `src/auth/security-log-redact.ts` (#625) не в `mutate` ни одного
-  stryker-конфига. [Секция «Наблюдатели и CI»](AUDIT_2026-10_FINDINGS.md#наблюдатели-и-ci).
 - **Login-CSRF: три ручки входа ставят refresh-куку без `requireCsrf`** —
   `auth-account.controller.ts:143-173` (`telegram/webapp`), `auth-max.controller.ts:36-76`,
   `auth-ticket.controller.ts:126-159`; глобальный `urlencoded` в `main.ts:140`
@@ -548,6 +541,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   спиннером в 28 местах при нуле в мини-аппе ([AUDIT_2026-10, «Фронтенды и UX»](AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
 
 **Тесты и даты — открыто:**
+- **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
+  (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
+  `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
+  `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
+  и другие). Гейт `check-mutation-zone.mjs` (#614) не даёт выпасть новому,
+  а этим двадцати одному ничего не мешает остаться за кадром: включать их в
+  `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
+  волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
+  `merge-subscriptions` (деньги и сессии).
 - Воскресный прогон `nightly.yml` (крон `0 4 * * 0`) гоняет только
   `mutation-bot`, и его зелёный закрывает issue `ci-alarm`, а проба
   самопроверки `ciRuns` (`src/infra/self-check/probe-ci-runs.ts` берёт
