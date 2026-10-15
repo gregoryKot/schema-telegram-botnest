@@ -172,6 +172,17 @@ describe('SubscribePage — управление подпиской по ток�
   });
 });
 
+// security#27: Вебвизор визитки не должен писать ввод email (политика
+// конфиденциальности обещает обратное) — метка ym-disable-keys, как у формы записи.
+describe('SubscribePage — Вебвизор не пишет ввод', () => {
+  it('поле email несёт ym-disable-keys', async () => {
+    render(<SubscribePage />);
+    const email = (await screen.findByPlaceholderText('Email для чека (необязательно)')) as HTMLInputElement;
+    expect(email.type).toBe('email');
+    expect(email.className).toContain('ym-disable-keys');
+  });
+});
+
 describe('SubscribePage — отмена подписки (отказ не глотается, аудит 2026-10-11 frontends#0)', () => {
   const ACTIVE = { status: 'active', period: 'month', amount: 299, nextChargeAt: '2026-11-01T00:00:00Z' };
 

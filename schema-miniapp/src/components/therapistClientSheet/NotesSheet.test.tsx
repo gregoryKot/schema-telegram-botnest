@@ -10,6 +10,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { NotesSheet } from './NotesSheet';
 import type { ClientDetail } from './types';
+import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 
 afterEach(() => {
   cleanup();
@@ -128,5 +129,35 @@ describe('NotesSheet — закрытие', () => {
     render(<NotesSheet detail={makeDetail({ setShowNotesSheet })} />);
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(setShowNotesSheet).toHaveBeenCalledWith(false);
+  });
+});
+
+// backend#29: заметка сессии на 6000 знаков раньше «сохранялась» на 5000 —
+// сервер молча резал хвост. Предел теперь один (SESSION_NOTE_MAX = @MaxLength
+// в DTO), и поле показывает его до отправки.
+describe('NotesSheet — предел длины заметки', () => {
+  const placeholder =
+    'Заметка сессии: наблюдения, гипотезы, динамика, план следующей встречи...';
+
+  it('textarea.maxLength = предел из shared; пока текста мало, счётчика нет', () => {
+    render(<NotesSheet detail={makeDetail({ newNoteText: 'коротко' })} />);
+    const area = screen.getByPlaceholderText(placeholder);
+    expect(area.maxLength).toBe(SESSION_NOTE_MAX);
+    expect(screen.queryByText(/Осталось знаков/)).toBeNull();
+  });
+
+  it('у границы показывает остаток, на пределе — сообщение о пределе', () => {
+    const { rerender } = render(
+      <NotesSheet
+        detail={makeDetail({ newNoteText: 'а'.repeat(SESSION_NOTE_MAX - 100) })}
+      />,
+    );
+    expect(screen.getByText(/Осталось знаков: 100/)).toBeTruthy();
+    rerender(
+      <NotesSheet
+        detail={makeDetail({ newNoteText: 'а'.repeat(SESSION_NOTE_MAX) })}
+      />,
+    );
+    expect(screen.getByText(/Достигнут предел/)).toBeTruthy();
   });
 });
