@@ -124,6 +124,44 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
   после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
   Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
+- **Dependabot: доводка бот-PR (процедура и решения владельца).** Конфиг
+  `.github/dependabot.yml` теперь покрывает все пять lock-файлов (сверка —
+  `src/test-support/gates/dependabot-coverage.spec.ts`), мажоры идут семейными
+  группами (Nest, Stryker, Vitest), `/game` берёт только патчи. Бот-PR красен по
+  построению, гейты для него не ослаблены (правило №15). Агент, закончивший свою
+  задачу, доводит их вручную, по одной группе:
+  (а) **мини-апп** (красный «dist устарел»): в ветке бота
+  `npm ci --prefix schema-miniapp && npm run build --prefix schema-miniapp`,
+  закоммитить `schema-miniapp/dist`. После пуша бот эту ветку больше не
+  ребейзит;
+  (б) **webapp** (бандл-храповик): `node scripts/check-bundle-size-ratchet.mjs
+  --update` после сборки, в теле коммита назвать, какие пакеты и на сколько КБ
+  выросло (правило №15 п.3). Храповик меряет и закоммиченный dist мини-аппа,
+  поэтому PR мини-аппа после пересборки тоже может потребовать `--update`;
+  (в) **мажоры**: по семейным группам; Nest 12 — отдельная задача, не механика;
+  (г) **PR с `@nestjs/throttler` 6.7.1** (ветка бота, #670): после ребейза на
+  `main` с этой починкой джоба backend зеленеет (контроль в
+  `memory-throttle-reset.spec.ts` не зависит от версии; прод с #677 считает хиты
+  в своём `MemoryThrottleStorage`, без таймеров библиотеки).
+  **Решает владелец:** (1) включить Dependabot alerts и security updates
+  (Settings → Code security): сейчас `dependabot/alerts` отвечает 403
+  «disabled», а три high в `game` (postcss, source-map-js под vite) version
+  update не чинит; (2) `allow_auto_merge` и required checks на `main`, если нужен
+  автомерж групп minor/patch; (3) PAT для воркфлоу, который сам пересобирает
+  `schema-miniapp/dist` в ветке бота (пуш через `GITHUB_TOKEN` CI не
+  перезапускает); (4) лейблы `dependencies`/`frontend`/`ci`: пока их нет, ключей
+  `labels:` в конфиге тоже нет; (5) переезд на Nest 12, Stryker 10, Vitest 5 и
+  решение, держать ли мажоры открытыми.
+  **После мержа проверить на GitHub:** Insights → Dependency graph → Dependabot
+  без ошибок конфигурации, на ближайшем недельном тике появился PR для
+  `/shared`. Схему файла офлайн не проверить, тест ловит только структуру.
+  Бот закроет текущие PR как superseded и откроет новые: шум на один тик.
+  **Сознательно не сделано:** проба самопроверки «бот-PR старше 7 дней» (новая
+  внешняя проба, правило №21, отдельный PR); audit-шаги для `shared` и `game` в
+  `ci.yml` (`npm audit` смотрит только корень, отдельная находка); одна запись
+  `directories:` на три фронтенда (один PR красил бы сразу webapp, мини-апп и
+  shared, доводить его тяжелее; vitest-мажор приходит тремя PR с одним именем
+  группы, мержить их надо одним заходом, правило №3).
 - **Telegram Web: нет браузерного теста и метрики платформы запуска.** Заголовок
   `frame-ancestors` теперь строится из реестра `src/security/embedders.ts` и
   проверен supertest'ом (`src/security/frame-ancestors.invariants.spec.ts`), но
