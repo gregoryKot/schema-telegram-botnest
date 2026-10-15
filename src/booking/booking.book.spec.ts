@@ -11,6 +11,7 @@ import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z'); // понедельник, 00:00 UTC
 const RULE = {
@@ -145,18 +146,38 @@ describe('BookingService.book — валидация до транзакции',
     ).rejects.toThrow('OFFER_NOT_ACCEPTED');
   });
 
-  it('returning=true без личной встречи — CLIENT_NOT_FOUND', async () => {
-    const { service, meeting } = makeService();
-    meeting.hasMeetingForContact.mockResolvedValue(false);
-    await expect(
-      service.book({
-        ...BASE_DTO,
-        returning: true,
-        startsAt: INSIDE_WINDOW,
-        durationMin: 50,
-        type: SessionType.SESSION_50,
-      }),
-    ).rejects.toThrow('CLIENT_NOT_FOUND');
+  // security#19 (аудит 2026-10): ответ не должен выдавать, клиент ли этот контакт.
+  const RETURNING_DTO = {
+    ...BASE_DTO,
+    returning: true,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+
+  it('returning=true без личной встречи — бронь создаётся как первая, ответ тот же, что у найденного контакта; админу уходит пометка', async () => {
+    const stranger = makeService({ robokassaEnabled: true });
+    stranger.meeting.hasMeetingForContact.mockResolvedValue(false);
+    const known = makeService({ robokassaEnabled: true });
+    known.meeting.hasMeetingForContact.mockResolvedValue(true);
+
+    const rStranger = await stranger.service.book(RETURNING_DTO);
+    const rKnown = await known.service.book(RETURNING_DTO);
+
+    expect(rStranger.status).toBe(rKnown.status);
+    expect(Object.keys(rStranger).sort()).toEqual(Object.keys(rKnown).sort());
+    // Цена — первой встречи: тип брони тот же, что у обычной записи на сессию.
+    expect(stranger.pricing.getPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+    );
+    expect(stranger.notify.onAwaitingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ clientContact: BASE_DTO.clientContact }),
+      RETURNING_NOT_FOUND_NOTE,
+    );
+    expect(known.notify.onAwaitingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ clientContact: BASE_DTO.clientContact }),
+      undefined,
+    );
   });
 
   it('INTRO_15 с returning=true (старый клиент) — returning игнорируется, бронь создаётся без проверки личной встречи', async () => {
