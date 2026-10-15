@@ -3,8 +3,10 @@
 -- active/pending), завершаются. Иначе клиент продолжает видеть бывшего
 -- терапевта в «Моём терапевте». Колонки updatedAt у TherapyRelation нет,
 -- прочих NOT NULL без дефолта UPDATE не касается. Идемпотентно: повторный
--- прогон не находит строк.
+-- прогон не находит строк. Офлайн-клиенты (clientId IS NULL и virtualClientName
+-- задан) не трогаются: это записи самого терапевта, стороны клиента у них нет.
 UPDATE "TherapyRelation"
 SET "status" = 'ended'
 WHERE "status" IN ('active', 'pending')
+  AND ("clientId" IS NOT NULL OR "virtualClientName" IS NULL)
   AND "therapistId" IN (SELECT "id" FROM "User" WHERE "role" <> 'THERAPIST');

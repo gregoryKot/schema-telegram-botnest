@@ -201,7 +201,12 @@ describe('AccountService — режим/роль терапевта', () => {
     // backend#33: связи терапевта (активные и неиспользованные приглашения)
     // завершаются в той же транзакции, а не удаляются.
     expect(relUpdateMany).toHaveBeenCalledWith({
-      where: { therapistId: uid, status: { in: ['pending', 'active'] } },
+      where: {
+        therapistId: uid,
+        status: { in: ['pending', 'active'] },
+        // Офлайн-клиенты не завершаются (Step D слияния стёр бы их концептуализации).
+        OR: [{ clientId: { not: null } }, { virtualClientName: null }],
+      },
       data: { status: 'ended' },
     });
   });

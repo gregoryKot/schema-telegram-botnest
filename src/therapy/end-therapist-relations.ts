@@ -12,6 +12,13 @@ import { Prisma } from '@prisma/client';
 // getClients/assertRelation/getRelationInfo смотрят только на `active`, а новая
 // связь появляется лишь через новое приглашение.
 //
+// Офлайн-клиенты (clientId NULL, virtualClientName задан) НЕ завершаются: у них
+// нет стороны клиента, которая видела бы бывшего терапевта, и нет согласия,
+// которое можно нарушить. Это записи самого терапевта — концептуализации и
+// задания висят на -TherapyRelation.id, а Step D слияния аккаунтов удаляет
+// концептуализации виртуальных клиентов без active-связи. После повторного
+// одобрения роли терапевт получает свой офлайн-список обратно.
+//
 // `pending` завершается тоже: неиспользованный код-приглашение бывшего
 // терапевта иначе мог бы принять клиент (joinTherapyAsClient роли не сверяет).
 //
@@ -21,7 +28,12 @@ export async function endTherapistRelations(
   therapistId: bigint,
 ): Promise<number> {
   const res = await tx.therapyRelation.updateMany({
-    where: { therapistId, status: { in: ['pending', 'active'] } },
+    where: {
+      therapistId,
+      status: { in: ['pending', 'active'] },
+      // Не офлайн-клиент: есть настоящий клиент либо это приглашение без имени.
+      OR: [{ clientId: { not: null } }, { virtualClientName: null }],
+    },
     data: { status: 'ended' },
   });
   return res.count;

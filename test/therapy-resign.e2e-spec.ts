@@ -5,9 +5,13 @@
 // роли мгновенно оживляло все связи без согласия клиентов.
 //
 // Гоняется дважды: на фейковой Prisma (джоба backend) и на живом Postgres
-// (E2E_REAL_DB=1, джоба migrations): updateMany по `status IN (…)`, enum
-// `ended` и вложенный фильтр по роли терапевта — то, что фейк уже расходился
-// с базой.
+// (E2E_REAL_DB=1, джоба migrations): updateMany по `status IN (…)` с OR по
+// офлайн-клиенту и enum `ended` — то, где фейк уже расходился с базой. Проверка
+// роли терапевта у клиента живёт в коде (getRelationInfo), не во вложенном where.
+//
+// Офлайн-клиенты (virtualClientName) при отказе от роли НЕ завершаются: у них
+// нет стороны клиента, а Step D слияния аккаунтов удаляет концептуализации
+// виртуальных клиентов без active-связи.
 //
 // Действующие лица: терапевт T (отказывается), клиент C (только у T), клиент
 // X (у T и у T2 — строка второго терапевта пишется в БД напрямую, через API её
@@ -19,6 +23,7 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { MergeService } from '../src/auth/merge.service';
 import { TherapistRequestService } from '../src/therapy/therapist-request.service';
 
 const ADMIN = 4_400_000_000_009n;
@@ -33,12 +38,19 @@ describe('e2e: отказ от роли терапевта завершает с
   let app: INestApplication;
   let prisma: TestApp['prisma'];
   let staleCode = '';
-  const ENDED_ALL = [
+  // C, X — ended; приглашение (null:ended) — ended; офлайн-клиент V (null:active) жив.
+  const AFTER_RESIGN = [
     `${C}:ended`,
     `${X}:ended`,
     'null:ended',
-    'null:ended',
+    'null:active',
   ].sort();
+  const virtualId = async () =>
+    (await prisma.therapyRelation.findMany({ where: { therapistId: T } })).find(
+      (r) => r.virtualClientName,
+    )!.id;
+
+  const liveOnly = process.env.E2E_REAL_DB ? it : it.skip;
 
   const act = (userId: bigint) => {
     const token = signAccessToken(userId, process.env.JWT_SECRET as string);
@@ -72,7 +84,7 @@ describe('e2e: отказ от роли терапевта завершает с
     (await act(who).get('/api/therapy/relation')).body.partnerId ?? null;
   const statuses = async (therapistId: bigint) =>
     (await prisma.therapyRelation.findMany({ where: { therapistId } }))
-      .map((r: any) => `${r.clientId ?? 'null'}:${r.status}`)
+      .map((r) => `${r.clientId ?? 'null'}:${r.status}`)
       .sort();
 
   beforeAll(async () => {
@@ -96,8 +108,11 @@ describe('e2e: отказ от роли терапевта завершает с
         status: 'active',
       },
     });
-    // Офлайн-клиент и неиспользованное приглашение терапевта T.
+    // Офлайн-клиент (с концептуализацией) и неиспользованное приглашение T.
     await act(T).post('/api/therapy/clients/virtual', { name: 'V' });
+    await prisma.clientConceptualization.create({
+      data: { therapistId: T, clientId: BigInt(-(await virtualId())) },
+    });
     staleCode = (await act(T).post('/api/therapy/invite')).body.code;
     // Данные терапевта (карта режимов) — их resign трогать не должен.
     const map = await act(T).post(`/api/therapy/mode-maps/${Number(C)}`, {
@@ -118,12 +133,12 @@ describe('e2e: отказ от роли терапевта завершает с
     expect(await partnerOf(C)).toBe(Number(T));
   });
 
-  it('DELETE therapist-role: роль CLIENT, все связи T (и приглашение) ended, чужие живы', async () => {
+  it('DELETE therapist-role: роль CLIENT, связи T с клиентами и приглашение ended, офлайн-клиент и чужие живы', async () => {
     const r = await act(T).del('/api/therapy/therapist-role');
     expect(r.status).toBe(200);
     const me = await prisma.user.findUnique({ where: { id: T } });
     expect(me.role).toBe('CLIENT');
-    expect(await statuses(T)).toEqual(ENDED_ALL);
+    expect(await statuses(T)).toEqual(AFTER_RESIGN);
     // Контроль: связи другого терапевта не тронуты.
     expect(await statuses(T2)).toEqual([`${D}:active`, `${X}:active`].sort());
   });
@@ -147,6 +162,26 @@ describe('e2e: отказ от роли терапевта завершает с
     ).toBe(1);
   });
 
+  // Слияние аккаунтов — сырой SQL (Step D), фейк его не исполнит (правило №18).
+  // Регрессия ревью: Step D удаляет концептуализации виртуальных клиентов без
+  // active-связи, поэтому resign не должен завершать офлайн-клиентов.
+  liveOnly(
+    'слияние аккаунтов бывшего терапевта не стирает концептуализацию офлайн-клиента',
+    async () => {
+      const MERGED = 4_400_000_000_100n;
+      const where = {
+        therapistId: T,
+        clientId: BigInt(-(await virtualId())),
+      };
+      expect(await prisma.clientConceptualization.count({ where })).toBe(1);
+      await prisma.user.create({ data: { id: MERGED } });
+      // T — цель слияния: Step D чистит строки именно цели.
+      await app.get(MergeService).merge(MERGED, T);
+      expect(await prisma.clientConceptualization.count({ where })).toBe(1);
+      await cleanupOwnershipFixtures(prisma, [MERGED]);
+    },
+  );
+
   it('старое приглашение бывшего терапевта больше не принимается', async () => {
     const join = await act(D).post('/api/therapy/join', { code: staleCode });
     expect(join.body).not.toEqual({ ok: true });
@@ -157,26 +192,28 @@ describe('e2e: отказ от роли терапевта завершает с
     ).toBe(1);
   });
 
-  it('повторная заявка + approve не воскрешает связи: клиентов нет, C отключён', async () => {
+  it('повторная заявка + approve не воскрешает связи с клиентами: C отключён, офлайн-клиент на месте', async () => {
     await becomeTherapist(T);
     const clients = await act(T).get('/api/therapy/clients');
     expect(clients.status).toBe(200);
-    expect(clients.body).toEqual([]);
+    expect(clients.body).toHaveLength(1);
+    expect(clients.body[0]).toMatchObject({ name: expect.any(String) });
     expect(await partnerOf(C)).toBeNull();
-    expect(await statuses(T)).toEqual(ENDED_ALL);
+    expect(await statuses(T)).toEqual(AFTER_RESIGN);
   });
 
   it('новая связь — только через новое приглашение', async () => {
     await connect(T, C);
     expect(await partnerOf(C)).toBe(Number(T));
     const clients = await act(T).get('/api/therapy/clients');
-    expect(clients.body.map((c: any) => c.telegramId)).toEqual([Number(C)]);
+    expect(
+      clients.body.map((c: { telegramId: number | null }) => c.telegramId),
+    ).toContain(Number(C));
   });
 
   // Бэкфил для строк, осиротевших ДО появления статуса `ended`. SQL читается из
   // самой миграции (а не копируется в тест) и исполняется настоящей базой —
   // фейк SQL не исполняет (правило №18), поэтому только E2E_REAL_DB=1.
-  const liveOnly = process.env.E2E_REAL_DB ? it : it.skip;
   liveOnly(
     'миграция-бэкфил завершает связи не-терапевтов и не трогает живые',
     async () => {
@@ -199,15 +236,28 @@ describe('e2e: отказ от роли терапевта завершает с
       await prisma.therapyRelation.create({
         data: { code: 'ORPHAN-P', therapistId: Z, status: 'pending' },
       });
+      // Офлайн-клиент бывшего терапевта бэкфилом не затрагивается.
+      await prisma.therapyRelation.create({
+        data: {
+          code: 'ORPHAN-V',
+          therapistId: Z,
+          status: 'active',
+          virtualClientName: 'V',
+        },
+      });
       // Сначала защита чтения: клиент K уже не видит Z, хотя строка active.
       expect(await partnerOf(K)).toBeNull();
       await prisma.$executeRawUnsafe(sql);
-      expect(await statuses(Z)).toEqual([`${K}:ended`, 'null:ended'].sort());
+      expect(await statuses(Z)).toEqual(
+        [`${K}:ended`, 'null:ended', 'null:active'].sort(),
+      );
       // Контроль: связи действующего терапевта T2 (role THERAPIST) не тронуты.
       expect(await statuses(T2)).toEqual([`${D}:active`, `${X}:active`].sort());
       // Идемпотентность: повторный прогон ничего не меняет.
       await prisma.$executeRawUnsafe(sql);
-      expect(await statuses(Z)).toEqual([`${K}:ended`, 'null:ended'].sort());
+      expect(await statuses(Z)).toEqual(
+        [`${K}:ended`, 'null:ended', 'null:active'].sort(),
+      );
     },
   );
 });
