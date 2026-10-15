@@ -102,12 +102,12 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
     return <>{fallback}</>;
   }
 
-  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} />;
+  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} message={message} />;
   if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
     <DoneScreen
       resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
-      sessionType={sessionType} onCancelled={() => setCancelled(true)}
+      sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message}
     />
   );
 

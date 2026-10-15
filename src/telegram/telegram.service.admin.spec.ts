@@ -13,7 +13,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
   const botService = {
     getUserSettings: jest.fn().mockResolvedValue(null),
     hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
-    cancelAllPreReminders: jest.fn().mockResolvedValue(0),
     ...overrides.botService,
   };
   const analyticsService = {
@@ -127,7 +126,7 @@ describe('TelegramService — BOT_REDIRECT_USERNAME (режим переезда
     // иначе юзер получал бы и старое поведение, и редирект одновременно.
     expect(fakeBot.commands.has('start')).toBe(false);
     expect(fakeBot.bot.launch).toHaveBeenCalledWith({
-      dropPendingUpdates: true,
+      dropPendingUpdates: false,
     });
   });
 

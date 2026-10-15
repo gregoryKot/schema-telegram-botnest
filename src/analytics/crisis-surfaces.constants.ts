@@ -1,7 +1,5 @@
-// Экран, на котором показалась кризисная карточка (meta.surface для
-// crisis_*). Без свободного текста — только перечислимый источник (правило №7
-// CLAUDE.md). Вынесено из analytics.constants.ts отдельным файлом (правило
-// №10 — тот файл держим ≤201 строки).
+// Экран, где показалась кризисная карточка (meta.surface для crisis_*): только
+// перечислимый источник, без свободного текста (правило №7). Файл — правило №10.
 //   schema       — заметка к схеме;
 //   mode         — заметка к режиму;
 //   gratitude    — практика благодарности;
@@ -13,7 +11,8 @@
 //   belief_check — проверка убеждения;
 //   flashcard    — карточки-упражнения (schema flashcard);
 //   task         — своё задание/цель (TaskCreateSheet, тип custom);
-//   phrase_check — «Критик или забота?» (PhraseCheck, RewriteStep, HistoryCard).
+//   phrase_check — «Критик или забота?» (PhraseCheck, RewriteStep, HistoryCard);
+//   booking      — поле «Запрос» и экран «Заявка отправлена» на визитке.
 export const CRISIS_SURFACES = [
   'schema',
   'mode',
@@ -27,6 +26,7 @@ export const CRISIS_SURFACES = [
   'flashcard',
   'task',
   'phrase_check',
+  'booking',
 ] as const;
 
 export type CrisisSurface = (typeof CRISIS_SURFACES)[number];

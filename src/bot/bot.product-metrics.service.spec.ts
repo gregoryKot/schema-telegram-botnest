@@ -54,6 +54,8 @@ describe('ProductMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
       .mockResolvedValueOnce(3) // crisis_hotline_tapped
+      .mockResolvedValueOnce(5) // crisis_card_shown, surface=booking
+      .mockResolvedValueOnce(2) // crisis_hotline_tapped, surface=booking
       .mockResolvedValueOnce(12) // share_card total7
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
@@ -122,7 +124,11 @@ describe('ProductMetricsService.getMetrics', () => {
         { kind: 'schema', count: 3 },
       ],
     });
-    expect(m.crisis).toEqual({ shown: 12, hotlineTapped: 3 });
+    expect(m.crisis).toEqual({
+      shown: 12,
+      hotlineTapped: 3,
+      booking: { shown: 5, hotlineTapped: 2 },
+    });
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
@@ -321,7 +327,11 @@ const EMPTY_METRICS = {
   sections: [],
   themes: { light: 0, dark: 0, system: 0 },
   shareCard: { total7: 0, total30: 0, byKind30: [] },
-  crisis: { shown: 0, hotlineTapped: 0 },
+  crisis: {
+    shown: 0,
+    hotlineTapped: 0,
+    booking: { shown: 0, hotlineTapped: 0 },
+  },
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
   today: {

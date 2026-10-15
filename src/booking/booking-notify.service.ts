@@ -17,7 +17,7 @@ import {
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
-interface PlainBooking {
+export interface PlainBooking {
   id: number;
   startsAt: Date;
   durationMin: number;

@@ -35,7 +35,11 @@ const FULL: ProductMetrics = {
       { kind: 'schema', count: 3 },
     ],
   },
-  crisis: { shown: 12, hotlineTapped: 3 },
+  crisis: {
+    shown: 12,
+    hotlineTapped: 3,
+    booking: { shown: 5, hotlineTapped: 2 },
+  },
   shareResult: { ok: 35, fallback: 5 },
   outbox: { flushes: 8, recovered: 21 },
   today: {
@@ -66,7 +70,11 @@ const EMPTY: ProductMetrics = {
   sections: [],
   themes: { light: 0, dark: 0, system: 0 },
   shareCard: { total7: 0, total30: 0, byKind30: [] },
-  crisis: { shown: 0, hotlineTapped: 0 },
+  crisis: {
+    shown: 0,
+    hotlineTapped: 0,
+    booking: { shown: 0, hotlineTapped: 0 },
+  },
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
   today: {
@@ -135,6 +143,22 @@ describe('formatProductMetrics', () => {
     for (const step of ONBOARDING_STEPS) {
       expect(t).not.toContain(step);
     }
+  });
+
+  it('карточка помощи: всего и отдельно из формы записи, простыми словами', () => {
+    const t = formatProductMetrics(FULL);
+    expect(t).toContain(
+      'Показали: 12 · позвонили по телефону доверия: 3 (из них в форме записи на консультацию: показали 5, позвонили 2)',
+    );
+    expect(t).not.toMatch(/surface|booking|crisis/i);
+  });
+
+  it('карточка помощи на пустой БД: нули словами, без NaN/undefined', () => {
+    const t = formatProductMetrics(EMPTY);
+    expect(t).toContain(
+      'Показали: 0 · позвонили по телефону доверия: 0 (из них в форме записи на консультацию: показали 0, позвонили 0)',
+    );
+    expect(t).not.toMatch(/NaN|undefined/);
   });
 
   it('пустая БД: без NaN и без «висящих» процентов', () => {
