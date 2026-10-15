@@ -71,6 +71,10 @@ export class BotLauncher {
     this.attempt();
   }
 
+  /**
+   * Цикл, который уже идёт, рвёт владелец (`bot.stop()`); цикл, который
+   * поднимет попытка в полёте, гасит watchGetUpdates — см. там.
+   */
   stop(): void {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
@@ -87,6 +91,12 @@ export class BotLauncher {
    * limit: 1} без `timeout` (syncUpdateOffset): он проходит и у падающего
    * цикла, и если засчитывать его, счётчик подряд идущих неудач обнуляется
    * перед каждым onFailure — до error (DM владельцу) дело не доходит.
+   *
+   * Long-poll после stop() обрывается до сети. Попытка, начатая до stop()
+   * (getMe/deleteWebhook в полёте), доходит до поллинга уже после него: тогда
+   * `bot.stop()` владельца гасил прежний, уже мёртвый цикл, а новый жил
+   * вечно — на сетевой ошибке Telegraf ретраит getUpdates раз в 5 с без
+   * конца. Так ночной jest не выходил после всех тестов (ci-alarm #672).
    */
   private watchGetUpdates(): void {
     const tg = this.bot.telegram as unknown as
@@ -94,6 +104,9 @@ export class BotLauncher {
     const original = tg?.callApi;
     if (!tg || !original) return;
     tg.callApi = async (...args: unknown[]) => {
+      // Long-poll зовёт уже созданный цикл, поэтому bot.stop() рвёт именно
+      // его; запрос с оборванным сигналом в сеть не уходит (AbortError).
+      if (this.stopped && isLongPoll(args)) this.bot.stop('BotLauncher.stop');
       const result: unknown = await original.call(tg, ...args);
       if (isLongPoll(args) && !this.stopped) {
         this.failures = 0;

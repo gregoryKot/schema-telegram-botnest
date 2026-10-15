@@ -26,7 +26,10 @@ jobs:
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Установка (~1 мин) + сумма timeout-minutes шагов ниже: зависший шаг
+    # падает сам, со своей причиной, раньше, чем джобу снимут целиком
+    # (сверка — src/test-support/gates/nightly-jest-steps.spec.ts).
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -37,18 +40,35 @@ jobs:
       - run: npx prisma generate
       # Три подряд прогона одного и того же набора: флаки, воспроизводимый
       # раз в 2-3 запуска, красит хотя бы один из трёх.
+      #
+      # Каждый jest — через scripts/jest-exit-guard.mjs. Он роняет шаг с
+      # причиной: утечка («A worker process has failed to exit gracefully» —
+      # тест оставил живой хендл; раньше шаг с этой строкой был зелёным);
+      # процесс не вышел за --exit-grace после сводки «Test Suites: … total»
+      # (с --silent строки «Ran all test suites» jest не печатает, сводка
+      # есть в обоих режимах); ненулевой код при сводке без упавших тестов
+      # (кто-то выставил process.exitCode); бюджет. Обычный прогон здесь
+      # ~1 мин, бюджет — 5.
       - name: jest run1
-        run: npx jest --silent
+        timeout-minutes: 8
+        run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest --silent
       - name: jest run2
-        run: npx jest --silent
+        timeout-minutes: 8
+        run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest --silent
       - name: jest run3
-        run: npx jest --silent
-      # Открытые хендлы (незакрытый таймер/соединение) — частая причина
-      # зависаний в CI, которые не видны при обычном прогоне с --forceExit
-      # по умолчанию. tail -50 — интересен именно хвост со списком хендлов,
-      # не весь вывод сьютов.
-      - name: jest detectOpenHandles (хвост лога — список открытых хендлов)
-        run: npx jest --detectOpenHandles --forceExit=false 2>&1 | tail -50
+        timeout-minutes: 8
+        run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest --silent
+      # Открытые хендлы: один процесс (detectOpenHandles гонит спеки в одном
+      # процессе) и без --forceExit — живой хендл не маскируется выходом
+      # воркера. Список таймеров и дочерних процессов jest печатает сам;
+      # сокеты (сервер, поллинг) в него не попадают, их выдаёт только то, что
+      # процесс не вышел, — сторож ждёт выхода минуту после сводки и роняет
+      # шаг. Вывод идёт в лог сразу: прежний `| tail -50` не печатал
+      # ничего до выхода процесса, и 2026-10-15 шаг молча висел 27 минут до
+      # отмены джобы (ci-alarm #672). Обычный прогон ~2.5 мин, бюджет — 10.
+      - name: jest detectOpenHandles (процесс обязан выйти после тестов)
+        timeout-minutes: 13
+        run: node scripts/jest-exit-guard.mjs --budget 600 --exit-grace 60 -- npx jest --detectOpenHandles
 
   frontend-flaky:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять

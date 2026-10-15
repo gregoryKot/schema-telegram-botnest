@@ -100,6 +100,29 @@ export interface TherapistNote {
   createdAt: string;
 }
 
+/**
+ * Связи одного режима в графической концептуализации (модель режимов):
+ * какими схемами режим питается, какая потребность за ним не встретила
+ * ответа, откуда он, как проявляется сейчас и что с ним делают в терапии.
+ * Хранится массивом в ClientConceptualization.modeLinks (шифруется целиком,
+ * как schemaIds/modeIds). Связь режима, убранного из modeIds, не стирается:
+ * вернул режим — вернулись и его связи.
+ */
+export interface ConceptModeLink {
+  modeId: string;
+  /** Как режим называет сам клиент («Судья», «Маленькая Аня»). */
+  alias: string;
+  schemaIds: string[];
+  /** NeedId из shared/src/needs/types.ts (NEED_ORDER). */
+  needIds: string[];
+  /** Откуда режим: ранний опыт, чей это голос. */
+  origin: string;
+  /** Как проявляется сейчас, к каким проблемам ведёт. */
+  manifest: string;
+  /** Что делаем с режимом в терапии. */
+  strategy: string;
+}
+
 export interface ConceptSnapshot {
   savedAt: string;
   schemaIds: string[];
@@ -111,6 +134,8 @@ export interface ConceptSnapshot {
   goals: string | null;
   currentProblems: string | null;
   modeTransitions?: string | null;
+  /** Снапшоты до графической концептуализации этого поля не несут. */
+  modeLinks?: ConceptModeLink[];
 }
 
 export interface YsqHistoryEntry {

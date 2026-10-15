@@ -41,6 +41,9 @@ describe('StatsReportService.render', () => {
     const profilePattern = {
       render: jest.fn().mockResolvedValue('паттерны со вкладки «Я»: 4'),
     };
+    const conceptGraph = {
+      render: jest.fn().mockResolvedValue('схема случая по режимам: 3'),
+    };
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
     };
@@ -77,6 +80,7 @@ describe('StatsReportService.render', () => {
         siteInstall,
         screen,
         profilePattern,
+        conceptGraph,
         authHealth,
         loginTicket,
         clientErrors,
@@ -100,6 +104,7 @@ describe('StatsReportService.render', () => {
         siteInstall as never,
         screen as never,
         profilePattern as never,
+        conceptGraph as never,
         authHealth as never,
         loginTicket as never,
         clientErrors as never,
@@ -127,7 +132,7 @@ describe('StatsReportService.render', () => {
       'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
-      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nвход в мессенджере: всё хорошо',
+      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
       'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
@@ -222,6 +227,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.siteInstall.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
+    expect(blocks.conceptGraph.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
     expect(blocks.loginTicket.render).toHaveBeenCalledTimes(1);
     expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
@@ -238,6 +244,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('установка с сайта: 8');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('паттерны со вкладки «Я»: 4');
+    expect(out).toContain('схема случая по режимам: 3');
     expect(out).toContain('вход в мессенджере: всё хорошо');
     expect(out).toContain('вход по коду: 74 из 74');
     expect(out).toContain('поломки на клиенте: не было');

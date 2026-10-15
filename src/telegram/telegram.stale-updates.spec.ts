@@ -99,12 +99,17 @@ describe('staleUpdateGuard: кнопки', () => {
   });
 
   it('другая ошибка подтверждения (контроль) пробрасывается как раньше', async () => {
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     jest
       .spyOn(Telegram.prototype, 'callApi')
       .mockRejectedValue(new Error('ETIMEDOUT'));
     const { bot } = makeBot();
-    await expect(bot.handleUpdate(button(1, NOW))).rejects.toThrow('ETIMEDOUT');
+    // Свой bot.catch, а не обработчик Telegraf по умолчанию: тот ставит
+    // process.exitCode = 1, и в одном процессе (--detectOpenHandles в
+    // nightly) jest выходил с кодом 1 при всех зелёных сьютах.
+    const caught: unknown[] = [];
+    bot.catch((err) => void caught.push(err));
+    await bot.handleUpdate(button(1, NOW));
+    expect(caught).toEqual([expect.objectContaining({ message: 'ETIMEDOUT' })]);
   });
 });
 

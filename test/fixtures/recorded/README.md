@@ -77,6 +77,7 @@ jest `rootDir`. См. `src/booking/caldav-discovery.spec.ts` и
 
 | `s3-list-objects-v2-truncated.xml`, `s3-list-objects-v2-prefix.xml` | S3 API, `GET /<бакет>?list-type=2` (ListObjectsV2) — Cloudflare R2 отвечает в том же формате | Примеры ответа из документации AWS (обрезанная страница с курсором и последняя страница с XML-прологом); ими проверяются оба разбора — `src/infra/s3-list-objects.ts` (проба `backupFreshness`) и `S3_LIST_JS` в `scripts/s3-api.sh` (скрипты бэкапа) |
 | `aws-sigv4-test-suite.json` | AWS Signature Version 4 Test Suite (запрос → ожидаемый `Authorization`) | Опубликованные AWS эталоны подписи; ими сверена `src/infra/s3-sigv4.ts`, а через поддельный S3 (`fake-s3.ts`) — и подпись `curl --aws-sigv4` в скриптах бэкапа |
+| `jest-run-output.json` | Вывод jest 30 в двух режимах nightly (`backend-flaky`): воркеры с `--silent` и один процесс с `--detectOpenHandles` | Строки из логов CI (прогоны 38700877351 и 38532509227) и локальных прогонов jest 30.5.1; ими проверяется `scripts/jest-exit-guard.mjs`. Показали, чего не видно по памяти: с `--silent` строки «Ran all test suites» нет, конец прогона — сводка «Test Suites: … total» |
 
 Новый парсер внешнего формата → см. `scripts/check-recorded-fixtures.mjs`
 (требует записи в `scripts/recorded-fixtures-baseline.json`) прежде, чем PR
