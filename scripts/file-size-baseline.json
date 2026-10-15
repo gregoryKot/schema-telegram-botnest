@@ -1187,7 +1187,7 @@
   "src/infra/self-check/probe-telegram.ts": 49,
   "src/infra/self-check/probe-throttle-storage.ts": 33,
   "src/infra/self-check/registry.live.ts": 22,
-  "src/infra/self-check/registry.ts": 24,
+  "src/infra/self-check/registry.ts": 18,
   "src/infra/self-check/runner.ts": 56,
   "src/infra/self-check/self-check.service.ts": 77,
   "src/infra/self-check/state.ts": 44,

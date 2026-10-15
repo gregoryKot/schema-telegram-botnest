@@ -82,9 +82,14 @@ Amvera, они не хранятся. Исчезнут вместе с акка�
 | `PROD_ENV` | все env из Amvera, по строке `KEY=value` |
 
 Формат `PROD_ENV`: как у `docker run --env-file`. Без кавычек, `$` и `#` внутри значений
-остаются как есть. Строки `DATABASE_URL`, `RECOVER_CMD` и `TRANSFER_TARGET_URL`
-сервер отбрасывает сам: адрес базы задаёт `docker-compose.yml`, а две другие запустили
-бы перенос уже на новом сервере. Пока нет `DEPLOY_HOST`, `DEPLOY_SSH_KEY` или
+остаются как есть. Часть имён сервер отбрасывает сам (`write-env` печатает в логе, какие именно):
+`DATABASE_URL` и `NODE_ENV` задаёт `docker-compose.yml` (`environment` сильнее `.env`);
+`RECOVER_CMD`, `MIGRATE_CMD`, `APP_CMD`, `PORT`, `APP_PORT`, `STARTUP_*`, `DB_WAIT_*` и
+`MIGRATE_*` управляют запуском контейнера (команды исполнились бы как есть, порты стоят за
+Caddy), а `TRANSFER_TARGET_URL` запустил бы перенос уже на новом сервере. Полный перечень —
+массивы в начале `deploy/vps/ops.sh`, их сверяет `src/infra/vps-env-deny.spec.ts`. Если после
+деплоя `/health` показывает `selfCheck.failed: ["runtimeMode"]` — прод-образ работает не в
+режиме production, смотреть `PROD_ENV` и env хостинга. Пока нет `DEPLOY_HOST`, `DEPLOY_SSH_KEY` или
 `PROD_ENV`, обе воркфлоу зелёные и ничего не делают.
 
 Сначала смержить PR с этими файлами в `main`: ручные воркфлоу видны в Actions только

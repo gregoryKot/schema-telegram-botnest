@@ -184,25 +184,44 @@ cmd_deploy() {
   die "деплой не удался, джоба красная"
 }
 
+# Имена, которых в .env быть не может. Списки однострочные и отсортированные:
+# src/infra/vps-ops.spec.ts достаёт их регэкспом и сверяет с deploy/*.mjs и
+# docker-compose.yml (правило №4), поэтому не разбивать на несколько строк.
+#
+# Ручки супервизора (deploy/entrypoint.mjs, front-server.mjs, wait-for-db.mjs):
+# команда запуска и миграций, порты за Caddy, повторы и ожидание базы. Из
+# PROD_ENV они не берутся: env_file сильнее ENV образа, и значение отсюда
+# исполнилось бы как команда контейнера, а откат поднимает прежний релиз с тем
+# же .env. Задаются только образом и compose.
+SUPERVISOR_ENV_NAMES=(APP_CMD APP_PORT DB_WAIT_CONNECT_MS DB_WAIT_INTERVAL_MS DB_WAIT_TIMEOUT_MS MIGRATE_BACKOFF_MS MIGRATE_CMD MIGRATE_MAX_ATTEMPTS PORT RECOVER_CMD STARTUP_BACKOFF_MS STARTUP_HEALTHY_MS STARTUP_MAX_FAILS)
+# Значения, которые задаёт docker-compose.yml в `environment` (он сильнее env_file).
+COMPOSE_OWNED_ENV=(DATABASE_URL NODE_ENV)
+# Адрес чужой базы для переноса: с ним скрипт переноса стартовал бы на новом сервере.
+TRANSFER_ENV_NAMES=(TRANSFER_TARGET_URL)
+
 cmd_write_env() {
   umask 077
-  local tmp bad total kept
+  local tmp bad total kept deny dropped
+  local -a denied
   tmp=$(mktemp .env.XXXXXX)
-  # Строки базы и переноса из старого окружения отбрасываем: адрес базы задаёт
-  # docker-compose.yml, а RECOVER_CMD/TRANSFER_TARGET_URL запустили бы перенос
-  # на новом сервере. Пустые строки и комментарии тоже убираем.
+  # Строки из списков выше отбрасываем (по имени целиком, не по подстроке).
+  # Пустые строки и комментарии тоже убираем.
   tr -d '\r' | grep -Ev '^[[:space:]]*(#|$)' > "$tmp" || true
   bad=$(grep -nEv '^[A-Za-z_][A-Za-z0-9_]*=' "$tmp" | cut -d: -f1 | tr '\n' ' ' || true)
   [ -z "$bad" ] || { rm -f "$tmp"; die "в PROD_ENV строки не вида KEY=value (номера строк после чистки: $bad)"; }
   total=$(wc -l < "$tmp")
-  grep -Ev '^(DATABASE_URL|RECOVER_CMD|TRANSFER_TARGET_URL)=' "$tmp" > "$tmp.f" || true
+  denied=("${SUPERVISOR_ENV_NAMES[@]}" "${COMPOSE_OWNED_ENV[@]}" "${TRANSFER_ENV_NAMES[@]}")
+  deny=$(IFS='|'; echo "${denied[*]}")
+  # Только имена: значения секретны, а логи Actions публичны.
+  dropped=$(grep -E "^($deny)=" "$tmp" | cut -d= -f1 | sort -u | paste -sd' ' - || true)
+  grep -Ev "^($deny)=" "$tmp" > "$tmp.f" || true
   mv -f "$tmp.f" "$tmp"
   rm -f "$tmp.f"
   kept=$(wc -l < "$tmp")
   [ "$kept" -gt 0 ] || { rm -f "$tmp"; die "PROD_ENV пуст"; }
   chmod 600 "$tmp"
   mv -f "$tmp" .env
-  log ".env записан: переменных $kept, отброшено $((total - kept)) (DATABASE_URL/RECOVER_CMD/TRANSFER_TARGET_URL)"
+  log ".env записан: переменных $kept, отброшено $((total - kept))${dropped:+: $dropped}"
 }
 
 cmd_status() {
