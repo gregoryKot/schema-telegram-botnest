@@ -1197,7 +1197,7 @@
   "src/infra/unhandled-rejection.ts": 50,
   "src/logger/alert.logger.ts": 67,
   "src/logger/db-outage.ts": 215,
-  "src/main.ts": 144,
+  "src/main.ts": 142,
   "src/notification/address-form.ts": 21,
   "src/notification/notification-payload.crypto.ts": 27,
   "src/notification/notification.buttons.ts": 32,
