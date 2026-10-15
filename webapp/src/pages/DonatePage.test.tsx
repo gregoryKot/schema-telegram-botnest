@@ -122,4 +122,11 @@ describe('DonatePage — Вебвизор не пишет ввод', () => {
     expect(email.type).toBe('email');
     expect(email.className).toContain('ym-disable-keys');
   });
+
+  it('поле суммы несёт ym-disable-keys: политика обещает «поля ввода не записываются» без исключений', () => {
+    render(<DonatePage />);
+    const amount = screen.getByPlaceholderText('Своя сумма, ₽') as HTMLInputElement;
+    expect(amount.type).toBe('number');
+    expect(amount.className).toContain('ym-disable-keys');
+  });
 });

@@ -9,7 +9,7 @@
 // Что проверяет: берёт страницы визитки из `personalRoutes` в
 // webapp/src/App.tsx (и компоненты вокруг них из `Root`), обходит их
 // относительные импорты и требует у каждого текстового <input>/<textarea>
-// метку `ym-disable-keys`. Не требует её у checkbox/radio/range/number/hidden/
+// метку `ym-disable-keys`. Не требует её у checkbox/radio/range/hidden/
 // file/кнопок и у aria-hidden-ловушек (honeypot).
 //
 // Граница обхода — файл с `ym-hide-content`: он объявляет свой корень скрытым

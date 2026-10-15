@@ -653,9 +653,11 @@ plaintext в очереди уведомлений. Нумерация: букв
   (`BookingResultScreens`, `BookingSaveBlock`, `BookingPaidPage`; тест
   `webvisorSecrets.test.tsx` рендерит их с узнаваемыми секретами и сверяет
   реестр файлов с исходниками), allow-list стартовых путей записи
-  (`shouldRecordSession` → `isWebvisorRecordRoute`: `/`, `/articles/*`,
-  `/reviews`) и гейт `scripts/check-webvisor-fields.mjs` (каждое текстовое поле
-  на страницах `personalRoutes` несёт `ym-disable-keys`). Что уже попало в
+  (`shouldRecordSession` + `WEBVISOR_PATHS` в `webapp/src/lib/webvisorRoutes.ts`:
+  `/`, `/articles/*`, `/reviews`) и гейт `scripts/check-webvisor-fields.mjs` (каждое текстовое поле
+  на страницах `personalRoutes` несёт `ym-disable-keys`, включая числовое поле
+  суммы доната: политика обещает «поля ввода не записываются» без исключений).
+  Что уже попало в
   плеер до починки, видно только в кабинете счётчика — у владельца.
 
 #### E-3 · Мёртвая popup-ветка OAuth-колбэка отдавала токен окну-открывателю ✅ Закрыто

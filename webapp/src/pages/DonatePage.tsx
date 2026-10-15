@@ -57,7 +57,7 @@ export function DonatePage() {
                 }}>{p} ₽</button>
               ))}
             </div>
-            <input type="number" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} style={{ ...field, marginBottom: 16 }} placeholder="Своя сумма, ₽" />
+            <input type="number" className="ym-disable-keys" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} style={{ ...field, marginBottom: 16 }} placeholder="Своя сумма, ₽" />
             <input type="email" className="ym-disable-keys" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...field, marginBottom: 20 }} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 

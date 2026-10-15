@@ -3,7 +3,11 @@
 // исхода (CLAUDE.md, «Тестовые храповики и e2e»): краснеет на регрессе и
 // зеленеет на чистом дереве, включая законные случаи — ложно-красный гейт
 // отключают через неделю.
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { runGate } from './gate-sandbox';
+import { importExport } from './pattern-loader';
 
 const APP = `
 import { Navigate } from 'react-router-dom';
@@ -110,6 +114,15 @@ describe('check-webvisor-fields.mjs — краснеет', () => {
     expect(res.stderr).not.toContain('<input className');
   });
 
+  it('number без метки — exit 1: политика обещает «поля ввода не записываются» без исключений (сумма доната)', () => {
+    const res = run({
+      'webapp/src/pages/PayPage.tsx':
+        'export const PayPage = () => <input type="number" min={10} />;\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('PayPage.tsx:1');
+  });
+
   it('data-type не принимается за type (поле с data-type="checkbox") — exit 1', () => {
     const res = run({
       'webapp/src/pages/PayPage.tsx':
@@ -143,11 +156,11 @@ describe('check-webvisor-fields.mjs — зеленеет на законном',
     expect(res.stdout).toContain(OK);
   });
 
-  it('checkbox, radio, range, number, hidden, кнопка и aria-hidden-ловушка не требуют метки', () => {
+  it('checkbox, radio, range, hidden, кнопка и aria-hidden-ловушка не требуют метки', () => {
     const res = run({
       'webapp/src/pages/PayPage.tsx':
         'export const PayPage = () => (<div><input type="checkbox" /><input type="radio" /><input type="range" />' +
-        '<input type="number" /><input type="hidden" /><input type="submit" /><input type="text" aria-hidden="true" tabIndex={-1} /></div>);\n',
+        '<input type="hidden" /><input type="submit" /><input type="text" aria-hidden="true" tabIndex={-1} /></div>);\n',
     });
     expect(res.status).toBe(0);
   });
@@ -169,11 +182,102 @@ describe('check-webvisor-fields.mjs — зеленеет на законном',
     expect(res.status).toBe(0);
   });
 
+  it('number с ym-disable-keys — exit 0', () => {
+    const res = run({
+      'webapp/src/pages/PayPage.tsx':
+        'export const PayPage = () => <input type="number" className="ym-disable-keys" />;\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('недостижимый с визитки файл с полем не краснит гейт', () => {
     const res = run({
       'webapp/src/components/Orphan.tsx':
         'export const Orphan = () => <input type="text" />;\n',
     });
     expect(res.status).toBe(0);
+  });
+});
+
+// Модуль разбора webvisor-fields-scan.mjs исполняется самим тестом, а не только
+// как зависимость песочницы: его логику (тип поля, импорты, резолв) гейт-CLI
+// проверяет лишь косвенно, через итоговый exit-код.
+const SCAN = 'webvisor-fields-scan.mjs';
+const callScan = (exportName: string, args: unknown[]): unknown =>
+  JSON.parse(
+    importExport(SCAN, exportName, `(fn) => fn(...${JSON.stringify(args)})`),
+  );
+
+describe('webvisor-fields-scan.mjs — разбор напрямую', () => {
+  type Field = { line: number; tag: string };
+  const fields = (text: string) =>
+    callScan('unmarkedFields', [text]) as Field[];
+
+  it('unmarkedFields: возвращает строку и тег поля без метки', () => {
+    const out = fields('<div>\n<input type="email" />\n</div>');
+    expect(out).toEqual([{ line: 2, tag: '<input type="email" />' }]);
+  });
+
+  it('unmarkedFields: тип в выражении {"text"} читается как тип, checkbox пропускается', () => {
+    expect(fields('<input type={"checkbox"} />')).toEqual([]);
+    expect(fields('<input type={"text"} />')).toHaveLength(1);
+  });
+
+  it('unmarkedFields: type="number" — текстовое поле (требует метки)', () => {
+    expect(fields('<input type="number" />')).toHaveLength(1);
+    expect(
+      fields('<input type="number" className="ym-disable-keys" />'),
+    ).toEqual([]);
+  });
+
+  it('unmarkedFields: > внутри {выражения} не обрывает тег раньше срока', () => {
+    const out = fields(
+      '<input value={a > b ? 1 : 2} className="ym-disable-keys" />',
+    );
+    expect(out).toEqual([]);
+  });
+
+  describe('резолв файлов и импортов', () => {
+    let root: string;
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), 'wv-scan-'));
+      mkdirSync(join(root, 'a', 'dir'), { recursive: true });
+      writeFileSync(join(root, 'a', 'one.tsx'), '');
+      writeFileSync(join(root, 'a', 'two.ts'), '');
+      writeFileSync(join(root, 'a', 'dir', 'index.tsx'), '');
+      writeFileSync(join(root, 'a', 'style.css'), '');
+    });
+    afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+    it('resolveFile: .tsx, .ts и index.tsx находятся, css и отсутствующий — null', () => {
+      expect(callScan('resolveFile', [root, 'a', './one'])).toBe(
+        join('a', 'one.tsx'),
+      );
+      expect(callScan('resolveFile', [root, 'a', './two'])).toBe(
+        join('a', 'two.ts'),
+      );
+      expect(callScan('resolveFile', [root, 'a', './dir'])).toBe(
+        join('a', 'dir', 'index.tsx'),
+      );
+      expect(callScan('resolveFile', [root, 'a', './style.css'])).toBeNull();
+      expect(callScan('resolveFile', [root, 'a', './nope'])).toBeNull();
+    });
+
+    it('relativeImports: статические, import() и side-effect; пакеты и несуществующие пропускаются', () => {
+      const text = [
+        "import { X } from './one';",
+        "const Y = lazy(() => import('./two'));",
+        "import './dir';",
+        "import React from 'react';",
+        "import { Z } from './nope';",
+      ].join('\n');
+      expect(
+        callScan('relativeImports', [root, join('a', 'host.tsx'), text]),
+      ).toEqual([
+        join('a', 'one.tsx'),
+        join('a', 'two.ts'),
+        join('a', 'dir', 'index.tsx'),
+      ]);
+    });
   });
 });

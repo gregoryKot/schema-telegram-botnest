@@ -6,10 +6,11 @@ import { dirname, join } from 'path';
 import { stripComments } from './gate-strip-comments.mjs';
 
 // Типы поля, где нет ввода текста: Вебвизор пишет только клавиши в текстовых
-// полях, а у этих типов вводимое — выбор/число, не личные данные. `number` — сумма
-// доната, не PII; если в поле number появится телефон/ИНН — тип ошибочен сам по себе.
+// полях, а у этих типов вводимое — выбор, не текст. `number` в списке НЕТ намеренно:
+// политика обещает «содержимое полей ввода не записывается» без исключений, а
+// сумма доната (/donate) доступна без перезагрузки из главной, где запись идёт.
 const NON_TEXT_TYPES = new Set([
-  'checkbox', 'radio', 'range', 'hidden', 'file', 'submit', 'button', 'reset', 'image', 'color', 'number',
+  'checkbox', 'radio', 'range', 'hidden', 'file', 'submit', 'button', 'reset', 'image', 'color',
 ]);
 export const MARKER_KEYS = 'ym-disable-keys';
 export const MARKER_HIDE = 'ym-hide-content';
