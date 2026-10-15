@@ -1,6 +1,6 @@
 {
   "deploy/backup-scheduler.cjs": 239,
-  "deploy/entrypoint.mjs": 172,
+  "deploy/entrypoint.mjs": 170,
   "deploy/front-server.mjs": 113,
   "deploy/pg-url-env.cjs": 64,
   "deploy/threads-relay/worker.js": 56,
