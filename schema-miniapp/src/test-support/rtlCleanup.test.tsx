@@ -11,7 +11,10 @@ const state = { unmounted: false, unmountTimerFired: false };
 // Шов afterAll из setupFiles: aroundAll верхнего уровня оборачивает весь файл,
 // включая afterAll из setup. Таймер, поставленный при размонтировании в
 // последнем тесте, обязан успеть до сноса jsdom (tiptap, CI 2026-10-15).
-// Без afterAll(settleUnmountTimers) в rtlCleanup.ts — красный.
+// Без afterAll(settleUnmountTimers) в rtlCleanup.ts — красный: vitest не отдаёт
+// макрозадачу между последним afterEach и концом aroundAll. Если обновление
+// vitest начнёт её отдавать, пин станет ложно-зелёным: перепроверь его без
+// afterAll.
 aroundAll(async (runSuite) => {
   await runSuite();
   expect(state.unmountTimerFired).toBe(true);

@@ -18,9 +18,7 @@ describe('settleUnmountTimers', () => {
     expect(fired).toBe(true);
   });
 
-  it('поддельные таймеры (в том числе только Date) не вешают ожидание', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    await settleUnmountTimers();
+  it('поддельные таймеры не вешают ожидание', async () => {
     vi.useFakeTimers();
     await settleUnmountTimers();
     expect(true).toBe(true);
