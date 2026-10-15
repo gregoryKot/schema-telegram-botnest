@@ -13,13 +13,16 @@ import {
 import { renderTemplate } from '../notification/notification.templates';
 import { isQuietHours, nextQuietEnd } from '../notification/notification.time';
 import { normalizeAddressForm } from '../notification/address-form';
-import { classifySendFailure, describeTelegramError } from './telegram-error';
+import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
+import { handleSendError } from './telegram.schedule-queue.errors';
 
 export interface QueueDeps {
   bot: Telegraf<Context>;
   accountService: AccountService;
   notificationService: NotificationService;
   logger: Logger;
+  /** Предел ожидания ответа Telegram; в проде — SEND_TIMEOUT_MS. */
+  sendTimeoutMs?: number;
 }
 
 // Сколько userId показать в итоговой строке про «некуда слать»: авария — это
@@ -36,6 +39,7 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
     ...new Set(due.map((n) => n.userId)),
   ]);
   const noAddress: string[] = [];
+  const unknown: number[] = [];
 
   for (const notif of due) {
     try {
@@ -93,17 +97,20 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
       };
       // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт
       // number | string.
-      await Promise.race([
-        bot.telegram.sendMessage(Number(chatId), template.text, opts),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('sendMessage timeout')), 15_000),
-        ),
-      ]);
+      await sendBounded(
+        bot,
+        Number(chatId),
+        template.text,
+        opts,
+        deps.sendTimeoutMs,
+      );
       await notificationService.markSent(notif.id);
     } catch (err: unknown) {
-      await handleSendError(deps, notif.id, notif.userId, err);
+      await handleSendError(deps, notif.id, notif.userId, err, unknown);
     }
   }
+
+  if (unknown.length > 0) logger.warn(describeUnknownOutcomes(unknown));
 
   if (noAddress.length > 0) {
     logger.warn(
@@ -113,31 +120,4 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
         `${noAddress.length > NO_ADDRESS_SAMPLE ? ' …' : ''}`,
     );
   }
-}
-
-async function handleSendError(
-  deps: QueueDeps,
-  id: number,
-  userId: bigint | number,
-  err: unknown,
-): Promise<void> {
-  const { accountService, notificationService, logger } = deps;
-  const verdict = classifySendFailure(err);
-  const desc = describeTelegramError(err);
-
-  if (verdict === 'transient') {
-    // Наша ошибка (разметка, длина, сеть) — не метим человека и не помечаем
-    // отправленным: повторим на следующем тике.
-    logger.error(`Failed to send notification id=${id} (${desc})`, err);
-    return;
-  }
-
-  // Оба оставшихся исхода означают «по этому адресу писать больше нельзя»,
-  // поэтому оба ставят флаг и перестают долбиться каждую ночь. Разводим их
-  // в ЛОГЕ: раньше причина терялась, и «человек закрыл бота» было не отличить
-  // от «мы пишем не туда» — а именно второе и было массовым.
-  await notificationService.markSent(id);
-  await accountService.markUserBlocked(BigInt(userId));
-  const reason = verdict === 'blocked' ? 'bot blocked' : 'chat_not_found';
-  logger.warn(`Skipping notification id=${id} — ${reason} (${desc})`);
 }

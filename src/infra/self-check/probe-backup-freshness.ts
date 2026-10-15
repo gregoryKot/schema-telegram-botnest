@@ -1,9 +1,6 @@
 import { Probe } from './types';
-import {
-  backupConfigState,
-  backupS3Config,
-  missingBackupVars,
-} from '../backup-config';
+import { backupS3Config } from '../backup-config';
+import { backupMisconfigResult } from '../backup-misconfig';
 import { listObjects, S3Object } from '../s3-list-objects';
 
 // Проба «бэкапы в Cloudflare R2 действительно делаются» (аудит D-2, правило
@@ -54,14 +51,8 @@ export function backupFreshnessProbe(
     title: 'Бэкапы БД в Cloudflare R2',
     critical: false,
     async run() {
-      const state = backupConfigState(env);
-      if (state === 'off') return { ok: true, detail: 'выключено' };
-      if (state === 'partial') {
-        return {
-          ok: false,
-          detail: `бэкапы настроены не до конца: не заданы ${missingBackupVars(env).join(', ')}`,
-        };
-      }
+      const misconfigured = backupMisconfigResult(env);
+      if (misconfigured) return misconfigured;
       try {
         const all = await listObjects(backupS3Config(env), PREFIX, {
           fetchFn: deps.fetchFn,

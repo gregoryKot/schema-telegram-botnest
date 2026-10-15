@@ -3,6 +3,7 @@
 // размера (правило №10).
 import type { CrossCheck } from './env-check';
 import { BACKUP_REQUIRED_ENV_VARS, missingBackupVars } from './backup-config';
+import { BACKUP_EXTRA_CROSS_CHECKS } from './env-check.backup-extra';
 
 export const BACKUP_CROSS_CHECKS: CrossCheck[] = [
   {
@@ -20,13 +21,5 @@ export const BACKUP_CROSS_CHECKS: CrossCheck[] = [
             `(нужны все: ${BACKUP_REQUIRED_ENV_VARS.join(', ')})`;
     },
   },
-  {
-    id: 'backupKeyDistinctFromEncryptionKey',
-    check: (env) => {
-      const key = env.BACKUP_ENCRYPTION_KEY?.trim();
-      return key && key === env.ENCRYPTION_KEY?.trim()
-        ? 'BACKUP_ENCRYPTION_KEY совпадает с ENCRYPTION_KEY — ключи бэкапов и полей БД должны различаться'
-        : null;
-    },
-  },
+  ...BACKUP_EXTRA_CROSS_CHECKS,
 ];
