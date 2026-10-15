@@ -1,6 +1,12 @@
-// Пин ожидания из rtlCleanup.ts (afterAll в setupFiles трёх пакетов).
-import { describe, it, expect, vi } from 'vitest';
+// Пин функции ожидания из rtlCleanup.ts (afterAll в setupFiles трёх пакетов).
+// Проводку самого afterAll держит rtlCleanup.test.tsx (aroundAll).
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { settleUnmountTimers } from './settleUnmountTimers';
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('settleUnmountTimers', () => {
   it('таймер размонтирования на 1 мс срабатывает до конца ожидания', async () => {
@@ -8,17 +14,21 @@ describe('settleUnmountTimers', () => {
     setTimeout(() => {
       fired = true;
     }, 1);
-    await settleUnmountTimers(() => vi.isFakeTimers());
+    await settleUnmountTimers();
     expect(fired).toBe(true);
   });
 
-  it('с поддельными таймерами не ждёт и не виснет', async () => {
+  it('поддельные таймеры (в том числе только Date) не вешают ожидание', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    await settleUnmountTimers();
     vi.useFakeTimers();
-    try {
-      await settleUnmountTimers(() => vi.isFakeTimers());
-    } finally {
-      vi.useRealTimers();
-    }
-    expect(vi.isFakeTimers()).toBe(false);
+    await settleUnmountTimers();
+    expect(true).toBe(true);
+  });
+
+  it('подменённый setTimeout не вешает ожидание', async () => {
+    vi.stubGlobal('setTimeout', vi.fn());
+    await settleUnmountTimers();
+    expect(true).toBe(true);
   });
 });

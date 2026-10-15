@@ -2,11 +2,32 @@
 // Пин механизма rtlCleanup.ts: тест НЕ вызывает cleanup сам — он проверяет,
 // что afterEach из setupFiles отработал между it. Без setupFiles в конфиге
 // второй и четвёртый it краснеют. Порядок it внутри файла детерминирован.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, aroundAll } from 'vitest';
 import { render, renderHook } from '@testing-library/react';
 import { useEffect } from 'react';
 
-const state = { unmounted: false };
+const state = { unmounted: false, unmountTimerFired: false };
+
+// Шов afterAll из setupFiles: aroundAll верхнего уровня оборачивает весь файл,
+// включая afterAll из setup. Таймер, поставленный при размонтировании в
+// последнем тесте, обязан успеть до сноса jsdom (tiptap, CI 2026-10-15).
+// Без afterAll(settleUnmountTimers) в rtlCleanup.ts — красный.
+aroundAll(async (runSuite) => {
+  await runSuite();
+  expect(state.unmountTimerFired).toBe(true);
+});
+
+function UnmountTimer() {
+  useEffect(
+    () => () => {
+      setTimeout(() => {
+        state.unmountTimerFired = true;
+      }, 1);
+    },
+    [],
+  );
+  return null;
+}
 
 describe('rtlCleanup (setupFiles)', () => {
   it('рендерит разметку и оставляет её без ручного cleanup', () => {
@@ -33,5 +54,9 @@ describe('rtlCleanup (setupFiles)', () => {
 
   it('функция очистки эффекта вызвана после предыдущего it', () => {
     expect(state.unmounted).toBe(true);
+  });
+
+  it('последний тест: размонтирование ставит таймер на 1 мс', () => {
+    render(<UnmountTimer />);
   });
 });
