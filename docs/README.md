@@ -736,25 +736,20 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 - Храповик «инлайновый набор свойств, для которого уже есть класс-утилита» —
   соседний класс, его тоже никто не написал.
 
-**Кнопка «Назад» — остаток после починки frontends#8** (аудит 2026-10; «Назад»
-хоста теперь закрывает верхний лист из реестра `OVERLAY_SHEET_KEYS`, closer'ы —
-`schema-miniapp/src/hooks/overlayClosers.ts`):
-- **Web-хост: одна запись истории на «есть хоть один лист», а не на каждый.**
-  При вложенности (`trackerGoal` поверх `trackerOverlay`) первое «Назад»
-  закрывает верхний, второе уходит со страницы. Стек записей — это `history.go(-n)`
-  при одновременном закрытии нескольких листов и гонки `selfBackRef`; сделано не
-  было осознанно: отдельная механика, граница описана в конце
-  `schema-miniapp/src/hooks/useHostBackButton.ts`.
-- **У `Celebration` и онбординга (`Disclaimer`) «Назад» хоста по-прежнему
-  скрыт.** Оба лежат в `OverlayExtras` у `isAnyOverlayOpen`, но не в `useSheets`,
-  и у `Disclaimer` кнопки «Назад» нет осознанно (гейт согласия). `Celebration`
-  — кандидат на тот же механизм: перенести в `useSheets` и добавить closer.
-- **Webapp, тот же класс без правки:** `webapp/src/components/schemaInfoSheet/ModesTab.tsx:60`
-  и `:96` — полноэкранные `position: fixed, inset: 0` чек-ины без `useHistorySheet`,
-  браузерная «Назад» закрывает весь справочник вместе с чек-ином. Нужен гейт
-  «оверлей `inset: 0` обязан вызывать `useHistorySheet`»
-  ([находка в AUDIT_2026-10_FINDINGS.md](AUDIT_2026-10_FINDINGS.md)); в этом PR
-  не чинилось (правило №20).
+**Кнопка «Назад» мини-аппа — остаток после frontends#8** (closer'ы —
+`schema-miniapp/src/hooks/overlayClosers.ts`, граница web-хоста описана в конце
+`schema-miniapp/src/hooks/useHostBackButton.ts`):
+- Web-хост держит одну запись истории на «есть хоть один лист»: при вложенности
+  (`trackerGoal` поверх `trackerOverlay`, `todayNote` с отложенным колесом)
+  первое «Назад» закрывает верхний, следующее уходит со страницы. Стек записей
+  (`history.go(-n)`, гонки `selfBackRef`) не делался осознанно: отдельная механика.
+- «Назад» хоста не знает `Celebration`, `Disclaimer` (гейт согласия, кнопки нет
+  осознанно) и локальные оверлеи `AppDiaryNav` (`activeOverlay`:
+  breathing/grounding/stop) — они вне `useSheets`.
+- `caseFlow`: «Назад» хоста закрывает поток с любого шага, а «назад» в шапке
+  возвращает на шаг (`useCaseFlow`). Нужен ли откат по шагам — решение владельца.
+- Webapp, тот же класс: `ModesTab.tsx:60`, `:96` без `useHistorySheet` — отдельная
+  находка в [AUDIT_2026-10_FINDINGS.md](AUDIT_2026-10_FINDINGS.md).
 
 ## Инцидент 2026-07-20 — утечка в публичном репозитории
 
