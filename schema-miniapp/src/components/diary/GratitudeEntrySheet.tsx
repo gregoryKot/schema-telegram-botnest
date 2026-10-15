@@ -8,6 +8,8 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryPanel } from './diaryUi';
 import { PrimaryAction } from './diaryFlowUi';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 interface Props {
   onClose: () => void;
@@ -30,10 +32,8 @@ export function GratitudeEntrySheet({
 
   const [items, setItems] = useState<string[]>(initItems);
   const [saving, setSaving] = useState(false);
-  // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
-  // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
-  // что запись сохранена. Текст уцелел бы черновиком, но об этом тоже никто
-  // не сообщал.
+  // Отказ раньше сообщался лишь вибрацией, а лист закрывался: на десктопе
+  // вибрации нет, и человек считал запись сохранённой.
   const [saveError, setSaveError] = useState(false);
 
   const update = (i: number, v: string) =>
@@ -93,8 +93,7 @@ export function GratitudeEntrySheet({
           Даже самое маленькое — оно считается. Хватит и одной строки.
         </div>
 
-        {/* Три строки в одном контейнере: без иконок и нумерованных плашек —
-            границу между строками держит волосяная линия. */}
+        {/* Строки в одном контейнере, границу держит волосяная линия. */}
         <DiaryPanel>
           {items.map((item, i) => (
             <div
@@ -104,7 +103,8 @@ export function GratitudeEntrySheet({
                 borderTop: i === 0 ? undefined : '1px solid var(--line)',
               }}
             >
-              <textarea
+              <LimitedTextarea
+                max={DIARY_FIELD_MAX}
                 value={item}
                 onChange={(e) => update(i, e.target.value)}
                 placeholder={

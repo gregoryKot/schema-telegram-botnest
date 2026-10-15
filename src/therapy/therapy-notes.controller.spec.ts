@@ -149,7 +149,7 @@ describe('TherapyNotesController.createNote', () => {
     expect(res).toEqual({ id: 2, date: '2026-07-01', text: 'новая' });
   });
 
-  it('текст длиннее 5000 символов обрезается до 5000 перед передачей в сервис', async () => {
+  it('текст длиннее прежних 5000 доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {
     const { controller, notes } = makeController();
     const longText = 'а'.repeat(6000);
     await controller.createNote(makeReq(3n), '5', {
@@ -157,7 +157,7 @@ describe('TherapyNotesController.createNote', () => {
       text: longText,
     });
     const passed = notes.createNote.mock.calls[0][2] as { text: string };
-    expect(passed.text).toHaveLength(5000);
+    expect(passed.text).toBe(longText);
   });
 
   it('No active relation → ForbiddenException', async () => {
