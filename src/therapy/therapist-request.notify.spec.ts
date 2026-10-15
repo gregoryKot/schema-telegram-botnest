@@ -13,6 +13,7 @@
 // раньше писал заявителю только «Твоя заявка…» независимо от выбранной
 // формы обращения — пользователь с формой «вы» видел «ты».
 import { TherapistRequestNotifyService } from './therapist-request.notify';
+import { Logger } from '@nestjs/common';
 import * as adminAlert from '../utils/admin-alert';
 
 jest.mock('../utils/admin-alert', () => ({
@@ -21,16 +22,59 @@ jest.mock('../utils/admin-alert', () => ({
 
 const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
-function makeFakePrisma(addressForm: string | null | undefined) {
+interface Fixture {
+  recoveryEmail?: string | null;
+  verified?: boolean;
+  providers?: Array<{ provider: string; providerId: string; email?: string }>;
+  tgIds?: Record<string, bigint>;
+}
+
+function makeFakePrisma(
+  addressForm: string | null | undefined,
+  fx: Fixture = {},
+) {
   return {
     user: {
-      findUnique: jest.fn(() => Promise.resolve({ addressForm })),
+      findUnique: jest.fn(() =>
+        Promise.resolve({
+          addressForm,
+          recoveryEmail: fx.recoveryEmail ?? null,
+          recoveryEmailVerifiedAt: fx.verified ? new Date() : null,
+        }),
+      ),
+    },
+    authProvider: {
+      findMany: jest.fn(() =>
+        Promise.resolve(
+          (fx.providers ?? []).map((p) => ({ email: null, ...p })),
+        ),
+      ),
     },
   } as any;
 }
 
-function makeService(addressForm: string | null | undefined = null) {
-  return new TherapistRequestNotifyService(makeFakePrisma(addressForm));
+function makeService(
+  addressForm: string | null | undefined = null,
+  fx: Fixture = {},
+  prisma: any = makeFakePrisma(addressForm, fx),
+) {
+  const telegramIdsFor = jest.fn((ids: bigint[]) => {
+    const m = new Map<string, bigint>();
+    for (const id of ids) {
+      const hit = fx.tgIds?.[id.toString()];
+      if (hit !== undefined) m.set(id.toString(), hit);
+      // Тот же фолбэк, что у AccountService: телеграмный номер — сам себе адрес.
+      else if (id < 1_000_000_000_000_000n) m.set(id.toString(), id);
+    }
+    return Promise.resolve(m);
+  });
+  const email = { send: jest.fn(() => Promise.resolve()) };
+  const svc = new TherapistRequestNotifyService(
+    prisma,
+    { telegramIdsFor } as any,
+    email as any,
+  );
+  return { svc, email, telegramIdsFor, prisma };
 }
 
 const NOTIFY_REQ = {
@@ -67,7 +111,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('DM админу не прошёл (Telegram 403) → e-mail-фолбэк вызван', async () => {
     mockFetchForNotify(false);
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fallback).toHaveBeenCalledTimes(1);
     expect(fallback.mock.calls[0][0]).toContain('#42');
@@ -76,7 +120,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
   it('ADMIN_ID не задан → пуш невозможен, e-mail-фолбэк вызван', async () => {
     delete process.env.ADMIN_ID;
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fetchMockLocal).not.toHaveBeenCalled();
     expect(fallback).toHaveBeenCalledTimes(1);
@@ -86,7 +130,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('DM админу прошёл (Telegram ok) → e-mail-фолбэк НЕ нужен', async () => {
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fallback).not.toHaveBeenCalled();
     // Успешный путь — DM реально ушёл в Telegram, а не просто «раньше не дошли до фолбэка».
@@ -102,7 +146,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
     delete process.env.BOT_TOKEN;
     const fetchMockLocal = jest.fn();
     global.fetch = fetchMockLocal;
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fetchMockLocal.mock.calls).toEqual([]);
     expect(fallback.mock.calls).toHaveLength(1);
@@ -111,7 +155,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('сетевая ошибка fetch (не HTTP-статус, а reject) → e-mail-фолбэк', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('ECONNRESET')));
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fallback.mock.calls).toHaveLength(1);
     expect(fallback.mock.calls[0][0]).toContain('Мария Иванова');
@@ -120,7 +164,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
   it('сетевая ошибка fetch НЕ-Error объектом (напр. строкой) — не падает, e-mail-фолбэк', async () => {
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- намеренно не-Error reject
     global.fetch = jest.fn(() => Promise.reject('boom-string'));
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     expect(fallback.mock.calls).toHaveLength(1);
     expect(fallback.mock.calls[0][0]).toContain('#42');
@@ -134,7 +178,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
         json: () => Promise.resolve({}),
       }),
     );
-    await makeService().notifyAdmin(NOTIFY_REQ);
+    await makeService().svc.notifyAdmin(NOTIFY_REQ);
 
     // Раз delivered=false — фолбэк всё равно сработал, и текст фолбэка не
     // содержит "undefined" (что случилось бы, интерполируй код отсутствующий
@@ -143,6 +187,13 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
     expect(fallback.mock.calls[0][0]).not.toContain('undefined');
   });
 });
+
+const WEB_ID = 1_000_000_000_000_102n;
+const req = (
+  userId: bigint,
+  decision: 'approved' | 'rejected' = 'approved',
+  reason?: string,
+) => ({ requestId: 42, userId, decision, reason });
 
 describe('TherapistRequestNotifyService.notifyApplicant — ты/вы по User.addressForm', () => {
   const ORIGINAL_ENV = process.env;
@@ -160,7 +211,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — ты/вы по User.
   });
 
   it('addressForm: "vy" → approved шлёт «Ваша заявка… Перезапустите…»', async () => {
-    await makeService('vy').notifyApplicant(1, 'approved');
+    await makeService('vy').svc.notifyApplicant(req(1n));
 
     const [, opts] = fetchMock.mock.calls[0];
     const text = JSON.parse(opts.body).text as string;
@@ -170,7 +221,9 @@ describe('TherapistRequestNotifyService.notifyApplicant — ты/вы по User.
   });
 
   it('addressForm: "vy" → rejected шлёт «Ваша заявка… отклонена»', async () => {
-    await makeService('vy').notifyApplicant(1, 'rejected', 'Причина X');
+    await makeService('vy').svc.notifyApplicant(
+      req(1n, 'rejected', 'Причина X'),
+    );
 
     const [, opts] = fetchMock.mock.calls[0];
     const text = JSON.parse(opts.body).text as string;
@@ -179,8 +232,17 @@ describe('TherapistRequestNotifyService.notifyApplicant — ты/вы по User.
     expect(text).not.toContain('Твоя');
   });
 
+  it('причина экранируется для parse_mode HTML', async () => {
+    await makeService(null).svc.notifyApplicant(
+      req(1n, 'rejected', 'нужен <диплом> & опыт'),
+    );
+
+    const text = JSON.parse(fetchMock.mock.calls[0][1].body).text as string;
+    expect(text).toContain('нужен &lt;диплом&gt; &amp; опыт');
+  });
+
   it('addressForm: null (дефолт) → «Твоя заявка… Перезапусти…»', async () => {
-    await makeService(null).notifyApplicant(1, 'approved');
+    await makeService(null).svc.notifyApplicant(req(1n));
 
     const [, opts] = fetchMock.mock.calls[0];
     const text = JSON.parse(opts.body).text as string;
@@ -195,14 +257,169 @@ describe('TherapistRequestNotifyService.notifyApplicant — ты/вы по User.
         findUnique: jest.fn(() => Promise.reject(new Error('db down'))),
       },
     } as any;
-    await new TherapistRequestNotifyService(prisma).notifyApplicant(
-      1,
-      'approved',
-    );
+    await makeService(null, {}, prisma).svc.notifyApplicant(req(1n));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, opts] = fetchMock.mock.calls[0];
     const text = JSON.parse(opts.body).text as string;
     expect(text).toContain('Твоя заявка на роль терапевта одобрена');
+  });
+});
+
+// Регрессия аудита 2026-10 (X-1 / backend#31): решение уходило в sendMessage с
+// chat_id = userId. У веб-аккаунта (Google/почта) userId лежит в веб-диапазоне
+// и чатом не является — заявитель с сайта не получал ничего, а в логе была
+// одна строка warn. Теперь адрес — из привязки Telegram, запасной канал —
+// почта аккаунта, нет ни того ни другого — logger.error (в проде это DM
+// владельцу через AlertLogger).
+describe('TherapistRequestNotifyService.notifyApplicant — адрес и запасной канал', () => {
+  const ORIGINAL_ENV = process.env;
+  let fetchMock: jest.Mock;
+  let errorSpy: jest.SpyInstance;
+  const tgBody = (i = 0) => JSON.parse(fetchMock.mock.calls[i][1].body);
+
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV, BOT_TOKEN: 'test-token' };
+    fetchMock = jest
+      .fn()
+      .mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+    global.fetch = fetchMock;
+    errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    process.env = ORIGINAL_ENV;
+    jest.restoreAllMocks();
+  });
+
+  it('веб-аккаунт без Telegram, с подтверждённой почтой → письмо, в Telegram не пишем', async () => {
+    const { svc, email } = makeService('vy', {
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    await svc.notifyApplicant(req(WEB_ID));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(email.send).toHaveBeenCalledTimes(1);
+    const [to, subject, text] = email.send.mock.calls[0] as unknown as string[];
+    expect(to).toBe('anya@example.com');
+    expect(subject).toBe('Заявка на роль терапевта одобрена');
+    expect(text).toContain('Ваша заявка на роль терапевта одобрена');
+    expect(text).toContain('https://schemehappens.ru/account');
+    expect(text).not.toMatch(/Твоя|✅/);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('неподтверждённый recoveryEmail не годится как адрес', async () => {
+    const { svc, email } = makeService(null, {
+      recoveryEmail: 'anya@example.com',
+      verified: false,
+    });
+    await svc.notifyApplicant(req(WEB_ID));
+
+    expect(email.send).not.toHaveBeenCalled();
+    expect(errorSpy.mock.calls[0][0]).toContain('нет почты');
+  });
+
+  it('вход по почте и email из профиля Google тоже дают адрес', async () => {
+    const byLogin = makeService(null, {
+      providers: [{ provider: 'email', providerId: 'a@example.com' }],
+    });
+    await byLogin.svc.notifyApplicant(req(WEB_ID));
+    expect(byLogin.email.send.mock.calls[0]).toEqual([
+      'a@example.com',
+      expect.any(String),
+      expect.any(String),
+    ]);
+
+    const byGoogle = makeService(null, {
+      providers: [
+        { provider: 'google', providerId: 'sub', email: 'g@example.com' },
+      ],
+    });
+    await byGoogle.svc.notifyApplicant(req(WEB_ID));
+    expect(byGoogle.email.send.mock.calls[0][0]).toBe('g@example.com');
+  });
+
+  it('веб-аккаунт с привязанным Telegram → chat_id из привязки, а не userId; письма нет', async () => {
+    const { svc, email } = makeService(null, {
+      tgIds: { [WEB_ID.toString()]: 555n },
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    await svc.notifyApplicant(req(WEB_ID));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(tgBody().chat_id).toBe(555);
+    expect(email.send).not.toHaveBeenCalled();
+  });
+
+  it('Telegram отказал (chat not found) → письмо на почту', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: () =>
+        Promise.resolve({ description: 'Bad Request: chat not found' }),
+    });
+    const { svc, email } = makeService(null, {
+      tgIds: { [WEB_ID.toString()]: 555n },
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    await svc.notifyApplicant(req(WEB_ID, 'rejected', 'нужен диплом'));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const text = (email.send.mock.calls[0] as unknown as string[])[2];
+    expect(text).toContain('отклонена');
+    expect(text).toContain('Причина: нужен диплом');
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('нет ни чата, ни почты → logger.error с номером заявки, без адресов', async () => {
+    const { svc, email } = makeService(null, {});
+    await svc.notifyApplicant(req(WEB_ID, 'rejected'));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(email.send).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const msg = errorSpy.mock.calls[0][0] as string;
+    expect(msg).toContain('#42');
+    expect(msg).toContain('rejected');
+    expect(msg).toContain('нет Telegram');
+    expect(msg).not.toContain(WEB_ID.toString());
+  });
+
+  it('Telegram отказал и письмо бросило → error (заявка #N не доставлена)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: () => Promise.resolve({ description: 'blocked' }),
+    });
+    const { svc, email } = makeService(null, {
+      tgIds: { [WEB_ID.toString()]: 555n },
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    email.send.mockRejectedValue(new Error('Email delivery failed'));
+    await svc.notifyApplicant(req(WEB_ID));
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('#42');
+    expect(errorSpy.mock.calls[0][0]).not.toContain('anya@example.com');
+  });
+
+  it('id выше 2^53 доходит до базы и карты адресов точным bigint', async () => {
+    const big = 2n ** 53n + 1n;
+    const { svc, prisma, telegramIdsFor } = makeService('vy', {
+      recoveryEmail: 'anya@example.com',
+      verified: true,
+    });
+    await svc.notifyApplicant(req(big));
+
+    expect(prisma.user.findUnique.mock.calls[0][0].where.id).toBe(big);
+    expect(prisma.authProvider.findMany).not.toHaveBeenCalled();
+    expect(telegramIdsFor.mock.calls[0][0]).toEqual([big]);
   });
 });

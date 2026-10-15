@@ -199,7 +199,7 @@ export class EmailService {
 
   // ─── Resend SMTP wrapper ──────────────────────────────────────────────────
 
-  private async send(to: string, subject: string, text: string): Promise<void> {
+  async send(to: string, subject: string, text: string): Promise<void> {
     const apiKey = process.env.RESEND_API_KEY;
     const from =
       process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
@@ -209,7 +209,7 @@ export class EmailService {
       // живой magic-link-токен. Отсутствие ключа тут = мисконфиг: алерт без токена.
       if (process.env.NODE_ENV === 'production') {
         this.logger.error(
-          'RESEND_API_KEY not configured — magic-link email NOT sent (misconfiguration)',
+          'RESEND_API_KEY not configured — email NOT sent (misconfiguration)',
         );
         return;
       }

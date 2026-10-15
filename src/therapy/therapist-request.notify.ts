@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AccountService } from '../bot/account.service';
+import { EmailService } from '../auth/email.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
-import { normalizeAddressForm, t } from '../notification/address-form';
+import { escapeHtml as he } from '../utils/escape-html';
+import { DecisionRequest, deliverDecision } from './therapist-request.deliver';
 
 // Телеграм-уведомления заявки на роль терапевта, вынесены из
 // TherapistRequestService (правило №10 CLAUDE.md — лимит размера файла).
@@ -9,7 +12,11 @@ import { normalizeAddressForm, t } from '../notification/address-form';
 export class TherapistRequestNotifyService {
   private readonly logger = new Logger(TherapistRequestNotifyService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accountService: AccountService,
+    private readonly email: EmailService,
+  ) {}
 
   // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
   // the circular-import that would create (TelegramModule ↔ TherapyModule).
@@ -20,7 +27,7 @@ export class TherapistRequestNotifyService {
   // e.g. after a bot migration the admin hasn't opened the new bot yet, so the
   // DM fails and the request would otherwise vanish silently.
   private async sendTg(
-    chatId: number,
+    chatId: number | bigint,
     text: string,
     replyMarkup?: object,
   ): Promise<boolean> {
@@ -34,7 +41,7 @@ export class TherapistRequestNotifyService {
       text: string;
       parse_mode: string;
       reply_markup?: object;
-    } = { chat_id: chatId, text, parse_mode: 'HTML' };
+    } = { chat_id: Number(chatId), text, parse_mode: 'HTML' };
     if (replyMarkup) body.reply_markup = replyMarkup;
     let res: Response | undefined;
     try {
@@ -137,39 +144,17 @@ export class TherapistRequestNotifyService {
     );
   }
 
-  async notifyApplicant(
-    userId: number,
-    decision: 'approved' | 'rejected',
-    reason?: string,
-  ) {
-    // Форма обращения — общая для бота/уведомлений/фронтендов (CLAUDE.md,
-    // «Обращение ты/вы»). Сбой чтения не должен ронять доставку — шлём
-    // с дефолтной формой «ты» (normalizeAddressForm(undefined)).
-    const form = await this.prisma.user
-      .findUnique({
-        where: { id: BigInt(userId) },
-        select: { addressForm: true },
-      })
-      .then((u) => normalizeAddressForm(u?.addressForm))
-      .catch(() => normalizeAddressForm(undefined));
-
-    const text =
-      decision === 'approved'
-        ? t(
-            form,
-            '✅ Твоя заявка на роль терапевта одобрена. Перезапусти приложение чтобы увидеть кабинет терапевта.',
-            '✅ Ваша заявка на роль терапевта одобрена. Перезапустите приложение, чтобы увидеть кабинет терапевта.',
-          )
-        : t(
-            form,
-            `❌ Твоя заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
-            `❌ Ваша заявка на роль терапевта отклонена.${reason ? `\n\nПричина: ${reason}` : ''}`,
-          );
-    await this.sendTg(userId, text);
+  // Решение заявителю: Telegram → письмо → logger.error (см. deliver.ts).
+  notifyApplicant(a: DecisionRequest): Promise<void> {
+    return deliverDecision(
+      {
+        prisma: this.prisma,
+        accountService: this.accountService,
+        email: this.email,
+        logger: this.logger,
+        sendTg: (chatId, text) => this.sendTg(chatId, text),
+      },
+      a,
+    );
   }
-}
-
-function he(s: string): string {
-  // HTML-escape for Telegram parse_mode: 'HTML'
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
