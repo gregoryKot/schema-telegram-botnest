@@ -178,6 +178,11 @@ jobs:
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
       - run: node scripts/check-raw-sql-live.mjs
+      # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
+      # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
+      # в security-log-redact.ts и перестал измеряться). Классификация в
+      # scripts/mutation-zone-baseline.json; флага --update нет.
+      - run: node scripts/check-mutation-zone.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
