@@ -215,7 +215,7 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
   уточнил: `amvera.yml` пока живой (прод на Amvera), удалять его — отдельным
   PR после DNS. Механизм: секция VPS-шва в гейте с тестом на оба исхода,
   `PORT` в реестре, `health_wait` через Caddy.
-- **`write-env` пропускает в контейнер супервизорные ручки и `NODE_ENV`.**
+- **Закрыто (PR «write-env: ручки супервизора и NODE_ENV»): `write-env` пропускает в контейнер супервизорные ручки и `NODE_ENV`.** Остаток (откат поднимает прежний образ с `.env` нового релиза) уже записан в `docs/README.md`, «Что осталось открытым», строка про `cmd_write_env` без `.env.prev`, и ниже в этом документе («Auto-rollback restores the image but not .env»).
   После второй линзы — P2 со сроком «до первого деплоя на VPS», размер M.
   `deploy/vps/ops.sh:142` отбрасывает три имени; `NODE_ENV`, `PORT`,
   `APP_CMD`, `MIGRATE_CMD`, `STARTUP_*` проходят, и `env_file` сильнее `ENV
