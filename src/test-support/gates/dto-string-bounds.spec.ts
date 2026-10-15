@@ -7,7 +7,10 @@
 // границы и зелёный на чистом дереве; и для каждого вида «границы» (правило
 // №15 п.2) — образец, который он гасит, И контрольный похожий, который
 // по-прежнему краснеет.
-import { runGate } from './gate-sandbox';
+import { execFileSync } from 'child_process';
+import { join } from 'path';
+import { pathToFileURL } from 'url';
+import { runGate, REAL_SCRIPTS_DIR } from './gate-sandbox';
 
 const VALIDATOR = "import * as v from 'class-validator';\n";
 const dto = (...members: string[]) =>
@@ -204,5 +207,67 @@ describe('check-dto-string-bounds.mjs', () => {
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('записи, которых в коде больше нет');
     });
+  });
+});
+
+// Парсер scripts/dto-fields.mjs гоняем и напрямую: через песочницу гейта его
+// не видит check-unwatched-code (в реальном коде тест должен назвать файл).
+// jest здесь CommonJS и ESM-модуль не импортирует — запускаем настоящий
+// модуль отдельным node-процессом, как это делает сам гейт.
+type Member = {
+  name: string | null;
+  decorators: { name: string; args: string }[];
+};
+const parse = (source: string): { name: string; members: Member[] }[] => {
+  const script =
+    `import { parseClasses } from ${JSON.stringify(
+      pathToFileURL(join(REAL_SCRIPTS_DIR, 'dto-fields.mjs')).href,
+    )};` +
+    'console.log(JSON.stringify(parseClasses(JSON.parse(process.argv[1]))));';
+  const out = execFileSync(
+    process.execPath,
+    ['--input-type=module', '-e', script, JSON.stringify(source)],
+    { encoding: 'utf8' },
+  );
+  return JSON.parse(out);
+};
+
+describe('dto-fields.mjs parseClasses', () => {
+  it('собирает декораторы поля, в том числе многострочный @MaxLength и v.-префикс', () => {
+    const [cls] = parse(
+      [
+        'export class FooDto {',
+        '  @v.IsString()',
+        '  @v.MaxLength(',
+        '    LIMIT,',
+        "    { message: 'длинно)' },",
+        '  )',
+        '  title?: string | null;',
+        '}',
+      ].join('\n'),
+    );
+    expect(cls.name).toBe('FooDto');
+    const [title] = cls.members;
+    expect(title.name).toBe('title');
+    expect(title.decorators.map((d) => d.name)).toEqual([
+      'IsString',
+      'MaxLength',
+    ]);
+    // скобка внутри строки не обрывает аргументы декоратора
+    expect(title.decorators[1].args).toContain("'длинно)'");
+  });
+
+  it('метод в теле класса — отдельный член без имени поля и не съедает соседей', () => {
+    const [cls] = parse(
+      [
+        'class A {',
+        '  @IsString() a!: string;',
+        '  get label(): string { return `${this.a};`; }',
+        '  @IsString() b!: string;',
+        '}',
+      ].join('\n'),
+    );
+    expect(cls.members.map((m) => m.name)).toEqual(['a', null, 'b']);
+    expect(cls.members[2].decorators.map((d) => d.name)).toEqual(['IsString']);
   });
 });
