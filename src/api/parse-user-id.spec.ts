@@ -7,7 +7,7 @@ import { parseId } from './request-utils';
 // на случай, если диапазон расширят. parseId такой id отвергает, Number()
 // округляет, parseUserId обязан вернуть точный bigint.
 describe('parseUserId', () => {
-  it('веб-id ≥ 2^53 возвращается точным bigint', () => {
+  it('id ≥ 2^53 (выдуманный) возвращается точным bigint', () => {
     const id = parseUserId('1000000000000000123');
     expect(typeof id).toBe('bigint');
     expect(id).toBe(1000000000000000123n);

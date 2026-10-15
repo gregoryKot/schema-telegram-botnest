@@ -732,7 +732,7 @@ describe('getClients — список клиентов терапевта', () =
   // выдуманный: он стережёт bigint-путь на случай расширения диапазона, когда
   // Number(id) округлит его и следующий запрос терапевта не пройдёт
   // assertRelation. Id обязан пройти от БД до ответа точным bigint.
-  it('веб-клиент с id > 2^53: getClients и getRelation отдают точный bigint, assertHasClient проходит', async () => {
+  it('клиент с выдуманным id > 2^53: getClients и getRelation отдают точный bigint, assertHasClient проходит', async () => {
     const WEB = 1000000000000000123n;
     const { service } = makeFullService(
       [
