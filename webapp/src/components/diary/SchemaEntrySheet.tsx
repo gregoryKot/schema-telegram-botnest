@@ -10,6 +10,8 @@ import { haptic } from '../../haptic';
 import { SchemaEmotionsStep } from './SchemaEmotionsStep';
 import { SchemaChipsStep } from './SchemaChipsStep';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import {
   buildSchemaDiarySteps,
   buildSchemaDiaryChipLabels,
@@ -189,9 +191,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
                 Своя aria-label (не flash-q выше — тот описывает чипы, а не
                 это поле): у schemaOrigin есть отдельный вопрос в контенте
                 (stepByKey.schemaOrigin.title), видимо он нигде не рендерится. */}
-            <textarea
-              className={'paper-area ' + (values.schemaOrigin.trim() ? 'is-filled' : '')}
-              rows={2}
+            <LimitedTextarea max={DIARY_FIELD_MAX} className={'paper-area ' + (values.schemaOrigin.trim() ? 'is-filled' : '')} rows={2}
               value={values.schemaOrigin}
               onChange={(e) => setField('schemaOrigin', e.target.value)}
               placeholder={stepByKey.schemaOrigin.example}
@@ -204,10 +204,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           <>
             <div id="schema-entry-question" className="flash-q">{textStep.title}</div>
             <div className="flash-hint">{textStep.hint}</div>
-            <textarea
-              ref={areaRef}
-              className={'paper-area ' + (curFilled ? 'is-filled' : '')}
-              rows={textStep.rows ?? 3}
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className={'paper-area ' + (curFilled ? 'is-filled' : '')} rows={textStep.rows ?? 3}
               value={values[textStep.key]}
               onChange={(e) => setField(textStep.key, e.target.value)}
               placeholder={textStep.example}

@@ -1,0 +1,4 @@
+{
+  "src/api/account-export.controller.ts: const date = result.exportedAt.slice(0, 10);": "Календарный день из ISO-момента выгрузки для имени файла; поля тела запроса здесь нет вообще.",
+  "src/booking/booking-calendar-admin.controller.ts: return new Date(ms).toISOString().slice(0, 10) === s;": "Сверка формата YYYY-MM-DD: день из вычисленного момента сравнивается со строкой запроса, строка не режется."
+}
