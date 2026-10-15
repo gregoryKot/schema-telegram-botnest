@@ -1,8 +1,9 @@
 // Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10).
 // Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
-// только ре-экспорт. ConceptSnapshot ещё и импортируется: на него ссылается
-// локальный ClientConceptualization (в webapp он с mode-map, потому локальный).
-import type { ConceptSnapshot, UserId } from '../../shared/src/apiTypes';
+// только ре-экспорт. ClientConceptualization локальный: в webapp он расширяет
+// общую ClientConceptualizationBase полями mode-map.
+import type { UserId } from '../../shared/src/apiTypes';
+import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
 export type {
   UserId,
   UserSettings,
@@ -137,23 +138,9 @@ export interface ModeMapFull extends ModeMapMeta {
   edges: ModeMapEdge[];
 }
 
-export interface ClientConceptualization {
-  id: number;
-  therapistId: UserId;
-  clientId: UserId;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions: string | null;
+export interface ClientConceptualization extends ClientConceptualizationBase {
   modeMapNodes: ModeMapNode[];
   modeMapEdges: ModeMapEdge[];
-  history: ConceptSnapshot[];
-  updatedAt: string;
 }
 export interface BeliefCheckEntry {
   id: number;

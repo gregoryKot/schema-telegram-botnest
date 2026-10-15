@@ -134,6 +134,16 @@ export type AccountLinkFailReason = 'expired' | 'error';
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
 
+// Графическая концептуализация в кабинете терапевта (оба фронтенда): открыл
+// схему случая по модели режимов и заполнил связи режима (схемы, потребности,
+// истоки). Без меты — свободного текста и id клиента в событии нет (правило
+// №7). Шлёт их литералами общий хук useConceptGraphTracking (так их видит
+// трипваер analytics-sync), константы сверяет с литералами тест хука. Парный
+// allow-list — src/analytics/analytics.constants.ts, блок в /stats —
+// src/bot/concept-graph-metrics.*.
+export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
+export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
+
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает
 // первую запись дневника, приметы для карточки и метку на карте себя.
