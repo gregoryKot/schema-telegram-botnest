@@ -85,6 +85,9 @@ describe('SecurityLogService — канал аудита', () => {
     // По контексту админ фильтрует аудит в логах Amvera; переименование
     // молча ломает его запрос и алерты на строки аудита.
     new SecurityLogService().log('login_success', { userId: 1 });
+    // `context` — приватное поле Logger из @nestjs/common: обновление Nest может
+    // его переименовать, и тест упадёт без изменения нашего кода. Публичного
+    // геттера контекста у Logger нет; при падении после апгрейда сверь поле.
     const logger = logSpy.mock.contexts[0] as unknown as { context: string };
     expect(logger.context).toBe('SecurityAudit');
   });

@@ -132,4 +132,71 @@ describe('check-mutation-zone.mjs', () => {
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('протухшая запись src/gone.ts');
   });
+
+  // Файл только из типов: мутировать нечего, запись «мутации не измеряются» про
+  // него была бы ложным долгом (правило №15 п.4). Контроль — в соседних тестах:
+  // тот же файл с хоть одной рантайм-строкой по-прежнему кандидат.
+  const typesOnly = [
+    "import type { Kind } from './kind';",
+    '',
+    '/** Описание. */',
+    'export interface Dto {',
+    '  kind: Kind;',
+    '}',
+    'export type Id = string;',
+    '',
+  ].join('\n');
+  const importsTypes = (file: string) =>
+    `import type { Dto } from './${file}';\nexport class Service {}\n`;
+
+  it('файл только из типов — не кандидат, записи не требует', () => {
+    const res = runGate(GATE, {
+      'src/service.ts': importsTypes('dto'),
+      'src/dto.ts': typesOnly,
+      'stryker.a.config.json': config(['src/service.ts']),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('0 выделенных вне неё классифицировано');
+  });
+
+  it.each([
+    ['const', 'export const LIMIT = 5;'],
+    ['function', 'export function pick(): number { return 1; }'],
+    ['enum', 'export enum Mode { A, B }'],
+    ['class', 'export class Box {}'],
+    ['реэкспорт значения', "export { x } from './x';"],
+    ['обычный import', "import { y } from './y';"],
+  ])('контроль: тип + рантайм-строка (%s) — по-прежнему кандидат', (_n, line) => {
+    const res = runGate(GATE, {
+      'src/service.ts': importsTypes('dto'),
+      'src/dto.ts': `${typesOnly}${line}\n`,
+      'stryker.a.config.json': config(['src/service.ts']),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('src/dto.ts');
+  });
+
+  it('запись про файл, ставший файлом только из типов, — протухшая', () => {
+    const res = runGate(GATE, {
+      'src/service.ts': importsTypes('dto'),
+      'src/dto.ts': typesOnly,
+      'stryker.a.config.json': config(['src/service.ts']),
+      'scripts/mutation-zone-baseline.json': baseline({
+        'src/dto.ts': { reason: GOOD_REASON },
+      }),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('протухшая запись src/dto.ts');
+  });
+
+  it('динамический import("./x") тоже связывает файл с зоной', () => {
+    const res = runGate(GATE, {
+      'src/service.ts':
+        "export const load = () => import('./helper');\nexport class Service {}\n",
+      'src/helper.ts': helper,
+      'stryker.a.config.json': config(['src/service.ts']),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('src/helper.ts');
+  });
 });

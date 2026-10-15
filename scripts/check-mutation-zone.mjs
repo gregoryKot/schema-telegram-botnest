@@ -18,6 +18,20 @@
 // (и пол в бейслайн храповика по результату прогона), либо вносит запись
 // с честной причиной — и она видна в диффе PR.
 //
+// Чего гейт не видит (честно, чтобы класс не считали закрытым целиком):
+//  - файл, выделенный из файла зоны, но ещё и импортируемый кодом вне зоны
+//    (booking-notify.service.ts, totp.service.ts, max-init-data.ts,
+//    login-ticket.service.ts — AUDIT_2026-10_FINDINGS.md), кандидатом не
+//    считается: «все импортёры в зоне» — единственный дешёвый признак
+//    «выделен ради зоны». Эти файлы классифицируются глазами при дроблении;
+//  - зона — объединение ВСЕХ stryker*.config.json, включая зонтичный
+//    stryker.config.json (ручной `npm run mutation`, в nightly не гоняется;
+//    ночью работают stryker.golden-*.config.json): файл, добавленный только
+//    туда, в зону для гейта входит, но ночным замером не измеряется.
+// Файл только с типами (interface/type, `import type`) кандидатом не считается:
+// в нём нечего мутировать, а запись «мутации не измеряются» про него была бы
+// ложным долгом (правило №15 п.4). Признак — isTypeOnly().
+//
 // Гейт ищет не признак, а требует классификации — как check-cron-leader.mjs.
 // Флага --update нет намеренно: это решение человека, не счётчик. Протухшая
 // запись (файл удалён, вошёл в зону или у него появился импортёр вне зоны)
@@ -59,7 +73,22 @@ export function readZone() {
   return zone;
 }
 
-const IMPORT_RE = /(?:from|import|require\()\s*['"](\.{1,2}\/[^'"]+)['"]/g;
+// `from '…'`, `import '…'`, `import('…')` (динамический) и `require('…')`.
+const IMPORT_RE =
+  /(?:\bfrom|\bimport\s*\(?|\brequire\s*\()\s*['"](\.{1,2}\/[^'"]+)['"]/g;
+
+// Строки верхнего уровня, не порождающие рантайм-кода: объявления типов,
+// `import type`, `declare`. Всё остальное на нулевой колонке (const, function,
+// class, enum, обычный import, реэкспорт, вызов) — рантайм, файл измеряем.
+const TYPE_ONLY_LINE =
+  /^(?:export\s+)?(?:declare\b|type\b|interface\b)|^import\s+type\b/;
+
+/** Файл целиком из типов: мутировать нечего. Консервативно: сомнение = не type-only. */
+export function isTypeOnly(source) {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const topLevel = code.split('\n').filter((l) => /^[A-Za-z_$]/.test(l));
+  return topLevel.length > 0 && topLevel.every((l) => TYPE_ONLY_LINE.test(l));
+}
 
 /** Относительные импорты файла, разрешённые в существующие .ts/.tsx. */
 function localImports(rel) {
@@ -90,6 +119,7 @@ export function findCandidates(zone) {
   const out = new Map();
   for (const [target, from] of importers) {
     if (zone.has(target)) continue;
+    if (isTypeOnly(readFileSync(join(ROOT, target), 'utf8'))) continue;
     if ([...from].every((f) => zone.has(f))) out.set(target, [...from].sort());
   }
   return out;
