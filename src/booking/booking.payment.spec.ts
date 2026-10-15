@@ -48,7 +48,7 @@ function makeService(bookingRow: any) {
     config as any,
     { claimRun: jest.fn().mockResolvedValue(true) } as any,
   );
-  return { service, prisma, notify, state };
+  return { service, prisma, notify, state, pricing };
 }
 
 describe('BookingService.confirm — идемпотентность и сверка суммы', () => {
@@ -149,6 +149,80 @@ describe('BookingService.confirm — идемпотентность и свер�
     await expect(service.confirm(7, 4000)).rejects.not.toBeInstanceOf(
       PaymentAmountMismatchError,
     );
+  });
+
+  // Аудит 2026-10-11: confirm сверял оплату с ТЕКУЩЕЙ ценой. Админ меняет цену
+  // между записью и оплатой (окно холда — 15 минут) — честный платёж по
+  // выставленному счёту читался как расхождение. Счёт теперь хранит бронь.
+  describe('сумма счёта — Booking.amount (цена на момент записи)', () => {
+    const invoiced = () => ({ ...held(), amount: 4000 });
+
+    it('цена изменилась после брони → оплата по старому счёту подтверждается', async () => {
+      const { service, pricing, state, notify } = makeService(invoiced());
+      pricing.getPrice.mockResolvedValue(5000);
+      await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+      expect(state.row.status).toBe(BookingStatus.CONFIRMED);
+      expect(notify.alertAdmin).not.toHaveBeenCalled();
+    });
+
+    it('цена изменилась → оплата по НОВОЙ цене не сходится со счётом: FAIL и алерт с обеими суммами', async () => {
+      const { service, pricing, state, notify } = makeService(invoiced());
+      pricing.getPrice.mockResolvedValue(5000);
+      await expect(service.confirm(7, 5000)).rejects.toThrow(
+        PaymentAmountMismatchError,
+      );
+      expect(state.row.status).toBe(BookingStatus.HELD);
+      const text = (
+        notify.alertAdmin.mock.calls as unknown as [string][]
+      )[0][0];
+      expect(text).toContain('Бронь #7');
+      expect(text).toContain('Выставлен счёт на 4000 ₽');
+      expect(text).toContain('оплатили 5000 ₽');
+      expect(text).toContain('сейчас в админке 5000 ₽');
+    });
+
+    it('цена не менялась: в алерте нет «сейчас в админке», только счёт и оплата', async () => {
+      const { service, notify } = makeService(invoiced());
+      await expect(service.confirm(7, 1)).rejects.toThrow(
+        PaymentAmountMismatchError,
+      );
+      const text = (
+        notify.alertAdmin.mock.calls as unknown as [string][]
+      )[0][0];
+      expect(text).toContain(
+        'Выставлен счёт на 4000 ₽ (цена на момент записи)',
+      );
+      expect(text).toContain('оплатили 1 ₽');
+      expect(text).not.toContain('сейчас в админке');
+    });
+
+    it('счёт есть: текущая цена на успешном пути не читается (лишний запрос в БД)', async () => {
+      const { service, pricing } = makeService(invoiced());
+      await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+      expect(pricing.getPrice).not.toHaveBeenCalled();
+    });
+
+    it('контроль: бронь без amount (до миграции) сверяется с текущей ценой, как раньше', async () => {
+      const { service, pricing, notify } = makeService({
+        ...held(),
+        amount: null,
+      });
+      pricing.getPrice.mockResolvedValue(5000);
+      await expect(service.confirm(7, 4000)).rejects.toThrow(
+        PaymentAmountMismatchError,
+      );
+      const text = (
+        notify.alertAdmin.mock.calls as unknown as [string][]
+      )[0][0];
+      expect(text).toContain('Ожидали 5000 ₽');
+      expect(text).toContain('оплатили 4000 ₽');
+      await expect(service.confirm(7, 5000)).resolves.toEqual({ ok: true });
+    });
+
+    it('округление: 3999.6 при счёте 4000 сходится (Robokassa присылает OutSum дробью)', async () => {
+      const { service } = makeService(invoiced());
+      await expect(service.confirm(7, 3999.6)).resolves.toEqual({ ok: true });
+    });
   });
 
   it('CANCELLED-бронь подтвердить нельзя', async () => {
