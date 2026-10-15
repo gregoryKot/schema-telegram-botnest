@@ -108,8 +108,8 @@ Amvera, они не хранятся. Исчезнут вместе с акка�
 
 Формат `PROD_ENV`: как у `docker run --env-file`. Без кавычек, `$` и `#` внутри значений
 остаются как есть. Часть имён сервер отбрасывает сам (`write-env` печатает в логе, какие именно):
-`DATABASE_URL` и `NODE_ENV` задаёт `docker-compose.yml` (`environment` сильнее `.env`);
-`RECOVER_CMD`, `MIGRATE_CMD`, `APP_CMD`, `PORT`, `APP_PORT`, `STARTUP_*`, `DB_WAIT_*` и
+`DATABASE_URL`, `DEPLOY_TARGET` и `NODE_ENV` задаёт `docker-compose.yml` (`environment` сильнее `.env`);
+`RECOVER_CMD`, `MIGRATE_CMD`, `APP_CMD`, `PORT`, `APP_PORT`, `STARTUP_*` (в том числе `STARTUP_COOLDOWN_*`), `DB_WAIT_*` и
 `MIGRATE_*` управляют запуском контейнера (команды исполнились бы как есть, порты стоят за
 Caddy), а `TRANSFER_TARGET_URL` запустил бы перенос уже на новом сервере. Полный перечень —
 массивы в начале `deploy/vps/ops.sh`, их сверяет `src/infra/vps-env-deny.spec.ts`. Если после

@@ -214,9 +214,9 @@ cmd_deploy() {
 # PROD_ENV они не берутся: env_file сильнее ENV образа, и значение отсюда
 # исполнилось бы как команда контейнера, а откат поднимает прежний релиз с тем
 # же .env. Задаются только образом и compose.
-SUPERVISOR_ENV_NAMES=(APP_CMD APP_PORT DB_WAIT_CONNECT_MS DB_WAIT_INTERVAL_MS DB_WAIT_TIMEOUT_MS MIGRATE_BACKOFF_MS MIGRATE_CMD MIGRATE_MAX_ATTEMPTS PORT RECOVER_CMD STARTUP_BACKOFF_MS STARTUP_HEALTHY_MS STARTUP_MAX_FAILS)
+SUPERVISOR_ENV_NAMES=(APP_CMD APP_PORT DB_WAIT_CONNECT_MS DB_WAIT_INTERVAL_MS DB_WAIT_TIMEOUT_MS MIGRATE_BACKOFF_MS MIGRATE_CMD MIGRATE_MAX_ATTEMPTS PORT RECOVER_CMD STARTUP_BACKOFF_MS STARTUP_COOLDOWN_MAX_MS STARTUP_COOLDOWN_MS STARTUP_HEALTHY_MS STARTUP_MAX_FAILS)
 # Значения, которые задаёт docker-compose.yml в `environment` (он сильнее env_file).
-COMPOSE_OWNED_ENV=(DATABASE_URL NODE_ENV)
+COMPOSE_OWNED_ENV=(DATABASE_URL DEPLOY_TARGET NODE_ENV)
 # Адрес чужой базы для переноса: с ним скрипт переноса стартовал бы на новом сервере.
 TRANSFER_ENV_NAMES=(TRANSFER_TARGET_URL)
 
@@ -234,7 +234,7 @@ cmd_write_env() {
   denied=("${SUPERVISOR_ENV_NAMES[@]}" "${COMPOSE_OWNED_ENV[@]}" "${TRANSFER_ENV_NAMES[@]}")
   deny=$(IFS='|'; echo "${denied[*]}")
   # Только имена: значения секретны, а логи Actions публичны.
-  dropped=$(grep -E "^($deny)=" "$tmp" | cut -d= -f1 | sort -u | paste -sd' ' - || true)
+  dropped=$(grep -E "^($deny)=" "$tmp" | cut -d= -f1 | LC_ALL=C sort -u | paste -sd' ' - || true)
   grep -Ev "^($deny)=" "$tmp" > "$tmp.f" || true
   mv -f "$tmp.f" "$tmp"
   rm -f "$tmp.f"

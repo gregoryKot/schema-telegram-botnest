@@ -18,16 +18,41 @@ function shellArray(src: string, name: string): string[] {
 }
 
 const OPS = file('deploy', 'vps', 'ops.sh');
+/**
+ * Имена deny-list, которые есть и в реестре env, но отбрасываются законно: их
+ * значение задаёт docker-compose.yml в `environment` (сильнее env_file), так что
+ * строка из PROD_ENV всё равно была бы перекрыта, а на VPS ей не место.
+ */
+const COMPOSE_OWNED_IN_REGISTRY = new Set([
+  'DATABASE_URL', // на VPS в PROD_ENV лежит прежний адрес Amvera
+  'DEPLOY_TARGET', // признак площадки: «vps» задаёт compose, а не секрет
+]);
+
+function registryClashes(denied: string[], registry: Set<string>): string[] {
+  return denied.filter(
+    (n) => registry.has(n) && !COMPOSE_OWNED_IN_REGISTRY.has(n),
+  );
+}
+
 const SUPERVISOR = shellArray(OPS, 'SUPERVISOR_ENV_NAMES');
 const COMPOSE_OWNED = shellArray(OPS, 'COMPOSE_OWNED_ENV');
 const TRANSFER = shellArray(OPS, 'TRANSFER_ENV_NAMES');
 
-/** Файлы, исполняемые супервизором контейнера (entrypoint.mjs и его локальные модули). */
-const SUPERVISOR_FILES = [
-  'entrypoint.mjs',
-  'front-server.mjs',
-  'wait-for-db.mjs',
-];
+/**
+ * Файлы, исполняемые супервизором контейнера: entrypoint.mjs и его локальные
+ * `.mjs`-модули, выводятся из импортов, а не списком (новый модуль, прочитавший
+ * env, не должен выпасть из сверки). `backup-scheduler.cjs` намеренно вне
+ * сверки: он читает B2_*, PG*, HOSTNAME — переменные приложения из реестра,
+ * которые обязаны приходить из PROD_ENV.
+ */
+function supervisorFiles(): string[] {
+  const entry = file('deploy', 'entrypoint.mjs');
+  const imported = [...entry.matchAll(/from '\.\/([\w.-]+\.mjs)'/g)].map(
+    (m) => m[1],
+  );
+  return ['entrypoint.mjs', ...imported];
+}
+const SUPERVISOR_FILES = supervisorFiles();
 
 function envReads(src: string): string[] {
   const names = new Set<string>();
@@ -35,6 +60,13 @@ function envReads(src: string): string[] {
     names.add(m[1]);
   }
   return [...names];
+}
+
+/** Формы чтения env, которых envReads не видит: их в deploy/*.mjs быть не должно. */
+function blindEnvForms(src: string): string[] {
+  return [...src.matchAll(/process\.env\s*\[|\}\s*=\s*process\.env\b/g)].map(
+    (m) => m[0],
+  );
 }
 
 describe('deny-list write-env ↔ супервизор и compose', () => {
@@ -50,11 +82,39 @@ describe('deny-list write-env ↔ супервизор и compose', () => {
     'каждое process.env.X из deploy/%s есть в deny-list или в списке compose',
     (name) => {
       const reads = envReads(file('deploy', name));
-      expect(reads.length).toBeGreaterThan(0);
       const covered = new Set([...SUPERVISOR, ...COMPOSE_OWNED]);
       expect(reads.filter((r) => !covered.has(r))).toEqual([]);
     },
   );
+
+  it('список файлов супервизора выведен из импортов и не пуст', () => {
+    expect(SUPERVISOR_FILES).toEqual(
+      expect.arrayContaining([
+        'entrypoint.mjs',
+        'front-server.mjs',
+        'wait-for-db.mjs',
+        'app-exit.mjs',
+      ]),
+    );
+    // Сверка не вырождается в пустую: сегодня супервизор читает 15+ имён.
+    const all = new Set(
+      SUPERVISOR_FILES.flatMap((f) => envReads(file('deploy', f))),
+    );
+    expect(all.size).toBeGreaterThanOrEqual(15);
+  });
+
+  it.each(SUPERVISOR_FILES)(
+    'в deploy/%s нет чтения env в обход process.env.X (деструктуринг, process.env[…])',
+    (name) => {
+      expect(blindEnvForms(file('deploy', name))).toEqual([]);
+    },
+  );
+
+  it('контроль: слепые формы действительно распознаются', () => {
+    expect(blindEnvForms('const { A } = process.env;')).toHaveLength(1);
+    expect(blindEnvForms("process.env['A']")).toHaveLength(1);
+    expect(blindEnvForms('const a = process.env.A;')).toEqual([]);
+  });
 
   it('контроль сверки: имя вне списков действительно было бы замечено', () => {
     const covered = new Set([...SUPERVISOR, ...COMPOSE_OWNED]);
@@ -62,16 +122,18 @@ describe('deny-list write-env ↔ супервизор и compose', () => {
     expect(fake.filter((r) => !covered.has(r))).toEqual(['SOME_NEW_KNOB']);
   });
 
-  it('deny-list не отрезает переменные приложения из реестра (кроме PORT, который супервизор выставляет приложению сам)', () => {
-    // entrypoint.mjs отдаёт приложению PORT=APP_PORT, поэтому из PROD_ENV
-    // приложению PORT не нужен. Любое другое пересечение — законная
-    // переменная приложения, которую фильтр молча убрал бы.
+  it('deny-list не отрезает переменные приложения из реестра', () => {
     const registry = new Set(ENV_REGISTRY.map((e) => e.name));
     const denied = [...SUPERVISOR, ...COMPOSE_OWNED, ...TRANSFER];
-    const clash = denied.filter((n) => registry.has(n));
-    // DATABASE_URL/NODE_ENV: приложение их читает, но значение задаёт compose.
-    const ALLOWED = new Set(['DATABASE_URL', 'NODE_ENV', 'PORT']);
-    expect(clash.filter((n) => !ALLOWED.has(n))).toEqual([]);
+    expect(registryClashes(denied, registry)).toEqual([]);
+  });
+
+  it('контроль: законная переменная приложения в deny-list была бы замечена', () => {
+    const registry = new Set(ENV_REGISTRY.map((e) => e.name));
+    expect(registry.has('BOT_TOKEN')).toBe(true);
+    expect(registryClashes(['APP_CMD', 'BOT_TOKEN'], registry)).toEqual([
+      'BOT_TOKEN',
+    ]);
   });
 
   it('docker-compose.yml: app.environment задаёт NODE_ENV: production и DATABASE_URL', () => {
