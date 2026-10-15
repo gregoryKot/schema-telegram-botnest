@@ -14,6 +14,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
+import { subscriptionUpdateMany } from '../test-support/subscription-update-many';
 
 function makePrisma() {
   const subs = new Map<number, any>();
@@ -55,6 +56,7 @@ function makePrisma() {
         Object.assign(row, data);
         return row;
       }),
+      updateMany: subscriptionUpdateMany(subs),
     },
     // 1 = подписку захватил этот обработчик (атомарный UPDATE
     // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
