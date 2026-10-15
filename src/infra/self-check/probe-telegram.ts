@@ -1,4 +1,5 @@
 import { Probe } from './types';
+import { botAnswer } from './probe-telegram.username';
 
 const GET_ME_TIMEOUT_MS = 8_000;
 
@@ -28,12 +29,7 @@ export function telegramProbe(env: NodeJS.ProcessEnv = process.env): Probe {
         // ниже вместо .catch(() => null), который прячет ошибку молча
         // (гейт check-silent-catch.mjs).
         const body = res.ok ? ((await res.json()) as GetMeResponse) : null;
-        if (res.ok && body?.ok) {
-          return {
-            ok: true,
-            detail: `отвечает (@${body.result?.username ?? 'бот'})`,
-          };
-        }
+        if (res.ok && body?.ok) return botAnswer(env, body.result?.username);
         return {
           ok: false,
           detail: `Telegram API ответил ошибкой (HTTP ${res.status})`,
