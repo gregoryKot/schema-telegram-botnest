@@ -861,6 +861,16 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   --mutate src/therapy/therapy-relations.service.ts`, выжившие — в
   `reports/mutation/golden-auth.html`, вкладка Survived. Пол не снижали
   (правило №15) и не поднимали.
+- **PR-CI не ловит тест, оставивший живой хендл.** Джоба `backend` в `ci.yml`
+  гоняет jest воркерами, и утечка там видна только строкой «A worker process
+  has failed to exit gracefully» при зелёном шаге — так поллинг из
+  `telegram.polling.seam.spec.ts` (#649) уехал в `main` и повесил nightly
+  (ci-alarm #672). Ловит её только ночной `backend-flaky` через
+  `scripts/jest-exit-guard.mjs`. Сторож в PR-CI осознанно не поставлен:
+  утечка от гонки проявляется не в каждом прогоне и роняла бы чужие PR как
+  флак. Вернуться, когда `backend-flaky` неделю подряд зелёный (видно по
+  `nightly.yml` в Actions): тогда такая строка в PR-CI укажет на утечку,
+  принесённую самим изменением.
 - `src/infra/vps-ops.spec.ts` флакает под нагрузкой машины: при load average
   15+ на чистом `origin/main` (25233de) один-два теста из 29 падают примерно
   в одном прогоне из трёх («релиз записан, предыдущий сохранён…», «первый
