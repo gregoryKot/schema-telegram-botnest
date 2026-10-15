@@ -526,6 +526,13 @@ a { color: inherit; text-decoration: none; }
 }
 .search-pill:hover { background: var(--surface-3); border-color: var(--line); color: var(--text-sub); }
 .search-pill .sp-spacer { flex: 1; }
+/* «Мне плохо» — постоянный вход в помощь из любого раздела (редизайн 2026-10).
+   Цвет — тон домена D1 (.tone-tint + --h на элементе). */
+.topbar-sos {
+  border: none; border-radius: 16px; padding: 7px 14px; cursor: pointer;
+  font: 700 13px var(--sans); white-space: nowrap; flex-shrink: 0;
+}
+.topbar-offline { font-size: 12px; color: var(--accent-red); font-weight: 500; }
 
 .canvas {
   overflow: hidden; min-height: 0;

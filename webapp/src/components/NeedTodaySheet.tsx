@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { COLORS, type Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
@@ -7,6 +7,9 @@ import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { needColor } from '../../../shared/src/needs/needColors';
 import { useTr } from '../utils/addressForm';
+import { NeedScale } from './NeedScale';
+import { NEED_HUE } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
 
 interface Props {
   need: Need;
@@ -27,33 +30,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
   const [showReflection, setShowReflection] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
   const NEED_DATA = useNeedData();
-
-  // Inline slider – prevent iOS scroll container from stealing touch events.
-  // Хуки объявляются ДО раннего `return null` ниже: при !data ранний выход
-  // иначе пропускал бы эти хуки и порядок хуков плыл между рендерами
-  // (react-hooks/rules-of-hooks).
-  const trackRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
-    el.addEventListener('touchstart', prevent, { passive: false });
-    return () => el.removeEventListener('touchstart', prevent);
-  }, []);
-  const calcValue = useCallback((clientX: number) => {
-    if (!trackRef.current) return;
-    const rect = trackRef.current.getBoundingClientRect();
-    onChange(Math.round(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 10));
-  }, [onChange]);
-  const onPtrDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    calcValue(e.clientX);
-  }, [calcValue]);
-  const onPtrMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.buttons === 0) return;
-    calcValue(e.clientX);
-  }, [calcValue]);
 
   const data = NEED_DATA[need.id];
   if (!data) return null;
@@ -76,35 +52,15 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
             <span style={{ fontFamily: 'var(--serif)', fontSize: 64, lineHeight: 1, color }}>{value}</span>
             <span style={{ fontSize: 16, color: 'var(--text-faint)' }}>/10</span>
           </div>
-          <div
-            ref={trackRef}
-            onPointerDown={onPtrDown}
-            onPointerMove={onPtrMove}
-            style={{ position: 'relative', padding: '12px 0', cursor: 'pointer', touchAction: 'none', userSelect: 'none', marginBottom: 8 }}
-          >
-            <div style={{ height: 6, borderRadius: 'var(--r-6)', background: 'var(--surface-2)', overflow: 'hidden' }}>
-              <div style={{ width: `${value * 10}%`, height: '100%', borderRadius: 'var(--r-6)', background: `linear-gradient(to right, ${color}55, ${color})` }} />
-            </div>
-            {/* Маркер «вчера» на шкале — паритет с miniapp NeedRatingBar (В10 аудита 2026-08) */}
-            {typeof yesterdayValue === 'number' && yesterdayValue > 0 && (
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute', left: `${yesterdayValue * 10}%`, top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: 2, height: 14, borderRadius: 1,
-                  background: 'var(--text-faint)',
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-            <div style={{
-              position: 'absolute', left: `${value * 10}%`, top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 20, height: 20, borderRadius: '50%',
-              background: color, border: '2px solid var(--bg)',
-              pointerEvents: 'none',
-            }} />
+          <div style={{ marginBottom: 12 }}>
+            <NeedScale
+              value={value > 0 ? value : undefined}
+              hue={NEED_HUE[need.id as NeedId]}
+              onChange={onChange}
+              label={need.chartLabel}
+              size="lg"
+              yesterday={yesterdayValue}
+            />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-ghost)', marginBottom: 16 }}>
             <span>0</span>
