@@ -72,8 +72,8 @@ export async function completeCheckout(
   assertPaymentAvailable(deps.robokassa, 'booking');
   // Robokassa not configured (dev, не прод): auto-confirm, слот не виснет в HELD.
   if (!deps.robokassa.enabled) {
-    await deps.prisma.booking.update({
-      where: { id: booking.id },
+    await deps.prisma.booking.updateMany({
+      where: { id: booking.id, status: BookingStatus.HELD },
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
     return confirmNow(deps, booking, cancelToken);

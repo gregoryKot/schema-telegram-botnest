@@ -65,10 +65,16 @@ function makeService(
     slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: {
-      update: jest.fn(async ({ where, data }: any) => {
-        const row = bookingRows.find((b) => b.id === where.id);
+      // CAS как в Postgres: WHERE на id и статус решает, обновится ли строка.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = bookingRows.find(
+          (b) =>
+            b.id === where.id &&
+            (where.status === undefined || b.status === where.status),
+        );
+        if (!row) return { count: 0 };
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       }),
     },
   };
@@ -353,11 +359,12 @@ describe('BookingService.book — создание и side-effects', () => {
       type: SessionType.SESSION_50,
     });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: BookingStatus.CONFIRMED }),
-      }),
-    );
+    // Аудит 2026-10-11 (booking-cas): переход HELD→CONFIRMED только с
+    // предикатом статуса, иначе dev-ветка перекрасила бы чужой переход.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 100, status: BookingStatus.HELD },
+      data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+    });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
   });
 });

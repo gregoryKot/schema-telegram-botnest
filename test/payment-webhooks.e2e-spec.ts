@@ -24,6 +24,8 @@ import { BookingService } from '../src/booking/booking.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
 import { MeetingService } from '../src/booking/meeting.service';
+import { CalDavService } from '../src/booking/caldav.service';
+import { bookingEventUid } from '../src/booking/booking-confirm-run';
 import { CronLeaderService } from '../src/infra/cron-leader.service';
 import { TelegramService } from '../src/telegram/telegram.service';
 import { EmailService } from '../src/auth/email.service';
@@ -49,6 +51,9 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-10',
   'bk-ct-11',
   'bk-ct-12',
+  'bk-ct-13',
+  'bk-ct-14',
+  'bk-ct-15',
 ];
 const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-1',
@@ -572,6 +577,128 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
           String(c[0]).includes(EFFECTS_CLIENT_CONTACT),
         ),
       ).toEqual([]);
+    });
+  });
+
+  // ─── Календарь: событие не переживает отмену (аудит 2026-10-11, booking-cas) ─
+  // Граница подмены — CalDavService (PUT/DELETE в iCloud): фейковый календарь —
+  // множество uid. Всё выше (HTTP ResultURL с MD5-подписью, runConfirmEffects,
+  // claimCancel, onCancelled) — код прода на настоящей БД. Гонка confirm ‖ cancel
+  // — свойство Postgres (CAS по строке), мок count её не доказал бы (правило №18).
+
+  describe('календарь: confirm ‖ cancel и гибель пода между PUT и записью uid', () => {
+    let bookingSvc: BookingService;
+    let tg: jest.SpyInstance;
+    let mail: jest.SpyInstance;
+    let push: jest.SpyInstance;
+    let remove: jest.SpyInstance;
+    let calendar: Set<string>;
+    let onPush: ((uid: string) => Promise<void>) | null;
+    const pauseThrottle = () => new Promise((r) => setTimeout(r, 1100));
+
+    beforeAll(async () => {
+      await pauseThrottle();
+      bookingSvc = app.get(BookingService);
+      jest
+        .spyOn(app.get(CronLeaderService), 'claimRun')
+        .mockResolvedValue(true);
+      tg = jest.spyOn(app.get(TelegramService), 'notifyAdmin');
+      mail = jest.spyOn(app.get(EmailService), 'sendAdminNotification');
+      const cal = app.get(CalDavService);
+      push = jest.spyOn(cal, 'pushEvent');
+      remove = jest.spyOn(cal, 'removeEvent');
+    });
+    beforeEach(() => {
+      calendar = new Set();
+      onPush = null;
+      tg.mockReset().mockResolvedValue(true);
+      mail.mockReset().mockResolvedValue(undefined);
+      push.mockReset().mockImplementation(async (ev: { uid: string }) => {
+        // Отмена приходит, пока идёт PUT: она раньше события в календаре.
+        if (onPush) await onPush(ev.uid);
+        calendar.add(ev.uid);
+        return ev.uid;
+      });
+      remove.mockReset().mockImplementation(async (uid: string) => {
+        calendar.delete(uid);
+      });
+    });
+    afterAll(async () => {
+      jest.restoreAllMocks();
+      await pauseThrottle();
+    });
+
+    const row = (id: number) => prisma.booking.findUnique({ where: { id } });
+    const dms = (title: string) =>
+      tg.mock.calls
+        .map((c) => String(c[0]))
+        .filter((t) => t.includes(title) && t.includes(EFFECTS_CLIENT_CONTACT));
+    function create(token: string, status: 'HELD' | 'CONFIRMED') {
+      return prisma.booking.create({
+        data: {
+          startsAt: new Date(Date.now() + 72 * 3_600_000),
+          durationMin: 50,
+          type: 'SESSION_50',
+          status,
+          heldUntil: status === 'HELD' ? new Date(Date.now() + 600_000) : null,
+          clientName: 'Клиент',
+          clientContact: EFFECTS_CLIENT_CONTACT,
+          cancelToken: token,
+        },
+      });
+    }
+    const pay = (id: number) =>
+      postResult(
+        SESSION_OUT_SUM,
+        String(id),
+        resultSig(SESSION_OUT_SUM, String(id)),
+      );
+
+    it('отмена во время PUT: события в календаре не остаётся, «Запись подтверждена» не уходит', async () => {
+      await pauseThrottle();
+      const b = await create('bk-ct-13', 'HELD');
+      onPush = async () => {
+        await bookingSvc.cancel('bk-ct-13');
+      };
+
+      const res = await pay(b.id);
+
+      expect(res.text).toBe(`OK${b.id}`);
+      expect((await row(b.id))?.status).toBe('CANCELLED');
+      expect([...calendar]).toEqual([]); // DELETE отмены обогнал PUT, добил confirm
+      expect(remove).toHaveBeenCalledWith(bookingEventUid(b.id));
+      expect(dms('Запись подтверждена')).toEqual([]);
+      expect(dms('Запись отменена')).toHaveLength(1);
+      expect((await row(b.id))?.confirmEffectsDoneAt ?? null).toBeNull();
+    });
+
+    it('под умер между PUT и записью uid: CONFIRMED без calDavUid, событие уже в календаре — отмена его снимает', async () => {
+      const b = await create('bk-ct-14', 'CONFIRMED');
+      calendar.add(bookingEventUid(b.id)); // PUT прошёл, uid в строку не записан
+      expect((await row(b.id))?.calDavUid ?? null).toBeNull();
+
+      await expect(bookingSvc.cancel('bk-ct-14')).resolves.toEqual({
+        ok: true,
+      });
+
+      expect([...calendar]).toEqual([]);
+      expect(dms('Запись отменена')).toHaveLength(1);
+    });
+
+    it('контроль: обычный порядок (оплата завершилась, потом отмена) — DELETE по записанному uid', async () => {
+      await pauseThrottle();
+      const b = await create('bk-ct-15', 'HELD');
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+      const saved = (await row(b.id))?.calDavUid;
+      expect(saved).toBe(bookingEventUid(b.id));
+      expect([...calendar]).toEqual([saved]);
+      expect(dms('Запись подтверждена')).toHaveLength(1);
+
+      await bookingSvc.cancel('bk-ct-15');
+
+      expect([...calendar]).toEqual([]);
+      expect(remove).toHaveBeenCalledWith(saved);
+      expect(dms('Запись отменена')).toHaveLength(1);
     });
   });
 

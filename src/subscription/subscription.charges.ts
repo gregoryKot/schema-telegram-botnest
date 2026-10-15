@@ -149,8 +149,8 @@ export async function chargeDue(deps: ChargeDeps) {
     } else {
       const fails = sub.failedAttempts + 1;
       await deps.prisma.$transaction([
-        deps.prisma.subscriptionCharge.update({
-          where: { id: charge.id },
+        deps.prisma.subscriptionCharge.updateMany({
+          where: { id: charge.id, status: { not: 'paid' } },
           data: { status: 'failed' },
         }),
         // Отмена между захватом и ответом Robokassa не откатывается:

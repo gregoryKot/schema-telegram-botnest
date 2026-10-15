@@ -45,10 +45,12 @@ function makePrisma() {
         return row;
       }),
       findFirst: jest.fn(() => null),
-      update: jest.fn(({ where: { id }, data }: any) => {
-        const row = charges.get(id);
+      updateMany: jest.fn(({ where, data }: any) => {
+        const row = charges.get(where.id);
+        if (!row || (where.status?.not && row.status === where.status.not))
+          return { count: 0 };
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       }),
     },
     $transaction: jest.fn((ops: any) =>
@@ -181,6 +183,29 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     // а полное 500-символьное тело — нет (иначе алерт Telegram переполнится).
     expect(alert).toContain('X'.repeat(150));
     expect(alert).not.toContain('X'.repeat(151));
+  });
+
+  // Аудит 2026-10-11 (booking-cas): пометка списания failed — только с
+  // предикатом статуса, иначе она затёрла бы оплаченное вебхуком списание.
+  it('отказ Robokassa помечает списание failed через updateMany с предикатом status not paid', async () => {
+    const { service, prisma } = makeService({
+      chargeRecurringResult: { ok: false, body: 'denied' },
+    });
+    await prisma.subscription.create({
+      data: {
+        status: 'active',
+        period: 'month',
+        amount: 300,
+        firstInvId: 900001,
+        failedAttempts: 0,
+        nextChargeAt: new Date(Date.now() - 1000),
+      },
+    });
+    await service.chargeDue();
+    expect(prisma.subscriptionCharge.updateMany).toHaveBeenCalledWith({
+      where: { id: expect.any(Number), status: { not: 'paid' } },
+      data: { status: 'failed' },
+    });
   });
 
   it('due.length===0 → this.logger.log НЕ вызывается со сводкой "Processed" (ConditionalExpression)', async () => {
