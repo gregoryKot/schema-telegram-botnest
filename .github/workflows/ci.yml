@@ -178,6 +178,11 @@ jobs:
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
       - run: node scripts/check-raw-sql-live.mjs
+      # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
+      # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
+      # в security-log-redact.ts и перестал измеряться). Классификация в
+      # scripts/mutation-zone-baseline.json; флага --update нет.
+      - run: node scripts/check-mutation-zone.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -455,6 +460,16 @@ jobs:
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
+      # Откат образа поверх упавшей миграции (аудит 2026-10-11, infra#8): N+1 с
+      # битой миграцией оставляет в _prisma_migrations запись, на которой образ N
+      # падает с P3009. Настоящие prisma migrate deploy, prisma db execute и
+      # deploy/entrypoint.mjs: recover-p3009.sql обязан снять запись, а образ N
+      # поднять приложение. Мок не проверяет, что Prisma оставляет огрызок и что
+      # DELETE его запись снимает (правило №18).
+      - name: e2e откат образа поверх упавшей миграции на реальном Postgres
+        run: |
+          command -v psql >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
+          npx jest --config ./test/jest-e2e.json --runInBand test/migrate-stuck-record.e2e-spec.ts
       # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-to-b2.sh →
       # (поддельный) B2 → fetch-latest-b2.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.

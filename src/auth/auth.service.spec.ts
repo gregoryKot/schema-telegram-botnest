@@ -658,12 +658,14 @@ describe('AuthService — findOrCreateUserByProvider', () => {
 
   it('generateWebUserId: id = MIN + rand % (MAX - MIN) — диапазон именно разность, а не сумма границ', async () => {
     const { svc } = makeService();
-    // Фиксируем "случайные" 8 байт — весь диапазон unsigned 64 бит, чтобы
-    // разность и сумма границ (мутант ArithmeticOperator) давали заведомо
-    // разный результат по модулю. auth.service.ts делает `import * as crypto
+    // Фиксируем "случайные" 8 байт так, чтобы разность и сумма границ
+    // (мутант ArithmeticOperator) давали разный остаток. Не 'ffff…ff': для
+    // него 2^64-1 mod 8e15 и mod 1e16 совпадают (1844·1e16 = 2305·8e15), и
+    // мутант `MAX + MIN` выживал в ночном замере (#614). 0x7fff…ff даёт
+    // 7372036854775807 против 3372036854775807. auth.service.ts делает `import * as crypto
     // from 'crypto'` — тот же закешированный модуль, что и require('crypto')
     // здесь, поэтому spyOn ловит и его вызов randomBytes(8).
-    const fixedBytes = Buffer.from('ffffffffffffffff', 'hex');
+    const fixedBytes = Buffer.from('7fffffffffffffff', 'hex');
     const mockedRandomBytes = cryptoModule.randomBytes as unknown as jest.Mock;
     // …Once — самовосстанавливающийся оверрайд ровно на 1 следующий вызов
     // (generateWebUserId дёргает randomBytes(8) ровно один раз), дефолтная
@@ -678,6 +680,9 @@ describe('AuthService — findOrCreateUserByProvider', () => {
     const range = WEB_USER_ID_MAX - WEB_USER_ID_MIN; // корректная формула
     const expected = WEB_USER_ID_MIN + (rand % range);
     expect(userId).toBe(expected);
+    // Литерал рядом с формулой: сверка «код == копия кода» сама по себе не
+    // отличила бы ошибку, одинаково сделанную в обеих частях.
+    expect(userId).toBe(1_000_000_000_000_000n + 7_372_036_854_775_807n);
     expect(userId).toBeGreaterThanOrEqual(WEB_USER_ID_MIN);
     expect(userId).toBeLessThan(WEB_USER_ID_MAX);
   });
