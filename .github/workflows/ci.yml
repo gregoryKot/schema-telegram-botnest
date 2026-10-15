@@ -88,7 +88,7 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client
+          test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/booking-admin-cancel
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
@@ -456,6 +456,7 @@ jobs:
           test/merge-my-lists.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
