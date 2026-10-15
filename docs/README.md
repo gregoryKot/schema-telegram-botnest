@@ -712,7 +712,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `webapp/src/pages/tests/QuizPage.tsx:67`, обоих `therapist/useClientDetail.ts`,
   `schema-miniapp/src/components/SafePlace.tsx:99`,
   `schema-miniapp/src/hooks/{useIntroSheetData,usePracticesData}.ts`. Переводить
-  на тот же хук; гейта у класса нет.
+  на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
+  тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
+  `afterEach(cleanup)` в каждом из трёх фронтовых пакетов
+  (`<пакет>/src/test-support/rtlCleanup.ts`, флак 2026-10-15, run 38707373186,
+  `LazySections.test.tsx` → `useSafeTop`). Перечисленные выше места этим НЕ
+  закрыты: размонтирование не гасит таймер, которого код не чистит.
 - Гонка «занял эфемерный порт → отпустил → занимаю обратно» живёт ещё в двух
   спеках джобы `backend`: `src/infra/front-server.spec.ts:91` (захардкоженный
   `APP_PORT = 58123` — тот самый класс, который `wait-for-db.spec.ts:53`
