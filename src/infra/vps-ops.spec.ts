@@ -46,9 +46,6 @@ case "$*" in
     fi ;;
   *" port db 5432"*) [ "\${FAKE_PORT_OPEN:-0}" = "1" ] || exit 1; echo "0.0.0.0:5432" ;;
   "images "*) ;;
-  # login читает пароль со stdin: без этого printf в ops.sh ловит SIGPIPE, если
-  # поддельный docker завершился раньше, и вход «не удаётся» (флак под нагрузкой).
-  "login "*) cat > /dev/null ;;
   # docker run вне compose — проверка внешнего подключения (external-db-check).
   "run --rm --network host"*)
     printf '%s' "$DATABASE_URL" > "$FAKE_URL_FILE"
