@@ -87,7 +87,7 @@ export function BecomeTherapistSection({
             Заявка отправлена
           </div>
           <div className="u-sub12-lh15">
-            Рассмотрим в течение нескольких дней и напишем в боте.
+            Сообщим о решении в Telegram, на почту или по контактам из заявки.
           </div>
         </div>
       ) : therapistReq?.status === 'approved' ? (
@@ -148,7 +148,7 @@ export function BecomeTherapistSection({
               lineHeight: 1.5,
             }}
           >
-            Рассмотрим заявку и напишем в боте
+            Сообщим о решении в Telegram, на почту или по контактам из заявки
           </div>
           {[
             {

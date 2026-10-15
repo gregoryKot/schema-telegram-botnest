@@ -43,8 +43,16 @@ describe('TherapistRequestSection — статусы существующей з
   it('pending — сообщение "на рассмотрении", без формы', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'pending', rejectReason: null, createdAt: '2026-07-01', reviewedAt: null }));
     render(<TherapistRequestSection accessToken="tok" />);
-    await screen.findByText(/на рассмотрении/);
+    const note = await screen.findByText(/на рассмотрении/);
     expect(screen.queryByText('ФИО')).toBeNull();
+    // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
+    // «Решение появится здесь» тут неверно: отказ виден только внутри раскрытой
+    // формы (тест ниже), поэтому обещаем сообщение и смену статуса.
+    expect(note.textContent).toContain(
+      'О решении сообщим в Telegram, на почту или по контактам из заявки',
+    );
+    expect(note.textContent).not.toContain('в боте');
+    expect(note.textContent).not.toContain('появится здесь');
   });
 
   it('approved — сообщение "одобрена"', async () => {

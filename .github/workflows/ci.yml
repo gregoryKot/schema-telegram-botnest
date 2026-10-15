@@ -456,6 +456,11 @@ jobs:
       # в настоящей БД, поэтому на шве, а не на моке.
       - name: e2e запись не выдаёт, клиент ли контакт, на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-returning-oracle.e2e-spec.ts
+      # Аудит 2026-10-11: прод без ROBOKASSA_* не подтверждает платную бронь и
+      # донат без денег (503 до записи в БД) + проба «приходят ли вебхуки» на
+      # настоящих запросах. «В БД ничего не появилось» доказывает только живая база.
+      - name: e2e прод без Robokassa отказывает платным путям на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/payment-unconfigured-prod.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт

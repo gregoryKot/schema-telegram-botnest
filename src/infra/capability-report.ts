@@ -10,8 +10,7 @@
 // блока «Настройки» в /stats (src/bot/capability-metrics.format.ts). Гейт
 // scripts/check-capability-registry.mjs: файл с веткой «if (!config) return»
 // — либо в `files` ниже, либо в capability-registry-baseline.json.
-import { buildOauthRedirectCapability } from '../auth/oauth-redirect-config';
-import { buildBackupCapability } from './backup-capability';
+import { buildIntegrationCapabilities } from './capability-integrations';
 
 export interface CapabilityStatus {
   /** Слаг для тестов/сверки. */
@@ -145,9 +144,7 @@ export function buildCapabilityReport(
       files: ['src/channel/targets/threads-token.service.ts'],
       critical: false,
     },
-    // Инцидент 2026-09-16: сама запись — в src/auth/oauth-redirect-config.ts.
-    buildOauthRedirectCapability(env),
-    buildBackupCapability(env),
+    ...buildIntegrationCapabilities(env),
   ];
 }
 
