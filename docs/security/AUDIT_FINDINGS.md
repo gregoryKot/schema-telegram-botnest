@@ -534,6 +534,14 @@ plaintext в очереди уведомлений. Нумерация: букв
   квартал стоит скачать файл из бакета и прогнать `scripts/restore-backup.sh`.
   Открытые вопросы по бэкапам CNPG самой Amvera (раздел «Резервные копии БД» в
   `CLAUDE.md`) этим не закрываются — это вторая, независимая копия.
+- **2026-10-15: хранилище сменилось на Cloudflare R2** (решение владельца; B2 на
+  проде так и не был настроен, переносить нечего). Переменные теперь
+  `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`,
+  `BACKUP_S3_SECRET_ACCESS_KEY` (+ `BACKUP_ENCRYPTION_KEY`, необязательные
+  `BACKUP_RETENTION_DAYS`, `BACKUP_S3_REGION`), скрипты — `backup-upload.sh`,
+  `backup-fetch-latest.sh`, `s3-api.sh`, аренда — `db-backup`. Инструкция
+  владельцу — docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы». Абзац выше
+  оставлен как история.
 
 #### D-3 · Фильтры исключений слали URL с токенами и текст Prisma в алерт ✅ Закрыто
 - **Severity:** Medium-High. `Prisma error on ${req.url}: ${exception.message}`
